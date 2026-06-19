@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_domain.h"
 
 int hz6_allocator_source_block_register_invalid_range(
     Hz6Allocator* allocator,
@@ -18,12 +19,17 @@ int hz6_allocator_source_block_register_invalid_range(
   probe_ptr = &probes;
 #endif
   int route_shared = 0;
+  int route_domain_locked = 0;
+  hz6_allocator_route_domain_lock(allocator);
+  route_domain_locked = 1;
   if (!hz6_route_backend_register_invalid_range(&allocator->route_backend,
                                                 block->ptr,
                                                 block->bytes,
                                                 front_id,
                                                 class_id,
                                                 probe_ptr)) {
+    hz6_allocator_route_domain_unlock(allocator);
+    route_domain_locked = 0;
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_ELASTIC_ROUTE_OVERFLOW_L1
     if (!hz6_allocator_route_register_shared_invalid_range(allocator,
                                                            block->ptr,
@@ -56,6 +62,9 @@ int hz6_allocator_source_block_register_invalid_range(
         allocator->stats.route_active_current;
   }
 #endif
+  if (route_domain_locked) {
+    hz6_allocator_route_domain_unlock(allocator);
+  }
 #if !HZ6_SOURCE_BLOCK_NO_ROUTE_BACKPTR_L1
   block->route_backend = route_shared ? NULL : &allocator->route_backend;
 #endif

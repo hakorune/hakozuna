@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_domain.h"
 
 #include <stdlib.h>
 
@@ -65,9 +66,11 @@ int hz6_allocator_release_source_block(Hz6Allocator* allocator,
                                                           block->ptr);
 #endif
     } else {
+      hz6_allocator_route_domain_lock(allocator);
       hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                  block->ptr,
                                                  NULL);
+      hz6_allocator_route_domain_unlock(allocator);
     }
   }
   void* release_ptr = block->ptr;

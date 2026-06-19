@@ -5,8 +5,7 @@ int hz6_allocator_release_orphan(Hz6Allocator* allocator, void* ptr) {
     return 0;
   }
 
-  Hz6RouteResult route =
-      hz6_route_backend_lookup(&allocator->route_backend, ptr);
+  Hz6RouteResult route = hz6_allocator_route_lookup(allocator, ptr);
   if (route.kind != HZ6_ROUTE_VALID || !route.descriptor) {
     return 0;
   }

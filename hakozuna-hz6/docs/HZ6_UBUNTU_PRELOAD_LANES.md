@@ -60,6 +60,10 @@ HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
 HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
+HZ6_ROUTE_DOMAIN_SYNC_L1=1
+HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
+HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
+HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -100,9 +104,19 @@ paper RUNS=10 collection.  The first debug pass found two separate issues:
 remote-positive frees could fall into visible allocator route scans, and
 route-tombstone compaction could race remote rehome unregister/register work.
 Short remote rows can now be made to complete, but long 300K rows still show a
-page-table lookup cliff.  Track the design in
+page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
+not a preload-only owner hint: Ubuntu preload must call the shared core
+resolver that Windows will use too.  Track the design in
 [`HZ6_REMOTE_ROUTE_PHASE_PLAN.md`](HZ6_REMOTE_ROUTE_PHASE_PLAN.md) and do not
 promote any MT remote numbers from this debug state.
+
+Phase 1A implementation status, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_DOMAIN_SYNC_L1=1` and
+`HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1`.  The old all-visible fallback remains
+available but selected preload uses `HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1` so a
+local miss searches foreign exact routes without falling into foreign
+invalid-range full-table scans for external pointers.  This is a stopgap until
+`RemoteFreeRouteResolve-L1`; it is not the final ownership authority.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

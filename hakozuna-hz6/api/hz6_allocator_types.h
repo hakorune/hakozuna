@@ -372,6 +372,10 @@ struct Hz6Allocator {
   Hz6RouteBytesStorage route_bytes[HZ6_ROUTE_TABLE_CAPACITY];
 #endif
   Hz6RouteBackend route_backend;
+#if HZ6_ROUTE_DOMAIN_SYNC_L1
+  atomic_flag route_domain_lock;
+  _Atomic unsigned int route_compact_requested;
+#endif
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1
   Hz6RouteLastHitCache route_last_hit;
 #endif

@@ -15,7 +15,7 @@ int hz6_allocator_orphan_adopt_prepare(Hz6Allocator* adopter,
     return 0;
   }
 
-  *source_route = hz6_route_backend_lookup(&source->route_backend, ptr);
+  *source_route = hz6_allocator_route_lookup(source, ptr);
   if (source_route->kind != HZ6_ROUTE_VALID || !source_route->descriptor) {
     return 0;
   }

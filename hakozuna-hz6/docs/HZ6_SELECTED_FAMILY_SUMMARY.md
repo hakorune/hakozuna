@@ -133,9 +133,10 @@ the 2026-06-19 debug pass showed that remote-positive MT rows are not yet a
 selected-final HZ6 claim on either Ubuntu or Windows.  The failure is at the
 route ownership boundary, not in Ubuntu's launcher: remote frees can degrade
 into page-table route misses, and tombstone compaction needs a writer boundary
-when remote rehome is active.  Keep the remote-route repair in its own phase and
-do not mix its debug numbers into the selected-family tables until Ubuntu
-x86_64 and Windows x64 both pass the RUNS=10 MT remote matrix.
+when remote rehome is active.  Keep the repair in the
+`RemoteFreeRouteResolve-L1` phase, not as a platform-wrapper owner hint, and do
+not mix its debug numbers into the selected-family tables until Ubuntu x86_64
+and Windows x64 both pass the RUNS=10 MT remote matrix.
 
 ## Selected Rows
 

@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_domain.h"
 #include "hz6_allocator_route_last_hit.h"
 #include "hz6_allocator_route_owner_locality.h"
 #include "hz6_allocator_route_shared_directory.h"
@@ -108,7 +109,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
+    hz6_allocator_route_domain_lock(visible);
+#if HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1
+    route = hz6_route_backend_lookup_exact(&visible->route_backend, ptr);
+#else
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
+#endif
+    hz6_allocator_route_domain_unlock(visible);
     if (route.kind != HZ6_ROUTE_MISS) {
       route.route_allocator = visible;
 #if HZ6_DIAGNOSTIC_PROBES
@@ -154,7 +161,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
 Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     Hz6Allocator* allocator,
     const void* ptr) {
+#if HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1
   return hz6_allocator_route_lookup_visible_only(allocator, ptr);
+#else
+  (void)allocator;
+  (void)ptr;
+  return hz6_route_miss();
+#endif
 }
 
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES || \

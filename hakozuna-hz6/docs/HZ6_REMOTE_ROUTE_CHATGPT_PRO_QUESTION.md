@@ -1,8 +1,8 @@
-# HZ6 Remote Route Design Consultation Prompt
+# HZ6 Remote Route Design Consultation Notes
 
-Use this prompt when asking ChatGPT Pro or another design reviewer for a second
-opinion on the HZ6 remote-route repair.  The goal is design review, not code
-generation.
+This file records the external design-review prompt and the accepted revision
+direction for the HZ6 remote-route repair.  The active work order is
+`HZ6_REMOTE_ROUTE_PHASE_PLAN.md`.
 
 ## Context
 
@@ -62,9 +62,10 @@ Interpretation:
   scans,
 - the issue is at the route ownership boundary, not at the Linux launcher.
 
-## Current Design Plan
+## Original Design Plan Under Review
 
-The active work order is `HZ6_REMOTE_ROUTE_PHASE_PLAN.md`.
+The original proposal used `RemoteRouteOwnerHint-L1`, a preload-visible
+local-vs-foreign hint, as the next box.
 
 Proposed phase split:
 
@@ -143,3 +144,52 @@ Please respond with:
 - a minimal implementation shape with module boundaries,
 - counters needed before performance tuning,
 - and a GO / NO-GO recommendation for implementing Phase 1 and Phase 2 first.
+
+## Accepted Review Result
+
+The review accepted the broad phase ordering but rejected
+`RemoteRouteOwnerHint-L1` as the correctness boundary.
+
+Decision:
+
+```text
+RemoteRouteOwnerHint-L1: NO-GO
+RemoteFreeRouteResolve-L1: GO
+```
+
+Reason:
+
+- owner-locality is a search hint, not ownership proof,
+- current shared-directory publication is not coherent enough to treat a miss
+  as external,
+- writer-only route locking does not protect lookup or last-hit cache readers,
+- current unregister/register rehome creates a MISS window,
+- current preload MISS -> real_free behavior conflates external and unresolved
+  HZ6 ownership.
+
+Accepted replacement:
+
+```text
+RemoteFreeRouteResolve-L1
+
+LOCAL_VALID
+FOREIGN_VALID
+OWNED_INVALID
+PROVEN_EXTERNAL
+RETRY
+UNRESOLVED_INTEGRITY
+```
+
+Key design changes:
+
+- make the global exact directory authoritative and coherently published,
+- synchronize route lookup, last-hit, mutation, and compaction in a
+  route-domain boundary,
+- defer compaction out of remote unregister,
+- replace unregister/register rehome with checked in-place owner transfer,
+- move free-route policy into a shared core resolver used by Ubuntu and
+  Windows wrappers,
+- split `PROVEN_EXTERNAL` from `UNRESOLVED_INTEGRITY`; only the former may call
+  platform real free.
+
+Follow the revised phase plan in `HZ6_REMOTE_ROUTE_PHASE_PLAN.md`.

@@ -1,6 +1,8 @@
 #include "hz6_allocator_init_internal.h"
+#include "hz6_allocator_route_domain.h"
 
 void hz6_allocator_init_backends(Hz6Allocator* allocator) {
+  hz6_allocator_route_domain_init(allocator);
   switch (allocator->profile.route_backend_policy) {
     case HZ6_ROUTE_POLICY_PAGE_TABLE:
       hz6_route_backend_init_page_table_with_granularity(
