@@ -405,3 +405,62 @@ remote_free_returned_uncommitted=0
 Decision: `GO(tooling/evidence)`.  DirectReuse is correct and useful for the
 targeted preload phase-shift workload.  Keep default promotion separate from
 this result because random remote RUNS=10 still favored selected on remote50.
+
+## DirectReuse HotPath Shape Follow-Up
+
+`DirectReuseHotPathShape-L1` is a behavior-neutral cleanup before moving the
+consumer gate.  The box keeps DirectReuse opt-in, but changes the production
+shape:
+
+```text
+HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=0:
+  no DirectReuse attribution counter writes on the malloc path
+
+HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=1:
+  diagnostic/direct-stats builds keep the gate/claim/activate counters
+```
+
+The preload DirectReuse boundary is now one helper, and the caller's exact-key
+mask hit is consumed by a known-nonempty claim path so the hit path does not
+reload the mask.  Claim integrity failures abort instead of falling through to
+ordinary allocation.
+
+Phase smoke, `threads=4 count=2048 size=128`:
+
+```text
+selected ops/s=646520.163 reuse_hits=256
+direct ops/s=722583.442 reuse_hits=1024
+direct_stats ops/s=658663.390 reuse_hits=1024
+```
+
+Production direct emitted zero DirectReuse attribution writes while still
+reusing all pending entries:
+
+```text
+remote_pending_direct_gate_load=0
+remote_pending_direct_gate_hit=0
+remote_pending_direct_claim_attempt=0
+remote_pending_direct_claim_success=0
+remote_pending_direct_activate_success=0
+remote_pending_direct_integrity_failure=0
+phase_reuse reuse_hits=1024
+```
+
+Direct-stats kept the observability lane:
+
+```text
+remote_pending_direct_gate_load=1053
+remote_pending_direct_gate_hit=1024
+remote_pending_direct_claim_attempt=1024
+remote_pending_direct_claim_success=1024
+remote_pending_direct_claim_busy=0
+remote_pending_direct_claim_empty_after_hint=0
+remote_pending_direct_activate_success=1024
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=0
+remote_free_returned_uncommitted=0
+```
+
+Integrity smoke passed for selected and for the opt-in DirectReuse flag bundle.
+This is `GO(shape)/HOLD(default)`: it removes measurement noise from the
+DirectReuse A/B path, but does not change the promotion status.

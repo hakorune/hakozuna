@@ -267,6 +267,17 @@ DirectReuse reached `694969 ops/s` with `reuse_hits=1024`; stats confirmed
 `remote_pending_direct_integrity_failure=0`, and
 `remote_pending_batch_items=0`.  This is `GO(tooling/evidence)`, not a default
 promotion, because random remote RUNS=10 still favored selected on remote50.
+`DirectReuseHotPathShape-L1` is the follow-up cleanup before changing the
+DirectReuse gate.  Production DirectReuse now compiles gate/claim attribution
+writes out unless `HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=1`; the preload caller
+uses one helper, and mask-hit callers use a known-nonempty claim path instead
+of reloading the exact-key mask.  Phase smoke at
+`threads=4 count=2048 size=128` still gave DirectReuse `reuse_hits=1024`;
+production direct emitted `remote_pending_direct_gate_load=0`, while
+direct-stats emitted `remote_pending_direct_claim_success=1024`,
+`remote_pending_direct_integrity_failure=0`, and
+`remote_pending_batch_items=0`.  This is `GO(shape)/HOLD(default)`; the next
+behavior box should be source-demand gated, not a pressure/high-water gate.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

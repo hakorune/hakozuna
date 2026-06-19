@@ -242,6 +242,15 @@ Hz6RemotePendingReuseStatus hz6_allocator_remote_pending_try_reuse(
     void** out_ptr,
     Hz6ObjectDescriptor** out_descriptor);
 
+Hz6RemotePendingReuseStatus
+hz6_allocator_remote_pending_try_reuse_known_nonempty(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested_bytes,
+    void** out_ptr,
+    Hz6ObjectDescriptor** out_descriptor);
+
 int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
                                               uint16_t front_id,
                                               uint16_t class_id);

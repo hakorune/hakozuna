@@ -325,12 +325,13 @@ static Hz6RemotePendingReuseStatus hz6_remote_pending_try_claim_exact_key(
     Hz6Allocator* allocator,
     uint16_t front_id,
     uint16_t class_id,
+    int check_mask,
     Hz6RemotePendingClaim* out) {
   if (!allocator || !out || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return HZ6_REMOTE_PENDING_REUSE_EMPTY;
   }
   memset(out, 0, sizeof(*out));
-  if (!hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+  if (check_mask && !hz6_allocator_remote_pending_key_maybe_nonempty_raw(
           allocator, front_id, class_id)) {
     return HZ6_REMOTE_PENDING_REUSE_EMPTY;
   }
@@ -420,6 +421,58 @@ static void hz6_remote_pending_commit_claim(
     hz6_remote_pending_note_claim_commit(allocator);
   }
   hz6_remote_pending_unlock(inbox);
+}
+
+static Hz6RemotePendingReuseStatus hz6_remote_pending_finish_claim_reuse(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested_bytes,
+    Hz6RemotePendingClaim* claim,
+    void** out_ptr,
+    Hz6ObjectDescriptor** out_descriptor) {
+  Hz6ObjectDescriptor* descriptor = claim->descriptor;
+  int valid = allocator && descriptor && claim->ptr &&
+              claim->front_id == front_id && claim->class_id == class_id &&
+              descriptor->ptr == claim->ptr &&
+              descriptor->generation == claim->generation &&
+              descriptor->bytes == claim->bytes &&
+              descriptor->class_id == class_id &&
+              descriptor->state == HZ6_STATE_REMOTE_PENDING &&
+              requested_bytes <= claim->bytes &&
+              hz6_owner_is_alive(&allocator->owner, claim->owner_token) &&
+              hz6_allocator_descriptor_owner_equal_at(
+                  allocator, descriptor, claim->owner_token,
+                  HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING);
+  if (valid) {
+    Hz6RouteResult route =
+        hz6_allocator_route_lookup_exact(allocator, claim->ptr);
+    if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
+        route.generation != claim->generation || route.front_id != front_id ||
+        route.class_id != class_id || route.route_allocator != allocator) {
+      valid = 0;
+    }
+  }
+  if (!valid) {
+    return HZ6_REMOTE_PENDING_REUSE_INTEGRITY_FAILURE;
+  }
+
+  if (!hz6_allocator_activate_descriptor(allocator, descriptor,
+                                         HZ6_STATE_REMOTE_PENDING,
+                                         claim->ptr, claim->generation,
+                                         claim->owner_token)) {
+    hz6_remote_pending_cancel_claim(allocator, claim);
+    return HZ6_REMOTE_PENDING_REUSE_EMPTY;
+  }
+
+  hz6_remote_pending_commit_claim(allocator, claim);
+  if (out_ptr) {
+    *out_ptr = claim->ptr;
+  }
+  if (out_descriptor) {
+    *out_descriptor = descriptor;
+  }
+  return HZ6_REMOTE_PENDING_REUSE_OK;
 }
 #endif
 
@@ -648,53 +701,54 @@ Hz6RemotePendingReuseStatus hz6_allocator_remote_pending_try_reuse(
   }
   Hz6RemotePendingClaim claim;
   Hz6RemotePendingReuseStatus status = hz6_remote_pending_try_claim_exact_key(
-      allocator, front_id, class_id, &claim);
+      allocator, front_id, class_id, 1, &claim);
   if (status != HZ6_REMOTE_PENDING_REUSE_OK) {
     return status;
   }
 
-  Hz6ObjectDescriptor* descriptor = claim.descriptor;
-  int valid = allocator && descriptor && claim.ptr &&
-              claim.front_id == front_id && claim.class_id == class_id &&
-              descriptor->ptr == claim.ptr &&
-              descriptor->generation == claim.generation &&
-              descriptor->bytes == claim.bytes &&
-              descriptor->class_id == class_id &&
-              descriptor->state == HZ6_STATE_REMOTE_PENDING &&
-              requested_bytes <= claim.bytes &&
-              hz6_owner_is_alive(&allocator->owner, claim.owner_token) &&
-              hz6_allocator_descriptor_owner_equal_at(
-                  allocator, descriptor, claim.owner_token,
-                  HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING);
-  if (valid) {
-    Hz6RouteResult route =
-        hz6_allocator_route_lookup_exact(allocator, claim.ptr);
-    if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
-        route.generation != claim.generation || route.front_id != front_id ||
-        route.class_id != class_id || route.route_allocator != allocator) {
-      valid = 0;
-    }
-  }
-  if (!valid) {
-    return HZ6_REMOTE_PENDING_REUSE_INTEGRITY_FAILURE;
-  }
-
-  if (!hz6_allocator_activate_descriptor(allocator, descriptor,
-                                         HZ6_STATE_REMOTE_PENDING, claim.ptr,
-                                         claim.generation,
-                                         claim.owner_token)) {
-    hz6_remote_pending_cancel_claim(allocator, &claim);
-    return HZ6_REMOTE_PENDING_REUSE_EMPTY;
-  }
-
-  hz6_remote_pending_commit_claim(allocator, &claim);
+  return hz6_remote_pending_finish_claim_reuse(
+      allocator, front_id, class_id, requested_bytes, &claim, out_ptr,
+      out_descriptor);
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  (void)requested_bytes;
   if (out_ptr) {
-    *out_ptr = claim.ptr;
+    *out_ptr = NULL;
   }
   if (out_descriptor) {
-    *out_descriptor = descriptor;
+    *out_descriptor = NULL;
   }
-  return HZ6_REMOTE_PENDING_REUSE_OK;
+  return HZ6_REMOTE_PENDING_REUSE_EMPTY;
+#endif
+}
+
+Hz6RemotePendingReuseStatus
+hz6_allocator_remote_pending_try_reuse_known_nonempty(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested_bytes,
+    void** out_ptr,
+    Hz6ObjectDescriptor** out_descriptor) {
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (out_ptr) {
+    *out_ptr = NULL;
+  }
+  if (out_descriptor) {
+    *out_descriptor = NULL;
+  }
+  Hz6RemotePendingClaim claim;
+  Hz6RemotePendingReuseStatus status = hz6_remote_pending_try_claim_exact_key(
+      allocator, front_id, class_id, 0, &claim);
+  if (status != HZ6_REMOTE_PENDING_REUSE_OK) {
+    return status;
+  }
+
+  return hz6_remote_pending_finish_claim_reuse(
+      allocator, front_id, class_id, requested_bytes, &claim, out_ptr,
+      out_descriptor);
 #else
   (void)allocator;
   (void)front_id;

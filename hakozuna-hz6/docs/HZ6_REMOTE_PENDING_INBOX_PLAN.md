@@ -351,6 +351,53 @@ direct+budget1 remote90=10810219.46
 Decision: DirectReuse budget1 remains opt-in.  It is cleaner and helps
 remote90, but selected remote50 is still stronger.
 
+## 2026-06-20 DirectReuse HotPath Shape
+
+`DirectReuseHotPathShape-L1` keeps DirectReuse behavior opt-in but narrows the
+hot path before the next behavior box:
+
+```text
+production:
+  DirectReuse attribution counters compile out by default
+
+diagnostic/direct-stats:
+  HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=1 records gate/claim/activate counters
+```
+
+The preload caller now enters one noinline helper for pending direct reuse.  On
+an exact-key mask hit, the helper calls a known-nonempty claim API so the claim
+path does not repeat the mask load.  The existing regular try-reuse API still
+owns its own mask check.
+
+Claim finishing is shared between both APIs:
+
+```text
+claim
+  -> immutable proof / owner / state validation
+  -> exact route validation
+  -> REMOTE_PENDING -> ACTIVE
+  -> commit claim
+```
+
+If proof or route validation fails, DirectReuse returns an integrity failure and
+the preload helper aborts.  Activation failure still cancels/requeues the claim
+and falls back to normal allocation.
+
+Smoke evidence:
+
+```text
+phase-reuse threads=4 count=2048 size=128
+direct reuse_hits=1024
+direct production direct counters=0
+direct_stats claim_success=1024
+direct_stats integrity_failure=0
+direct_stats batch_items=0
+```
+
+Decision: `GO(shape)/HOLD(default)`.  This box is a prerequisite for
+`DirectReuseCostAttribution-L1` and `DirectReuseSourceDemandGate-L1`; it is not
+a default promotion.
+
 ## 2026-06-20 Phase-Reuse Bench Harness
 
 `RemotePendingPhaseReuseBench-L1` adds a behavior-neutral benchmark mode:

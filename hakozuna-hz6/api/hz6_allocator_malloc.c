@@ -9,6 +9,16 @@
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 
+#include <stdlib.h>
+
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+#if defined(__GNUC__) || defined(__clang__)
+#define HZ6_PENDING_DIRECT_NOINLINE __attribute__((noinline))
+#else
+#define HZ6_PENDING_DIRECT_NOINLINE
+#endif
+#endif
+
 #if HZ6_MIDPAGE_DIRECT_LOCAL_SKIP_TRANSFER_FIRST_L1
 #if defined(__GNUC__) || defined(__clang__)
 #define HZ6_MIDPAGE_SKIP_TRANSFER_NOINLINE __attribute__((noinline))
@@ -25,6 +35,61 @@
 #else
 #define HZ6_PRELOAD_TOY_DIRECT_CLASS_NOINLINE
 #endif
+#endif
+
+#if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
+static HZ6_PENDING_DIRECT_NOINLINE void*
+hz6_allocator_try_pending_direct_reuse(Hz6Allocator* allocator,
+                                       uint16_t front_id,
+                                       uint16_t class_id,
+                                       size_t requested_bytes,
+                                       Hz6ObjectDescriptor** out_descriptor) {
+  if (!allocator || requested_bytes == 0 ||
+      (front_id != HZ6_FRONT_TOY && front_id != HZ6_FRONT_MIDPAGE)) {
+    return NULL;
+  }
+#if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+  ++allocator->stats.remote_pending_direct_gate_load;
+#endif
+  if (!hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+          allocator, front_id, class_id)) {
+    return NULL;
+  }
+#if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+  ++allocator->stats.remote_pending_direct_gate_hit;
+  ++allocator->stats.remote_pending_direct_claim_attempt;
+#endif
+  void* pending_ptr = NULL;
+  Hz6ObjectDescriptor* pending_descriptor = NULL;
+  Hz6RemotePendingReuseStatus status =
+      hz6_allocator_remote_pending_try_reuse_known_nonempty(
+          allocator, front_id, class_id, requested_bytes, &pending_ptr,
+          &pending_descriptor);
+  if (status == HZ6_REMOTE_PENDING_REUSE_OK && pending_ptr &&
+      pending_descriptor) {
+#if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+    ++allocator->stats.remote_pending_direct_claim_success;
+    ++allocator->stats.remote_pending_direct_activate_success;
+#endif
+    if (out_descriptor) {
+      *out_descriptor = pending_descriptor;
+    }
+    return pending_ptr;
+  }
+#if HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+  if (status == HZ6_REMOTE_PENDING_REUSE_BUSY) {
+    ++allocator->stats.remote_pending_direct_claim_busy;
+  } else if (status == HZ6_REMOTE_PENDING_REUSE_EMPTY) {
+    ++allocator->stats.remote_pending_direct_claim_empty_after_hint;
+  } else if (status == HZ6_REMOTE_PENDING_REUSE_INTEGRITY_FAILURE) {
+    ++allocator->stats.remote_pending_direct_integrity_failure;
+  }
+#endif
+  if (status == HZ6_REMOTE_PENDING_REUSE_INTEGRITY_FAILURE) {
+    abort();
+  }
+  return NULL;
+}
 #endif
 
 #if HZ6_TOY_PRECLASSIFIED_MALLOC_L1 || HZ6_PRELOAD_TOY_MALLOC_DIRECT_CLASS_L1
@@ -120,36 +185,10 @@ static void* hz6_allocator_direct_local_reuse(Hz6Allocator* allocator,
   }
 
 #if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (requested_bytes != 0 &&
-      (front_id == HZ6_FRONT_TOY || front_id == HZ6_FRONT_MIDPAGE)) {
-    ++allocator->stats.remote_pending_direct_gate_load;
-    if (hz6_allocator_remote_pending_key_maybe_nonempty_raw(
-            allocator, front_id, class_id)) {
-      ++allocator->stats.remote_pending_direct_gate_hit;
-      ++allocator->stats.remote_pending_direct_claim_attempt;
-      void* pending_ptr = NULL;
-      Hz6ObjectDescriptor* pending_descriptor = NULL;
-      Hz6RemotePendingReuseStatus status =
-          hz6_allocator_remote_pending_try_reuse(
-              allocator, front_id, class_id, requested_bytes, &pending_ptr,
-              &pending_descriptor);
-      if (status == HZ6_REMOTE_PENDING_REUSE_OK && pending_ptr &&
-          pending_descriptor) {
-        ++allocator->stats.remote_pending_direct_claim_success;
-        ++allocator->stats.remote_pending_direct_activate_success;
-        if (out_descriptor) {
-          *out_descriptor = pending_descriptor;
-        }
-        return pending_ptr;
-      }
-      if (status == HZ6_REMOTE_PENDING_REUSE_BUSY) {
-        ++allocator->stats.remote_pending_direct_claim_busy;
-      } else if (status == HZ6_REMOTE_PENDING_REUSE_EMPTY) {
-        ++allocator->stats.remote_pending_direct_claim_empty_after_hint;
-      } else {
-        ++allocator->stats.remote_pending_direct_integrity_failure;
-      }
-    }
+  void* pending_direct = hz6_allocator_try_pending_direct_reuse(
+      allocator, front_id, class_id, requested_bytes, out_descriptor);
+  if (pending_direct) {
+    return pending_direct;
   }
 #else
   (void)front_id;
@@ -249,33 +288,11 @@ static void* hz6_allocator_midpage_direct_local_reuse_trusted_class(
   }
 
 #if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (requested_bytes != 0) {
-    ++allocator->stats.remote_pending_direct_gate_load;
-    if (hz6_allocator_remote_pending_key_maybe_nonempty_raw(
-            allocator, HZ6_FRONT_MIDPAGE, class_id)) {
-      ++allocator->stats.remote_pending_direct_gate_hit;
-      ++allocator->stats.remote_pending_direct_claim_attempt;
-      void* pending_ptr = NULL;
-      Hz6ObjectDescriptor* pending_descriptor = NULL;
-      Hz6RemotePendingReuseStatus status =
-          hz6_allocator_remote_pending_try_reuse(
-              allocator, HZ6_FRONT_MIDPAGE, class_id, requested_bytes,
-              &pending_ptr, &pending_descriptor);
-      if (status == HZ6_REMOTE_PENDING_REUSE_OK && pending_ptr &&
-          pending_descriptor) {
-        ++allocator->stats.remote_pending_direct_claim_success;
-        ++allocator->stats.remote_pending_direct_activate_success;
-        *out_descriptor = pending_descriptor;
-        return pending_ptr;
-      }
-      if (status == HZ6_REMOTE_PENDING_REUSE_BUSY) {
-        ++allocator->stats.remote_pending_direct_claim_busy;
-      } else if (status == HZ6_REMOTE_PENDING_REUSE_EMPTY) {
-        ++allocator->stats.remote_pending_direct_claim_empty_after_hint;
-      } else {
-        ++allocator->stats.remote_pending_direct_integrity_failure;
-      }
-    }
+  void* pending_direct = hz6_allocator_try_pending_direct_reuse(
+      allocator, HZ6_FRONT_MIDPAGE, class_id, requested_bytes,
+      out_descriptor);
+  if (pending_direct) {
+    return pending_direct;
   }
 #else
   (void)requested_bytes;

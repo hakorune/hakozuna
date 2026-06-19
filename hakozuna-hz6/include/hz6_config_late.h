@@ -462,6 +462,12 @@
 #define HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1
+/* Keep DirectReuse attribution counters out of production A/B unless the lane
+ * is explicitly observing cost or diagnostics are enabled. */
+#define HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 HZ6_DIAGNOSTIC_PROBES
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the
