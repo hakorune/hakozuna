@@ -230,6 +230,15 @@ state plus `bytes` proof, and exposes an unconnected
 quick RUNS=3 measured `remote50=12536762.73`, `remote90=9837030.86`.  This is
 `GO(core)/HOLD(perf)`, and the next selected work should be AuditV2 before
 caller wiring.
+`RemotePendingReuseDemandAuditV2-L1` moves the same-key probe before existing
+pending maintenance and covers source prefill.  Opt-in smoke found
+`pending_same_key_before_maintenance=920`,
+`pending_maintenance_immediate_reuse_success=975`,
+`pending_maintenance_batch_surplus=2569`, and
+`source_block_commit_with_matching_pending=102`; RUNS=3 measured
+`remote50=13570506.65`, `remote90=10002012.48`.  DirectReuse is now justified
+as a default-off replacement for pending->frontcache->pop, not as a source
+allocation avoidance feature yet.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

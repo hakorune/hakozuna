@@ -124,6 +124,24 @@
         stats.pending_same_key_on_source_alloc;
     source_alloc_with_matching_pending +=
         stats.source_alloc_with_matching_pending;
+    pending_same_key_before_maintenance +=
+        stats.pending_same_key_before_maintenance;
+    pending_same_key_after_maintenance +=
+        stats.pending_same_key_after_maintenance;
+    pending_maintenance_immediate_reuse_success +=
+        stats.pending_maintenance_immediate_reuse_success;
+    pending_maintenance_batch_surplus +=
+        stats.pending_maintenance_batch_surplus;
+    pending_same_key_on_prefill_attempt +=
+        stats.pending_same_key_on_prefill_attempt;
+    prefill_commit_with_matching_pending +=
+        stats.prefill_commit_with_matching_pending;
+    source_block_commit_with_matching_pending +=
+        stats.source_block_commit_with_matching_pending;
+    direct_source_attempt_with_matching_pending +=
+        stats.direct_source_attempt_with_matching_pending;
+    direct_source_commit_with_matching_pending +=
+        stats.direct_source_commit_with_matching_pending;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

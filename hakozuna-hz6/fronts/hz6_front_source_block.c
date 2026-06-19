@@ -338,6 +338,8 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
 #else
   (void)has_front_index;
 #endif
+  hz6_allocator_remote_pending_note_prefill_attempt(allocator, front_id,
+                                                   class_id);
 
   size_t filled = hz6_front_prefill_from_source_run(
       allocator, front_id, class_id, slot_bytes, block_bytes, source_kind,
@@ -350,6 +352,8 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
       allocator->stats.front_source_prefill_filled[front_index] += filled;
     }
 #endif
+    hz6_allocator_remote_pending_note_prefill_commit(allocator, front_id,
+                                                    class_id);
     return filled;
   }
 
@@ -454,5 +458,9 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_remote_pending_note_prefill_commit(allocator, front_id,
+                                                  class_id);
+  hz6_allocator_remote_pending_note_source_block_commit(allocator, front_id,
+                                                       class_id);
   return filled;
 }

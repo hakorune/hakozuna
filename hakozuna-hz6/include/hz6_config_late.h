@@ -444,6 +444,12 @@
 #define HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1
+/* Behavior-neutral follow-up: observe demand before existing pending
+ * maintenance and around source prefill/source-block commits. */
+#define HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

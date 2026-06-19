@@ -220,3 +220,33 @@ remote90=9837030.86
 
 Decision: keep as `GO(core)/HOLD(perf)`.  The next box is
 `RemotePendingReuseDemandAuditV2-L1`, not direct-reuse selection.
+
+## 2026-06-20 Demand Audit V2
+
+`RemotePendingReuseDemandAuditV2-L1` confirms that V1 observed too late.
+
+Opt-in smoke:
+
+```text
+pending_same_key_before_maintenance=920
+pending_same_key_after_maintenance=744
+pending_maintenance_immediate_reuse_success=975
+pending_maintenance_batch_surplus=2569
+pending_same_key_on_prefill_attempt=38
+prefill_commit_with_matching_pending=102
+source_block_commit_with_matching_pending=102
+direct_source_attempt_with_matching_pending=0
+direct_source_commit_with_matching_pending=0
+```
+
+RUNS=3:
+
+```text
+remote50=13570506.65
+remote90=10002012.48
+```
+
+Interpretation: direct-source fallback still has no same-key overlap, but the
+old owner-local maintenance path is already consuming same-key pending entries
+and creating surplus frontcache work.  The next box can wire
+`RemotePendingDirectReuse-L1` as a default-off replacement for that path.

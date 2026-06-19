@@ -129,6 +129,15 @@
           "pending_same_key_on_front_dispatch=%zu "
           "pending_same_key_on_source_alloc=%zu "
           "source_alloc_with_matching_pending=%zu "
+          "pending_same_key_before_maintenance=%zu "
+          "pending_same_key_after_maintenance=%zu "
+          "pending_maintenance_immediate_reuse_success=%zu "
+          "pending_maintenance_batch_surplus=%zu "
+          "pending_same_key_on_prefill_attempt=%zu "
+          "prefill_commit_with_matching_pending=%zu "
+          "source_block_commit_with_matching_pending=%zu "
+          "direct_source_attempt_with_matching_pending=%zu "
+          "direct_source_commit_with_matching_pending=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -243,6 +252,15 @@
           pending_same_key_on_front_dispatch,
           pending_same_key_on_source_alloc,
           source_alloc_with_matching_pending,
+          pending_same_key_before_maintenance,
+          pending_same_key_after_maintenance,
+          pending_maintenance_immediate_reuse_success,
+          pending_maintenance_batch_surplus,
+          pending_same_key_on_prefill_attempt,
+          prefill_commit_with_matching_pending,
+          source_block_commit_with_matching_pending,
+          direct_source_attempt_with_matching_pending,
+          direct_source_commit_with_matching_pending,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,

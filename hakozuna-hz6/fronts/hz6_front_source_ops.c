@@ -29,6 +29,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   }
   hz6_allocator_remote_pending_note_source_alloc(allocator, front_id,
                                                  class_id);
+  hz6_allocator_remote_pending_note_direct_source_attempt(allocator, front_id,
+                                                          class_id);
 
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);
@@ -84,6 +86,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
   ++allocator->stats.front_source_ops_alloc;
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_remote_pending_note_direct_source_commit(allocator, front_id,
+                                                         class_id);
   hz6_allocator_note_front_alloc_path(allocator, front_id,
                                       HZ6_ALLOC_PATH_DIRECT_SOURCE);
   return ptr;

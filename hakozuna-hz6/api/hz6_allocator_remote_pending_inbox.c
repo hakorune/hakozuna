@@ -803,3 +803,140 @@ void hz6_allocator_remote_pending_note_source_alloc(
   (void)class_id;
 #endif
 }
+
+void hz6_allocator_remote_pending_note_before_maintenance(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_before_maintenance;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_after_maintenance(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_after_maintenance;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_maintenance_reuse_success(
+    Hz6Allocator* allocator,
+    size_t drained) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (!allocator || drained == 0) {
+    return;
+  }
+  ++allocator->stats.pending_maintenance_immediate_reuse_success;
+  if (drained > 1u) {
+    allocator->stats.pending_maintenance_batch_surplus += drained - 1u;
+  }
+#else
+  (void)allocator;
+  (void)drained;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_prefill_attempt(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_on_prefill_attempt;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_prefill_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.prefill_commit_with_matching_pending;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_source_block_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.source_block_commit_with_matching_pending;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_direct_source_attempt(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.direct_source_attempt_with_matching_pending;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_direct_source_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.direct_source_commit_with_matching_pending;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}

@@ -66,6 +66,15 @@
   size_t pending_same_key_on_front_dispatch;
   size_t pending_same_key_on_source_alloc;
   size_t source_alloc_with_matching_pending;
+  size_t pending_same_key_before_maintenance;
+  size_t pending_same_key_after_maintenance;
+  size_t pending_maintenance_immediate_reuse_success;
+  size_t pending_maintenance_batch_surplus;
+  size_t pending_same_key_on_prefill_attempt;
+  size_t prefill_commit_with_matching_pending;
+  size_t source_block_commit_with_matching_pending;
+  size_t direct_source_attempt_with_matching_pending;
+  size_t direct_source_commit_with_matching_pending;
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

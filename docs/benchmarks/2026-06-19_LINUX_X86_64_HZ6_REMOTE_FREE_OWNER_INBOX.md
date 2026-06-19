@@ -156,3 +156,40 @@ remote90=9837030.86
 
 Decision: `GO(core)/HOLD(perf)`.  The exact-key structure is the right
 prerequisite for direct reuse, but this is not a selected performance box.
+
+## Demand Audit V2 Follow-Up
+
+`RemotePendingReuseDemandAuditV2-L1` is behavior-neutral.  It moves same-key
+observation to the point before existing pending maintenance and adds source
+prefill/source-block coverage.
+
+Opt-in smoke:
+
+```text
+pending_same_key_before_maintenance=920
+pending_same_key_after_maintenance=744
+pending_maintenance_immediate_reuse_success=975
+pending_maintenance_batch_surplus=2569
+pending_same_key_on_prefill_attempt=38
+prefill_commit_with_matching_pending=102
+source_block_commit_with_matching_pending=102
+direct_source_attempt_with_matching_pending=0
+direct_source_commit_with_matching_pending=0
+remote_pending_generation_mismatch=0
+remote_pending_owner_mismatch=0
+remote_pending_route_mismatch=0
+remote_pending_state_mismatch=0
+```
+
+Quick RUNS=3:
+
+```text
+remote50=13570506.65
+remote90=10002012.48
+```
+
+Decision: `GO(tooling)`.  The V1 `source_alloc_with_matching_pending=0` did
+not cover the main opportunity: existing maintenance is already consuming
+same-key pending work before the old audit point.  DirectReuse should now be
+evaluated as a replacement for the pending-pop/frontcache-push/frontcache-pop
+sequence.
