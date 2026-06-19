@@ -3492,6 +3492,46 @@ also weakens the high-remote profile case.  Do not stack another owner-inbox
 consumer policy yet; first reconcile why the current p0 selected-off shape no
 longer shows the earlier high-remote cliff.
 
+## 2026-06-20 OriginTransferCliffReconcile-L1
+
+Added a tax-runner control variant:
+
+```text
+p0_no_origin_transfer
+  p0_off plus HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1=0
+```
+
+This checks whether the current p0 selected-off high-remote strength comes from
+the selected origin-transfer backpressure path rather than owner-inbox.
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote90 \
+  --variants p0_off,p0_no_origin_transfer
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_074913
+```
+
+Summary:
+
+```text
+variant                remote90 median  RSS median  transfer_pop  source_alloc
+p0_off                 11.24M           72.00MiB    89087         62864
+p0_no_origin_transfer   7.42M          103.05MiB   160903         67231
+```
+
+Decision: `GO(evidence)/HOLD(owner-inbox)`.  The earlier high-remote cliff did
+not disappear because owner-inbox became necessary; it is mostly covered by the
+selected origin-transfer backpressure path now included in p0 selected-off.
+Owner-inbox p1 should remain on hold, and the next baseline for high-remote
+work is the current origin-transfer selected path.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
+  --variants CSV p0_off,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -29,6 +29,7 @@ Options:
 
 Variants:
   p0_off                     owner-inbox family forced off
+  p0_no_origin_transfer      p0_off plus origin-transfer backpressure off
   p1_metadata                inbox structs compiled in, producer/consumer off
   p1_inline_no_maintenance   inline owner-inbox producer on, consumer off
   p1_inline                  inline producer and owner-local maintenance on
@@ -88,7 +89,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -117,6 +118,9 @@ build_variant() {
   hz6_preload_effective_owner_inbox_off_cflags flags 1
   case "$variant" in
     p0_off)
+      ;;
+    p0_no_origin_transfer)
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1 0
       ;;
     p1_metadata)
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
