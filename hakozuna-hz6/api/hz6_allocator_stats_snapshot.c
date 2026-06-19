@@ -286,6 +286,7 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(allocator->transfer_objects);
   snapshot->memory_shared_route_directory_bytes =
       hz6_allocator_shared_route_directory_bytes();
+  hz6_shared_route_directory_note_stats(snapshot);
   snapshot->memory_owner_locality_index_bytes =
       hz6_allocator_owner_locality_index_bytes();
   snapshot->memory_ownerlocality_index_bytes =

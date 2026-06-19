@@ -69,6 +69,7 @@ HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256
 HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1
@@ -186,6 +187,21 @@ lock timed out the `remote90 16..131072` smoke.
 `HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is kept off: shared-first completed
 but regressed the same r90 smoke, so the resolver keeps the existing
 local-first order while shared publication remains mandatory.
+
+Phase 4 first maintenance status, 2026-06-19: selected preload now enables
+`HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1=1`.  Shared exact
+unregister still leaves tombstones on the remote path, but global tombstone
+state is now observable with `shared_dir_tombstone_current`,
+`shared_dir_tombstone_max`, `shared_dir_register_used_tombstone`,
+`shared_dir_maintenance_attempt`, `shared_dir_maintenance_success`, and
+`shared_dir_maintenance_cleared`.  Maintenance is owner-local and thresholded
+by `HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_MIN`; it takes all shared
+directory writer shards, clears only tombstone entries back to empty, and
+does not touch live records.  The maintenance path is active only when
+`HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1` is also enabled.  Focused
+smokes completed: `/bin/true` with `LD_PRELOAD` exited 0, `remote50
+16..32768` reached `246441.92 ops/s`, and `remote90 16..131072` reached
+`135253.20 ops/s`.
 
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed

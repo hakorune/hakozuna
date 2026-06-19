@@ -65,6 +65,12 @@
   size_t route_tombstone_cond_occupancy75 = 0;
   size_t route_tombstone_cond_cooldown_blocked = 0;
   size_t route_tombstone_cond_highwater = 0;
+  size_t shared_dir_tombstone_current = 0;
+  size_t shared_dir_tombstone_max = 0;
+  size_t shared_dir_register_used_tombstone = 0;
+  size_t shared_dir_maintenance_attempt = 0;
+  size_t shared_dir_maintenance_success = 0;
+  size_t shared_dir_maintenance_cleared = 0;
   size_t descriptor_live_max = 0;
   size_t source_block_active_max = 0;
   size_t frontcache_total_max = 0;
@@ -344,6 +350,30 @@
         route_tombstone_cond_highwater) {
       route_tombstone_cond_highwater =
           stats.route_tombstone_cond_highwater;
+    }
+    if (stats.shared_dir_tombstone_current >
+        shared_dir_tombstone_current) {
+      shared_dir_tombstone_current = stats.shared_dir_tombstone_current;
+    }
+    if (stats.shared_dir_tombstone_max > shared_dir_tombstone_max) {
+      shared_dir_tombstone_max = stats.shared_dir_tombstone_max;
+    }
+    if (stats.shared_dir_register_used_tombstone >
+        shared_dir_register_used_tombstone) {
+      shared_dir_register_used_tombstone =
+          stats.shared_dir_register_used_tombstone;
+    }
+    if (stats.shared_dir_maintenance_attempt >
+        shared_dir_maintenance_attempt) {
+      shared_dir_maintenance_attempt = stats.shared_dir_maintenance_attempt;
+    }
+    if (stats.shared_dir_maintenance_success >
+        shared_dir_maintenance_success) {
+      shared_dir_maintenance_success = stats.shared_dir_maintenance_success;
+    }
+    if (stats.shared_dir_maintenance_cleared >
+        shared_dir_maintenance_cleared) {
+      shared_dir_maintenance_cleared = stats.shared_dir_maintenance_cleared;
     }
     if (stats.descriptor_live_max > descriptor_live_max) {
       descriptor_live_max = stats.descriptor_live_max;

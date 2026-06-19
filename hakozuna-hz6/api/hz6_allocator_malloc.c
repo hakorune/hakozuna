@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_midpage_active_map.h"
+#include "hz6_allocator_route_shared_directory.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
 #include "hz6_allocator_toy_small_diag.h"
 
@@ -476,6 +477,10 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
   if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     return NULL;
   }
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1 && \
+    HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1
+  hz6_shared_route_directory_maintain_tombstones();
+#endif
 
   uint16_t class_id = 0;
   const Hz6FrontOps* front = NULL;

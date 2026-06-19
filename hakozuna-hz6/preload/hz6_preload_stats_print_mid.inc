@@ -75,7 +75,13 @@
           "route_tombstone_cond_ratio25=%zu "
           "route_tombstone_cond_occupancy75=%zu "
           "route_tombstone_cond_cooldown_blocked=%zu "
-          "route_tombstone_cond_highwater=%zu\n",
+          "route_tombstone_cond_highwater=%zu "
+          "shared_dir_tombstone_current=%zu "
+          "shared_dir_tombstone_max=%zu "
+          "shared_dir_register_used_tombstone=%zu "
+          "shared_dir_maintenance_attempt=%zu "
+          "shared_dir_maintenance_success=%zu "
+          "shared_dir_maintenance_cleared=%zu\n",
           route_register_reason_unknown,
           route_register_reason_source_run_slot,
           route_register_reason_direct_source,
@@ -95,7 +101,11 @@
           route_tombstone_cond_would_compact,
           route_tombstone_cond_ratio25, route_tombstone_cond_occupancy75,
           route_tombstone_cond_cooldown_blocked,
-          route_tombstone_cond_highwater);
+          route_tombstone_cond_highwater,
+          shared_dir_tombstone_current, shared_dir_tombstone_max,
+          shared_dir_register_used_tombstone,
+          shared_dir_maintenance_attempt, shared_dir_maintenance_success,
+          shared_dir_maintenance_cleared);
 
   fprintf(stderr,
           "[HZ6_PRELOAD_FRONT_DETAIL] descriptor_live_max=%zu "
