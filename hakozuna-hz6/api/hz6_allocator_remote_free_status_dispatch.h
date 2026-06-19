@@ -99,6 +99,10 @@ static inline int hz6_remote_free_status_try_origin_transfer(
   if (allocator->stats.transfer_reserve_attempt %
           HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE !=
       0) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats
+          .remote_free_backpressure_origin_transfer_stride_skip;
+#endif
     return 0;
   }
 #endif
@@ -114,6 +118,8 @@ static inline int hz6_remote_free_status_try_origin_transfer(
           HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_backpressure_origin_transfer_fail;
+    ++allocator->stats
+          .remote_free_backpressure_origin_transfer_validation_fail;
 #endif
     return 0;
   }
@@ -124,6 +130,12 @@ static inline int hz6_remote_free_status_try_origin_transfer(
   if (origin_status != HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_backpressure_origin_transfer_fail;
+    if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+      ++allocator->stats.remote_free_backpressure_origin_transfer_full;
+    } else {
+      ++allocator->stats
+            .remote_free_backpressure_origin_transfer_validation_fail;
+    }
 #endif
     return 0;
   }

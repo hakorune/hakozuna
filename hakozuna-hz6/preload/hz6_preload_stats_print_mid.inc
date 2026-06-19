@@ -97,6 +97,9 @@
           "remote_free_returned_integrity_failure=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
+          "remote_free_backpressure_origin_transfer_stride_skip=%zu "
+          "remote_free_backpressure_origin_transfer_validation_fail=%zu "
+          "remote_free_backpressure_origin_transfer_full=%zu "
           "remote_free_backpressure_drain_attempt=%zu "
           "remote_free_backpressure_drain_success=%zu "
           "remote_free_backpressure_retry_success=%zu "
@@ -171,6 +174,9 @@
           remote_free_returned_integrity_failure,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
+          remote_free_backpressure_origin_transfer_stride_skip,
+          remote_free_backpressure_origin_transfer_validation_fail,
+          remote_free_backpressure_origin_transfer_full,
           remote_free_backpressure_drain_attempt,
           remote_free_backpressure_drain_success,
           remote_free_backpressure_retry_success,

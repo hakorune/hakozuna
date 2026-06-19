@@ -68,6 +68,12 @@
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=
         stats.remote_free_backpressure_origin_transfer_fail;
+    remote_free_backpressure_origin_transfer_stride_skip +=
+        stats.remote_free_backpressure_origin_transfer_stride_skip;
+    remote_free_backpressure_origin_transfer_validation_fail +=
+        stats.remote_free_backpressure_origin_transfer_validation_fail;
+    remote_free_backpressure_origin_transfer_full +=
+        stats.remote_free_backpressure_origin_transfer_full;
     remote_free_backpressure_drain_attempt +=
         stats.remote_free_backpressure_drain_attempt;
     remote_free_backpressure_drain_success +=

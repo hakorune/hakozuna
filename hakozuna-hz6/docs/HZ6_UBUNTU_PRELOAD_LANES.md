@@ -181,6 +181,14 @@ without route rehome.  The stride-2 RUNS=10 result was
 `remote50=14934275.07` and `remote90=9902231.78`; the selected smoke showed
 `remote_free_backpressure_origin_transfer_success=5674` and kept uncommitted,
 stale, and integrity-failure returns at zero.
+`RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
+origin-transfer misses without changing behavior.  The selected smoke showed
+`remote_free_backpressure_origin_transfer_stride_skip=16295`,
+`remote_free_backpressure_origin_transfer_validation_fail=0`, and
+`remote_free_backpressure_origin_transfer_full=11311`; quick RUNS=3 held
+`remote50=14823669.53` but dropped `remote90=1689959.38`.  The next high-remote
+box should therefore target transfer-cache saturation or stride/capacity policy,
+not ownership validation.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while
