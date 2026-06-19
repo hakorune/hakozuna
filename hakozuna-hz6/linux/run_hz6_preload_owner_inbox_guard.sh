@@ -6,7 +6,7 @@ HZ6_DIR="${ROOT_DIR}/hakozuna-hz6"
 BENCH="${HZ6_BENCH_REMOTE_MT:-/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc}"
 RUNS="${RUNS:-3}"
 RUN_TIMEOUT="${HZ6_PRELOAD_REMOTE_TIMEOUT:-60}"
-OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_owner_inbox_selected_guard_$(date +%Y%m%d_%H%M%S)}"
+OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_owner_inbox_profile_guard_$(date +%Y%m%d_%H%M%S)}"
 
 usage() {
   cat <<'EOF'
@@ -22,6 +22,10 @@ Rows:
   local0   16 threads, remote_pct=0,  16..32768
   remote50 16 threads, remote_pct=50, 16..32768
   remote90 16 threads, remote_pct=90, 16..131072
+
+This builds the explicit owner-inbox external high-remote profile DSO.  The
+profile currently matches the branch-selected candidate, but remains a separate
+target so selected/default promotion can be judged independently.
 EOF
 }
 
@@ -44,8 +48,9 @@ if [[ ! -x /usr/bin/time ]]; then
 fi
 
 mkdir -p "$OUTDIR"
-"${HZ6_DIR}/linux/build_hz6_preload.sh" > "${OUTDIR}/build.log" 2>&1
-DSO="${HZ6_DIR}/out/linux/hz6_preload/libhakozuna_hz6_preload.so"
+"${HZ6_DIR}/linux/build_hz6_preload_owner_inbox_external_target.sh" \
+  > "${OUTDIR}/build.log" 2>&1
+DSO="${HZ6_DIR}/out/linux/hz6_preload_owner_inbox_external_target/libhakozuna_hz6_preload.so"
 
 rows=(
   "local0 16 10000 100 16 32768 0 65536"

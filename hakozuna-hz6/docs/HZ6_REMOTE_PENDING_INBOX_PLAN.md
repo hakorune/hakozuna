@@ -1890,3 +1890,69 @@ Decision: `GO(tooling)/HOLD(default)`.  Correctness, accounting, and lifetime
 are now closed enough for a branch-selected candidate, but this is not a final
 default-release shape.  The next optimization should target the p1 local0 and
 remote50 tax, or keep owner-inbox as an explicit high-remote profile.
+
+## 2026-06-20 OwnerInboxProfileSplit-L1
+
+The paired RSS/default gate now compares two explicit shapes without relying on
+manual flag drift:
+
+```text
+p0_selected_off:
+  selected candidate flags with owner-inbox / external-ticket family forced off
+
+p1_owner_inbox:
+  branch-selected owner-inbox external candidate, DirectReuse off
+```
+
+The p1 high-remote profile is also available as a named target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+```
+
+It applies:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+`run_hz6_preload_owner_inbox_paired_gate.sh` now obtains p0 from the explicit
+owner-inbox-off helper and p1 from the owner-inbox external profile helper.
+`run_hz6_preload_owner_inbox_guard.sh` builds the p1 profile DSO directly.
+
+Verification note: briefly moving selected/default to p0 reintroduced
+`remote_free_returned_backpressure` in the integrity smoke, so the branch
+selected candidate stays on p1 while release/default promotion remains HOLD.
+
+Verification:
+
+```text
+bash -n hakozuna-hz6/linux/hz6_preload_flags.sh \
+  hakozuna-hz6/linux/hz6_preload_profile_builder.sh \
+  hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh \
+  hakozuna-hz6/linux/run_hz6_preload_owner_inbox_guard.sh \
+  hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+RUNS=1 ./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh --runs 1
+```
+
+The selected integrity smoke kept `remote_free_returned_backpressure=0`,
+`remote_free_returned_uncommitted=0`, and external ticket mismatch/abort gates
+at zero.  The RUNS=1 paired output is only a shape smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_045649
+```
+
+Decision: `GO(profile split)/HOLD(default promotion)`.  Keep owner-inbox
+external as the branch-selected high-remote candidate and explicit profile.
+The next optimization box should attribute or reduce the p1 local0/remote50
+tax before reconsidering release/default promotion.

@@ -74,23 +74,12 @@ write_meta() {
 build_variant() {
   local variant="$1"
   local flags=()
-  hz6_preload_effective_selected_cflags flags 1
   case "$variant" in
     p0_selected_off)
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
+      hz6_preload_effective_owner_inbox_off_cflags flags 1
       ;;
     p1_owner_inbox)
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
-      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 1
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
-      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
       ;;
   esac
   OUT_DIR="${OUTDIR}/build/${variant}" \

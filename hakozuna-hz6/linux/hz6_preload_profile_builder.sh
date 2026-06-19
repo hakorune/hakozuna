@@ -15,6 +15,20 @@ hz6_preload_profile_selected_cflags() {
   hz6_preload_effective_selected_cflags "$out_name" "$enable_midpage_boundary"
 }
 
+hz6_preload_profile_owner_inbox_external_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_external_cflags \
+    "$out_name" "$enable_midpage_boundary"
+}
+
+hz6_preload_profile_owner_inbox_off_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_off_cflags \
+    "$out_name" "$enable_midpage_boundary"
+}
+
 hz6_preload_profile_build() {
   local -n flags_ref="$1"
   local default_out_dir="$2"

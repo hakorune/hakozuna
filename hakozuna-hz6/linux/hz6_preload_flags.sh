@@ -101,6 +101,40 @@ hz6_preload_effective_selected_cflags() {
   fi
 }
 
+hz6_preload_apply_owner_inbox_external_profile() {
+  local -n profile_flags_ref="$1"
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 1
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
+}
+
+hz6_preload_apply_owner_inbox_off_profile() {
+  local -n profile_flags_ref="$1"
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_INBOX_CORE_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 0
+  hz6_preload_replace_define profile_flags_ref HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 0
+}
+
+hz6_preload_effective_owner_inbox_external_cflags() {
+  local -n out_ref="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_selected_cflags "$1" "$enable_midpage_boundary"
+  hz6_preload_apply_owner_inbox_external_profile out_ref
+}
+
+hz6_preload_effective_owner_inbox_off_cflags() {
+  local -n out_ref="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_selected_cflags "$1" "$enable_midpage_boundary"
+  hz6_preload_apply_owner_inbox_off_profile out_ref
+}
+
 hz6_preload_preserve_phase_counters() {
   local -n phase_flags_ref="$1"
   hz6_preload_replace_define phase_flags_ref HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
