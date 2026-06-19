@@ -2716,6 +2716,50 @@ sharding into the owner-inbox high-remote profile does not reduce the p1
 runtime tax.  Keep the runner variant for attribution, but do not add a combined
 profile target.
 
+## 2026-06-20 OwnerInboxMaintenanceStatsShape-L1
+
+`OwnerInboxMaintenanceStatsShape-L1` removes production hot-path writes from
+owner-local pending maintenance counters by using the existing diagnostic-only
+macros:
+
+```text
+HZ6_REMOTE_PENDING_STAT_INC
+HZ6_REMOTE_PENDING_STAT_ADD
+```
+
+The integrity counters remain visible in diagnostic builds because
+`run_hz6_preload_integrity_smoke.sh` builds the diagnostic preload DSO.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production p1-only RUNS=10:
+
+```text
+p1_external local0   16.35M  67.38 MiB
+p1_external remote50 14.25M  74.75 MiB
+p1_external remote90 10.51M  77.33 MiB
+```
+
+Paired production RUNS=10:
+
+```text
+variant      local0   remote50  remote90
+p0_off       16.21M   15.18M    10.68M
+p1_external 16.47M   14.07M    10.53M
+```
+
+Decision: `GO(shape)/NO-GO(default)`.  Production owner-inbox maintenance
+counters now stay zero in the tax runner, as expected, and local0 is neutral to
+slightly positive.  The p1 remote50/remote90 tax remains, so default stays
+owner-inbox off.
+
 RUNS=10 paired result:
 
 ```text
