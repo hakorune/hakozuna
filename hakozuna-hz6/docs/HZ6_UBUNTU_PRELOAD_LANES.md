@@ -3208,6 +3208,32 @@ remote90 loss.  Keep `p1_external_direct_reuse` as an attribution/profile
 candidate and keep the high-remote profile/default DirectReuse-off until a
 narrow source-boundary or MidPage-shaped policy beats both rows.
 
+Follow-up remote90 diagnostic note:
+
+```text
+remote90 full diagnostic:
+  p1_external_direct_reuse_observe
+  remote_pending_direct_claim_success=3154
+  remote_pending_direct_claim_success_midpage=2624
+  remote_pending_direct_claim_success_transfer_nonempty=2626
+  remote_pending_direct_integrity_failure=0
+
+remote90_short diagnostic:
+  p1_external_direct_reuse_observe
+  remote_pending_direct_claim_success=547
+  remote_pending_direct_claim_success_midpage=527
+  remote_pending_direct_claim_success_transfer_nonempty=547
+  remote_pending_direct_integrity_failure=0
+```
+
+Both diagnostic remote90 rows also produced `remote_free_returned_uncommitted`
+under the heavy diagnostic counter shape, while the production-shaped remote90
+run stayed at normal throughput.  Treat these remote90 diagnostic rows as shape
+attribution only, not as zero gates.  The useful signal is that high-remote
+DirectReuse claims are mostly MidPage and almost entirely same-class transfer
+overlap; this favors a source-boundary/order policy over a broader eager
+frontcache-miss DirectReuse promotion.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

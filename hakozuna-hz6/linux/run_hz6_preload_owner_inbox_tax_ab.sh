@@ -21,7 +21,7 @@ Usage:
 Options:
   --runs N        repeat count per row and variant (default: 3)
   --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
-  --rows CSV     local0,remote50,remote90 (default: local0,remote50)
+  --rows CSV     local0,remote50,remote90,remote90_short (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
   --production    build production-shaped DSOs; some counters will be NA
@@ -50,6 +50,8 @@ Rows:
   local0   16 threads, remote_pct=0,  16..32768
   remote50 16 threads, remote_pct=50, 16..32768
   remote90 16 threads, remote_pct=90, 16..131072
+  remote90_short
+           diagnostic-only short remote90 observe row, not a promotion gate
 
 This is an attribution runner, not a promotion gate.  Some intermediate
 variants intentionally reintroduce returned backpressure so the cost of each
@@ -187,6 +189,7 @@ for row_name in "${raw_rows[@]}"; do
     local0) rows+=("local0 16 10000 100 16 32768 0 65536") ;;
     remote50) rows+=("remote50 16 10000 100 16 32768 50 65536") ;;
     remote90) rows+=("remote90 16 120000 100 16 131072 90 65536") ;;
+    remote90_short) rows+=("remote90_short 16 20000 100 16 131072 90 65536") ;;
     "") ;;
     *) echo "unknown row: $row_name" >&2; exit 2 ;;
   esac
@@ -239,7 +242,7 @@ counter_keys=(
   remote_pending_direct_integrity_failure
   remote_pending_direct_claim_success_toy
   remote_pending_direct_claim_success_midpage
-  remote_pending_direct_claim_success_while_transfer_nonempty
+  remote_pending_direct_claim_success_transfer_nonempty
   remote_pending_direct_source_boundary_attempt
   remote_pending_direct_source_boundary_gate_hit
   remote_pending_direct_source_boundary_claim_success
