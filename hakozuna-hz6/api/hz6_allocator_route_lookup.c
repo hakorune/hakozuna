@@ -305,8 +305,23 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   size_t bytes = descriptor->bytes;
 #if HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1
   hz6_allocator_route_rehome_lock_pair(origin, allocator);
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t origin_lookup_probes = 0;
+  Hz6RouteResult origin_route =
+      hz6_route_backend_lookup_exact_probe(&origin->route_backend,
+                                           ptr,
+                                           &origin_lookup_probes);
+  allocator->stats.route_rehome_origin_lookup_probe_total +=
+      origin_lookup_probes;
+  if (origin_lookup_probes >
+      allocator->stats.route_rehome_origin_lookup_probe_max) {
+    allocator->stats.route_rehome_origin_lookup_probe_max =
+        origin_lookup_probes;
+  }
+#else
   Hz6RouteResult origin_route =
       hz6_route_backend_lookup_exact(&origin->route_backend, ptr);
+#endif
   if (origin_route.kind != HZ6_ROUTE_VALID ||
       origin_route.descriptor != route->descriptor ||
       origin_route.generation != route->generation ||
@@ -318,14 +333,36 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
     hz6_allocator_route_rehome_unlock_pair(origin, allocator);
     return 0;
   }
-  if (!hz6_route_backend_register_exact(&allocator->route_backend,
-                                        ptr,
-                                        bytes,
-                                        route->front_id,
-                                        route->class_id,
-                                        route->generation,
-                                        (void*)descriptor,
-                                        NULL)) {
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t destination_register_probes = 0;
+  int destination_ok = hz6_route_backend_register_exact(
+      &allocator->route_backend,
+      ptr,
+      bytes,
+      route->front_id,
+      route->class_id,
+      route->generation,
+      (void*)descriptor,
+      &destination_register_probes);
+  allocator->stats.route_rehome_destination_register_probe_total +=
+      destination_register_probes;
+  if (destination_register_probes >
+      allocator->stats.route_rehome_destination_register_probe_max) {
+    allocator->stats.route_rehome_destination_register_probe_max =
+        destination_register_probes;
+  }
+#else
+  int destination_ok = hz6_route_backend_register_exact(
+      &allocator->route_backend,
+      ptr,
+      bytes,
+      route->front_id,
+      route->class_id,
+      route->generation,
+      (void*)descriptor,
+      NULL);
+#endif
+  if (!destination_ok) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.route_rehome_destination_route_fail;
 #endif
@@ -346,7 +383,21 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
     return 0;
   }
 #endif
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t origin_unregister_probes = 0;
+  hz6_route_backend_unregister_exact(&origin->route_backend,
+                                     ptr,
+                                     &origin_unregister_probes);
+  allocator->stats.route_rehome_origin_unregister_probe_total +=
+      origin_unregister_probes;
+  if (origin_unregister_probes >
+      allocator->stats.route_rehome_origin_unregister_probe_max) {
+    allocator->stats.route_rehome_origin_unregister_probe_max =
+        origin_unregister_probes;
+  }
+#else
   hz6_route_backend_unregister_exact(&origin->route_backend, ptr, NULL);
+#endif
   hz6_allocator_route_domain_note_compact_debt(origin);
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1
   hz6_allocator_route_last_hit_clear(origin);

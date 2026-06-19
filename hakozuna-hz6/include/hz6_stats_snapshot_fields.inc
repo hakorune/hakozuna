@@ -45,6 +45,12 @@
   size_t route_rehome_directory_transfer_fail;
   size_t route_rehome_directory_transfer_probe_total;
   size_t route_rehome_directory_transfer_probe_max;
+  size_t route_rehome_origin_lookup_probe_total;
+  size_t route_rehome_origin_lookup_probe_max;
+  size_t route_rehome_destination_register_probe_total;
+  size_t route_rehome_destination_register_probe_max;
+  size_t route_rehome_origin_unregister_probe_total;
+  size_t route_rehome_origin_unregister_probe_max;
   size_t route_rehome_rollback_success;
   size_t route_rehome_rollback_fail;
   size_t descriptor_source_route_allocator_match;
