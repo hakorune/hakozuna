@@ -2530,6 +2530,16 @@ Build target:
 hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
 ```
 
+Paired runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_transfer_shard_policy_ab.sh
+```
+
+The paired runner records selected vs class-shard ops/RSS and supports
+`--diagnostic` to emit the same focused backpressure `counters.tsv` used by the
+transfer-capacity sweep.
+
 Verification:
 
 ```text
@@ -2552,3 +2562,15 @@ Decision: `GO(candidate)/HOLD(default)`.  Class sharding is worth keeping as an
 opt-in candidate because the first sample improves remote50 without the
 owner-inbox profile, but it does not clearly improve remote90 and needs broader
 paired evidence before selected/default promotion.
+
+Follow-up RUNS=1 from the paired runner reversed the remote50 direction:
+
+```text
+variant      local0   remote50  remote90
+selected     16.46M   15.00M    10.84M
+class_shard  16.37M   13.85M    10.94M
+```
+
+Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
+reduce returned backpressure or transfer full events in that sample.  Promotion
+remains HOLD until a RUNS=10 paired result is positive.
