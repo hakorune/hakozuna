@@ -376,6 +376,17 @@
 #define HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT ((size_t)-1)
 #endif
 
+#ifndef HZ6_REMOTE_FREE_OVERFLOW_L1
+/* Opt-in bounded overflow for remote free transfer backpressure.  The remote
+ * free path reserves this cache only after the main transfer cache is full and
+ * still before descriptor state/owner mutation. */
+#define HZ6_REMOTE_FREE_OVERFLOW_L1 0
+#endif
+
+#ifndef HZ6_REMOTE_FREE_OVERFLOW_CAPACITY
+#define HZ6_REMOTE_FREE_OVERFLOW_CAPACITY ((size_t)64)
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

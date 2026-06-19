@@ -386,6 +386,11 @@ struct Hz6Allocator {
 #endif
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  Hz6TransferObject remote_free_overflow_objects
+      [HZ6_REMOTE_FREE_OVERFLOW_CAPACITY];
+  Hz6TransferCache remote_free_overflow_cache;
+#endif
   Hz6LargeSpanPool large_span_pool;
   Hz6SourceBlock source_blocks[HZ6_SOURCE_BLOCK_CAPACITY];
 #if HZ6_SOURCE_BLOCK_ROUTE_RANGE_INDEX_L1

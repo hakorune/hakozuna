@@ -197,6 +197,18 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6TransferObject* out);
 
+int hz6_allocator_remote_free_overflow_reserve(
+    Hz6Allocator* allocator,
+    Hz6TransferReservation* out);
+
+void hz6_allocator_remote_free_overflow_commit(
+    Hz6TransferReservation* reservation,
+    Hz6TransferObject object);
+
+int hz6_allocator_remote_free_overflow_pop(Hz6Allocator* allocator,
+                                           uint16_t class_id,
+                                           Hz6TransferObject* out);
+
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
 
 void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator);

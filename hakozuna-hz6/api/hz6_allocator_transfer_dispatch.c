@@ -48,6 +48,49 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                              out);
 }
 
+int hz6_allocator_remote_free_overflow_reserve(
+    Hz6Allocator* allocator,
+    Hz6TransferReservation* out) {
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  if (!allocator || !out) {
+    return 0;
+  }
+  return hz6_transfer_reserve(&allocator->remote_free_overflow_cache, out);
+#else
+  (void)allocator;
+  (void)out;
+  return 0;
+#endif
+}
+
+void hz6_allocator_remote_free_overflow_commit(
+    Hz6TransferReservation* reservation,
+    Hz6TransferObject object) {
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  hz6_transfer_commit(reservation, object);
+#else
+  (void)reservation;
+  (void)object;
+#endif
+}
+
+int hz6_allocator_remote_free_overflow_pop(Hz6Allocator* allocator,
+                                           uint16_t class_id,
+                                           Hz6TransferObject* out) {
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  if (!allocator || !out) {
+    return 0;
+  }
+  return hz6_transfer_pop(&allocator->remote_free_overflow_cache,
+                          class_id, out);
+#else
+  (void)allocator;
+  (void)class_id;
+  (void)out;
+  return 0;
+#endif
+}
+
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator) {
   if (allocator) {
     ++allocator->stats.transfer_push;

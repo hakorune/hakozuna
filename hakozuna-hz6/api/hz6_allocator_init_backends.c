@@ -36,4 +36,9 @@ void hz6_allocator_init_backends(Hz6Allocator* allocator) {
                                      allocator->transfer_objects,
                                      transfer_capacity);
   }
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  hz6_transfer_init(&allocator->remote_free_overflow_cache,
+                    allocator->remote_free_overflow_objects,
+                    HZ6_REMOTE_FREE_OVERFLOW_CAPACITY);
+#endif
 }

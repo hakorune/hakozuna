@@ -578,6 +578,40 @@ void* hz6_front_reuse_transfer_with_descriptor(
     return transfer.ptr;
   }
 
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  while (hz6_allocator_remote_free_overflow_pop(allocator, class_id,
+                                                &transfer)) {
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)transfer.descriptor;
+    if (!hz6_allocator_activate_descriptor(
+            allocator, descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
+            transfer.generation, hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.transfer_reuse_invalid;
+#endif
+      continue;
+    }
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_L1
+    descriptor = hz6_front_try_elastic_depot_descriptor_rehome(
+        allocator, descriptor, front_id, class_id);
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reuse_hit;
+    ++allocator->stats.remote_free_overflow_pop;
+#endif
+    if (path) {
+      *path = HZ6_ALLOC_PATH_TRANSFER_REUSE;
+    } else {
+      hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                          HZ6_ALLOC_PATH_TRANSFER_REUSE);
+    }
+    if (out_descriptor) {
+      *out_descriptor = descriptor;
+    }
+    return transfer.ptr;
+  }
+#endif
+
   return NULL;
 }
 

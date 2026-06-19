@@ -73,6 +73,9 @@
   size_t transfer_reserve_full_transfer_count_total = 0;
   size_t transfer_reserve_full_class_count_total = 0;
   size_t transfer_reserve_full_class_count_max = 0;
+  size_t remote_free_overflow_reserve_success = 0;
+  size_t remote_free_overflow_reserve_full = 0;
+  size_t remote_free_overflow_pop = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -305,10 +308,8 @@
     local2p_source_alloc += stats.local2p_source_alloc;
     alloc_fail += stats.alloc_fail;
     descriptor_exhausted += stats.descriptor_exhausted;
-    elastic_descriptor_overflow_alloc +=
-        stats.elastic_descriptor_overflow_alloc;
-    elastic_descriptor_overflow_reset +=
-        stats.elastic_descriptor_overflow_reset;
+    elastic_descriptor_overflow_alloc += stats.elastic_descriptor_overflow_alloc;
+    elastic_descriptor_overflow_reset += stats.elastic_descriptor_overflow_reset;
     elastic_descriptor_overflow_exhausted +=
         stats.elastic_descriptor_overflow_exhausted;
     route_register_fail += stats.route_register_fail;
@@ -331,12 +332,9 @@
       route_unregister_probe_max = stats.route_unregister_probe_max;
     }
     route_register_reason_unknown += stats.route_register_reason_unknown;
-    route_register_reason_source_run_slot +=
-        stats.route_register_reason_source_run_slot;
-    route_register_reason_direct_source +=
-        stats.route_register_reason_direct_source;
-    route_register_reason_materialize +=
-        stats.route_register_reason_materialize;
+    route_register_reason_source_run_slot += stats.route_register_reason_source_run_slot;
+    route_register_reason_direct_source += stats.route_register_reason_direct_source;
+    route_register_reason_materialize += stats.route_register_reason_materialize;
     route_register_reason_rehome += stats.route_register_reason_rehome;
     route_unregister_reason_unknown += stats.route_unregister_reason_unknown;
     route_unregister_reason_frontcache_overflow +=
@@ -369,14 +367,10 @@
     route_rehome_commit_success += stats.route_rehome_commit_success;
     remote_free_backpressure += stats.remote_free_backpressure;
     remote_free_returned_uncommitted += stats.remote_free_returned_uncommitted;
-    remote_free_backpressure_drain_attempt +=
-        stats.remote_free_backpressure_drain_attempt;
-    remote_free_backpressure_drain_success +=
-        stats.remote_free_backpressure_drain_success;
-    remote_free_backpressure_retry_success +=
-        stats.remote_free_backpressure_retry_success;
-    remote_free_backpressure_requeue_fail +=
-        stats.remote_free_backpressure_requeue_fail;
+    remote_free_backpressure_drain_attempt += stats.remote_free_backpressure_drain_attempt;
+    remote_free_backpressure_drain_success += stats.remote_free_backpressure_drain_success;
+    remote_free_backpressure_retry_success += stats.remote_free_backpressure_retry_success;
+    remote_free_backpressure_requeue_fail += stats.remote_free_backpressure_requeue_fail;
     transfer_reserve_full_transfer_count_total +=
         stats.transfer_reserve_full_transfer_count_total;
     transfer_reserve_full_class_count_total +=
@@ -385,6 +379,9 @@
     if (full_class_max > transfer_reserve_full_class_count_max) {
       transfer_reserve_full_class_count_max = full_class_max;
     }
+    remote_free_overflow_reserve_success += stats.remote_free_overflow_reserve_success;
+    remote_free_overflow_reserve_full += stats.remote_free_overflow_reserve_full;
+    remote_free_overflow_pop += stats.remote_free_overflow_pop;
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;

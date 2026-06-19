@@ -112,6 +112,7 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
+HZ6_REMOTE_FREE_OVERFLOW_L1=0
 ```
 
 ## Current Read
@@ -172,6 +173,14 @@ changing behavior.  Selected smoke showed
 dominating the cache.  The next performance box should therefore avoid extra
 committed rehome and use a bounded overflow/pending policy rather than more
 eager drain.
+`RemoteFreeOverflow-L1` implements that bounded overflow as an opt-in research
+box, but it is not selected.  Safety smoke passed for `OVERFLOW_CAPACITY=64`
+and `256`, but quick RUNS=3 showed weak performance: cap64 gave
+`remote50=13789256.22`, `remote90=6044836.89`; cap256 held `remote50` at
+`14399762.89` but collapsed `remote90` to `2440102.22`.  Cap256 smoke reduced
+uncommitted remote frees by committing `remote_free_overflow_reserve_success=3038`,
+but route rehome also rose to `6668`, so the overflow cache has the same
+route-movement problem as eager drain.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

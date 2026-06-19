@@ -86,6 +86,9 @@
           "transfer_reserve_full_transfer_count_total=%zu "
           "transfer_reserve_full_class_count_total=%zu "
           "transfer_reserve_full_class_count_max=%zu "
+          "remote_free_overflow_reserve_success=%zu "
+          "remote_free_overflow_reserve_full=%zu "
+          "remote_free_overflow_pop=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -139,6 +142,9 @@
           transfer_reserve_full_transfer_count_total,
           transfer_reserve_full_class_count_total,
           transfer_reserve_full_class_count_max,
+          remote_free_overflow_reserve_success,
+          remote_free_overflow_reserve_full,
+          remote_free_overflow_pop,
           route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,

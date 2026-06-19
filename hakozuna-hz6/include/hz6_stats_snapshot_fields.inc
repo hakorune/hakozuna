@@ -31,6 +31,9 @@
   size_t transfer_reserve_full_transfer_count_total;
   size_t transfer_reserve_full_class_count_total;
   size_t transfer_reserve_full_class_count_max;
+  size_t remote_free_overflow_reserve_success;
+  size_t remote_free_overflow_reserve_full;
+  size_t remote_free_overflow_pop;
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;

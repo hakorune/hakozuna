@@ -122,6 +122,31 @@ static void hz6_allocator_note_transfer_reserve_full(
 }
 #endif
 
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+static int hz6_allocator_remote_free_try_overflow(
+    Hz6Allocator* allocator,
+    Hz6TransferObject object) {
+  Hz6TransferReservation overflow = {0};
+  if (!hz6_allocator_remote_free_overflow_reserve(allocator, &overflow)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_overflow_reserve_full;
+#endif
+    return 0;
+  }
+
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)object.descriptor;
+  descriptor->state = HZ6_STATE_TRANSFER_FREE;
+  hz6_allocator_set_descriptor_owner(allocator, descriptor,
+                                     (Hz6OwnerToken){0});
+  hz6_allocator_remote_free_overflow_commit(&overflow, object);
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.remote_free_overflow_reserve_success;
+#endif
+  return 1;
+}
+#endif
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
@@ -171,6 +196,11 @@ int hz6_allocator_remote_free_active_descriptor(
   }
 #endif
   if (!reserve_ok) {
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+    if (hz6_allocator_remote_free_try_overflow(allocator, object)) {
+      return 1;
+    }
+#endif
     ++allocator->stats.remote_free_transfer_fail;
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_note_transfer_reserve_full(allocator, object.class_id);
