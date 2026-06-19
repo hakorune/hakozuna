@@ -318,6 +318,13 @@ shape.  This confirms true global transfer-cache saturation on both sides, not
 a narrow class-only imbalance; further default work should avoid adding remote
 thread transfer-cache/frontcache mutation and should instead revisit the
 owner-local consumer or guaranteed owner-owned sink boundary.
+Rechecking the existing owner-inbox lane with RUNS=10 confirms that direction:
+selected measured `remote50=14.76M`, `remote90=1.22M`; owner-inbox measured
+`remote50=14.03M`, `remote90=9.94M`.  The smoke committed
+`remote_free_origin_pending_commit=35243` with pending mismatch/fail gates at
+zero, but still left `remote_free_returned_backpressure=11`.  Keep owner-inbox
+as the current high-remote specialist and default candidate, but do not select
+it until the remote50 cost and small origin-transfer-full tail are closed.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

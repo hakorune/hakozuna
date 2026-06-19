@@ -709,3 +709,50 @@ with same-class pressure high but not the only explanation.  Class/shard tuning
 alone is unlikely to close this; the next behavior box needs either a cheaper
 owner-local consumer or a guaranteed owner-owned sink rather than more remote
 thread transfer-cache work.
+
+## Owner Inbox RUNS=10 Recheck
+
+After the origin-transfer occupancy observation, the smallest default-candidate
+recheck is the existing owner-inbox lane without DirectReuse or source-gate
+changes:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+```
+
+RUNS=10, same selected remote rows:
+
+```text
+selected     remote50=14758301.09 remote90=1221155.61
+owner_inbox  remote50=14025142.73 remote90=9939719.00
+```
+
+Owner-inbox smoke:
+
+```text
+remote_free_origin_pending_commit=35243
+remote_free_pending_no_rehome=35243
+remote_pending_enqueue_success=35243
+remote_pending_enqueue_full=0
+remote_pending_duplicate_claim=0
+remote_pending_publish_fail=0
+remote_pending_generation_mismatch=0
+remote_pending_owner_mismatch=0
+remote_pending_route_mismatch=0
+remote_pending_state_mismatch=0
+remote_pending_batch_items=3686
+remote_pending_frontcache_push=3686
+remote_pending_current=31557
+remote_pending_total_current=31557
+remote_free_returned_uncommitted=0
+remote_free_returned_backpressure=11
+remote_free_backpressure_origin_transfer_full=11
+```
+
+Decision: `GO(high-remote-specialist)/HOLD(default)`.  Owner-inbox is the
+cleanest high-remote recovery path observed so far: it restores remote90 by
+avoiding most route rehome/transfer-cache churn and keeps integrity gates clean.
+It is not ready as the selected default because remote50 regresses by about 5%
+and a small origin-transfer-full tail still returns backpressure.
