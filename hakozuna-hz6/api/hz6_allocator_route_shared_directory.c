@@ -461,6 +461,16 @@ int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
             (uint32_t)owner_generation) {
       break;
     }
+#if HZ6_DIAGNOSTIC_PROBES
+    size_t probe_count = probe + 1u;
+    new_allocator->stats.route_rehome_directory_transfer_probe_total +=
+        probe_count;
+    if (probe_count >
+        new_allocator->stats.route_rehome_directory_transfer_probe_max) {
+      new_allocator->stats.route_rehome_directory_transfer_probe_max =
+          probe_count;
+    }
+#endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
     hz6_shared_route_directory_entry_begin_update(entry);
 #endif
@@ -478,6 +488,15 @@ int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
 #endif
     return 1;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  new_allocator->stats.route_rehome_directory_transfer_probe_total +=
+      HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+  if (HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY >
+      new_allocator->stats.route_rehome_directory_transfer_probe_max) {
+    new_allocator->stats.route_rehome_directory_transfer_probe_max =
+        HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+  }
+#endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
   hz6_shared_route_directory_writer_unlock(lock_index);
 #endif

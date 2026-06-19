@@ -188,6 +188,12 @@ tries to rehome on transfer reuse instead.  Safety smoke passed and shifted
 route movement to reuse (`transfer_reuse_rehome_success=2183`), but quick
 RUNS=3 regressed to `remote50=12638884.18` and `remote90=269255.48`.  The
 consumer lookup/rehome work is too expensive on the high-remote row.
+`SharedRouteTransferProbeObserve-L1` adds behavior-neutral counters for the
+shared-directory owner-transfer search inside route rehome.  Selected smoke
+showed `route_rehome_directory_transfer_probe_total=2661` for
+`route_rehome_success=2627`, with max probe `3`.  This means direct
+proof-token transfer is unlikely to be the next large win; the remaining cost
+is route movement/locking/tombstone work, not shared-directory probing.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

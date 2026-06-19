@@ -55,6 +55,8 @@
   size_t route_rehome_expected_owner_mismatch = 0;
   size_t route_rehome_destination_route_fail = 0;
   size_t route_rehome_directory_transfer_fail = 0;
+  size_t route_rehome_directory_transfer_probe_total = 0;
+  size_t route_rehome_directory_transfer_probe_max = 0;
   size_t route_rehome_rollback_success = 0;
   size_t route_rehome_rollback_fail = 0;
   size_t remote_free_foreign_candidate = 0;
@@ -340,29 +342,28 @@
     route_register_reason_rehome += stats.route_register_reason_rehome;
     route_unregister_reason_unknown += stats.route_unregister_reason_unknown;
     route_unregister_reason_frontcache_overflow += stats.route_unregister_reason_frontcache_overflow;
-    route_unregister_reason_cap_release +=
-        stats.route_unregister_reason_cap_release;
-    route_unregister_reason_descriptorless_detach +=
-        stats.route_unregister_reason_descriptorless_detach;
-    route_unregister_reason_source_slot_release +=
-        stats.route_unregister_reason_source_slot_release;
+    route_unregister_reason_cap_release += stats.route_unregister_reason_cap_release;
+    route_unregister_reason_descriptorless_detach += stats.route_unregister_reason_descriptorless_detach;
+    route_unregister_reason_source_slot_release += stats.route_unregister_reason_source_slot_release;
     route_unregister_reason_rehome += stats.route_unregister_reason_rehome;
     route_rehome_attempt += stats.route_rehome_attempt;
     route_rehome_success += stats.route_rehome_success;
     route_rehome_fail += stats.route_rehome_fail;
-    route_rehome_expected_owner_mismatch +=
-        stats.route_rehome_expected_owner_mismatch;
+    route_rehome_expected_owner_mismatch += stats.route_rehome_expected_owner_mismatch;
     route_rehome_destination_route_fail += stats.route_rehome_destination_route_fail;
-    route_rehome_directory_transfer_fail +=
-        stats.route_rehome_directory_transfer_fail;
+    route_rehome_directory_transfer_fail += stats.route_rehome_directory_transfer_fail;
+    route_rehome_directory_transfer_probe_total += stats.route_rehome_directory_transfer_probe_total;
+    size_t dir_probe_max = stats.route_rehome_directory_transfer_probe_max;
+    if (dir_probe_max > route_rehome_directory_transfer_probe_max) {
+      route_rehome_directory_transfer_probe_max = dir_probe_max;
+    }
     route_rehome_rollback_success += stats.route_rehome_rollback_success;
     route_rehome_rollback_fail += stats.route_rehome_rollback_fail;
     remote_free_foreign_candidate += stats.remote_free_foreign_candidate;
     transfer_reserve_attempt += stats.transfer_reserve_attempt;
     transfer_reserve_success += stats.transfer_reserve_success;
     transfer_reserve_full += stats.transfer_reserve_full;
-    transfer_reserve_full_after_state_mutation +=
-        stats.transfer_reserve_full_after_state_mutation;
+    transfer_reserve_full_after_state_mutation += stats.transfer_reserve_full_after_state_mutation;
     route_rehome_commit_enter += stats.route_rehome_commit_enter;
     route_rehome_commit_success += stats.route_rehome_commit_success;
     remote_free_backpressure += stats.remote_free_backpressure;
@@ -371,10 +372,8 @@
     remote_free_backpressure_drain_success += stats.remote_free_backpressure_drain_success;
     remote_free_backpressure_retry_success += stats.remote_free_backpressure_retry_success;
     remote_free_backpressure_requeue_fail += stats.remote_free_backpressure_requeue_fail;
-    transfer_reserve_full_transfer_count_total +=
-        stats.transfer_reserve_full_transfer_count_total;
-    transfer_reserve_full_class_count_total +=
-        stats.transfer_reserve_full_class_count_total;
+    transfer_reserve_full_transfer_count_total += stats.transfer_reserve_full_transfer_count_total;
+    transfer_reserve_full_class_count_total += stats.transfer_reserve_full_class_count_total;
     size_t full_class_max = stats.transfer_reserve_full_class_count_max;
     if (full_class_max > transfer_reserve_full_class_count_max) {
       transfer_reserve_full_class_count_max = full_class_max;

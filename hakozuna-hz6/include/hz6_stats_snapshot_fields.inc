@@ -43,6 +43,8 @@
   size_t route_rehome_expected_owner_mismatch;
   size_t route_rehome_destination_route_fail;
   size_t route_rehome_directory_transfer_fail;
+  size_t route_rehome_directory_transfer_probe_total;
+  size_t route_rehome_directory_transfer_probe_max;
   size_t route_rehome_rollback_success;
   size_t route_rehome_rollback_fail;
   size_t descriptor_source_route_allocator_match;

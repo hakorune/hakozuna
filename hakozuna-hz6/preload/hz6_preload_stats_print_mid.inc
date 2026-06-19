@@ -68,6 +68,8 @@
           "route_rehome_expected_owner_mismatch=%zu "
           "route_rehome_destination_route_fail=%zu "
           "route_rehome_directory_transfer_fail=%zu "
+          "route_rehome_directory_transfer_probe_total=%zu "
+          "route_rehome_directory_transfer_probe_max=%zu "
           "route_rehome_rollback_success=%zu "
           "route_rehome_rollback_fail=%zu "
           "remote_free_foreign_candidate=%zu "
@@ -132,6 +134,8 @@
           route_rehome_expected_owner_mismatch,
           route_rehome_destination_route_fail,
           route_rehome_directory_transfer_fail,
+          route_rehome_directory_transfer_probe_total,
+          route_rehome_directory_transfer_probe_max,
           route_rehome_rollback_success, route_rehome_rollback_fail,
           remote_free_foreign_candidate, transfer_reserve_attempt,
           transfer_reserve_success, transfer_reserve_full,
