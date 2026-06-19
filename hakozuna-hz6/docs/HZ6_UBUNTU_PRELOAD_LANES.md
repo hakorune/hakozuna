@@ -1913,3 +1913,25 @@ remote90=10827648.18
 Decision: `GO(branch selected)/HOLD(default release)`.  The branch selected
 lane now targets high-remote recovery.  Before treating it as final default,
 capture RSS/local/lifetime/accounting guards.
+
+## 2026-06-20 OwnerInboxSelectedGuard-L1
+
+Added a small selected-preload guard runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_guard.sh
+```
+
+It records median ops/s and `/usr/bin/time` peak RSS for local0, remote50, and
+remote90 rows.
+
+Initial RUNS=3:
+
+```text
+local0   ops/s=15622095.27 peak=72.88 MiB
+remote50 ops/s=13443084.42 peak=74.62 MiB
+remote90 ops/s=11098596.12 peak=77.50 MiB
+```
+
+Decision: `GO(tooling)`.  Keep using this runner as the local/RSS guard while
+the branch selected lane remains under promotion review.

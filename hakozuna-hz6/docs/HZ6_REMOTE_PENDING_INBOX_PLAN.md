@@ -1611,3 +1611,33 @@ remote90=10827648.18
 Decision: `GO(branch selected)/HOLD(default release)`.  This selected candidate
 removes the remote90 cliff, but release/default promotion still waits on RSS,
 local-only, lifetime, and accounting guards.
+
+## 2026-06-20 OwnerInboxSelectedGuard-L1
+
+Added:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_guard.sh
+```
+
+The runner builds the current selected preload DSO and runs three guard rows
+under `/usr/bin/time`:
+
+```text
+local0   16 threads, remote_pct=0,  16..32768
+remote50 16 threads, remote_pct=50, 16..32768
+remote90 16 threads, remote_pct=90, 16..131072
+```
+
+Initial branch-selected RUNS=3:
+
+```text
+local0   median_ops_s=15622095.27 median_peak_mib=72.88
+remote50 median_ops_s=13443084.42 median_peak_mib=74.62
+remote90 median_ops_s=11098596.12 median_peak_mib=77.50
+```
+
+Decision: `GO(tooling)`.  This gives the owner-inbox selected branch a
+repeatable local/RSS guard.  It is not a default-release closeout by itself:
+paired RSS comparison, allocator lifetime, and pending accounting guards remain
+open.
