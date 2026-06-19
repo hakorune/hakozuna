@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd -- "$SCRIPT_DIR/../.." && pwd)"
+
+BENCH="${HZ6_BENCH_REMOTE_MT:-/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc}"
+DSO="$REPO_ROOT/hakozuna-hz6/out/linux/hz6_preload_diag/libhakozuna_hz6_preload.so"
+RUN_TIMEOUT="${HZ6_PRELOAD_INTEGRITY_TIMEOUT:-30}"
+
+if [[ ! -x "$BENCH" ]]; then
+  echo "[hz6][integrity] missing bench: $BENCH" >&2
+  exit 2
+fi
+
+"$SCRIPT_DIR/build_hz6_preload_diag.sh" >/dev/null
+
+output="$(
+  timeout "$RUN_TIMEOUT" env -i \
+    PATH="${PATH:-/usr/bin:/bin}" \
+    HOME="${HOME:-/tmp}" \
+    HZ6_PRELOAD_STATS=1 \
+    LD_PRELOAD="$DSO" \
+    "$BENCH" 16 10000 100 16 32768 50 65536 2>&1
+)"
+
+extract_counter() {
+  local name="$1"
+  local match
+  match="$(printf '%s\n' "$output" | grep -o "${name}=[0-9][0-9]*" | tail -1 || true)"
+  if [[ -z "$match" ]]; then
+    echo "[hz6][integrity] missing counter: $name" >&2
+    printf '%s\n' "$output" >&2
+    exit 3
+  fi
+  printf '%s' "${match#*=}"
+}
+
+require_zero() {
+  local name="$1"
+  local value
+  value="$(extract_counter "$name")"
+  if [[ "$value" != "0" ]]; then
+    echo "[hz6][integrity] expected ${name}=0, got $value" >&2
+    printf '%s\n' "$output" >&2
+    exit 4
+  fi
+}
+
+require_zero "free_route_retry_abort"
+require_zero "free_route_integrity_abort"
+require_zero "free_route_real_free_unproven"
+require_zero "free_resolve_result_retry"
+require_zero "free_resolve_result_unresolved_integrity"
+require_zero "route_compact_remote_path_attempt"
+require_zero "ring_full_fallback"
+require_zero "overflow_sent"
+require_zero "overflow_received"
+
+printf '%s\n' "$output" | grep -E \
+  'BENCH_MT_REMOTE|ops/s|HZ6_PRELOAD_HOOK_DETAIL|HZ6_PRELOAD_RESOLVE_DETAIL|HZ6_PRELOAD_ROUTE_DETAIL|EFFECTIVE_REMOTE|OVERFLOW_PENDING'
+echo "[hz6][integrity] ok"

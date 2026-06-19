@@ -255,6 +255,15 @@ Phase 3 platform boundary status, 2026-06-19: preload hook stats now expose
 real-free fallback remains limited to `PROVEN_EXTERNAL`.  Focused stats smoke
 kept all three at zero.
 
+Phase 3 integrity smoke gate, 2026-06-19:
+`linux/run_hz6_preload_integrity_smoke.sh` builds the diagnostic preload,
+runs the focused remote50 lane with `HZ6_PRELOAD_STATS=1`, and fails if the
+integrity counters, resolver retry/integrity results, remote-path compaction
+attempt, ring fallback, or overflow counters are nonzero.  The first run passed
+with `free_route_real_free_unproven=0`,
+`free_resolve_result_unresolved_integrity=0`, and
+`route_compact_remote_path_attempt=0`.
+
 Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
 include `route_lock_read_contended`, `route_lock_write_contended`, and
 `route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`
