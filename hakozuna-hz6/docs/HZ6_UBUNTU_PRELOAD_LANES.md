@@ -138,6 +138,9 @@ fails.  `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` remains an
 off-by-default control: it removed the shared-directory empty window in shape,
 but the `16 x 120000 x remote90 x 16..131072` smoke timed out at 60s, so it is
 not selected.
+Shared-directory exact records also store the publishing owner slot/generation;
+unregister now requires allocator pointer and owner token to match before
+tombstoning a record.
 
 Phase 1B transaction-lite status, 2026-06-19: selected preload now enables
 `HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1`.  Remote frees that need route

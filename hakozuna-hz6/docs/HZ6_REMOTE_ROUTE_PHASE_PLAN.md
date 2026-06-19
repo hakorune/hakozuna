@@ -126,6 +126,15 @@ The Phase 1B selected flags improve publication correctness, not speed.  The
 visible throughput drop is expected until Phase 2/3 removes legacy route scans
 and reduces synchronization cost.
 
+2026-06-19 Phase 1B owner-qualified retire is implemented:
+
+- Shared-directory exact records now store the publishing allocator owner slot
+  and owner generation alongside the allocator pointer.
+- Lookup treats allocator-pointer/token mismatch as a stale record and returns
+  MISS instead of trusting pointer equality alone.
+- Unregister requires allocator pointer, owner slot, and owner generation to
+  match before tombstoning the authoritative record.
+
 2026-06-19 Phase 1B transaction-lite box is implemented and selected:
 
 - `HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1` changes remote frees that need
