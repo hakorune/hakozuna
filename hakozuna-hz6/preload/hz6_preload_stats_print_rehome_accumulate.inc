@@ -42,6 +42,11 @@
     route_rehome_rollback_success += stats.route_rehome_rollback_success;
     route_rehome_rollback_fail += stats.route_rehome_rollback_fail;
     remote_free_foreign_candidate += stats.remote_free_foreign_candidate;
+    remote_free_status_committed += stats.remote_free_status_committed;
+    remote_free_status_backpressure += stats.remote_free_status_backpressure;
+    remote_free_status_stale += stats.remote_free_status_stale;
+    remote_free_status_integrity_failure +=
+        stats.remote_free_status_integrity_failure;
     transfer_reserve_attempt += stats.transfer_reserve_attempt;
     transfer_reserve_success += stats.transfer_reserve_success;
     transfer_reserve_full += stats.transfer_reserve_full;

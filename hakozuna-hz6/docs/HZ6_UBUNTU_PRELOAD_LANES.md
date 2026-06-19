@@ -158,6 +158,12 @@ same-class transfer object into the destination frontcache and retries reserve
 once.  RUNS=10 moved `remote90` from `6610576.93` to `6969804.00` ops/s, but
 `remote50` fell from `14363938.00` to `13321713.54` ops/s, so keep it as
 `HOLD(default)` until the drain can be gated more narrowly.
+`RemoteFreeCommitStatus-L1` adds a status boundary under the existing bool
+front API: `COMMITTED`, `BACKPRESSURE`, `STALE`, and `INTEGRITY_FAILURE`.
+The selected smoke classified the current uncommitted remote-free returns as
+backpressure (`remote_free_status_backpressure=36311`) with stale and
+integrity-failure statuses at zero.  This is tooling for the next policy box,
+not a selected performance claim.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while

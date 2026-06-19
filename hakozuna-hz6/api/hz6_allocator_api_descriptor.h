@@ -505,6 +505,18 @@ int hz6_allocator_activate_local_descriptor_trusted_owner(
     void* ptr,
     uint32_t generation);
 
+typedef enum Hz6RemoteFreeCommitStatus {
+  HZ6_REMOTE_FREE_COMMIT_STATUS_STALE = 0,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED = 1,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE = 2,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE = 3
+} Hz6RemoteFreeCommitStatus;
+
+Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr);
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,

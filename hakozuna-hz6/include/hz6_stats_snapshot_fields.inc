@@ -15,6 +15,10 @@
   size_t remote_free_attempt;
   size_t remote_free_strict_owner_block;
   size_t remote_free_transfer_fail;
+  size_t remote_free_status_committed;
+  size_t remote_free_status_backpressure;
+  size_t remote_free_status_stale;
+  size_t remote_free_status_integrity_failure;
   size_t remote_free_foreign_candidate;
   size_t transfer_reserve_attempt;
   size_t transfer_reserve_success;

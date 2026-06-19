@@ -147,13 +147,42 @@ static int hz6_allocator_remote_free_try_overflow(
 }
 #endif
 
-int hz6_allocator_remote_free_active_descriptor(
+static Hz6RemoteFreeCommitStatus hz6_remote_free_commit_status_note(
+    Hz6Allocator* allocator,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return status;
+  }
+  switch (status) {
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED:
+      ++allocator->stats.remote_free_status_committed;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE:
+      ++allocator->stats.remote_free_status_backpressure;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE:
+      ++allocator->stats.remote_free_status_integrity_failure;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_STALE:
+    default:
+      ++allocator->stats.remote_free_status_stale;
+      break;
+  }
+#else
+  (void)allocator;
+#endif
+  return status;
+}
+
+Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
     void* ptr) {
   if (!allocator || !descriptor || !ptr ||
       descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr) {
-    return 0;
+    return hz6_remote_free_commit_status_note(
+        allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_STALE);
   }
 
   ++allocator->stats.remote_free_attempt;
@@ -162,10 +191,12 @@ int hz6_allocator_remote_free_active_descriptor(
             allocator, descriptor, allocator->owner.token,
             HZ6_OWNER_EQUAL_SITE_REMOTE_FREE)) {
       ++allocator->stats.remote_free_strict_owner_block;
-      return 0;
+      return hz6_remote_free_commit_status_note(
+          allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_STALE);
     }
     descriptor->state = HZ6_STATE_REMOTE_PENDING;
-    return 1;
+    return hz6_remote_free_commit_status_note(
+        allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
   }
 
   Hz6TransferObject object;
@@ -198,14 +229,16 @@ int hz6_allocator_remote_free_active_descriptor(
   if (!reserve_ok) {
 #if HZ6_REMOTE_FREE_OVERFLOW_L1
     if (hz6_allocator_remote_free_try_overflow(allocator, object)) {
-      return 1;
+      return hz6_remote_free_commit_status_note(
+          allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
     }
 #endif
     ++allocator->stats.remote_free_transfer_fail;
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_note_transfer_reserve_full(allocator, object.class_id);
 #endif
-    return 0;
+    return hz6_remote_free_commit_status_note(
+        allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE);
   }
 
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
@@ -216,7 +249,8 @@ int hz6_allocator_remote_free_active_descriptor(
   ++allocator->stats.transfer_reserve_success;
 #endif
   hz6_allocator_note_transfer_push(allocator);
-  return 1;
+  return hz6_remote_free_commit_status_note(
+      allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
 #else
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
   hz6_allocator_set_descriptor_owner(allocator, descriptor,
@@ -233,13 +267,24 @@ int hz6_allocator_remote_free_active_descriptor(
     descriptor->state = HZ6_STATE_ACTIVE;
     hz6_allocator_set_descriptor_owner(allocator, descriptor,
                                        allocator->owner.token);
-    return 0;
+    return hz6_remote_free_commit_status_note(
+        allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE);
   }
 
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.transfer_reserve_success;
 #endif
   hz6_allocator_note_transfer_push(allocator);
-  return 1;
+  return hz6_remote_free_commit_status_note(
+      allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
 #endif
+}
+
+int hz6_allocator_remote_free_active_descriptor(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr) {
+  return hz6_allocator_remote_free_active_descriptor_status(
+             allocator, descriptor, ptr) ==
+         HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED;
 }
