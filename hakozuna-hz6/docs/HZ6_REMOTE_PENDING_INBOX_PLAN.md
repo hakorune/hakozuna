@@ -1567,3 +1567,47 @@ remote90=10863892.07
 Decision: `GO(candidate prerequisite)`.  This is not the selected-flag flip
 yet.  It makes the candidate safer and cheaper to promote.  The next box is
 `OwnerInboxExternalSelected-L1`.
+
+## 2026-06-20 OwnerInboxExternalSelected-L1
+
+The Ubuntu selected preload flag bundle now enables the correctness-complete
+owner-inbox external candidate and keeps DirectReuse off:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+Selected smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_free_returned_stale=0
+remote_free_returned_integrity_failure=0
+remote_pending_enqueue_full=0
+remote_pending_duplicate_claim=0
+remote_pending_publish_fail=0
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Selected RUNS=10:
+
+```text
+remote50=13975874.04
+remote90=10827648.18
+```
+
+Decision: `GO(branch selected)/HOLD(default release)`.  This selected candidate
+removes the remote90 cliff, but release/default promotion still waits on RSS,
+local-only, lifetime, and accounting guards.

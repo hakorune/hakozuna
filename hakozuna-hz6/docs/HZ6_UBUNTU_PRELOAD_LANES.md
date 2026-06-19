@@ -1874,3 +1874,42 @@ remote90=10863892.07
 Decision: `GO(candidate prerequisite)`.  The next box may flip the selected
 candidate flags.  RSS/lifetime/accounting guards remain separate promotion
 gates.
+
+## 2026-06-20 OwnerInboxExternalSelected-L1
+
+The Ubuntu selected preload flags now use the owner-inbox external candidate:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+Selected smoke passed with the new external-ticket zero gates:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=2583
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Selected RUNS=10:
+
+```text
+remote50=13975874.04
+remote90=10827648.18
+```
+
+Decision: `GO(branch selected)/HOLD(default release)`.  The branch selected
+lane now targets high-remote recovery.  Before treating it as final default,
+capture RSS/local/lifetime/accounting guards.
