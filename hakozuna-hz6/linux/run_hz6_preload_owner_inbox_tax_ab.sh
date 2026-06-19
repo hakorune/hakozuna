@@ -164,6 +164,9 @@ counter_keys=(
   remote_free_returned_backpressure
   remote_free_returned_uncommitted
   remote_free_origin_pending_commit
+  route_unregister_while_pending
+  route_replace_while_pending
+  route_rehome_while_pending
   remote_pending_enqueue_success
   remote_pending_external_ticket_success
   remote_pending_maintenance_check

@@ -300,6 +300,11 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
 
   const Hz6ObjectDescriptor* descriptor =
       (const Hz6ObjectDescriptor*)route->descriptor;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (descriptor->state == HZ6_STATE_REMOTE_PENDING) {
+    ++allocator->stats.route_rehome_while_pending;
+  }
+#endif
   Hz6Allocator* origin = route->route_allocator;
   void* ptr = descriptor->ptr;
   size_t bytes = descriptor->bytes;

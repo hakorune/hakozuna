@@ -62,6 +62,9 @@
           "route_unregister_reason_descriptorless_detach=%zu "
           "route_unregister_reason_source_slot_release=%zu "
           "route_unregister_reason_rehome=%zu "
+          "route_unregister_while_pending=%zu "
+          "route_replace_while_pending=%zu "
+          "route_rehome_while_pending=%zu "
           "route_rehome_attempt=%zu "
           "route_rehome_success=%zu "
           "route_rehome_fail=%zu "
@@ -286,7 +289,9 @@
           route_unregister_reason_cap_release,
           route_unregister_reason_descriptorless_detach,
           route_unregister_reason_source_slot_release,
-          route_unregister_reason_rehome, route_rehome_attempt,
+          route_unregister_reason_rehome, route_unregister_while_pending,
+          route_replace_while_pending, route_rehome_while_pending,
+          route_rehome_attempt,
           route_rehome_success, route_rehome_fail,
           route_rehome_expected_owner_mismatch,
           route_rehome_destination_route_fail,

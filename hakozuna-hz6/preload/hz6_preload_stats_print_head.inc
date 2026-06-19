@@ -49,6 +49,9 @@
   size_t route_unregister_reason_descriptorless_detach = 0;
   size_t route_unregister_reason_source_slot_release = 0;
   size_t route_unregister_reason_rehome = 0;
+  size_t route_unregister_while_pending = 0;
+  size_t route_replace_while_pending = 0;
+  size_t route_rehome_while_pending = 0;
 #include "hz6_preload_stats_print_rehome_vars.inc"
   size_t route_active_current = 0;
   size_t route_active_max = 0;
@@ -315,6 +318,9 @@
     route_unregister_reason_descriptorless_detach += stats.route_unregister_reason_descriptorless_detach;
     route_unregister_reason_source_slot_release += stats.route_unregister_reason_source_slot_release;
     route_unregister_reason_rehome += stats.route_unregister_reason_rehome;
+    route_unregister_while_pending += stats.route_unregister_while_pending;
+    route_replace_while_pending += stats.route_replace_while_pending;
+    route_rehome_while_pending += stats.route_rehome_while_pending;
 #include "hz6_preload_stats_print_rehome_accumulate.inc"
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {

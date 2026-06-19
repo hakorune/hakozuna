@@ -243,6 +243,18 @@ static void hz6_allocator_note_route_unregister_reason(
 #endif
 }
 
+#if HZ6_DIAGNOSTIC_PROBES
+static int hz6_allocator_route_descriptor_is_pending(
+    const Hz6RouteResult* route) {
+  if (!route || route->kind != HZ6_ROUTE_VALID || !route->descriptor) {
+    return 0;
+  }
+  const Hz6ObjectDescriptor* descriptor =
+      (const Hz6ObjectDescriptor*)route->descriptor;
+  return descriptor->state == HZ6_STATE_REMOTE_PENDING;
+}
+#endif
+
 void hz6_allocator_route_unregister_exact_reason(
     Hz6Allocator* allocator,
     void* ptr,
@@ -262,6 +274,11 @@ void hz6_allocator_route_unregister_exact_reason(
   hz6_owner_locality_index_unregister(allocator, ptr);
 #endif
 #if HZ6_DIAGNOSTIC_PROBES
+  Hz6RouteResult pending_route =
+      hz6_route_backend_lookup_exact(&allocator->route_backend, ptr);
+  if (hz6_allocator_route_descriptor_is_pending(&pending_route)) {
+    ++allocator->stats.route_unregister_while_pending;
+  }
   size_t probes = 0;
   hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, &probes);
   hz6_allocator_route_note_conditional_tombstone_dryrun(allocator);
@@ -451,6 +468,11 @@ int hz6_allocator_route_replace_exact_descriptor(
   int ok = 0;
   hz6_allocator_route_domain_lock(allocator);
 #if HZ6_DIAGNOSTIC_PROBES
+  Hz6RouteResult pending_route =
+      hz6_route_backend_lookup_exact(&allocator->route_backend, base);
+  if (hz6_allocator_route_descriptor_is_pending(&pending_route)) {
+    ++allocator->stats.route_replace_while_pending;
+  }
   size_t probes = 0;
   ok = hz6_route_backend_replace_exact_descriptor(
       &allocator->route_backend, base, bytes, front_id, class_id,

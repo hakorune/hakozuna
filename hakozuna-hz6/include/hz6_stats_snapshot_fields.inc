@@ -778,6 +778,9 @@
   size_t route_unregister_reason_descriptorless_detach;
   size_t route_unregister_reason_source_slot_release;
   size_t route_unregister_reason_rehome;
+  size_t route_unregister_while_pending;
+  size_t route_replace_while_pending;
+  size_t route_rehome_while_pending;
   size_t route_tombstone_current;
   size_t route_tombstone_max;
   size_t route_register_used_tombstone;

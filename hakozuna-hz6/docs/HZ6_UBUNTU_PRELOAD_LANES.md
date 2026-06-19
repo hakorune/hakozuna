@@ -2920,6 +2920,54 @@ too much.  Keep this as a research control only.  The next design should not
 defer all inline work to the source boundary; it needs a narrower inline-cost
 reduction or an inline/external policy with a better demand signal.
 
+## 2026-06-20 RemotePendingRoutePinAudit-L1
+
+`RemotePendingRoutePinAudit-L1` adds diagnostic-only shadow counters around
+route mutation entry points:
+
+```text
+route_unregister_while_pending
+route_replace_while_pending
+route_rehome_while_pending
+```
+
+The goal is to validate the route-pin invariant needed before removing the
+production `hz6_allocator_route_lookup_exact()` from inline pending
+maintenance.  This box does not change behavior; inline and external pending
+maintenance still perform exact route validation.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Observed medians:
+
+```text
+row       unregister_pending  replace_pending  rehome_pending  inline route
+remote50  0                   0                0               3910
+remote90  0                   0                0               1563
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The observed owner-inbox profile
+does not mutate routes while descriptors are `REMOTE_PENDING`, which supports a
+future `RemotePendingRoutePinTrust-L1` behavior box.  That next box should keep
+diagnostic shadow route validation and only skip the production route lookup
+after the route-pin zero counters are clean.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
