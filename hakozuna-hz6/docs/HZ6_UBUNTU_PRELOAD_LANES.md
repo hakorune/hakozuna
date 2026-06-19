@@ -143,6 +143,11 @@ capacity to 256.  RUNS=10 held `remote50` at `14363938.00` ops/s and lifted
 `remote90` to `6610576.93` ops/s.  The smoke still showed
 `transfer_reserve_full=31316`, so capacity is a selected relief box, not the
 final backpressure contract.
+Follow-up capacity ladder reads: 512 and 1024 are no-go for selected despite
+more transfer reserve successes.  512 quick RUNS=3 put `remote90` at
+`382901.85` ops/s; 1024 put it at `1949951.84` ops/s.  Both increased committed
+rehome/tombstone pressure, so the next box should reduce backpressure without
+raising committed rehome debt above the 256-cap lane.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core
