@@ -2120,3 +2120,56 @@ Decision: `GO(profile split)/HOLD(default promotion)`.  Keep owner-inbox
 external as the branch-selected high-remote candidate and explicit profile.
 The next optimization box should attribute or reduce the p1 local0/remote50
 tax before reconsidering release/default promotion.
+
+## 2026-06-20 OwnerInboxTaxAttribution-L1
+
+Added:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh
+```
+
+The runner is diagnostic-first and compares the owner-inbox stack in layers:
+
+```text
+p0_off
+p1_metadata
+p1_inline_no_maintenance
+p1_inline
+p1_external_no_maintenance
+p1_external
+```
+
+Default rows are `local0,remote50`; `remote90` is available explicitly but is
+too heavy for the default diagnostic attribution pass.
+
+Diagnostic RUNS=1:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050300
+```
+
+Production local0 smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050331
+```
+
+Initial read:
+
+```text
+local0:
+  p0_off peak=67.12 MiB
+  p1_metadata peak=71.62 MiB
+  p1_external peak=72.75 MiB
+
+remote50 p1_external:
+  returned_backpressure=0
+  external_ticket_success=2682
+  external_ticket_duplicate_probe_total=2746368
+```
+
+Decision: `GO(tooling)`.  The tax now has two concrete targets: fixed
+owner-inbox metadata/RSS for local0, and external-ticket duplicate scanning for
+remote50.  Next prefer a design box before behavior: either
+`ExternalTicketDuplicateIndex-L1` or `OwnerInboxLazyStorage-L1`.

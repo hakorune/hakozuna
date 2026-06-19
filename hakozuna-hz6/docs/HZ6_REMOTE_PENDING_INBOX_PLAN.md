@@ -1956,3 +1956,91 @@ Decision: `GO(profile split)/HOLD(default promotion)`.  Keep owner-inbox
 external as the branch-selected high-remote candidate and explicit profile.
 The next optimization box should attribute or reduce the p1 local0/remote50
 tax before reconsidering release/default promotion.
+
+## 2026-06-20 OwnerInboxTaxAttribution-L1
+
+Added an attribution runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh
+```
+
+It compares:
+
+```text
+p0_off
+p1_metadata
+p1_inline_no_maintenance
+p1_inline
+p1_external_no_maintenance
+p1_external
+```
+
+Default rows are `local0,remote50`.  The runner defaults to diagnostic builds
+so the owner-inbox counters are present; use `--production` for production
+shape smoke only.
+
+Diagnostic RUNS=1:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050300
+```
+
+Key local0 read:
+
+```text
+p0_off       peak=67.12 MiB
+p1_metadata peak=71.62 MiB
+p1_external peak=72.75 MiB
+```
+
+The fixed owner-inbox storage accounts for most of the local RSS tax in this
+sample.  Production local0 smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050331
+
+p0_off      16.54M ops/s, 67.25 MiB
+p1_external 15.55M ops/s, 72.50 MiB
+```
+
+Key remote50 diagnostic counters:
+
+```text
+p1_inline:
+  remote_free_returned_backpressure=60
+  remote_pending_enqueue_success=32908
+  remote_pending_maintenance_check=4477
+  remote_pending_batch_items=4477
+
+p1_external:
+  remote_free_returned_backpressure=0
+  remote_pending_enqueue_success=33045
+  remote_pending_external_ticket_success=2682
+  remote_pending_maintenance_check=4939
+  remote_pending_external_ticket_duplicate_probe_total=2746368
+```
+
+Read:
+
+```text
+local0 tax:
+  mostly fixed metadata/RSS from compiling in owner-inbox storage
+
+remote50 tax:
+  p1 external closes returned backpressure, but the external-ticket producer
+  does a large duplicate scan.  This is a strong next target.
+```
+
+Decision: `GO(tooling)`.  The next behavior/design box should target one of:
+
+```text
+ExternalTicketDuplicateIndex-L1
+  reduce external-ticket duplicate scan cost
+
+OwnerInboxLazyStorage-L1
+  reduce local0 fixed RSS/touch cost
+```
+
+Do not change owner-inbox consumption policy from this data alone; the runner is
+diagnostic attribution, not promotion evidence.

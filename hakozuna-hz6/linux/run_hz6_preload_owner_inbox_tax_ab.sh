@@ -1,0 +1,279 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+HZ6_DIR="${ROOT_DIR}/hakozuna-hz6"
+BENCH="${HZ6_BENCH_REMOTE_MT:-/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc}"
+RUNS="${RUNS:-3}"
+RUN_TIMEOUT="${HZ6_PRELOAD_REMOTE_TIMEOUT:-90}"
+VARIANTS_CSV="${VARIANTS:-p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external}"
+ROWS_CSV="${ROWS:-local0,remote50}"
+OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_owner_inbox_tax_ab_$(date +%Y%m%d_%H%M%S)}"
+DIAGNOSTIC="${HZ6_OWNER_INBOX_TAX_DIAGNOSTIC:-1}"
+
+source "${HZ6_DIR}/linux/hz6_preload_flags.sh"
+
+usage() {
+  cat <<'EOF'
+Usage:
+  ./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh [options]
+
+Options:
+  --runs N        repeat count per row and variant (default: 3)
+  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external
+  --rows CSV     local0,remote50,remote90 (default: local0,remote50)
+  --outdir DIR    output directory
+  --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
+  --production    build production-shaped DSOs; some counters will be NA
+  --help          show this message
+
+Variants:
+  p0_off                     owner-inbox family forced off
+  p1_metadata                inbox structs compiled in, producer/consumer off
+  p1_inline_no_maintenance   inline owner-inbox producer on, consumer off
+  p1_inline                  inline producer and owner-local maintenance on
+  p1_external_no_maintenance inline+external producer on, consumer off
+  p1_external                branch-selected owner-inbox external candidate
+
+Rows:
+  local0   16 threads, remote_pct=0,  16..32768
+  remote50 16 threads, remote_pct=50, 16..32768
+  remote90 16 threads, remote_pct=90, 16..131072
+
+This is an attribution runner, not a promotion gate.  Some intermediate
+variants intentionally reintroduce returned backpressure so the cost of each
+box can be separated.
+EOF
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --runs) RUNS="$2"; shift 2 ;;
+    --variants) VARIANTS_CSV="$2"; shift 2 ;;
+    --rows) ROWS_CSV="$2"; shift 2 ;;
+    --outdir) OUTDIR="$2"; shift 2 ;;
+    --diagnostic) DIAGNOSTIC=1; shift ;;
+    --production) DIAGNOSTIC=0; shift ;;
+    --help|-h) usage; exit 0 ;;
+    *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
+  esac
+done
+
+if [[ ! -x "$BENCH" ]]; then
+  echo "[hz6][owner-inbox-tax] missing bench: $BENCH" >&2
+  exit 2
+fi
+if [[ ! -x /usr/bin/time ]]; then
+  echo "[hz6][owner-inbox-tax] missing /usr/bin/time" >&2
+  exit 2
+fi
+
+variants=()
+IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
+for variant in "${raw_variants[@]}"; do
+  case "$variant" in
+    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external)
+      variants+=("$variant")
+      ;;
+    "") ;;
+    *) echo "unknown variant: $variant" >&2; exit 2 ;;
+  esac
+done
+
+mkdir -p "$OUTDIR/build"
+
+write_meta() {
+  {
+    echo "runs=${RUNS}"
+    echo "variants=${VARIANTS_CSV}"
+    echo "rows=${ROWS_CSV}"
+    echo "diagnostic=${DIAGNOSTIC}"
+    echo "bench=${BENCH}"
+    echo "git_sha=$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
+    echo "uname=$(uname -a)"
+    echo "note=owner-inbox tax attribution; intermediate variants are not correctness gates"
+  } > "${OUTDIR}/README.log"
+}
+
+build_variant() {
+  local variant="$1"
+  local flags=()
+  hz6_preload_effective_owner_inbox_off_cflags flags 1
+  case "$variant" in
+    p0_off)
+      ;;
+    p1_metadata)
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 0
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
+      ;;
+    p1_inline_no_maintenance)
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
+      ;;
+    p1_inline)
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_INBOX_CORE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1 0
+      ;;
+    p1_external_no_maintenance)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1 0
+      ;;
+    p1_external)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      ;;
+  esac
+  OUT_DIR="${OUTDIR}/build/${variant}" \
+    HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS="$DIAGNOSTIC" \
+    HZ6_EXTRA_CFLAGS="${HZ6_EXTRA_CFLAGS:-}$([[ "$DIAGNOSTIC" -ne 0 ]] && printf ' -DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1')" \
+    HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${flags[@]}")" \
+    "${HZ6_DIR}/linux/build_hz6_preload.sh" \
+    > "${OUTDIR}/${variant}_build.log" 2>&1
+}
+
+rows=()
+IFS=',' read -r -a raw_rows <<< "$ROWS_CSV"
+for row_name in "${raw_rows[@]}"; do
+  case "$row_name" in
+    local0) rows+=("local0 16 10000 100 16 32768 0 65536") ;;
+    remote50) rows+=("remote50 16 10000 100 16 32768 50 65536") ;;
+    remote90) rows+=("remote90 16 120000 100 16 131072 90 65536") ;;
+    "") ;;
+    *) echo "unknown row: $row_name" >&2; exit 2 ;;
+  esac
+done
+
+counter_keys=(
+  remote_free_returned_backpressure
+  remote_free_returned_uncommitted
+  remote_free_origin_pending_commit
+  remote_pending_enqueue_success
+  remote_pending_external_ticket_success
+  remote_pending_maintenance_check
+  remote_pending_batch_items
+  remote_pending_current
+  remote_pending_external_ticket_current
+  remote_pending_external_ticket_duplicate_probe_total
+  transfer_reserve_full
+)
+
+write_meta
+printf 'variant\trow\trun\tstatus\tops_s\tpeak_kb\tlog\n' > "${OUTDIR}/runs.tsv"
+{
+  printf 'variant\trow\trun'
+  for key in "${counter_keys[@]}"; do
+    printf '\t%s' "$key"
+  done
+  printf '\n'
+} > "${OUTDIR}/counters.tsv"
+
+extract_counters() {
+  local variant="$1"
+  local row="$2"
+  local run="$3"
+  local log="$4"
+  python3 - "$variant" "$row" "$run" "$log" "${counter_keys[@]}" <<'PY'
+import re
+import sys
+
+variant, row, run, path, *keys = sys.argv[1:]
+text = open(path, errors="replace").read()
+values = {}
+for key in keys:
+    m = re.search(r"(?<![A-Za-z0-9_])" + re.escape(key) + r"=([0-9]+)", text)
+    values[key] = m.group(1) if m else "NA"
+print("\t".join([variant, row, run] + [values[key] for key in keys]))
+PY
+}
+
+for variant in "${variants[@]}"; do
+  echo "[hz6][owner-inbox-tax] building ${variant}" >&2
+  build_variant "$variant"
+  so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
+  [[ -f "$so" ]] || { echo "missing preload: $so" >&2; exit 3; }
+  for row in "${rows[@]}"; do
+    read -r name threads iters ws min_size max_size remote_pct ring_slots <<<"$row"
+    for run in $(seq 1 "$RUNS"); do
+      log="${OUTDIR}/${variant}_${name}_r${run}.log"
+      time_log="${OUTDIR}/${variant}_${name}_r${run}.time"
+      status=0
+      timeout "$RUN_TIMEOUT" /usr/bin/time -f 'peak_kb=%M' -o "$time_log" \
+        env -i \
+          PATH="${PATH:-/usr/bin:/bin}" \
+          HOME="${HOME:-/tmp}" \
+          HZ6_PRELOAD_STATS=1 \
+          LD_PRELOAD="$so" \
+          "$BENCH" "$threads" "$iters" "$ws" "$min_size" "$max_size" \
+          "$remote_pct" "$ring_slots" \
+          > "$log" 2>&1 || status=$?
+      if [[ "$status" -eq 0 ]] && ! grep -q 'fallback_rate=0.00%' "$log"; then
+        status=30
+      fi
+      if [[ "$status" -eq 0 ]] &&
+         ! grep -q 'overflow_sent=0 overflow_received=0' "$log"; then
+        status=40
+      fi
+      ops="$(awk -F'ops/s=' '/bench_random_mixed_mt_remote/ { print $2; exit }' "$log")"
+      peak="$(awk -F= '/^peak_kb=/ { print $2; exit }' "$time_log")"
+      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+        "$variant" "$name" "$run" "$status" "${ops:-NA}" \
+        "${peak:-NA}" "$log" >> "${OUTDIR}/runs.tsv"
+      extract_counters "$variant" "$name" "$run" "$log" >> "${OUTDIR}/counters.tsv"
+      echo "[hz6][owner-inbox-tax] ${variant} ${name} run=${run} status=${status} ops/s=${ops:-NA} peak_kb=${peak:-NA}" >&2
+      [[ "$status" -eq 0 ]] || exit "$status"
+    done
+  done
+done
+
+python3 - "$OUTDIR/runs.tsv" "$OUTDIR/counters.tsv" <<'PY' | tee "${OUTDIR}/summary.tsv"
+import csv
+import statistics
+import sys
+
+runs_path, counters_path = sys.argv[1:3]
+runs = {}
+with open(runs_path, newline="") as f:
+    reader = csv.DictReader(f, delimiter="\t")
+    for row in reader:
+        if row["status"] != "0" or row["ops_s"] == "NA" or row["peak_kb"] == "NA":
+            continue
+        key = (row["variant"], row["row"])
+        runs.setdefault(key, {"ops": [], "peak": []})
+        runs[key]["ops"].append(float(row["ops_s"]))
+        runs[key]["peak"].append(float(row["peak_kb"]))
+
+counters = {}
+counter_names = []
+with open(counters_path, newline="") as f:
+    reader = csv.DictReader(f, delimiter="\t")
+    counter_names = [name for name in reader.fieldnames or [] if name not in ("variant", "row", "run")]
+    for row in reader:
+        key = (row["variant"], row["row"])
+        bucket = counters.setdefault(key, {name: [] for name in counter_names})
+        for name in counter_names:
+            if row[name] != "NA":
+                bucket[name].append(float(row[name]))
+
+print("variant\trow\tmedian_ops_s\tmedian_peak_mib\truns\t" + "\t".join(f"median_{name}" for name in counter_names))
+for key in sorted(runs):
+    ops = runs[key]["ops"]
+    peak = runs[key]["peak"]
+    row = [
+        key[0],
+        key[1],
+        f"{statistics.median(ops):.2f}",
+        f"{statistics.median(peak) / 1024.0:.2f}",
+        str(len(ops)),
+    ]
+    for name in counter_names:
+        values = counters.get(key, {}).get(name, [])
+        row.append(f"{statistics.median(values):.0f}" if values else "NA")
+    print("\t".join(row))
+PY
+
+echo "[DONE] ${OUTDIR}"
