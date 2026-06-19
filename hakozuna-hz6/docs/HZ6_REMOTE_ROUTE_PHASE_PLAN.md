@@ -110,6 +110,9 @@ build:
   tombstones off the remote path.  Unregister only marks tombstones and updates
   counters; owner-local maintenance later clears tombstone entries back to
   empty once `HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_MIN` is reached.
+- Shared exact lookup returns `VALID`, `MISS`, `RETRY`, or `STALE` to the
+  resolver.  `STALE` is an integrity failure, `RETRY` is bounded retry/fail-fast
+  material, and mandatory shared MISS plus visible hit is directory divergence.
 - `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` exists as a control for
   removing the old shared-directory empty window, but it is not selected.  The
   2026-06-19 smoke completed `remote50` but timed out `remote90` at 60s, so the

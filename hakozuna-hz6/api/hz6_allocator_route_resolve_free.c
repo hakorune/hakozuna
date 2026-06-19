@@ -1,6 +1,7 @@
 #include "hz6_allocator_route_resolve_free.h"
 
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_shared_directory.h"
 
 static Hz6FreeRouteResolveResult hz6_free_route_resolved(
     Hz6FreeRouteResolveKind kind,
@@ -50,13 +51,26 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   int visible_hit = 0;
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+  Hz6SharedRouteLookup shared_lookup;
+  shared_lookup.status = HZ6_SHARED_ROUTE_LOOKUP_MISS;
+  shared_lookup.route = hz6_route_miss();
+  int shared_lookup_done = 0;
+#endif
 
 #if HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1 && HZ6_SHARED_ROUTE_DIRECTORY_L1
   if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
-    route = hz6_allocator_route_shared_directory_lookup_exact(allocator, ptr);
-    if (route.kind != HZ6_ROUTE_MISS) {
+    shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
+    shared_lookup_done = 1;
+    if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
+      route = shared_lookup.route;
       visible_lookup_done = 1;
       visible_hit = (route.route_allocator != allocator);
+    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+      return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
+    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
+      return hz6_free_route_resolved(
+          HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
     }
   }
 #endif
@@ -69,9 +83,14 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
     Hz6OwnerLocalityKind locality =
         hz6_allocator_route_owner_locality_hint(allocator, ptr);
     if (locality == HZ6_OWNER_LOCALITY_DEFINITELY_FOREIGN) {
-      route = hz6_allocator_route_shared_directory_lookup_exact(allocator, ptr);
-      if (route.kind == HZ6_ROUTE_MISS &&
-          HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1) {
+      shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
+      shared_lookup_done = 1;
+      if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
+        route = shared_lookup.route;
+      } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+        return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
+      } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE ||
+                 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1) {
         return hz6_free_route_resolved(
             HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
       }
@@ -109,11 +128,39 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
 
   if (!visible_lookup_done && route.kind == HZ6_ROUTE_MISS &&
       !hz6_allocator_profile_strict_owner_remote(allocator)) {
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+    if (!shared_lookup_done) {
+      shared_lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
+      shared_lookup_done = 1;
+    }
+    if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
+      route = shared_lookup.route;
+      visible_lookup_done = 1;
+      visible_hit = (route.route_allocator != allocator);
+    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+      return hz6_free_route_resolved(HZ6_FREE_ROUTE_RETRY, route, 0);
+    } else if (shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
+      return hz6_free_route_resolved(
+          HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, 0);
+    }
+#endif
+  }
+
+  if (!visible_lookup_done && route.kind == HZ6_ROUTE_MISS &&
+      !hz6_allocator_profile_strict_owner_remote(allocator)) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1 && HZ6_DIAGNOSTIC_PROBES
     hz6_allocator_route_shared_directory_dryrun(allocator, ptr);
 #endif
     route = hz6_allocator_route_lookup_visible_after_local_miss(allocator, ptr);
     visible_hit = (route.kind != HZ6_ROUTE_MISS);
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+    if (visible_hit && HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1 &&
+        shared_lookup_done &&
+        shared_lookup.status == HZ6_SHARED_ROUTE_LOOKUP_MISS) {
+      return hz6_free_route_resolved(
+          HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY, route, visible_hit);
+    }
+#endif
   }
 
   return hz6_free_route_resolved(

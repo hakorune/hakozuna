@@ -203,6 +203,17 @@ smokes completed: `/bin/true` with `LD_PRELOAD` exited 0, `remote50
 16..32768` reached `246441.92 ops/s`, and `remote90 16..131072` reached
 `135253.20 ops/s`.
 
+Phase 2 integrity status, 2026-06-19: shared exact lookup now has a snapshot
+status boundary: `VALID`, `MISS`, `RETRY`, or `STALE`.  The raw route lookup
+wrapper still returns a route or MISS for legacy callers, but
+`RemoteFreeRouteResolve-L1` consumes the richer status.  `STALE` maps to
+`UNRESOLVED_INTEGRITY`, `RETRY` maps to `RETRY`, and a mandatory shared MISS
+followed by an all-visible hit is treated as integrity divergence instead of
+external fallback.  Focused smokes completed: `/bin/true` with `LD_PRELOAD`
+exited 0, `remote50 16..32768` reached `180665.35 ops/s`, and `remote90
+16..131072` reached `130647.25 ops/s`.  The extra shared snapshot on local
+miss is a correctness boundary; performance recovery belongs to Phase 3.
+
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
 the `remote90 16..131072` smoke (`81209.19 ops/s`), so resolver local fallback

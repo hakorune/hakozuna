@@ -22,12 +22,6 @@ static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
     [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
 static atomic_flag g_hz6_shared_route_directory_writer_locks
     [HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS];
-static _Atomic(size_t) g_hz6_shared_route_directory_tombstone_current;
-static _Atomic(size_t) g_hz6_shared_route_directory_tombstone_max;
-static _Atomic(size_t) g_hz6_shared_route_directory_register_used_tombstone;
-static _Atomic(size_t) g_hz6_shared_route_directory_maintenance_attempt;
-static _Atomic(size_t) g_hz6_shared_route_directory_maintenance_success;
-static _Atomic(size_t) g_hz6_shared_route_directory_maintenance_cleared;
 
 #define HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE ((uintptr_t)UINTPTR_MAX)
 
@@ -58,65 +52,6 @@ static void hz6_shared_route_directory_writer_unlock(size_t lock_index) {
 #else
   (void)lock_index;
 #endif
-}
-
-static void hz6_shared_route_directory_note_tombstone_added(void) {
-  size_t current = atomic_fetch_add_explicit(
-                       &g_hz6_shared_route_directory_tombstone_current,
-                       1u,
-                       memory_order_relaxed) +
-                   1u;
-  size_t observed = atomic_load_explicit(
-      &g_hz6_shared_route_directory_tombstone_max, memory_order_relaxed);
-  while (current > observed &&
-         !atomic_compare_exchange_weak_explicit(
-             &g_hz6_shared_route_directory_tombstone_max,
-             &observed,
-             current,
-             memory_order_relaxed,
-             memory_order_relaxed)) {
-  }
-}
-
-static void hz6_shared_route_directory_note_tombstone_reused(void) {
-  atomic_fetch_add_explicit(
-      &g_hz6_shared_route_directory_register_used_tombstone,
-      1u,
-      memory_order_relaxed);
-  size_t current = atomic_load_explicit(
-      &g_hz6_shared_route_directory_tombstone_current, memory_order_relaxed);
-  while (current != 0 &&
-         !atomic_compare_exchange_weak_explicit(
-             &g_hz6_shared_route_directory_tombstone_current,
-             &current,
-             current - 1u,
-             memory_order_relaxed,
-             memory_order_relaxed)) {
-  }
-}
-
-static void hz6_shared_route_directory_note_tombstone_cleared(
-    size_t cleared) {
-  if (cleared == 0) {
-    return;
-  }
-  atomic_fetch_add_explicit(
-      &g_hz6_shared_route_directory_maintenance_cleared,
-      cleared,
-      memory_order_relaxed);
-  size_t current = atomic_load_explicit(
-      &g_hz6_shared_route_directory_tombstone_current, memory_order_relaxed);
-  while (current != 0) {
-    size_t next = current > cleared ? current - cleared : 0;
-    if (atomic_compare_exchange_weak_explicit(
-            &g_hz6_shared_route_directory_tombstone_current,
-            &current,
-            next,
-            memory_order_relaxed,
-            memory_order_relaxed)) {
-      return;
-    }
-  }
 }
 
 static void hz6_shared_route_directory_entry_begin_update(
@@ -190,6 +125,36 @@ static void hz6_shared_route_directory_entry_publish(
   hz6_shared_route_directory_entry_end_update(entry);
 }
 
+static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_result(
+    Hz6SharedRouteLookupStatus status,
+    Hz6RouteResult route) {
+  Hz6SharedRouteLookup result;
+  result.status = status;
+  result.route = route;
+  return result;
+}
+
+static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_miss(void) {
+  return hz6_shared_route_directory_lookup_result(
+      HZ6_SHARED_ROUTE_LOOKUP_MISS, hz6_route_miss());
+}
+
+static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_retry(void) {
+  return hz6_shared_route_directory_lookup_result(
+      HZ6_SHARED_ROUTE_LOOKUP_RETRY, hz6_route_miss());
+}
+
+static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_stale(void) {
+  return hz6_shared_route_directory_lookup_result(
+      HZ6_SHARED_ROUTE_LOOKUP_STALE, hz6_route_miss());
+}
+
+static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_valid(
+    Hz6RouteResult route) {
+  return hz6_shared_route_directory_lookup_result(
+      HZ6_SHARED_ROUTE_LOOKUP_VALID, route);
+}
+
 size_t hz6_allocator_shared_route_directory_bytes(void) {
   size_t bytes = sizeof(g_hz6_shared_route_directory);
 #if HZ6_ELASTIC_ROUTE_OVERFLOW_L1
@@ -233,7 +198,7 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
                                                front_id, class_id, generation,
                                                descriptor);
       if (reused_tombstone) {
-        hz6_shared_route_directory_note_tombstone_reused();
+        hz6_shared_route_directory_diag_tombstone_reused();
       }
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.shared_dir_register;
@@ -248,7 +213,7 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
     hz6_shared_route_directory_entry_publish(entry, allocator, base,
                                              front_id, class_id, generation,
                                              descriptor);
-    hz6_shared_route_directory_note_tombstone_reused();
+    hz6_shared_route_directory_diag_tombstone_reused();
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.shared_dir_register;
 #endif
@@ -288,7 +253,7 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
                 memory_order_acquire)) {
           continue;
         }
-        hz6_shared_route_directory_note_tombstone_reused();
+        hz6_shared_route_directory_diag_tombstone_reused();
       } else if (!atomic_compare_exchange_strong_explicit(
                      &entry->base,
                      &expected,
@@ -326,7 +291,7 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
                                                 (uintptr_t)base,
                                                 memory_order_acq_rel,
                                                 memory_order_acquire)) {
-      hz6_shared_route_directory_note_tombstone_reused();
+      hz6_shared_route_directory_diag_tombstone_reused();
       atomic_store_explicit(&entry->descriptor,
                             (uintptr_t)descriptor,
                             memory_order_release);
@@ -354,12 +319,14 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
 #endif
 }
 
-Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
+Hz6SharedRouteLookup hz6_shared_route_directory_lookup_snapshot(
+    const void* ptr) {
   if (!ptr) {
-    return hz6_route_miss();
+    return hz6_shared_route_directory_lookup_miss();
   }
   uintptr_t key = (uintptr_t)ptr;
   size_t start = hz6_shared_route_directory_index(key);
+  int saw_retry = 0;
   for (size_t probes = 0; probes < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
        ++probes) {
     size_t index = (start + probes) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
@@ -369,6 +336,7 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
     unsigned int sequence_before =
         atomic_load_explicit(&entry->sequence, memory_order_acquire);
     if ((sequence_before & 1u) != 0u) {
+      saw_retry = 1;
       continue;
     }
 #endif
@@ -380,13 +348,14 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
           atomic_load_explicit(&entry->sequence, memory_order_acquire);
       if (sequence_before == sequence_after &&
           (sequence_after & 1u) == 0u) {
-        return hz6_route_miss();
+        return hz6_shared_route_directory_lookup_miss();
       }
+      saw_retry = 1;
       continue;
     }
 #else
     if (current == 0) {
-      return hz6_route_miss();
+      return hz6_shared_route_directory_lookup_miss();
     }
 #endif
     if (current == HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE) {
@@ -400,7 +369,7 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
     uintptr_t descriptor_value =
         atomic_load_explicit(&entry->descriptor, memory_order_acquire);
     if (!route_allocator || descriptor_value == 0) {
-      return hz6_route_miss();
+      return hz6_shared_route_directory_lookup_stale();
     }
     unsigned int front_id =
         atomic_load_explicit(&entry->front_id, memory_order_acquire);
@@ -416,6 +385,7 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
     unsigned int sequence_after =
         atomic_load_explicit(&entry->sequence, memory_order_acquire);
     if (sequence_before != sequence_after || (sequence_after & 1u) != 0u) {
+      saw_retry = 1;
       continue;
     }
 #endif
@@ -424,27 +394,35 @@ Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
     if (route_allocator->owner.token.slot != (uint32_t)owner_slot ||
         route_allocator->owner.token.generation !=
             (uint32_t)owner_generation) {
-      return hz6_route_miss();
+      return hz6_shared_route_directory_lookup_stale();
     }
     if (!descriptor || descriptor->ptr != ptr ||
         descriptor->generation != (uint32_t)generation ||
         descriptor->state == HZ6_STATE_DEAD ||
         descriptor->state == HZ6_STATE_DESCRIPTOR_RESERVED) {
-      return hz6_route_miss();
+      return hz6_shared_route_directory_lookup_stale();
     }
     if (descriptor->source_block &&
         (!hz6_source_block_active(descriptor->source_block) ||
          !descriptor->source_block->ptr)) {
-      return hz6_route_miss();
+      return hz6_shared_route_directory_lookup_stale();
     }
     Hz6RouteResult route = hz6_route_valid((uint16_t)front_id,
                                            (uint16_t)class_id,
                                            (uint32_t)generation,
                                            (void*)descriptor_value);
     route.route_allocator = route_allocator;
-    return route;
+    return hz6_shared_route_directory_lookup_valid(route);
   }
-  return hz6_route_miss();
+  return saw_retry ? hz6_shared_route_directory_lookup_retry()
+                   : hz6_shared_route_directory_lookup_miss();
+}
+
+Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
+  Hz6SharedRouteLookup lookup =
+      hz6_shared_route_directory_lookup_snapshot(ptr);
+  return lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID ? lookup.route
+                                                        : hz6_route_miss();
 }
 
 void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
@@ -506,7 +484,7 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
     atomic_store_explicit(&entry->owner_generation, 0, memory_order_release);
     atomic_store_explicit(&entry->base, HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE,
                           memory_order_release);
-    hz6_shared_route_directory_note_tombstone_added();
+    hz6_shared_route_directory_diag_tombstone_added();
 #if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
     hz6_shared_route_directory_entry_end_update(entry);
 #endif
@@ -589,42 +567,14 @@ int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
   return 0;
 }
 
-void hz6_shared_route_directory_note_stats(Hz6StatsSnapshot* snapshot) {
-  if (!snapshot) {
-    return;
-  }
-  snapshot->shared_dir_tombstone_current =
-      atomic_load_explicit(&g_hz6_shared_route_directory_tombstone_current,
-                           memory_order_relaxed);
-  snapshot->shared_dir_tombstone_max =
-      atomic_load_explicit(&g_hz6_shared_route_directory_tombstone_max,
-                           memory_order_relaxed);
-  snapshot->shared_dir_register_used_tombstone =
-      atomic_load_explicit(&g_hz6_shared_route_directory_register_used_tombstone,
-                           memory_order_relaxed);
-  snapshot->shared_dir_maintenance_attempt =
-      atomic_load_explicit(&g_hz6_shared_route_directory_maintenance_attempt,
-                           memory_order_relaxed);
-  snapshot->shared_dir_maintenance_success =
-      atomic_load_explicit(&g_hz6_shared_route_directory_maintenance_success,
-                           memory_order_relaxed);
-  snapshot->shared_dir_maintenance_cleared =
-      atomic_load_explicit(&g_hz6_shared_route_directory_maintenance_cleared,
-                           memory_order_relaxed);
-}
-
 void hz6_shared_route_directory_maintain_tombstones(void) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1 && \
     HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
-  size_t current = atomic_load_explicit(
-      &g_hz6_shared_route_directory_tombstone_current, memory_order_relaxed);
+  size_t current = hz6_shared_route_directory_diag_tombstone_current();
   if (current < HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_MIN) {
     return;
   }
-  atomic_fetch_add_explicit(
-      &g_hz6_shared_route_directory_maintenance_attempt,
-      1u,
-      memory_order_relaxed);
+  hz6_shared_route_directory_diag_maintenance_attempt();
   size_t cleared = 0;
   for (size_t shard = 0; shard < HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS;
        ++shard) {
@@ -649,11 +599,8 @@ void hz6_shared_route_directory_maintain_tombstones(void) {
     hz6_shared_route_directory_writer_unlock(shard - 1u);
   }
   if (cleared != 0) {
-    atomic_fetch_add_explicit(
-        &g_hz6_shared_route_directory_maintenance_success,
-        1u,
-        memory_order_relaxed);
-    hz6_shared_route_directory_note_tombstone_cleared(cleared);
+    hz6_shared_route_directory_diag_maintenance_success();
+    hz6_shared_route_directory_diag_tombstone_cleared(cleared);
   }
 #endif
 }
@@ -721,13 +668,19 @@ Hz6RouteResult hz6_allocator_route_shared_directory_lookup_exact(
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.shared_dir_first_attempt;
 #endif
-  Hz6RouteResult route = hz6_shared_route_directory_lookup_raw(ptr);
-  if (route.kind == HZ6_ROUTE_VALID) {
+  Hz6SharedRouteLookup lookup =
+      hz6_shared_route_directory_lookup_snapshot(ptr);
+  if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.shared_dir_first_hit;
 #endif
-    return route;
+    return lookup.route;
   }
+#if HZ6_DIAGNOSTIC_PROBES
+  if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
+    ++allocator->stats.shared_dir_stale;
+  }
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.shared_dir_first_fallback;
 #endif
@@ -772,13 +725,18 @@ int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
   return 0;
 }
 
+Hz6SharedRouteLookup hz6_shared_route_directory_lookup_snapshot(
+    const void* ptr) {
+  (void)ptr;
+  Hz6SharedRouteLookup lookup;
+  lookup.status = HZ6_SHARED_ROUTE_LOOKUP_MISS;
+  lookup.route = hz6_route_miss();
+  return lookup;
+}
+
 Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
   (void)ptr;
   return hz6_route_miss();
-}
-
-void hz6_shared_route_directory_note_stats(Hz6StatsSnapshot* snapshot) {
-  (void)snapshot;
 }
 
 void hz6_shared_route_directory_maintain_tombstones(void) {

@@ -63,6 +63,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_route_last_hit.c"
   "${HZ6_DIR}/api/hz6_allocator_route_owner_locality.c"
   "${HZ6_DIR}/api/hz6_allocator_route_shared_directory.c"
+  "${HZ6_DIR}/api/hz6_allocator_route_shared_directory_diag.c"
   "${HZ6_DIR}/api/hz6_allocator_route_shared_range_directory.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_orphans.c"
   "${HZ6_DIR}/api/hz6_allocator_scavenge_local_free.c"
