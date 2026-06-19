@@ -1658,3 +1658,21 @@ same-key pending often remains after that one-item drain.  A quick budget2
 R3 was not decisive (`remote50=13.76M`, `remote90=9.88M`), so the policy stays
 unchanged.  Next work should be demand-shaped consumption rather than no-op
 avoidance.
+
+## 2026-06-20 Source Overlap Split Observe
+
+`SourceOverlapSplitObserve-L1` splits source-boundary matching pending by
+storage:
+
+```text
+prefill_commit_with_matching_pending=139
+prefill_commit_with_inline_pending=137
+prefill_commit_with_external_pending=14
+source_block_commit_with_matching_pending=139
+source_block_commit_with_inline_pending=137
+source_block_commit_with_external_pending=14
+```
+
+Smoke gates stayed clean.  The overlap is primarily inline owner-inbox pending,
+not external tickets.  The next optimization line should focus on inline
+exact-key pending left after budget1 maintenance.

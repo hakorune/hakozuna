@@ -421,7 +421,8 @@ static void print_stats(const Hz6Allocator* allocator) {
          "claim_while_frontcache_nonempty=%zu "
          "claim_while_transfer_nonempty=%zu same_key_before=%zu "
          "same_key_after=%zu maintenance_immediate_reuse=%zu "
-         "maintenance_batch_surplus=%zu source_block_commit_match=%zu\n",
+         "maintenance_batch_surplus=%zu source_block_commit_match=%zu "
+         "source_block_inline_match=%zu source_block_external_match=%zu\n",
          stats.remote_free_returned_backpressure,
          stats.remote_free_returned_uncommitted,
          stats.remote_free_foreign_candidate,
@@ -471,7 +472,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.pending_same_key_after_maintenance,
          stats.pending_maintenance_immediate_reuse_success,
          stats.pending_maintenance_batch_surplus,
-         stats.source_block_commit_with_matching_pending);
+         stats.source_block_commit_with_matching_pending,
+         stats.source_block_commit_with_inline_pending,
+         stats.source_block_commit_with_external_pending);
   printf("[HZ6_REMOTE_INBOX_REJECT] "
          "storage_ineligible=%zu descriptor_mismatch=%zu owner_dead=%zu "
          "owner_mismatch=%zu enqueue_fail=%zu\n",

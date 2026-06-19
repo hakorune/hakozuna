@@ -98,7 +98,11 @@
   size_t pending_maintenance_batch_surplus = 0;
   size_t pending_same_key_on_prefill_attempt = 0;
   size_t prefill_commit_with_matching_pending = 0;
+  size_t prefill_commit_with_inline_pending = 0;
+  size_t prefill_commit_with_external_pending = 0;
   size_t source_block_commit_with_matching_pending = 0;
+  size_t source_block_commit_with_inline_pending = 0;
+  size_t source_block_commit_with_external_pending = 0;
   size_t direct_source_attempt_with_matching_pending = 0;
   size_t direct_source_commit_with_matching_pending = 0;
   size_t remote_pending_direct_gate_load = 0;

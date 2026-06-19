@@ -1326,9 +1326,20 @@ void hz6_allocator_remote_pending_note_prefill_commit(
     uint16_t class_id) {
 #if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
-                                                class_id)) {
+  int inline_hit = hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+      allocator, front_id, class_id);
+  int external_hit =
+      hz6_remote_pending_external_key_nonempty(allocator, front_id, class_id);
+  ++allocator->stats.remote_pending_key_nonempty_load;
+  if (inline_hit || external_hit) {
+    ++allocator->stats.remote_pending_key_nonempty_hit;
     ++allocator->stats.prefill_commit_with_matching_pending;
+    if (inline_hit) {
+      ++allocator->stats.prefill_commit_with_inline_pending;
+    }
+    if (external_hit) {
+      ++allocator->stats.prefill_commit_with_external_pending;
+    }
   }
 #else
   (void)allocator;
@@ -1343,9 +1354,20 @@ void hz6_allocator_remote_pending_note_source_block_commit(
     uint16_t class_id) {
 #if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_V2_L1 && \
     HZ6_REMOTE_PENDING_INBOX_CORE_L1
-  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
-                                                class_id)) {
+  int inline_hit = hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+      allocator, front_id, class_id);
+  int external_hit =
+      hz6_remote_pending_external_key_nonempty(allocator, front_id, class_id);
+  ++allocator->stats.remote_pending_key_nonempty_load;
+  if (inline_hit || external_hit) {
+    ++allocator->stats.remote_pending_key_nonempty_hit;
     ++allocator->stats.source_block_commit_with_matching_pending;
+    if (inline_hit) {
+      ++allocator->stats.source_block_commit_with_inline_pending;
+    }
+    if (external_hit) {
+      ++allocator->stats.source_block_commit_with_external_pending;
+    }
   }
 #else
   (void)allocator;

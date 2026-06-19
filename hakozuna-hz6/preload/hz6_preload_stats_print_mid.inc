@@ -162,7 +162,11 @@
           "pending_maintenance_batch_surplus=%zu "
           "pending_same_key_on_prefill_attempt=%zu "
           "prefill_commit_with_matching_pending=%zu "
+          "prefill_commit_with_inline_pending=%zu "
+          "prefill_commit_with_external_pending=%zu "
           "source_block_commit_with_matching_pending=%zu "
+          "source_block_commit_with_inline_pending=%zu "
+          "source_block_commit_with_external_pending=%zu "
           "direct_source_attempt_with_matching_pending=%zu "
           "direct_source_commit_with_matching_pending=%zu "
           "remote_pending_direct_gate_load=%zu "
@@ -331,7 +335,11 @@
           pending_maintenance_batch_surplus,
           pending_same_key_on_prefill_attempt,
           prefill_commit_with_matching_pending,
+          prefill_commit_with_inline_pending,
+          prefill_commit_with_external_pending,
           source_block_commit_with_matching_pending,
+          source_block_commit_with_inline_pending,
+          source_block_commit_with_external_pending,
           direct_source_attempt_with_matching_pending,
           direct_source_commit_with_matching_pending,
           remote_pending_direct_gate_load,

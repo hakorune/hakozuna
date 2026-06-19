@@ -198,8 +198,16 @@
         stats.pending_same_key_on_prefill_attempt;
     prefill_commit_with_matching_pending +=
         stats.prefill_commit_with_matching_pending;
+    prefill_commit_with_inline_pending +=
+        stats.prefill_commit_with_inline_pending;
+    prefill_commit_with_external_pending +=
+        stats.prefill_commit_with_external_pending;
     source_block_commit_with_matching_pending +=
         stats.source_block_commit_with_matching_pending;
+    source_block_commit_with_inline_pending +=
+        stats.source_block_commit_with_inline_pending;
+    source_block_commit_with_external_pending +=
+        stats.source_block_commit_with_external_pending;
     direct_source_attempt_with_matching_pending +=
         stats.direct_source_attempt_with_matching_pending;
     direct_source_commit_with_matching_pending +=

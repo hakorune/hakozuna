@@ -1248,3 +1248,38 @@ budget2:
 Decision: `GO(tooling)/HOLD(policy)`.  Do not change the budget from this noisy
 R3 sample.  The next design should target demand-shaped consumption, not no-op
 avoidance.
+
+## 2026-06-20 Source Overlap Split Observe
+
+`SourceOverlapSplitObserve-L1` adds no behavior.  It splits source-boundary
+same-key pending overlap into inline inbox and external ticket contributors:
+
+```text
+prefill_commit_with_inline_pending
+prefill_commit_with_external_pending
+source_block_commit_with_inline_pending
+source_block_commit_with_external_pending
+```
+
+Owner-inbox + external-ticket + demand-audit smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_maintenance_noop=0
+remote_pending_batch_items=3739
+pending_same_key_after_maintenance=3546
+prefill_commit_with_matching_pending=139
+prefill_commit_with_inline_pending=137
+prefill_commit_with_external_pending=14
+source_block_commit_with_matching_pending=139
+source_block_commit_with_inline_pending=137
+source_block_commit_with_external_pending=14
+remote_pending_external_ticket_current=1983
+remote_pending_external_ticket_consume=144
+```
+
+Decision: `GO(tooling)`.  The source-boundary overlap is dominated by inline
+owner-inbox pending, not external tickets.  The next consumer design should
+target inline exact-key pending left after budget1 maintenance; external ticket
+policy is not the primary source-block overlap problem.
