@@ -150,6 +150,7 @@
           "remote_pending_external_ticket_owner_mismatch=%zu "
           "remote_pending_external_ticket_state_mismatch=%zu "
           "remote_pending_external_ticket_storage_mismatch=%zu "
+          "remote_pending_external_ticket_integrity_abort=%zu "
           "remote_pending_key_nonempty_load=%zu "
           "remote_pending_key_nonempty_hit=%zu "
           "pending_same_key_on_frontcache_miss=%zu "
@@ -328,6 +329,7 @@
           remote_pending_external_ticket_owner_mismatch,
           remote_pending_external_ticket_state_mismatch,
           remote_pending_external_ticket_storage_mismatch,
+          remote_pending_external_ticket_integrity_abort,
           remote_pending_key_nonempty_load,
           remote_pending_key_nonempty_hit,
           pending_same_key_on_frontcache_miss,

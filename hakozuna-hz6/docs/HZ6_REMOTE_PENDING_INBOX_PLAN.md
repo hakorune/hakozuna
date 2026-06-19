@@ -1517,3 +1517,53 @@ useful as a phase-specialist, but adding it to the external-ticket candidate
 regressed both random remote rows in this R10.  The next behavior box should be
 an explicit selected-flag candidate for `p1_inbox_external`, followed by a final
 selected-vs-candidate run.
+
+## 2026-06-20 Owner-Inbox Production Stats Shape
+
+`OwnerInboxProductionStatsShape-L1` closes two prerequisites before changing
+the selected flags:
+
+```text
+1. Producer-side owner-inbox and external-ticket stats writes now compile out
+   unless HZ6_DIAGNOSTIC_PROBES is enabled.
+
+2. External-ticket consume validation mismatch now fail-fasts through
+   remote_pending_external_ticket_integrity_abort instead of returning the
+   ticket to the free-list and continuing.
+```
+
+The integrity smoke now zero-gates external-ticket failure counters:
+
+```text
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_locked_revalidate_fail=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Candidate smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_free_returned_stale=0
+remote_free_returned_integrity_failure=0
+remote_pending_external_ticket_success=2791
+remote_pending_external_ticket_current=2536
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Quick p1 external RUNS=3 after the shape change:
+
+```text
+remote50=14724219.57
+remote90=10863892.07
+```
+
+Decision: `GO(candidate prerequisite)`.  This is not the selected-flag flip
+yet.  It makes the candidate safer and cheaper to promote.  The next box is
+`OwnerInboxExternalSelected-L1`.

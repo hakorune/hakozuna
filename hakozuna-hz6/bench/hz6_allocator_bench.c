@@ -498,7 +498,7 @@ static void print_stats(const Hz6Allocator* allocator) {
          "current=%zu high_water=%zu consume_empty=%zu "
          "frontcache_full=%zu "
          "route_mismatch=%zu owner_mismatch=%zu state_mismatch=%zu "
-         "storage_mismatch=%zu\n",
+         "storage_mismatch=%zu integrity_abort=%zu\n",
          stats.remote_pending_external_ticket_attempt,
          stats.remote_pending_external_ticket_success,
          stats.remote_pending_external_ticket_full,
@@ -515,7 +515,8 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_external_ticket_route_mismatch,
          stats.remote_pending_external_ticket_owner_mismatch,
          stats.remote_pending_external_ticket_state_mismatch,
-         stats.remote_pending_external_ticket_storage_mismatch);
+         stats.remote_pending_external_ticket_storage_mismatch,
+         stats.remote_pending_external_ticket_integrity_abort);
   printf("[HZ6_REMOTE_BACKPRESSURE] "
          "origin_transfer_full=%zu origin_full_transfer_total=%zu "
          "origin_full_class_total=%zu origin_full_class_max=%zu "

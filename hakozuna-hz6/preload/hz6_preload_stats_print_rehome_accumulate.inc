@@ -174,6 +174,8 @@
         stats.remote_pending_external_ticket_state_mismatch;
     remote_pending_external_ticket_storage_mismatch +=
         stats.remote_pending_external_ticket_storage_mismatch;
+    remote_pending_external_ticket_integrity_abort +=
+        stats.remote_pending_external_ticket_integrity_abort;
     remote_pending_key_nonempty_load +=
         stats.remote_pending_key_nonempty_load;
     remote_pending_key_nonempty_hit +=

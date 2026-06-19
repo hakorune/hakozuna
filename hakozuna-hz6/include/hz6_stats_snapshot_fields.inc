@@ -87,6 +87,7 @@
   size_t remote_pending_external_ticket_owner_mismatch;
   size_t remote_pending_external_ticket_state_mismatch;
   size_t remote_pending_external_ticket_storage_mismatch;
+  size_t remote_pending_external_ticket_integrity_abort;
   size_t remote_pending_key_nonempty_load;
   size_t remote_pending_key_nonempty_hit;
   size_t pending_same_key_on_frontcache_miss;

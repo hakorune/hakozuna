@@ -1840,3 +1840,37 @@ remote_pending_external_ticket_route_mismatch=0
 Decision: `GO(candidate)/HOLD(default)`.  The next selected-candidate box should
 enable owner inbox, owner-local maintenance, and external tickets while keeping
 DirectReuse off.  Do not promote `p3_claim_external` from this evidence.
+
+## 2026-06-20 Owner-Inbox Production Stats Shape
+
+Before changing selected flags, `OwnerInboxProductionStatsShape-L1` removed
+production cross-thread stats writes from owner-inbox/external-ticket producer
+paths by compiling them only under `HZ6_DIAGNOSTIC_PROBES`.  It also changed
+external-ticket consume validation mismatch from silent ticket discard to
+fail-fast through `remote_pending_external_ticket_integrity_abort`.
+
+Candidate smoke with owner inbox + external tickets and DirectReuse off:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=2791
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Quick p1 external RUNS=3:
+
+```text
+remote50=14724219.57
+remote90=10863892.07
+```
+
+Decision: `GO(candidate prerequisite)`.  The next box may flip the selected
+candidate flags.  RSS/lifetime/accounting guards remain separate promotion
+gates.
