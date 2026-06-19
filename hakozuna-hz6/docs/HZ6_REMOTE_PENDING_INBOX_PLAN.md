@@ -1820,3 +1820,73 @@ Default R1 smokes also passed:
 Decision: `GO(correctness)`.  This closes the allocator lifetime prerequisite
 for the branch-selected owner-inbox candidate.  Default release remains `HOLD`
 on paired selected-vs-baseline RSS/local/perf evidence.
+
+## 2026-06-20 PairedRSSDefaultGate-L1
+
+Added a paired preload gate runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+```
+
+Variants:
+
+```text
+p0_selected_off:
+  selected flags with owner-inbox / external ticket / pending maintenance off
+
+p1_owner_inbox:
+  selected owner-inbox external candidate, DirectReuse off
+```
+
+Rows:
+
+```text
+local0
+remote50
+remote90
+cross128_r90
+```
+
+Each row records median ops/s and `/usr/bin/time` peak RSS.
+
+RUNS=3 raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_044750
+```
+
+RUNS=3 median:
+
+```text
+variant          row           median_ops_s  median_peak_mib
+p0_selected_off  local0        16069344.04   67.12
+p1_owner_inbox   local0        14684557.35   72.62
+
+p0_selected_off  remote50      14009374.49   69.38
+p1_owner_inbox   remote50      12926507.20   74.88
+
+p0_selected_off  remote90       3019174.12   99.01
+p1_owner_inbox   remote90      10385562.54   77.50
+
+p0_selected_off  cross128_r90   1624846.21   78.70
+p1_owner_inbox   cross128_r90  12193149.80   72.50
+```
+
+Read:
+
+```text
+remote90:
+  p1 wins throughput by about 3.4x and lowers peak RSS in this RUNS=3 sample
+
+cross128_r90:
+  p1 wins the median, but individual runs are noisy; keep RUNS=10 for promotion
+
+local0 / remote50:
+  p1 regresses throughput and raises RSS
+```
+
+Decision: `GO(tooling)/HOLD(default)`.  Correctness, accounting, and lifetime
+are now closed enough for a branch-selected candidate, but this is not a final
+default-release shape.  The next optimization should target the p1 local0 and
+remote50 tax, or keep owner-inbox as an explicit high-remote profile.

@@ -2025,3 +2025,40 @@ passed.
 Decision: `GO(correctness)`.  This removes the lifetime blocker for the
 owner-inbox selected candidate.  The remaining default-release gate is paired
 selected-vs-baseline RSS/local/perf evidence.
+
+## 2026-06-20 PairedRSSDefaultGate-L1
+
+Added:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+```
+
+The runner compares:
+
+```text
+p0_selected_off
+p1_owner_inbox
+```
+
+across local0, remote50, remote90, and cross128_r90, recording median ops/s and
+peak RSS.
+
+RUNS=3:
+
+```text
+variant          row           median_ops_s  median_peak_mib
+p0_selected_off  local0        16069344.04   67.12
+p1_owner_inbox   local0        14684557.35   72.62
+p0_selected_off  remote50      14009374.49   69.38
+p1_owner_inbox   remote50      12926507.20   74.88
+p0_selected_off  remote90       3019174.12   99.01
+p1_owner_inbox   remote90      10385562.54   77.50
+p0_selected_off  cross128_r90   1624846.21   78.70
+p1_owner_inbox   cross128_r90  12193149.80   72.50
+```
+
+Decision: `GO(tooling)/HOLD(default)`.  The owner-inbox selected candidate is
+strong for high-remote rows, but default release stays on hold because local0
+and remote50 regress.  The next box should reduce the owner-inbox tax or split
+it into an explicit high-remote profile.
