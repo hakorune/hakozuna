@@ -1620,6 +1620,14 @@ baseline external ticket: remote50=13397113.55 remote90=10121661.63
 locked revalidate:        remote50=13167908.91 remote90=10147241.78
 ```
 
-Decision: `GO(opt-in)/HOLD(default)`.  The correctness shape is clean, but
-performance is neutral, so default promotion waits for longer median and
-cross-platform evidence.
+RUNS=10:
+
+```text
+baseline external ticket: remote50=14169060.73 remote90=10495572.22
+locked revalidate:        remote50=13796783.70 remote90=9885400.51
+```
+
+Decision: `GO(observation)/NO-GO(default)`.  The correctness shape is clean,
+but the longer median is weaker.  Keep the counters and default-off switch for
+diagnostics; do not use locked revalidation as the next default optimization
+line.

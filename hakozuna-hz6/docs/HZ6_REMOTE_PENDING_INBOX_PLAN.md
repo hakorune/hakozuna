@@ -1181,6 +1181,19 @@ locked revalidate:
   remote90=10147241.78
 ```
 
-Decision: `GO(opt-in correctness shape)/HOLD(default)`.  The scan is proven
-real cost, and locked revalidation keeps correctness gates clean, but quick
-performance is neutral rather than clearly better.
+RUNS=10 recheck:
+
+```text
+external-ticket baseline:
+  remote50=14169060.73
+  remote90=10495572.22
+
+locked revalidate:
+  remote50=13796783.70
+  remote90=9885400.51
+```
+
+Decision: `GO(observation)/NO-GO(default)`.  The scan is proven real cost, and
+locked revalidation keeps correctness gates clean, but removing this scan alone
+does not improve the lane.  Keep the counters and default-off switch for future
+diagnostics; do not pursue locked revalidation as the next optimization line.
