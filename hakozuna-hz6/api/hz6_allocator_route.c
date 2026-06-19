@@ -16,12 +16,12 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
-  hz6_allocator_route_domain_lock(allocator);
+  hz6_allocator_route_domain_read_lock(allocator);
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1
   Hz6RouteResult cached_route =
       hz6_allocator_route_last_hit_lookup(allocator, ptr);
   if (cached_route.kind == HZ6_ROUTE_VALID) {
-    hz6_allocator_route_domain_unlock(allocator);
+    hz6_allocator_route_domain_read_unlock(allocator);
     return cached_route;
   }
 #endif
@@ -123,7 +123,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
       ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_hit;
       ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_hit;
 #endif
-      hz6_allocator_route_domain_unlock(allocator);
+      hz6_allocator_route_domain_read_unlock(allocator);
       return overflow_route;
     }
     if (route.kind == HZ6_ROUTE_MISS) {
@@ -136,7 +136,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
         ++((Hz6Allocator*)allocator)->stats.route_lookup_overflow_range_hit;
 #endif
-        hz6_allocator_route_domain_unlock(allocator);
+        hz6_allocator_route_domain_read_unlock(allocator);
         return overflow_range;
       }
     }
@@ -144,7 +144,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
 #endif
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
-#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1 && !HZ6_ROUTE_DOMAIN_RWLOCK_L1
     hz6_allocator_route_last_hit_fill_route((Hz6Allocator*)allocator, ptr,
                                             route);
 #endif
@@ -171,7 +171,7 @@ Hz6RouteResult hz6_allocator_route_lookup(const Hz6Allocator* allocator,
     }
 #endif
   }
-  hz6_allocator_route_domain_unlock(allocator);
+  hz6_allocator_route_domain_read_unlock(allocator);
   return route;
 }
 
@@ -180,12 +180,12 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
   if (!allocator || !ptr) {
     return hz6_route_miss();
   }
-  hz6_allocator_route_domain_lock(allocator);
+  hz6_allocator_route_domain_read_lock(allocator);
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1
   Hz6RouteResult cached_route =
       hz6_allocator_route_last_hit_lookup(allocator, ptr);
   if (cached_route.kind == HZ6_ROUTE_VALID) {
-    hz6_allocator_route_domain_unlock(allocator);
+    hz6_allocator_route_domain_read_unlock(allocator);
     return cached_route;
   }
 #endif
@@ -215,14 +215,14 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
       ++((Hz6Allocator*)allocator)->stats.elastic_route_overflow_hit;
 #endif
-      hz6_allocator_route_domain_unlock(allocator);
+      hz6_allocator_route_domain_read_unlock(allocator);
       return overflow_route;
     }
   }
 #endif
   if (route.kind != HZ6_ROUTE_MISS) {
     route.route_allocator = (Hz6Allocator*)allocator;
-#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1 && !HZ6_ROUTE_DOMAIN_RWLOCK_L1
     hz6_allocator_route_last_hit_fill_route((Hz6Allocator*)allocator, ptr,
                                             route);
 #endif
@@ -240,7 +240,7 @@ Hz6RouteResult hz6_allocator_route_lookup_exact(const Hz6Allocator* allocator,
     }
 #endif
   }
-  hz6_allocator_route_domain_unlock(allocator);
+  hz6_allocator_route_domain_read_unlock(allocator);
   return route;
 }
 

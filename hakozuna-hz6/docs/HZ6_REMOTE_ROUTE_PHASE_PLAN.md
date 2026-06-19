@@ -213,6 +213,29 @@ Keep the selected Phase 3 shape at shared directory enabled, 256 writer-lock
 shards, resolver local-first order, full local route fallback, and tight
 route-domain spin.
 
+2026-06-19 Phase 3 route-domain read-side split is implemented and selected:
+
+- `HZ6_ROUTE_DOMAIN_RWLOCK_L1=1` changes the route-domain box from a single
+  mutex-like spin gate to writer admission plus a reader count.
+- Route lookup, exact lookup, and visible foreign exact lookup use the read
+  side.  Route register, unregister, replace, invalid-range mutation, and
+  compaction remain write-side operations.
+- Route last-hit fill is disabled in RW mode because it mutates non-atomic
+  cached fields from lookup.  Last-hit clear remains protected by writer-side
+  route mutation.
+
+Smoke evidence after route-domain RW selected:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=173590.19 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=119345.12 fail=0 timeout=no
+```
+
+This is still smoke evidence, not RUNS=10 paper evidence.
+
 ## Ownership Model
 
 Keep these roles explicit:

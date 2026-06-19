@@ -16,6 +16,13 @@ void hz6_allocator_route_domain_init(Hz6Allocator* allocator) {
   }
   atomic_flag_clear_explicit(&allocator->route_domain_lock,
                              memory_order_release);
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  atomic_flag_clear_explicit(&allocator->route_domain_writer,
+                             memory_order_release);
+  atomic_store_explicit(&allocator->route_domain_readers,
+                        0u,
+                        memory_order_release);
+#endif
   atomic_store_explicit(&allocator->route_compact_requested,
                         0u,
                         memory_order_release);
@@ -29,10 +36,22 @@ void hz6_allocator_route_domain_lock(const Hz6Allocator* allocator) {
   if (!allocator) {
     return;
   }
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  atomic_flag* writer = &((Hz6Allocator*)allocator)->route_domain_writer;
+  while (atomic_flag_test_and_set_explicit(writer, memory_order_acquire)) {
+    hz6_allocator_route_domain_spin_pause();
+  }
+  while (atomic_load_explicit(
+             &((Hz6Allocator*)allocator)->route_domain_readers,
+             memory_order_acquire) != 0u) {
+    hz6_allocator_route_domain_spin_pause();
+  }
+#else
   atomic_flag* lock = &((Hz6Allocator*)allocator)->route_domain_lock;
   while (atomic_flag_test_and_set_explicit(lock, memory_order_acquire)) {
     hz6_allocator_route_domain_spin_pause();
   }
+#endif
 #else
   (void)allocator;
 #endif
@@ -43,8 +62,58 @@ void hz6_allocator_route_domain_unlock(const Hz6Allocator* allocator) {
   if (!allocator) {
     return;
   }
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  atomic_flag_clear_explicit(&((Hz6Allocator*)allocator)->route_domain_writer,
+                             memory_order_release);
+#else
   atomic_flag_clear_explicit(&((Hz6Allocator*)allocator)->route_domain_lock,
                              memory_order_release);
+#endif
+#else
+  (void)allocator;
+#endif
+}
+
+void hz6_allocator_route_domain_read_lock(const Hz6Allocator* allocator) {
+#if HZ6_ROUTE_DOMAIN_SYNC_L1
+  if (!allocator) {
+    return;
+  }
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  for (;;) {
+    while (atomic_flag_test_and_set_explicit(
+        &((Hz6Allocator*)allocator)->route_domain_writer,
+        memory_order_acquire)) {
+      hz6_allocator_route_domain_spin_pause();
+    }
+    atomic_fetch_add_explicit(
+        &((Hz6Allocator*)allocator)->route_domain_readers, 1u,
+        memory_order_acquire);
+    atomic_flag_clear_explicit(
+        &((Hz6Allocator*)allocator)->route_domain_writer,
+        memory_order_release);
+    return;
+  }
+#else
+  hz6_allocator_route_domain_lock(allocator);
+#endif
+#else
+  (void)allocator;
+#endif
+}
+
+void hz6_allocator_route_domain_read_unlock(const Hz6Allocator* allocator) {
+#if HZ6_ROUTE_DOMAIN_SYNC_L1
+  if (!allocator) {
+    return;
+  }
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  atomic_fetch_sub_explicit(
+      &((Hz6Allocator*)allocator)->route_domain_readers, 1u,
+      memory_order_release);
+#else
+  hz6_allocator_route_domain_unlock(allocator);
+#endif
 #else
   (void)allocator;
 #endif

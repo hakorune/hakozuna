@@ -61,6 +61,7 @@ HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
 HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
 HZ6_ROUTE_DOMAIN_SYNC_L1=1
+HZ6_ROUTE_DOMAIN_RWLOCK_L1=1
 HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=0
 HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
 HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
@@ -172,6 +173,21 @@ completed but regressed the same smoke (`67217.46 ops/s`), so the selected
 route-domain spin stays the previous tight spin.  Raising
 `HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS` from 256 to 1024 completed but
 regressed r90 (`63935.77 ops/s`), so selected keeps 256 shards.
+
+Phase 3 route-domain read-side split, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_DOMAIN_RWLOCK_L1=1`.  Route lookup and visible exact lookup take the
+route-domain read side; register, unregister, replace, invalid-range mutation,
+and compaction stay on the write side.  In RW mode the non-atomic last-hit fill
+is suppressed from route lookup, while last-hit clear remains under the writer.
+Focused smokes completed:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=173590.19 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=119345.12 fail=0 timeout=no
+```
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

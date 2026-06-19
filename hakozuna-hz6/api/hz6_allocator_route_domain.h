@@ -9,6 +9,10 @@ void hz6_allocator_route_domain_lock(const Hz6Allocator* allocator);
 
 void hz6_allocator_route_domain_unlock(const Hz6Allocator* allocator);
 
+void hz6_allocator_route_domain_read_lock(const Hz6Allocator* allocator);
+
+void hz6_allocator_route_domain_read_unlock(const Hz6Allocator* allocator);
+
 void hz6_allocator_route_domain_note_compact_debt(Hz6Allocator* allocator);
 
 int hz6_allocator_route_domain_consume_compact_debt(

@@ -374,6 +374,10 @@ struct Hz6Allocator {
   Hz6RouteBackend route_backend;
 #if HZ6_ROUTE_DOMAIN_SYNC_L1
   atomic_flag route_domain_lock;
+#if HZ6_ROUTE_DOMAIN_RWLOCK_L1
+  atomic_flag route_domain_writer;
+  _Atomic unsigned int route_domain_readers;
+#endif
   _Atomic unsigned int route_compact_requested;
 #endif
 #if HZ6_ROUTE_LAST_HIT_CACHE_L1

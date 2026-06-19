@@ -109,13 +109,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
-    hz6_allocator_route_domain_lock(visible);
+    hz6_allocator_route_domain_read_lock(visible);
 #if HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1
     route = hz6_route_backend_lookup_exact(&visible->route_backend, ptr);
 #else
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
 #endif
-    hz6_allocator_route_domain_unlock(visible);
+    hz6_allocator_route_domain_read_unlock(visible);
     if (route.kind != HZ6_ROUTE_MISS) {
       route.route_allocator = visible;
 #if HZ6_DIAGNOSTIC_PROBES
