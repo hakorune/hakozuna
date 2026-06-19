@@ -307,6 +307,17 @@ origin-transfer misses without changing behavior.  The selected smoke showed
 `remote50=14823669.53` but dropped `remote90=1689959.38`.  The next high-remote
 box should therefore target transfer-cache saturation or stride/capacity policy,
 not ownership validation.
+`OriginTransferFullOccupancyObserve-L1` then sampled occupancy when
+origin-transfer returned full.  Selected smoke showed
+`remote_free_backpressure_origin_transfer_full=31298`,
+`remote_free_backpressure_origin_full_transfer_count_total=8012288`
+(average 256), and
+`remote_free_backpressure_origin_full_class_count_total=4785345`
+(average 153, max 200).  Destination reserve full had the same average-256
+shape.  This confirms true global transfer-cache saturation on both sides, not
+a narrow class-only imbalance; further default work should avoid adding remote
+thread transfer-cache/frontcache mutation and should instead revisit the
+owner-local consumer or guaranteed owner-owned sink boundary.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

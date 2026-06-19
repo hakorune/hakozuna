@@ -183,6 +183,17 @@
         stats.remote_free_backpressure_origin_transfer_validation_fail;
     remote_free_backpressure_origin_transfer_full +=
         stats.remote_free_backpressure_origin_transfer_full;
+    remote_free_backpressure_origin_full_transfer_count_total +=
+        stats.remote_free_backpressure_origin_full_transfer_count_total;
+    remote_free_backpressure_origin_full_class_count_total +=
+        stats.remote_free_backpressure_origin_full_class_count_total;
+    size_t origin_full_class_max =
+        stats.remote_free_backpressure_origin_full_class_count_max;
+    if (origin_full_class_max >
+        remote_free_backpressure_origin_full_class_count_max) {
+      remote_free_backpressure_origin_full_class_count_max =
+          origin_full_class_max;
+    }
     remote_free_backpressure_origin_drain_attempt +=
         stats.remote_free_backpressure_origin_drain_attempt;
     remote_free_backpressure_origin_drain_success +=

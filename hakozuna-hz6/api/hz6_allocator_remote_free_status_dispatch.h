@@ -208,6 +208,18 @@ static inline int hz6_remote_free_status_try_origin_transfer(
     ++allocator->stats.remote_free_backpressure_origin_transfer_fail;
     if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
       ++allocator->stats.remote_free_backpressure_origin_transfer_full;
+      size_t origin_transfer_count = hz6_allocator_transfer_count(origin);
+      size_t origin_class_count =
+          hz6_allocator_transfer_count_class(origin, route.class_id);
+      allocator->stats.remote_free_backpressure_origin_full_transfer_count_total +=
+          origin_transfer_count;
+      allocator->stats.remote_free_backpressure_origin_full_class_count_total +=
+          origin_class_count;
+      if (origin_class_count >
+          allocator->stats.remote_free_backpressure_origin_full_class_count_max) {
+        allocator->stats.remote_free_backpressure_origin_full_class_count_max =
+            origin_class_count;
+      }
     } else {
       ++allocator->stats
             .remote_free_backpressure_origin_transfer_validation_fail;

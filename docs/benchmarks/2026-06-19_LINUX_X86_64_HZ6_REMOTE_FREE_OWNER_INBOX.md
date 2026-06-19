@@ -663,3 +663,49 @@ Decision: `GO(phase-specialist)/NO-GO(default)`.  The hybrid fixes the quick
 RUNS=3 source-gate regression and preserves the phase target, but RUNS=10 still
 regresses remote50 materially and does not beat selected remote90.  Keep the
 box as a phase/research lane only.
+
+## Origin Transfer Full Occupancy Follow-Up
+
+`OriginTransferFullOccupancyObserve-L1` adds selected-lane counters for the
+origin-transfer fallback full path.  This separates two possibilities:
+
+```text
+origin transfer is full because the whole origin transfer cache is full
+origin transfer is full because the requested class is locally saturated
+```
+
+Selected diagnostic smoke:
+
+```text
+remote_free_backpressure_origin_transfer_success=6013
+remote_free_backpressure_origin_transfer_fail=31298
+remote_free_backpressure_origin_transfer_full=31298
+remote_free_backpressure_origin_full_transfer_count_total=8012288
+remote_free_backpressure_origin_full_class_count_total=4785345
+remote_free_backpressure_origin_full_class_count_max=200
+
+transfer_reserve_full=68609
+transfer_reserve_full_transfer_count_total=17563904
+transfer_reserve_full_class_count_total=10443131
+transfer_reserve_full_class_count_max=203
+
+remote_free_returned_uncommitted=0
+remote_free_returned_backpressure=31298
+transfer_reserve_full_after_state_mutation=0
+```
+
+Derived values:
+
+```text
+origin full avg transfer count: 8012288 / 31298 = 256.00
+origin full avg same-class count: 4785345 / 31298 = 152.90
+destination full avg transfer count: 17563904 / 68609 = 256.00
+destination full avg same-class count: 10443131 / 68609 = 152.21
+```
+
+Decision: `GO(tooling)`.  Origin-transfer full has the same shape as the
+destination reserve full path: global transfer capacity is saturated at 256,
+with same-class pressure high but not the only explanation.  Class/shard tuning
+alone is unlikely to close this; the next behavior box needs either a cheaper
+owner-local consumer or a guaranteed owner-owned sink rather than more remote
+thread transfer-cache work.

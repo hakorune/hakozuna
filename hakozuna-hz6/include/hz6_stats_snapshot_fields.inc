@@ -96,6 +96,9 @@
   size_t remote_free_backpressure_origin_transfer_stride_skip;
   size_t remote_free_backpressure_origin_transfer_validation_fail;
   size_t remote_free_backpressure_origin_transfer_full;
+  size_t remote_free_backpressure_origin_full_transfer_count_total;
+  size_t remote_free_backpressure_origin_full_class_count_total;
+  size_t remote_free_backpressure_origin_full_class_count_max;
   size_t remote_free_backpressure_origin_drain_attempt;
   size_t remote_free_backpressure_origin_drain_success;
   size_t remote_free_backpressure_origin_drain_retry_success;

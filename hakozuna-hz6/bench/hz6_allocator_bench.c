@@ -465,6 +465,19 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.pending_maintenance_immediate_reuse_success,
          stats.pending_maintenance_batch_surplus,
          stats.source_block_commit_with_matching_pending);
+  printf("[HZ6_REMOTE_BACKPRESSURE] "
+         "origin_transfer_full=%zu origin_full_transfer_total=%zu "
+         "origin_full_class_total=%zu origin_full_class_max=%zu "
+         "transfer_full=%zu transfer_full_transfer_total=%zu "
+         "transfer_full_class_total=%zu transfer_full_class_max=%zu\n",
+         stats.remote_free_backpressure_origin_transfer_full,
+         stats.remote_free_backpressure_origin_full_transfer_count_total,
+         stats.remote_free_backpressure_origin_full_class_count_total,
+         stats.remote_free_backpressure_origin_full_class_count_max,
+         stats.transfer_reserve_full,
+         stats.transfer_reserve_full_transfer_count_total,
+         stats.transfer_reserve_full_class_count_total,
+         stats.transfer_reserve_full_class_count_max);
   printf("[HZ6_TOY_SMALL] "
          "malloc_fast_attempt=%zu malloc_fast_hit=%zu "
          "malloc_front_dispatch=%zu malloc_frontcache_pop=%zu "

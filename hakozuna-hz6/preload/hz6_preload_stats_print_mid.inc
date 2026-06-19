@@ -159,6 +159,9 @@
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
           "remote_free_backpressure_origin_transfer_validation_fail=%zu "
           "remote_free_backpressure_origin_transfer_full=%zu "
+          "remote_free_backpressure_origin_full_transfer_count_total=%zu "
+          "remote_free_backpressure_origin_full_class_count_total=%zu "
+          "remote_free_backpressure_origin_full_class_count_max=%zu "
           "remote_free_backpressure_origin_drain_attempt=%zu "
           "remote_free_backpressure_origin_drain_success=%zu "
           "remote_free_backpressure_origin_drain_retry_success=%zu "
@@ -298,6 +301,9 @@
           remote_free_backpressure_origin_transfer_stride_skip,
           remote_free_backpressure_origin_transfer_validation_fail,
           remote_free_backpressure_origin_transfer_full,
+          remote_free_backpressure_origin_full_transfer_count_total,
+          remote_free_backpressure_origin_full_class_count_total,
+          remote_free_backpressure_origin_full_class_count_max,
           remote_free_backpressure_origin_drain_attempt,
           remote_free_backpressure_origin_drain_success,
           remote_free_backpressure_origin_drain_retry_success,
