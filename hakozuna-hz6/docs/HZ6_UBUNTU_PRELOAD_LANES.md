@@ -1800,3 +1800,15 @@ remote_pending_direct_claim_success_transfer_midpage=1266
 Decision: `GO(tooling)`.  This is observation only.  The overlap varies across
 smoke runs, so the next behavior box should first run a small A/B with these
 fields captured instead of adding another skip gate from one sample.
+
+Same-code RUNS=3 after adding the overlap counters:
+
+```text
+p1_inbox remote50=14391836.36 remote90=11206437.81
+p3_claim remote50=14531696.87 remote90=10847666.69
+```
+
+Decision: `HOLD`.  This A/B does not justify a new ordering gate.  It confirms
+that DirectReuse's tradeoff is still phase-sensitive and should be rechecked
+with RUNS=10 or a more specific MidPage/class 5 hypothesis before behavior
+changes.

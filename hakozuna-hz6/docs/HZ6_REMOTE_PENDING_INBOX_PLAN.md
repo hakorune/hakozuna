@@ -1460,3 +1460,17 @@ Decision: `GO(tooling)`.  The counters are enough to observe DirectReuse's
 possible overlap with transfer inventory, but the phase variance means a
 behavior gate should not be selected from a single smoke.  Include these fields
 in the next RUNS A/B before trying another ordering change.
+
+Follow-up same-code RUNS=3:
+
+```text
+p1_inbox remote50=14391836.36 remote90=11206437.81
+p3_claim remote50=14531696.87 remote90=10847666.69
+```
+
+Decision remains `HOLD`.  This sample makes DirectReuse slightly better on
+remote50 but weaker on remote90, while the earlier RUNS=10 recheck had the
+opposite tradeoff versus owner-inbox+external.  Do not add another skip/order
+gate from this R3.  The next decision point is either a RUNS=10 recheck with
+the overlap counters available, or a narrower design that specifically explains
+the MidPage class 5 overlap.
