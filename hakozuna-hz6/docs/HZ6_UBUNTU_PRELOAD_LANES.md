@@ -2506,3 +2506,49 @@ samples but does not remove the bounded-cache saturation condition.
 Decision: `GO(tooling)/NO-GO(cap512 default)`.  Capacity sweep is useful as an
 observation surface, but simply increasing transfer capacity to 512 is not the
 next selected/default optimization.
+
+## 2026-06-20 TransferClassShardProfile-L1
+
+`TransferClassShardProfile-L1` adds a default-off profile switch:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1
+```
+
+When enabled, speed and remote profiles use:
+
+```text
+HZ6_TRANSFER_SHARD_CLASS_ID
+```
+
+instead of the default owner-slot transfer shard policy.  The selected/default
+policy is unchanged.
+
+Build target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
+```
+
+Verification:
+
+```text
+bash hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+bash hakozuna-hz6/linux/build_hz6_preload.sh
+bash hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
+HZ6_EXTRA_CFLAGS='-DHZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1' \
+  bash hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+Quick RUNS=3 comparison:
+
+```text
+variant      remote50  remote90
+selected     14.33M    10.88M
+class_shard  14.95M    10.82M
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  Class sharding is worth keeping as an
+opt-in candidate because the first sample improves remote50 without the
+owner-inbox profile, but it does not clearly improve remote90 and needs broader
+paired evidence before selected/default promotion.
