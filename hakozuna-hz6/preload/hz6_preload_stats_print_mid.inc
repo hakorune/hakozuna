@@ -117,6 +117,11 @@
           "remote_pending_maintenance_external_miss=%zu "
           "remote_pending_maintenance_inline_empty=%zu "
           "remote_pending_maintenance_frontcache_full_stop=%zu "
+          "remote_pending_maintenance_entry_gate_miss=%zu "
+          "remote_pending_maintenance_inline_gate_hit=%zu "
+          "remote_pending_maintenance_external_gate_hit=%zu "
+          "remote_pending_external_key_probe=%zu "
+          "remote_pending_external_key_hit=%zu "
           "remote_pending_batch_call=%zu "
           "remote_pending_batch_items=%zu "
           "remote_pending_frontcache_push=%zu "
@@ -313,6 +318,11 @@
           remote_pending_maintenance_external_miss,
           remote_pending_maintenance_inline_empty,
           remote_pending_maintenance_frontcache_full_stop,
+          remote_pending_maintenance_entry_gate_miss,
+          remote_pending_maintenance_inline_gate_hit,
+          remote_pending_maintenance_external_gate_hit,
+          remote_pending_external_key_probe,
+          remote_pending_external_key_hit,
           remote_pending_batch_call,
           remote_pending_batch_items,
           remote_pending_frontcache_push,

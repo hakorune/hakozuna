@@ -37,6 +37,8 @@ static inline Hz6RemotePendingStorage* hz6_remote_pending_storage_ptr(
   (hz6_remote_pending_storage_ptr(allocator)->remote_pending_external_free_head)
 #define HZ6_RP_EXTERNAL_HEAD(allocator) \
   (hz6_remote_pending_storage_ptr(allocator)->remote_pending_external_head)
+#define HZ6_RP_EXTERNAL_NONEMPTY_MASK(allocator) \
+  (hz6_remote_pending_storage_ptr(allocator)->remote_pending_external_nonempty_mask)
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
 #define HZ6_RP_EXTERNAL_DUP_INDEX(allocator) \
   (hz6_remote_pending_storage_ptr(allocator)->remote_pending_external_dup_index)
@@ -76,6 +78,8 @@ static inline Hz6RemotePendingStorage* hz6_remote_pending_storage_ptr(
   ((allocator)->remote_pending_external_free_head)
 #define HZ6_RP_EXTERNAL_HEAD(allocator) \
   ((allocator)->remote_pending_external_head)
+#define HZ6_RP_EXTERNAL_NONEMPTY_MASK(allocator) \
+  ((allocator)->remote_pending_external_nonempty_mask)
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
 #define HZ6_RP_EXTERNAL_DUP_INDEX(allocator) \
   ((allocator)->remote_pending_external_dup_index)

@@ -414,6 +414,7 @@ typedef struct Hz6RemotePendingStorage {
   uint32_t remote_pending_external_free_head;
   uint32_t remote_pending_external_head
       [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint64_t remote_pending_external_nonempty_mask;
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
   uint32_t remote_pending_external_dup_index
       [HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY];
@@ -490,6 +491,7 @@ struct Hz6Allocator {
   uint32_t remote_pending_external_free_head;
   uint32_t remote_pending_external_head
       [HZ6_REMOTE_PENDING_FRONT_COUNT][HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint64_t remote_pending_external_nonempty_mask;
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
   uint32_t remote_pending_external_dup_index
       [HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY];

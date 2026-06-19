@@ -155,8 +155,13 @@ counter_keys=(
   remote_pending_enqueue_success
   remote_pending_external_ticket_success
   remote_pending_maintenance_check
+  remote_pending_maintenance_entry_gate_miss
+  remote_pending_maintenance_inline_gate_hit
+  remote_pending_maintenance_external_gate_hit
   remote_pending_batch_items
   remote_pending_current
+  remote_pending_external_key_probe
+  remote_pending_external_key_hit
   remote_pending_external_ticket_current
   remote_pending_external_ticket_duplicate_probe_total
   remote_pending_external_ticket_duplicate_probe_max

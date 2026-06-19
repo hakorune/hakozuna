@@ -53,6 +53,11 @@
   size_t remote_pending_maintenance_external_miss = 0;
   size_t remote_pending_maintenance_inline_empty = 0;
   size_t remote_pending_maintenance_frontcache_full_stop = 0;
+  size_t remote_pending_maintenance_entry_gate_miss = 0;
+  size_t remote_pending_maintenance_inline_gate_hit = 0;
+  size_t remote_pending_maintenance_external_gate_hit = 0;
+  size_t remote_pending_external_key_probe = 0;
+  size_t remote_pending_external_key_hit = 0;
   size_t remote_pending_batch_call = 0;
   size_t remote_pending_batch_items = 0;
   size_t remote_pending_frontcache_push = 0;

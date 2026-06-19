@@ -2305,3 +2305,97 @@ p1_external remote90 10.79M ops/s  77.34 MiB
 Decision: `GO(candidate)/HOLD(default promotion)`.  Lazy storage closes the
 fixed local-only owner-inbox RSS tax.  The remaining default blocker is runtime
 remote50 cost, not fixed metadata footprint.
+
+## 2026-06-20 OwnerInboxRemote50RuntimeTaxObserve-L1
+
+Added diagnostic-only counters for the owner-local pending maintenance entry
+shape:
+
+```text
+remote_pending_maintenance_entry_gate_miss
+remote_pending_maintenance_inline_gate_hit
+remote_pending_maintenance_external_gate_hit
+remote_pending_external_key_probe
+remote_pending_external_key_hit
+```
+
+The first diagnostic p1 run showed the remote50 tax candidate clearly:
+
+```text
+remote50 p1_external diagnostic RUNS=1
+maintenance_check=3372
+entry_gate_miss=3871
+inline_gate_hit=3336
+external_gate_hit=296
+external_key_probe=7539
+external_key_hit=504
+```
+
+Read: many owner-local maintenance calls entered with no matching pending key,
+and the external ticket key check was mostly a miss.  The next small behavior
+box should avoid taking the external-ticket lock for empty keys.
+
+## 2026-06-20 ExternalTicketNonemptyMask-L1
+
+Added an atomic exact-key nonempty mask for external tickets.  The queue remains
+protected by the existing external-ticket lock; the new mask is only a lock
+avoidance gate before checking an exact `(front_id,class_id)` ticket head.
+
+Update points:
+
+```text
+publish success: set bit
+consume pop when head becomes empty: clear bit
+frontcache-full requeue: set bit
+duplicate-index rollback when head becomes empty: clear bit
+init/destroy closeout: clear mask
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 10 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Integrity smoke stayed clean and showed the mask active:
+
+```text
+external_key_probe=7873
+external_key_hit=272
+external_ticket_consume_empty=0
+external mismatch/full/duplicate/integrity_abort=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Footprint after extra stats fields and external mask:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_055518
+
+p0_off       sizeof_Hz6Allocator=3251968  owner_inbox_bytes=0
+p1_external sizeof_Hz6Allocator=3252000  owner_inbox_bytes=336896
+```
+
+Production RUNS=10:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_055430
+
+p0_off      local0   14.09M ops/s  67.25 MiB
+p1_external local0   14.05M ops/s  67.31 MiB
+p0_off      remote50 12.54M ops/s  69.62 MiB
+p1_external remote50 12.21M ops/s  74.81 MiB
+p0_off      remote90 10.02M ops/s  72.04 MiB
+p1_external remote90  9.70M ops/s  77.24 MiB
+```
+
+Decision: `GO(shape)/HOLD(default)`.  The mask removes the empty external-head
+lock path and keeps correctness gates clean, but this RUNS=10 does not justify
+default promotion.  p1 remains a correctness/high-remote candidate, and the
+next step is a design checkpoint before adding another consumer policy.

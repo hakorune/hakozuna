@@ -2353,3 +2353,66 @@ Decision: keep p1 owner-inbox external as `GO(candidate)/HOLD(default)`.  The
 local-only fixed RSS tax is closed; default promotion still waits on reducing
 the remote50 runtime tax or making the owner-inbox lane an explicit high-remote
 profile.
+
+## 2026-06-20 OwnerInboxRemote50RuntimeTaxObserve-L1
+
+Added diagnostic-only owner-inbox maintenance gate counters to locate the p1
+remote50 runtime tax.  A diagnostic p1 remote50 run showed:
+
+```text
+maintenance_check=3372
+maintenance_entry_gate_miss=3871
+maintenance_inline_gate_hit=3336
+maintenance_external_gate_hit=296
+external_key_probe=7539
+external_key_hit=504
+```
+
+Interpretation: owner-local maintenance was often entered without matching
+pending work, and external-ticket exact-key checks were mostly empty.  That made
+external-ticket lock avoidance the next narrow shape candidate.
+
+## 2026-06-20 ExternalTicketNonemptyMask-L1
+
+External tickets now have an atomic exact-key nonempty mask.  The mask is only a
+pre-lock gate; ticket queue mutation still uses the existing external-ticket
+lock.  It is set on publish/requeue, cleared when an exact key head becomes
+empty, and reset during init/destroy closeout.
+
+Verification passed:
+
+```text
+build_hz6_preload.sh
+build_hz6_r1_smokes.sh
+build_hz6_preload_owner_inbox_external_target.sh
+run_hz6_preload_integrity_smoke.sh
+run_hz6_owner_inbox_storage_footprint.sh
+run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 10 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Integrity smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+external_ticket_consume_empty=0
+external mismatch/full/duplicate/integrity_abort=0
+external_key_probe=7873
+external_key_hit=272
+```
+
+RUNS=10 did not promote the candidate:
+
+```text
+p0_off      local0   14.09M ops/s  67.25 MiB
+p1_external local0   14.05M ops/s  67.31 MiB
+p0_off      remote50 12.54M ops/s  69.62 MiB
+p1_external remote50 12.21M ops/s  74.81 MiB
+p0_off      remote90 10.02M ops/s  72.04 MiB
+p1_external remote90  9.70M ops/s  77.24 MiB
+```
+
+Decision: `GO(shape)/HOLD(default)`.  The empty external-head lock path is
+boxed, but default promotion remains blocked by runtime cost and inconsistent
+remote90 comparison.  Stop for design before adding another owner-inbox consumer
+policy.

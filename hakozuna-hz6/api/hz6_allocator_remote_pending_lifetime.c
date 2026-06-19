@@ -144,6 +144,8 @@ static void hz6_remote_pending_lifetime_close_external(
             ? (uint32_t)(i + 1u)
             : HZ6_REMOTE_PENDING_LIFETIME_INDEX_NONE;
   }
+  atomic_store_explicit(&HZ6_RP_EXTERNAL_NONEMPTY_MASK(allocator), 0u,
+                        memory_order_relaxed);
 #if HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1
   for (size_t i = 0; i < HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_CAPACITY; ++i) {
     HZ6_RP_EXTERNAL_DUP_INDEX(allocator)[i] =
