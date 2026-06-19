@@ -49,6 +49,11 @@
   size_t remote_pending_high_water;
   size_t remote_pending_maintenance_check;
   size_t remote_pending_maintenance_armed;
+  size_t remote_pending_maintenance_noop;
+  size_t remote_pending_maintenance_key_race;
+  size_t remote_pending_maintenance_external_miss;
+  size_t remote_pending_maintenance_inline_empty;
+  size_t remote_pending_maintenance_frontcache_full_stop;
   size_t remote_pending_batch_call;
   size_t remote_pending_batch_items;
   size_t remote_pending_frontcache_push;

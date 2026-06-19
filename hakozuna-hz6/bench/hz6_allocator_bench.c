@@ -407,7 +407,9 @@ static void print_stats(const Hz6Allocator* allocator) {
          "duplicate_claim=%zu owner_dead=%zu current=%zu queued=%zu "
          "claimed=%zu total=%zu high_water=%zu "
          "maintenance_check=%zu maintenance_armed=%zu batch_call=%zu "
-         "batch_items=%zu frontcache_push=%zu frontcache_full=%zu "
+         "batch_items=%zu maintenance_noop=%zu key_race=%zu "
+         "external_miss=%zu inline_empty=%zu frontcache_full_stop=%zu "
+         "frontcache_push=%zu frontcache_full=%zu "
          "key_load=%zu key_hit=%zu direct_gate_load=%zu "
          "direct_gate_hit=%zu direct_claim_attempt=%zu "
          "direct_claim_success=%zu direct_claim_busy=%zu "
@@ -440,6 +442,11 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_maintenance_armed,
          stats.remote_pending_batch_call,
          stats.remote_pending_batch_items,
+         stats.remote_pending_maintenance_noop,
+         stats.remote_pending_maintenance_key_race,
+         stats.remote_pending_maintenance_external_miss,
+         stats.remote_pending_maintenance_inline_empty,
+         stats.remote_pending_maintenance_frontcache_full_stop,
          stats.remote_pending_frontcache_push,
          stats.remote_pending_frontcache_full,
          stats.remote_pending_key_nonempty_load,

@@ -1631,3 +1631,30 @@ Decision: `GO(observation)/NO-GO(default)`.  The correctness shape is clean,
 but the longer median is weaker.  Keep the counters and default-off switch for
 diagnostics; do not use locked revalidation as the next default optimization
 line.
+
+## 2026-06-20 Pending Maintenance Noop Observe
+
+`PendingMaintenanceNoopObserve-L1` splits owner-local pending maintenance
+empty-work reasons without changing behavior.
+
+Smoke with owner-inbox + external ticket + demand audit:
+
+```text
+remote_pending_maintenance_check=3688
+remote_pending_maintenance_armed=3688
+remote_pending_maintenance_noop=0
+remote_pending_maintenance_key_race=0
+remote_pending_maintenance_external_miss=0
+remote_pending_maintenance_inline_empty=0
+remote_pending_maintenance_frontcache_full_stop=0
+remote_pending_batch_items=3688
+pending_same_key_before_maintenance=3687
+pending_same_key_after_maintenance=3522
+source_block_commit_with_matching_pending=126
+```
+
+This says the budget1 consumer is doing useful work on every armed call, but
+same-key pending often remains after that one-item drain.  A quick budget2
+R3 was not decisive (`remote50=13.76M`, `remote90=9.88M`), so the policy stays
+unchanged.  Next work should be demand-shaped consumption rather than no-op
+avoidance.

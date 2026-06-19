@@ -48,6 +48,11 @@
   size_t remote_pending_high_water = 0;
   size_t remote_pending_maintenance_check = 0;
   size_t remote_pending_maintenance_armed = 0;
+  size_t remote_pending_maintenance_noop = 0;
+  size_t remote_pending_maintenance_key_race = 0;
+  size_t remote_pending_maintenance_external_miss = 0;
+  size_t remote_pending_maintenance_inline_empty = 0;
+  size_t remote_pending_maintenance_frontcache_full_stop = 0;
   size_t remote_pending_batch_call = 0;
   size_t remote_pending_batch_items = 0;
   size_t remote_pending_frontcache_push = 0;

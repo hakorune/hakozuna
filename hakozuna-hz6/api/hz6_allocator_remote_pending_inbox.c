@@ -971,6 +971,7 @@ size_t hz6_allocator_remote_pending_maintenance_class(
                            memory_order_relaxed) == 0 &&
       !hz6_remote_pending_external_key_nonempty(allocator, front_id,
                                                 class_id)) {
+    ++allocator->stats.remote_pending_maintenance_key_race;
     return 0;
   }
   ++allocator->stats.remote_pending_maintenance_armed;
@@ -981,21 +982,24 @@ size_t hz6_allocator_remote_pending_maintenance_class(
   while (drained < budget) {
     if (hz6_allocator_frontcache_count(allocator, class_id) >=
         hz6_allocator_frontcache_capacity(allocator, class_id)) {
+      ++allocator->stats.remote_pending_maintenance_frontcache_full_stop;
       ++allocator->stats.remote_pending_frontcache_full;
       break;
     }
     if (external_nonempty) {
       if (hz6_allocator_remote_pending_external_ticket_consume_one(
-              allocator, front_id, class_id)) {
+          allocator, front_id, class_id)) {
         ++drained;
         external_nonempty = hz6_remote_pending_external_key_nonempty(
             allocator, front_id, class_id);
         continue;
       }
+      ++allocator->stats.remote_pending_maintenance_external_miss;
       external_nonempty = 0;
     }
     Hz6RemotePendingInboxEntry entry = {0};
     if (!hz6_remote_pending_pop_key(allocator, front_id, class_id, &entry)) {
+      ++allocator->stats.remote_pending_maintenance_inline_empty;
       break;
     }
     Hz6ObjectDescriptor* descriptor = entry.descriptor;
@@ -1050,6 +1054,9 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     descriptor->state = HZ6_STATE_LOCAL_FREE;
     ++allocator->stats.remote_pending_frontcache_push;
     ++drained;
+  }
+  if (drained == 0) {
+    ++allocator->stats.remote_pending_maintenance_noop;
   }
   allocator->stats.remote_pending_batch_items += drained;
   return drained;

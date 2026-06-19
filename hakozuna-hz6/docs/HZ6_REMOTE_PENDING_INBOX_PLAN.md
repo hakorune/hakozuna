@@ -1197,3 +1197,54 @@ Decision: `GO(observation)/NO-GO(default)`.  The scan is proven real cost, and
 locked revalidation keeps correctness gates clean, but removing this scan alone
 does not improve the lane.  Keep the counters and default-off switch for future
 diagnostics; do not pursue locked revalidation as the next optimization line.
+
+## 2026-06-20 Pending Maintenance Noop Observe
+
+`PendingMaintenanceNoopObserve-L1` adds no behavior.  It splits owner-local
+pending maintenance empty work into:
+
+```text
+remote_pending_maintenance_noop
+remote_pending_maintenance_key_race
+remote_pending_maintenance_external_miss
+remote_pending_maintenance_inline_empty
+remote_pending_maintenance_frontcache_full_stop
+```
+
+Owner-inbox + external-ticket + demand-audit smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_maintenance_check=3688
+remote_pending_maintenance_armed=3688
+remote_pending_maintenance_noop=0
+remote_pending_maintenance_key_race=0
+remote_pending_maintenance_external_miss=0
+remote_pending_maintenance_inline_empty=0
+remote_pending_maintenance_frontcache_full_stop=0
+remote_pending_batch_items=3688
+pending_same_key_before_maintenance=3687
+pending_same_key_after_maintenance=3522
+source_block_commit_with_matching_pending=126
+```
+
+The maintenance calls are not empty; every armed call drains one item.  The
+remaining issue is that same-key inventory often remains after the budget1
+drain, and source-block commits can still happen with matching pending.
+
+Quick RUNS=3 budget check:
+
+```text
+budget1:
+  remote50=13308196.37
+  remote90=9938358.40
+
+budget2:
+  remote50=13758848.49
+  remote90=9881248.06
+```
+
+Decision: `GO(tooling)/HOLD(policy)`.  Do not change the budget from this noisy
+R3 sample.  The next design should target demand-shaped consumption, not no-op
+avoidance.

@@ -93,6 +93,16 @@
         stats.remote_pending_maintenance_check;
     remote_pending_maintenance_armed +=
         stats.remote_pending_maintenance_armed;
+    remote_pending_maintenance_noop +=
+        stats.remote_pending_maintenance_noop;
+    remote_pending_maintenance_key_race +=
+        stats.remote_pending_maintenance_key_race;
+    remote_pending_maintenance_external_miss +=
+        stats.remote_pending_maintenance_external_miss;
+    remote_pending_maintenance_inline_empty +=
+        stats.remote_pending_maintenance_inline_empty;
+    remote_pending_maintenance_frontcache_full_stop +=
+        stats.remote_pending_maintenance_frontcache_full_stop;
     remote_pending_batch_call += stats.remote_pending_batch_call;
     remote_pending_batch_items += stats.remote_pending_batch_items;
     remote_pending_frontcache_push +=

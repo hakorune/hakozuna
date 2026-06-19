@@ -112,6 +112,11 @@
           "remote_pending_high_water=%zu "
           "remote_pending_maintenance_check=%zu "
           "remote_pending_maintenance_armed=%zu "
+          "remote_pending_maintenance_noop=%zu "
+          "remote_pending_maintenance_key_race=%zu "
+          "remote_pending_maintenance_external_miss=%zu "
+          "remote_pending_maintenance_inline_empty=%zu "
+          "remote_pending_maintenance_frontcache_full_stop=%zu "
           "remote_pending_batch_call=%zu "
           "remote_pending_batch_items=%zu "
           "remote_pending_frontcache_push=%zu "
@@ -276,6 +281,11 @@
           remote_pending_high_water,
           remote_pending_maintenance_check,
           remote_pending_maintenance_armed,
+          remote_pending_maintenance_noop,
+          remote_pending_maintenance_key_race,
+          remote_pending_maintenance_external_miss,
+          remote_pending_maintenance_inline_empty,
+          remote_pending_maintenance_frontcache_full_stop,
           remote_pending_batch_call,
           remote_pending_batch_items,
           remote_pending_frontcache_push,
