@@ -170,6 +170,29 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
   ops/s=113182.85 fail=0 timeout=no
 ```
 
+2026-06-19 Phase 3 first tuning box is implemented and selected:
+
+- The selected preload lane now actually enables `HZ6_SHARED_ROUTE_DIRECTORY_L1=1`.
+  The sequence snapshot and mandatory publication flags were present earlier,
+  but the base directory flag itself was missing from the selected flag list.
+- The shared-directory writer lock is sharded with
+  `HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256`.  With one global writer lock,
+  the actual shared-directory selected build timed out the
+  `remote90 16..131072` smoke at 60s; sharding restores completion.
+- `HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is kept off.  It completed the
+  smoke but regressed `remote90`, so shared publication is selected while the
+  resolver keeps local-first order for now.
+
+Smoke evidence after sharded shared-directory selected:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=261584.71 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=92346.57 fail=0 timeout=no
+```
+
 ## Ownership Model
 
 Keep these roles explicit:

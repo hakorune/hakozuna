@@ -64,11 +64,14 @@ HZ6_ROUTE_DOMAIN_SYNC_L1=1
 HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
 HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
 HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256
 HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
+HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=0
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -148,6 +151,16 @@ lives in `api/hz6_allocator_route_resolve_free.[ch]` and returns
 or `UNRESOLVED_INTEGRITY`.  This first selected use is intentionally scoped to
 core remote free; preload external-pointer `real_free` selection still uses the
 existing wrapper boundary until the HZ6 address-domain proof exists.
+
+Phase 3 first tuning status, 2026-06-19: selected preload now actually enables
+`HZ6_SHARED_ROUTE_DIRECTORY_L1=1`; the earlier coherent-publication flags were
+present but the base directory flag was missing from the selected list.  The
+directory writer lock is sharded with
+`HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256`, because the single global writer
+lock timed out the `remote90 16..131072` smoke.
+`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is kept off: shared-first completed
+but regressed the same r90 smoke, so the resolver keeps the existing
+local-first order while shared publication remains mandatory.
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw

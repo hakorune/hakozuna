@@ -643,6 +643,8 @@ int hz6_allocator_route_register_exact_reason(
     }
 #endif
   }
+#else
+  (void)mandatory_publish_failed;
 #endif
 #endif
 #if HZ6_OWNER_LOCALITY_INDEX_L1

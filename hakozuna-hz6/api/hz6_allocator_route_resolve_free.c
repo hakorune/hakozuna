@@ -41,8 +41,20 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   int visible_lookup_done = 0;
   Hz6RouteResult route = hz6_route_miss();
 
+#if HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1 && HZ6_SHARED_ROUTE_DIRECTORY_L1
+  if (!hz6_allocator_profile_strict_owner_remote(allocator)) {
+    route = hz6_allocator_route_shared_directory_lookup_exact(allocator, ptr);
+    if (route.kind != HZ6_ROUTE_MISS) {
+      visible_lookup_done = 1;
+      visible_hit = (route.route_allocator != allocator);
+    }
+  }
+#endif
+
 #if HZ6_OWNER_LOCALITY_INDEX_L1
-  route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  if (route.kind == HZ6_ROUTE_MISS) {
+    route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  }
   if (route.kind == HZ6_ROUTE_MISS) {
     Hz6OwnerLocalityKind locality =
         hz6_allocator_route_owner_locality_hint(allocator, ptr);
@@ -64,7 +76,9 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   }
 #else
 #if HZ6_LOCAL_EXACT_FIRST_FREE_L1
-  route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  if (route.kind == HZ6_ROUTE_MISS) {
+    route = hz6_allocator_route_lookup_exact(allocator, ptr);
+  }
 #endif
 #if HZ6_SHARED_ROUTE_DIRECTORY_FIRST_L1 && HZ6_DIAGNOSTIC_PROBES
   if (!hz6_allocator_profile_strict_owner_remote(allocator) &&
