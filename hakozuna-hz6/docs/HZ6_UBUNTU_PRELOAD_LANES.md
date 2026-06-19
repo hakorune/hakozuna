@@ -2678,6 +2678,44 @@ line for design before stacking another transfer-shard tweak.
 Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
 reduce returned backpressure or transfer full events in that sample.
 
+## 2026-06-20 OwnerInboxSmallClassComposition-L1
+
+`OwnerInboxSmallClassComposition-L1` adds an attribution-only owner-inbox tax
+runner variant:
+
+```text
+p1_external_small_class
+```
+
+This composes the p1 owner-inbox external high-remote profile with:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
+```
+
+It does not create a new build target or selected/default behavior.
+
+Production RUNS=3:
+
+```text
+variant                  local0   remote50  remote90
+p1_external              16.09M   14.23M    10.43M
+p1_external_small_class  16.55M   13.71M    10.79M
+```
+
+Production RUNS=10:
+
+```text
+variant                  remote50  remote90
+p1_external              14.12M    10.71M
+p1_external_small_class  13.93M    10.71M
+```
+
+Decision: `GO(tooling)/NO-GO(profile)`.  Composing small-class transfer
+sharding into the owner-inbox high-remote profile does not reduce the p1
+runtime tax.  Keep the runner variant for attribution, but do not add a combined
+profile target.
+
 RUNS=10 paired result:
 
 ```text
