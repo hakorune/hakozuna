@@ -389,6 +389,15 @@ and zero mismatch gates; quick RUNS=3 measured `remote50=14.41M` and
 `remote90=9.47M`.  Keep this as the owner-inbox opt-in shape to avoid surplus
 frontcache staging, while default promotion still waits on owner-inbox
 cost/backlog evidence.
+`ExternalTicketDemandAudit-L1` fixes the diagnostic demand helper so it sees
+external tickets as same-key pending too.  Smoke showed
+`remote_pending_key_nonempty_hit=7424/21435`,
+`pending_same_key_before_maintenance=3688`,
+`source_block_commit_with_matching_pending=73`,
+`source_alloc_with_matching_pending=0`, and
+`remote_pending_external_ticket_current=1920`.  This says backlog is not purely
+cold exit inventory; the next design point is a source-block/pre-source
+consumer boundary.
 `RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
 opt-in no-go.  It drains one same-class transfer object from the origin transfer
 cache into the origin frontcache and retries origin commit once.  Safety smoke

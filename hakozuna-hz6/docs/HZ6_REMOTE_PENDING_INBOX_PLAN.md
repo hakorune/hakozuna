@@ -1059,3 +1059,38 @@ Decision: `GO(opt-in shape)/HOLD(default)`.  Budget1 is now the owner-inbox
 maintenance default because the owner-inbox lane itself is still opt-in and the
 smoke gates remain clean.  Default promotion of owner-inbox still requires
 broader cost/backlog evidence.
+
+## 2026-06-20 External Ticket Demand Audit
+
+`ExternalTicketDemandAudit-L1` extends the diagnostic key-demand helper so
+`remote_pending_key_nonempty` includes both inline pending entries and external
+tickets.  The raw inline mask helper remains unchanged for DirectReuse behavior.
+
+Owner-inbox + external-ticket + audit smoke:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_key_nonempty_load=21435
+remote_pending_key_nonempty_hit=7424
+pending_same_key_on_frontcache_miss=1
+pending_same_key_on_front_dispatch=1
+source_alloc_with_matching_pending=0
+pending_same_key_before_maintenance=3688
+pending_same_key_after_maintenance=3570
+pending_maintenance_immediate_reuse_success=3688
+pending_maintenance_batch_surplus=0
+pending_same_key_on_prefill_attempt=18
+prefill_commit_with_matching_pending=73
+source_block_commit_with_matching_pending=73
+direct_source_attempt_with_matching_pending=0
+direct_source_commit_with_matching_pending=0
+remote_pending_external_ticket_current=1920
+remote_pending_external_ticket_consume=357
+remote_pending_external_ticket_consume_empty=0
+```
+
+Decision: `GO(tooling)`.  The backlog is not purely cold exit inventory:
+same-key pending still overlaps source-block commit.  The useful next design
+box is a source-block/pre-source consumer boundary, not another direct-source
+fallback hook.

@@ -1139,7 +1139,9 @@ int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
   }
   ++allocator->stats.remote_pending_key_nonempty_load;
   int hit = hz6_allocator_remote_pending_key_maybe_nonempty_raw(
-      allocator, front_id, class_id);
+                allocator, front_id, class_id) ||
+            hz6_remote_pending_external_key_nonempty(allocator, front_id,
+                                                     class_id);
   if (hit) {
     ++allocator->stats.remote_pending_key_nonempty_hit;
   }
