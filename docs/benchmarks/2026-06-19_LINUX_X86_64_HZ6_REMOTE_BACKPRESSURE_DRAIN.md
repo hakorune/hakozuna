@@ -99,3 +99,22 @@ failure gates, but the smoke only drained 45 objects:
 
 Keep both controls as opt-in A/B knobs. The default-selected lane remains
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0`.
+
+## Occupancy Observation
+
+The follow-up observe counters do not change behavior.  On selected smoke they
+showed that reserve failures happen when the 256-entry transfer cache is truly
+full:
+
+| Counter | Value |
+|---|---:|
+| `transfer_reserve_full` | 33465 |
+| `transfer_reserve_full_transfer_count_total` | 8567040 |
+| `transfer_reserve_full_class_count_total` | 5123433 |
+| `transfer_reserve_full_class_count_max` | 203 |
+
+Average transfer occupancy at full was `256`, and the same-class average was
+about `153`.  More eager drain is therefore the wrong default direction because
+it converts full-cache pressure into extra committed rehome work.  The next
+candidate should be a bounded overflow/pending policy that preserves the
+reserve-before-mutation invariant.

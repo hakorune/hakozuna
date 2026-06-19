@@ -162,6 +162,16 @@ opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while
 `MAX_FRONTCACHE_COUNT=4` was the best bounded variant (`remote50=14180156.45`,
 `remote90=6926930.38`) but still leaves a small remote50 regression versus the
 selected capacity-256 baseline.
+`RemoteFreeBackpressureObserve-L1` adds reserve-full occupancy counters without
+changing behavior.  Selected smoke showed
+`transfer_reserve_full=33465`,
+`transfer_reserve_full_transfer_count_total=8567040`,
+`transfer_reserve_full_class_count_total=5123433`, and
+`transfer_reserve_full_class_count_max=203`.  That is effectively a full
+`256/256` transfer cache at every reserve failure, with the target class often
+dominating the cache.  The next performance box should therefore avoid extra
+committed rehome and use a bounded overflow/pending policy rather than more
+eager drain.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

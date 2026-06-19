@@ -83,6 +83,9 @@
           "remote_free_backpressure_drain_success=%zu "
           "remote_free_backpressure_retry_success=%zu "
           "remote_free_backpressure_requeue_fail=%zu "
+          "transfer_reserve_full_transfer_count_total=%zu "
+          "transfer_reserve_full_class_count_total=%zu "
+          "transfer_reserve_full_class_count_max=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -133,6 +136,9 @@
           remote_free_backpressure_drain_success,
           remote_free_backpressure_retry_success,
           remote_free_backpressure_requeue_fail,
+          transfer_reserve_full_transfer_count_total,
+          transfer_reserve_full_class_count_total,
+          transfer_reserve_full_class_count_max,
           route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,

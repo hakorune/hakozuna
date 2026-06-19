@@ -99,6 +99,29 @@ static int hz6_allocator_remote_free_should_try_backpressure_drain(
 }
 #endif
 
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+static void hz6_allocator_note_transfer_reserve_full(
+    Hz6Allocator* allocator,
+    uint16_t class_id) {
+  if (!allocator) {
+    return;
+  }
+  ++allocator->stats.transfer_reserve_full;
+  ++allocator->stats.remote_free_backpressure;
+
+  size_t transfer_count = hz6_allocator_transfer_count(allocator);
+  size_t class_count = hz6_allocator_transfer_count_class(allocator,
+                                                          class_id);
+  allocator->stats.transfer_reserve_full_transfer_count_total +=
+      transfer_count;
+  allocator->stats.transfer_reserve_full_class_count_total += class_count;
+  if (class_count >
+      allocator->stats.transfer_reserve_full_class_count_max) {
+    allocator->stats.transfer_reserve_full_class_count_max = class_count;
+  }
+}
+#endif
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
@@ -150,8 +173,7 @@ int hz6_allocator_remote_free_active_descriptor(
   if (!reserve_ok) {
     ++allocator->stats.remote_free_transfer_fail;
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
-    ++allocator->stats.transfer_reserve_full;
-    ++allocator->stats.remote_free_backpressure;
+    hz6_allocator_note_transfer_reserve_full(allocator, object.class_id);
 #endif
     return 0;
   }
@@ -175,9 +197,8 @@ int hz6_allocator_remote_free_active_descriptor(
   if (!hz6_allocator_transfer_push(allocator, object)) {
     ++allocator->stats.remote_free_transfer_fail;
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
-    ++allocator->stats.transfer_reserve_full;
+    hz6_allocator_note_transfer_reserve_full(allocator, object.class_id);
     ++allocator->stats.transfer_reserve_full_after_state_mutation;
-    ++allocator->stats.remote_free_backpressure;
 #endif
     descriptor->state = HZ6_STATE_ACTIVE;
     hz6_allocator_set_descriptor_owner(allocator, descriptor,

@@ -70,6 +70,9 @@
   size_t remote_free_backpressure_drain_success = 0;
   size_t remote_free_backpressure_retry_success = 0;
   size_t remote_free_backpressure_requeue_fail = 0;
+  size_t transfer_reserve_full_transfer_count_total = 0;
+  size_t transfer_reserve_full_class_count_total = 0;
+  size_t transfer_reserve_full_class_count_max = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -365,8 +368,7 @@
     route_rehome_commit_enter += stats.route_rehome_commit_enter;
     route_rehome_commit_success += stats.route_rehome_commit_success;
     remote_free_backpressure += stats.remote_free_backpressure;
-    remote_free_returned_uncommitted +=
-        stats.remote_free_returned_uncommitted;
+    remote_free_returned_uncommitted += stats.remote_free_returned_uncommitted;
     remote_free_backpressure_drain_attempt +=
         stats.remote_free_backpressure_drain_attempt;
     remote_free_backpressure_drain_success +=
@@ -375,6 +377,14 @@
         stats.remote_free_backpressure_retry_success;
     remote_free_backpressure_requeue_fail +=
         stats.remote_free_backpressure_requeue_fail;
+    transfer_reserve_full_transfer_count_total +=
+        stats.transfer_reserve_full_transfer_count_total;
+    transfer_reserve_full_class_count_total +=
+        stats.transfer_reserve_full_class_count_total;
+    size_t full_class_max = stats.transfer_reserve_full_class_count_max;
+    if (full_class_max > transfer_reserve_full_class_count_max) {
+      transfer_reserve_full_class_count_max = full_class_max;
+    }
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;

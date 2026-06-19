@@ -28,6 +28,9 @@
   size_t remote_free_backpressure_drain_success;
   size_t remote_free_backpressure_retry_success;
   size_t remote_free_backpressure_requeue_fail;
+  size_t transfer_reserve_full_transfer_count_total;
+  size_t transfer_reserve_full_class_count_total;
+  size_t transfer_reserve_full_class_count_max;
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;
