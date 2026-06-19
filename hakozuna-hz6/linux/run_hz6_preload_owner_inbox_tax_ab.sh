@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
+  --variants CSV p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -37,6 +37,9 @@ Variants:
   p1_external_direct_reuse   p1_external plus frontcache-miss DirectReuse
   p1_external_direct_reuse_observe
                               p1_external_direct_reuse with DirectReuse counters on
+  p1_external_source_gate    p1_external plus source-boundary DirectReuse
+  p1_external_source_gate_observe
+                              p1_external_source_gate with DirectReuse counters on
   p1_external_inline_skip_mid5
                               skip inline MidPage class >=5, preserve external sink
   p1_external_inline_skip_mid4
@@ -85,7 +88,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -150,6 +153,20 @@ build_variant() {
       hz6_preload_effective_owner_inbox_external_cflags flags 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 1
+      ;;
+    p1_external_source_gate)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0
+      ;;
+    p1_external_source_gate_observe)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 1
       ;;
     p1_external_inline_skip_mid5)

@@ -3234,6 +3234,42 @@ DirectReuse claims are mostly MidPage and almost entirely same-class transfer
 overlap; this favors a source-boundary/order policy over a broader eager
 frontcache-miss DirectReuse promotion.
 
+## 2026-06-20 OwnerInboxSourceGateRecheck-L1
+
+Rechecked source-boundary DirectReuse after owner-inbox external tickets and
+lazy storage.  The owner-inbox tax runner now has:
+
+```text
+p1_external_source_gate
+  p1_external plus DirectReuse at the source-demand boundary
+
+p1_external_source_gate_observe
+  same behavior, DirectReuse counters on for diagnostic attribution
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse,p1_external_source_gate
+```
+
+```text
+variant                   remote50  RSS       remote90  RSS
+p1_external               13.42M    74.75MiB  10.53M    77.48MiB
+p1_external_direct_reuse  13.63M    75.00MiB  10.92M    77.38MiB
+p1_external_source_gate   14.24M    74.88MiB   3.99M    83.84MiB
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Source-boundary DirectReuse improves
+remote50 in this short run, but it collapses remote90 and raises high-remote
+RSS.  The current source-gate shape still moves too much owner-local sink work
+away from the normal high-remote path.  Keep the variant for attribution only;
+do not use it in the high-remote profile.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
