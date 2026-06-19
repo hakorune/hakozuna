@@ -21,6 +21,8 @@ int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
 
 Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr);
 
+size_t hz6_shared_route_range_directory_bytes(void);
+
 Hz6RouteResult hz6_shared_route_range_lookup_raw(const void* ptr);
 
 #endif
