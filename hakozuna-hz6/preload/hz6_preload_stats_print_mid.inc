@@ -70,6 +70,14 @@
           "route_rehome_directory_transfer_fail=%zu "
           "route_rehome_rollback_success=%zu "
           "route_rehome_rollback_fail=%zu "
+          "remote_free_foreign_candidate=%zu "
+          "transfer_reserve_attempt=%zu "
+          "transfer_reserve_success=%zu "
+          "transfer_reserve_full=%zu "
+          "route_rehome_commit_enter=%zu "
+          "route_rehome_commit_success=%zu "
+          "remote_free_backpressure=%zu "
+          "remote_free_returned_uncommitted=%zu "
           "route_active_current=%zu route_active_max=%zu "
           "route_tombstone_current=%zu route_tombstone_max=%zu "
           "route_register_used_tombstone=%zu "
@@ -111,6 +119,10 @@
           route_rehome_destination_route_fail,
           route_rehome_directory_transfer_fail,
           route_rehome_rollback_success, route_rehome_rollback_fail,
+          remote_free_foreign_candidate, transfer_reserve_attempt,
+          transfer_reserve_success, transfer_reserve_full,
+          route_rehome_commit_enter, route_rehome_commit_success,
+          remote_free_backpressure, remote_free_returned_uncommitted,
           route_active_current,
           route_active_max, route_tombstone_current, route_tombstone_max,
           route_register_used_tombstone,

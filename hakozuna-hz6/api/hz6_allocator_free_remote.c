@@ -21,9 +21,15 @@ static int hz6_free_remote_rehome_before_transfer(
   }
 
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+  ++allocator->stats.route_rehome_commit_enter;
+#endif
   int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
   if (rehome_ok) {
     ++allocator->stats.route_rehome_success;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+    ++allocator->stats.route_rehome_commit_success;
+#endif
   } else {
     ++allocator->stats.route_rehome_fail;
   }
@@ -216,6 +222,9 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
                                                      route.class_id);
   if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+    ++allocator->stats.remote_free_foreign_candidate;
+#endif
     if (hz6_allocator_descriptor_has_source_release(allocator, descriptor)) {
       ++allocator->stats.source_owned_remote_free_attempt;
     }
@@ -225,6 +234,11 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
 #if HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1
   if (!hz6_free_remote_rehome_before_transfer(allocator, ptr, route, front,
                                               needs_rehome)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    if (needs_rehome) {
+      ++allocator->stats.remote_free_returned_uncommitted;
+    }
+#endif
     ++allocator->stats.route_invalid;
     return 0;
   }
@@ -237,9 +251,15 @@ int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   }
   if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+    ++allocator->stats.route_rehome_commit_enter;
+#endif
     int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
     if (rehome_ok) {
       ++allocator->stats.route_rehome_success;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+      ++allocator->stats.route_rehome_commit_success;
+#endif
     } else {
       ++allocator->stats.route_rehome_fail;
     }

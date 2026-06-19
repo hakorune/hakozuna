@@ -30,14 +30,24 @@ int hz6_allocator_remote_free_active_descriptor(
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
   hz6_allocator_set_descriptor_owner(allocator, descriptor,
                                      (Hz6OwnerToken){0});
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.transfer_reserve_attempt;
+#endif
   if (!hz6_allocator_transfer_push(allocator, object)) {
     ++allocator->stats.remote_free_transfer_fail;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reserve_full;
+    ++allocator->stats.remote_free_backpressure;
+#endif
     descriptor->state = HZ6_STATE_ACTIVE;
     hz6_allocator_set_descriptor_owner(allocator, descriptor,
                                        allocator->owner.token);
     return 0;
   }
 
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.transfer_reserve_success;
+#endif
   hz6_allocator_note_transfer_push(allocator);
   return 1;
 }

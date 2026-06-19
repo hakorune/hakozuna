@@ -15,6 +15,14 @@
   size_t remote_free_attempt;
   size_t remote_free_strict_owner_block;
   size_t remote_free_transfer_fail;
+  size_t remote_free_foreign_candidate;
+  size_t transfer_reserve_attempt;
+  size_t transfer_reserve_success;
+  size_t transfer_reserve_full;
+  size_t route_rehome_commit_enter;
+  size_t route_rehome_commit_success;
+  size_t remote_free_backpressure;
+  size_t remote_free_returned_uncommitted;
   size_t route_rehome_attempt;
   size_t route_rehome_success;
   size_t route_rehome_fail;

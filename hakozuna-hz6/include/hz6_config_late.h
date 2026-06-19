@@ -342,6 +342,13 @@
 #define HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+/* Diagnostic-only observation for the current remote-free commit path.  It
+ * splits foreign candidates, transfer push attrition, and actual rehome commit
+ * entries before the transaction box changes behavior. */
+#define HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

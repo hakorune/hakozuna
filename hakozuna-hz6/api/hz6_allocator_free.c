@@ -362,6 +362,9 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
         } else {
           if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            ++allocator->stats.remote_free_foreign_candidate;
+#endif
             ++allocator->stats.route_rehome_attempt;
 #endif
           }
@@ -370,14 +373,25 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
             ++allocator->stats.free_invalid_remote_tagged;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            if (needs_rehome) {
+              ++allocator->stats.remote_free_returned_uncommitted;
+            }
+#endif
           }
 #endif
         }
         if (ok && needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+          ++allocator->stats.route_rehome_commit_enter;
+#endif
           int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
           if (rehome_ok) {
             ++allocator->stats.route_rehome_success;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            ++allocator->stats.route_rehome_commit_success;
+#endif
           } else {
             ++allocator->stats.route_rehome_fail;
           }

@@ -80,6 +80,7 @@ HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3
 HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1
+HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -123,6 +124,11 @@ returns `FOREIGN_VALID`.  RUNS=10 moved `remote50` from `763130.83` to
 the integrity smoke kept unresolved, unproven real-free, and remote compaction
 gates at zero.  The remaining repair focus is remote transfer commit
 transaction/backpressure, not broad preload fast free.
+`RemoteFreeCommitObserve-L1` confirmed the attribution on the integrity smoke:
+`remote_free_foreign_candidate=39715`, `transfer_reserve_success=893`,
+`transfer_reserve_full=38822`, `route_rehome_commit_success=893`, and
+`remote_free_returned_uncommitted=38822`.  Treat `route_rehome_attempt` as a
+candidate counter until the transaction box separates reserve from commit.
 Short remote rows can now be made to complete, but long 300K rows still show a
 page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
 not a preload-only owner hint: Ubuntu preload must call the shared core

@@ -57,6 +57,14 @@
   size_t route_rehome_directory_transfer_fail = 0;
   size_t route_rehome_rollback_success = 0;
   size_t route_rehome_rollback_fail = 0;
+  size_t remote_free_foreign_candidate = 0;
+  size_t transfer_reserve_attempt = 0;
+  size_t transfer_reserve_success = 0;
+  size_t transfer_reserve_full = 0;
+  size_t route_rehome_commit_enter = 0;
+  size_t route_rehome_commit_success = 0;
+  size_t remote_free_backpressure = 0;
+  size_t remote_free_returned_uncommitted = 0;
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -343,6 +351,15 @@
         stats.route_rehome_directory_transfer_fail;
     route_rehome_rollback_success += stats.route_rehome_rollback_success;
     route_rehome_rollback_fail += stats.route_rehome_rollback_fail;
+    remote_free_foreign_candidate += stats.remote_free_foreign_candidate;
+    transfer_reserve_attempt += stats.transfer_reserve_attempt;
+    transfer_reserve_success += stats.transfer_reserve_success;
+    transfer_reserve_full += stats.transfer_reserve_full;
+    route_rehome_commit_enter += stats.route_rehome_commit_enter;
+    route_rehome_commit_success += stats.route_rehome_commit_success;
+    remote_free_backpressure += stats.remote_free_backpressure;
+    remote_free_returned_uncommitted +=
+        stats.remote_free_returned_uncommitted;
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;
