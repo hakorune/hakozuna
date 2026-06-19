@@ -410,6 +410,7 @@ static void print_stats(const Hz6Allocator* allocator) {
          "batch_items=%zu maintenance_noop=%zu key_race=%zu "
          "external_miss=%zu inline_empty=%zu frontcache_full_stop=%zu "
          "external_attempt=%zu external_success=%zu "
+         "external_only_call=%zu inline_deferred=%zu "
          "inline_pop_attempt=%zu inline_pop_success=%zu "
          "route_validate_inline=%zu route_validate_external=%zu "
          "push_attempt_inline=%zu push_attempt_external=%zu "
@@ -459,6 +460,8 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.remote_pending_maintenance_frontcache_full_stop,
          stats.remote_pending_maintenance_external_attempt,
          stats.remote_pending_maintenance_external_success,
+         stats.remote_pending_maintenance_external_only_call,
+         stats.remote_pending_maintenance_inline_deferred,
          stats.remote_pending_maintenance_inline_pop_attempt,
          stats.remote_pending_maintenance_inline_pop_success,
          stats.remote_pending_maintenance_route_validate_inline,

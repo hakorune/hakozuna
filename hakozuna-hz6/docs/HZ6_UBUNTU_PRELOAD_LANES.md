@@ -2859,6 +2859,67 @@ The next behavior box should not use one broad maintenance throttle.  Prefer a
 split policy or targeted inline-cost reduction that preserves the external sink
 needed by high-remote rows.
 
+## 2026-06-20 OwnerInboxSplitMaintenancePolicy-L1
+
+`OwnerInboxSplitMaintenancePolicy-L1` tests the narrow policy suggested by the
+cost attribution counters:
+
+```text
+frontcache-miss maintenance:
+  drain external tickets only
+
+source-boundary maintenance:
+  run the existing full exact-key maintenance
+```
+
+The box is controlled by:
+
+```text
+HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1=1
+HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1
+```
+
+The implementation adds an external-only maintenance API and keeps the existing
+full maintenance API unchanged.  The owner-inbox tax runner now has:
+
+```text
+p1_external_split_maintenance
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3 showed the mechanism working: split maintenance reduced
+remote90 diagnostic RSS and moved many front-miss inline hits into deferred
+source-boundary work.  The production-shaped A/B is the promotion signal:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_split_maintenance
+```
+
+Production RUNS=3:
+
+```text
+variant                        remote50         remote90
+p1_external                    14.11M/74.88MiB  10.67M/77.33MiB
+p1_external_split_maintenance  12.29M/74.62MiB  11.00M/77.35MiB
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Splitting front maintenance away from
+inline work can preserve or slightly improve remote90, but remote50 regresses
+too much.  Keep this as a research control only.  The next design should not
+defer all inline work to the source boundary; it needs a narrower inline-cost
+reduction or an inline/external policy with a better demand signal.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

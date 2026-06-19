@@ -522,6 +522,12 @@
   HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1
+/* Split maintenance policy: frontcache-miss maintenance preserves the external
+ * ticket sink but defers inline pending work to the source-demand boundary. */
+#define HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

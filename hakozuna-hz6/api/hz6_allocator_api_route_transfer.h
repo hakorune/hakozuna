@@ -247,6 +247,12 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     uint16_t class_id,
     size_t budget);
 
+size_t hz6_allocator_remote_pending_maintenance_class_external_only(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t budget);
+
 Hz6RemotePendingReuseStatus hz6_allocator_remote_pending_try_reuse(
     Hz6Allocator* allocator,
     uint16_t front_id,
