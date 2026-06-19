@@ -445,6 +445,12 @@
 #define HZ6_REMOTE_PENDING_LAZY_STORAGE_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1
+/* Trust the REMOTE_PENDING route-pin invariant for production inline pending
+ * maintenance.  Diagnostic builds keep the route lookup as a shadow check. */
+#define HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_FRONT_COUNT
 #define HZ6_REMOTE_PENDING_FRONT_COUNT 4
 #endif

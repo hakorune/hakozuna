@@ -1421,6 +1421,7 @@ size_t hz6_allocator_remote_pending_maintenance_class(
       HZ6_REMOTE_PENDING_STAT_INC(allocator, remote_pending_owner_mismatch);
       valid = 0;
     }
+#if !HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1 || HZ6_DIAGNOSTIC_PROBES
     if (valid) {
       HZ6_REMOTE_PENDING_STAT_INC(
           allocator, remote_pending_maintenance_route_validate_inline);
@@ -1434,6 +1435,7 @@ size_t hz6_allocator_remote_pending_maintenance_class(
         valid = 0;
       }
     }
+#endif
     if (!valid) {
       if (descriptor && descriptor->generation != entry.generation) {
         HZ6_REMOTE_PENDING_STAT_INC(allocator,

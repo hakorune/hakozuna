@@ -2968,6 +2968,58 @@ future `RemotePendingRoutePinTrust-L1` behavior box.  That next box should keep
 diagnostic shadow route validation and only skip the production route lookup
 after the route-pin zero counters are clean.
 
+## 2026-06-20 RemotePendingRoutePinTrust-L1
+
+`RemotePendingRoutePinTrust-L1` adds a default-off production switch:
+
+```text
+HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1=1
+```
+
+When enabled, production inline pending maintenance trusts the
+`REMOTE_PENDING` route-pin invariant and skips the exact route lookup before
+pushing the object into the owner-local frontcache.  Diagnostic builds still
+run the route lookup as a shadow check, so the route-pin counters from
+`RemotePendingRoutePinAudit-L1` remain the correctness gate.
+
+The owner-inbox tax runner gained a focused variant:
+
+```text
+p1_external_route_pin
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,remote90 \
+  --variants p1_external,p1_external_route_pin
+```
+
+Observed medians:
+
+```text
+variant                local0    remote50  remote90  remote90 RSS
+p1_external            15.20M    13.17M     3.94M    83.24 MiB
+p1_external_route_pin  16.61M    14.00M     2.71M    99.88 MiB
+```
+
+Decision: `GO(research)/NO-GO(default)`.  The route-pin trust switch improves
+the lower-remote rows in this short run, but it damages the high-remote sink and
+raises remote90 RSS.  Keep the switch as a research control only.  Do not add it
+to `p1_external` or selected flags.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
