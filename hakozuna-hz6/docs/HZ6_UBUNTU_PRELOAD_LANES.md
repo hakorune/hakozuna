@@ -3601,6 +3601,88 @@ selected high-remote baseline, but remote50 still has a large origin-full tail
 under diagnostic attribution.  Do not add owner-inbox back yet; the next
 behavior idea needs to target this tail without the owner-inbox runtime/RSS tax.
 
+## 2026-06-20 OriginTransferFullTailDesign-L1
+
+Reviewed the selected origin-transfer path and the owner-local transfer
+consumer boundary before adding another behavior box.
+
+Current selected path:
+
+```text
+remote free:
+  destination transfer reserve
+  -> if backpressure and foreign route valid:
+       try origin transfer reserve
+
+owner-local allocation:
+  transfer-first profile
+  -> hz6_front_reuse_transfer_with_descriptor()
+  -> pop same-class transfer object
+  -> activate descriptor
+  -> otherwise continue to existing reuse/source paths
+```
+
+Evidence already rules out several broad fixes:
+
+```text
+remote-thread origin drain:
+  NO-GO.  It moves transfer objects into origin frontcache on the remote path
+  and regressed remote rows.
+
+generic remote-free overflow:
+  NO-GO for default.  It converts backpressure into extra route movement and
+  did not improve selected performance.
+
+owner-inbox reintroduction:
+  HOLD.  It closes some tails, but current p1 loses p0 selected-off on the
+  paired RUNS=10 and carries runtime/RSS tax.
+
+larger transfer capacity / broad class sharding:
+  HOLD/NO-GO for default from existing sweeps.  Full events are often true
+  capacity saturation and not just a single class hash issue.
+```
+
+Therefore the next box should be observe-only:
+
+```text
+OriginTransferFullTailDemandAudit-L1
+```
+
+Questions to answer before behavior:
+
+```text
+1. Does source or prefill commit happen while same-class transfer inventory
+   exists for the owner allocator?
+
+2. On origin-transfer full, is same-class count near capacity, or is the cache
+   globally full with mostly other classes?
+
+3. Does owner-local demand lag producer bursts, or is the consumer simply not
+   checking the transfer cache at the right source boundary?
+
+4. Are invalid transfer-pop loops or transfer activation failures meaningful,
+   or is transfer inventory valid but not consumed quickly enough?
+```
+
+Candidate counters:
+
+```text
+source_commit_with_same_class_transfer
+source_commit_with_any_transfer
+source_commit_same_class_transfer_count_total/max
+source_commit_transfer_count_total/max
+prefill_commit_with_same_class_transfer
+transfer_pop_loop_attempt
+transfer_pop_loop_empty
+transfer_pop_loop_invalid
+transfer_pop_loop_hit
+origin_transfer_full_by_class[]
+```
+
+Decision: `GO(design)/HOLD(behavior)`.  Do not add another sink yet.  The next
+implementation should be a small diagnostic box around existing source/prefill
+and transfer-pop boundaries, not a new owner-inbox or remote-thread drain path.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
