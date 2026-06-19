@@ -20,6 +20,7 @@ typedef enum Hz6BenchMode {
   HZ6_BENCH_LOCAL = 0,
   HZ6_BENCH_REMOTE = 1,
   HZ6_BENCH_REUSE = 2,
+  HZ6_BENCH_PHASE_REUSE = 3,
 } Hz6BenchMode;
 
 static double now_sec(void) {
@@ -44,6 +45,8 @@ static const char* mode_name(Hz6BenchMode mode) {
       return "remote";
     case HZ6_BENCH_REUSE:
       return "reuse";
+    case HZ6_BENCH_PHASE_REUSE:
+      return "phase-reuse";
     default:
       return "unknown";
   }
@@ -117,7 +120,39 @@ static int parse_mode(const char* value, Hz6BenchMode* mode) {
     *mode = HZ6_BENCH_REUSE;
     return 1;
   }
+  if (strcmp(value, "phase-reuse") == 0) {
+    *mode = HZ6_BENCH_PHASE_REUSE;
+    return 1;
+  }
   return 0;
+}
+
+static int compare_ptrs(const void* lhs, const void* rhs) {
+  const uintptr_t a = (uintptr_t)*(void* const*)lhs;
+  const uintptr_t b = (uintptr_t)*(void* const*)rhs;
+  return (a > b) - (a < b);
+}
+
+static uint64_t count_reused_ptrs(void** first, void** second, uint64_t n) {
+  uint64_t i = 0;
+  uint64_t j = 0;
+  uint64_t reused = 0;
+  qsort(first, (size_t)n, sizeof(first[0]), compare_ptrs);
+  qsort(second, (size_t)n, sizeof(second[0]), compare_ptrs);
+  while (i < n && j < n) {
+    uintptr_t a = (uintptr_t)first[i];
+    uintptr_t b = (uintptr_t)second[j];
+    if (a == b) {
+      ++reused;
+      ++i;
+      ++j;
+    } else if (a < b) {
+      ++i;
+    } else {
+      ++j;
+    }
+  }
+  return reused;
 }
 
 static int parse_profile(const char* value, Hz6ProfileId* profile) {
@@ -726,10 +761,109 @@ static int run_reuse(Hz6ProfileId profile, uint64_t iters, size_t size) {
   return 0;
 }
 
+static int run_phase_reuse(Hz6ProfileId profile,
+                           uint64_t iters,
+                           size_t size) {
+  Hz6Allocator origin;
+  Hz6Allocator foreign;
+  void** first = NULL;
+  void** second = NULL;
+  uint64_t ops = 0;
+  uint64_t reuse_hits = 0;
+  uint64_t first_count = 0;
+  uint64_t second_count = 0;
+  int first_remote_freed = 0;
+  int rc = 0;
+
+  hz6_allocator_init_with_profile(&origin, profile);
+  hz6_allocator_init_with_profile(&foreign, profile);
+  if (!bench_set_owner_slot(&origin, 0) ||
+      !bench_set_owner_slot(&foreign, 1)) {
+    fprintf(stderr, "owner slot setup failed\n");
+    hz6_allocator_destroy(&foreign);
+    hz6_allocator_destroy(&origin);
+    return 4;
+  }
+
+  first = (void**)calloc((size_t)iters, sizeof(first[0]));
+  second = (void**)calloc((size_t)iters, sizeof(second[0]));
+  if (!first || !second) {
+    fprintf(stderr, "phase-reuse pointer table allocation failed\n");
+    rc = 5;
+    goto done;
+  }
+
+  double start = now_sec();
+  for (uint64_t i = 0; i < iters; ++i) {
+    first[i] = hz6_malloc(&origin, size);
+    if (!first[i]) {
+      fprintf(stderr, "phase-reuse phase-a malloc failed iter=%llu size=%zu\n",
+              (unsigned long long)i, size);
+      rc = 6;
+      goto done;
+    }
+    touch_payload(first[i], size);
+    ++first_count;
+    ++ops;
+  }
+
+  for (uint64_t i = 0; i < iters; ++i) {
+    hz6_free(&foreign, first[i]);
+    ++ops;
+  }
+  first_remote_freed = 1;
+
+  for (uint64_t i = 0; i < iters; ++i) {
+    second[i] = hz6_malloc(&origin, size);
+    if (!second[i]) {
+      fprintf(stderr, "phase-reuse phase-c malloc failed iter=%llu size=%zu\n",
+              (unsigned long long)i, size);
+      rc = 10;
+      goto done;
+    }
+    touch_payload(second[i], size);
+    ++second_count;
+    ++ops;
+  }
+  double elapsed = now_sec() - start;
+  reuse_hits = count_reused_ptrs(first, second, iters);
+  for (uint64_t i = 0; i < iters; ++i) {
+    hz6_free(&origin, second[i]);
+    ++ops;
+  }
+
+  printf("allocator=hz6 profile=%s mode=%s iters=%llu size=%zu ops=%llu "
+         "time=%.6f ops/s=%.3f reuse_hits=%llu\n",
+         profile_name(profile), mode_name(HZ6_BENCH_PHASE_REUSE),
+         (unsigned long long)iters, size, (unsigned long long)ops, elapsed,
+         (double)ops / elapsed, (unsigned long long)reuse_hits);
+  printf("[HZ6_PHASE_REUSE_STATS] owner=origin\n");
+  print_stats(&origin);
+  printf("[HZ6_PHASE_REUSE_STATS] owner=foreign\n");
+  print_stats(&foreign);
+
+done:
+  if (rc != 0) {
+    for (uint64_t i = 0; i < second_count; ++i) {
+      hz6_free(&origin, second[i]);
+    }
+    if (!first_remote_freed) {
+      for (uint64_t i = 0; i < first_count; ++i) {
+        hz6_free(&origin, first[i]);
+      }
+    }
+  }
+  free(second);
+  free(first);
+  hz6_allocator_destroy(&foreign);
+  hz6_allocator_destroy(&origin);
+  return rc;
+}
+
 static void usage(const char* argv0) {
   fprintf(stderr,
           "usage: %s [mode] [profile] [iters] [size]\n"
-          "  mode: local | remote | reuse\n"
+          "  mode: local | remote | reuse | phase-reuse\n"
           "  profile: strict | speed | rss | remote\n"
           "  iters: iteration count\n"
           "  size: allocation size in bytes\n",
@@ -768,6 +902,8 @@ int main(int argc, char** argv) {
       return run_remote(profile, iters, size);
     case HZ6_BENCH_REUSE:
       return run_reuse(profile, iters, size);
+    case HZ6_BENCH_PHASE_REUSE:
+      return run_phase_reuse(profile, iters, size);
     default:
       usage(argv[0]);
       return 2;

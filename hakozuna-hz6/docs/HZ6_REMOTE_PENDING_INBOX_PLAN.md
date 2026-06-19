@@ -350,3 +350,34 @@ direct+budget1 remote90=10810219.46
 
 Decision: DirectReuse budget1 remains opt-in.  It is cleaner and helps
 remote90, but selected remote50 is still stronger.
+
+## 2026-06-20 Phase-Reuse Bench Harness
+
+`RemotePendingPhaseReuseBench-L1` adds a behavior-neutral benchmark mode:
+
+```text
+phase-reuse:
+  Phase A: origin allocator allocates N same-size objects
+  Phase B: foreign allocator frees all N objects
+  Phase C: origin allocator allocates N same-size objects again
+  reuse_hits: intersection of Phase A and Phase C pointers
+```
+
+The mode is available through `hz6_allocator_bench phase-reuse ...` and the
+Linux runner exposes `--phase-reuse-iters`, `--phase-reuse-sizes`, and
+`--phase-reuse-profiles`.
+
+Default smoke:
+
+```text
+phase-reuse speed iters=8 size=128
+reuse_hits=0
+origin transfer_push=0 transfer_pop=0
+foreign transfer_push=8 transfer_pop=0
+```
+
+This is expected: the small default run fits in the foreign transfer cache, so
+no owner pending publish occurs.  The harness is intended for owner-inbox flag
+bundles and capacity/stress settings where transfer backpressure is forced.
+It lets DirectReuse promotion be checked against the exact phase-shift shape
+instead of inferring demand from random remote rows.

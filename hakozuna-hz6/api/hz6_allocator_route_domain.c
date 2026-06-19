@@ -2,6 +2,7 @@
 
 #include <stdatomic.h>
 
+#if HZ6_ROUTE_DOMAIN_SYNC_L1
 static void hz6_allocator_route_domain_spin_pause(void) {
 #if HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1 && \
     (defined(__x86_64__) || defined(__i386__))
@@ -32,6 +33,7 @@ static void hz6_allocator_route_domain_note_wait(
   (void)spins;
 #endif
 }
+#endif
 
 void hz6_allocator_route_domain_init(Hz6Allocator* allocator) {
 #if HZ6_ROUTE_DOMAIN_SYNC_L1

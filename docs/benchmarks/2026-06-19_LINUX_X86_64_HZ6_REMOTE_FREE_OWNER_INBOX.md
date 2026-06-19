@@ -309,3 +309,33 @@ remote90=10810219.46
 Decision: `GO(opt-in)/HOLD(default)`.  The budget-1 fallback removes surplus
 and improves remote90 versus current selected in this run, but remote50 still
 regresses, so do not promote by default yet.
+
+## Phase-Reuse Bench Harness Follow-Up
+
+`RemotePendingPhaseReuseBench-L1` adds a dedicated allocator benchmark mode for
+the owner-stable pending model:
+
+```text
+origin alloc N
+foreign free N
+origin alloc N
+```
+
+The summary line reports `reuse_hits` as the intersection of the first and
+second origin allocation phases.  This directly tests whether pending entries
+can satisfy same-key owner demand after a foreign free phase.
+
+Build/smoke:
+
+```text
+./hakozuna-hz6/linux/build_hz6_benchmark.sh
+hz6_allocator_bench phase-reuse speed 8 128
+reuse_hits=0
+origin: route_valid=8 transfer_push=0 transfer_pop=0 source_alloc=2
+foreign: route_valid=8 transfer_push=8 transfer_pop=0
+```
+
+Decision: `GO(tooling)`.  The small smoke intentionally stays below transfer
+capacity, so it records the baseline transfer-cache outcome rather than a
+pending hit.  Use this mode with the owner-inbox flag bundle and pressure
+settings when evaluating DirectReuse or any replacement consumer policy.

@@ -3,12 +3,14 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_route_shared_directory.h"
 
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
 static void hz6_free_route_resolve_spin_pause(void) {
 #if HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1 && \
     (defined(__x86_64__) || defined(__i386__))
   __asm__ __volatile__("pause");
 #endif
 }
+#endif
 
 static Hz6FreeRouteResolveResult hz6_free_route_resolved(
     Hz6FreeRouteResolveKind kind,
@@ -163,6 +165,7 @@ Hz6FreeRouteResolveResult hz6_allocator_route_resolve_free(
   Hz6RouteResult route = hz6_route_miss();
   Hz6FreeRouteResolveResult early_result =
       hz6_free_route_resolved(HZ6_FREE_ROUTE_PROVEN_EXTERNAL, route, 0);
+  (void)early_result;
 #if HZ6_SHARED_ROUTE_DIRECTORY_L1
   Hz6SharedRouteLookup shared_lookup;
   shared_lookup.status = HZ6_SHARED_ROUTE_LOOKUP_MISS;

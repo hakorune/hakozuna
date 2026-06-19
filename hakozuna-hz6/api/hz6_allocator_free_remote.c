@@ -3,6 +3,7 @@
 
 #include "../fronts/hz6_front.h"
 
+#if HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1
 static Hz6RemoteFreeCommitStatus hz6_free_remote_status_bool_fallback(
     Hz6Allocator* allocator,
     void* ptr,
@@ -98,6 +99,7 @@ static Hz6RemoteFreeCommitStatus hz6_free_remote_rehome_before_transfer(
 #endif
   return status;
 }
+#endif
 
 int hz6_free_remote(Hz6Allocator* allocator, void* ptr) {
   if (!allocator || !ptr) {
