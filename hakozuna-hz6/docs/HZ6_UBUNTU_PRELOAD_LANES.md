@@ -2602,3 +2602,33 @@ class_shard  16.19M/67.44MiB  15.02M/69.50MiB 10.83M/72.15MiB
 Final decision for this box: `GO(tooling)/NO-GO(default)`.  Class sharding is
 not a selected/default win.  It slightly helps remote50 in this batch but costs
 local0 and does not improve remote90.
+
+## 2026-06-20 Profile Frontier Alias Smoke
+
+The new profile aliases were exercised through the existing focused profile
+frontier:
+
+```text
+bash hakozuna-hz6/linux/run_hz6_preload_profile_frontier.sh \
+  --runs 3 \
+  --iters 120000 \
+  --ws 100 \
+  --rows focused \
+  --allocators hz6,hz6-high-remote-owner-inbox-target,hz6-transfer-class-shard-target \
+  --skip-prepare
+```
+
+Focused RUNS=3:
+
+```text
+row          hz6      high-remote owner-inbox  transfer class-shard
+16_256       59.19M   58.81M                   60.94M
+16_4096      52.18M   55.15M                   56.33M
+1024_4096    71.02M   69.96M                   68.37M
+4096_16384   62.32M   59.43M                   61.39M
+```
+
+Decision: `GO(evidence)/HOLD(policy)`.  This confirms the aliases work in the
+shared profile frontier.  It also reinforces the current policy: high-remote
+owner-inbox should stay remote-heavy only, and transfer class-shard is not a
+broad default despite good small/mixed rows.
