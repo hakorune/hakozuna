@@ -362,6 +362,20 @@
 #define HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE
+/* Drain at most one out of N reserve failures.  This lets the opt-in drain box
+ * test high-remote pressure without forcing every full transfer shard into an
+ * immediate local frontcache conversion and extra rehome work. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE 1
+#endif
+
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT
+/* Only drain when the destination class frontcache is at or below this count.
+ * The default keeps the original opt-in behavior; A/B can tighten this to
+ * prefer drains that are likely to be consumed soon. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT ((size_t)-1)
+#endif
+
 #ifndef HZ6_PRELOAD_MIDPAGE_ROUTE_REARM_L1
 /* Candidate preload-boundary shortcut.  When preload already found a local
  * MidPage exact route, re-arm the MidPage active map so hz6_free() can consume

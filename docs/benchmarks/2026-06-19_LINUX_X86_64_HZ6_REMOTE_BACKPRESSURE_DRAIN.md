@@ -54,3 +54,48 @@ The drain relieved final backpressure but increased committed route movement:
 but leave the flag off in the selected preload lane. The box helps remote90
 slightly and proves the backpressure path, but it costs remote50 and adds
 committed rehome/tombstone pressure.
+
+## Follow-up Gates
+
+Two additional controls were added after the first pass:
+
+| Control | Default | Purpose |
+|---|---:|---|
+| `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` | 1 | Drain at most one out of N reserve failures |
+| `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` | unlimited | Drain only when the destination class frontcache count is small |
+
+Quick RUNS=3 stride checks were not promising:
+
+| Drain config | `remote50` median ops/s | `remote90` median ops/s | Read |
+|---|---:|---:|---|
+| `STRIDE=2` | 13672577.62 | 7351493.57 | Quick looked plausible |
+| `STRIDE=4` | 12605251.22 | 4230151.73 | No-go |
+| `STRIDE=8` | 12203822.86 | 6101161.15 | No-go |
+
+RUNS=10 for `STRIDE=2` did not hold:
+
+| Drain config | `remote50` median ops/s | `remote90` median ops/s | Read |
+|---|---:|---:|---|
+| `STRIDE=2` | 13208613.68 | 6434072.00 | No-go versus selected capacity-256 baseline |
+
+Frontcache count gating was better but still not enough for default promotion:
+
+| Drain config | RUNS | `remote50` median ops/s | `remote90` median ops/s | Read |
+|---|---:|---:|---:|---|
+| `MAX_FRONTCACHE_COUNT=0` | 3 | 13811855.47 | 6813806.72 | Narrow, mixed |
+| `MAX_FRONTCACHE_COUNT=1` | 3 | 13543466.10 | 7662096.68 | Remote90 specialist candidate |
+| `MAX_FRONTCACHE_COUNT=4` | 3 | 14209003.27 | 7084600.33 | Best quick balance |
+| `MAX_FRONTCACHE_COUNT=4` | 10 | 14180156.45 | 6926930.38 | Small remote90 win, small remote50 loss |
+
+`MAX_FRONTCACHE_COUNT=4` passed integrity smoke with zero requeue and route
+failure gates, but the smoke only drained 45 objects:
+
+| Counter | Value |
+|---|---:|
+| `remote_free_backpressure_drain_attempt` | 56 |
+| `remote_free_backpressure_drain_success` | 45 |
+| `remote_free_backpressure_retry_success` | 45 |
+| `remote_free_backpressure_requeue_fail` | 0 |
+
+Keep both controls as opt-in A/B knobs. The default-selected lane remains
+`HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0`.

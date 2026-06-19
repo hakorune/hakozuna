@@ -19,8 +19,12 @@ static int hz6_allocator_remote_free_drain_transfer_one(
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     return 0;
   }
-  if (hz6_allocator_frontcache_count(allocator, class_id) >=
-      hz6_allocator_frontcache_capacity(allocator, class_id)) {
+  size_t front_count = hz6_allocator_frontcache_count(allocator, class_id);
+  if (front_count >= hz6_allocator_frontcache_capacity(allocator, class_id)) {
+    return 0;
+  }
+  if (front_count >
+      HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT) {
     return 0;
   }
 
@@ -79,6 +83,20 @@ static int hz6_allocator_remote_free_drain_transfer_one(
 #endif
   return 1;
 }
+
+static int hz6_allocator_remote_free_should_try_backpressure_drain(
+    const Hz6Allocator* allocator) {
+  if (!allocator) {
+    return 0;
+  }
+#if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE <= 1
+  return 1;
+#else
+  return allocator->stats.transfer_reserve_attempt %
+             HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE ==
+         0;
+#endif
+}
 #endif
 
 int hz6_allocator_remote_free_active_descriptor(
@@ -117,6 +135,7 @@ int hz6_allocator_remote_free_active_descriptor(
                                                   &reservation);
 #if HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
   if (!reserve_ok &&
+      hz6_allocator_remote_free_should_try_backpressure_drain(allocator) &&
       hz6_allocator_remote_free_drain_transfer_one(allocator,
                                                   object.class_id)) {
     reserve_ok = hz6_allocator_transfer_reserve(allocator, object.class_id,
