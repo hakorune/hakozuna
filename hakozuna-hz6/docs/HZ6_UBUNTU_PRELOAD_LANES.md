@@ -76,6 +76,7 @@ HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
+HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3
 HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
@@ -238,6 +239,13 @@ route-after-map work resolving through shared exact records
 (`shared_valid=39716`, `visible_shadow=0`), and the refreshed production
 control improved both focused smoke rows: `remote50 16..32768` reached
 `699944.49 ops/s`, and `remote90 16..131072` reached `239981.88 ops/s`.
+
+Phase 3 resolver retry status, 2026-06-19: shared exact free resolution now
+uses `HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3`.  A transient shared
+snapshot `RETRY` is re-read inside the resolver before surfacing
+`HZ6_FREE_ROUTE_RETRY` to the platform free policy.  The retry loop stays in
+the shared lookup helper, so resolver callers still see the same six-result
+contract.
 
 Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
 off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed

@@ -3,6 +3,13 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_route_shared_directory.h"
 
+static void hz6_free_route_resolve_spin_pause(void) {
+#if HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1 && \
+    (defined(__x86_64__) || defined(__i386__))
+  __asm__ __volatile__("pause");
+#endif
+}
+
 static Hz6FreeRouteResolveResult hz6_free_route_resolved(
     Hz6FreeRouteResolveKind kind,
     Hz6RouteResult route,
@@ -51,26 +58,38 @@ static Hz6SharedRouteLookup hz6_free_route_shared_lookup(Hz6Allocator* allocator
 #if !HZ6_DIAGNOSTIC_PROBES
   (void)allocator;
 #endif
-#if HZ6_DIAGNOSTIC_PROBES
-  if (allocator) {
-    ++allocator->stats.free_resolve_shared_probe;
+  size_t attempts = HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT;
+  if (attempts == 0) {
+    attempts = 1;
   }
-#endif
-  Hz6SharedRouteLookup lookup =
-      hz6_shared_route_directory_lookup_snapshot(ptr);
+  Hz6SharedRouteLookup lookup;
+  lookup.status = HZ6_SHARED_ROUTE_LOOKUP_MISS;
+  lookup.route = hz6_route_miss();
+  for (size_t i = 0; i < attempts; ++i) {
 #if HZ6_DIAGNOSTIC_PROBES
-  if (allocator) {
-    if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
-      ++allocator->stats.free_resolve_shared_valid;
-    } else if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
-      ++allocator->stats.free_resolve_shared_retry;
-    } else if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
-      ++allocator->stats.free_resolve_shared_stale;
-    } else {
-      ++allocator->stats.free_resolve_shared_miss;
+    if (allocator) {
+      ++allocator->stats.free_resolve_shared_probe;
     }
-  }
 #endif
+    lookup = hz6_shared_route_directory_lookup_snapshot(ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+    if (allocator) {
+      if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_VALID) {
+        ++allocator->stats.free_resolve_shared_valid;
+      } else if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+        ++allocator->stats.free_resolve_shared_retry;
+      } else if (lookup.status == HZ6_SHARED_ROUTE_LOOKUP_STALE) {
+        ++allocator->stats.free_resolve_shared_stale;
+      } else {
+        ++allocator->stats.free_resolve_shared_miss;
+      }
+    }
+#endif
+    if (lookup.status != HZ6_SHARED_ROUTE_LOOKUP_RETRY) {
+      return lookup;
+    }
+    hz6_free_route_resolve_spin_pause();
+  }
   return lookup;
 }
 
