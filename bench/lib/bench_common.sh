@@ -374,6 +374,13 @@ bench_find_hz6_high_remote_owner_inbox_target_library() {
     hz6-preload-high-remote-owner-inbox-target
 }
 
+bench_find_hz6_high_remote_owner_inbox_direct_reuse_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_HIGH_REMOTE_OWNER_INBOX_DIRECT_REUSE_TARGET_PRELOAD_SO \
+    hz6_preload_high_remote_owner_inbox_direct_reuse \
+    hz6-preload-high-remote-owner-inbox-direct-reuse-target
+}
+
 bench_find_hz6_transfer_class_shard_target_library() {
   bench_find_hz6_preload_output \
     HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO \
@@ -527,6 +534,9 @@ bench_find_allocator_library() {
     hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
       bench_find_hz6_high_remote_owner_inbox_target_library
       ;;
+    hz6-high-remote-owner-inbox-direct-reuse-target|hz6_high_remote_owner_inbox_direct_reuse_target)
+      bench_find_hz6_high_remote_owner_inbox_direct_reuse_target_library
+      ;;
     hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
       bench_find_hz6_transfer_class_shard_target_library
       ;;
@@ -673,6 +683,9 @@ bench_print_allocator_hints() {
       ;;
     hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
       echo "hint: build the HZ6 high-remote owner-inbox target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh' or set HZ6_HIGH_REMOTE_OWNER_INBOX_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-high-remote-owner-inbox-direct-reuse-target|hz6_high_remote_owner_inbox_direct_reuse_target)
+      echo "hint: build the HZ6 high-remote owner-inbox DirectReuse target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh' or set HZ6_HIGH_REMOTE_OWNER_INBOX_DIRECT_REUSE_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
       echo "hint: build the HZ6 transfer class-shard target lane with './hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh' or set HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO" >&2

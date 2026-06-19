@@ -22,6 +22,16 @@ hz6_preload_profile_owner_inbox_external_cflags() {
     "$out_name" "$enable_midpage_boundary"
 }
 
+hz6_preload_profile_owner_inbox_direct_reuse_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_external_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0
+}
+
 hz6_preload_profile_owner_inbox_off_cflags() {
   local out_name="$1"
   local enable_midpage_boundary="${2:-1}"

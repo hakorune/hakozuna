@@ -3270,6 +3270,53 @@ RSS.  The current source-gate shape still moves too much owner-local sink work
 away from the normal high-remote path.  Keep the variant for attribution only;
 do not use it in the high-remote profile.
 
+## 2026-06-20 DirectReuseAsProfile-L1
+
+Fixed frontcache-miss DirectReuse as an explicit profile/control alias, not as
+selected/default or the high-remote owner-inbox profile:
+
+```text
+hz6-high-remote-owner-inbox-direct-reuse-target
+  build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh
+```
+
+The builder composes the owner-inbox external profile with:
+
+```text
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=1
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=1
+HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=0
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh
+./hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh
+bash -lc 'ROOT_DIR=$PWD; source bench/lib/bench_common.sh; bench_find_allocator_library hz6-high-remote-owner-inbox-direct-reuse-target'
+./hakozuna-hz6/linux/run_hz6_preload_profile_frontier.sh \
+  --runs 1 \
+  --iters 20000 \
+  --rows focused \
+  --allocators hz6-high-remote-owner-inbox-target,hz6-high-remote-owner-inbox-direct-reuse-target \
+  --skip-prepare
+```
+
+Focused R1 smoke:
+
+```text
+row          owner-inbox  owner-inbox direct-reuse
+16_256       7.45M        7.54M
+16_4096      3.49M        3.56M
+1024_4096    3.03M        3.22M
+4096_16384   3.92M        3.99M
+```
+
+Decision: `GO(profile)/HOLD(default)`.  This keeps the DirectReuse candidate
+easy to run through the shared profile frontier while preserving immediate
+rollback: selected/default and `hz6-high-remote-owner-inbox-target` remain
+DirectReuse-off.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile
