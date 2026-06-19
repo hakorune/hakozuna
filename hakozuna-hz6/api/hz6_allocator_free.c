@@ -385,6 +385,14 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
                                                        &status_handled);
           if (status_handled) {
             ok = remote_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED;
+            if (!ok &&
+                hz6_remote_free_status_try_origin_transfer(allocator,
+                                                           ptr,
+                                                           route,
+                                                           remote_status)) {
+              ok = 1;
+              needs_rehome = 0;
+            }
           } else {
             ok = front->remote_free_tagged &&
                  front->remote_free_tagged(allocator, ptr, route);

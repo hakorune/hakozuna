@@ -64,6 +64,10 @@
     remote_free_returned_stale += stats.remote_free_returned_stale;
     remote_free_returned_integrity_failure +=
         stats.remote_free_returned_integrity_failure;
+    remote_free_backpressure_origin_transfer_success +=
+        stats.remote_free_backpressure_origin_transfer_success;
+    remote_free_backpressure_origin_transfer_fail +=
+        stats.remote_free_backpressure_origin_transfer_fail;
     remote_free_backpressure_drain_attempt +=
         stats.remote_free_backpressure_drain_attempt;
     remote_free_backpressure_drain_success +=

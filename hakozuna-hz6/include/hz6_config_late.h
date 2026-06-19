@@ -362,6 +362,19 @@
 #define HZ6_REMOTE_FREE_STATUS_DISPATCH_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1
+/* Opt-in fallback for transfer backpressure.  If the destination transfer
+ * cache is full before descriptor mutation, try committing the object into the
+ * origin allocator's transfer cache without route rehome. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1 0
+#endif
+
+#ifndef HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE
+/* Try origin-transfer relief for at most one out of N destination transfer
+ * backpressure events. */
+#define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE 1
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

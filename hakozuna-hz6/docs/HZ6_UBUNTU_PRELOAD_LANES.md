@@ -175,6 +175,12 @@ from stale or integrity failures.  The selected smoke showed
 `remote_free_returned_uncommitted=0`, `remote_free_returned_stale=0`, and
 `remote_free_returned_integrity_failure=0`; the integrity smoke now gates those
 non-backpressure outcomes at zero.
+`RemoteFreeBackpressureOriginTransfer-L1` is now selected with stride 2.  On
+destination transfer full, it tries the origin allocator's transfer cache
+without route rehome.  The stride-2 RUNS=10 result was
+`remote50=14934275.07` and `remote90=9902231.78`; the selected smoke showed
+`remote_free_backpressure_origin_transfer_success=5674` and kept uncommitted,
+stale, and integrity-failure returns at zero.
 The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
 `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
 opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while
