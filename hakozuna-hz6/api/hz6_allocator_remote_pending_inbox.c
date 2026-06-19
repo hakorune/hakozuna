@@ -7,10 +7,54 @@ typedef struct Hz6RemotePendingInboxEntry {
   void* ptr;
   Hz6ObjectDescriptor* descriptor;
   uint32_t generation;
+  uint16_t front_id;
   uint16_t class_id;
-  uint16_t reserved;
   Hz6OwnerToken owner_token;
 } Hz6RemotePendingInboxEntry;
+
+static int hz6_remote_pending_front_ordinal(uint16_t front_id,
+                                            uint16_t* out) {
+  if (!out) {
+    return 0;
+  }
+  switch (front_id) {
+    case HZ6_FRONT_LOCAL2P:
+      *out = 0;
+      return 1;
+    case HZ6_FRONT_MIDPAGE:
+      *out = 1;
+      return 1;
+    case HZ6_FRONT_LARGE:
+      *out = 2;
+      return 1;
+    case HZ6_FRONT_TOY:
+      *out = 3;
+      return 1;
+    default:
+      return 0;
+  }
+}
+
+static int hz6_remote_pending_key_bit(uint16_t front_id,
+                                      uint16_t class_id,
+                                      uint16_t* out_index,
+                                      uint64_t* out_bit) {
+  uint16_t ordinal = 0;
+  if (!out_bit || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
+      !hz6_remote_pending_front_ordinal(front_id, &ordinal)) {
+    return 0;
+  }
+  uint16_t bit_index =
+      (uint16_t)(ordinal * HZ6_FRONT_CACHE_CLASS_COUNT + class_id);
+  if (bit_index >= 64u) {
+    return 0;
+  }
+  if (out_index) {
+    *out_index = bit_index;
+  }
+  *out_bit = UINT64_C(1) << bit_index;
+  return 1;
+}
 
 static void hz6_remote_pending_lock(Hz6RemotePendingClassInbox* inbox) {
   while (atomic_flag_test_and_set_explicit(&inbox->lock,
@@ -43,6 +87,37 @@ static void hz6_remote_pending_note_current(Hz6Allocator* allocator,
   }
 }
 
+static void hz6_remote_pending_note_key_enqueue(Hz6Allocator* allocator,
+                                                uint16_t front_id,
+                                                uint16_t class_id) {
+  uint16_t key_index = 0;
+  uint64_t bit = 0;
+  if (!allocator ||
+      !hz6_remote_pending_key_bit(front_id, class_id, &key_index, &bit)) {
+    return;
+  }
+  if (allocator->remote_pending_key_count[key_index]++ == 0) {
+    atomic_fetch_or_explicit(&allocator->remote_pending_nonempty_mask, bit,
+                             memory_order_relaxed);
+  }
+}
+
+static void hz6_remote_pending_note_key_pop(Hz6Allocator* allocator,
+                                            uint16_t front_id,
+                                            uint16_t class_id) {
+  uint16_t key_index = 0;
+  uint64_t bit = 0;
+  if (!allocator ||
+      !hz6_remote_pending_key_bit(front_id, class_id, &key_index, &bit) ||
+      allocator->remote_pending_key_count[key_index] == 0) {
+    return;
+  }
+  if (--allocator->remote_pending_key_count[key_index] == 0) {
+    atomic_fetch_and_explicit(&allocator->remote_pending_nonempty_mask, ~bit,
+                              memory_order_relaxed);
+  }
+}
+
 static void hz6_remote_pending_requeue_locked(
     Hz6Allocator* allocator,
     uint16_t class_id,
@@ -53,6 +128,9 @@ static void hz6_remote_pending_requeue_locked(
   allocator->remote_pending_next[index] = inbox->head_index;
   inbox->head_index = index;
   ++inbox->count;
+  hz6_remote_pending_note_key_enqueue(
+      allocator, allocator->remote_pending_published_front_id[index],
+      allocator->remote_pending_published_class_id[index]);
   size_t current = atomic_fetch_add_explicit(
                        &allocator->remote_pending_current, 1u,
                        memory_order_relaxed) +
@@ -88,12 +166,13 @@ static int hz6_remote_pending_pop_class(
   hz6_remote_pending_unlock(inbox);
 
   Hz6ObjectDescriptor* descriptor = &allocator->descriptors[index];
-  out->ptr = descriptor->ptr;
+  out->ptr = allocator->remote_pending_published_ptr[index];
   out->descriptor = descriptor;
-  out->generation = descriptor->generation;
-  out->class_id = descriptor->class_id;
-  out->reserved = 0;
+  out->generation = allocator->remote_pending_published_generation[index];
+  out->front_id = allocator->remote_pending_published_front_id[index];
+  out->class_id = allocator->remote_pending_published_class_id[index];
   out->owner_token = allocator->remote_pending_owner_token[index];
+  hz6_remote_pending_note_key_pop(allocator, out->front_id, out->class_id);
   return 1;
 }
 
@@ -133,9 +212,18 @@ void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator) {
   for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
     allocator->remote_pending_next[i] = HZ6_REMOTE_PENDING_INDEX_NONE;
     allocator->remote_pending_enqueued[i] = 0;
+    allocator->remote_pending_published_ptr[i] = NULL;
+    allocator->remote_pending_published_generation[i] = 0;
+    allocator->remote_pending_published_front_id[i] = 0;
+    allocator->remote_pending_published_class_id[i] = 0;
     allocator->remote_pending_owner_token[i] = (Hz6OwnerToken){0};
   }
+  for (size_t i = 0; i < 64u; ++i) {
+    allocator->remote_pending_key_count[i] = 0;
+  }
   atomic_store_explicit(&allocator->remote_pending_current, 0u,
+                        memory_order_relaxed);
+  atomic_store_explicit(&allocator->remote_pending_nonempty_mask, 0u,
                         memory_order_relaxed);
 #else
   (void)allocator;
@@ -146,12 +234,18 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
                                          Hz6ObjectDescriptor* descriptor,
                                          void* ptr,
                                          uint32_t generation,
+                                         uint16_t front_id,
                                          uint16_t class_id) {
 #if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  uint64_t bit = 0;
+  uint16_t key_index = 0;
   if (!allocator || !descriptor || !ptr ||
-      class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+      class_id >= HZ6_FRONT_CACHE_CLASS_COUNT ||
+      !hz6_remote_pending_key_bit(front_id, class_id, &key_index, &bit)) {
     return 0;
   }
+  (void)key_index;
+  (void)bit;
   ++allocator->stats.remote_pending_enqueue_attempt;
   if (!hz6_owner_is_alive(&allocator->owner, allocator->owner.token)) {
     ++allocator->stats.remote_pending_owner_dead;
@@ -186,6 +280,10 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
     return 0;
   }
   descriptor->state = HZ6_STATE_REMOTE_PENDING;
+  allocator->remote_pending_published_ptr[index] = ptr;
+  allocator->remote_pending_published_generation[index] = generation;
+  allocator->remote_pending_published_front_id[index] = front_id;
+  allocator->remote_pending_published_class_id[index] = class_id;
   allocator->remote_pending_owner_token[index] = allocator->owner.token;
   hz6_remote_pending_requeue_locked(allocator, class_id, index);
   ++allocator->stats.remote_pending_enqueue_success;
@@ -196,6 +294,7 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
   (void)descriptor;
   (void)ptr;
   (void)generation;
+  (void)front_id;
   (void)class_id;
   return 0;
 #endif
@@ -230,7 +329,8 @@ size_t hz6_allocator_remote_pending_maintenance_class(
     Hz6ObjectDescriptor* descriptor = entry.descriptor;
     int valid = descriptor && descriptor->ptr == entry.ptr &&
                 descriptor->generation == entry.generation &&
-                descriptor->class_id == class_id;
+                descriptor->class_id == entry.class_id &&
+                entry.class_id == class_id;
     if (valid && descriptor->state != HZ6_STATE_REMOTE_PENDING) {
       ++allocator->stats.remote_pending_state_mismatch;
       valid = 0;
@@ -246,6 +346,7 @@ size_t hz6_allocator_remote_pending_maintenance_class(
           hz6_allocator_route_lookup_exact(allocator, entry.ptr);
       if (route.kind != HZ6_ROUTE_VALID || route.descriptor != descriptor ||
           route.generation != entry.generation || route.class_id != class_id ||
+          route.front_id != entry.front_id ||
           route.route_allocator != allocator) {
         ++allocator->stats.remote_pending_route_mismatch;
         valid = 0;
@@ -283,5 +384,84 @@ size_t hz6_allocator_remote_pending_maintenance_class(
   (void)class_id;
   (void)budget;
   return 0;
+#endif
+}
+
+int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
+                                              uint16_t front_id,
+                                              uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (!allocator) {
+    return 0;
+  }
+  ++allocator->stats.remote_pending_key_nonempty_load;
+  uint64_t bit = 0;
+  if (!hz6_remote_pending_key_bit(front_id, class_id, NULL, &bit)) {
+    return 0;
+  }
+  int hit = (atomic_load_explicit(&allocator->remote_pending_nonempty_mask,
+                                  memory_order_relaxed) &
+             bit) != 0;
+  if (hit) {
+    ++allocator->stats.remote_pending_key_nonempty_hit;
+  }
+  return hit;
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  return 0;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_frontcache_miss(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_on_frontcache_miss;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_front_dispatch(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_on_front_dispatch;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+#endif
+}
+
+void hz6_allocator_remote_pending_note_source_alloc(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+#if HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (hz6_allocator_remote_pending_key_nonempty(allocator, front_id,
+                                                class_id)) {
+    ++allocator->stats.pending_same_key_on_source_alloc;
+    ++allocator->stats.source_alloc_with_matching_pending;
+  }
+#else
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
 #endif
 }

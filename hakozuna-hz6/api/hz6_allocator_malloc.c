@@ -384,6 +384,8 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
         allocator, HZ6_FRONT_MIDPAGE, class_id);
     return ptr;
   }
+  hz6_allocator_remote_pending_note_frontcache_miss(
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
   ptr = hz6_allocator_preload_malloc_transfer_retry(
       allocator, HZ6_FRONT_MIDPAGE, class_id, &descriptor);
@@ -400,6 +402,8 @@ void* hz6_allocator_preload_midpage_malloc_skip_transfer(Hz6Allocator* allocator
 #endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
+  hz6_allocator_remote_pending_note_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
   ptr = hz6_midpage_alloc_with_descriptor(allocator, class_id, size,
@@ -486,6 +490,8 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
         allocator, HZ6_FRONT_MIDPAGE, class_id);
     return ptr;
   }
+  hz6_allocator_remote_pending_note_frontcache_miss(
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
   ptr = hz6_allocator_preload_malloc_transfer_retry(
       allocator, HZ6_FRONT_MIDPAGE, class_id, &descriptor);
@@ -502,6 +508,8 @@ void* hz6_allocator_preload_midpage_malloc_class_skip_transfer(
 #endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
+      allocator, HZ6_FRONT_MIDPAGE, class_id);
+  hz6_allocator_remote_pending_note_front_dispatch(
       allocator, HZ6_FRONT_MIDPAGE, class_id);
 #if HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
   ptr = hz6_midpage_alloc_with_descriptor(allocator, class_id, size,
@@ -584,6 +592,8 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
         allocator, HZ6_FRONT_TOY, class_id);
     return ptr;
   }
+  hz6_allocator_remote_pending_note_frontcache_miss(
+      allocator, HZ6_FRONT_TOY, class_id);
 #if HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1
   ptr = hz6_allocator_preload_malloc_transfer_retry(
       allocator, HZ6_FRONT_TOY, class_id, &descriptor);
@@ -597,6 +607,8 @@ hz6_allocator_preload_toy_malloc_direct_class(Hz6Allocator* allocator,
 #endif
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(
+      allocator, HZ6_FRONT_TOY, class_id);
+  hz6_allocator_remote_pending_note_front_dispatch(
       allocator, HZ6_FRONT_TOY, class_id);
   ptr = hz6_toy_front_ops()->alloc(allocator, class_id, size);
   if (!ptr) {
@@ -681,6 +693,8 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
                                                class_id);
     return direct_ptr;
   }
+  hz6_allocator_remote_pending_note_frontcache_miss(
+      allocator, front->front_id, class_id);
 #if HZ6_MIDPAGE_PREFILL_DIRECT_REUSE_L1 && HZ6_LOCAL_CACHE_DIRECT_ALLOC_L1
   if (front->front_id == HZ6_FRONT_MIDPAGE &&
       hz6_midpage_prefill_run(allocator, class_id) != 0) {
@@ -704,6 +718,8 @@ void* hz6_malloc(Hz6Allocator* allocator, size_t size) {
 
   hz6_toy_small_hotpath_diag_malloc_front_dispatch(allocator, front->front_id,
                                                    class_id);
+  hz6_allocator_remote_pending_note_front_dispatch(
+      allocator, front->front_id, class_id);
 #if HZ6_MIDPAGE_ALLOC_DESCRIPTOR_OUT_L1
   if (front->front_id == HZ6_FRONT_MIDPAGE) {
     Hz6ObjectDescriptor* midpage_descriptor = NULL;

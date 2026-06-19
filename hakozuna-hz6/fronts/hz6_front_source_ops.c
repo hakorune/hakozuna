@@ -27,6 +27,8 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
                                         HZ6_ALLOC_PATH_LOCAL_REUSE);
     return reused;
   }
+  hz6_allocator_remote_pending_note_source_alloc(allocator, front_id,
+                                                 class_id);
 
   Hz6ObjectDescriptor* descriptor =
       hz6_allocator_find_free_descriptor(allocator);

@@ -118,6 +118,7 @@ static inline int hz6_remote_free_status_try_owner_inbox(
   }
   if (!hz6_allocator_remote_pending_enqueue(origin, descriptor, ptr,
                                             route.generation,
+                                            route.front_id,
                                             route.class_id)) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.remote_free_pending_publish_fail;

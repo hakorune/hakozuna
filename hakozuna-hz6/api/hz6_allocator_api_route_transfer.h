@@ -218,12 +218,32 @@ int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
                                          Hz6ObjectDescriptor* descriptor,
                                          void* ptr,
                                          uint32_t generation,
+                                         uint16_t front_id,
                                          uint16_t class_id);
 
 size_t hz6_allocator_remote_pending_maintenance_class(
     Hz6Allocator* allocator,
     uint16_t class_id,
     size_t budget);
+
+int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
+                                              uint16_t front_id,
+                                              uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_frontcache_miss(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_front_dispatch(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_source_alloc(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
 
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
 

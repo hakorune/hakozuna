@@ -428,6 +428,11 @@
   HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1
+/* Behavior-neutral observation for direct pending reuse demand. */
+#define HZ6_REMOTE_PENDING_REUSE_DEMAND_AUDIT_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

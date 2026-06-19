@@ -85,3 +85,34 @@ The performance direction is strong, especially remote90, and the publish
 failure gate is now zero.  Do not select yet: the owner-local consumer is too
 weak (`remote_pending_current` remains high at exit) and backpressure returns
 are not fully eliminated.
+
+## Demand Audit Follow-Up
+
+`RemotePendingReuseDemandAudit-L1` added behavior-neutral immutable proof
+storage and a per-key nonempty mask.  The first implementation used a scan to
+refresh the mask and regressed badly, so the mask was changed to O(1) per-key
+counts.
+
+Opt-in smoke with owner inbox + demand audit:
+
+```text
+remote_pending_key_nonempty_load=6478
+remote_pending_key_nonempty_hit=1
+pending_same_key_on_frontcache_miss=0
+pending_same_key_on_front_dispatch=1
+pending_same_key_on_source_alloc=0
+source_alloc_with_matching_pending=0
+remote_free_pending_publish_fail=0
+remote_free_returned_uncommitted=0
+```
+
+RUNS=3 after the O(1) fix:
+
+```text
+remote50=14637714.57
+remote90=10727161.65
+```
+
+This says the large pending balance in this smoke is mostly exit inventory, not
+obvious same-key demand falling through to source allocation on the measured
+path.

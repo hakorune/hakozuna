@@ -109,6 +109,18 @@
     remote_free_pending_no_rehome += stats.remote_free_pending_no_rehome;
     remote_free_pending_publish_fail +=
         stats.remote_free_pending_publish_fail;
+    remote_pending_key_nonempty_load +=
+        stats.remote_pending_key_nonempty_load;
+    remote_pending_key_nonempty_hit +=
+        stats.remote_pending_key_nonempty_hit;
+    pending_same_key_on_frontcache_miss +=
+        stats.pending_same_key_on_frontcache_miss;
+    pending_same_key_on_front_dispatch +=
+        stats.pending_same_key_on_front_dispatch;
+    pending_same_key_on_source_alloc +=
+        stats.pending_same_key_on_source_alloc;
+    source_alloc_with_matching_pending +=
+        stats.source_alloc_with_matching_pending;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

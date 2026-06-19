@@ -214,6 +214,13 @@ allocator, then lets owner-local class maintenance move `REMOTE_PENDING` to
 measured `remote50=14988073.96` and `remote90=10816334.11`.  Keep it off until
 owner-local consumption reduces the remaining pending backlog and
 `remote_free_returned_backpressure` reaches zero.
+`RemotePendingReuseDemandAudit-L1` adds immutable pending publication proof and
+an O(1) per-key nonempty mask without changing behavior.  Owner-inbox opt-in
+smoke showed `remote_pending_key_nonempty_load=6478`,
+`remote_pending_key_nonempty_hit=1`, and
+`source_alloc_with_matching_pending=0`; RUNS=3 stayed strong at
+`remote50=14637714.57`, `remote90=10727161.65`.  Treat pending balance as
+inventory unless same-key demand counters prove missed reuse.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,

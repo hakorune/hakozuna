@@ -57,6 +57,12 @@
   size_t remote_free_origin_pending_commit;
   size_t remote_free_pending_no_rehome;
   size_t remote_free_pending_publish_fail;
+  size_t remote_pending_key_nonempty_load;
+  size_t remote_pending_key_nonempty_hit;
+  size_t pending_same_key_on_frontcache_miss;
+  size_t pending_same_key_on_front_dispatch;
+  size_t pending_same_key_on_source_alloc;
+  size_t source_alloc_with_matching_pending;
   size_t remote_free_backpressure_origin_transfer_success;
   size_t remote_free_backpressure_origin_transfer_fail;
   size_t remote_free_backpressure_origin_transfer_stride_skip;

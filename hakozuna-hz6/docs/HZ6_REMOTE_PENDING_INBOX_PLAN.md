@@ -138,3 +138,41 @@ remote90=10816334.11
 
 Next work should keep the publish boundary but improve owner-local consumption
 before promotion.
+
+## 2026-06-19 Demand Audit
+
+`RemotePendingReuseDemandAudit-L1` added immutable publication proof and an
+O(1) per-key nonempty mask:
+
+```text
+published_ptr
+published_generation
+published_front_id
+published_class_id
+published_owner_token
+```
+
+The first mask refresh used descriptor-table scanning on pop and regressed, so
+it was replaced with per-key counts.  With owner inbox + audit enabled:
+
+```text
+remote_pending_key_nonempty_load=6478
+remote_pending_key_nonempty_hit=1
+pending_same_key_on_frontcache_miss=0
+pending_same_key_on_front_dispatch=1
+pending_same_key_on_source_alloc=0
+source_alloc_with_matching_pending=0
+```
+
+RUNS=3:
+
+```text
+remote50=14637714.57
+remote90=10727161.65
+```
+
+Interpretation: the measured lane has a large pending inventory at exit, but
+the current demand points did not observe same-key demand falling through to
+source allocation.  Direct reuse should therefore use the nonempty mask as a
+cheap gate and should be judged by `source_alloc_with_matching_pending`, not by
+forcing `remote_pending_current` to zero.
