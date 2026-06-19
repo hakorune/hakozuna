@@ -212,6 +212,19 @@ int hz6_allocator_remote_free_overflow_pop(Hz6Allocator* allocator,
 int hz6_allocator_remote_free_drain_transfer_one(Hz6Allocator* allocator,
                                                  uint16_t class_id);
 
+void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator);
+
+int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
+                                         Hz6ObjectDescriptor* descriptor,
+                                         void* ptr,
+                                         uint32_t generation,
+                                         uint16_t class_id);
+
+size_t hz6_allocator_remote_pending_maintenance_class(
+    Hz6Allocator* allocator,
+    uint16_t class_id,
+    size_t budget);
+
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
 
 void hz6_allocator_note_transfer_pop(Hz6Allocator* allocator);

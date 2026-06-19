@@ -364,6 +364,14 @@ typedef struct Hz6RouteLastHitCache {
 } Hz6RouteLastHitCache;
 #endif
 
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+typedef struct Hz6RemotePendingClassInbox {
+  atomic_flag lock;
+  uint32_t head_index;
+  size_t count;
+} Hz6RemotePendingClassInbox;
+#endif
+
 struct Hz6Allocator {
   Hz6ProfileConfig profile;
   Hz6OwnerRecord owner;
@@ -403,6 +411,13 @@ struct Hz6Allocator {
   size_t next_descriptor_index;
   size_t descriptor_available_count;
   Hz6ObjectDescriptor descriptors[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  Hz6RemotePendingClassInbox
+      remote_pending_inbox[HZ6_FRONT_CACHE_CLASS_COUNT];
+  uint32_t remote_pending_next[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  uint8_t remote_pending_enqueued[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
+  _Atomic size_t remote_pending_current;
+#endif
 #if HZ6_DESCRIPTOR_SIDE_OWNER16_L1 || HZ6_DESCRIPTOR_STORAGE_OWNER16_L1
   uint32_t descriptor_side_owner16[HZ6_OBJECT_DESCRIPTOR_CAPACITY];
 #endif

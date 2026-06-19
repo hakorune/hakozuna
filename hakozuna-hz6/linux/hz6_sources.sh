@@ -55,6 +55,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_orphan_adopt_commit.c"
   "${HZ6_DIR}/api/hz6_allocator_orphan_adopt.c"
   "${HZ6_DIR}/api/hz6_allocator_remote_pending.c"
+  "${HZ6_DIR}/api/hz6_allocator_remote_pending_inbox.c"
   "${HZ6_DIR}/api/hz6_allocator_route.c"
   "${HZ6_DIR}/api/hz6_allocator_route_mutation.c"
   "${HZ6_DIR}/api/hz6_allocator_route_domain.c"

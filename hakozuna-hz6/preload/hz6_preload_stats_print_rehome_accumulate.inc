@@ -72,6 +72,38 @@
         stats.preload_malloc_transfer_retry_attempt;
     preload_malloc_transfer_retry_hit +=
         stats.preload_malloc_transfer_retry_hit;
+    remote_pending_enqueue_attempt +=
+        stats.remote_pending_enqueue_attempt;
+    remote_pending_enqueue_success +=
+        stats.remote_pending_enqueue_success;
+    remote_pending_enqueue_full += stats.remote_pending_enqueue_full;
+    remote_pending_duplicate_claim +=
+        stats.remote_pending_duplicate_claim;
+    remote_pending_owner_dead += stats.remote_pending_owner_dead;
+    remote_pending_publish_fail += stats.remote_pending_publish_fail;
+    remote_pending_current += stats.remote_pending_current;
+    size_t pending_high_water = stats.remote_pending_high_water;
+    if (pending_high_water > remote_pending_high_water) {
+      remote_pending_high_water = pending_high_water;
+    }
+    remote_pending_maintenance_check +=
+        stats.remote_pending_maintenance_check;
+    remote_pending_maintenance_armed +=
+        stats.remote_pending_maintenance_armed;
+    remote_pending_batch_call += stats.remote_pending_batch_call;
+    remote_pending_batch_items += stats.remote_pending_batch_items;
+    remote_pending_frontcache_push +=
+        stats.remote_pending_frontcache_push;
+    remote_pending_frontcache_full +=
+        stats.remote_pending_frontcache_full;
+    remote_pending_generation_mismatch +=
+        stats.remote_pending_generation_mismatch;
+    remote_pending_owner_mismatch +=
+        stats.remote_pending_owner_mismatch;
+    remote_pending_route_mismatch +=
+        stats.remote_pending_route_mismatch;
+    remote_pending_state_mismatch +=
+        stats.remote_pending_state_mismatch;
     remote_free_backpressure_origin_transfer_success +=
         stats.remote_free_backpressure_origin_transfer_success;
     remote_free_backpressure_origin_transfer_fail +=

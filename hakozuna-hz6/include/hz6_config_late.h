@@ -400,6 +400,21 @@
 #define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1 0
 #endif
 
+#ifndef HZ6_REMOTE_PENDING_INBOX_CORE_L1
+/* Owner-stable remote pending inbox core.  Producers publish descriptor
+ * indices into an owner allocator per-class inbox; behavior stays off until a
+ * remote-free policy box calls it. */
+#define HZ6_REMOTE_PENDING_INBOX_CORE_L1 0
+#endif
+
+#ifndef HZ6_REMOTE_PENDING_INBOX_CLASS_CAPACITY
+#define HZ6_REMOTE_PENDING_INBOX_CLASS_CAPACITY HZ6_OBJECT_DESCRIPTOR_CAPACITY
+#endif
+
+#ifndef HZ6_REMOTE_PENDING_DRAIN_BUDGET
+#define HZ6_REMOTE_PENDING_DRAIN_BUDGET ((size_t)4)
+#endif
+
 #ifndef HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1
 /* Bounded relief lane for remote-free transfer backpressure.  On reserve
  * failure, drain one already-committed same-class transfer object into the

@@ -99,6 +99,24 @@
           "preload_malloc_transfer_retry_stride_skip=%zu "
           "preload_malloc_transfer_retry_attempt=%zu "
           "preload_malloc_transfer_retry_hit=%zu "
+          "remote_pending_enqueue_attempt=%zu "
+          "remote_pending_enqueue_success=%zu "
+          "remote_pending_enqueue_full=%zu "
+          "remote_pending_duplicate_claim=%zu "
+          "remote_pending_owner_dead=%zu "
+          "remote_pending_publish_fail=%zu "
+          "remote_pending_current=%zu "
+          "remote_pending_high_water=%zu "
+          "remote_pending_maintenance_check=%zu "
+          "remote_pending_maintenance_armed=%zu "
+          "remote_pending_batch_call=%zu "
+          "remote_pending_batch_items=%zu "
+          "remote_pending_frontcache_push=%zu "
+          "remote_pending_frontcache_full=%zu "
+          "remote_pending_generation_mismatch=%zu "
+          "remote_pending_owner_mismatch=%zu "
+          "remote_pending_route_mismatch=%zu "
+          "remote_pending_state_mismatch=%zu "
           "remote_free_backpressure_origin_transfer_success=%zu "
           "remote_free_backpressure_origin_transfer_fail=%zu "
           "remote_free_backpressure_origin_transfer_stride_skip=%zu "
@@ -183,6 +201,24 @@
           preload_malloc_transfer_retry_stride_skip,
           preload_malloc_transfer_retry_attempt,
           preload_malloc_transfer_retry_hit,
+          remote_pending_enqueue_attempt,
+          remote_pending_enqueue_success,
+          remote_pending_enqueue_full,
+          remote_pending_duplicate_claim,
+          remote_pending_owner_dead,
+          remote_pending_publish_fail,
+          remote_pending_current,
+          remote_pending_high_water,
+          remote_pending_maintenance_check,
+          remote_pending_maintenance_armed,
+          remote_pending_batch_call,
+          remote_pending_batch_items,
+          remote_pending_frontcache_push,
+          remote_pending_frontcache_full,
+          remote_pending_generation_mismatch,
+          remote_pending_owner_mismatch,
+          remote_pending_route_mismatch,
+          remote_pending_state_mismatch,
           remote_free_backpressure_origin_transfer_success,
           remote_free_backpressure_origin_transfer_fail,
           remote_free_backpressure_origin_transfer_stride_skip,

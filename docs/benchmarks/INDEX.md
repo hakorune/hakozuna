@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Linux x86_64 HZ6 remote pending inbox core, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_PENDING_INBOX_CORE.md)
 - [Linux x86_64 HZ6 remote backpressure capacity, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_CAPACITY.md)
 - [Linux x86_64 HZ6 backpressure policy clock, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_BACKPRESSURE_POLICY_CLOCK.md)
 - [Linux x86_64 HZ6 remote backpressure drain, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_BACKPRESSURE_DRAIN.md)

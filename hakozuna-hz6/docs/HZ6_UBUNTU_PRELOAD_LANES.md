@@ -117,6 +117,7 @@ HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1=0
 HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
 HZ6_REMOTE_FREE_OVERFLOW_L1=0
 HZ6_REMOTE_FREE_CONSUMER_REHOME_L1=0
 ```
@@ -193,6 +194,14 @@ measured `remote50=14090990.96`, `remote90=2134217.85` in RUNS=10, while true
 `remote90=8788405.81`.  The current selected lane therefore uses
 `HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE=1` so production and
 diagnostic builds share the same policy.
+`RemotePendingInboxCore-L1` is now available as a behavior-off core box behind
+`HZ6_REMOTE_PENDING_INBOX_CORE_L1=0` in selected.  It adds a per-class owner
+inbox, duplicate-claim tracking, owner/generation/route validation, and
+owner-local maintenance counters.  Selected/off and opt-in/on integrity smokes
+both kept all `remote_pending_*` counters at zero because no remote-free path is
+connected yet.  The next behavior box is
+`RemoteFreeBackpressureOwnerInbox-L1`: on destination transfer full, publish to
+the origin owner inbox while keeping route/logical/descriptor owner stable.
 `RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
 origin-transfer misses without changing behavior.  The selected smoke showed
 `remote_free_backpressure_origin_transfer_stride_skip=16295`,
