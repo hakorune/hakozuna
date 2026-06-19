@@ -141,6 +141,15 @@ import csv
 import statistics
 import sys
 
+def pct(values, numerator, denominator):
+    if not values:
+        return float("nan")
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    index = round((len(ordered) - 1) * numerator / denominator)
+    return ordered[index]
+
 rows = {}
 with open(sys.argv[1], newline="") as f:
     reader = csv.DictReader(f, delimiter="\t")
@@ -152,11 +161,22 @@ with open(sys.argv[1], newline="") as f:
         rows[key]["ops"].append(float(row["ops_s"]))
         rows[key]["peak"].append(float(row["peak_kb"]))
 
-print("variant\trow\tmedian_ops_s\tmedian_peak_mib\truns")
+print(
+    "variant\trow\truns\t"
+    "ops_min\tops_p25\tops_median\tops_p75\tops_max\t"
+    "peak_mib_min\tpeak_mib_p25\tpeak_mib_median\tpeak_mib_p75\tpeak_mib_max"
+)
 for key in sorted(rows):
     ops = rows[key]["ops"]
-    peak = rows[key]["peak"]
-    print(f"{key[0]}\t{key[1]}\t{statistics.median(ops):.2f}\t{statistics.median(peak) / 1024.0:.2f}\t{len(ops)}")
+    peak_mib = [value / 1024.0 for value in rows[key]["peak"]]
+    print(
+        f"{key[0]}\t{key[1]}\t{len(ops)}\t"
+        f"{min(ops):.2f}\t{pct(ops, 1, 4):.2f}\t{statistics.median(ops):.2f}\t"
+        f"{pct(ops, 3, 4):.2f}\t{max(ops):.2f}\t"
+        f"{min(peak_mib):.2f}\t{pct(peak_mib, 1, 4):.2f}\t"
+        f"{statistics.median(peak_mib):.2f}\t{pct(peak_mib, 3, 4):.2f}\t"
+        f"{max(peak_mib):.2f}"
+    )
 PY
 
 echo "[DONE] ${OUTDIR}"

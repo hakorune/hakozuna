@@ -3416,6 +3416,45 @@ remote50 and remote90.  Keep
 not add a transfer-aware skip or selected promotion until a stronger paired
 batch shows stable upside.
 
+## 2026-06-20 PairedGateDistributionSummary-L1
+
+Updated the owner-inbox paired gate and tax attribution runners so the summary
+TSV shows the distribution needed for promotion review:
+
+```text
+ops_min / ops_p25 / ops_median / ops_p75 / ops_max
+peak_mib_min / peak_mib_p25 / peak_mib_median / peak_mib_p75 / peak_mib_max
+```
+
+The raw per-run TSVs remain unchanged, and the tax runner still appends counter
+medians after the distribution columns.  This is observation-only; allocator
+flags and behavior are unchanged.
+
+Verification:
+
+```text
+bash -n hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+bash -n hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh
+git diff --check
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production --runs 1 --rows remote50 --variants p1_external
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 1 --variants p1_owner_inbox
+```
+
+The smoke outputs confirmed the new columns.  Example paired-gate RUNS=1
+summary row:
+
+```text
+p1_owner_inbox remote90 runs=1 ops_min=11119250.60 ops_median=11119250.60 peak_mib_median=77.88
+```
+
+Decision: `GO(tooling)`.  Use these richer summaries for the next RUNS=10
+paired batches so variance and RSS spread are visible without reprocessing raw
+logs.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

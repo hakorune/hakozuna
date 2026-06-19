@@ -350,6 +350,15 @@ import csv
 import statistics
 import sys
 
+def pct(values, numerator, denominator):
+    if not values:
+        return float("nan")
+    ordered = sorted(values)
+    if len(ordered) == 1:
+        return ordered[0]
+    index = round((len(ordered) - 1) * numerator / denominator)
+    return ordered[index]
+
 runs_path, counters_path = sys.argv[1:3]
 runs = {}
 with open(runs_path, newline="") as f:
@@ -374,16 +383,29 @@ with open(counters_path, newline="") as f:
             if row[name] != "NA":
                 bucket[name].append(float(row[name]))
 
-print("variant\trow\tmedian_ops_s\tmedian_peak_mib\truns\t" + "\t".join(f"median_{name}" for name in counter_names))
+print(
+    "variant\trow\truns\t"
+    "ops_min\tops_p25\tops_median\tops_p75\tops_max\t"
+    "peak_mib_min\tpeak_mib_p25\tpeak_mib_median\tpeak_mib_p75\tpeak_mib_max\t"
+    + "\t".join(f"median_{name}" for name in counter_names)
+)
 for key in sorted(runs):
     ops = runs[key]["ops"]
-    peak = runs[key]["peak"]
+    peak_mib = [value / 1024.0 for value in runs[key]["peak"]]
     row = [
         key[0],
         key[1],
-        f"{statistics.median(ops):.2f}",
-        f"{statistics.median(peak) / 1024.0:.2f}",
         str(len(ops)),
+        f"{min(ops):.2f}",
+        f"{pct(ops, 1, 4):.2f}",
+        f"{statistics.median(ops):.2f}",
+        f"{pct(ops, 3, 4):.2f}",
+        f"{max(ops):.2f}",
+        f"{min(peak_mib):.2f}",
+        f"{pct(peak_mib, 1, 4):.2f}",
+        f"{statistics.median(peak_mib):.2f}",
+        f"{pct(peak_mib, 3, 4):.2f}",
+        f"{max(peak_mib):.2f}",
     ]
     for name in counter_names:
         values = counters.get(key, {}).get(name, [])
