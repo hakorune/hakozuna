@@ -158,6 +158,29 @@ bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
   ops/s=80413.30 fail=0 timeout=no
 ```
 
+2026-06-19 Phase 1B route transfer-owner box is implemented and selected:
+
+- `HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1` replaces the selected rehome
+  unregister/register sequence with a locked transfer.
+- Rehome acquires origin and destination route-domain write locks in stable
+  address order, revalidates the expected origin route, registers the
+  destination local route, transfers the shared-directory exact record owner in
+  place, then tombstones the origin local route.
+- If destination route registration or shared-directory owner transfer fails,
+  the destination local route is rolled back before the locks are released.
+- `HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=0` keeps the old rehome path available as
+  an immediate rollback lane.
+
+Smoke evidence after route transfer-owner selected:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=175482.77 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=127924.91 fail=0 timeout=no
+```
+
 2026-06-19 Phase 2 initial resolver box is implemented and selected for core
 remote free:
 

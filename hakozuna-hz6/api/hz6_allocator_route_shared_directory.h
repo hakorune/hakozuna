@@ -13,6 +13,12 @@ int hz6_shared_route_directory_register(Hz6Allocator* allocator,
 void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
                                            void* base);
 
+int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
+                                              Hz6Allocator* new_allocator,
+                                              void* base,
+                                              uint32_t generation,
+                                              void* descriptor);
+
 Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr);
 
 Hz6RouteResult hz6_shared_route_range_lookup_raw(const void* ptr);

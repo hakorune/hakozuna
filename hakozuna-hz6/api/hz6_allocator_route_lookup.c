@@ -260,6 +260,36 @@ int hz6_allocator_route_negative_filter_skip_local(
   return 1;
 }
 
+#if HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1
+static int hz6_allocator_route_rehome_lock_origin_first(
+    const Hz6Allocator* origin,
+    const Hz6Allocator* destination) {
+  return (uintptr_t)origin < (uintptr_t)destination;
+}
+
+static void hz6_allocator_route_rehome_lock_pair(Hz6Allocator* origin,
+                                                 Hz6Allocator* destination) {
+  if (hz6_allocator_route_rehome_lock_origin_first(origin, destination)) {
+    hz6_allocator_route_domain_lock(origin);
+    hz6_allocator_route_domain_lock(destination);
+    return;
+  }
+  hz6_allocator_route_domain_lock(destination);
+  hz6_allocator_route_domain_lock(origin);
+}
+
+static void hz6_allocator_route_rehome_unlock_pair(Hz6Allocator* origin,
+                                                   Hz6Allocator* destination) {
+  if (hz6_allocator_route_rehome_lock_origin_first(origin, destination)) {
+    hz6_allocator_route_domain_unlock(destination);
+    hz6_allocator_route_domain_unlock(origin);
+    return;
+  }
+  hz6_allocator_route_domain_unlock(origin);
+  hz6_allocator_route_domain_unlock(destination);
+}
+#endif
+
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                      const Hz6RouteResult* route) {
   if (!allocator || !route || route->kind != HZ6_ROUTE_VALID ||
@@ -273,6 +303,53 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
   Hz6Allocator* origin = route->route_allocator;
   void* ptr = descriptor->ptr;
   size_t bytes = descriptor->bytes;
+#if HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1
+  hz6_allocator_route_rehome_lock_pair(origin, allocator);
+  Hz6RouteResult origin_route =
+      hz6_route_backend_lookup_exact(&origin->route_backend, ptr);
+  if (origin_route.kind != HZ6_ROUTE_VALID ||
+      origin_route.descriptor != route->descriptor ||
+      origin_route.generation != route->generation ||
+      origin_route.front_id != route->front_id ||
+      origin_route.class_id != route->class_id) {
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+  if (!hz6_route_backend_register_exact(&allocator->route_backend,
+                                        ptr,
+                                        bytes,
+                                        route->front_id,
+                                        route->class_id,
+                                        route->generation,
+                                        (void*)descriptor,
+                                        NULL)) {
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+  if (!hz6_shared_route_directory_transfer_owner(origin,
+                                                 allocator,
+                                                 ptr,
+                                                 route->generation,
+                                                 (void*)descriptor)) {
+    hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+#endif
+  hz6_route_backend_unregister_exact(&origin->route_backend, ptr, NULL);
+  hz6_allocator_route_domain_note_compact_debt(origin);
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+  hz6_allocator_route_last_hit_clear(origin);
+  hz6_allocator_route_last_hit_clear(allocator);
+#endif
+#if HZ6_OWNER_LOCALITY_INDEX_L1
+  hz6_owner_locality_index_register(allocator, ptr, route->generation);
+  hz6_owner_locality_index_unregister(origin, ptr);
+#endif
+  hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+  return 1;
+#else
 #if HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1
   if (!hz6_allocator_route_register_exact_reason(
           allocator, ptr, bytes, route->front_id, route->class_id,
@@ -296,7 +373,7 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
         HZ6_ROUTE_REGISTER_REASON_REHOME);
     return 0;
   }
-
   return 1;
+#endif
 #endif
 }

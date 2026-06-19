@@ -71,6 +71,7 @@ HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
 HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256
 HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
+HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1
 HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
 HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
 HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=0
@@ -149,6 +150,16 @@ transfer cache, and roll the route back if the transfer push fails.  This
 removes the old split-brain case where transfer ownership could commit while
 the route still pointed at the origin.  It is still a bounded bridge, not the
 final ordered dual-lock transaction.
+
+Phase 1B route transfer status, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1`.  Rehome takes origin and destination
+route-domain write locks in stable order, validates the expected origin route,
+registers the destination local route, transfers the shared-directory owner
+record in place, and only then tombstones the origin local route.  The old
+unregister/register rehome remains behind
+`HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=0`.
+Focused smokes completed at `175482.77 ops/s` for `remote50 16..32768` and
+`127924.91 ops/s` for `remote90 16..131072`.
 
 Phase 2 initial resolver status, 2026-06-19: selected preload now enables
 `HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1` for the remote-free path.  The resolver

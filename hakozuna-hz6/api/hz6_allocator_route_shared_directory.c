@@ -576,6 +576,72 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
 #endif
 }
 
+int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
+                                              Hz6Allocator* new_allocator,
+                                              void* base,
+                                              uint32_t generation,
+                                              void* descriptor) {
+  if (!old_allocator || !new_allocator || !base || !descriptor) {
+    return 0;
+  }
+  size_t start = hz6_shared_route_directory_index((uintptr_t)base);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  size_t lock_index = hz6_shared_route_directory_lock_index(start);
+  hz6_shared_route_directory_writer_lock(lock_index);
+#endif
+  for (size_t probe = 0; probe < HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY; ++probe) {
+    size_t index = (start + probe) % HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY;
+    Hz6SharedRouteDirectoryEntry* entry =
+        &g_hz6_shared_route_directory[index];
+    uintptr_t current =
+        atomic_load_explicit(&entry->base, memory_order_acquire);
+    if (current == 0) {
+      break;
+    }
+    if (current == HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE ||
+        current != (uintptr_t)base) {
+      continue;
+    }
+    Hz6Allocator* owner =
+        atomic_load_explicit(&entry->allocator, memory_order_acquire);
+    uintptr_t descriptor_value =
+        atomic_load_explicit(&entry->descriptor, memory_order_acquire);
+    unsigned int current_generation =
+        atomic_load_explicit(&entry->generation, memory_order_acquire);
+    unsigned int owner_slot =
+        atomic_load_explicit(&entry->owner_slot, memory_order_acquire);
+    unsigned int owner_generation =
+        atomic_load_explicit(&entry->owner_generation, memory_order_acquire);
+    if (owner != old_allocator || descriptor_value != (uintptr_t)descriptor ||
+        current_generation != generation ||
+        old_allocator->owner.token.slot != (uint32_t)owner_slot ||
+        old_allocator->owner.token.generation !=
+            (uint32_t)owner_generation) {
+      break;
+    }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    hz6_shared_route_directory_entry_begin_update(entry);
+#endif
+    atomic_store_explicit(&entry->allocator, new_allocator,
+                          memory_order_release);
+    atomic_store_explicit(&entry->owner_slot,
+                          new_allocator->owner.token.slot,
+                          memory_order_release);
+    atomic_store_explicit(&entry->owner_generation,
+                          new_allocator->owner.token.generation,
+                          memory_order_release);
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+    hz6_shared_route_directory_entry_end_update(entry);
+    hz6_shared_route_directory_writer_unlock(lock_index);
+#endif
+    return 1;
+  }
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
+  hz6_shared_route_directory_writer_unlock(lock_index);
+#endif
+  return 0;
+}
+
 void hz6_allocator_route_shared_directory_dryrun(Hz6Allocator* allocator,
                                                  const void* ptr) {
 #if HZ6_DIAGNOSTIC_PROBES
@@ -675,6 +741,19 @@ void hz6_shared_route_directory_unregister(Hz6Allocator* allocator,
                                            void* base) {
   (void)allocator;
   (void)base;
+}
+
+int hz6_shared_route_directory_transfer_owner(Hz6Allocator* old_allocator,
+                                              Hz6Allocator* new_allocator,
+                                              void* base,
+                                              uint32_t generation,
+                                              void* descriptor) {
+  (void)old_allocator;
+  (void)new_allocator;
+  (void)base;
+  (void)generation;
+  (void)descriptor;
+  return 0;
 }
 
 Hz6RouteResult hz6_shared_route_directory_lookup_raw(const void* ptr) {
