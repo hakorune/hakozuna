@@ -89,13 +89,24 @@ added from the Linux x86_64 full allocator frontier run
 `guard_r0` filled by a same-machine/same-runner selected-row rerun. Its role in
 this table is low and flat RSS, not top throughput.
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row | HZ6 | HZ6 RSS | HZ6 row |
-|------|-----|-----|----------|----------|----------|---------|-----|--------:|---------|
-| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | hz5-pagerun64-main | 16.88M | 67.38 MiB | hz6 / local0 |
-| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | hz5-large128-transfer128 | 15.08M | 69.50 MiB | hz6 / remote50 |
-| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | hz5-pagerun64-cross128 | 10.99M | 72.07 MiB | hz6 / remote90 |
-| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main | 189.48M | 65.88 MiB | HZ6 selected row |
-| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | hz5-large128-transfer128 | 6.38M | 68.91 MiB | hz6 / cross128_r90 |
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 |
+|------|-----|-----|----------|----------|----------|-----|
+| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | 16.88M |
+| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | 15.08M |
+| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | 10.99M |
+| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | 189.48M |
+| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | 6.38M |
+
+Profile-selection notes:
+
+- HZ5 selected rows: main_r0 and guard_r0 use hz5-pagerun64-main;
+  main_r50 and cross128_r90 use hz5-large128-transfer128; main_r90 uses
+  hz5-pagerun64-cross128.
+- HZ6 selected rows: main_r0/main_r50/main_r90 use the HZ6 full R10
+  local0/remote50/remote90 rows; guard_r0 uses the selected-row guard rerun;
+  cross128_r90 uses the full R10 cross128_r90 row.
+- HZ6 peak RSS medians: main_r0 67.38 MiB, main_r50 69.50 MiB,
+  main_r90 72.07 MiB, guard_r0 65.88 MiB, cross128_r90 68.91 MiB.
 
 HZ5 Linux profile family
 ------------------------
