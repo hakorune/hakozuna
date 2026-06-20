@@ -8,9 +8,12 @@ allocators on the same benchmark binary.
 ```bash
 ./hakozuna-hz6/linux/run_hz6_remote_allocator_compare.sh \
   --runs 10 \
-  --allocators system,hz3,hz4,hz6,transfer_presence,small_class_shard,mimalloc,tcmalloc \
+  --allocators system,hz3,hz4,hz6,transfer_presence,owner_inbox_external,small_class_shard,mimalloc,tcmalloc \
   --rows remote50,remote90,cross128_r90
 ```
+
+`owner_inbox_external` is a short runner alias for the HZ6 high-remote
+owner-inbox target and should be included in future cross128 sink comparisons.
 
 ## Raw Results
 
