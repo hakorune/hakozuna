@@ -55,7 +55,8 @@ Latest benchmark and paper
 --------------------------
 
 - Benchmark snapshot: docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md
-- HZ5-inclusive MT snapshot: RUNS=10 / T=16 / Ubuntu native / 2026-05-26
+- HZ5/HZ6-inclusive MT snapshot: RUNS=10 / T=16 / Ubuntu native /
+  2026-05-26 and 2026-06-21
 - Public paper PDF (English): docs/paper/main_en.pdf
 - Public paper PDF (Japanese): docs/paper/main_ja.pdf
 - Local paper workspace: private/paper/
@@ -81,16 +82,19 @@ Latest benchmark and paper
 Representative MT snapshot
 --------------------------
 
-The table uses a same-machine, same-runner RUNS=10 / T=16 rerun. HZ5 is shown
-as "Best HZ5" because it is a profile family, not one default allocator.
+The table uses same-machine Ubuntu-native MT snapshots. HZ5 is shown as
+"Best HZ5" because it is a profile family, not one default allocator. HZ6 is
+added from the Linux x86_64 full allocator frontier run
+`2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md`; its role in
+this table is low and flat RSS, not top throughput.
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row |
-|------|-----|-----|----------|----------|----------|---------|
-| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | hz5-pagerun64-main |
-| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | hz5-large128-transfer128 |
-| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | hz5-pagerun64-cross128 |
-| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main |
-| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | hz5-large128-transfer128 |
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row | HZ6 | HZ6 RSS | HZ6 row |
+|------|-----|-----|----------|----------|----------|---------|-----|--------:|---------|
+| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | hz5-pagerun64-main | 16.88M | 67.38 MiB | hz6 / local0 |
+| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | hz5-large128-transfer128 | 15.08M | 69.50 MiB | hz6 / remote50 |
+| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | hz5-pagerun64-cross128 | 10.99M | 72.07 MiB | hz6 / remote90 |
+| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main | n/a | n/a | not in HZ6 full R10 |
+| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | hz5-large128-transfer128 | 6.38M | 68.91 MiB | hz6 / cross128_r90 |
 
 HZ5 Linux profile family
 ------------------------
