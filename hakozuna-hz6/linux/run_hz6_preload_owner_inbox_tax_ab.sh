@@ -349,12 +349,27 @@ counter_keys=(
   transfer_pop
   source_alloc
   frontcache_reuse_hit
+  free_calls
+  free_toy_active_map_attempt
+  free_toy_active_map_hit
+  free_toy_active_map_miss
+  free_midpage_active_map_attempt
+  free_midpage_active_map_hit
+  free_midpage_active_map_miss
+  free_route_lookup_after_maps
+  free_route_valid_owned
+  free_route_valid_foreign_visible
+  free_resolved_foreign_direct_dispatch
+  free_resolved_duplicate_route_lookup_avoided
   midpage_source_alloc
   toy_source_alloc
   large_source_alloc
   route_unregister_while_pending
   route_replace_while_pending
   route_rehome_while_pending
+  toy_small_active_map_free_attempt
+  toy_small_active_map_free_hit
+  toy_small_active_map_route_bypass
   remote_pending_enqueue_success
   remote_pending_external_ticket_success
   remote_pending_maintenance_check
