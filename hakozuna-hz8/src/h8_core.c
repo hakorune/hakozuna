@@ -172,9 +172,9 @@ void h8_stats_snapshot(H8Stats* out) {
       atomic_load_explicit(&h8g.pending_dequeue_count, memory_order_acquire);
   out->orphan_handoff_count =
       atomic_load_explicit(&h8g.orphan_handoff_count, memory_order_acquire);
-  out->adopt_success_count =
-      atomic_load_explicit(&h8g.adopt_success_count, memory_order_acquire);
-  out->adopt_fail_count = atomic_load_explicit(&h8g.adopt_fail_count, memory_order_acquire);
+  out->handoff_success_count =
+      atomic_load_explicit(&h8g.handoff_success_count, memory_order_acquire);
+  out->handoff_fail_count = atomic_load_explicit(&h8g.handoff_fail_count, memory_order_acquire);
   out->invalid_count = atomic_load_explicit(&h8g.invalid_count, memory_order_acquire);
   out->miss_count = atomic_load_explicit(&h8g.miss_count, memory_order_acquire);
   out->owner_transition_count =

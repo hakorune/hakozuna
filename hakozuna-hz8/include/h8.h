@@ -39,8 +39,8 @@ typedef struct H8Stats {
   size_t pending_enqueue_count;
   size_t pending_dequeue_count;
   size_t orphan_handoff_count;
-  size_t adopt_success_count;
-  size_t adopt_fail_count;
+  size_t handoff_success_count;
+  size_t handoff_fail_count;
   size_t invalid_count;
   size_t miss_count;
   size_t owner_transition_count;

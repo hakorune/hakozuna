@@ -15,6 +15,16 @@ static void* worker(void* arg) {
   return NULL;
 }
 
+static void* orphan_source(void* arg) {
+  (void)arg;
+  void* p = h8_malloc(128);
+  if (!p) {
+    return (void*)1;
+  }
+  memset(p, 0x5A, 128);
+  return p;
+}
+
 int main(void) {
   h8_init();
   void* p = h8_malloc(32);
@@ -40,6 +50,29 @@ int main(void) {
   pthread_join(t, &rc);
   if (rc != NULL) {
     return 5;
+  }
+  pthread_t orphan_thread;
+  if (pthread_create(&orphan_thread, NULL, orphan_source, NULL) != 0) {
+    perror("pthread_create");
+    return 6;
+  }
+  void* orphan_ptr = NULL;
+  if (pthread_join(orphan_thread, &orphan_ptr) != 0) {
+    perror("pthread_join");
+    return 7;
+  }
+  if (orphan_ptr == (void*)1 || !orphan_ptr) {
+    fprintf(stderr, "orphan alloc failed\n");
+    return 8;
+  }
+  if (h8_route(orphan_ptr) != H8_ROUTE_VALID) {
+    fprintf(stderr, "route invalid after owner exit handoff\n");
+    return 9;
+  }
+  h8_free(orphan_ptr);
+  if (h8_route(orphan_ptr) == H8_ROUTE_VALID) {
+    fprintf(stderr, "route still valid after orphan free\n");
+    return 10;
   }
   H8Stats stats = h8_stats();
   printf("arena=%zu committed=%zu owners=%zu local=%zu remote=%zu\n",

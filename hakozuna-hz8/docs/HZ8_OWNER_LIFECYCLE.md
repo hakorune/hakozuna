@@ -479,6 +479,22 @@ Regular owner re-adoption can wait for v1.  Permanent orphan owner prevents
 valid remote frees from becoming invalid merely because the allocating thread
 exited.
 
+In v0, the only formal handoff path is:
+
+```text
+old owner ALIVE
+  -> DYING / publish gate closed
+  -> publish refs == 0
+  -> pending queue fully drained
+  -> span handoff to permanent orphan owner
+  -> old owner DEAD
+```
+
+That handoff must be a whole-span transition, not a per-object rehome.  The
+implementation surface should stay generic (`h8_span_handoff(...)`) so v1 can
+add regular-owner adoption later, but v0 must pin the target to the permanent
+orphan owner only.
+
 ## Atomic Ordering
 
 | Operation | Ordering |

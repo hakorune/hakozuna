@@ -1,5 +1,7 @@
 #include "h8_internal.h"
 
+#include <stdlib.h>
+
 static void h8_owner_close_gate(H8OwnerRecord* owner) {
   uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
   for (;;) {
@@ -37,13 +39,15 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
       h8_span_retire(span);
     } else {
-      span->span_state = H8_SPAN_ORPHAN_READY;
-      atomic_fetch_add_explicit(&span->span_epoch, 1, memory_order_acq_rel);
-      span->owner_slot = h8_orphan_owner()->slot;
-      span->owner_generation = h8_orphan_owner()->generation;
-      h8_owner_add_orphan_span(h8_orphan_owner(), span);
-      atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
-      atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
+      H8OwnerWord expected = h8_owner_word_make((uint8_t)owner->slot,
+                                                (uint16_t)owner->generation,
+                                                H8_SPAN_OWNED_ACTIVE,
+                                                atomic_load_explicit(&span->span_epoch,
+                                                                     memory_order_acquire));
+      if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
+        atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+        abort();
+      }
     }
     span = next;
   }
