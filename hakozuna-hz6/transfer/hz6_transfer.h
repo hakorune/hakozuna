@@ -14,6 +14,10 @@ typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
 #define HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1 0
 #endif
 
+#ifndef HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT
+#define HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT 0
+#endif
+
 typedef struct Hz6TransferObject {
   void* ptr;
   void* descriptor;

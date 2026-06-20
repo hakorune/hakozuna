@@ -4606,3 +4606,54 @@ empty-scan totals much larger than hit-scan totals on the measured rows.  Keep
 the counters as diagnostic evidence only; do not stack another behavior change
 until the next design decision chooses whether to address scan shape, cache
 layout, or profile packaging.
+
+## 2026-06-20 Transfer Below-Min Pop Scan Limit
+
+Box:
+
+```text
+TransferBelowMinPopScanLimit-L1
+```
+
+Control:
+
+```text
+HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT=64
+```
+
+Runner variant:
+
+```text
+p0_transfer_class_presence_min192_scan64
+```
+
+Shape: when `HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1=1` and the cache occupancy is
+below `HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`, scan only the newest N transfer
+objects before returning a miss.  This does not drop objects or change ownership;
+missed older entries remain in the transfer cache.
+
+Diagnostic R1:
+
+```text
+raw: hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151228
+
+row             min192 empty_total  scan64 empty_total
+cross128_r90    26714736           12130757
+remote90_short  6102201            5687639
+```
+
+Production R3:
+
+```text
+raw: hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151329
+
+row             min192  scan64
+cross128_r90    3.43M   2.53M
+remote90_short  8.89M   8.66M
+```
+
+Decision: `NO-GO(default/profile)`.  The scan cap reduces diagnostic scan work,
+but the production rows do not improve.  The likely tradeoff is that bounded
+scan misses older same-class transfer entries and pushes work into later reuse
+or source paths.  Keep the flag as an opt-in research switch only; do not add it
+to `hz6-high-remote-transfer-presence-target`.

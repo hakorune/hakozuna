@@ -382,12 +382,20 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
     HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   size_t scanned = 0;
 #endif
-  for (size_t i = cache->count; i > 0; --i) {
+  size_t scan_limit = cache->count;
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
+    HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT > 0
+  if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL &&
+      scan_limit > (size_t)HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT) {
+    scan_limit = (size_t)HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT;
+  }
+#endif
+  for (size_t offset = 0; offset < scan_limit; ++offset) {
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
     HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
     ++scanned;
 #endif
-    size_t index = i - 1;
+    size_t index = cache->count - 1u - offset;
     if (cache->objects[index].class_id != class_id) {
       continue;
     }
