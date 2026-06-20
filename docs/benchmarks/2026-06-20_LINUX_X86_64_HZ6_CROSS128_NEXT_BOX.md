@@ -6,34 +6,44 @@ Follow-up direction after `Cross128RouteCostAudit-L1`.
 
 - `cross128_r90` is a fixed 128B Toy-size remote-heavy row.
 - HZ6 is far behind HZ4/tcmalloc/HZ3 on this row in the allocator compare.
-- Diagnostic counters show the row is dominated by remote transfer pressure and
-  transfer-cache scan/full cost, not source allocation.
-- `toy_source_alloc` is about 1K, while `returned_backpressure` is about 125K.
-- `small_class_shard` reduces `transfer_pop` and scan work, but does not remove
-  the full/backpressure tail.
+- `transfer_presence` helped the transfer-cache negative lookup side, but the
+  remaining small-object weakness is now in owner-inbox maintenance/reuse.
+- Broad follow-up knobs have been tested and rejected:
+  class-shard tuning, source-boundary DirectReuse, front external-only
+  maintenance, and larger pending drain budgets.
+- The useful split-maintenance signal is not "drain more".  Split changes where
+  inline maintenance is attempted, and the benefit is unstable when expressed
+  through broad flags.
 
 ## Next Box
 
 ```text
-ToyCross128TransferFastPath-L1
+ToyClass2FrontMaintenanceGate-L1
 ```
 
 Boundary:
 
-- Toy/front small only.
-- Prefer exact 128B class first; do not affect MidPage or large paths.
+- Toy front, class 2 only.  `128B` requests map to Toy class 2 because the Toy
+  class size is 256B.
+- Gate front-side inline pending maintenance explicitly instead of relying on
+  broad split/source/external-only flags.
+- Do not change DirectReuse ordering.
+- Do not increase pending drain budget.
+- Do not touch MidPage or large paths.
 - Default-off flag, production A/B safe.
-- No profile mixing with `transfer_presence`.
+- Keep the implementation in a small helper boundary; avoid editing the large
+  allocator core files unless they only receive one-line hooks.
 
 First implementation candidate:
 
 ```text
-Toy128OriginTransferSpecialize-L1
+ToyClass2FrontInlineMaintenanceGate-L1
 ```
 
 Goal:
 
-- Reduce origin-transfer full/scan cost for fixed 128B remote frees.
+- Reduce unstable front-side inline maintenance cost on fixed 128B remote-heavy
+  rows while preserving the owner-inbox sink.
 - Keep correctness authority unchanged.
 - Avoid remote-thread frontcache mutation and broad draining.
 
@@ -42,7 +52,9 @@ Promotion evidence:
 - `cross128_r90` production R3/R10 improves.
 - `remote50` and `remote90` do not regress materially.
 - Integrity gates stay zero.
-- `returned_backpressure` and `transfer_reserve_full` decrease on cross128.
+- `toy_source_alloc` and pending backlog do not increase materially.
+- Split-maintenance variance improves rather than just producing occasional
+  high outliers.
 
 ## Class-Shard Scope Observation
 
@@ -589,3 +601,59 @@ regresses `cross128_r90`.  The next implementation should not simply skip
 front inline maintenance.  It needs a narrow Toy class 2 policy that decides
 when front-side inline maintenance is worth doing, instead of a broad
 external-only rule.
+
+## Pending Drain Budget Probe
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_pending_budget_prod_r3_20260620_175718`
+
+New runner variants:
+
+```text
+p1_external_budget2
+p1_external_budget4
+p1_external_split_maintenance_budget2
+p1_external_split_maintenance_budget4
+```
+
+These test whether simply draining more pending objects per maintenance call
+helps the small-object remote-heavy row.  The run used production mode with
+`remote50`, `remote90`, and `cross128_r90`.
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external` | `remote50` | 13.25M | 13.09M | 13.81M | 74.8 MiB |
+| `p1_external_budget2` | `remote50` | 13.93M | 13.41M | 14.14M | 74.8 MiB |
+| `p1_external_budget4` | `remote50` | 11.71M | 11.26M | 12.85M | 74.8 MiB |
+| `p1_external_split_maintenance` | `remote50` | 12.90M | 12.76M | 13.28M | 74.9 MiB |
+| `p1_external_split_maintenance_budget2` | `remote50` | 13.52M | 11.29M | 14.10M | 74.9 MiB |
+| `p1_external_split_maintenance_budget4` | `remote50` | 13.29M | 12.99M | 13.79M | 75.0 MiB |
+| `p1_external` | `remote90` | 11.10M | 10.73M | 11.21M | 77.6 MiB |
+| `p1_external_budget2` | `remote90` | 10.69M | 10.63M | 10.79M | 77.5 MiB |
+| `p1_external_budget4` | `remote90` | 10.83M | 10.75M | 10.96M | 77.4 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.95M | 10.83M | 10.98M | 77.4 MiB |
+| `p1_external_split_maintenance_budget2` | `remote90` | 10.82M | 10.79M | 11.21M | 77.3 MiB |
+| `p1_external_split_maintenance_budget4` | `remote90` | 10.59M | 10.58M | 11.05M | 77.4 MiB |
+| `p1_external` | `cross128_r90` | 5.01M | 2.97M | 5.43M | 76.1 MiB |
+| `p1_external_budget2` | `cross128_r90` | 1.08M | 0.86M | 1.57M | 91.4 MiB |
+| `p1_external_budget4` | `cross128_r90` | 1.45M | 1.31M | 1.47M | 94.0 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 4.11M | 2.20M | 37.05M | 76.1 MiB |
+| `p1_external_split_maintenance_budget2` | `cross128_r90` | 3.27M | 2.77M | 9.06M | 77.8 MiB |
+| `p1_external_split_maintenance_budget4` | `cross128_r90` | 5.82M | 2.29M | 6.40M | 75.1 MiB |
+
+Decision:
+
+```text
+Larger pending drain budget:
+  NO-GO as the next cross128 optimization
+```
+
+The plain owner-inbox budget increases sharply regress `cross128_r90` and raise
+RSS.  Split plus budget 4 has a slightly higher R3 median than `p1_external`,
+but the p25 remains weak and the prior split evidence already showed high
+variance.  This confirms that the next box should not be "drain more".  It
+should express the useful part of split maintenance as a narrow Toy class 2
+front-side gate.
