@@ -737,3 +737,35 @@ keeps the `remote50`/`remote90` guard rows healthier than broad split in the R3
 batch.  It does not recover the full broad-split cross128 win, and its lower
 tail remains weak.  The next step is a paired R10 guard matrix before any
 profile promotion decision.
+
+Paired R10 guard raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_toy2_split_guard_r10_20260620_181018`
+
+Production R10:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external` | `remote50` | 13.52M | 12.77M | 13.83M | 74.9 MiB |
+| `p1_external_split_maintenance` | `remote50` | 13.38M | 13.18M | 13.57M | 74.9 MiB |
+| `p1_external_toy2_split_maintenance` | `remote50` | 13.52M | 13.16M | 13.81M | 74.9 MiB |
+| `p1_external` | `remote90` | 10.95M | 10.84M | 11.12M | 77.4 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.87M | 10.58M | 10.98M | 77.4 MiB |
+| `p1_external_toy2_split_maintenance` | `remote90` | 11.06M | 10.88M | 11.34M | 77.4 MiB |
+| `p1_external` | `cross128_r90` | 5.53M | 3.04M | 7.59M | 74.9 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 13.97M | 10.15M | 24.84M | 72.6 MiB |
+| `p1_external_toy2_split_maintenance` | `cross128_r90` | 11.55M | 7.04M | 17.87M | 73.1 MiB |
+
+Decision update:
+
+```text
+ToyClass2FrontMaintenanceGate-L1:
+  GO(profile candidate)
+  HOLD(default)
+```
+
+The paired R10 guard matrix keeps `remote50` essentially flat, improves
+`remote90` slightly, and more than doubles `cross128_r90` versus `p1_external`.
+Broad split still wins the cross128 median, but it does not improve the guard
+rows.  The Toy2 gate is therefore the better boxed candidate for a cross128
+specialist profile; it is not a default candidate yet.
