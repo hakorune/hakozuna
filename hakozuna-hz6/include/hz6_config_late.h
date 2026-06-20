@@ -753,6 +753,13 @@
 #define HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1
+/* Research free-dispatch shape.  Resolve before active maps, but consume only
+ * authoritative foreign-valid routes; all other results fall back to the
+ * selected active-map-first path. */
+#define HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 0
+#endif
+
 #if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 || \
     HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 || \
     HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
