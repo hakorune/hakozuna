@@ -448,3 +448,61 @@ The class2 combination looked promising in R3, but failed the focused R10 and
 was worse than split maintenance alone.  The runner variants remain useful for
 reproduction, but the next implementation box should not combine owner-inbox
 maintenance with transfer class-shard placement.
+
+## Split-Maintenance Counter Attribution
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_maintenance_diag_r3_20260620_174537`
+
+Runner update:
+
+```text
+inline_toy / external_toy
+c0..c4 inline/external maintenance drains
+```
+
+These counters are extracted from `HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL` so
+future maintenance-shape boxes can see whether a result changes the actual Toy
+class 2 consumption path.
+
+Diagnostic R3 on `cross128_r90`:
+
+| Counter | `p1_external` | `p1_external_split_maintenance` |
+| --- | ---: | ---: |
+| `remote_free_origin_pending_commit` | 549.1K | 586.7K |
+| `remote_pending_enqueue_success` | 517.1K | 521.5K |
+| `remote_pending_external_ticket_success` | 34.7K | 47.7K |
+| `remote_pending_maintenance_check` | 420.0K | 457.9K |
+| `remote_pending_maintenance_entry_gate_miss` | 349.2K | 613.9K |
+| `remote_pending_maintenance_inline_gate_hit` | 419.8K | 401.4K |
+| `remote_pending_maintenance_external_gate_hit` | 29.0K | 40.7K |
+| `remote_pending_maintenance_inline_deferred` | 0 | 454.7K |
+| `remote_pending_maintenance_inline_pop_success` | 391.7K | 400.3K |
+| `remote_pending_maintenance_external_success` | 29.0K | 40.7K |
+| `c2_inline` | 391.7K | 400.3K |
+| `c2_external` | 29.0K | 40.7K |
+| `remote_pending_batch_items` | 420.0K | 457.9K |
+| `remote_pending_current` | 123.4K | 122.1K |
+| `remote_pending_external_ticket_current` | 5.7K | 7.0K |
+
+Decision:
+
+```text
+SplitMaintenance attribution:
+  observed
+
+Toy class 2 drain volume:
+  not the primary differentiator
+
+Next box:
+  reduce or specialize front-side maintenance gating,
+  not transfer class-shard placement and not more drain volume
+```
+
+Both variants drain roughly the same Toy class 2 inventory.  The split variant
+mainly changes where inline work is attempted: many front-side inline checks
+are deferred and the source-gate path performs the actual consumption.  This
+explains why the existing split flag can improve lower-tail behavior without
+being a stable selected candidate.  A future implementation should make this
+boundary explicit for Toy class 2 instead of relying on the broad split flag.

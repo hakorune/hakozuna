@@ -315,6 +315,20 @@ counter_keys=(
   remote_pending_maintenance_frontcache_push_success_external
   remote_pending_maintenance_drained_inline
   remote_pending_maintenance_drained_external
+  inline_toy
+  inline_midpage
+  external_toy
+  external_midpage
+  c0_inline
+  c0_external
+  c1_inline
+  c1_external
+  c2_inline
+  c2_external
+  c3_inline
+  c3_external
+  c4_inline
+  c4_external
   remote_pending_batch_items
   remote_pending_current
   remote_pending_external_key_probe
