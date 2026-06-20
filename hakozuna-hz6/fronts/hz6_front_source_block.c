@@ -440,7 +440,17 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 
   if (filled == 0) {
+#if HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1
+    if (front_id == HZ6_FRONT_TOY && class_id == 2) {
+      if (!hz6_allocator_abort_unretained_source_block(allocator, block)) {
+        hz6_allocator_release_source_block(allocator, block);
+      }
+    } else {
+      hz6_allocator_release_source_block(allocator, block);
+    }
+#else
     hz6_allocator_release_source_block(allocator, block);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
     if (has_front_index) {

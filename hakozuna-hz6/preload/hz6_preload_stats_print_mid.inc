@@ -9,7 +9,17 @@
           "elastic_descriptor_overflow_reset=%zu "
           "elastic_descriptor_overflow_exhausted=%zu "
           "route_register_fail=%zu "
-          "source_block_exhausted=%zu source_prefill_attempt=%zu "
+          "source_block_exhausted=%zu "
+          "toy2_construct_abort_attempt=%zu "
+          "toy2_construct_abort_success=%zu "
+          "toy2_construct_abort_ref_nonzero=%zu "
+          "toy2_construct_abort_live_descriptor=%zu "
+          "toy2_construct_abort_live_route=%zu "
+          "toy2_construct_abort_pending_reference=%zu "
+          "toy2_construct_abort_double_release=%zu "
+          "toy2_construct_abort_release_fail=%zu "
+          "toy2_unretained_active_block_after_abort=%zu "
+          "source_prefill_attempt=%zu "
           "source_prefill_filled=%zu source_prefill_fallback=%zu "
           "front_source_prefill_alloc=%zu toy_source_prefill_call=%zu "
           "route_lookup_probe_total=%zu "
@@ -32,7 +42,15 @@
           elastic_descriptor_overflow_reset,
           elastic_descriptor_overflow_exhausted,
           route_register_fail,
-          source_block_exhausted, source_prefill_attempt,
+          source_block_exhausted, toy2_construct_abort_attempt,
+          toy2_construct_abort_success, toy2_construct_abort_ref_nonzero,
+          toy2_construct_abort_live_descriptor,
+          toy2_construct_abort_live_route,
+          toy2_construct_abort_pending_reference,
+          toy2_construct_abort_double_release,
+          toy2_construct_abort_release_fail,
+          toy2_unretained_active_block_after_abort,
+          source_prefill_attempt,
           source_prefill_filled, source_prefill_fallback,
           front_source_prefill_alloc, toy_source_prefill_call,
           route_lookup_probe_total,

@@ -27,6 +27,15 @@
   size_t elastic_descriptor_overflow_exhausted = 0;
   size_t route_register_fail = 0;
   size_t source_block_exhausted = 0;
+  size_t toy2_construct_abort_attempt = 0;
+  size_t toy2_construct_abort_success = 0;
+  size_t toy2_construct_abort_ref_nonzero = 0;
+  size_t toy2_construct_abort_live_descriptor = 0;
+  size_t toy2_construct_abort_live_route = 0;
+  size_t toy2_construct_abort_pending_reference = 0;
+  size_t toy2_construct_abort_double_release = 0;
+  size_t toy2_construct_abort_release_fail = 0;
+  size_t toy2_unretained_active_block_after_abort = 0;
   size_t source_prefill_attempt = 0;
   size_t source_prefill_filled = 0;
   size_t source_prefill_fallback = 0;
@@ -290,6 +299,20 @@
     elastic_descriptor_overflow_exhausted += stats.elastic_descriptor_overflow_exhausted;
     route_register_fail += stats.route_register_fail;
     source_block_exhausted += stats.source_block_exhausted;
+    toy2_construct_abort_attempt += stats.toy2_construct_abort_attempt;
+    toy2_construct_abort_success += stats.toy2_construct_abort_success;
+    toy2_construct_abort_ref_nonzero += stats.toy2_construct_abort_ref_nonzero;
+    toy2_construct_abort_live_descriptor +=
+        stats.toy2_construct_abort_live_descriptor;
+    toy2_construct_abort_live_route += stats.toy2_construct_abort_live_route;
+    toy2_construct_abort_pending_reference +=
+        stats.toy2_construct_abort_pending_reference;
+    toy2_construct_abort_double_release +=
+        stats.toy2_construct_abort_double_release;
+    toy2_construct_abort_release_fail +=
+        stats.toy2_construct_abort_release_fail;
+    toy2_unretained_active_block_after_abort +=
+        stats.toy2_unretained_active_block_after_abort;
     source_prefill_attempt += stats.source_prefill_attempt;
     source_prefill_filled += stats.source_prefill_filled;
     source_prefill_fallback += stats.source_prefill_fallback;

@@ -463,14 +463,32 @@
               "toy_source_alloc=%zu midpage_source_alloc=%zu "
               "large_source_alloc=%zu local2p_source_alloc=%zu "
               "alloc_fail=%zu descriptor_exhausted=%zu "
-              "route_register_fail=%zu source_block_exhausted=%zu\n",
+              "route_register_fail=%zu source_block_exhausted=%zu "
+              "toy2_construct_abort_attempt=%zu "
+              "toy2_construct_abort_success=%zu "
+              "toy2_construct_abort_ref_nonzero=%zu "
+              "toy2_construct_abort_live_descriptor=%zu "
+              "toy2_construct_abort_live_route=%zu "
+              "toy2_construct_abort_pending_reference=%zu "
+              "toy2_construct_abort_double_release=%zu "
+              "toy2_construct_abort_release_fail=%zu "
+              "toy2_unretained_active_block_after_abort=%zu\n",
               i, (void*)allocator, stats.route_valid, stats.route_invalid,
               stats.route_miss, stats.transfer_push, stats.transfer_pop,
               stats.source_alloc, stats.toy_source_alloc,
               stats.midpage_source_alloc, stats.large_source_alloc,
               stats.local2p_source_alloc, stats.alloc_fail,
               stats.descriptor_exhausted, stats.route_register_fail,
-              stats.source_block_exhausted);
+              stats.source_block_exhausted,
+              stats.toy2_construct_abort_attempt,
+              stats.toy2_construct_abort_success,
+              stats.toy2_construct_abort_ref_nonzero,
+              stats.toy2_construct_abort_live_descriptor,
+              stats.toy2_construct_abort_live_route,
+              stats.toy2_construct_abort_pending_reference,
+              stats.toy2_construct_abort_double_release,
+              stats.toy2_construct_abort_release_fail,
+              stats.toy2_unretained_active_block_after_abort);
     }
     pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
   }

@@ -674,6 +674,13 @@
 #define HZ6_PRELOAD_PHASE_COUNT_COMPILED_OUT_L1 0
 #endif
 
+#ifndef HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1
+/* Default-off construction rollback probe.  When a Toy class2 source block
+ * never successfully materializes a slot, release the zero-ref backing through
+ * a preconditioned abort path instead of the normal refcounted release API. */
+#define HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1 0
+#endif
+
 #ifndef HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
 /* Default-off calloc control.  When enabled, preload calloc delegates to the
  * next real calloc implementation instead of hz6 malloc plus memset. */

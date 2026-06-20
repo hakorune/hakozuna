@@ -369,6 +369,15 @@
   size_t activation_route_repair_conflict;
   size_t source_block_release_live_guard;
   size_t source_block_release_live_descriptors_max;
+  size_t toy2_construct_abort_attempt;
+  size_t toy2_construct_abort_success;
+  size_t toy2_construct_abort_ref_nonzero;
+  size_t toy2_construct_abort_live_descriptor;
+  size_t toy2_construct_abort_live_route;
+  size_t toy2_construct_abort_pending_reference;
+  size_t toy2_construct_abort_double_release;
+  size_t toy2_construct_abort_release_fail;
+  size_t toy2_unretained_active_block_after_abort;
   size_t visible_first_attempt;
   size_t visible_first_hit;
   size_t visible_first_miss;
