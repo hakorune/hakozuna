@@ -674,3 +674,66 @@ The R10 follow-up closes the remaining ambiguity from the R3 probe:
 `split_maintenance` is a real cross128 signal in this batch, but increasing the
 drain budget destroys it.  The next behavior box should preserve split's
 placement of inline work while keeping drain budget 1.
+
+## Toy Class 2 Split-Maintenance Gate
+
+Raw outputs:
+
+- smoke: `hakozuna-hz6/private/raw-results/linux/hz6_toy2_split_smoke_20260620_180624`
+- R3 guards: `hakozuna-hz6/private/raw-results/linux/hz6_toy2_split_prod_r3_20260620_180635`
+- R10 cross128: `hakozuna-hz6/private/raw-results/linux/hz6_toy2_split_cross128_r10_20260620_180717`
+
+Implementation box:
+
+```text
+ToyClass2FrontMaintenanceGate-L1
+```
+
+The box adds a small policy helper and a tax-runner variant:
+
+```text
+p1_external_toy2_split_maintenance
+```
+
+Behavior:
+
+- Front-side maintenance uses external-only maintenance only for Toy class 2.
+- Source-gate maintenance is enabled only for Toy class 2.
+- Pending drain budget stays at 1.
+- DirectReuse remains off.
+
+Production R3 guards:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external` | `remote50` | 13.63M | 13.38M | 13.79M | 74.8 MiB |
+| `p1_external_split_maintenance` | `remote50` | 12.41M | 12.12M | 13.88M | 74.8 MiB |
+| `p1_external_toy2_split_maintenance` | `remote50` | 13.54M | 12.19M | 14.22M | 74.9 MiB |
+| `p1_external` | `remote90` | 10.86M | 10.78M | 11.06M | 77.6 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.98M | 10.83M | 11.08M | 77.5 MiB |
+| `p1_external_toy2_split_maintenance` | `remote90` | 11.47M | 11.14M | 11.55M | 77.4 MiB |
+| `p1_external` | `cross128_r90` | 7.35M | 3.23M | 39.54M | 74.0 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 12.59M | 7.86M | 36.93M | 72.6 MiB |
+| `p1_external_toy2_split_maintenance` | `cross128_r90` | 7.86M | 1.55M | 41.03M | 74.8 MiB |
+
+Production R10 on `cross128_r90`:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external` | 3.69M | 2.98M | 6.13M | 75.9 MiB |
+| `p1_external_split_maintenance` | 13.64M | 10.86M | 23.53M | 72.4 MiB |
+| `p1_external_toy2_split_maintenance` | 8.04M | 3.29M | 11.30M | 73.8 MiB |
+
+Decision:
+
+```text
+ToyClass2FrontMaintenanceGate-L1:
+  GO(research implementation)
+  HOLD(selected/profile)
+```
+
+Toy2-limited split improves `cross128_r90` versus plain `p1_external` and
+keeps the `remote50`/`remote90` guard rows healthier than broad split in the R3
+batch.  It does not recover the full broad-split cross128 win, and its lower
+tail remains weak.  The next step is a paired R10 guard matrix before any
+profile promotion decision.

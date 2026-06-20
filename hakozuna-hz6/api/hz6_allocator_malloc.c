@@ -9,6 +9,8 @@
 #include "../fronts/midpage/hz6_midpage_front.h"
 #include "../fronts/toy/hz6_toy_front.h"
 
+#include "hz6_allocator_remote_pending_maintenance_policy.h"
+
 #include <stdlib.h>
 
 #if HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 && HZ6_REMOTE_PENDING_INBOX_CORE_L1
@@ -47,14 +49,15 @@ static size_t hz6_allocator_run_front_pending_maintenance(
     size_t budget) {
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
                                                        class_id);
-#if HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1
-  size_t pending_drained =
-      hz6_allocator_remote_pending_maintenance_class_external_only(
-          allocator, front_id, class_id, budget);
-#else
-  size_t pending_drained = hz6_allocator_remote_pending_maintenance_class(
-      allocator, front_id, class_id, budget);
-#endif
+  size_t pending_drained = 0;
+  if (hz6_remote_pending_policy_front_external_only(front_id, class_id)) {
+    pending_drained =
+        hz6_allocator_remote_pending_maintenance_class_external_only(
+            allocator, front_id, class_id, budget);
+  } else {
+    pending_drained = hz6_allocator_remote_pending_maintenance_class(
+        allocator, front_id, class_id, budget);
+  }
   hz6_allocator_remote_pending_note_after_maintenance(allocator, front_id,
                                                       class_id);
   return pending_drained;
@@ -329,6 +332,9 @@ static void* hz6_allocator_try_source_gate_pending_maintenance(
     *out_descriptor = NULL;
   }
   if (!allocator || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return NULL;
+  }
+  if (!hz6_remote_pending_policy_source_gate_allowed(front_id, class_id)) {
     return NULL;
   }
   hz6_allocator_remote_pending_note_before_maintenance(allocator, front_id,
