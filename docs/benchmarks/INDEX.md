@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Linux x86_64 HZ6 cross128 next box, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_CROSS128_NEXT_BOX.md)
 - [Linux x86_64 HZ6 cross128 route cost audit, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_CROSS128_ROUTE_COST_AUDIT.md)
 - [Linux x86_64 HZ6 remote allocator compare, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE.md)
 - [Linux x86_64 HZ6 remote profile frontier, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_REMOTE_PROFILE_FRONTIER.md)
