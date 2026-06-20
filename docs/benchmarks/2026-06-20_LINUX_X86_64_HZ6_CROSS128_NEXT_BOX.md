@@ -181,3 +181,28 @@ SourceGate / SmallClass on top:
 The next implementation box should not add another broad placement policy.  It
 should either make owner-inbox pending cheaper to consume for Toy class 2 or
 reduce the fixed RSS/metadata tax of enabling owner inbox in the selected lane.
+
+## Route-Pin Trust Probe
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_route_pin_prod_r10_20260620_172405`
+
+Production R10 on `cross128_r90`:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external` | 7.75M | 3.72M | 16.76M | 73.1 MiB |
+| `p1_external_route_pin` | 0.97M | 0.86M | 1.25M | 112.2 MiB |
+
+Decision:
+
+```text
+RemotePendingRoutePinTrust:
+  NO-GO for cross128
+```
+
+Skipping production inline route validation through route-pin trust does not
+improve the Toy class 2 sink path.  It sharply regresses throughput and RSS in
+this row, so pending optimization should stay on storage footprint and
+consumer scheduling rather than weakening route validation.
