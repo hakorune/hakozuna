@@ -232,3 +232,169 @@ back into reusable objects.  Producer-side sink-only behavior removes
 backpressure but leaves cross128 too slow and increases RSS.  The next box
 should keep maintenance enabled and reduce either storage footprint or
 maintenance scheduling cost.
+
+## Owner-Inbox RSS Attribution Plan
+
+Code inspection found that the lazy owner-inbox storage path still touches the
+full pending storage block at first publish:
+
+```text
+hz6_owner_inbox_storage_alloc(sizeof(Hz6RemotePendingStorage))
+  -> provider allocation
+  -> hz6_remote_pending_storage_reset_block()
+```
+
+The storage provider also zeroes the block, but the larger RSS source is likely
+`reset_block()`: it initializes all descriptor-capacity side arrays, external
+ticket arrays, duplicate indexes, and counters before the first pending object
+needs most of those fields.  Removing the provider zero-fill alone is unlikely
+to move RSS while `reset_block()` still touches the full block.
+
+Next observation box:
+
+```text
+OwnerInboxStorageTaxAudit-L1
+```
+
+Compare:
+
+| Variant | Purpose |
+| --- | --- |
+| `p1_metadata` | inbox code/fields compiled in, producer and consumer off |
+| `p1_external_no_maintenance` | producer sink on, storage allocated, consumer off |
+| `p1_external` | producer sink and owner-local maintenance on |
+
+Rows:
+
+```text
+local0
+remote50
+remote90
+cross128_r90
+```
+
+Decision target:
+
+```text
+metadata-only tax:
+  if low, keep compile-in path
+
+producer allocation/reset tax:
+  if high, next implementation must split or lazily initialize
+  Hz6RemotePendingStorage
+
+maintenance tax:
+  if high, next implementation should tune owner-local consumer scheduling
+```
+
+Implementation note:
+
+```text
+Do not edit hz6_allocator_remote_pending_inbox.c in this box.
+```
+
+That file is currently a large ownership/state-machine module.  The next code
+change should stay boxed and either add a small storage-shape helper or a narrow
+runner/doc observation before touching the pending core.
+
+## Owner-Inbox Storage Tax Audit
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_tax_prod_r3_20260620_173512`
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_metadata` | `local0` | 14.85M | 14.50M | 14.97M | 71.9 MiB |
+| `p1_external_no_maintenance` | `local0` | 15.46M | 11.91M | 16.15M | 67.4 MiB |
+| `p1_external` | `local0` | 17.08M | 16.77M | 17.25M | 67.4 MiB |
+| `p1_metadata` | `remote50` | 13.26M | 13.11M | 13.78M | 74.0 MiB |
+| `p1_external_no_maintenance` | `remote50` | 13.04M | 11.96M | 13.98M | 74.9 MiB |
+| `p1_external` | `remote50` | 13.84M | 13.56M | 14.81M | 74.9 MiB |
+| `p1_metadata` | `remote90` | 10.75M | 10.08M | 10.99M | 76.7 MiB |
+| `p1_external_no_maintenance` | `remote90` | 3.38M | 3.14M | 4.22M | 83.8 MiB |
+| `p1_external` | `remote90` | 10.82M | 10.71M | 10.97M | 77.5 MiB |
+| `p1_metadata` | `cross128_r90` | 3.33M | 0.41M | 15.56M | 75.0 MiB |
+| `p1_external_no_maintenance` | `cross128_r90` | 0.42M | 0.31M | 0.49M | 87.3 MiB |
+| `p1_external` | `cross128_r90` | 9.12M | 4.45M | 15.06M | 73.0 MiB |
+
+Decision:
+
+```text
+OwnerInboxStorageTaxAudit-L1:
+  observed
+
+p1_external_no_maintenance:
+  NO-GO
+
+p1_external:
+  keep as the working owner-inbox sink baseline
+```
+
+Notes:
+
+- `p1_external_no_maintenance` confirms that accumulating pending inventory
+  without owner-local consumption is both slow and RSS-heavy on high-remote
+  rows.
+- `p1_external` is better than both metadata-only and no-maintenance variants
+  on this R3 across `local0`, `remote50`, `remote90`, and `cross128_r90`.
+- The next small-object optimization should not disable maintenance or chase
+  provider zero-fill first.  The likely next box is a narrow owner-local
+  maintenance shape for Toy class 2 that consumes pending objects with less
+  scan/staging work while keeping the same sink semantics.
+
+## Split-Maintenance Recheck
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_maintenance_prod_r3_20260620_173718`
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external` | `remote50` | 13.60M | 12.48M | 14.11M | 74.9 MiB |
+| `p1_external_split_maintenance` | `remote50` | 12.81M | 11.66M | 13.77M | 74.8 MiB |
+| `p1_external` | `remote90` | 10.77M | 10.58M | 11.09M | 77.3 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.79M | 10.51M | 10.92M | 77.4 MiB |
+| `p1_external` | `cross128_r90` | 3.47M | 1.37M | 6.98M | 79.4 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 19.12M | 5.03M | 24.75M | 72.4 MiB |
+
+Decision:
+
+```text
+p1_external_split_maintenance:
+  GO for R10 confirmation on cross128_r90
+```
+
+This existing variant matches the emerging shape: keep the owner-inbox sink and
+owner-local consumption, but separate the maintenance path so cross128 does not
+pay the broad pending consumer cost.  The R3 result is high-variance, so the
+next step is a focused `cross128_r90` R10 before turning this into a selected
+candidate.
+
+Focused R10 raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_maintenance_prod_r10_20260620_173807`
+
+Production R10 on `cross128_r90`:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external` | 4.66M | 1.64M | 6.91M | 74.7 MiB |
+| `p1_external_split_maintenance` | 5.15M | 3.95M | 7.90M | 75.4 MiB |
+
+Decision:
+
+```text
+p1_external_split_maintenance:
+  HOLD / promising but not enough as-is
+```
+
+The R10 confirms a modest median and lower-tail improvement, but not the large
+R3 jump.  This keeps the maintenance-shape direction alive while ruling out a
+simple selected promotion of the existing split variant.  The next code box
+should be narrower than the current split maintenance flag: target Toy class 2
+pending consumption directly and keep guard rows for `remote50` and `remote90`.
