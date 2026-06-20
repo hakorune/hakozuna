@@ -332,6 +332,109 @@ void hz6_allocator_note_descgov_descriptor_fail(
 #endif
 }
 
+void hz6_allocator_note_toy2_descriptor_pressure_fail(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || front_id != HZ6_FRONT_TOY || class_id != 2) {
+    return;
+  }
+
+  size_t active = 0;
+  size_t local_free = 0;
+  size_t transfer_free = 0;
+  size_t remote_pending = 0;
+  size_t frontcache = allocator->frontcache_bins[class_id].count;
+  size_t ref_zero_blocks = 0;
+  size_t low_ref_blocks = 0;
+  size_t full_blocks = 0;
+  size_t partial_blocks = 0;
+
+  ++allocator->stats.toy2_descriptor_fail;
+
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (!descriptor->ptr || descriptor->class_id != class_id) {
+      continue;
+    }
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++active;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++local_free;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++transfer_free;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++remote_pending;
+        break;
+      default:
+        break;
+    }
+  }
+
+#if HZ6_SOURCE_RUN_INLINE_META_L1
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    const Hz6SourceBlock* block = &allocator->source_blocks[i];
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        !hz6_source_block_run_active(block) ||
+        block->run_front_id != HZ6_FRONT_TOY ||
+        block->run_class_id != class_id) {
+      continue;
+    }
+    size_t ref_count = hz6_source_block_ref_count(block);
+    if (ref_count == 0) {
+      ++ref_zero_blocks;
+    } else if (ref_count <= 2) {
+      ++low_ref_blocks;
+    }
+    if (block->run_slot_count != 0) {
+      if (block->run_used_count >= block->run_slot_count) {
+        ++full_blocks;
+      } else if (block->run_used_count != 0) {
+        ++partial_blocks;
+      }
+    }
+  }
+#endif
+
+  if (active > allocator->stats.toy2_descriptor_fail_active_max) {
+    allocator->stats.toy2_descriptor_fail_active_max = active;
+  }
+  if (local_free > allocator->stats.toy2_descriptor_fail_local_free_max) {
+    allocator->stats.toy2_descriptor_fail_local_free_max = local_free;
+  }
+  if (transfer_free > allocator->stats.toy2_descriptor_fail_transfer_free_max) {
+    allocator->stats.toy2_descriptor_fail_transfer_free_max = transfer_free;
+  }
+  if (remote_pending >
+      allocator->stats.toy2_descriptor_fail_remote_pending_max) {
+    allocator->stats.toy2_descriptor_fail_remote_pending_max = remote_pending;
+  }
+  if (frontcache > allocator->stats.toy2_descriptor_fail_frontcache_max) {
+    allocator->stats.toy2_descriptor_fail_frontcache_max = frontcache;
+  }
+  if (allocator->stats.remote_pending_external_ticket_current >
+      allocator->stats.toy2_descriptor_fail_external_storage_max) {
+    allocator->stats.toy2_descriptor_fail_external_storage_max =
+        allocator->stats.remote_pending_external_ticket_current;
+  }
+  if (ref_zero_blocks > allocator->stats.toy2_source_blocks_ref_zero_max) {
+    allocator->stats.toy2_source_blocks_ref_zero_max = ref_zero_blocks;
+  }
+  if (low_ref_blocks > allocator->stats.toy2_source_blocks_low_ref_max) {
+    allocator->stats.toy2_source_blocks_low_ref_max = low_ref_blocks;
+  }
+  if (full_blocks > allocator->stats.toy2_source_blocks_full_max) {
+    allocator->stats.toy2_source_blocks_full_max = full_blocks;
+  }
+  if (partial_blocks > allocator->stats.toy2_source_blocks_partial_max) {
+    allocator->stats.toy2_source_blocks_partial_max = partial_blocks;
+  }
+}
+
 int hz6_allocator_descgov_descriptor_available(
     const Hz6Allocator* allocator) {
 #if HZ6_DESCRIPTOR_COLD_GOV_L1

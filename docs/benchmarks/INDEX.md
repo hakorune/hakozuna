@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Linux x86_64 HZ6 Toy2 descriptor pressure audit, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY2_DESCRIPTOR_PRESSURE_AUDIT.md)
 - [Linux x86_64 HZ6 Toy2 construct abort, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY2_CONSTRUCT_ABORT.md)
 - [Linux x86_64 HZ6 small object observation refresh, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_SMALL_OBJECT_OBSERVATION_REFRESH.md)
 - [Linux x86_64 HZ6 cross128 next box, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_CROSS128_NEXT_BOX.md)

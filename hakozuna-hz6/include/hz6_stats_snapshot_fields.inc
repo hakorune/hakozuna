@@ -732,6 +732,17 @@
   size_t descriptor_fail_frontcache_total_max;
   size_t descriptor_fail_frontcache_largest_bin_max;
   size_t descriptor_fail_frontcache_nonempty_bins_max;
+  size_t toy2_descriptor_fail;
+  size_t toy2_descriptor_fail_active_max;
+  size_t toy2_descriptor_fail_local_free_max;
+  size_t toy2_descriptor_fail_transfer_free_max;
+  size_t toy2_descriptor_fail_remote_pending_max;
+  size_t toy2_descriptor_fail_frontcache_max;
+  size_t toy2_descriptor_fail_external_storage_max;
+  size_t toy2_source_blocks_ref_zero_max;
+  size_t toy2_source_blocks_low_ref_max;
+  size_t toy2_source_blocks_full_max;
+  size_t toy2_source_blocks_partial_max;
   size_t descriptor_frontcache_reuse_dryrun_calls;
   size_t descriptor_frontcache_reuse_requested_nonempty;
   size_t descriptor_frontcache_reuse_requested_total;

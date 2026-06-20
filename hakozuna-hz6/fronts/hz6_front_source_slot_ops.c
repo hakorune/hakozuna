@@ -38,6 +38,8 @@ void* hz6_front_source_slot_ops(Hz6Allocator* allocator,
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
+    hz6_allocator_note_toy2_descriptor_pressure_fail(allocator, front_id,
+                                                     class_id);
     return NULL;
   }
 

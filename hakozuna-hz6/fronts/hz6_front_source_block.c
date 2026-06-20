@@ -56,6 +56,8 @@ static void* hz6_front_source_block_reserved_slot(
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
+    hz6_allocator_note_toy2_descriptor_pressure_fail(allocator, front_id,
+                                                     class_id);
     return NULL;
   }
 
@@ -236,6 +238,8 @@ static void* hz6_front_source_block_slot_with_descriptor(
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
+    hz6_allocator_note_toy2_descriptor_pressure_fail(allocator, front_id,
+                                                     class_id);
     return NULL;
   }
   if (!hz6_source_block_route_registered(source_block)) {

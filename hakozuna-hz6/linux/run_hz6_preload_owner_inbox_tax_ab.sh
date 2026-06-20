@@ -377,6 +377,17 @@ counter_keys=(
   alloc_fail
   descriptor_exhausted
   source_block_exhausted
+  toy2_descriptor_fail
+  toy2_descriptor_fail_active_max
+  toy2_descriptor_fail_local_free_max
+  toy2_descriptor_fail_transfer_free_max
+  toy2_descriptor_fail_remote_pending_max
+  toy2_descriptor_fail_frontcache_max
+  toy2_descriptor_fail_external_storage_max
+  toy2_source_blocks_ref_zero_max
+  toy2_source_blocks_low_ref_max
+  toy2_source_blocks_full_max
+  toy2_source_blocks_partial_max
   toy2_construct_abort_attempt
   toy2_construct_abort_success
   toy2_construct_abort_ref_nonzero

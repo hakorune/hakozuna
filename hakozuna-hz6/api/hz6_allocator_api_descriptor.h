@@ -561,6 +561,11 @@ void hz6_allocator_note_descgov_descriptor_fail(
     Hz6Allocator* allocator,
     uint16_t requested_class_id);
 
+void hz6_allocator_note_toy2_descriptor_pressure_fail(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
 int hz6_allocator_descgov_descriptor_available(
     const Hz6Allocator* allocator);
 
