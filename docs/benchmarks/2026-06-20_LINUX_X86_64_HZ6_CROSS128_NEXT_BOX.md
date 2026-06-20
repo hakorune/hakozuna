@@ -657,3 +657,20 @@ but the p25 remains weak and the prior split evidence already showed high
 variance.  This confirms that the next box should not be "drain more".  It
 should express the useful part of split maintenance as a narrow Toy class 2
 front-side gate.
+
+R10 follow-up raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_pending_budget_r10_20260620_180145`
+
+Production R10 on `cross128_r90` only:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external` | 4.27M | 3.16M | 7.94M | 75.0 MiB |
+| `p1_external_split_maintenance` | 16.68M | 8.45M | 35.48M | 72.1 MiB |
+| `p1_external_split_maintenance_budget4` | 2.17M | 1.49M | 4.50M | 81.6 MiB |
+
+The R10 follow-up closes the remaining ambiguity from the R3 probe:
+`split_maintenance` is a real cross128 signal in this batch, but increasing the
+drain budget destroys it.  The next behavior box should preserve split's
+placement of inline work while keeping drain budget 1.
