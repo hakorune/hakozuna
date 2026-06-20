@@ -195,6 +195,62 @@ Read:
   first prevent or explain the descriptor/source exhaustion that makes valid HZ6
   frees fall through as `PROVEN_EXTERNAL`.
 
+## Capacity Split Follow-Up
+
+Capacity raw results:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_descriptor_hybrid_r10_20260620_220330
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_capacity_split_r5_20260620_220520
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_wide_capacity_prod_r10_20260620_220558
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_xwide_capacity_prod_r5_20260620_220659
+```
+
+The first capacity pass applied the existing workload-descriptor-hybrid shape
+to `route_before_maps`: route table `40960`, descriptors `10240`, source blocks
+`1280`, and elastic descriptor overflow.  It improved phase-counter cross128
+median to `22.34M` and held `remote90` at `11.30M`, but still had a low
+cross128 run with `alloc_fail=6728`, `descriptor_exhausted=14648`, and
+`source_block_exhausted=5537`.
+
+The split pass showed both descriptor and source-block capacity matter:
+
+| Variant | shape | cross128 median | low-run read |
+| --- | --- | ---: | --- |
+| `desc10240` | descriptors `10240`, source blocks unchanged | 23.60M | still hit `alloc_fail=4310`, `descriptor_exhausted=10508`, `source_block_exhausted=2424` |
+| `source1280` | source blocks `1280`, descriptors unchanged | 16.49M | still hit `alloc_fail=14745`, `descriptor_exhausted=33411`, `source_block_exhausted=10855` |
+| `wide12288` | descriptors `12288`, source blocks `1536` | 23.98M | all five runs had `alloc_fail=0`, `descriptor_exhausted=0`, `source_block_exhausted=0` |
+
+Production-shaped `wide12288` still had tail runs, and those runs again showed
+descriptor/source exhaustion in the production stats:
+
+| run | ops/s | `alloc_fail` | `descriptor_exhausted` | `source_block_exhausted` |
+| ---: | ---: | ---: | ---: | ---: |
+| 7 | 1.47M | 42,167 | 88,654 | 37,850 |
+| 9 | 2.74M | 27,012 | 59,784 | 21,256 |
+| 2 | 12.72M | 1,511 | 4,462 | 72 |
+
+An extra-wide production-shaped pass used descriptors `32768`, source blocks
+`4096`, and route table `131072`.  This eliminated the exhaustion counters in
+all measured runs and stabilized cross128:
+
+| row | runs | ops/s min | ops/s median | ops/s max | peak MiB median |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `cross128_r90` | 5 | 30.36M | 34.00M | 35.01M | 190.62 |
+| `remote90` | 5 | 3.96M | 4.01M | 4.13M | 194.12 |
+
+Read:
+
+- The cross128 tail is capacity-sensitive.  When descriptor/source exhaustion is
+  forced to zero, the route-before-maps cross128 tail disappears in this batch.
+- The required static capacity is too large for profile promotion as-is: peak
+  RSS rises to about `195 MiB`, and `remote90` remains in the weak 4M band.
+- Elastic descriptor overflow did not help in the hybrid pass
+  (`elastic_descriptor_overflow_alloc=0`), so the next design should not assume
+  the existing overflow depot fixes this path.
+- The next box should be a narrow Toy class2 descriptor/source reclamation or
+  adaptive capacity design, not a broad static table increase.
+
 ## Decision
 
 ```text
@@ -204,6 +260,7 @@ SmallObjectObservationRefresh-L1:
 ```
 
 Next work should target the descriptor/source exhaustion cliff in
-route-before-maps `cross128_r90`.  Do not add a narrower `PROVEN_EXTERNAL`
-fallback consumer until those fallthroughs are proven to be true platform
-external pointers rather than HZ6 source/descriptor exhaustion artifacts.
+route-before-maps `cross128_r90` with a narrow Toy class2 reclamation or adaptive
+capacity design.  Do not add a narrower `PROVEN_EXTERNAL` fallback consumer
+until those fallthroughs are proven to be true platform external pointers rather
+than HZ6 source/descriptor exhaustion artifacts.
