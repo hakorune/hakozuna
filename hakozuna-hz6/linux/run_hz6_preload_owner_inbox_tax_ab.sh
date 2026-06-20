@@ -21,7 +21,7 @@ Usage:
 Options:
   --runs N        repeat count per row and variant (default: 3)
   --variants CSV p0_off,p0_transfer_class_presence,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
-  --rows CSV     local0,remote50,remote90,remote90_short (default: local0,remote50)
+  --rows CSV     local0,remote50,remote90,remote90_short,cross128_r90 (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
   --production    build production-shaped DSOs; some counters will be NA
@@ -219,6 +219,7 @@ for row_name in "${raw_rows[@]}"; do
     remote50) rows+=("remote50 16 10000 100 16 32768 50 65536") ;;
     remote90) rows+=("remote90 16 120000 100 16 131072 90 65536") ;;
     remote90_short) rows+=("remote90_short 16 20000 100 16 131072 90 65536") ;;
+    cross128_r90) rows+=("cross128_r90 16 120000 100 128 128 90 65536") ;;
     "") ;;
     *) echo "unknown row: $row_name" >&2; exit 2 ;;
   esac
@@ -270,6 +271,9 @@ counter_keys=(
   transfer_class_presence_gate_check
   transfer_class_presence_gate_hit
   transfer_class_presence_gate_miss
+  transfer_class_presence_below_min_check
+  transfer_class_presence_below_min_hit
+  transfer_class_presence_below_min_miss
   transfer_class_presence_invalid_class
   transfer_class_presence_underflow
   transfer_class_presence_over_capacity

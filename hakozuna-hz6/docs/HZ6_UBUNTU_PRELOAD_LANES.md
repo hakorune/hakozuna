@@ -4321,3 +4321,66 @@ bench_random_mixed_mt_remote:
 Decision: `GO(profile)/HOLD(default)`.  Use this alias for high-remote
 presence experiments and profile-frontier comparisons.  Do not move it into
 selected/default until the cross128_r90 regression is explained or bounded.
+
+## 2026-06-20 Transfer Presence Threshold Audit
+
+`TransferPresenceThresholdAudit-L1` adds diagnostic-only counters to split
+class-presence pop attempts that bypass the hint because the cache is below
+`HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`.
+
+New counters:
+
+```text
+transfer_class_presence_below_min_check
+transfer_class_presence_below_min_hit
+transfer_class_presence_below_min_miss
+```
+
+The tax runner now also accepts `cross128_r90`, so the same counter extraction
+path can cover the row that blocks default promotion.
+
+Command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_off,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_144306
+```
+
+Diagnostic R1:
+
+```text
+row                 p0_off     min192
+ops/s               0.54M      0.44M
+peak RSS            80.74 MiB  116.25 MiB
+transfer_pop        585840     370523
+presence_gate_check 0          0
+below_min_check     0          719112
+below_min_hit       0          370702
+below_min_miss      0          348410
+false_zero_shadow   0          0
+```
+
+Read:
+
+```text
+min192 did not use the class-presence skip on this cross128 diagnostic run.
+All observed presence decisions stayed below the min-total threshold and fell
+back to dense scan.  The regression therefore is not explained by false-zero
+or over-aggressive skip behavior; the likely cost is maintaining class_count
+atomics on a low-occupancy row where the hint never fires.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Keep the high-remote profile as an
+explicit profile.  Do not promote presence to default.  A behavior fix for
+cross128 would need an armed-count design that avoids low-occupancy atomic
+maintenance without creating false-zero counts when the cache crosses the
+threshold.

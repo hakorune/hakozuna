@@ -60,6 +60,12 @@
         stats.transfer_class_presence_gate_hit;
     transfer_class_presence_gate_miss +=
         stats.transfer_class_presence_gate_miss;
+    transfer_class_presence_below_min_check +=
+        stats.transfer_class_presence_below_min_check;
+    transfer_class_presence_below_min_hit +=
+        stats.transfer_class_presence_below_min_hit;
+    transfer_class_presence_below_min_miss +=
+        stats.transfer_class_presence_below_min_miss;
     transfer_class_presence_invalid_class +=
         stats.transfer_class_presence_invalid_class;
     transfer_class_presence_underflow +=

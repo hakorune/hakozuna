@@ -27,6 +27,9 @@
   size_t transfer_class_presence_gate_check = 0;
   size_t transfer_class_presence_gate_hit = 0;
   size_t transfer_class_presence_gate_miss = 0;
+  size_t transfer_class_presence_below_min_check = 0;
+  size_t transfer_class_presence_below_min_hit = 0;
+  size_t transfer_class_presence_below_min_miss = 0;
   size_t transfer_class_presence_invalid_class = 0;
   size_t transfer_class_presence_underflow = 0;
   size_t transfer_class_presence_over_capacity = 0;
