@@ -11,6 +11,12 @@ void hz6_allocator_destroy_descriptors(Hz6Allocator* allocator);
 
 void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator);
 
+void hz6_allocator_remote_pending_closeout_for_destroy(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_remote_pending_note_after_destroy(
+    Hz6Allocator* allocator);
+
 #ifdef __cplusplus
 }
 #endif

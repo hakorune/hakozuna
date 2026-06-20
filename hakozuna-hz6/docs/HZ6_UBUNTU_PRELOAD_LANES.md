@@ -32,6 +32,9 @@ Default flags selected by `build_hz6_preload.sh`:
 
 ```text
 HZ6_ROUTE_TABLE_CAPACITY=32768
+HZ6_TRANSFER_CACHE_CAPACITY=256
+HZ6_PROFILE_SPEED_TRANSFER_CAPACITY=256
+HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY=256
 HZ6_OBJECT_DESCRIPTOR_CAPACITY=8192
 HZ6_SOURCE_BLOCK_CAPACITY=1024
 HZ6_FRONT_CACHE_BIN_CAPACITY=4096
@@ -60,6 +63,31 @@ HZ6_TOY_FULL_BLOCK_PREFILL_L1=1
 HZ6_TOY_FULL_BLOCK_PREFILL_MAX_SLOTS=128
 HZ6_TOY_ACTIVE_MAP_FREE_FAST_SLOT_L1=1
 HZ6_ROUTE_TOMBSTONE_COMPACT_L1=1
+HZ6_ROUTE_DOMAIN_SYNC_L1=1
+HZ6_ROUTE_DOMAIN_RWLOCK_L1=1
+HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1=0
+HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=0
+HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1
+HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1=1
+HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1=1
+HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256
+HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=0
+HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1
+HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1
+HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1
+HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1
+HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3
+HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=0
+HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1=1
+HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1=1
+HZ6_REMOTE_FREE_COMMIT_L1=1
+HZ6_REMOTE_FREE_STATUS_DISPATCH_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE=1
 HZ6_ROUTE_HASH_XOR_FOLD_L1=1
 HZ6_ROUTE_LINEAR_WRAP_L1=1
 HZ6_ROUTE_LOOP_CARRY_L1=1
@@ -81,17 +109,559 @@ HZ6_LINUX_MMAP_RETAIN_TLS_L1=0
 HZ6_SOURCE_RUN_REUSE_L1=0
 HZ6_ROUTE_PACKED_META_L1=0
 HZ6_PRELOAD_FAST_FREE_L1=0
+HZ6_PRELOAD_MALLOC_TRANSFER_RETRY_L1=0
 HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_L1=0
 HZ6_MIDPAGE_ACTIVE_MAP_FREE_FAST_SLOT_CURRENT_BIAS_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_4K_L1=0
 HZ6_PRELOAD_REALLOC_BOUNDARY_SLACK_8K_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=0
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=0
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=0
+HZ6_REMOTE_PENDING_LAZY_STORAGE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+HZ6_REMOTE_FREE_OVERFLOW_L1=0
+HZ6_REMOTE_FREE_CONSUMER_REHOME_L1=0
 ```
 
 ## Current Read
 
 The preload lane is a real Ubuntu performance lane, but it remains separate
 from the direct HZ6 API and Windows selected-family rows.
+
+MT remote-route status, 2026-06-19:
+
+The HZ6 MT remote rows are under an active repair phase and are not ready for
+paper RUNS=10 collection.  `PreloadForeignResolvedDispatch-L1` is now selected
+for Ubuntu after preload active maps miss and the shared-first free resolver
+returns `FOREIGN_VALID`.  RUNS=10 moved `remote50` from `763130.83` to
+`14351051.48` ops/s and `remote90` from `148892.40` to `422566.06` ops/s while
+the integrity smoke kept unresolved, unproven real-free, and remote compaction
+gates at zero.  The remaining repair focus is remote transfer commit
+transaction/backpressure, not broad preload fast free.
+`RemoteFreeCommitObserve-L1` confirmed the attribution on the integrity smoke:
+`remote_free_foreign_candidate=39715`, `transfer_reserve_success=893`,
+`transfer_reserve_full=38822`, `route_rehome_commit_success=893`, and
+`remote_free_returned_uncommitted=38822`.  Treat `route_rehome_attempt` as a
+candidate counter until the transaction box separates reserve from commit.
+`RemoteFreeCommit-L1` now reserves transfer capacity before descriptor
+state/owner mutation and the integrity smoke gates
+`transfer_reserve_full_after_state_mutation=0`.  This is a correctness step,
+not a perf closeout: quick RUNS=3 held `remote50` near `13.97M` ops/s but
+`remote90` was `257756.17` ops/s, below the prior selected RUNS=10 median.
+`RemoteFreeBackpressure-L1` raises the selected transfer compile/profile
+capacity to 256.  RUNS=10 held `remote50` at `14363938.00` ops/s and lifted
+`remote90` to `6610576.93` ops/s.  The smoke still showed
+`transfer_reserve_full=31316`, so capacity is a selected relief box, not the
+final backpressure contract.
+Follow-up capacity ladder reads: 512 and 1024 are no-go for selected despite
+more transfer reserve successes.  512 quick RUNS=3 put `remote90` at
+`382901.85` ops/s; 1024 put it at `1949951.84` ops/s.  Both increased committed
+rehome/tombstone pressure, so the next box should reduce backpressure without
+raising committed rehome debt above the 256-cap lane.
+`RemoteFreeBackpressureDrain-L1` is implemented as an opt-in remote90
+specialist, not selected by default.  With
+`HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_L1=1`, reserve failure drains one validated
+same-class transfer object into the destination frontcache and retries reserve
+once.  RUNS=10 moved `remote90` from `6610576.93` to `6969804.00` ops/s, but
+`remote50` fell from `14363938.00` to `13321713.54` ops/s, so keep it as
+`HOLD(default)` until the drain can be gated more narrowly.
+`RemoteFreeCommitStatus-L1` adds a status boundary under the existing bool
+front API: `COMMITTED`, `BACKPRESSURE`, `STALE`, and `INTEGRITY_FAILURE`.
+The selected smoke classified the current uncommitted remote-free returns as
+backpressure (`remote_free_status_backpressure=36311`) with stale and
+integrity-failure statuses at zero.  This is tooling for the next policy box,
+not a selected performance claim.
+`RemoteFreeStatusDispatch-L1` is now selected for Toy/MidPage/Local2P remote
+free callers.  It keeps Large on bool fallback, but the selected transfer-based
+path now receives the status boundary directly
+(`remote_free_status_dispatch_transfer=34757` on the smoke), so the next box
+can handle `BACKPRESSURE` without inferring it from a generic false return.
+`RemoteFreeBackpressurePolicy-L1` now separates explicit backpressure returns
+from stale or integrity failures.  The selected smoke showed
+`remote_free_returned_backpressure=36383` while
+`remote_free_returned_uncommitted=0`, `remote_free_returned_stale=0`, and
+`remote_free_returned_integrity_failure=0`; the integrity smoke now gates those
+non-backpressure outcomes at zero.
+`RemoteFreeBackpressureOriginTransfer-L1` is selected.  On
+destination transfer full, it tries the origin allocator's transfer cache
+without route rehome.  The earlier stride-2 candidate RUNS=10 result was
+`remote50=14934275.07` and `remote90=9902231.78`; the selected smoke showed
+`remote_free_backpressure_origin_transfer_success=5674` and kept uncommitted,
+stale, and integrity-failure returns at zero.
+`BackpressurePolicyClock-L1` corrected the cadence bug where origin-transfer
+stride used diagnostic-only `transfer_reserve_attempt`.  True `STRIDE=2`
+measured `remote50=14090990.96`, `remote90=2134217.85` in RUNS=10, while true
+`STRIDE=1` quick RUNS=3 measured `remote50=15149047.54`,
+`remote90=8788405.81`.  The current selected lane therefore uses
+`HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE=1` so production and
+diagnostic builds share the same policy.
+`RemotePendingInboxCore-L1` is now available as a behavior-off core box behind
+`HZ6_REMOTE_PENDING_INBOX_CORE_L1=0` in selected.  It adds a per-class owner
+inbox, duplicate-claim tracking, owner/generation/route validation, and
+owner-local maintenance counters.  Selected/off and opt-in/on integrity smokes
+both kept all `remote_pending_*` counters at zero because no remote-free path is
+connected yet.  The next behavior box is
+`RemoteFreeBackpressureOwnerInbox-L1`: on destination transfer full, publish to
+the origin owner inbox while keeping route/logical/descriptor owner stable.
+The boundary checklist lives in
+[`HZ6_REMOTE_PENDING_INBOX_PLAN.md`](HZ6_REMOTE_PENDING_INBOX_PLAN.md).
+`RemoteFreeBackpressureOwnerInbox-L1` is implemented as an opt-in behavior
+candidate, not selected.  It routes destination transfer backpressure to the
+origin owner's pending inbox when the descriptor is stored by the origin
+allocator, then lets owner-local class maintenance move `REMOTE_PENDING` to
+`LOCAL_FREE`.  Opt-in smoke published
+`remote_free_origin_pending_commit=33196` with
+`remote_free_pending_publish_fail=0` and zero pending mismatch gates; RUNS=3
+measured `remote50=14988073.96` and `remote90=10816334.11`.  Keep it off until
+owner-local consumption reduces the remaining pending backlog and
+`remote_free_returned_backpressure` reaches zero.
+`RemotePendingReuseDemandAudit-L1` adds immutable pending publication proof and
+an O(1) per-key nonempty mask without changing behavior.  Owner-inbox opt-in
+smoke showed `remote_pending_key_nonempty_load=6478`,
+`remote_pending_key_nonempty_hit=1`, and
+`source_alloc_with_matching_pending=0`; RUNS=3 stayed strong at
+`remote50=14637714.57`, `remote90=10727161.65`.  Treat pending balance as
+inventory unless same-key demand counters prove missed reuse.
+`RemotePendingExactKeyClaimCore-L1` is the 2026-06-20 prerequisite for direct
+reuse.  It keeps one class lock, splits each pending class inbox by front,
+moves key count/mask updates under that lock, adds `NONE/QUEUED/CLAIMED` slot
+state plus `bytes` proof, and exposes an unconnected
+`hz6_allocator_remote_pending_try_reuse()` boundary.  Opt-in smoke kept
+`remote_pending_claimed_current=0` and all pending mismatch gates at zero;
+quick RUNS=3 measured `remote50=12536762.73`, `remote90=9837030.86`.  This is
+`GO(core)/HOLD(perf)`, and the next selected work should be AuditV2 before
+caller wiring.
+`RemotePendingReuseDemandAuditV2-L1` moves the same-key probe before existing
+pending maintenance and covers source prefill.  Opt-in smoke found
+`pending_same_key_before_maintenance=920`,
+`pending_maintenance_immediate_reuse_success=975`,
+`pending_maintenance_batch_surplus=2569`, and
+`source_block_commit_with_matching_pending=102`; RUNS=3 measured
+`remote50=13570506.65`, `remote90=10002012.48`.  DirectReuse is now justified
+as a default-off replacement for pending->frontcache->pop, not as a source
+allocation avoidance feature yet.
+`RemotePendingDirectReuse-L1` wires one exact-key pending claim after
+frontcache miss for Toy/MidPage preload direct paths.  Direct-only is
+`NO-GO(default)`: it claimed `1453` entries but quick RUNS=3 collapsed
+`remote90=1423660.43`.  Direct plus owner-local maintenance is the useful
+shape: smoke claimed `3065` entries, kept batch work to `480`, and RUNS=3
+measured `remote50=14162158.67`, `remote90=11188549.20`.  Keep it opt-in until
+the fallback maintenance policy is tuned.
+`RemotePendingExactKeyMaintenance` makes the fallback drain exact
+`(front_id,class_id)` keys instead of class-only heads.  Opt-in smoke kept
+DirectReuse healthy (`remote_pending_direct_claim_success=3392`,
+`remote_pending_direct_integrity_failure=0`) and reduced batch fallback to
+`remote_pending_batch_items=71`; RUNS=3 measured `remote50=14252255.99`,
+`remote90=10071818.95`.  Keep this correctness boundary for future DirectReuse
+promotion.
+`HZ6_REMOTE_PENDING_DIRECT_FALLBACK_DRAIN_BUDGET=1` is the current DirectReuse
+opt-in fallback setting.  It removes surplus staging
+(`pending_maintenance_batch_surplus=0`) and RUNS=10 improved remote90 versus
+selected in this sample (`10.81M` vs `10.20M`), but selected remote50 was still
+stronger (`15.03M` vs `14.44M`).  Keep DirectReuse opt-in for now.
+`PreloadPhaseReuseTarget-L1` adds a dedicated LD_PRELOAD phase-shift harness
+where the main thread allocates/reallocates and foreign worker threads free.
+RUNS=3 at `threads=4 count=2048 size=128` showed the intended DirectReuse
+shape works: selected median was `664078 ops/s` with `reuse_hits=256`, while
+DirectReuse reached `694969 ops/s` with `reuse_hits=1024`; stats confirmed
+`remote_pending_direct_claim_success=1024`,
+`remote_pending_direct_integrity_failure=0`, and
+`remote_pending_batch_items=0`.  This is `GO(tooling/evidence)`, not a default
+promotion, because random remote RUNS=10 still favored selected on remote50.
+`DirectReuseHotPathShape-L1` is the follow-up cleanup before changing the
+DirectReuse gate.  Production DirectReuse now compiles gate/claim attribution
+writes out unless `HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=1`; the preload caller
+uses one helper, and mask-hit callers use a known-nonempty claim path instead
+of reloading the exact-key mask.  Phase smoke at
+`threads=4 count=2048 size=128` still gave DirectReuse `reuse_hits=1024`;
+production direct emitted `remote_pending_direct_gate_load=0`, while
+direct-stats emitted `remote_pending_direct_claim_success=1024`,
+`remote_pending_direct_integrity_failure=0`, and
+`remote_pending_batch_items=0`.  This is `GO(shape)/HOLD(default)`; the next
+behavior box should be source-demand gated, not a pressure/high-water gate.
+`DirectReuseCostAttribution-L1` adds a P0-P3 remote runner and the
+measurement-only `HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0` gate.  RUNS=3 showed
+P1 owner-inbox at `remote50=14.23M`, P2 gate-only at `14.37M`, and P3
+claim/route/activate at `11.66M`; the gate itself is not the main cost.  Keep
+DirectReuse claim out of the frontcache-miss hot path and place it at the
+source-demand boundary in the next behavior box.
+`DirectReuseSourceDemandGate-L1` adds
+`HZ6_REMOTE_PENDING_DIRECT_SOURCE_DEMAND_GATE_L1=1`.  The phase target remains
+healthy (`source_gate median=717837 ops/s`, `reuse_hits=1024`, source-boundary
+claim success 1024, and all early-claim zero gates clean), but random remote
+RUNS=3 regressed (`p4_source_gate remote50=13.75M`, `remote90=1.08M`) because
+the lane disables pre-source owner maintenance and leaves a large pending
+inventory.  Keep it as a phase specialist only; default work needs a hybrid
+cleanup consumer.
+`HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1` adds that hybrid cleanup:
+source-boundary DirectReuse still gets first chance, and a budget-1 exact-key
+maintenance fallback runs only when the claim misses.  Phase smoke preserved
+`reuse_hits=1024` with no batch work; quick random remote RUNS=3 measured
+`p4_source_gate_hybrid remote50=14.51M`, `remote90=10.79M`, but RUNS=10
+regressed against selected (`13.85M/9.99M` vs `15.02M/10.21M`).  Keep it as a
+phase/research lane, not default.
+`RemoteFreeBackpressureOriginTransferReasonObserve-L1` splits the remaining
+origin-transfer misses without changing behavior.  The selected smoke showed
+`remote_free_backpressure_origin_transfer_stride_skip=16295`,
+`remote_free_backpressure_origin_transfer_validation_fail=0`, and
+`remote_free_backpressure_origin_transfer_full=11311`; quick RUNS=3 held
+`remote50=14823669.53` but dropped `remote90=1689959.38`.  The next high-remote
+box should therefore target transfer-cache saturation or stride/capacity policy,
+not ownership validation.
+`OriginTransferFullOccupancyObserve-L1` then sampled occupancy when
+origin-transfer returned full.  Selected smoke showed
+`remote_free_backpressure_origin_transfer_full=31298`,
+`remote_free_backpressure_origin_full_transfer_count_total=8012288`
+(average 256), and
+`remote_free_backpressure_origin_full_class_count_total=4785345`
+(average 153, max 200).  Destination reserve full had the same average-256
+shape.  This confirms true global transfer-cache saturation on both sides, not
+a narrow class-only imbalance; further default work should avoid adding remote
+thread transfer-cache/frontcache mutation and should instead revisit the
+owner-local consumer or guaranteed owner-owned sink boundary.
+Rechecking the existing owner-inbox lane with RUNS=10 confirms that direction:
+selected measured `remote50=14.76M`, `remote90=1.22M`; owner-inbox measured
+`remote50=14.03M`, `remote90=9.94M`.  The smoke committed
+`remote_free_origin_pending_commit=35243` with pending mismatch/fail gates at
+zero, but still left `remote_free_returned_backpressure=11`.  Keep owner-inbox
+as the current high-remote specialist and default candidate, but do not select
+it until the remote50 cost and small origin-transfer-full tail are closed.
+`OwnerInboxRejectReasonObserve-L1` splits that tail.  The owner-inbox smoke
+showed `remote_pending_owner_inbox_storage_ineligible=2897` while descriptor,
+owner, and enqueue reject counters were zero.  The remaining fallback was
+`remote_free_backpressure_origin_transfer_full=45` and
+`remote_free_returned_backpressure=45`.  This points at external descriptor
+coverage: the current inbox requires an origin inline descriptor index.  The
+next correctness box should therefore be an external-descriptor owner-inbox
+ticket path, not another remote-thread origin-transfer drain.
+`ExternalDescriptorOwnerInboxTicket-L1` is now specified in
+[`HZ6_REMOTE_PENDING_INBOX_PLAN.md`](HZ6_REMOTE_PENDING_INBOX_PLAN.md).  The
+design keeps the inline descriptor-index inbox unchanged and adds separate
+owner-owned ticket storage for external descriptors with immutable
+ptr/descriptor/generation/front/class/owner/storage proof.  Promotion requires
+closing `remote_free_returned_backpressure` to zero; default selection still
+also requires solving the owner-inbox remote50 cost.
+`ExternalDescriptorOwnerInboxTicketCore-L1` implements the default-off storage
+surface and counters only.  It adds `remote_pending_external_tickets`, a
+free-list head, and per-key heads under
+`HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1`; selected/off builds and the
+external-ticket-core smoke pass, with all ticket counters still zero because
+no producer path is connected yet.
+`ExternalDescriptorOwnerInboxTicketPublishAPI-L1` adds the producer-facing API
+and a dedicated ticket lock, but still leaves the free path disconnected.  The
+API records immutable proof and moves a descriptor to `REMOTE_PENDING` only
+after external-storage, owner, state, duplicate, and capacity validation.  It
+also requires descriptor-storage-owner proof; selected-shape builds that cannot
+provide that proof fail the API with storage mismatch by design.
+`ExternalDescriptorOwnerInboxTicketConsumeAPI-L1` adds the matching owner-local
+consume primitive, also disconnected.  It claims one exact-key external ticket,
+validates immutable proof, owner, storage owner, and exact route, then moves the
+object to owner-local frontcache as `LOCAL_FREE`.  The smoke still has all
+ticket counters at zero because producer and consumer are not wired into
+malloc/free yet.
+`ExternalDescriptorOwnerInboxTicketMaintenance-L1` wires that consumer into
+owner-local pending maintenance.  Maintenance now arms on either inline pending
+or an external ticket exact-key head, and tries external-ticket consume before
+the inline descriptor-index pop.  The producer is still disconnected, so smoke
+keeps ticket counters at zero.
+`ExternalDescriptorOwnerInboxTicketPublish-L1` connects only the
+storage-ineligible owner-inbox branch to ticket publish.  The opt-in smoke
+closed the previous tail with `remote_free_returned_backpressure=0`,
+`remote_free_returned_uncommitted=0`, `remote_pending_external_ticket_success=2214`,
+and zero full/duplicate/route/owner/state/storage mismatch gates.  Quick RUNS=3
+measured selected `remote50=14.48M`, `remote90=8.63M` versus external-ticket
+`remote50=13.62M`, `remote90=10.45M`, so this is `GO(correctness)/HOLD(default)`.
+`ExternalTicketObserveAndConsumeGate-L1` adds current/high-water/empty/full
+counters for external tickets and avoids calling external consume when the
+exact-key external list is empty.  Follow-up smoke kept backpressure and
+uncommitted returns at zero, moved `remote_pending_external_ticket_consume_empty`
+from `3750` to `0`, and showed `remote_pending_external_ticket_current=1970`
+with `high_water=269`.  Quick RUNS=3 was `remote50=14.14M`,
+`remote90=8.80M`, so default promotion remains held while owner-inbox backlog
+and remote50 cost are still open.
+`RemotePendingMaintenanceGateShape-L1` tried collapsing the maintenance entry
+nonempty probes into a single inline/external exact-key snapshot.  The smoke
+stayed clean, but quick RUNS=3 was weaker (`remote50=13.78M`,
+`remote90=8.77M`), so the code was reverted and the box is `NO-GO`.
+`OwnerInboxDrainBudget1-L1` lowers the owner-local pending maintenance default
+drain budget from 4 to 1.  The committed opt-in shape kept
+`remote_free_returned_backpressure=0`, `remote_pending_external_ticket_consume_empty=0`,
+and zero mismatch gates; quick RUNS=3 measured `remote50=14.41M` and
+`remote90=9.47M`.  Keep this as the owner-inbox opt-in shape to avoid surplus
+frontcache staging, while default promotion still waits on owner-inbox
+cost/backlog evidence.
+`ExternalTicketDemandAudit-L1` fixes the diagnostic demand helper so it sees
+external tickets as same-key pending too.  Smoke showed
+`remote_pending_key_nonempty_hit=7424/21435`,
+`pending_same_key_before_maintenance=3688`,
+`source_block_commit_with_matching_pending=73`,
+`source_alloc_with_matching_pending=0`, and
+`remote_pending_external_ticket_current=1920`.  This says backlog is not purely
+cold exit inventory; the next design point is a source-block/pre-source
+consumer boundary.
+`PreSourcePendingMaintenance-L1` tested that boundary by draining one pending
+item after source-run reuse missed and before source-block creation.  The smoke
+was clean and found `pre_source_success=48`, but
+`source_block_commit_with_matching_pending` still reached `120`; quick RUNS=3
+regressed to `remote50=13.80M`, `remote90=1.71M`.  The code was reverted and
+the box is `NO-GO`.
+`RemoteFreeBackpressureOriginDrain-L1` tried that full path directly as an
+opt-in no-go.  It drains one same-class transfer object from the origin transfer
+cache into the origin frontcache and retries origin commit once.  Safety smoke
+passed and converted most origin full events
+(`remote_free_backpressure_origin_drain_retry_success=12160`,
+`remote_free_backpressure_origin_transfer_full=32`), but quick RUNS=3 regressed
+to `remote50=13935320.47` and `remote90=1287581.08`.  Keep it off; the remote
+path cannot afford direct origin frontcache drain work.
+`PreloadMallocTransferRetry-L1` is also opt-in only.  It tries transfer reuse
+from the owner-local preload malloc fast paths after local frontcache reuse
+misses.  Smoke showed the path works (`preload_malloc_transfer_retry_hit=2690`
+of `3040` attempts) and reduced backpressure without integrity failures, but
+quick RUNS=3 was weak (`remote50=14613277.36`, `remote90=1077952.16`).  Keep it
+off; high-remote rows need a cheaper transfer consumption model than repeated
+malloc-side activation.
+The follow-up `HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_STRIDE` and
+`HZ6_REMOTE_FREE_BACKPRESSURE_DRAIN_MAX_FRONTCACHE_COUNT` controls are also
+opt-in only.  `STRIDE=2` did not hold in RUNS=10 (`remote90=6434072.00`), while
+`MAX_FRONTCACHE_COUNT=4` was the best bounded variant (`remote50=14180156.45`,
+`remote90=6926930.38`) but still leaves a small remote50 regression versus the
+selected capacity-256 baseline.
+`RemoteFreeBackpressureObserve-L1` adds reserve-full occupancy counters without
+changing behavior.  Selected smoke showed
+`transfer_reserve_full=33465`,
+`transfer_reserve_full_transfer_count_total=8567040`,
+`transfer_reserve_full_class_count_total=5123433`, and
+`transfer_reserve_full_class_count_max=203`.  That is effectively a full
+`256/256` transfer cache at every reserve failure, with the target class often
+dominating the cache.  The next performance box should therefore avoid extra
+committed rehome and use a bounded overflow/pending policy rather than more
+eager drain.
+`RemoteFreeOverflow-L1` implements that bounded overflow as an opt-in research
+box, but it is not selected.  Safety smoke passed for `OVERFLOW_CAPACITY=64`
+and `256`, but quick RUNS=3 showed weak performance: cap64 gave
+`remote50=13789256.22`, `remote90=6044836.89`; cap256 held `remote50` at
+`14399762.89` but collapsed `remote90` to `2440102.22`.  Cap256 smoke reduced
+uncommitted remote frees by committing `remote_free_overflow_reserve_success=3038`,
+but route rehome also rose to `6668`, so the overflow cache has the same
+route-movement problem as eager drain.
+`RemoteFreeConsumerRehome-L1` is another opt-in no-go for the selected
+performance lane.  It skips free-side rehome for transfer-based fronts and
+tries to rehome on transfer reuse instead.  Safety smoke passed and shifted
+route movement to reuse (`transfer_reuse_rehome_success=2183`), but quick
+RUNS=3 regressed to `remote50=12638884.18` and `remote90=269255.48`.  The
+consumer lookup/rehome work is too expensive on the high-remote row.
+`SharedRouteTransferProbeObserve-L1` adds behavior-neutral counters for the
+shared-directory owner-transfer search inside route rehome.  Selected smoke
+showed `route_rehome_directory_transfer_probe_total=2661` for
+`route_rehome_success=2627`, with max probe `3`.  This means direct
+proof-token transfer is unlikely to be the next large win; the remaining cost
+is route movement/locking/tombstone work, not shared-directory probing.
+Short remote rows can now be made to complete, but long 300K rows still show a
+page-table lookup cliff.  The active design is `RemoteFreeRouteResolve-L1`,
+not a preload-only owner hint: Ubuntu preload must call the shared core
+resolver that Windows will use too.  Track the design in
+[`HZ6_REMOTE_ROUTE_PHASE_PLAN.md`](HZ6_REMOTE_ROUTE_PHASE_PLAN.md) and do not
+promote any MT remote numbers from this debug state.
+
+Phase 1A implementation status, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_DOMAIN_SYNC_L1=1` and
+`HZ6_ROUTE_COMPACT_DEFER_REMOTE_L1=1`.  The old all-visible fallback remains
+available but selected preload uses `HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1=1` so a
+local miss searches foreign exact routes without falling into foreign
+invalid-range full-table scans for external pointers.  This is a stopgap until
+`RemoteFreeRouteResolve-L1`; it is not the final ownership authority.
+
+Phase 1B implementation status, 2026-06-19: selected preload now enables
+`HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1` and
+`HZ6_SHARED_ROUTE_DIRECTORY_MANDATORY_L1=1`.  Shared-directory exact records
+use a sequence snapshot so readers see a complete stable record or retry, and
+local exact route registration rolls back if mandatory shared publication
+fails.  `HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1=1` remains an
+off-by-default control: it removed the shared-directory empty window in shape,
+but the `16 x 120000 x remote90 x 16..131072` smoke timed out at 60s, so it is
+not selected.
+Shared-directory exact records also store the publishing owner slot/generation;
+unregister now requires allocator pointer and owner token to match before
+tombstoning a record.
+
+Phase 1B transaction-lite status, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_REHOME_BEFORE_TRANSFER_L1=1`.  Remote frees that need route
+rehome move the route before pushing the descriptor into the destination
+transfer cache, and roll the route back if the transfer push fails.  This
+removes the old split-brain case where transfer ownership could commit while
+the route still pointed at the origin.  It is still a bounded bridge, not the
+final ordered dual-lock transaction.
+
+Phase 1B route transfer status, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=1`.  Rehome takes origin and destination
+route-domain write locks in stable order, validates the expected origin route,
+registers the destination local route, transfers the shared-directory owner
+record in place, and only then tombstones the origin local route.  The old
+unregister/register rehome remains behind
+`HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1=0`.
+Focused smokes completed at `175482.77 ops/s` for `remote50 16..32768` and
+`127924.91 ops/s` for `remote90 16..131072`.
+
+Phase 2 initial resolver status, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1=1` for the remote-free path.  The resolver
+lives in `api/hz6_allocator_route_resolve_free.[ch]` and returns
+`LOCAL_VALID`, `FOREIGN_VALID`, `OWNED_INVALID`, `PROVEN_EXTERNAL`, `RETRY`,
+or `UNRESOLVED_INTEGRITY`.  This first selected use is intentionally scoped to
+core remote free; preload external-pointer `real_free` selection still uses the
+existing wrapper boundary until the HZ6 address-domain proof exists.
+
+Phase 2 preload wrapper boundary, 2026-06-19: selected preload now routes
+`free`, `realloc`, and `malloc_usable_size` through the shared resolver helper.
+The platform real allocator fallback is allowed only for `PROVEN_EXTERNAL`;
+`OWNED_INVALID` stays inside HZ6 policy and `UNRESOLVED_INTEGRITY` / `RETRY`
+fail fast.  Focused smokes completed: `/bin/true` with `LD_PRELOAD` exited 0,
+`remote50 16..32768` reached `276329.96 ops/s`, and `remote90 16..131072`
+reached `124362.20 ops/s`.
+
+Phase 3 first tuning status, 2026-06-19: selected preload now actually enables
+`HZ6_SHARED_ROUTE_DIRECTORY_L1=1`; the earlier coherent-publication flags were
+present but the base directory flag was missing from the selected list.  The
+directory writer lock is sharded with
+`HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS=256`, because the single global writer
+lock timed out the `remote90 16..131072` smoke.
+`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1` is selected after resolver
+integrity classification and rehome transfer landed.  The old shared-first
+control had regressed before those boxes; the 2026-06-19 refresh now improves
+the focused remote lane while shared publication remains mandatory.
+
+Phase 4 first maintenance status, 2026-06-19: selected preload now enables
+`HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_L1=1`.  Shared exact
+unregister still leaves tombstones on the remote path, but global tombstone
+state is now observable with `shared_dir_tombstone_current`,
+`shared_dir_tombstone_max`, `shared_dir_register_used_tombstone`,
+`shared_dir_maintenance_attempt`, `shared_dir_maintenance_success`, and
+`shared_dir_maintenance_cleared`.  Maintenance is owner-local and thresholded
+by `HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE_MAINTENANCE_MIN`; it takes all shared
+directory writer shards, clears only tombstone entries back to empty, and
+does not touch live records.  The maintenance path is active only when
+`HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1=1` is also enabled.  Focused
+smokes completed: `/bin/true` with `LD_PRELOAD` exited 0, `remote50
+16..32768` reached `246441.92 ops/s`, and `remote90 16..131072` reached
+`135253.20 ops/s`.
+
+Phase 4 local route maintenance status, 2026-06-19: route rehome still leaves
+origin exact-route tombstones on the remote path, but the remote path now only
+records compact debt.  `hz6_allocator_route_maintain_tombstones()` is the
+owner-local maintenance boundary; `hz6_malloc()` consumes pending debt before
+allocation and runs the existing thresholded route compaction under the route
+domain lock.  Diagnostic stats now expose `route_compact_deferred`,
+`route_compact_owner_maintenance`, and `route_compact_remote_path_attempt`.
+The selected lane should keep `route_compact_remote_path_attempt=0`.
+
+Phase 2 integrity status, 2026-06-19: shared exact lookup now has a snapshot
+status boundary: `VALID`, `MISS`, `RETRY`, or `STALE`.  The raw route lookup
+wrapper still returns a route or MISS for legacy callers, but
+`RemoteFreeRouteResolve-L1` consumes the richer status.  `STALE` maps to
+`UNRESOLVED_INTEGRITY`, `RETRY` maps to `RETRY`, and a mandatory shared MISS
+followed by an all-visible hit is treated as integrity divergence instead of
+external fallback.  Focused smokes completed: `/bin/true` with `LD_PRELOAD`
+exited 0, `remote50 16..32768` reached `180665.35 ops/s`, and `remote90
+16..131072` reached `130647.25 ops/s`.  The extra shared snapshot on local
+miss is a correctness boundary; performance recovery belongs to Phase 3.
+
+Phase 3 observation status, 2026-06-19: selected preload stats now include
+`HZ6_PRELOAD_RESOLVE_DETAIL`.  The counters split resolver attempts, shared
+snapshot probes and statuses, local lookup attempts, visible-shadow attempts,
+visible hits, and final resolver result kinds.  Focused smokes completed:
+`HZ6_PRELOAD_STATS=1 /bin/true` printed the new line, `remote50 16..32768`
+reached `162177.18 ops/s`, and `remote90 16..131072` reached
+`129113.97 ops/s`.
+
+Phase 3 shared-first refresh, 2026-06-19: selected preload now enables
+`HZ6_REMOTE_FREE_RESOLVE_SHARED_FIRST_L1=1`.  Diagnostic r50 showed almost all
+route-after-map work resolving through shared exact records
+(`shared_valid=39716`, `visible_shadow=0`), and the refreshed production
+control improved both focused smoke rows: `remote50 16..32768` reached
+`699944.49 ops/s`, and `remote90 16..131072` reached `239981.88 ops/s`.
+
+Phase 3 resolver retry status, 2026-06-19: shared exact free resolution now
+uses `HZ6_REMOTE_FREE_RESOLVE_SHARED_RETRY_LIMIT=3`.  A transient shared
+snapshot `RETRY` is re-read inside the resolver before surfacing
+`HZ6_FREE_ROUTE_RETRY` to the platform free policy.  The retry loop stays in
+the shared lookup helper, so resolver callers still see the same six-result
+contract.
+
+Phase 3 platform boundary status, 2026-06-19: preload hook stats now expose
+`free_route_retry_abort`, `free_route_integrity_abort`, and
+`free_route_real_free_unproven`.  These counters verify that `RETRY` and
+`UNRESOLVED_INTEGRITY` fail fast instead of reaching real `free()`, and that
+real-free fallback remains limited to `PROVEN_EXTERNAL`.  Focused stats smoke
+kept all three at zero.
+
+Phase 3 integrity smoke gate, 2026-06-19:
+`linux/run_hz6_preload_integrity_smoke.sh` builds the diagnostic preload,
+runs the focused remote50 lane with `HZ6_PRELOAD_STATS=1`, and fails if the
+integrity counters, resolver retry/integrity results, remote-path compaction
+attempt, ring fallback, or overflow counters are nonzero.  The first run passed
+with `free_route_real_free_unproven=0`,
+`free_resolve_result_unresolved_integrity=0`, and
+`route_compact_remote_path_attempt=0`.
+
+Phase 3 rehome diagnostic status, 2026-06-19: route detail stats now split
+rehome failures into expected-owner mismatch, destination-route failure,
+directory-transfer failure, rollback success, and rollback failure.  The
+integrity smoke gate now requires all rehome failure counters and rollback
+failure to stay zero.  Focused smoke showed `route_rehome_fail=0`,
+`route_rehome_expected_owner_mismatch=0`,
+`route_rehome_destination_route_fail=0`,
+`route_rehome_directory_transfer_fail=0`, and
+`route_rehome_rollback_fail=0`.
+
+Phase 3 remote median runner, 2026-06-19:
+`linux/run_hz6_preload_remote_median.sh` builds the selected preload and runs
+remote MT rows with `RUNS=10` by default, reporting median `ops/s` as a TSV.
+It fails on fallback or overflow.  `RUNS=1` smoke completed for `remote50
+16..32768`; use the default repeat count for publishable A/B evidence.  First
+selected baseline, RUNS=10: `remote50 16..32768` median `763130.83 ops/s`,
+`remote90 16..131072` median `148892.40 ops/s`.
+
+Phase 3 route-domain observation status, 2026-06-19: diagnostic stats now
+include `route_lock_read_contended`, `route_lock_write_contended`, and
+`route_lock_max_wait`.  These counters are scoped to `HZ6_DIAGNOSTIC_PROBES`
+and measure spin waits at the route-domain boundary without adding selected
+lane overhead.
+
+Phase 3 route-domain reader-gate control, 2026-06-19: the opt-in
+`HZ6_ROUTE_DOMAIN_RWLOCK_READER_GATE_L1=1` reader gate compiles and completes
+focused smokes, but it is kept off.  The control reached `remote50 16..32768`
+at `251122.91 ops/s` and `remote90 16..131072` at `205763.99 ops/s`, while the
+same refresh with the gate off reached `469022.81 ops/s` and `233418.25 ops/s`.
+The current selected RW lock keeps the older writer-flag reader entry.
+
+Phase 3 control closeout, 2026-06-19: two narrow lock/lookup controls are kept
+off.  `HZ6_REMOTE_FREE_RESOLVE_LOCAL_EXACT_ONLY_L1=1` completed but regressed
+the `remote90 16..131072` smoke (`81209.19 ops/s`), so resolver local fallback
+stays full route lookup for now.  `HZ6_ROUTE_DOMAIN_SPIN_PAUSE_L1=1` also
+completed but regressed the same smoke (`67217.46 ops/s`), so the selected
+route-domain spin stays the previous tight spin.  Raising
+`HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS` from 256 to 1024 completed but
+regressed r90 (`63935.77 ops/s`), so selected keeps 256 shards.
+
+Phase 3 route-domain read-side split, 2026-06-19: selected preload now enables
+`HZ6_ROUTE_DOMAIN_RWLOCK_L1=1`.  Route lookup and visible exact lookup take the
+route-domain read side; register, unregister, replace, invalid-range mutation,
+and compaction stay on the write side.  In RW mode the non-atomic last-hit fill
+is suppressed from route lookup, while last-hit clear remains under the writer.
+Focused smokes completed:
+
+```text
+bench_random_mixed_mt_remote 16 10000 100 16 32768 50 65536
+  ops/s=173590.19 fail=0 timeout=no
+
+bench_random_mixed_mt_remote 16 120000 100 16 131072 90 65536
+  ops/s=119345.12 fail=0 timeout=no
+```
 
 Latest selected-default focused guards, after fixed-floor and active-map storage
 trim, repeat-3, `bench_mixed_ws_crt`, raw
@@ -1022,3 +1592,3376 @@ current_task.md:
 archive/current_task_2026-06-16_pre_compaction.md:
   detailed chronological experiment ledger before compaction
 ```
+
+## 2026-06-20 External Ticket Locked Revalidate
+
+`ExternalTicketDuplicateScanObserve-L1` showed the external-ticket duplicate
+scan is real overhead in the owner-inbox + external-ticket lane:
+
+```text
+remote_pending_external_ticket_attempt=2321
+remote_pending_external_ticket_success=2321
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_duplicate_probe_total=2376704
+remote_pending_external_ticket_duplicate_probe_max=1024
+```
+
+`HZ6_REMOTE_PENDING_EXTERNAL_LOCKED_REVALIDATE_L1=1` is a default-off shape
+that revalidates descriptor proof under the external-ticket lock and skips the
+full duplicate scan.
+
+Smoke:
+
+```text
+remote_pending_external_ticket_duplicate_probe_total=0
+remote_pending_external_ticket_duplicate_scan_skip=2886
+remote_pending_external_ticket_locked_revalidate_fail=0
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Quick same-code RUNS=3:
+
+```text
+baseline external ticket: remote50=13397113.55 remote90=10121661.63
+locked revalidate:        remote50=13167908.91 remote90=10147241.78
+```
+
+RUNS=10:
+
+```text
+baseline external ticket: remote50=14169060.73 remote90=10495572.22
+locked revalidate:        remote50=13796783.70 remote90=9885400.51
+```
+
+Decision: `GO(observation)/NO-GO(default)`.  The correctness shape is clean,
+but the longer median is weaker.  Keep the counters and default-off switch for
+diagnostics; do not use locked revalidation as the next default optimization
+line.
+
+## 2026-06-20 Pending Maintenance Noop Observe
+
+`PendingMaintenanceNoopObserve-L1` splits owner-local pending maintenance
+empty-work reasons without changing behavior.
+
+Smoke with owner-inbox + external ticket + demand audit:
+
+```text
+remote_pending_maintenance_check=3688
+remote_pending_maintenance_armed=3688
+remote_pending_maintenance_noop=0
+remote_pending_maintenance_key_race=0
+remote_pending_maintenance_external_miss=0
+remote_pending_maintenance_inline_empty=0
+remote_pending_maintenance_frontcache_full_stop=0
+remote_pending_batch_items=3688
+pending_same_key_before_maintenance=3687
+pending_same_key_after_maintenance=3522
+source_block_commit_with_matching_pending=126
+```
+
+This says the budget1 consumer is doing useful work on every armed call, but
+same-key pending often remains after that one-item drain.  A quick budget2
+R3 was not decisive (`remote50=13.76M`, `remote90=9.88M`), so the policy stays
+unchanged.  Next work should be demand-shaped consumption rather than no-op
+avoidance.
+
+## 2026-06-20 Source Overlap Split Observe
+
+`SourceOverlapSplitObserve-L1` splits source-boundary matching pending by
+storage:
+
+```text
+prefill_commit_with_matching_pending=139
+prefill_commit_with_inline_pending=137
+prefill_commit_with_external_pending=14
+source_block_commit_with_matching_pending=139
+source_block_commit_with_inline_pending=137
+source_block_commit_with_external_pending=14
+```
+
+Smoke gates stayed clean.  The overlap is primarily inline owner-inbox pending,
+not external tickets.  The next optimization line should focus on inline
+exact-key pending left after budget1 maintenance.
+
+## 2026-06-20 Post-Hit Extra Drain No-Go
+
+`PostHitExtraDrain-L1` tried a demand-shaped extra drain: only after pending
+maintenance returned the current allocation, drain one more exact-key inline
+pending item.  Smoke was clean and active:
+
+```text
+remote_pending_post_hit_extra_attempt=2622
+remote_pending_post_hit_extra_items=2442
+pending_same_key_after_maintenance=2531
+source_block_commit_with_matching_pending=116
+```
+
+But quick RUNS=3 regressed remote90:
+
+```text
+remote50=13944893.51
+remote90=3502421.04
+```
+
+Decision: `NO-GO`; code reverted.  More frontcache staging after a hit is too
+expensive for high-remote rows.
+
+## 2026-06-20 DirectReuse + Maintenance + External Recheck
+
+Rechecked the existing `RemotePendingDirectReuse-L1` shape with owner-local
+maintenance and external tickets still enabled.
+
+RUNS=10:
+
+```text
+owner-inbox + external baseline:        remote50=14088862.64 remote90=10786968.07
+direct reuse + maintenance + external:  remote50=14101262.47 remote90=11136207.62
+```
+
+Smoke gates stayed clean:
+
+```text
+remote_pending_direct_claim_success=4789
+remote_pending_direct_claim_busy=18
+remote_pending_direct_integrity_failure=0
+remote_pending_batch_items=376
+remote_pending_frontcache_push=14
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  Direct pending-pool reuse is back as
+the main candidate because it improves remote90 without meaningful remote50
+loss against the owner-inbox+external baseline.  Default promotion still waits
+on selected/off comparison and cross-platform evidence.
+
+## 2026-06-20 DirectReuse Selected Comparison
+
+Selected/off RUNS=10:
+
+```text
+selected/off:                          remote50=15024772.13 remote90=10925614.98
+direct reuse + maintenance + external: remote50=14101262.47 remote90=11136207.62
+```
+
+Decision: `GO(high-remote candidate)/NO-GO(default)`.  The candidate is useful
+for remote90, but it still pays a remote50 tax versus selected/off.  Do not
+promote as the default lane; keep optimizing the direct-pool shape if the target
+is high-remote recovery.
+
+## 2026-06-20 DirectReuse Transfer-Nonempty Skip No-Go
+
+Tried skipping frontcache-miss DirectReuse when same-class transfer inventory
+was present.  Smoke was clean and showed the intended skip fired:
+
+```text
+remote_pending_direct_skip_transfer_nonempty=2146
+remote_pending_direct_claim_success=2878
+remote_pending_direct_integrity_failure=0
+```
+
+But quick RUNS=3 regressed high-remote badly:
+
+```text
+remote50=14194282.72
+remote90=3696648.67
+```
+
+Decision: `NO-GO`; code reverted.  The preload skip-transfer shape means this
+gate does not safely hand work to transfer reuse.
+
+## 2026-06-20 DirectReuse Front/Class Observe
+
+Added DirectReuse claim attribution by front and class.  The integrity smoke
+runner now keeps `[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]` in its filtered
+output so this split survives in raw logs.
+
+Smoke with DirectReuse + owner-local maintenance + external tickets:
+
+```text
+remote_pending_direct_claim_success=2479
+remote_pending_direct_claim_success_toy=57
+remote_pending_direct_claim_success_midpage=2422
+remote_pending_direct_integrity_failure=0
+[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] c3_claim=10 c4_claim=458 c5_claim=2011
+```
+
+Decision: `GO(tooling)`.  The useful DirectReuse work is concentrated in
+MidPage, especially class 5.  Use this split for the next A/B rather than
+treating DirectReuse as a uniform all-front/all-class path.
+
+## 2026-06-20 DirectReuse Transfer Overlap Observe
+
+Added success-side counters for DirectReuse claims that occur while same-class
+transfer inventory is visible.  The smoke output now reports both aggregate
+front split and class split:
+
+```text
+remote_pending_direct_claim_success_transfer_nonempty=1384
+remote_pending_direct_claim_success_transfer_toy=118
+remote_pending_direct_claim_success_transfer_midpage=1266
+[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL] c4_transfer=308 c5_transfer=1074
+```
+
+Decision: `GO(tooling)`.  This is observation only.  The overlap varies across
+smoke runs, so the next behavior box should first run a small A/B with these
+fields captured instead of adding another skip gate from one sample.
+
+Same-code RUNS=3 after adding the overlap counters:
+
+```text
+p1_inbox remote50=14391836.36 remote90=11206437.81
+p3_claim remote50=14531696.87 remote90=10847666.69
+```
+
+Decision: `HOLD`.  This A/B does not justify a new ordering gate.  It confirms
+that DirectReuse's tradeoff is still phase-sensitive and should be rechecked
+with RUNS=10 or a more specific MidPage/class 5 hypothesis before behavior
+changes.
+
+## 2026-06-20 Owner-Inbox External Candidate Recheck
+
+The preload direct-reuse cost runner now includes external-ticket variants so
+the correctness-complete owner-inbox lane can be measured directly.
+
+RUNS=10:
+
+```text
+p0_selected          remote50=14554879.54 remote90=3675431.50
+p1_inbox_external   remote50=14305115.84 remote90=10887492.69
+p3_claim_external   remote50=13362196.87 remote90=10747207.04
+```
+
+`p1_inbox_external` diagnostic smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=1927
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  The next selected-candidate box should
+enable owner inbox, owner-local maintenance, and external tickets while keeping
+DirectReuse off.  Do not promote `p3_claim_external` from this evidence.
+
+## 2026-06-20 Owner-Inbox Production Stats Shape
+
+Before changing selected flags, `OwnerInboxProductionStatsShape-L1` removed
+production cross-thread stats writes from owner-inbox/external-ticket producer
+paths by compiling them only under `HZ6_DIAGNOSTIC_PROBES`.  It also changed
+external-ticket consume validation mismatch from silent ticket discard to
+fail-fast through `remote_pending_external_ticket_integrity_abort`.
+
+Candidate smoke with owner inbox + external tickets and DirectReuse off:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=2791
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Quick p1 external RUNS=3:
+
+```text
+remote50=14724219.57
+remote90=10863892.07
+```
+
+Decision: `GO(candidate prerequisite)`.  The next box may flip the selected
+candidate flags.  RSS/lifetime/accounting guards remain separate promotion
+gates.
+
+## 2026-06-20 OwnerInboxExternalSelected-L1
+
+The Ubuntu selected preload flags now use the owner-inbox external candidate:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+Selected smoke passed with the new external-ticket zero gates:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+remote_pending_external_ticket_success=2583
+remote_pending_external_ticket_full=0
+remote_pending_external_ticket_duplicate=0
+remote_pending_external_ticket_route_mismatch=0
+remote_pending_external_ticket_owner_mismatch=0
+remote_pending_external_ticket_state_mismatch=0
+remote_pending_external_ticket_storage_mismatch=0
+remote_pending_external_ticket_integrity_abort=0
+```
+
+Selected RUNS=10:
+
+```text
+remote50=13975874.04
+remote90=10827648.18
+```
+
+Decision: `GO(branch selected)/HOLD(default release)`.  The branch selected
+lane now targets high-remote recovery.  Before treating it as final default,
+capture RSS/local/lifetime/accounting guards.
+
+## 2026-06-20 OwnerInboxSelectedGuard-L1
+
+Added a small selected-preload guard runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_guard.sh
+```
+
+It records median ops/s and `/usr/bin/time` peak RSS for local0, remote50, and
+remote90 rows.
+
+Initial RUNS=3:
+
+```text
+local0   ops/s=15622095.27 peak=72.88 MiB
+remote50 ops/s=13443084.42 peak=74.62 MiB
+remote90 ops/s=11098596.12 peak=77.50 MiB
+```
+
+Decision: `GO(tooling)`.  Keep using this runner as the local/RSS guard while
+the branch selected lane remains under promotion review.
+
+## 2026-06-20 OwnerInboxAccountingGuard-L1
+
+`OwnerInboxAccountingGuard-L1` adds diagnostic snapshot accounting for the
+owner-inbox selected branch without changing allocation/free behavior.  The
+checker lives outside the already-large inbox implementation:
+
+```text
+api/hz6_allocator_remote_pending_accounting.c
+```
+
+It verifies inline pending lists, exact-key counts, slot states, external
+ticket head/free lists, list cycles, multiple membership,
+claimed-at-quiescence, and that every slot/ticket still points at a
+`REMOTE_PENDING` descriptor.
+
+Selected integrity smoke now zero-gates:
+
+```text
+remote_pending_inline_accounting_mismatch=0
+remote_pending_external_accounting_mismatch=0
+remote_pending_total_state_count_mismatch=0
+remote_pending_external_free_list_corruption=0
+remote_pending_external_list_cycle=0
+remote_pending_external_ticket_multiple_list_membership=0
+remote_pending_claimed_current_at_quiescence=0
+remote_pending_external_claimed_at_quiescence=0
+```
+
+The selected smoke passed with all new counters at zero while retaining
+expected pending inventory:
+
+```text
+remote_pending_current=33282
+remote_pending_external_ticket_current=1860
+```
+
+Post-accounting quick selected guard RUNS=1:
+
+```text
+local0   median_ops_s=15458799.79 median_peak_mib=72.75
+remote50 median_ops_s=14074062.72 median_peak_mib=75.00
+remote90 median_ops_s=10792436.45 median_peak_mib=77.18
+```
+
+Decision: `GO(tooling)`.  Pending backlog is not a blocker when accounting is
+explainable.  Default-release promotion still needs allocator lifetime closeout
+and paired RSS/local guard evidence.
+
+## 2026-06-20 AllocatorLifetimeCloseout-L1
+
+`AllocatorLifetimeCloseout-L1` closes pending inbox state during allocator
+destroy before route visibility and descriptor/source teardown.  The behavior
+lives in:
+
+```text
+api/hz6_allocator_remote_pending_lifetime.c
+```
+
+Inline pending slots are cleared and then existing descriptor destroy releases
+their backing storage.  External tickets are different: the descriptor storage
+owner may be another allocator, so destroy validates the ticket proof, verifies
+the storage owner token, unregisters the origin route, and releases the
+descriptor/source through the storage owner.
+
+New selected integrity zero gates:
+
+```text
+remote_pending_destroy_external_release_fail=0
+remote_pending_enqueue_after_owner_dying=0
+remote_pending_ticket_to_dead_owner=0
+remote_pending_ticket_to_dead_storage_owner=0
+remote_pending_route_removed_while_pending=0
+remote_pending_after_allocator_destroy=0
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+The selected+diagnostic transfer smoke was also manually built and run with
+`ulimit -s unlimited`; the flag-gated inline/external pending destroy cases
+passed.
+
+Decision: `GO(correctness)`.  This removes the lifetime blocker for the
+owner-inbox selected candidate.  The remaining default-release gate is paired
+selected-vs-baseline RSS/local/perf evidence.
+
+## 2026-06-20 PairedRSSDefaultGate-L1
+
+Added:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+```
+
+The runner compares:
+
+```text
+p0_selected_off
+p1_owner_inbox
+```
+
+across local0, remote50, remote90, and cross128_r90, recording median ops/s and
+peak RSS.
+
+RUNS=3:
+
+```text
+variant          row           median_ops_s  median_peak_mib
+p0_selected_off  local0        16069344.04   67.12
+p1_owner_inbox   local0        14684557.35   72.62
+p0_selected_off  remote50      14009374.49   69.38
+p1_owner_inbox   remote50      12926507.20   74.88
+p0_selected_off  remote90       3019174.12   99.01
+p1_owner_inbox   remote90      10385562.54   77.50
+p0_selected_off  cross128_r90   1624846.21   78.70
+p1_owner_inbox   cross128_r90  12193149.80   72.50
+```
+
+Decision: `GO(tooling)/HOLD(default)`.  The owner-inbox selected candidate is
+strong for high-remote rows, but default release stays on hold because local0
+and remote50 regress.  The next box should reduce the owner-inbox tax or split
+it into an explicit high-remote profile.
+
+## 2026-06-20 OwnerInboxProfileSplit-L1
+
+The paired RSS/default gate now compares two explicit shapes without relying on
+manual flag drift:
+
+```text
+p0_selected_off:
+  selected candidate flags with owner-inbox / external-ticket family forced off
+
+p1_owner_inbox:
+  branch-selected owner-inbox external candidate, DirectReuse off
+```
+
+The p1 high-remote profile is also available as a named target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+```
+
+It applies:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=1
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=1
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=1
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=1
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+`run_hz6_preload_owner_inbox_paired_gate.sh` now obtains p0 from the explicit
+owner-inbox-off helper and p1 from the owner-inbox external profile helper.
+`run_hz6_preload_owner_inbox_guard.sh` builds the p1 profile DSO directly.
+
+Verification note: briefly moving selected/default to p0 reintroduced
+`remote_free_returned_backpressure` in the integrity smoke, so the branch
+selected candidate stays on p1 while release/default promotion remains HOLD.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+RUNS=1 ./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh --runs 1
+```
+
+The paired RUNS=1 shape smoke wrote:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_045649
+```
+
+Decision: `GO(profile split)/HOLD(default promotion)`.  Keep owner-inbox
+external as the branch-selected high-remote candidate and explicit profile.
+The next optimization box should attribute or reduce the p1 local0/remote50
+tax before reconsidering release/default promotion.
+
+## 2026-06-20 OwnerInboxTaxAttribution-L1
+
+Added:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh
+```
+
+The runner is diagnostic-first and compares the owner-inbox stack in layers:
+
+```text
+p0_off
+p1_metadata
+p1_inline_no_maintenance
+p1_inline
+p1_external_no_maintenance
+p1_external
+```
+
+Default rows are `local0,remote50`; `remote90` is available explicitly but is
+too heavy for the default diagnostic attribution pass.
+
+Diagnostic RUNS=1:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050300
+```
+
+Production local0 smoke:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_050331
+```
+
+Initial read:
+
+```text
+local0:
+  p0_off peak=67.12 MiB
+  p1_metadata peak=71.62 MiB
+  p1_external peak=72.75 MiB
+
+remote50 p1_external:
+  returned_backpressure=0
+  external_ticket_success=2682
+  external_ticket_duplicate_probe_total=2746368
+```
+
+Decision: `GO(tooling)`.  The tax now has two concrete targets: fixed
+owner-inbox metadata/RSS for local0, and external-ticket duplicate scanning for
+remote50.  Next prefer a design box before behavior: either
+`ExternalTicketDuplicateIndex-L1` or `OwnerInboxLazyStorage-L1`.
+
+## 2026-06-20 ExternalTicketDuplicateIndex-L1
+
+Added a boxed duplicate index for external owner-inbox tickets:
+
+```text
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.c
+hakozuna-hz6/api/hz6_allocator_remote_pending_external_dup_index.h
+```
+
+The profile flag is:
+
+```text
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=1
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --runs 1 --rows remote50 --variants p1_external
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 1 --rows remote50 --variants p0_off,p1_external
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Integrity smoke closed:
+
+```text
+external_ticket_success=2036
+duplicate_probe_total=2217
+duplicate_probe_max=2
+duplicate_index_stale=0
+returned_backpressure=0
+```
+
+Focused tax run:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_051158
+
+p1_external remote50:
+  external_ticket_success=2320
+  duplicate_probe_total=2627
+  duplicate_probe_max=3
+  duplicate_index_stale=0
+```
+
+Decision: `GO(correctness+cost-shape)/HOLD(default promotion)`.  The external
+duplicate full scan is no longer the main remote50 suspect.  The one-shot
+production smoke still leaves p1 remote50 below p0, so the next design target
+is fixed owner-inbox metadata/RSS or maintenance work rather than another
+duplicate-scan change.
+
+## 2026-06-20 OwnerInboxStorageFootprintAudit-L1
+
+Added:
+
+```text
+hakozuna-hz6/tests/hz6_owner_inbox_storage_footprint.c
+hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Run:
+
+```text
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_051602
+```
+
+Result:
+
+```text
+p0_off sizeof(Hz6Allocator)       = 3251928
+p1_external sizeof(Hz6Allocator)  = 3588872
+p1 owner_inbox_bytes              = 336896
+p1 inline_slot_bytes              = 270336
+p1 external_ticket_bytes           = 57600
+p1 external_dup_index_bytes         = 8192
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The local0 RSS tax is primarily the
+fixed owner-inbox storage block.  A useful lazy-storage box must move the
+inline slot/proof arrays too; making only external tickets lazy is too small to
+be the main local0 fix.
+
+## 2026-06-20 OwnerInboxStorageProvider-L1
+
+Added the behavior-off storage provider for the next lazy owner-inbox box:
+
+```text
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.c
+hakozuna-hz6/api/hz6_allocator_owner_inbox_storage_provider.h
+```
+
+The provider uses OS-backed allocation directly instead of `malloc()`:
+
+```text
+Linux mmap / munmap
+Windows VirtualAlloc / VirtualFree
+```
+
+It page-rounds the allocation, zero-fills the returned block, and stores the
+rounded size for release.  This is the recursion-safe boundary needed before
+moving owner-inbox arrays out of `Hz6Allocator`.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/run_hz6_owner_inbox_storage_footprint.sh
+```
+
+Latest storage footprint remained unchanged, as expected for a boundary-only
+box:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_storage_footprint_20260620_052205
+
+p1_external owner_inbox_bytes=336896
+```
+
+Decision: `GO(boundary)/HOLD(lazy migration)`.  Next work should migrate the
+inline pending slot/proof arrays plus external-ticket storage behind this
+provider; do not use ordinary `calloc()` for that migration.
+
+## 2026-06-20 OwnerInboxLazyStorage-L1
+
+The owner-inbox external selected candidate now stores pending inbox metadata in
+a lazy OS-backed block instead of fixed arrays inside `Hz6Allocator`.  This
+covers both inline pending slot/proof storage and external ticket/index storage.
+The storage provider uses direct `mmap` on Linux and `VirtualAlloc` on Windows,
+so preload initialization does not recurse through interposed `calloc()`.
+
+The storage pointer is protected by an allocator-local init lock and is
+release-published only after reset.  This matters: publishing before reset
+created a production-only remote50 race where external-ticket consume could
+observe partially initialized lazy storage and hit the integrity abort.
+
+Verification passed:
+
+```text
+build_hz6_r1_smokes.sh
+build_hz6_preload.sh
+build_hz6_preload_owner_inbox_external_target.sh
+run_hz6_preload_integrity_smoke.sh
+run_hz6_owner_inbox_storage_footprint.sh
+run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 3 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Footprint moved as intended:
+
+```text
+p0_off       sizeof_Hz6Allocator=3251928
+p1_external sizeof_Hz6Allocator=3251960
+p1 logical owner_inbox_bytes=336896
+```
+
+Production RUNS=3 after lazy storage:
+
+```text
+p0_off      local0   16.13M ops/s  67.38 MiB
+p1_external local0   16.36M ops/s  67.12 MiB
+p0_off      remote50 14.56M ops/s  69.75 MiB
+p1_external remote50 13.76M ops/s  74.88 MiB
+p0_off      remote90  3.22M ops/s  79.66 MiB
+p1_external remote90 10.79M ops/s  77.34 MiB
+```
+
+Decision: keep p1 owner-inbox external as `GO(candidate)/HOLD(default)`.  The
+local-only fixed RSS tax is closed; default promotion still waits on reducing
+the remote50 runtime tax or making the owner-inbox lane an explicit high-remote
+profile.
+
+## 2026-06-20 OwnerInboxRemote50RuntimeTaxObserve-L1
+
+Added diagnostic-only owner-inbox maintenance gate counters to locate the p1
+remote50 runtime tax.  A diagnostic p1 remote50 run showed:
+
+```text
+maintenance_check=3372
+maintenance_entry_gate_miss=3871
+maintenance_inline_gate_hit=3336
+maintenance_external_gate_hit=296
+external_key_probe=7539
+external_key_hit=504
+```
+
+Interpretation: owner-local maintenance was often entered without matching
+pending work, and external-ticket exact-key checks were mostly empty.  That made
+external-ticket lock avoidance the next narrow shape candidate.
+
+## 2026-06-20 ExternalTicketNonemptyMask-L1
+
+External tickets now have an atomic exact-key nonempty mask.  The mask is only a
+pre-lock gate; ticket queue mutation still uses the existing external-ticket
+lock.  It is set on publish/requeue, cleared when an exact key head becomes
+empty, and reset during init/destroy closeout.
+
+Verification passed:
+
+```text
+build_hz6_preload.sh
+build_hz6_r1_smokes.sh
+build_hz6_preload_owner_inbox_external_target.sh
+run_hz6_preload_integrity_smoke.sh
+run_hz6_owner_inbox_storage_footprint.sh
+run_hz6_preload_owner_inbox_tax_ab.sh --production --runs 10 --rows local0,remote50,remote90 --variants p0_off,p1_external
+```
+
+Integrity smoke stayed clean:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+external_ticket_consume_empty=0
+external mismatch/full/duplicate/integrity_abort=0
+external_key_probe=7873
+external_key_hit=272
+```
+
+RUNS=10 did not promote the candidate:
+
+```text
+p0_off      local0   14.09M ops/s  67.25 MiB
+p1_external local0   14.05M ops/s  67.31 MiB
+p0_off      remote50 12.54M ops/s  69.62 MiB
+p1_external remote50 12.21M ops/s  74.81 MiB
+p0_off      remote90 10.02M ops/s  72.04 MiB
+p1_external remote90  9.70M ops/s  77.24 MiB
+```
+
+Decision: `GO(shape)/HOLD(default)`.  The empty external-head lock path is
+boxed, but default promotion remains blocked by runtime cost and inconsistent
+remote90 comparison.  Stop for design before adding another owner-inbox consumer
+policy.
+
+## 2026-06-20 OwnerInboxHighRemoteProfile-L1
+
+Owner-inbox external is no longer part of selected/default.  It remains an
+explicit high-remote profile with DirectReuse off.
+
+Selected/default keeps the owner-inbox family off:
+
+```text
+HZ6_REMOTE_PENDING_INBOX_CORE_L1=0
+HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1=0
+HZ6_REMOTE_PENDING_OWNER_LOCAL_MAINTENANCE_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1=0
+HZ6_REMOTE_PENDING_EXTERNAL_DUP_INDEX_L1=0
+HZ6_REMOTE_PENDING_LAZY_STORAGE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=0
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=0
+```
+
+High-remote profile builds:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh
+hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+```
+
+`run_hz6_preload_owner_inbox_guard.sh` now builds the high-remote target name.
+`run_hz6_preload_owner_inbox_paired_gate.sh` remains the default-vs-profile
+comparison tool.
+
+Decision: `GO(profile)/HOLD(default)`.  Do not add another owner-inbox consumer
+policy to selected/default until a separate audit shows a no-regression path.
+
+Profile frontier alias:
+
+```text
+hz6-high-remote-owner-inbox-target
+```
+
+This alias builds through
+`build_hz6_preload_high_remote_owner_inbox_target.sh` and resolves through
+`bench/lib/bench_common.sh`, so existing profile frontier and selected-balance
+runners can compare it without custom LD_PRELOAD plumbing.
+
+## 2026-06-20 TransferCapacitySweep-L1
+
+`TransferCapacitySweep-L1` adds a selected/default observation runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_transfer_capacity_sweep.sh
+```
+
+It keeps selected/default behavior and changes only:
+
+```text
+HZ6_TRANSFER_CACHE_CAPACITY
+HZ6_PROFILE_SPEED_TRANSFER_CAPACITY
+HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY
+```
+
+The runner records ops/s and `/usr/bin/time` peak RSS for:
+
+```text
+local0
+remote50
+remote90
+```
+
+It also supports `--diagnostic`, which builds with
+`HZ6_DIAGNOSTIC_PROBES=1` and passes `HZ6_PRELOAD_STATS=1` so the existing
+backpressure counters can be read from the logs.  Diagnostic results are for
+counter attribution, not performance selection.  The runner writes both
+`summary.tsv` and a focused `counters.tsv` for the remote-free backpressure
+and origin-transfer saturation counters.
+
+Production RUNS=3 for cap256 vs cap512:
+
+```text
+capacity  row       median ops/s  median peak MiB
+256       local0    16.18M        67.25
+256       remote50  14.66M        69.50
+256       remote90  10.73M        72.12
+512       local0    14.90M        67.62
+512       remote50  14.28M        70.00
+512       remote90  10.63M        72.00
+```
+
+Diagnostic cap256/cap512 counters showed both variants still saturate transfer
+capacity under remote rows; cap512 reduces some returned backpressure in single
+samples but does not remove the bounded-cache saturation condition.
+
+Decision: `GO(tooling)/NO-GO(cap512 default)`.  Capacity sweep is useful as an
+observation surface, but simply increasing transfer capacity to 512 is not the
+next selected/default optimization.
+
+## 2026-06-20 TransferClassShardProfile-L1
+
+`TransferClassShardProfile-L1` adds a default-off profile switch:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1
+```
+
+When enabled, speed and remote profiles use:
+
+```text
+HZ6_TRANSFER_SHARD_CLASS_ID
+```
+
+instead of the default owner-slot transfer shard policy.  The selected/default
+policy is unchanged.
+
+Build target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
+```
+
+Profile frontier alias:
+
+```text
+hz6-transfer-class-shard-target
+```
+
+Paired runner:
+
+```text
+hakozuna-hz6/linux/run_hz6_preload_transfer_shard_policy_ab.sh
+```
+
+The paired runner records selected vs class-shard ops/RSS and supports
+`--diagnostic` to emit the same focused backpressure `counters.tsv` used by the
+transfer-capacity sweep.
+
+Verification:
+
+```text
+bash hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+bash hakozuna-hz6/linux/build_hz6_preload.sh
+bash hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh
+HZ6_EXTRA_CFLAGS='-DHZ6_PROFILE_TRANSFER_SHARD_CLASS_L1=1' \
+  bash hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+Quick RUNS=3 comparison:
+
+```text
+variant      remote50  remote90
+selected     14.33M    10.88M
+class_shard  14.95M    10.82M
+```
+
+Decision: `GO(candidate)/HOLD(default)`.  Class sharding is worth keeping as an
+opt-in candidate because the first sample improves remote50 without the
+owner-inbox profile, but it does not clearly improve remote90 and needs broader
+paired evidence before selected/default promotion.
+
+Follow-up RUNS=1 from the paired runner reversed the remote50 direction:
+
+```text
+variant      local0   remote50  remote90
+selected     16.46M   15.00M    10.84M
+class_shard  16.37M   13.85M    10.94M
+```
+
+## 2026-06-20 SmallClassTransferShard-L1
+
+`SmallClassTransferShard-L1` keeps broad class-id transfer sharding as an
+explicit research lane and adds a narrower default-off knob:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
+```
+
+With this set, class ids `0..3` use class-id transfer sharding and class ids
+`4+` keep the selected owner-slot policy.  This avoids applying the class-id
+policy to Toy 4096 and MidPage 8K/32K classes.
+
+Build target:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_transfer_small_class_shard_target.sh
+```
+
+Profile frontier alias:
+
+```text
+hz6-transfer-small-class-shard-target
+```
+
+The transfer shard policy runner now includes `small_class_shard` beside
+`selected` and `class_shard`.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_transfer_small_class_shard_target.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+HZ6_EXTRA_CFLAGS='-DHZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3' \
+  ./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+```
+
+Focused RUNS=3:
+
+```text
+row          selected  class_shard  small_class_shard
+16_256       58.52M    60.19M       59.27M
+16_4096      56.51M    57.31M       57.23M
+1024_4096    73.01M    67.52M       70.49M
+4096_16384   62.68M    61.75M       63.93M
+```
+
+Remote MT RUNS=3:
+
+```text
+variant            local0   remote50  remote90
+selected           15.93M   13.97M    10.83M
+class_shard        16.20M   14.42M    10.67M
+small_class_shard  16.31M   14.79M    11.13M
+```
+
+Remote MT RUNS=10:
+
+```text
+variant            local0   remote50  remote90
+selected           16.17M   15.00M    10.93M
+class_shard        16.35M   15.01M    10.84M
+small_class_shard  15.95M   15.29M    10.87M
+```
+
+Diagnostic RUNS=3 counters:
+
+```text
+variant            row       returned_bp  transfer_success  transfer_full
+selected           remote50  28706        11009             64605
+class_shard        remote50  28428        11285             64835
+small_class_shard  remote50  28927        10788             65794
+selected           remote90  2469         113323            152493
+class_shard        remote90  2629         121501            152756
+small_class_shard  remote90  2529         121387            151911
+```
+
+Decision: `GO(remote50 target)/NO-GO(default)`.  The narrow lane preserves the
+small-row signal and avoids part of the class 4/5 regression from broad
+class-sharding, but the RUNS=10 recheck only improves remote50 and slightly
+regresses local0/remote90.  Keep it as an explicit target/profile; do not
+promote it to selected/default from this data.  The diagnostic counters do not
+show fewer transfer-full or returned-backpressure events, so stop this policy
+line for design before stacking another transfer-shard tweak.
+
+Diagnostic paired RUNS=1 populated `counters.tsv`; class-shard did not clearly
+reduce returned backpressure or transfer full events in that sample.
+
+## 2026-06-20 OwnerInboxSmallClassComposition-L1
+
+`OwnerInboxSmallClassComposition-L1` adds an attribution-only owner-inbox tax
+runner variant:
+
+```text
+p1_external_small_class
+```
+
+This composes the p1 owner-inbox external high-remote profile with:
+
+```text
+HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
+```
+
+It does not create a new build target or selected/default behavior.
+
+Production RUNS=3:
+
+```text
+variant                  local0   remote50  remote90
+p1_external              16.09M   14.23M    10.43M
+p1_external_small_class  16.55M   13.71M    10.79M
+```
+
+Production RUNS=10:
+
+```text
+variant                  remote50  remote90
+p1_external              14.12M    10.71M
+p1_external_small_class  13.93M    10.71M
+```
+
+Decision: `GO(tooling)/NO-GO(profile)`.  Composing small-class transfer
+sharding into the owner-inbox high-remote profile does not reduce the p1
+runtime tax.  Keep the runner variant for attribution, but do not add a combined
+profile target.
+
+## 2026-06-20 OwnerInboxMaintenanceStatsShape-L1
+
+`OwnerInboxMaintenanceStatsShape-L1` removes production hot-path writes from
+owner-local pending maintenance counters by using the existing diagnostic-only
+macros:
+
+```text
+HZ6_REMOTE_PENDING_STAT_INC
+HZ6_REMOTE_PENDING_STAT_ADD
+```
+
+The integrity counters remain visible in diagnostic builds because
+`run_hz6_preload_integrity_smoke.sh` builds the diagnostic preload DSO.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production p1-only RUNS=10:
+
+```text
+p1_external local0   16.35M  67.38 MiB
+p1_external remote50 14.25M  74.75 MiB
+p1_external remote90 10.51M  77.33 MiB
+```
+
+Paired production RUNS=10:
+
+```text
+variant      local0   remote50  remote90
+p0_off       16.21M   15.18M    10.68M
+p1_external 16.47M   14.07M    10.53M
+```
+
+Decision: `GO(shape)/NO-GO(default)`.  Production owner-inbox maintenance
+counters now stay zero in the tax runner, as expected, and local0 is neutral to
+slightly positive.  The p1 remote50/remote90 tax remains, so default stays
+owner-inbox off.
+
+RUNS=10 paired result:
+
+```text
+variant      local0           remote50         remote90
+selected     16.59M/67.38MiB  14.86M/69.50MiB 10.88M/72.21MiB
+class_shard  16.19M/67.44MiB  15.02M/69.50MiB 10.83M/72.15MiB
+```
+
+Final decision for this box: `GO(tooling)/NO-GO(default)`.  Class sharding is
+not a selected/default win.  It slightly helps remote50 in this batch but costs
+local0 and does not improve remote90.
+
+## 2026-06-20 OwnerInboxMaintenanceSinkAudit-L1
+
+`OwnerInboxMaintenanceSinkAudit-L1` uses the existing owner-inbox tax variants
+to split producer-only cost from producer-plus-consumer behavior:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p0_off,p1_external_no_maintenance,p1_external
+```
+
+Production RUNS=10:
+
+```text
+variant                     remote50         remote90
+p0_off                      14.65M/69.31MiB  10.91M/72.22MiB
+p1_external_no_maintenance  14.04M/74.75MiB   3.09M/95.19MiB
+p1_external                 13.72M/74.75MiB  10.64M/77.43MiB
+```
+
+Decision: `GO(evidence)/NO-GO(maintenance-off)`.  Disabling owner-local
+maintenance slightly improves p1 remote50 versus p1 with maintenance, but it
+collapses remote90 and increases peak RSS.  Owner-local maintenance is the
+high-remote sink that keeps pending buildup from becoming another remote90
+cliff, so the next p1 work should reduce per-item consumer cost or improve
+demand targeting without broadly skipping maintenance.
+
+## 2026-06-20 OwnerInboxMaintenanceCostAttribution-L1
+
+`OwnerInboxMaintenanceCostAttribution-L1` adds diagnostic-only counters for the
+owner-inbox maintenance loop:
+
+```text
+remote_pending_maintenance_external_attempt/success
+remote_pending_maintenance_inline_pop_attempt/success
+remote_pending_maintenance_route_validate_inline/external
+remote_pending_maintenance_frontcache_push_attempt_inline/external
+remote_pending_maintenance_frontcache_push_success_inline/external
+remote_pending_maintenance_drained_inline/external
+```
+
+The counters are reported through the preload detail dump and the owner-inbox
+tax runner, and they compile out in production through the existing
+`HZ6_REMOTE_PENDING_STAT_*` macros.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Observed medians:
+
+```text
+row       ops/s   inline drained  external drained  inline route  external route
+remote50  5.17M   4149            400               4149          400
+remote90  3.02M   1691            20611             1691          20611
+```
+
+Other relevant medians:
+
+```text
+row       maintenance_check  entry_gate_miss  inline_gate  external_gate
+remote50  4488               4216             4430         400
+remote90  22302              31656            2608         20611
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Remote50 tax is mostly inline
+maintenance, while remote90 survival is mostly external-ticket consumption.
+The next behavior box should not use one broad maintenance throttle.  Prefer a
+split policy or targeted inline-cost reduction that preserves the external sink
+needed by high-remote rows.
+
+## 2026-06-20 OwnerInboxMaintenanceShapeObserve-L1
+
+`OwnerInboxMaintenanceShapeObserve-L1` adds diagnostic-only front/class split
+for owner-inbox maintenance drain work:
+
+```text
+inline_toy / inline_midpage
+external_toy / external_midpage
+cN_inline / cN_external
+```
+
+The counters are emitted on the existing
+`[HZ6_PRELOAD_DIRECT_PENDING_CLASS_DETAIL]` line to keep the log surface small.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Representative median-run shape:
+
+```text
+row       inline toy/midpage  external toy/midpage  c4 inline/external  c5 inline/external
+remote50  317 / 5813          7 / 24                922 / 29            5204 / 2
+remote90  437 / 1061          4285 / 21011          215 / 10393         874 / 12493
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Remote50 inline maintenance is
+mostly MidPage class5, then class4.  Remote90 survival is mostly external
+MidPage class5/class4, with Toy external work still visible.  The next behavior
+should not throttle all inline pending; target MidPage class5/class4 inline
+work specifically and preserve external class4/class5 consumption.
+
+## 2026-06-20 OwnerInboxMidpageInlineSkip-L1
+
+`OwnerInboxMidpageInlineSkip-L1` tests whether the MidPage class5/class4 inline
+maintenance identified above can be removed while preserving the external-ticket
+sink.
+
+The box adds a default-off threshold:
+
+```text
+HZ6_REMOTE_PENDING_INLINE_MIDPAGE_MIN_CLASS=HZ6_STATS_CLASS_COUNT
+```
+
+When set to `5`, inline MidPage maintenance for class5 and above is skipped.
+When set to `4`, class4 and class5 are skipped.  External-ticket consumption
+still runs first.
+
+Runner variants:
+
+```text
+p1_external_inline_skip_mid5
+p1_external_inline_skip_mid4
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4
+```
+
+Observed medians:
+
+```text
+variant                       remote50         remote90
+p1_external                   14.23M/74.88MiB  10.65M/77.70MiB
+p1_external_inline_skip_mid5  13.76M/74.88MiB   3.78M/85.13MiB
+p1_external_inline_skip_mid4  14.28M/74.75MiB   3.24M/86.18MiB
+```
+
+Diagnostic RUNS=1 confirmed the policy was active:
+
+```text
+variant                       inline_policy_skip  inline_pop_success
+p1_external_inline_skip_mid5  1142                620
+p1_external_inline_skip_mid4  1165                 86
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Skipping MidPage class5/class4 inline
+maintenance does not improve remote50 reliably and collapses remote90.  The
+next idea should make inline consumption cheaper or more direct rather than
+removing it.
+
+## 2026-06-20 OwnerInboxSplitMaintenancePolicy-L1
+
+`OwnerInboxSplitMaintenancePolicy-L1` tests the narrow policy suggested by the
+cost attribution counters:
+
+```text
+frontcache-miss maintenance:
+  drain external tickets only
+
+source-boundary maintenance:
+  run the existing full exact-key maintenance
+```
+
+The box is controlled by:
+
+```text
+HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1=1
+HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1=1
+```
+
+The implementation adds an external-only maintenance API and keeps the existing
+full maintenance API unchanged.  The owner-inbox tax runner now has:
+
+```text
+p1_external_split_maintenance
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3 showed the mechanism working: split maintenance reduced
+remote90 diagnostic RSS and moved many front-miss inline hits into deferred
+source-boundary work.  The production-shaped A/B is the promotion signal:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_split_maintenance
+```
+
+Production RUNS=3:
+
+```text
+variant                        remote50         remote90
+p1_external                    14.11M/74.88MiB  10.67M/77.33MiB
+p1_external_split_maintenance  12.29M/74.62MiB  11.00M/77.35MiB
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Splitting front maintenance away from
+inline work can preserve or slightly improve remote90, but remote50 regresses
+too much.  Keep this as a research control only.  The next design should not
+defer all inline work to the source boundary; it needs a narrower inline-cost
+reduction or an inline/external policy with a better demand signal.
+
+## 2026-06-20 RemotePendingRoutePinAudit-L1
+
+`RemotePendingRoutePinAudit-L1` adds diagnostic-only shadow counters around
+route mutation entry points:
+
+```text
+route_unregister_while_pending
+route_replace_while_pending
+route_rehome_while_pending
+```
+
+The goal is to validate the route-pin invariant needed before removing the
+production `hz6_allocator_route_lookup_exact()` from inline pending
+maintenance.  This box does not change behavior; inline and external pending
+maintenance still perform exact route validation.
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external
+```
+
+Observed medians:
+
+```text
+row       unregister_pending  replace_pending  rehome_pending  inline route
+remote50  0                   0                0               3910
+remote90  0                   0                0               1563
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The observed owner-inbox profile
+does not mutate routes while descriptors are `REMOTE_PENDING`, which supports a
+future `RemotePendingRoutePinTrust-L1` behavior box.  That next box should keep
+diagnostic shadow route validation and only skip the production route lookup
+after the route-pin zero counters are clean.
+
+## 2026-06-20 RemotePendingRoutePinTrust-L1
+
+`RemotePendingRoutePinTrust-L1` adds a default-off production switch:
+
+```text
+HZ6_REMOTE_PENDING_ROUTE_PIN_TRUST_L1=1
+```
+
+When enabled, production inline pending maintenance trusts the
+`REMOTE_PENDING` route-pin invariant and skips the exact route lookup before
+pushing the object into the owner-local frontcache.  Diagnostic builds still
+run the route lookup as a shadow check, so the route-pin counters from
+`RemotePendingRoutePinAudit-L1` remain the correctness gate.
+
+The owner-inbox tax runner gained a focused variant:
+
+```text
+p1_external_route_pin
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/build_hz6_preload.sh
+./hakozuna-hz6/linux/build_hz6_preload_owner_inbox_external_target.sh
+./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh
+./hakozuna-hz6/linux/build_hz6_r1_smokes.sh
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,remote90 \
+  --variants p1_external,p1_external_route_pin
+```
+
+Observed medians:
+
+```text
+variant                local0    remote50  remote90  remote90 RSS
+p1_external            15.20M    13.17M     3.94M    83.24 MiB
+p1_external_route_pin  16.61M    14.00M     2.71M    99.88 MiB
+```
+
+Focused remote90 RUNS=10 recheck:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote90 \
+  --variants p1_external,p1_external_route_pin
+```
+
+```text
+variant                remote90  remote90 RSS
+p1_external             3.97M    82.42 MiB
+p1_external_route_pin   3.60M    87.64 MiB
+```
+
+Decision: `GO(research)/NO-GO(default)`.  The route-pin trust switch improves
+the lower-remote rows in this short run, but it damages the high-remote sink and
+raises remote90 RSS.  Keep the switch as a research control only.  Do not add it
+to `p1_external` or selected flags.
+
+## 2026-06-20 OwnerInboxDirectReuseProfileRecheck-L1
+
+Rechecked DirectReuse after the owner-inbox storage and maintenance-shape boxes.
+The attribution runner now has two variants:
+
+```text
+p1_external_direct_reuse
+  p1_external plus DirectReuse/claim on, production DirectReuse counters off
+
+p1_external_direct_reuse_observe
+  same behavior, DirectReuse counters on for diagnostic attribution
+```
+
+Production RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse
+```
+
+```text
+variant                   remote50          RSS       remote90          RSS
+p1_external               14.05086950M      74.69MiB  10.73298177M     77.56MiB
+p1_external_direct_reuse  14.38359632M      74.81MiB  10.65646400M     77.45MiB
+```
+
+Diagnostic observe smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50 \
+  --variants p1_external_direct_reuse_observe
+```
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+route_unregister_while_pending=0
+route_replace_while_pending=0
+route_rehome_while_pending=0
+remote_pending_direct_gate_load=6782
+remote_pending_direct_gate_hit=3795
+remote_pending_direct_claim_attempt=3795
+remote_pending_direct_claim_success=3767
+remote_pending_direct_claim_busy=28
+remote_pending_direct_integrity_failure=0
+remote_pending_direct_claim_success_toy=77
+remote_pending_direct_claim_success_midpage=3690
+```
+
+Decision: `GO(profile candidate)/HOLD(default)`.  The current p1 shape makes
+DirectReuse useful again for remote50, but the same RUNS=10 shows a small
+remote90 loss.  Keep `p1_external_direct_reuse` as an attribution/profile
+candidate and keep the high-remote profile/default DirectReuse-off until a
+narrow source-boundary or MidPage-shaped policy beats both rows.
+
+Follow-up remote90 diagnostic note:
+
+```text
+remote90 full diagnostic:
+  p1_external_direct_reuse_observe
+  remote_pending_direct_claim_success=3154
+  remote_pending_direct_claim_success_midpage=2624
+  remote_pending_direct_claim_success_transfer_nonempty=2626
+  remote_pending_direct_integrity_failure=0
+
+remote90_short diagnostic:
+  p1_external_direct_reuse_observe
+  remote_pending_direct_claim_success=547
+  remote_pending_direct_claim_success_midpage=527
+  remote_pending_direct_claim_success_transfer_nonempty=547
+  remote_pending_direct_integrity_failure=0
+```
+
+Both diagnostic remote90 rows also produced `remote_free_returned_uncommitted`
+under the heavy diagnostic counter shape, while the production-shaped remote90
+run stayed at normal throughput.  Treat these remote90 diagnostic rows as shape
+attribution only, not as zero gates.  The useful signal is that high-remote
+DirectReuse claims are mostly MidPage and almost entirely same-class transfer
+overlap; this favors a source-boundary/order policy over a broader eager
+frontcache-miss DirectReuse promotion.
+
+## 2026-06-20 OwnerInboxSourceGateRecheck-L1
+
+Rechecked source-boundary DirectReuse after owner-inbox external tickets and
+lazy storage.  The owner-inbox tax runner now has:
+
+```text
+p1_external_source_gate
+  p1_external plus DirectReuse at the source-demand boundary
+
+p1_external_source_gate_observe
+  same behavior, DirectReuse counters on for diagnostic attribution
+```
+
+Production RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse,p1_external_source_gate
+```
+
+```text
+variant                   remote50  RSS       remote90  RSS
+p1_external               13.42M    74.75MiB  10.53M    77.48MiB
+p1_external_direct_reuse  13.63M    75.00MiB  10.92M    77.38MiB
+p1_external_source_gate   14.24M    74.88MiB   3.99M    83.84MiB
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  Source-boundary DirectReuse improves
+remote50 in this short run, but it collapses remote90 and raises high-remote
+RSS.  The current source-gate shape still moves too much owner-local sink work
+away from the normal high-remote path.  Keep the variant for attribution only;
+do not use it in the high-remote profile.
+
+## 2026-06-20 DirectReuseAsProfile-L1
+
+Fixed frontcache-miss DirectReuse as an explicit profile/control alias, not as
+selected/default or the high-remote owner-inbox profile:
+
+```text
+hz6-high-remote-owner-inbox-direct-reuse-target
+  build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh
+```
+
+The builder composes the owner-inbox external profile with:
+
+```text
+HZ6_REMOTE_PENDING_DIRECT_REUSE_L1=1
+HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1=1
+HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=0
+```
+
+Verification:
+
+```text
+./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh
+./hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh
+bash -lc 'ROOT_DIR=$PWD; source bench/lib/bench_common.sh; bench_find_allocator_library hz6-high-remote-owner-inbox-direct-reuse-target'
+./hakozuna-hz6/linux/run_hz6_preload_profile_frontier.sh \
+  --runs 1 \
+  --iters 20000 \
+  --rows focused \
+  --allocators hz6-high-remote-owner-inbox-target,hz6-high-remote-owner-inbox-direct-reuse-target \
+  --skip-prepare
+```
+
+Focused R1 smoke:
+
+```text
+row          owner-inbox  owner-inbox direct-reuse
+16_256       7.45M        7.54M
+16_4096      3.49M        3.56M
+1024_4096    3.03M        3.22M
+4096_16384   3.92M        3.99M
+```
+
+Decision: `GO(profile)/HOLD(default)`.  This keeps the DirectReuse candidate
+easy to run through the shared profile frontier while preserving immediate
+rollback: selected/default and `hz6-high-remote-owner-inbox-target` remain
+DirectReuse-off.
+
+## 2026-06-20 DirectReuseTransferOutcomeAudit-L1
+
+Extended `run_hz6_preload_owner_inbox_tax_ab.sh` to extract existing outcome
+counters alongside DirectReuse overlap counters:
+
+```text
+transfer_pop
+source_alloc
+frontcache_reuse_hit
+midpage_source_alloc / toy_source_alloc / large_source_alloc
+remote_pending_direct_claim_while_transfer_nonempty
+remote_pending_direct_claim_while_frontcache_nonempty
+remote_pending_direct_claim_before_existing_reuse
+remote_pending_direct_claim_success_transfer_nonempty
+remote_pending_direct_claim_success_transfer_toy
+remote_pending_direct_claim_success_transfer_midpage
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50 \
+  --variants p1_external_direct_reuse_observe
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote90_short \
+  --variants p1_external_direct_reuse_observe
+```
+
+Observed medians:
+
+```text
+row             direct_claim  transfer-overlap  source_alloc  transfer_pop
+remote50        3461             6                 711          2546
+remote90_short   591           591               28628         51559
+```
+
+`remote90_short` is still diagnostic-shape only because it reports
+`remote_free_returned_uncommitted` under counter-heavy builds.  It is not a
+zero gate.  The useful signal is the split: remote50 DirectReuse mostly does
+not overlap same-class transfer inventory, while high-remote DirectReuse does.
+If the next behavior box exists, it should be transfer-aware only for the
+high-remote/direct-reuse profile shape, not a blanket DirectReuse skip.
+
+## 2026-06-20 DirectReuseProfileReproBatch2-L1
+
+Re-ran the production owner-inbox external profile against the DirectReuse
+profile alias after the transfer-outcome audit.  This batch was intentionally
+the same production shape as the earlier profile recheck: DirectReuse behavior
+on, but DirectReuse attribution counters compiled out.
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows remote50,remote90 \
+  --variants p1_external,p1_external_direct_reuse
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_073847
+```
+
+Production RUNS=10 medians:
+
+```text
+variant                   remote50          RSS       remote90          RSS
+p1_external               14.18163794M      74.75MiB  10.67473729M     77.36MiB
+p1_external_direct_reuse  14.05390252M      74.88MiB  10.48207211M     77.48MiB
+```
+
+Outcome counters also stayed clean for the correctness gates:
+
+```text
+remote_free_returned_backpressure=0
+remote_free_returned_uncommitted=0
+route_unregister_while_pending=0
+route_replace_while_pending=0
+route_rehome_while_pending=0
+```
+
+Production DirectReuse diagnostic counters remained zero because
+`HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1=0`, which is the intended production
+shape for this profile.
+
+Decision: `HOLD(profile promotion)/NO-GO(next behavior)`.  The earlier RUNS=10
+remote50 win did not reproduce; this batch has DirectReuse down on both
+remote50 and remote90.  Keep
+`hz6-high-remote-owner-inbox-direct-reuse-target` as a profile/control and do
+not add a transfer-aware skip or selected promotion until a stronger paired
+batch shows stable upside.
+
+## 2026-06-20 PairedGateDistributionSummary-L1
+
+Updated the owner-inbox paired gate and tax attribution runners so the summary
+TSV shows the distribution needed for promotion review:
+
+```text
+ops_min / ops_p25 / ops_median / ops_p75 / ops_max
+peak_mib_min / peak_mib_p25 / peak_mib_median / peak_mib_p75 / peak_mib_max
+```
+
+The raw per-run TSVs remain unchanged, and the tax runner still appends counter
+medians after the distribution columns.  This is observation-only; allocator
+flags and behavior are unchanged.
+
+Verification:
+
+```text
+bash -n hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh
+bash -n hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh
+git diff --check
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production --runs 1 --rows remote50 --variants p1_external
+
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 1 --variants p1_owner_inbox
+```
+
+The smoke outputs confirmed the new columns.  Example paired-gate RUNS=1
+summary row:
+
+```text
+p1_owner_inbox remote90 runs=1 ops_min=11119250.60 ops_median=11119250.60 peak_mib_median=77.88
+```
+
+Decision: `GO(tooling)`.  Use these richer summaries for the next RUNS=10
+paired batches so variance and RSS spread are visible without reprocessing raw
+logs.
+
+## 2026-06-20 PairedGateR10Recheck-L1
+
+Ran the distribution-enabled paired gate for a full production RUNS=10 batch:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p1_owner_inbox
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_074553
+```
+
+Summary:
+
+```text
+variant          row           runs  ops_min    ops_p25    ops_median  ops_p75    ops_max    RSS_median
+p0_selected_off  local0        10    15.75M     16.52M     16.74M      16.98M     17.27M      67.25MiB
+p1_owner_inbox   local0        10    13.62M     15.33M     16.25M      16.66M     17.11M      67.38MiB
+p0_selected_off  remote50      10    12.31M     14.34M     14.85M      15.40M     15.71M      69.50MiB
+p1_owner_inbox   remote50      10    11.94M     12.50M     13.88M      14.29M     14.63M      74.81MiB
+p0_selected_off  remote90      10    10.72M     10.86M     11.00M      11.19M     11.30M      72.21MiB
+p1_owner_inbox   remote90      10     9.69M     10.50M     10.67M      10.80M     10.86M      77.36MiB
+p0_selected_off  cross128_r90  10     0.63M      3.84M      8.11M      17.53M     39.21M      68.81MiB
+p1_owner_inbox   cross128_r90  10     1.70M      3.35M      5.25M       7.82M     31.91M      74.56MiB
+```
+
+Decision: `HOLD(profile/default)/DESIGN checkpoint`.  In this batch the
+owner-inbox p1 shape loses every median row and has higher RSS in the remote
+rows.  That removes the current performance case for p1 default promotion and
+also weakens the high-remote profile case.  Do not stack another owner-inbox
+consumer policy yet; first reconcile why the current p0 selected-off shape no
+longer shows the earlier high-remote cliff.
+
+## 2026-06-20 OriginTransferCliffReconcile-L1
+
+Added a tax-runner control variant:
+
+```text
+p0_no_origin_transfer
+  p0_off plus HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1=0
+```
+
+This checks whether the current p0 selected-off high-remote strength comes from
+the selected origin-transfer backpressure path rather than owner-inbox.
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote90 \
+  --variants p0_off,p0_no_origin_transfer
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_074913
+```
+
+Summary:
+
+```text
+variant                remote90 median  RSS median  transfer_pop  source_alloc
+p0_off                 11.24M           72.00MiB    89087         62864
+p0_no_origin_transfer   7.42M          103.05MiB   160903         67231
+```
+
+Decision: `GO(evidence)/HOLD(owner-inbox)`.  The earlier high-remote cliff did
+not disappear because owner-inbox became necessary; it is mostly covered by the
+selected origin-transfer backpressure path now included in p0 selected-off.
+Owner-inbox p1 should remain on hold, and the next baseline for high-remote
+work is the current origin-transfer selected path.
+
+## 2026-06-20 OriginTransferOutcomeCounters-L1
+
+Extended the owner-inbox tax runner to print the selected origin-transfer
+outcome counters:
+
+```text
+remote_free_backpressure_origin_transfer_success
+remote_free_backpressure_origin_transfer_fail
+remote_free_backpressure_origin_transfer_stride_skip
+remote_free_backpressure_origin_transfer_validation_fail
+remote_free_backpressure_origin_transfer_full
+remote_free_backpressure_origin_full_transfer_count_total
+remote_free_backpressure_origin_full_class_count_total
+remote_free_backpressure_origin_full_class_count_max
+remote_free_backpressure_origin_drain_attempt
+remote_free_backpressure_origin_drain_success
+remote_free_backpressure_origin_drain_retry_success
+```
+
+Production-shaped sanity run:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90 \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075126
+```
+
+Diagnostic shape attribution:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075138
+```
+
+Observed diagnostic counters:
+
+```text
+row             origin_success  origin_full  avg_full_transfer  max_same_class
+remote50        7635            28645        256                198
+remote90_short  7184              137        256                127
+```
+
+The diagnostic rows are counter-shape attribution only; they are not promotion
+zero gates.  In particular `remote90_short` reports diagnostic-shape
+`remote_free_returned_uncommitted`, while the production-shaped p0 remote90 row
+stays at normal throughput.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Origin-transfer is the current
+selected high-remote baseline, but remote50 still has a large origin-full tail
+under diagnostic attribution.  Do not add owner-inbox back yet; the next
+behavior idea needs to target this tail without the owner-inbox runtime/RSS tax.
+
+## 2026-06-20 OriginTransferFullTailDesign-L1
+
+Reviewed the selected origin-transfer path and the owner-local transfer
+consumer boundary before adding another behavior box.
+
+Current selected path:
+
+```text
+remote free:
+  destination transfer reserve
+  -> if backpressure and foreign route valid:
+       try origin transfer reserve
+
+owner-local allocation:
+  transfer-first profile
+  -> hz6_front_reuse_transfer_with_descriptor()
+  -> pop same-class transfer object
+  -> activate descriptor
+  -> otherwise continue to existing reuse/source paths
+```
+
+Evidence already rules out several broad fixes:
+
+```text
+remote-thread origin drain:
+  NO-GO.  It moves transfer objects into origin frontcache on the remote path
+  and regressed remote rows.
+
+generic remote-free overflow:
+  NO-GO for default.  It converts backpressure into extra route movement and
+  did not improve selected performance.
+
+owner-inbox reintroduction:
+  HOLD.  It closes some tails, but current p1 loses p0 selected-off on the
+  paired RUNS=10 and carries runtime/RSS tax.
+
+larger transfer capacity / broad class sharding:
+  HOLD/NO-GO for default from existing sweeps.  Full events are often true
+  capacity saturation and not just a single class hash issue.
+```
+
+Therefore the next box should be observe-only:
+
+```text
+OriginTransferFullTailDemandAudit-L1
+```
+
+Questions to answer before behavior:
+
+```text
+1. Does source or prefill commit happen while same-class transfer inventory
+   exists for the owner allocator?
+
+2. On origin-transfer full, is same-class count near capacity, or is the cache
+   globally full with mostly other classes?
+
+3. Does owner-local demand lag producer bursts, or is the consumer simply not
+   checking the transfer cache at the right source boundary?
+
+4. Are invalid transfer-pop loops or transfer activation failures meaningful,
+   or is transfer inventory valid but not consumed quickly enough?
+```
+
+Candidate counters:
+
+```text
+source_commit_with_same_class_transfer
+source_commit_with_any_transfer
+source_commit_same_class_transfer_count_total/max
+source_commit_transfer_count_total/max
+prefill_commit_with_same_class_transfer
+transfer_pop_loop_attempt
+transfer_pop_loop_empty
+transfer_pop_loop_invalid
+transfer_pop_loop_hit
+origin_transfer_full_by_class[]
+```
+
+Decision: `GO(design)/HOLD(behavior)`.  Do not add another sink yet.  The next
+implementation should be a small diagnostic box around existing source/prefill
+and transfer-pop boundaries, not a new owner-inbox or remote-thread drain path.
+
+## 2026-06-20 OriginTransferFullTailDemandAudit-L1
+
+Added diagnostic-only origin-transfer demand counters around the owner-local
+source/prefill commit boundary and transfer-pop loop:
+
+```text
+origin_transfer_source_commit_with_same_class_transfer
+origin_transfer_source_commit_with_any_transfer
+origin_transfer_source_commit_same_class_count_total/max
+origin_transfer_source_commit_transfer_count_total/max
+origin_transfer_prefill_commit_with_same_class_transfer
+origin_transfer_prefill_commit_with_any_transfer
+origin_transfer_prefill_commit_same_class_count_total/max
+origin_transfer_prefill_commit_transfer_count_total/max
+origin_transfer_pop_loop_attempt
+origin_transfer_pop_loop_empty
+origin_transfer_pop_loop_invalid
+origin_transfer_pop_loop_hit
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_075921
+```
+
+Observed diagnostic counters:
+
+```text
+row             source_same  prefill_same  pop_attempt  pop_empty  pop_invalid  pop_hit
+remote50                  0             0         5349       1160            2     4189
+remote90_short            0             0        95891      43324            1    52567
+```
+
+The new counters are diagnostic-only and now print numerically in the tax
+runner instead of `NA`.  In this smoke, owner-local source and prefill commits
+did not occur while same-class transfer inventory was visible, so the remaining
+origin-transfer full tail is not explained by a simple missing same-class
+transfer check at the source boundary.  The transfer-pop loop still shows many
+empty attempts under `remote90_short`, which points more toward producer/consumer
+phase timing or global bounded-cache pressure than source-boundary same-class
+starvation.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Keep this audit as evidence before
+adding behavior.  Do not reintroduce owner-inbox, remote-thread drain, overflow,
+or larger transfer capacity from this result alone.
+
+## 2026-06-20 OriginTransferFullTailAttributionV2-L1
+
+Extended the previous audit with two more diagnostic-only views:
+
+```text
+origin_transfer_pop_empty_with_any_transfer
+origin_transfer_pop_empty_transfer_count_total/max
+origin_transfer_full_transfer_count_max
+origin_transfer_full_same_class_zero
+origin_transfer_full_same_class_lt_quarter
+origin_transfer_full_same_class_lt_half
+origin_transfer_full_same_class_lt_3quarter
+origin_transfer_full_same_class_ge_3quarter
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_080252
+```
+
+Observed diagnostic counters:
+
+```text
+row             pop_empty  empty_with_any  empty_any_total  empty_any_max
+remote50             1070             894            13662            199
+remote90_short      28670           28309          4133897            255
+
+row             full_max  same_zero  same_lt_25  same_lt_50  same_lt_75  same_ge_75
+remote50             256         63        6041        1064       15793        6208
+remote90_short       256          0           9           7           0           0
+```
+
+The `remote90_short` empty-pop shape is mostly cross-class inventory: transfer
+reuse for the requested class misses while the owner allocator still has many
+transfer objects in other classes.  The `remote50` origin-full shape is not a
+single same-class saturation case; full events are spread across zero, low,
+mid, and high same-class occupancy.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The next behavior should model
+class mismatch and producer/consumer phase timing explicitly.  This result does
+not justify broad capacity increase, remote-thread drain, owner-inbox
+reintroduction, or generic overflow.
+
+## 2026-06-20 OriginTransferPhaseAgeAudit-L1
+
+Added a diagnostic-only phase-age audit for transfer inventory.  The audit
+records owner-local demand epochs, stamps committed transfer objects with
+destination-vs-origin-fallback publish kind, and reports pop/full/empty age
+buckets plus publish-kind occupancy snapshots.  With the flag off, production
+layout and production counters stay unchanged.
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_095645
+```
+
+Observed diagnostic counters:
+
+```text
+row             origin_success  destination_publish  origin_fallback_publish
+remote50                 7810                 2980                     7810
+remote90_short           5048                50713                     5048
+
+row             unknown_kind  commit_without_stamp  pop_without_stamp  generation_mismatch
+remote50                  0                     0                  0                    0
+remote90_short            0                     0                  0                    0
+
+row             full_dest_occ_total  full_origin_occ_total  full_dest_max  full_origin_max
+remote50                   122187                7288532             10              259
+remote90_short              30293                  12761            238              210
+```
+
+Production smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 1 \
+  --rows remote50 \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_095655
+```
+
+The production run reports all `origin_phase_audit_*` counters as zero because
+the audit flag is off.  The diagnostic smoke initially exposed uninitialized
+audit tags on stack-created `Hz6TransferObject`s; those construction sites now
+zero-initialize the object before stamping.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The audit now separates normal
+destination transfer inventory from origin-fallback inventory and shows the
+remaining full/empty tail can be classified without changing transfer behavior.
+Use the next design step to decide whether stale cross-class inventory,
+fresh phase lag, or demanded-not-consumed inventory dominates before adding any
+owner-local maintenance or victim policy.
+
+## 2026-06-20 OriginTransferResidentSplitAudit-L1
+
+Extended `OriginTransferPhaseAgeAudit-L1` with requested-vs-resident occupancy
+splits.  The new counters keep per-class destination/origin-fallback occupancy
+aggregates and classify cross-class resident inventory by owner demand age:
+
+```text
+fresh:  resident demand age == 0
+recent: resident demand age <= 15
+stale:  resident demand age > 15
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_101127
+```
+
+Median resident split:
+
+```text
+row             full same d/o   full cross d/o      full cross fresh/recent/stale
+remote50        2527/4430858    124118/2940712     1173133/1092881/754389
+remote90_short  7515/7141       21309/6998         2442/9659/20908
+
+row             empty same d/o  empty cross d/o       empty cross fresh/recent/stale
+remote50        0/249           9785/3498             0/4097/9186
+remote90_short  0/2             3641643/570593        0/2287702/1924534
+```
+
+Read:
+
+```text
+remote50 origin-full:
+  origin-fallback inventory dominates, but both same-class and cross-class are
+  substantial.  Cross resident inventory is mixed fresh/recent/stale.
+
+remote90_short pop-empty:
+  requested-class inventory is essentially absent while cross-class resident
+  inventory is huge.  That cross inventory is mostly recent/stale rather than
+  a pure old-inventory tail.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  This does not justify an aged
+victim or owner-local demotion box yet: the cross-class resident inventory is
+not purely stale, and `remote90_short` still has a large recent component.
+The next design question should focus on transfer placement/partitioning or a
+resident-class-aware consumer boundary, not on discard/admission rejection.
+
+## 2026-06-20 TransferClassPresenceGate-L1
+
+Added an opt-in transfer-cache class presence gate.  Each transfer cache tracks
+committed objects by class, and class-specific pop returns before the dense
+array scan when the requested class count is zero.  Reservation placeholders
+are not counted, and the gate does not reject publish, move ownership, demote
+objects, or change descriptor state.
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134500
+```
+
+Production A/B:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134604
+```
+
+Median production result:
+
+```text
+row             p0_off      presence gate
+remote50        14.91M      14.79M
+remote90         3.75M      10.81M
+remote90_short   4.58M       8.54M
+```
+
+Local guard:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0 \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134651
+```
+
+```text
+row      p0_off      presence gate
+local0   16.74M      16.27M
+```
+
+Read:
+
+```text
+remote90:
+  The class-negative pop path is a real cost.  Avoiding the dense scan when
+  requested-class inventory is absent removes a large part of the short-row
+  transfer tail.
+
+remote50:
+  The change is close to neutral but still slightly below p0 in the R3 sample.
+
+local0:
+  The opt-in gate regressed the local guard by about 2.8%, above the 1%
+  promotion budget.
+```
+
+Diagnostic integrity counters for invalid class, underflow, over-capacity,
+placeholder counted, double increment, and double decrement stayed zero in the
+smoke.  Snapshot-style `sum_mismatch`, `scan_mismatch`, and
+`false_zero_shadow` were nonzero under diagnostic observation, consistent with
+the current lockless transfer-cache mutation and snapshot race.  This does not
+lose a transfer object, but it blocks treating the class count as anything more
+than a hint and must be reconciled before default promotion.
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  The box is a strong
+remote90/remote90_short candidate and matches the class-negative lookup
+diagnosis.  It should not replace selected/default until the local0 tax is
+reduced and the false-zero/snapshot mismatch story is either eliminated or
+documented as an accepted diagnostic-only race with a stronger shadow check.
+
+## 2026-06-20 TransferClassPresenceProductionShape-L1
+
+Cleaned the production code shape for `TransferClassPresenceGate-L1` without
+changing the class-count update order or memory ordering:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1 defaults to HZ6_DIAGNOSTIC_PROBES
+production keeps class_count[] only
+gate check/hit/miss and shadow counters compile out of production
+empty transfer cache returns before class-count atomic load
+```
+
+Clean R3 smoke after the shape cleanup:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140516
+```
+
+Median result:
+
+```text
+row             p0_off      presence clean
+local0          16.35M      16.06M
+remote50        14.72M      15.21M
+remote90_short   4.96M       8.75M
+```
+
+Promotion evidence, tax runner batch 1:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140552
+```
+
+```text
+row             p0_off      presence clean
+local0          16.80M      16.27M
+remote50        14.80M      14.90M
+remote90         3.61M      10.53M
+remote90_short   4.54M       8.89M
+```
+
+Promotion evidence, tax runner batch 2 with variant order reversed:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_transfer_class_presence,p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140634
+```
+
+```text
+row             p0_off      presence clean
+local0          16.35M      16.13M
+remote50        14.94M      14.77M
+remote90         3.62M      10.55M
+remote90_short   4.74M       8.91M
+```
+
+Paired gate with cross128:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_140738
+```
+
+```text
+row             p0_selected_off   presence clean
+local0          16.31M            16.21M
+remote50        14.86M            14.92M
+remote90         3.73M            10.66M
+cross128_r90     8.73M             4.76M
+```
+
+Read:
+
+```text
+production shape cleanup:
+  Removed the likely hot-path instrumentation tax.  Production presence
+  counters now stay zero unless diagnostic observe is enabled.
+
+remote90:
+  Strong and repeatable.  Both tax batches and the paired gate show about
+  2.9x improvement with lower and more stable peak RSS.
+
+remote90_short:
+  Strong and repeatable in both tax batches.
+
+local0/remote50:
+  Much closer after cleanup, but not fully settled.  The tax runner still has
+  local0 down by more than 1% in both batches, while the paired gate shows
+  local0 within 1% and remote50 slightly positive.
+
+cross128_r90:
+  Still a blocker for default.  The row is highly variant, but median regressed
+  in the paired gate.
+```
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  The production-shape box
+worked: the obvious hot-path stats RMW is gone and remote90 remains a large
+win.  Do not promote to selected/default yet because local0 evidence is mixed
+and `cross128_r90` regressed.  The next behavior box should either be
+`HighOccupancyPresenceGate-L1` to avoid class-count checks on low-occupancy
+transfer caches, or a profile-only cut if the cross128/local guard remains
+negative after occupancy gating.
+
+## 2026-06-20 HighOccupancyPresenceGate-L1
+
+Added a narrow arming threshold for `TransferClassPresenceGate-L1`:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL
+```
+
+When a transfer cache has fewer objects than this threshold, pop skips the
+class-count hint and uses the existing dense scan.  The default remains
+`1`, which preserves the previous presence-gate behavior.  The runner exposes
+`p0_transfer_class_presence_min192` as the tested high-occupancy variant.
+
+Implementation note:
+
+```text
+min64 smoke initially timed out because the first patch returned success from
+hz6_transfer_pop() before filling the output object.  That bug was fixed before
+the recorded min192 runs; the fixed min64 R3 no longer timed out, but min64 did
+not improve the cross128 guard enough to keep as a named variant.
+```
+
+Tax runner RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_142026
+```
+
+```text
+row             p0_off      presence      min192
+local0          16.71M      16.14M        16.22M
+remote50        14.82M      15.14M        14.86M
+remote90         3.78M      10.51M        10.71M
+remote90_short   4.60M       8.76M         8.91M
+```
+
+Paired gate RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p0_transfer_class_presence,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_142114
+```
+
+```text
+row             p0_selected_off   presence      min192
+local0          15.95M            16.25M        16.42M
+remote50        14.80M            15.00M        15.44M
+remote90         3.58M            10.58M        10.86M
+cross128_r90    10.73M             3.50M         6.07M
+```
+
+Read:
+
+```text
+min192:
+  Keeps the remote90 and remote90_short win.
+  Improves local0/remote50 shape relative to always-on presence in the paired
+  gate.
+  Partially recovers cross128_r90 versus always-on presence, but still trails
+  p0 selected-off.
+```
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  `min192` is the best
+presence shape so far and should replace always-on presence as the candidate
+when benchmarking this line.  Do not promote to selected/default because
+`cross128_r90` remains below p0.  The next decision is design-level: either
+package `min192` as an explicit high-remote profile, or investigate a
+cross128-specific interaction before another behavior tweak.
+
+## 2026-06-20 Profile Frontier Alias Smoke
+
+The new profile aliases were exercised through the existing focused profile
+frontier:
+
+```text
+bash hakozuna-hz6/linux/run_hz6_preload_profile_frontier.sh \
+  --runs 3 \
+  --iters 120000 \
+  --ws 100 \
+  --rows focused \
+  --allocators hz6,hz6-high-remote-owner-inbox-target,hz6-transfer-class-shard-target \
+  --skip-prepare
+```
+
+Focused RUNS=3:
+
+```text
+row          hz6      high-remote owner-inbox  transfer class-shard
+16_256       59.19M   58.81M                   60.94M
+16_4096      52.18M   55.15M                   56.33M
+1024_4096    71.02M   69.96M                   68.37M
+4096_16384   62.32M   59.43M                   61.39M
+```
+
+Decision: `GO(evidence)/HOLD(policy)`.  This confirms the aliases work in the
+shared profile frontier.  It also reinforces the current policy: high-remote
+owner-inbox should stay remote-heavy only, and transfer class-shard is not a
+broad default despite good small/mixed rows.
+
+## 2026-06-20 High-Remote Transfer Presence Profile
+
+`HighRemoteTransferPresenceProfile-L1` packages the best current transfer
+class-presence shape as an explicit profile alias, without changing
+selected/default flags.
+
+Profile alias:
+
+```text
+hz6-high-remote-transfer-presence-target
+```
+
+Builder:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_high_remote_transfer_presence_target.sh
+```
+
+Flag shape:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1=1
+HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL=((size_t)192)
+```
+
+Validation:
+
+```text
+./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh
+./hakozuna-hz6/linux/build_hz6_preload_high_remote_transfer_presence_target.sh
+bench_find_allocator_library hz6-high-remote-transfer-presence-target
+```
+
+LD_PRELOAD smoke:
+
+```text
+bench_random_mixed_mt_remote:
+  threads=16 ops=459389 time=0.053871 ops/s=8527519.41
+  fallback_rate=0.00%
+  overflow_sent=0 overflow_received=0
+```
+
+Decision: `GO(profile)/HOLD(default)`.  Use this alias for high-remote
+presence experiments and profile-frontier comparisons.  Do not move it into
+selected/default until the cross128_r90 regression is explained or bounded.
+
+## 2026-06-20 Transfer Presence Threshold Audit
+
+`TransferPresenceThresholdAudit-L1` adds diagnostic-only counters to split
+class-presence pop attempts that bypass the hint because the cache is below
+`HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`.
+
+New counters:
+
+```text
+transfer_class_presence_below_min_check
+transfer_class_presence_below_min_hit
+transfer_class_presence_below_min_miss
+```
+
+The tax runner now also accepts `cross128_r90`, so the same counter extraction
+path can cover the row that blocks default promotion.
+
+Command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_off,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_144306
+```
+
+Diagnostic R1:
+
+```text
+row                 p0_off     min192
+ops/s               0.54M      0.44M
+peak RSS            80.74 MiB  116.25 MiB
+transfer_pop        585840     370523
+presence_gate_check 0          0
+below_min_check     0          719112
+below_min_hit       0          370702
+below_min_miss      0          348410
+false_zero_shadow   0          0
+```
+
+Read:
+
+```text
+min192 did not use the class-presence skip on this cross128 diagnostic run.
+All observed presence decisions stayed below the min-total threshold and fell
+back to dense scan.  The regression therefore is not explained by false-zero
+or over-aggressive skip behavior; the likely cost is maintaining class_count
+atomics on a low-occupancy row where the hint never fires.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  Keep the high-remote profile as an
+explicit profile.  Do not promote presence to default.  A behavior fix for
+cross128 would need an armed-count design that avoids low-occupancy atomic
+maintenance without creating false-zero counts when the cache crosses the
+threshold.
+
+## 2026-06-20 Transfer Presence Update Cost Audit
+
+`TransferPresenceUpdateCostAudit-L1` extends the threshold audit to the update
+side.  It counts class-presence atomic maintenance performed while the cache is
+still below `HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`.
+
+New counters:
+
+```text
+transfer_class_presence_update_below_min_increment
+transfer_class_presence_update_below_min_decrement
+transfer_class_presence_update_below_min_commit
+```
+
+Command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_off,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_144712
+```
+
+Diagnostic R1:
+
+```text
+row                         p0_off  min192
+presence_gate_check         0       0
+below_min_check             0       1270083
+below_min_hit               0       659117
+below_min_miss              0       610966
+update_below_min_increment  0       661631
+update_below_min_decrement  0       659031
+update_below_min_commit     0       661631
+false_zero_shadow           0       0
+```
+
+Read:
+
+```text
+cross128 remains almost entirely below the min192 arming threshold in this
+diagnostic run.  The presence hint never fires, but class_count maintenance
+still performs hundreds of thousands of low-occupancy atomic increments and
+decrements.  Raising MIN_TOTAL alone cannot remove this tax.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The next behavior, if pursued,
+should be an armed/lazy class-count maintenance box:
+
+```text
+below threshold:
+  do not maintain class_count
+  always dense scan
+
+threshold crossing:
+  rebuild class_count from the dense cache under the same mutation boundary
+  mark counts armed
+
+armed:
+  maintain class_count incrementally
+  allow class-presence skip
+
+drop below threshold:
+  mark unarmed and stop maintaining counts
+```
+
+Do not implement this as a blind `if (count < min) skip increment` patch; that
+would produce false-zero counts after the cache later crosses the threshold.
+
+## 2026-06-20 Transfer Presence Armed Maintenance
+
+`TransferPresenceArmedMaintenance-L1` is an opt-in research box:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1=1
+```
+
+Shape:
+
+```text
+below threshold:
+  class_count is not maintained
+  presence lookup always dense-scans
+
+threshold crossing:
+  class_count is rebuilt from the dense cache
+  cache becomes armed
+
+armed:
+  class_count is incrementally maintained
+  presence lookup may skip absent classes
+
+drop below threshold:
+  cache is disarmed
+  class_count is cleared
+```
+
+The owner-inbox tax runner exposes:
+
+```text
+p0_transfer_class_presence_min192_armed
+```
+
+Diagnostic command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_145349
+```
+
+Diagnostic R1:
+
+```text
+row                            min192  armed
+update_below_min_increment     374922  0
+update_below_min_decrement     370716  0
+update_below_min_commit        374922  0
+false_zero_shadow              0       0
+```
+
+Production R3:
+
+```text
+DIAGNOSTIC=0 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_145701
+```
+
+```text
+row             p0_off  armed
+cross128_r90    0.40M   0.39M
+remote90_short  2.66M   2.50M
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  The armed design removes the
+below-threshold class_count update counters without introducing observed
+false-zero shadows, but the production R3 does not beat selected/off on the
+rows that matter.  Keep it as an opt-in research switch only.  Do not add it to
+`hz6-high-remote-transfer-presence-target`.
+
+## 2026-06-20 Transfer Presence Pop Scan Audit
+
+Box:
+
+```text
+TransferPresencePopScanAudit-L1
+```
+
+Purpose: observe how much dense transfer-cache scan work remains when the class
+presence hint is skipped or disabled by the high-occupancy threshold.  The box is
+diagnostic-only and does not change transfer routing, publication, or class
+presence behavior.
+
+New counters:
+
+```text
+transfer_class_presence_pop_hit_scan_total
+transfer_class_presence_pop_hit_scan_max
+transfer_class_presence_pop_empty_scan_total
+transfer_class_presence_pop_empty_scan_max
+```
+
+Diagnostic command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150436
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150907
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150918
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151024
+```
+
+R1 summary after correcting `*_scan_max` aggregation to use max, not sum:
+
+```text
+variant                         row             hit_total  hit_max  empty_total  empty_max  false_zero
+p0_transfer_class_presence_min192 cross128_r90    381866    117      19810091     573        0
+p0_transfer_class_presence_min192 remote90_short  280908    831      6042559      1024       0
+p0_transfer_class_presence_min192_armed cross128  435380    119      32570877     725        0
+p0_transfer_class_presence_min192_armed remote90  231494    806      9043920      1024       0
+```
+
+Decision: `GO(tooling)/HOLD(behavior)`.  The audit confirms that class-negative
+dense scan work remains visible when the presence gate is not firing, with
+empty-scan totals much larger than hit-scan totals on the measured rows.  Keep
+the counters as diagnostic evidence only; do not stack another behavior change
+until the next design decision chooses whether to address scan shape, cache
+layout, or profile packaging.
+
+## 2026-06-20 Transfer Below-Min Pop Scan Limit
+
+Box:
+
+```text
+TransferBelowMinPopScanLimit-L1
+```
+
+Control:
+
+```text
+HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT=64
+```
+
+Runner variant:
+
+```text
+p0_transfer_class_presence_min192_scan64
+```
+
+Shape: when `HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1=1` and the cache occupancy is
+below `HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`, scan only the newest N transfer
+objects before returning a miss.  This does not drop objects or change ownership;
+missed older entries remain in the transfer cache.
+
+Diagnostic R1:
+
+```text
+raw: hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151228
+
+row             min192 empty_total  scan64 empty_total
+cross128_r90    26714736           12130757
+remote90_short  6102201            5687639
+```
+
+Production R3:
+
+```text
+raw: hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151329
+
+row             min192  scan64
+cross128_r90    3.43M   2.53M
+remote90_short  8.89M   8.66M
+```
+
+Decision: `NO-GO(default/profile)`.  The scan cap reduces diagnostic scan work,
+but the production rows do not improve.  The likely tradeoff is that bounded
+scan misses older same-class transfer entries and pushes work into later reuse
+or source paths.  Keep the flag as an opt-in research switch only; do not add it
+to `hz6-high-remote-transfer-presence-target`.
+
+## 2026-06-20 Transfer Class Negative Memo
+
+Box:
+
+```text
+TransferClassNegativeMemo-L1
+```
+
+Attempted shape: remember a class as absent after a full dense scan miss, then
+skip later below-threshold pop attempts for that class until a publish epoch
+changes.  The implementation was tested locally as a default-off research
+variant and then removed rather than committed, because the diagnostic shadow
+oracle found false-zero cases.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_negmemo
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151734
+```
+
+Key result:
+
+```text
+row           false_zero_shadow
+cross128_r90 11917
+```
+
+Decision: `NO-GO(correctness)`.  The idea reduces repeated empty scans, but it
+can report class absence while the diagnostic dense scan still finds that class.
+Do not keep a negative absence memo without a stronger synchronization boundary
+or a real per-class index.
+
+## 2026-06-20 Transfer Class Index
+
+Box:
+
+```text
+TransferClassIndex-L1
+```
+
+Attempted shape: keep the dense shared slot pool, but add sidecar
+`class_head/slot_next/slot_prev` links so class-specific pop can remove the head
+entry in O(1).  The implementation was tested locally as a default-off research
+variant and then removed before commit.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_152335
+```
+
+Key result:
+
+```text
+row             over_capacity  scan_mismatch
+cross128_r90    187909         19
+remote90_short  8              742
+```
+
+Decision: `NO-GO(correctness)`.  A sidecar per-class linked index is not safe on
+the current transfer cache boundary.  The cache is mutated by producer and
+consumer paths without a dedicated list lock, and the side index diverged from
+the dense array/counts under diagnostic smoke.  Do not revive this shape unless
+the transfer cache first gets a real synchronization/transaction boundary or is
+replaced by a class-indexed storage design.
+
+## 2026-06-20 Transfer Cache Lock
+
+Box:
+
+```text
+TransferCacheLock-L1
+```
+
+Shape: add a default-off `HZ6_TRANSFER_CACHE_LOCK_L1` spin-lock boundary to
+`Hz6TransferCache`.  Plain push/pop operations take and release the cache lock.
+Reservation success keeps the lock held until commit or cancel, so placeholder
+publication and final commit/cancel are serialized with pop and push.  The tax
+runner exposes this as:
+
+```text
+p0_transfer_class_presence_min192_lock
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_153225
+```
+
+Key diagnostic result:
+
+```text
+variant                                  underflow  scan_mismatch  false_zero
+p0_transfer_class_presence_min192        1          5              0
+p0_transfer_class_presence_min192_lock   0          0              0
+```
+
+Production guard:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_153337
+```
+
+Median result:
+
+```text
+row             min192    min192_lock
+local0          16.64M    16.49M
+remote50        14.98M    14.66M
+cross128_r90     3.68M     8.18M
+remote90_short   8.88M     9.26M
+```
+
+Decision: `GO(sync prerequisite)/HOLD(default, profile)`.  The lock boundary
+removes the live diagnostic divergence seen by the sidecar/index experiments
+and materially improves the unstable `cross128_r90` median in this batch.  It
+also has a measurable `remote50` cost, so it is not a selected/default change.
+Keep it as a boxed research switch and use it as the prerequisite boundary for a
+future class-indexed transfer storage design.
+
+## 2026-06-20 Transfer Class Index Locked
+
+Box:
+
+```text
+TransferClassIndexLocked-L1
+```
+
+Attempted shape: revive the per-class slot index only under
+`HZ6_TRANSFER_CACHE_LOCK_L1`, keeping the dense shared slot pool and adding
+`class_head/slot_next/slot_prev` links so class-specific pop can remove a
+same-class entry without a dense scan.  The implementation was tested locally as
+a default-off research variant and then removed before commit.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_lock_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154033
+```
+
+Key diagnostic result:
+
+```text
+variant              row             underflow  scan_mismatch  false_zero  pop_scan_total
+lock_index           cross128_r90     0          0              0           0
+lock_index           remote90_short   0          0              0           0
+```
+
+Production command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_lock_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154149
+```
+
+Median result:
+
+```text
+row             lock      lock_index
+local0          16.75M    16.43M
+remote50        15.02M    14.39M
+cross128_r90    13.29M     3.27M
+remote90_short   8.60M     8.86M
+```
+
+Decision: `NO-GO(performance)`.  The lock makes the side index coherent in this
+smoke, and the index removes pop scan work, but maintaining and following the
+side links badly hurts `cross128_r90` and also regresses `remote50`.  Do not
+revive this dense-slot side index.  If class-indexed transfer storage is tried
+again, replace the storage layout rather than layering a linked side index onto
+the dense shared array.
+
+## 2026-06-20 Transfer Cache Lock Profile Check
+
+Question: should `HZ6_TRANSFER_CACHE_LOCK_L1` be mixed into the existing
+`hz6-high-remote-transfer-presence-target` profile?
+
+Production command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote90 \
+  --variants p0_off,p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154439
+```
+
+Median result:
+
+```text
+variant                         remote90
+p0_off                           3.61M
+p0_transfer_class_presence_min192 10.77M
+p0_transfer_class_presence_min192_lock 10.84M
+```
+
+Decision: `NO-GO(profile change)`.  The lock does not materially improve the
+main `remote90` row over the existing min192 high-remote candidate, while earlier
+guards showed `remote50` tax.  Keep the high-remote transfer-presence profile as
+min192 without the transfer-cache lock.
+
+## 2026-06-20 Transfer Class Slot Pool
+
+Box:
+
+```text
+TransferClassSlotPool-L1
+```
+
+Attempted shape: replace the dense transfer array behavior under
+`HZ6_TRANSFER_CACHE_LOCK_L1` with a free-slot pool plus per-class heads.  Push
+and reserve take a free slot; commit links the slot to its class; pop removes
+the class head in O(1).  The implementation was tested locally as a default-off
+research variant and then removed before commit.
+
+Diagnostic raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_155050
+```
+
+Production raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_155147
+```
+
+Median production result:
+
+```text
+row             lock      slot_pool
+cross128_r90    15.06M     3.70M
+remote90_short   8.41M     9.02M
+```
+
+Decision: `NO-GO(performance)`.  The replacement storage removes transfer pop
+scan work and helps the narrow `remote90_short` row, but it destroys
+`cross128_r90`.  Do not use this slot-pool layout for the high-remote profile or
+default.  The remaining useful direction is not a linked dense side index or
+this simple slot pool; it needs a different transfer layout or workload-specific
+profile decision.

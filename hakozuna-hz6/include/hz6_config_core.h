@@ -10,6 +10,14 @@
 #define HZ6_TRANSFER_CACHE_CAPACITY ((size_t)64)
 #endif
 
+#ifndef HZ6_PROFILE_SPEED_TRANSFER_CAPACITY
+#define HZ6_PROFILE_SPEED_TRANSFER_CAPACITY 64u
+#endif
+
+#ifndef HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY
+#define HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY 128u
+#endif
+
 #ifndef HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP
 #define HZ6_LARGE_SPAN_CENTRAL_CLASS_BYTES_CAP \
   ((size_t)8u * 1024u * 1024u)
@@ -75,6 +83,18 @@
 
 #ifndef HZ6_TRANSFER_SHARD_COUNT
 #define HZ6_TRANSFER_SHARD_COUNT ((size_t)4)
+#endif
+
+#ifndef HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1
+#define HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1 0
+#endif
+
+#ifndef HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID
+/* Default-off partial class-id transfer sharding.  When nonzero, class ids at
+ * or below this value use class-id sharding and larger ids keep owner-slot
+ * sharding.  The broad HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1 lane still forces
+ * all classes to class-id sharding. */
+#define HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID 0
 #endif
 
 #ifndef HZ6_OBJECT_DESCRIPTOR_CAPACITY
@@ -230,6 +250,10 @@
 
 #ifndef HZ6_DESCRIPTOR_COLD_GOV_DETACH_BUDGET
 #define HZ6_DESCRIPTOR_COLD_GOV_DETACH_BUDGET ((size_t)256)
+#endif
+
+#ifndef HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1
+#define HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1 0
 #endif
 
 #ifndef HZ6_SOURCE_ADMISSION_NO_STARVATION_BOOST

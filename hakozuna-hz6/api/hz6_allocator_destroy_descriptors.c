@@ -18,4 +18,5 @@ void hz6_allocator_destroy_descriptors(Hz6Allocator* allocator) {
 #endif
     hz6_allocator_release_descriptor_source(allocator, descriptor);
   }
+  hz6_allocator_destroy_toy2_adaptive_descriptors(allocator);
 }

@@ -1,4 +1,5 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_route_domain.h"
 #include "hz6_allocator_route_last_hit.h"
 #include "hz6_allocator_route_owner_locality.h"
 #include "hz6_allocator_route_shared_directory.h"
@@ -108,7 +109,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
 #if HZ6_DIAGNOSTIC_PROBES
     ++probes;
 #endif
+    hz6_allocator_route_domain_read_lock(visible);
+#if HZ6_ROUTE_VISIBLE_EXACT_ONLY_L1
+    route = hz6_route_backend_lookup_exact(&visible->route_backend, ptr);
+#else
     route = hz6_route_backend_lookup(&visible->route_backend, ptr);
+#endif
+    hz6_allocator_route_domain_read_unlock(visible);
     if (route.kind != HZ6_ROUTE_MISS) {
       route.route_allocator = visible;
 #if HZ6_DIAGNOSTIC_PROBES
@@ -154,7 +161,13 @@ Hz6RouteResult hz6_allocator_route_lookup_visible_only(Hz6Allocator* allocator,
 Hz6RouteResult hz6_allocator_route_lookup_visible_after_local_miss(
     Hz6Allocator* allocator,
     const void* ptr) {
+#if HZ6_ROUTE_VISIBLE_AFTER_LOCAL_MISS_L1
   return hz6_allocator_route_lookup_visible_only(allocator, ptr);
+#else
+  (void)allocator;
+  (void)ptr;
+  return hz6_route_miss();
+#endif
 }
 
 #if HZ6_DESCRIPTOR_STORAGE_OWNER16_L1 || HZ6_DIAGNOSTIC_PROBES || \
@@ -247,6 +260,36 @@ int hz6_allocator_route_negative_filter_skip_local(
   return 1;
 }
 
+#if HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1
+static int hz6_allocator_route_rehome_lock_origin_first(
+    const Hz6Allocator* origin,
+    const Hz6Allocator* destination) {
+  return (uintptr_t)origin < (uintptr_t)destination;
+}
+
+static void hz6_allocator_route_rehome_lock_pair(Hz6Allocator* origin,
+                                                 Hz6Allocator* destination) {
+  if (hz6_allocator_route_rehome_lock_origin_first(origin, destination)) {
+    hz6_allocator_route_domain_lock(origin);
+    hz6_allocator_route_domain_lock(destination);
+    return;
+  }
+  hz6_allocator_route_domain_lock(destination);
+  hz6_allocator_route_domain_lock(origin);
+}
+
+static void hz6_allocator_route_rehome_unlock_pair(Hz6Allocator* origin,
+                                                   Hz6Allocator* destination) {
+  if (hz6_allocator_route_rehome_lock_origin_first(origin, destination)) {
+    hz6_allocator_route_domain_unlock(destination);
+    hz6_allocator_route_domain_unlock(origin);
+    return;
+  }
+  hz6_allocator_route_domain_unlock(origin);
+  hz6_allocator_route_domain_unlock(destination);
+}
+#endif
+
 int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
                                      const Hz6RouteResult* route) {
   if (!allocator || !route || route->kind != HZ6_ROUTE_VALID ||
@@ -257,9 +300,132 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
 
   const Hz6ObjectDescriptor* descriptor =
       (const Hz6ObjectDescriptor*)route->descriptor;
+#if HZ6_DIAGNOSTIC_PROBES
+  if (descriptor->state == HZ6_STATE_REMOTE_PENDING) {
+    ++allocator->stats.route_rehome_while_pending;
+  }
+#endif
   Hz6Allocator* origin = route->route_allocator;
   void* ptr = descriptor->ptr;
   size_t bytes = descriptor->bytes;
+#if HZ6_ROUTE_REHOME_TRANSFER_OWNER_L1
+  hz6_allocator_route_rehome_lock_pair(origin, allocator);
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t origin_lookup_probes = 0;
+  Hz6RouteResult origin_route =
+      hz6_route_backend_lookup_exact_probe(&origin->route_backend,
+                                           ptr,
+                                           &origin_lookup_probes);
+  allocator->stats.route_rehome_origin_lookup_probe_total +=
+      origin_lookup_probes;
+  if (origin_lookup_probes >
+      allocator->stats.route_rehome_origin_lookup_probe_max) {
+    allocator->stats.route_rehome_origin_lookup_probe_max =
+        origin_lookup_probes;
+  }
+#else
+  Hz6RouteResult origin_route =
+      hz6_route_backend_lookup_exact(&origin->route_backend, ptr);
+#endif
+  if (origin_route.kind != HZ6_ROUTE_VALID ||
+      origin_route.descriptor != route->descriptor ||
+      origin_route.generation != route->generation ||
+      origin_route.front_id != route->front_id ||
+      origin_route.class_id != route->class_id) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_expected_owner_mismatch;
+#endif
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t destination_register_probes = 0;
+  int destination_ok = hz6_route_backend_register_exact(
+      &allocator->route_backend,
+      ptr,
+      bytes,
+      route->front_id,
+      route->class_id,
+      route->generation,
+      (void*)descriptor,
+      &destination_register_probes);
+  allocator->stats.route_rehome_destination_register_probe_total +=
+      destination_register_probes;
+  if (destination_register_probes >
+      allocator->stats.route_rehome_destination_register_probe_max) {
+    allocator->stats.route_rehome_destination_register_probe_max =
+        destination_register_probes;
+  }
+#else
+  int destination_ok = hz6_route_backend_register_exact(
+      &allocator->route_backend,
+      ptr,
+      bytes,
+      route->front_id,
+      route->class_id,
+      route->generation,
+      (void*)descriptor,
+      NULL);
+#endif
+  if (!destination_ok) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_destination_route_fail;
+#endif
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+#if HZ6_SHARED_ROUTE_DIRECTORY_L1
+  if (!hz6_shared_route_directory_transfer_owner(origin,
+                                                 allocator,
+                                                 ptr,
+                                                 route->generation,
+                                                 (void*)descriptor)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.route_rehome_directory_transfer_fail;
+#endif
+    hz6_route_backend_unregister_exact(&allocator->route_backend, ptr, NULL);
+    hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+    return 0;
+  }
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+  size_t origin_unregister_probes = 0;
+  hz6_route_backend_unregister_exact(&origin->route_backend,
+                                     ptr,
+                                     &origin_unregister_probes);
+  allocator->stats.route_rehome_origin_unregister_probe_total +=
+      origin_unregister_probes;
+  if (origin_unregister_probes >
+      allocator->stats.route_rehome_origin_unregister_probe_max) {
+    allocator->stats.route_rehome_origin_unregister_probe_max =
+        origin_unregister_probes;
+  }
+#else
+  hz6_route_backend_unregister_exact(&origin->route_backend, ptr, NULL);
+#endif
+  hz6_allocator_route_domain_note_compact_debt(origin);
+#if HZ6_ROUTE_LAST_HIT_CACHE_L1
+  hz6_allocator_route_last_hit_clear(origin);
+  hz6_allocator_route_last_hit_clear(allocator);
+#endif
+#if HZ6_OWNER_LOCALITY_INDEX_L1
+  hz6_owner_locality_index_register(allocator, ptr, route->generation);
+  hz6_owner_locality_index_unregister(origin, ptr);
+#endif
+  hz6_allocator_route_rehome_unlock_pair(origin, allocator);
+  return 1;
+#else
+#if HZ6_ROUTE_REHOME_REGISTER_BEFORE_UNREGISTER_L1
+  if (!hz6_allocator_route_register_exact_reason(
+          allocator, ptr, bytes, route->front_id, route->class_id,
+          route->generation, (void*)descriptor,
+          HZ6_ROUTE_REGISTER_REASON_REHOME)) {
+    return 0;
+  }
+  hz6_allocator_route_unregister_exact_reason(
+      origin, ptr, HZ6_ROUTE_UNREGISTER_REASON_REHOME);
+  return 1;
+#else
   hz6_allocator_route_unregister_exact_reason(
       origin, ptr, HZ6_ROUTE_UNREGISTER_REASON_REHOME);
   if (!hz6_allocator_route_register_exact_reason(
@@ -272,6 +438,7 @@ int hz6_allocator_route_rehome_exact(Hz6Allocator* allocator,
         HZ6_ROUTE_REGISTER_REASON_REHOME);
     return 0;
   }
-
   return 1;
+#endif
+#endif
 }

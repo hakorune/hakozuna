@@ -9,6 +9,10 @@
 #include "hz6_preload_real.h"
 #include "hz6_preload_stats.h"
 
+#ifndef HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1
+#define HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1 0
+#endif
+
 #include "../fronts/hz6_front.h"
 
 #include <errno.h>
@@ -22,6 +26,7 @@
 
 typedef struct Hz6PreloadRoute {
   Hz6RouteResult route;
+  Hz6FreeRouteResolveKind resolve_kind;
   int visible_hit;
 } Hz6PreloadRoute;
 
@@ -32,6 +37,10 @@ typedef struct Hz6PreloadRoute {
 #endif
 
 static __thread Hz6Allocator* g_hz6_preload_allocator;
+
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+static __thread unsigned char g_hz6_preload_foreign_route_before_maps_armed;
+#endif
 
 #if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
 static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_4k;
@@ -257,9 +266,18 @@ static Hz6PreloadRoute hz6_preload_route(Hz6Allocator* allocator,
                                          const void* ptr) {
   Hz6PreloadRoute preload_route = {0};
   preload_route.route = hz6_route_miss();
+  preload_route.resolve_kind = HZ6_FREE_ROUTE_PROVEN_EXTERNAL;
   if (!allocator || !ptr) {
     return preload_route;
   }
+#if HZ6_REMOTE_FREE_ROUTE_RESOLVE_L1
+  Hz6FreeRouteResolveResult resolved =
+      hz6_allocator_route_resolve_free(allocator, ptr);
+  preload_route.route = resolved.route;
+  preload_route.resolve_kind = resolved.kind;
+  preload_route.visible_hit = resolved.visible_hit;
+  return preload_route;
+#else
   preload_route.route = hz6_allocator_route_lookup(allocator, ptr);
   if (preload_route.route.kind == HZ6_ROUTE_MISS) {
     preload_route.route =
@@ -267,8 +285,100 @@ static Hz6PreloadRoute hz6_preload_route(Hz6Allocator* allocator,
     preload_route.visible_hit =
         preload_route.route.kind != HZ6_ROUTE_MISS ? 1 : 0;
   }
+  if (preload_route.route.kind == HZ6_ROUTE_VALID) {
+    preload_route.resolve_kind = preload_route.visible_hit
+                                     ? HZ6_FREE_ROUTE_FOREIGN_VALID
+                                     : HZ6_FREE_ROUTE_LOCAL_VALID;
+  } else if (preload_route.route.kind == HZ6_ROUTE_INVALID) {
+    preload_route.resolve_kind = HZ6_FREE_ROUTE_OWNED_INVALID;
+  }
   return preload_route;
+#endif
 }
+
+static int hz6_preload_route_real_fallback_allowed(Hz6PreloadRoute route) {
+  return route.resolve_kind == HZ6_FREE_ROUTE_PROVEN_EXTERNAL;
+}
+
+static void hz6_preload_route_fail_fast_if_integrity(Hz6PreloadRoute route) {
+  if (route.resolve_kind == HZ6_FREE_ROUTE_RETRY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_retry_abort);
+    abort();
+  }
+  if (route.resolve_kind == HZ6_FREE_ROUTE_UNRESOLVED_INTEGRITY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_integrity_abort);
+    abort();
+  }
+}
+
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1
+static int hz6_preload_foreign_route_before_maps_try(Hz6Allocator* allocator,
+                                                     void* ptr) {
+  if (!allocator || !ptr) {
+    return 0;
+  }
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+  if (!g_hz6_preload_foreign_route_before_maps_armed) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_arm_skip);
+    return 0;
+  }
+#endif
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_route_before_maps_attempt);
+  Hz6PreloadRoute before_maps_route = hz6_preload_route(allocator, ptr);
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_FOREIGN_VALID &&
+      before_maps_route.route.kind == HZ6_ROUTE_VALID &&
+      before_maps_route.visible_hit) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_foreign_dispatch);
+    hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                            before_maps_route.route,
+                                            before_maps_route.visible_hit);
+    return 1;
+  }
+#if HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_LOCAL_VALID &&
+      before_maps_route.route.kind == HZ6_ROUTE_VALID &&
+      !before_maps_route.visible_hit) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_local_dispatch);
+    hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                            before_maps_route.route,
+                                            before_maps_route.visible_hit);
+    return 1;
+  }
+#endif
+#if HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_PROVEN_EXTERNAL) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_external_dispatch);
+    hz6_preload_real_free(ptr);
+    return 1;
+  }
+#endif
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_route_before_maps_fallback);
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_LOCAL_VALID) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_route_before_maps_fallback_local_valid);
+  } else if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_OWNED_INVALID) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_route_before_maps_fallback_owned_invalid);
+  } else if (before_maps_route.resolve_kind ==
+             HZ6_FREE_ROUTE_PROVEN_EXTERNAL) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats
+             .free_route_before_maps_fallback_proven_external);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_fallback_other);
+  }
+  return 0;
+}
+#endif
 
 #if HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 || \
     HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
@@ -297,9 +407,8 @@ static int hz6_preload_midpage_current_bias_first(
 }
 #endif
 
-static size_t hz6_preload_usable_size(Hz6Allocator* allocator,
-                                      const void* ptr) {
-  Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+static size_t hz6_preload_usable_size_from_route(
+    Hz6PreloadRoute preload_route) {
   if (preload_route.route.kind != HZ6_ROUTE_VALID ||
       !preload_route.route.descriptor) {
     return 0;

@@ -13,6 +13,37 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
+Hz6ObjectDescriptor* hz6_allocator_find_toy2_adaptive_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+int hz6_allocator_toy2_adaptive_descriptor_owner(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken* owner);
+
+int hz6_allocator_toy2_adaptive_set_descriptor_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner);
+
+int hz6_allocator_toy2_adaptive_descriptor_belongs_to(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor);
+
+void hz6_allocator_toy2_adaptive_note_prepare(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor);
+
+void hz6_allocator_toy2_adaptive_note_reset(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    int had_ptr);
+
+void hz6_allocator_destroy_toy2_adaptive_descriptors(
+    Hz6Allocator* allocator);
+
 #if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
 int hz6_allocator_descriptor_is_depot(
     const Hz6ObjectDescriptor* descriptor);
@@ -196,6 +227,11 @@ static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
       return hz6_allocator_descriptor_depot_owner(descriptor);
     }
 #endif
+    Hz6OwnerToken segment_owner = {0};
+    if (hz6_allocator_toy2_adaptive_descriptor_owner(
+            storage, descriptor, &segment_owner)) {
+      return segment_owner;
+    }
     return (Hz6OwnerToken){0};
   }
   return hz6_descriptor_unpack_owner16(
@@ -236,6 +272,8 @@ static inline void hz6_allocator_set_descriptor_owner(
       hz6_allocator_set_descriptor_depot_owner(descriptor, owner);
     }
 #endif
+    (void)hz6_allocator_toy2_adaptive_set_descriptor_owner(
+        storage, descriptor, owner);
     return;
   }
   storage->descriptor_side_owner16[index] =
@@ -505,6 +543,26 @@ int hz6_allocator_activate_local_descriptor_trusted_owner(
     void* ptr,
     uint32_t generation);
 
+typedef enum Hz6RemoteFreeCommitStatus {
+  HZ6_REMOTE_FREE_COMMIT_STATUS_STALE = 0,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED = 1,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE = 2,
+  HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE = 3
+} Hz6RemoteFreeCommitStatus;
+
+Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr);
+
+Hz6RemoteFreeCommitStatus
+hz6_allocator_remote_free_active_descriptor_status_with_audit(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    Hz6TransferPublishKind publish_kind,
+    Hz6OwnerToken producer_token);
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
@@ -540,6 +598,11 @@ void hz6_allocator_note_descriptor_frontcache_reuse_dryrun(
 void hz6_allocator_note_descgov_descriptor_fail(
     Hz6Allocator* allocator,
     uint16_t requested_class_id);
+
+void hz6_allocator_note_toy2_descriptor_pressure_fail(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
 
 int hz6_allocator_descgov_descriptor_available(
     const Hz6Allocator* allocator);

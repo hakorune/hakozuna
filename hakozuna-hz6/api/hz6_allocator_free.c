@@ -1,5 +1,6 @@
 #include "hz6_allocator.h"
 #include "hz6_allocator_midpage_active_map.h"
+#include "hz6_allocator_remote_free_status_dispatch.h"
 #include "hz6_allocator_same_owner_fast_inline.h"
 #include "hz6_allocator_toy_small_diag.h"
 
@@ -10,6 +11,14 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
                                     Hz6RouteResult route,
                                     int visible_hit);
 
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+static int hz6_free_route_consumer_rehome_eligible(Hz6RouteResult route) {
+  return route.front_id == HZ6_FRONT_TOY ||
+         route.front_id == HZ6_FRONT_MIDPAGE ||
+         route.front_id == HZ6_FRONT_LOCAL2P;
+}
+#endif
+
 void hz6_free(Hz6Allocator* allocator, void* ptr) {
   if (!allocator || !ptr) {
     return;
@@ -18,9 +27,11 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     return;
   }
+#if !HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     return;
   }
+#endif
 
 #if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
   hz6_allocator_source_block_route_dryrun(allocator, ptr);
@@ -173,7 +184,20 @@ void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     return;
   }
+#if !HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
+    return;
+  }
+#endif
+
+  hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
+}
+
+void hz6_free_with_resolved_route_after_maps(Hz6Allocator* allocator,
+                                             void* ptr,
+                                             Hz6RouteResult route,
+                                             int visible_hit) {
+  if (!allocator || !ptr) {
     return;
   }
 
@@ -351,28 +375,81 @@ static void hz6_free_route_dispatch(Hz6Allocator* allocator,
         } else {
           if (needs_rehome) {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            ++allocator->stats.remote_free_foreign_candidate;
+#endif
             ++allocator->stats.route_rehome_attempt;
 #endif
           }
-          ok = front->remote_free_tagged &&
-               front->remote_free_tagged(allocator, ptr, route);
+          int status_handled = 0;
+          Hz6RemoteFreeCommitStatus remote_status =
+              hz6_remote_free_status_dispatch_transfer(allocator,
+                                                       ptr,
+                                                       route,
+                                                       &status_handled);
+          if (status_handled) {
+            ok = remote_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED;
+            if (!ok &&
+                hz6_remote_free_status_try_owner_inbox(allocator,
+                                                       ptr,
+                                                       route,
+                                                       remote_status)) {
+              ok = 1;
+              needs_rehome = 0;
+            }
+            if (!ok &&
+                hz6_remote_free_status_try_origin_transfer(allocator,
+                                                           ptr,
+                                                           route,
+                                                           remote_status)) {
+              ok = 1;
+              needs_rehome = 0;
+            }
+          } else {
+            ok = front->remote_free_tagged &&
+                 front->remote_free_tagged(allocator, ptr, route);
+          }
 #if HZ6_DIAGNOSTIC_PROBES
           if (!ok) {
-            ++allocator->stats.free_invalid_remote_tagged;
+            if (!status_handled ||
+                remote_status != HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+              ++allocator->stats.free_invalid_remote_tagged;
+            }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            if (needs_rehome) {
+              if (status_handled) {
+                hz6_remote_free_status_note_return(allocator,
+                                                   remote_status);
+              } else {
+                ++allocator->stats.remote_free_returned_uncommitted;
+              }
+            }
+#endif
           }
 #endif
         }
         if (ok && needs_rehome) {
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+          if (!hz6_free_route_consumer_rehome_eligible(route))
+#endif
+          {
 #if HZ6_DIAGNOSTIC_PROBES
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+          ++allocator->stats.route_rehome_commit_enter;
+#endif
           int rehome_ok = hz6_allocator_route_rehome_exact(allocator, &route);
           if (rehome_ok) {
             ++allocator->stats.route_rehome_success;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+            ++allocator->stats.route_rehome_commit_success;
+#endif
           } else {
             ++allocator->stats.route_rehome_fail;
           }
 #else
           (void)hz6_allocator_route_rehome_exact(allocator, &route);
 #endif
+          }
         }
 #if HZ6_DIAGNOSTIC_PROBES
         if (!local_owner) {

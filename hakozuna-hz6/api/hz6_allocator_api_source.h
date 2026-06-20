@@ -18,6 +18,9 @@ int hz6_allocator_retain_source_block(Hz6SourceBlock* block);
 int hz6_allocator_release_source_block(Hz6Allocator* allocator,
                                        Hz6SourceBlock* block);
 
+int hz6_allocator_abort_unretained_source_block(Hz6Allocator* allocator,
+                                                Hz6SourceBlock* block);
+
 int hz6_allocator_source_block_is_elastic_depot(
     const Hz6SourceBlock* block);
 

@@ -19,8 +19,11 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
     case HZ6_PROFILE_SPEED:
       config.transfer_first = 1;
       config.strict_owner_remote = 0;
-      config.transfer_capacity = 64;
+      config.transfer_capacity = HZ6_PROFILE_SPEED_TRANSFER_CAPACITY;
       config.transfer_shards = 4;
+#if HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1
+      config.transfer_shard_policy = HZ6_TRANSFER_SHARD_CLASS_ID;
+#endif
       config.route_backend_policy = HZ6_ROUTE_POLICY_PAGE_TABLE;
       config.route_page_granularity = HZ6_ROUTE_PAGE_GRANULARITY;
       config.source_batch = 16;
@@ -39,8 +42,11 @@ Hz6ProfileConfig hz6_profile_config(Hz6ProfileId id) {
     case HZ6_PROFILE_REMOTE:
       config.transfer_first = 1;
       config.strict_owner_remote = 0;
-      config.transfer_capacity = 128;
+      config.transfer_capacity = HZ6_PROFILE_REMOTE_TRANSFER_CAPACITY;
       config.transfer_shards = 4;
+#if HZ6_PROFILE_TRANSFER_SHARD_CLASS_L1
+      config.transfer_shard_policy = HZ6_TRANSFER_SHARD_CLASS_ID;
+#endif
       config.route_backend_policy = HZ6_ROUTE_POLICY_PAGE_TABLE;
       config.route_page_granularity = HZ6_ROUTE_PAGE_GRANULARITY;
       config.source_batch = 16;

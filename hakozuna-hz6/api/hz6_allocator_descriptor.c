@@ -1,5 +1,7 @@
 #include "hz6_allocator.h"
 
+#include <stdlib.h>
+
 #if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
 static Hz6ObjectDescriptor g_hz6_descriptor_depot
     [HZ6_ELASTIC_DESCRIPTOR_DEPOT_CAPACITY];
@@ -80,6 +82,416 @@ static Hz6ObjectDescriptor* hz6_allocator_find_descriptor_depot_slot(
   (void)allocator;
 #endif
   return NULL;
+}
+#endif
+
+#if HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_L1
+typedef struct Hz6Toy2DescriptorSegmentState {
+  Hz6Allocator* allocator;
+  Hz6Toy2DescriptorSegment* segments;
+  size_t segment_count;
+  size_t live_current;
+  struct Hz6Toy2DescriptorSegmentState* next;
+} Hz6Toy2DescriptorSegmentState;
+
+static Hz6Toy2DescriptorSegmentState* g_hz6_toy2_descriptor_states;
+
+static Hz6Toy2DescriptorSegmentState* hz6_allocator_toy2_segment_state(
+    Hz6Allocator* allocator,
+    int create) {
+  if (!allocator) {
+    return NULL;
+  }
+  for (Hz6Toy2DescriptorSegmentState* state =
+           g_hz6_toy2_descriptor_states;
+       state; state = state->next) {
+    if (state->allocator == allocator) {
+      return state;
+    }
+  }
+  if (!create) {
+    return NULL;
+  }
+  Hz6Toy2DescriptorSegmentState* state =
+      (Hz6Toy2DescriptorSegmentState*)calloc(1, sizeof(*state));
+  if (!state) {
+    ++allocator->stats.toy2_adaptive_descriptor_segment_alloc_fail;
+    return NULL;
+  }
+  state->allocator = allocator;
+  state->next = g_hz6_toy2_descriptor_states;
+  g_hz6_toy2_descriptor_states = state;
+  return state;
+}
+
+static int hz6_allocator_toy2_adaptive_descriptor_slot(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6Toy2DescriptorSegment** out_segment,
+    size_t* out_index) {
+  if (out_segment) {
+    *out_segment = NULL;
+  }
+  if (out_index) {
+    *out_index = HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE;
+  }
+  if (!allocator || !descriptor) {
+    return 0;
+  }
+  Hz6Toy2DescriptorSegmentState* state =
+      hz6_allocator_toy2_segment_state((Hz6Allocator*)allocator, 0);
+  if (!state) {
+    return 0;
+  }
+  for (Hz6Toy2DescriptorSegment* segment =
+           state->segments;
+       segment; segment = segment->next) {
+    if (descriptor < segment->descriptors ||
+        descriptor >= segment->descriptors +
+                          HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+      continue;
+    }
+    if (out_segment) {
+      *out_segment = segment;
+    }
+    if (out_index) {
+      *out_index = (size_t)(descriptor - segment->descriptors);
+    }
+    return 1;
+  }
+  return 0;
+}
+
+int hz6_allocator_toy2_adaptive_descriptor_belongs_to(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  return hz6_allocator_toy2_adaptive_descriptor_slot(allocator, descriptor,
+                                                     NULL, NULL);
+}
+
+int hz6_allocator_toy2_adaptive_descriptor_owner(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken* owner) {
+  Hz6Toy2DescriptorSegment* segment = NULL;
+  size_t index = 0;
+  if (owner) {
+    *owner = (Hz6OwnerToken){0};
+  }
+  if (!hz6_allocator_toy2_adaptive_descriptor_slot(
+          allocator, descriptor, &segment, &index) ||
+      !segment || index >= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+    return 0;
+  }
+  if (segment->storage_owner != allocator) {
+    Hz6Allocator* mutable_allocator = (Hz6Allocator*)allocator;
+    if (mutable_allocator) {
+      ++mutable_allocator->stats
+            .toy2_adaptive_descriptor_storage_owner_mismatch;
+    }
+    return 0;
+  }
+  if (owner) {
+    *owner = segment->owners[index];
+  }
+  return 1;
+}
+
+int hz6_allocator_toy2_adaptive_set_descriptor_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner) {
+  Hz6Toy2DescriptorSegment* segment = NULL;
+  size_t index = 0;
+  if (!hz6_allocator_toy2_adaptive_descriptor_slot(
+          allocator, descriptor, &segment, &index) ||
+      !segment || index >= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+    return 0;
+  }
+  if (segment->storage_owner != allocator) {
+    ++allocator->stats.toy2_adaptive_descriptor_storage_owner_mismatch;
+    return 0;
+  }
+  segment->owners[index] = owner;
+  return 1;
+}
+
+static int hz6_allocator_toy2_adaptive_route_headroom(
+    Hz6Allocator* allocator) {
+  const Hz6RouteTable* table = &allocator->route_backend.exact_table;
+  if (!table->entries || table->capacity == 0 ||
+      HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_DENOMINATOR == 0) {
+    return 0;
+  }
+  size_t occupied = table->active_count + table->tombstone_count;
+  size_t limit =
+      (table->capacity *
+       HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_NUMERATOR) /
+      HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_DENOMINATOR;
+  return occupied < limit;
+}
+
+static Hz6Toy2DescriptorSegment* hz6_allocator_toy2_segment_alloc(
+    Hz6Allocator* allocator) {
+  Hz6Toy2DescriptorSegmentState* state =
+      hz6_allocator_toy2_segment_state(allocator, 1);
+  if (!state) {
+    return NULL;
+  }
+  if (state->segment_count >=
+      HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_MAX) {
+    ++allocator->stats.toy2_adaptive_descriptor_segment_max_block;
+    return NULL;
+  }
+  if (!hz6_allocator_toy2_adaptive_route_headroom(allocator)) {
+    ++allocator->stats.toy2_adaptive_descriptor_route_headroom_block;
+    return NULL;
+  }
+
+  Hz6Toy2DescriptorSegment* segment =
+      (Hz6Toy2DescriptorSegment*)calloc(1, sizeof(*segment));
+  if (!segment) {
+    ++allocator->stats.toy2_adaptive_descriptor_segment_alloc_fail;
+    return NULL;
+  }
+  segment->storage_owner = allocator;
+  segment->storage_generation = allocator->owner.token.generation;
+  for (size_t i = 0; i < HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE; ++i) {
+#if !HZ6_DESCRIPTOR_NO_BACKPTR_L1
+    segment->descriptors[i].allocator = allocator;
+#endif
+#if HZ6_THIN_DESCRIPTOR_L1
+    segment->descriptors[i].cold_index = UINT32_MAX;
+#endif
+    segment->descriptors[i].state = HZ6_STATE_DEAD;
+  }
+  segment->next = state->segments;
+  state->segments = segment;
+  ++state->segment_count;
+  ++allocator->stats.toy2_adaptive_descriptor_segment_alloc;
+  if (state->segment_count >
+      allocator->stats.toy2_adaptive_descriptor_segment_high_water) {
+    allocator->stats.toy2_adaptive_descriptor_segment_high_water =
+        state->segment_count;
+  }
+  return segment;
+}
+
+Hz6ObjectDescriptor* hz6_allocator_find_toy2_adaptive_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || front_id != HZ6_FRONT_TOY || class_id != 2) {
+    return NULL;
+  }
+
+  Hz6Toy2DescriptorSegmentState* state =
+      hz6_allocator_toy2_segment_state(allocator, 0);
+  if (!state) {
+    Hz6Toy2DescriptorSegment* segment =
+        hz6_allocator_toy2_segment_alloc(allocator);
+    if (!segment) {
+      return NULL;
+    }
+    ++allocator->stats.toy2_adaptive_descriptor_alloc;
+    return &segment->descriptors[0];
+  }
+  for (Hz6Toy2DescriptorSegment* segment =
+           state->segments;
+       segment; segment = segment->next) {
+    for (size_t offset = 0;
+         offset < HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE; ++offset) {
+      size_t index = segment->next_index + offset;
+      if (index >= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+        index -= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE;
+      }
+      Hz6ObjectDescriptor* descriptor = &segment->descriptors[index];
+      if (descriptor->ptr || descriptor->state != HZ6_STATE_DEAD) {
+        continue;
+      }
+      segment->next_index = index + 1;
+      if (segment->next_index >=
+          HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+        segment->next_index = 0;
+      }
+      ++allocator->stats.toy2_adaptive_descriptor_alloc;
+      return descriptor;
+    }
+  }
+
+  Hz6Toy2DescriptorSegment* segment =
+      hz6_allocator_toy2_segment_alloc(allocator);
+  if (!segment) {
+    return NULL;
+  }
+  ++allocator->stats.toy2_adaptive_descriptor_alloc;
+  return &segment->descriptors[0];
+}
+
+void hz6_allocator_toy2_adaptive_note_prepare(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor) {
+  Hz6Toy2DescriptorSegment* segment = NULL;
+  size_t index = 0;
+  if (!allocator ||
+      !hz6_allocator_toy2_adaptive_descriptor_slot(
+          allocator, descriptor, &segment, &index) ||
+      !segment || index >= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+    return;
+  }
+  if (descriptor->state != HZ6_STATE_DEAD || !descriptor->ptr) {
+    ++allocator->stats.toy2_adaptive_descriptor_reuse_while_live;
+    return;
+  }
+  Hz6Toy2DescriptorSegmentState* state =
+      hz6_allocator_toy2_segment_state(allocator, 0);
+  if (!state) {
+    ++allocator->stats.toy2_adaptive_descriptor_storage_owner_mismatch;
+    return;
+  }
+  ++segment->live_count;
+  ++state->live_current;
+  allocator->stats.toy2_adaptive_descriptor_live_current =
+      state->live_current;
+  if (state->live_current >
+      allocator->stats.toy2_adaptive_descriptor_live_max) {
+    allocator->stats.toy2_adaptive_descriptor_live_max =
+        state->live_current;
+  }
+}
+
+void hz6_allocator_toy2_adaptive_note_reset(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    int had_ptr) {
+  Hz6Toy2DescriptorSegment* segment = NULL;
+  size_t index = 0;
+  if (!allocator ||
+      !hz6_allocator_toy2_adaptive_descriptor_slot(
+          allocator, descriptor, &segment, &index) ||
+      !segment || index >= HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE) {
+    return;
+  }
+  segment->owners[index] = (Hz6OwnerToken){0};
+  if (!had_ptr) {
+    return;
+  }
+  Hz6Toy2DescriptorSegmentState* state =
+      hz6_allocator_toy2_segment_state(allocator, 0);
+  if (!state) {
+    ++allocator->stats.toy2_adaptive_descriptor_storage_owner_mismatch;
+    return;
+  }
+  if (segment->live_count != 0) {
+    --segment->live_count;
+  }
+  if (state->live_current != 0) {
+    --state->live_current;
+  }
+  allocator->stats.toy2_adaptive_descriptor_live_current =
+      state->live_current;
+}
+
+void hz6_allocator_destroy_toy2_adaptive_descriptors(
+    Hz6Allocator* allocator) {
+  if (!allocator) {
+    return;
+  }
+  Hz6Toy2DescriptorSegmentState** link = &g_hz6_toy2_descriptor_states;
+  Hz6Toy2DescriptorSegmentState* state = NULL;
+  while (*link) {
+    if ((*link)->allocator == allocator) {
+      state = *link;
+      *link = (*link)->next;
+      break;
+    }
+    link = &(*link)->next;
+  }
+  if (!state) {
+    return;
+  }
+  Hz6Toy2DescriptorSegment* segment = state->segments;
+  while (segment) {
+    Hz6Toy2DescriptorSegment* next = segment->next;
+    for (size_t i = 0; i < HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE; ++i) {
+      Hz6ObjectDescriptor* descriptor = &segment->descriptors[i];
+      if (!descriptor->ptr) {
+        continue;
+      }
+      hz6_allocator_route_unregister_exact(allocator, descriptor->ptr);
+#if HZ6_DIAGNOSTIC_PROBES
+      if (hz6_allocator_descriptor_has_source_release(allocator,
+                                                      descriptor)) {
+        ++allocator->stats.source_owned_release;
+      }
+#endif
+      hz6_allocator_release_descriptor_source(allocator, descriptor);
+    }
+    free(segment);
+    segment = next;
+  }
+  free(state);
+}
+#else
+Hz6ObjectDescriptor* hz6_allocator_find_toy2_adaptive_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  (void)allocator;
+  (void)front_id;
+  (void)class_id;
+  return NULL;
+}
+
+int hz6_allocator_toy2_adaptive_descriptor_owner(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken* owner) {
+  (void)allocator;
+  (void)descriptor;
+  if (owner) {
+    *owner = (Hz6OwnerToken){0};
+  }
+  return 0;
+}
+
+int hz6_allocator_toy2_adaptive_set_descriptor_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner) {
+  (void)allocator;
+  (void)descriptor;
+  (void)owner;
+  return 0;
+}
+
+int hz6_allocator_toy2_adaptive_descriptor_belongs_to(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor) {
+  (void)allocator;
+  (void)descriptor;
+  return 0;
+}
+
+void hz6_allocator_toy2_adaptive_note_prepare(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor) {
+  (void)allocator;
+  (void)descriptor;
+}
+
+void hz6_allocator_toy2_adaptive_note_reset(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    int had_ptr) {
+  (void)allocator;
+  (void)descriptor;
+  (void)had_ptr;
+}
+
+void hz6_allocator_destroy_toy2_adaptive_descriptors(
+    Hz6Allocator* allocator) {
+  (void)allocator;
 }
 #endif
 
@@ -330,6 +742,109 @@ void hz6_allocator_note_descgov_descriptor_fail(
   (void)allocator;
   (void)requested_class_id;
 #endif
+}
+
+void hz6_allocator_note_toy2_descriptor_pressure_fail(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id) {
+  if (!allocator || front_id != HZ6_FRONT_TOY || class_id != 2) {
+    return;
+  }
+
+  size_t active = 0;
+  size_t local_free = 0;
+  size_t transfer_free = 0;
+  size_t remote_pending = 0;
+  size_t frontcache = allocator->frontcache_bins[class_id].count;
+  size_t ref_zero_blocks = 0;
+  size_t low_ref_blocks = 0;
+  size_t full_blocks = 0;
+  size_t partial_blocks = 0;
+
+  ++allocator->stats.toy2_descriptor_fail;
+
+  for (size_t i = 0; i < HZ6_OBJECT_DESCRIPTOR_CAPACITY; ++i) {
+    const Hz6ObjectDescriptor* descriptor = &allocator->descriptors[i];
+    if (!descriptor->ptr || descriptor->class_id != class_id) {
+      continue;
+    }
+    switch (descriptor->state) {
+      case HZ6_STATE_ACTIVE:
+        ++active;
+        break;
+      case HZ6_STATE_LOCAL_FREE:
+        ++local_free;
+        break;
+      case HZ6_STATE_TRANSFER_FREE:
+        ++transfer_free;
+        break;
+      case HZ6_STATE_REMOTE_PENDING:
+        ++remote_pending;
+        break;
+      default:
+        break;
+    }
+  }
+
+#if HZ6_SOURCE_RUN_INLINE_META_L1
+  for (size_t i = 0; i < HZ6_SOURCE_BLOCK_CAPACITY; ++i) {
+    const Hz6SourceBlock* block = &allocator->source_blocks[i];
+    if (!hz6_source_block_active(block) || !block->ptr ||
+        !hz6_source_block_run_active(block) ||
+        block->run_front_id != HZ6_FRONT_TOY ||
+        block->run_class_id != class_id) {
+      continue;
+    }
+    size_t ref_count = hz6_source_block_ref_count(block);
+    if (ref_count == 0) {
+      ++ref_zero_blocks;
+    } else if (ref_count <= 2) {
+      ++low_ref_blocks;
+    }
+    if (block->run_slot_count != 0) {
+      if (block->run_used_count >= block->run_slot_count) {
+        ++full_blocks;
+      } else if (block->run_used_count != 0) {
+        ++partial_blocks;
+      }
+    }
+  }
+#endif
+
+  if (active > allocator->stats.toy2_descriptor_fail_active_max) {
+    allocator->stats.toy2_descriptor_fail_active_max = active;
+  }
+  if (local_free > allocator->stats.toy2_descriptor_fail_local_free_max) {
+    allocator->stats.toy2_descriptor_fail_local_free_max = local_free;
+  }
+  if (transfer_free > allocator->stats.toy2_descriptor_fail_transfer_free_max) {
+    allocator->stats.toy2_descriptor_fail_transfer_free_max = transfer_free;
+  }
+  if (remote_pending >
+      allocator->stats.toy2_descriptor_fail_remote_pending_max) {
+    allocator->stats.toy2_descriptor_fail_remote_pending_max = remote_pending;
+  }
+  if (frontcache > allocator->stats.toy2_descriptor_fail_frontcache_max) {
+    allocator->stats.toy2_descriptor_fail_frontcache_max = frontcache;
+  }
+  if (allocator->stats.remote_pending_external_ticket_current >
+      allocator->stats.toy2_descriptor_fail_external_storage_max) {
+    allocator->stats.toy2_descriptor_fail_external_storage_max =
+        allocator->stats.remote_pending_external_ticket_current;
+  }
+  if (ref_zero_blocks > allocator->stats.toy2_source_blocks_ref_zero_max) {
+    allocator->stats.toy2_source_blocks_ref_zero_max = ref_zero_blocks;
+  }
+  if (low_ref_blocks > allocator->stats.toy2_source_blocks_low_ref_max) {
+    allocator->stats.toy2_source_blocks_low_ref_max = low_ref_blocks;
+  }
+  if (full_blocks > allocator->stats.toy2_source_blocks_full_max) {
+    allocator->stats.toy2_source_blocks_full_max = full_blocks;
+  }
+  if (partial_blocks > allocator->stats.toy2_source_blocks_partial_max) {
+    allocator->stats.toy2_source_blocks_partial_max = partial_blocks;
+  }
 }
 
 int hz6_allocator_descgov_descriptor_available(

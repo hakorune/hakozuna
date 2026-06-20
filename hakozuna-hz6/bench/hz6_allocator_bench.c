@@ -20,6 +20,7 @@ typedef enum Hz6BenchMode {
   HZ6_BENCH_LOCAL = 0,
   HZ6_BENCH_REMOTE = 1,
   HZ6_BENCH_REUSE = 2,
+  HZ6_BENCH_PHASE_REUSE = 3,
 } Hz6BenchMode;
 
 static double now_sec(void) {
@@ -44,6 +45,8 @@ static const char* mode_name(Hz6BenchMode mode) {
       return "remote";
     case HZ6_BENCH_REUSE:
       return "reuse";
+    case HZ6_BENCH_PHASE_REUSE:
+      return "phase-reuse";
     default:
       return "unknown";
   }
@@ -117,7 +120,39 @@ static int parse_mode(const char* value, Hz6BenchMode* mode) {
     *mode = HZ6_BENCH_REUSE;
     return 1;
   }
+  if (strcmp(value, "phase-reuse") == 0) {
+    *mode = HZ6_BENCH_PHASE_REUSE;
+    return 1;
+  }
   return 0;
+}
+
+static int compare_ptrs(const void* lhs, const void* rhs) {
+  const uintptr_t a = (uintptr_t)*(void* const*)lhs;
+  const uintptr_t b = (uintptr_t)*(void* const*)rhs;
+  return (a > b) - (a < b);
+}
+
+static uint64_t count_reused_ptrs(void** first, void** second, uint64_t n) {
+  uint64_t i = 0;
+  uint64_t j = 0;
+  uint64_t reused = 0;
+  qsort(first, (size_t)n, sizeof(first[0]), compare_ptrs);
+  qsort(second, (size_t)n, sizeof(second[0]), compare_ptrs);
+  while (i < n && j < n) {
+    uintptr_t a = (uintptr_t)first[i];
+    uintptr_t b = (uintptr_t)second[j];
+    if (a == b) {
+      ++reused;
+      ++i;
+      ++j;
+    } else if (a < b) {
+      ++i;
+    } else {
+      ++j;
+    }
+  }
+  return reused;
 }
 
 static int parse_profile(const char* value, Hz6ProfileId* profile) {
@@ -364,6 +399,158 @@ static void print_stats(const Hz6Allocator* allocator) {
          stats.owner_equal_site_owner_dead,
          stats.owner_equal_site_same_owner_fast,
          stats.owner_equal_site_unknown);
+  printf("[HZ6_REMOTE_PENDING] "
+         "returned_backpressure=%zu returned_uncommitted=%zu "
+         "foreign_candidate=%zu origin_pending_commit=%zu "
+         "pending_no_rehome=%zu pending_publish_fail=%zu "
+         "enqueue_attempt=%zu enqueue_success=%zu enqueue_full=%zu "
+         "duplicate_claim=%zu owner_dead=%zu current=%zu queued=%zu "
+         "claimed=%zu total=%zu high_water=%zu "
+         "maintenance_check=%zu maintenance_armed=%zu batch_call=%zu "
+         "batch_items=%zu maintenance_noop=%zu key_race=%zu "
+         "external_miss=%zu inline_empty=%zu frontcache_full_stop=%zu "
+         "external_attempt=%zu external_success=%zu "
+         "external_only_call=%zu inline_deferred=%zu "
+         "inline_pop_attempt=%zu inline_pop_success=%zu "
+         "route_validate_inline=%zu route_validate_external=%zu "
+         "push_attempt_inline=%zu push_attempt_external=%zu "
+         "push_success_inline=%zu push_success_external=%zu "
+         "drained_inline=%zu drained_external=%zu "
+         "frontcache_push=%zu frontcache_full=%zu "
+         "key_load=%zu key_hit=%zu direct_gate_load=%zu "
+         "direct_gate_hit=%zu direct_claim_attempt=%zu "
+         "direct_claim_success=%zu direct_claim_busy=%zu "
+         "direct_empty_after_hint=%zu direct_activate_success=%zu "
+         "direct_integrity_failure=%zu source_boundary_attempt=%zu "
+         "source_boundary_gate_hit=%zu source_boundary_claim_success=%zu "
+         "direct_prefill_avoided=%zu direct_source_alloc_avoided=%zu "
+         "claim_before_existing_reuse=%zu "
+         "claim_while_frontcache_nonempty=%zu "
+         "claim_while_transfer_nonempty=%zu direct_toy=%zu "
+         "direct_midpage=%zu direct_transfer_success=%zu "
+         "direct_transfer_toy=%zu direct_transfer_midpage=%zu "
+         "same_key_before=%zu "
+         "same_key_after=%zu maintenance_immediate_reuse=%zu "
+         "maintenance_batch_surplus=%zu source_block_commit_match=%zu "
+         "source_block_inline_match=%zu source_block_external_match=%zu\n",
+         stats.remote_free_returned_backpressure,
+         stats.remote_free_returned_uncommitted,
+         stats.remote_free_foreign_candidate,
+         stats.remote_free_origin_pending_commit,
+         stats.remote_free_pending_no_rehome,
+         stats.remote_free_pending_publish_fail,
+         stats.remote_pending_enqueue_attempt,
+         stats.remote_pending_enqueue_success,
+         stats.remote_pending_enqueue_full,
+         stats.remote_pending_duplicate_claim,
+         stats.remote_pending_owner_dead,
+         stats.remote_pending_current,
+         stats.remote_pending_queued_current,
+         stats.remote_pending_claimed_current,
+         stats.remote_pending_total_current,
+         stats.remote_pending_high_water,
+         stats.remote_pending_maintenance_check,
+         stats.remote_pending_maintenance_armed,
+         stats.remote_pending_batch_call,
+         stats.remote_pending_batch_items,
+         stats.remote_pending_maintenance_noop,
+         stats.remote_pending_maintenance_key_race,
+         stats.remote_pending_maintenance_external_miss,
+         stats.remote_pending_maintenance_inline_empty,
+         stats.remote_pending_maintenance_frontcache_full_stop,
+         stats.remote_pending_maintenance_external_attempt,
+         stats.remote_pending_maintenance_external_success,
+         stats.remote_pending_maintenance_external_only_call,
+         stats.remote_pending_maintenance_inline_deferred,
+         stats.remote_pending_maintenance_inline_pop_attempt,
+         stats.remote_pending_maintenance_inline_pop_success,
+         stats.remote_pending_maintenance_route_validate_inline,
+         stats.remote_pending_maintenance_route_validate_external,
+         stats.remote_pending_maintenance_frontcache_push_attempt_inline,
+         stats.remote_pending_maintenance_frontcache_push_attempt_external,
+         stats.remote_pending_maintenance_frontcache_push_success_inline,
+         stats.remote_pending_maintenance_frontcache_push_success_external,
+         stats.remote_pending_maintenance_drained_inline,
+         stats.remote_pending_maintenance_drained_external,
+         stats.remote_pending_frontcache_push,
+         stats.remote_pending_frontcache_full,
+         stats.remote_pending_key_nonempty_load,
+         stats.remote_pending_key_nonempty_hit,
+         stats.remote_pending_direct_gate_load,
+         stats.remote_pending_direct_gate_hit,
+         stats.remote_pending_direct_claim_attempt,
+         stats.remote_pending_direct_claim_success,
+         stats.remote_pending_direct_claim_busy,
+         stats.remote_pending_direct_claim_empty_after_hint,
+         stats.remote_pending_direct_activate_success,
+         stats.remote_pending_direct_integrity_failure,
+         stats.remote_pending_direct_source_boundary_attempt,
+         stats.remote_pending_direct_source_boundary_gate_hit,
+         stats.remote_pending_direct_source_boundary_claim_success,
+         stats.remote_pending_direct_prefill_avoided,
+         stats.remote_pending_direct_source_alloc_avoided,
+         stats.remote_pending_direct_claim_before_existing_reuse,
+         stats.remote_pending_direct_claim_while_frontcache_nonempty,
+         stats.remote_pending_direct_claim_while_transfer_nonempty,
+         stats.remote_pending_direct_claim_success_toy,
+         stats.remote_pending_direct_claim_success_midpage,
+         stats.remote_pending_direct_claim_success_while_transfer_nonempty,
+         stats.remote_pending_direct_claim_success_transfer_toy,
+         stats.remote_pending_direct_claim_success_transfer_midpage,
+         stats.pending_same_key_before_maintenance,
+         stats.pending_same_key_after_maintenance,
+         stats.pending_maintenance_immediate_reuse_success,
+         stats.pending_maintenance_batch_surplus,
+         stats.source_block_commit_with_matching_pending,
+         stats.source_block_commit_with_inline_pending,
+         stats.source_block_commit_with_external_pending);
+  printf("[HZ6_REMOTE_INBOX_REJECT] "
+         "storage_ineligible=%zu descriptor_mismatch=%zu owner_dead=%zu "
+         "owner_mismatch=%zu enqueue_fail=%zu\n",
+         stats.remote_pending_owner_inbox_storage_ineligible,
+         stats.remote_pending_owner_inbox_descriptor_mismatch,
+         stats.remote_pending_owner_inbox_owner_dead,
+         stats.remote_pending_owner_inbox_owner_mismatch,
+         stats.remote_pending_owner_inbox_enqueue_fail);
+  printf("[HZ6_REMOTE_EXTERNAL_TICKET] "
+         "attempt=%zu success=%zu full=%zu duplicate=%zu "
+         "duplicate_probe_total=%zu duplicate_probe_max=%zu "
+         "duplicate_scan_skip=%zu locked_revalidate_fail=%zu consume=%zu "
+         "current=%zu high_water=%zu consume_empty=%zu "
+         "frontcache_full=%zu "
+         "route_mismatch=%zu owner_mismatch=%zu state_mismatch=%zu "
+         "storage_mismatch=%zu integrity_abort=%zu\n",
+         stats.remote_pending_external_ticket_attempt,
+         stats.remote_pending_external_ticket_success,
+         stats.remote_pending_external_ticket_full,
+         stats.remote_pending_external_ticket_duplicate,
+         stats.remote_pending_external_ticket_duplicate_probe_total,
+         stats.remote_pending_external_ticket_duplicate_probe_max,
+         stats.remote_pending_external_ticket_duplicate_scan_skip,
+         stats.remote_pending_external_ticket_locked_revalidate_fail,
+         stats.remote_pending_external_ticket_consume,
+         stats.remote_pending_external_ticket_current,
+         stats.remote_pending_external_ticket_high_water,
+         stats.remote_pending_external_ticket_consume_empty,
+         stats.remote_pending_external_ticket_frontcache_full,
+         stats.remote_pending_external_ticket_route_mismatch,
+         stats.remote_pending_external_ticket_owner_mismatch,
+         stats.remote_pending_external_ticket_state_mismatch,
+         stats.remote_pending_external_ticket_storage_mismatch,
+         stats.remote_pending_external_ticket_integrity_abort);
+  printf("[HZ6_REMOTE_BACKPRESSURE] "
+         "origin_transfer_full=%zu origin_full_transfer_total=%zu "
+         "origin_full_class_total=%zu origin_full_class_max=%zu "
+         "transfer_full=%zu transfer_full_transfer_total=%zu "
+         "transfer_full_class_total=%zu transfer_full_class_max=%zu\n",
+         stats.remote_free_backpressure_origin_transfer_full,
+         stats.remote_free_backpressure_origin_full_transfer_count_total,
+         stats.remote_free_backpressure_origin_full_class_count_total,
+         stats.remote_free_backpressure_origin_full_class_count_max,
+         stats.transfer_reserve_full,
+         stats.transfer_reserve_full_transfer_count_total,
+         stats.transfer_reserve_full_class_count_total,
+         stats.transfer_reserve_full_class_count_max);
   printf("[HZ6_TOY_SMALL] "
          "malloc_fast_attempt=%zu malloc_fast_hit=%zu "
          "malloc_front_dispatch=%zu malloc_frontcache_pop=%zu "
@@ -726,10 +913,109 @@ static int run_reuse(Hz6ProfileId profile, uint64_t iters, size_t size) {
   return 0;
 }
 
+static int run_phase_reuse(Hz6ProfileId profile,
+                           uint64_t iters,
+                           size_t size) {
+  Hz6Allocator origin;
+  Hz6Allocator foreign;
+  void** first = NULL;
+  void** second = NULL;
+  uint64_t ops = 0;
+  uint64_t reuse_hits = 0;
+  uint64_t first_count = 0;
+  uint64_t second_count = 0;
+  int first_remote_freed = 0;
+  int rc = 0;
+
+  hz6_allocator_init_with_profile(&origin, profile);
+  hz6_allocator_init_with_profile(&foreign, profile);
+  if (!bench_set_owner_slot(&origin, 0) ||
+      !bench_set_owner_slot(&foreign, 1)) {
+    fprintf(stderr, "owner slot setup failed\n");
+    hz6_allocator_destroy(&foreign);
+    hz6_allocator_destroy(&origin);
+    return 4;
+  }
+
+  first = (void**)calloc((size_t)iters, sizeof(first[0]));
+  second = (void**)calloc((size_t)iters, sizeof(second[0]));
+  if (!first || !second) {
+    fprintf(stderr, "phase-reuse pointer table allocation failed\n");
+    rc = 5;
+    goto done;
+  }
+
+  double start = now_sec();
+  for (uint64_t i = 0; i < iters; ++i) {
+    first[i] = hz6_malloc(&origin, size);
+    if (!first[i]) {
+      fprintf(stderr, "phase-reuse phase-a malloc failed iter=%llu size=%zu\n",
+              (unsigned long long)i, size);
+      rc = 6;
+      goto done;
+    }
+    touch_payload(first[i], size);
+    ++first_count;
+    ++ops;
+  }
+
+  for (uint64_t i = 0; i < iters; ++i) {
+    hz6_free(&foreign, first[i]);
+    ++ops;
+  }
+  first_remote_freed = 1;
+
+  for (uint64_t i = 0; i < iters; ++i) {
+    second[i] = hz6_malloc(&origin, size);
+    if (!second[i]) {
+      fprintf(stderr, "phase-reuse phase-c malloc failed iter=%llu size=%zu\n",
+              (unsigned long long)i, size);
+      rc = 10;
+      goto done;
+    }
+    touch_payload(second[i], size);
+    ++second_count;
+    ++ops;
+  }
+  double elapsed = now_sec() - start;
+  reuse_hits = count_reused_ptrs(first, second, iters);
+  for (uint64_t i = 0; i < iters; ++i) {
+    hz6_free(&origin, second[i]);
+    ++ops;
+  }
+
+  printf("allocator=hz6 profile=%s mode=%s iters=%llu size=%zu ops=%llu "
+         "time=%.6f ops/s=%.3f reuse_hits=%llu\n",
+         profile_name(profile), mode_name(HZ6_BENCH_PHASE_REUSE),
+         (unsigned long long)iters, size, (unsigned long long)ops, elapsed,
+         (double)ops / elapsed, (unsigned long long)reuse_hits);
+  printf("[HZ6_PHASE_REUSE_STATS] owner=origin\n");
+  print_stats(&origin);
+  printf("[HZ6_PHASE_REUSE_STATS] owner=foreign\n");
+  print_stats(&foreign);
+
+done:
+  if (rc != 0) {
+    for (uint64_t i = 0; i < second_count; ++i) {
+      hz6_free(&origin, second[i]);
+    }
+    if (!first_remote_freed) {
+      for (uint64_t i = 0; i < first_count; ++i) {
+        hz6_free(&origin, first[i]);
+      }
+    }
+  }
+  free(second);
+  free(first);
+  hz6_allocator_destroy(&foreign);
+  hz6_allocator_destroy(&origin);
+  return rc;
+}
+
 static void usage(const char* argv0) {
   fprintf(stderr,
           "usage: %s [mode] [profile] [iters] [size]\n"
-          "  mode: local | remote | reuse\n"
+          "  mode: local | remote | reuse | phase-reuse\n"
           "  profile: strict | speed | rss | remote\n"
           "  iters: iteration count\n"
           "  size: allocation size in bytes\n",
@@ -768,6 +1054,8 @@ int main(int argc, char** argv) {
       return run_remote(profile, iters, size);
     case HZ6_BENCH_REUSE:
       return run_reuse(profile, iters, size);
+    case HZ6_BENCH_PHASE_REUSE:
+      return run_phase_reuse(profile, iters, size);
     default:
       usage(argv[0]);
       return 2;

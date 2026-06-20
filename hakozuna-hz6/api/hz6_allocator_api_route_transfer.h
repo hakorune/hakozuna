@@ -2,6 +2,7 @@
 #define HZ6_ALLOCATOR_API_ROUTE_TRANSFER_H
 
 #include "hz6_allocator_types.h"
+#include "hz6_allocator_route_resolve_free.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -88,6 +89,11 @@ void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
                                     Hz6RouteResult route,
                                     int visible_hit);
 
+void hz6_free_with_resolved_route_after_maps(Hz6Allocator* allocator,
+                                             void* ptr,
+                                             Hz6RouteResult route,
+                                             int visible_hit);
+
 void hz6_allocator_route_unregister_exact_reason(
     Hz6Allocator* allocator,
     void* ptr,
@@ -110,6 +116,8 @@ int hz6_allocator_route_register_exact_reason(
     uint32_t generation,
     void* descriptor,
     Hz6RouteRegisterReason reason);
+
+void hz6_allocator_route_maintain_tombstones(Hz6Allocator* allocator);
 
 int hz6_allocator_route_replace_exact_descriptor(
     Hz6Allocator* allocator,
@@ -176,9 +184,224 @@ size_t hz6_allocator_owner_locality_index_bytes(void);
 int hz6_allocator_transfer_push(Hz6Allocator* allocator,
                                 Hz6TransferObject object);
 
+int hz6_allocator_transfer_reserve(Hz6Allocator* allocator,
+                                   uint16_t class_id,
+                                   Hz6TransferReservation* out);
+
+void hz6_allocator_transfer_cancel(Hz6TransferReservation* reservation);
+
+void hz6_allocator_transfer_commit(Hz6TransferReservation* reservation,
+                                   Hz6TransferObject object);
+
 int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
                                uint16_t class_id,
                                Hz6TransferObject* out);
+
+int hz6_allocator_remote_free_overflow_reserve(
+    Hz6Allocator* allocator,
+    Hz6TransferReservation* out);
+
+void hz6_allocator_remote_free_overflow_commit(
+    Hz6TransferReservation* reservation,
+    Hz6TransferObject object);
+
+int hz6_allocator_remote_free_overflow_pop(Hz6Allocator* allocator,
+                                           uint16_t class_id,
+                                           Hz6TransferObject* out);
+
+int hz6_allocator_remote_free_drain_transfer_one(Hz6Allocator* allocator,
+                                                 uint16_t class_id);
+
+void hz6_allocator_remote_pending_inbox_init(Hz6Allocator* allocator);
+
+typedef enum Hz6RemotePendingReuseStatus {
+  HZ6_REMOTE_PENDING_REUSE_EMPTY = 0,
+  HZ6_REMOTE_PENDING_REUSE_BUSY = 1,
+  HZ6_REMOTE_PENDING_REUSE_OK = 2,
+  HZ6_REMOTE_PENDING_REUSE_INTEGRITY_FAILURE = 3
+} Hz6RemotePendingReuseStatus;
+
+int hz6_allocator_remote_pending_enqueue(Hz6Allocator* allocator,
+                                         Hz6ObjectDescriptor* descriptor,
+                                         void* ptr,
+                                         uint32_t generation,
+                                         uint16_t front_id,
+                                         uint16_t class_id);
+
+int hz6_allocator_remote_pending_external_ticket_publish(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    uint32_t generation,
+    uint16_t front_id,
+    uint16_t class_id);
+
+int hz6_allocator_remote_pending_external_ticket_consume_one(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+size_t hz6_allocator_remote_pending_maintenance_class(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t budget);
+
+size_t hz6_allocator_remote_pending_maintenance_class_external_only(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t budget);
+
+Hz6RemotePendingReuseStatus hz6_allocator_remote_pending_try_reuse(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested_bytes,
+    void** out_ptr,
+    Hz6ObjectDescriptor** out_descriptor);
+
+Hz6RemotePendingReuseStatus
+hz6_allocator_remote_pending_try_reuse_known_nonempty(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    size_t requested_bytes,
+    void** out_ptr,
+    Hz6ObjectDescriptor** out_descriptor);
+
+int hz6_allocator_remote_pending_key_nonempty(Hz6Allocator* allocator,
+                                              uint16_t front_id,
+                                              uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_accounting_snapshot(
+    const Hz6Allocator* allocator,
+    Hz6StatsSnapshot* snapshot);
+
+void hz6_allocator_remote_pending_closeout_for_destroy(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_remote_pending_note_after_destroy(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_remote_pending_storage_release(Hz6Allocator* allocator);
+
+int hz6_allocator_remote_pending_key_maybe_nonempty_raw(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_frontcache_miss(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_front_dispatch(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_source_alloc(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_before_maintenance(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_after_maintenance(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_maintenance_reuse_success(
+    Hz6Allocator* allocator,
+    size_t drained);
+
+void hz6_allocator_remote_pending_note_prefill_attempt(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_prefill_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_source_block_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_direct_source_attempt(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_remote_pending_note_direct_source_commit(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_audit_note_source_commit(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_audit_note_prefill_commit(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_audit_note_pop_attempt(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_pop_empty(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_origin_full(
+    Hz6Allocator* allocator,
+    const Hz6Allocator* origin,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_phase_audit_init(Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_phase_audit_note_demand(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_phase_audit_stamp(
+    Hz6Allocator* allocator,
+    Hz6TransferObject* object,
+    Hz6TransferPublishKind publish_kind,
+    Hz6OwnerToken producer_token);
+
+void hz6_allocator_origin_transfer_phase_audit_note_commit(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_commit_cancel(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_pop(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_origin_full(
+    Hz6Allocator* observer,
+    const Hz6Allocator* origin,
+    uint16_t requested_class_id);
+
+void hz6_allocator_origin_transfer_phase_audit_note_pop_empty(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id);
+
+void hz6_allocator_origin_transfer_audit_note_pop_invalid(
+    Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_audit_note_pop_hit(
+    Hz6Allocator* allocator);
 
 void hz6_allocator_note_transfer_push(Hz6Allocator* allocator);
 

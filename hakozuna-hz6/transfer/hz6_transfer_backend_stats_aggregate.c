@@ -51,3 +51,26 @@ size_t hz6_transfer_backend_count_class(const Hz6TransferBackend* backend,
   }
   return count;
 }
+
+void hz6_transfer_backend_note_class_presence_stats(
+    const Hz6TransferBackend* backend,
+    Hz6StatsSnapshot* snapshot) {
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!backend || !snapshot) {
+    return;
+  }
+  if (backend->kind == HZ6_TRANSFER_BACKEND_SINGLE_CACHE) {
+    hz6_transfer_note_class_presence_stats(&backend->single_cache, snapshot);
+    return;
+  }
+  if (backend->kind != HZ6_TRANSFER_BACKEND_SHARDED_CACHE) {
+    return;
+  }
+  for (size_t i = 0; i < backend->shard_count; ++i) {
+    hz6_transfer_note_class_presence_stats(&backend->shard[i], snapshot);
+  }
+#else
+  (void)backend;
+  (void)snapshot;
+#endif
+}

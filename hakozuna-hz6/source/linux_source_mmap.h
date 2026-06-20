@@ -32,6 +32,9 @@ typedef struct Hz6LinuxMmapRetainStats {
 
 Hz6LinuxMmapRetainStats hz6_linux_mmap_retain_stats_snapshot(void);
 size_t hz6_linux_mmap_retain_flush(size_t max_bytes);
+size_t hz6_linux_page_size(void);
+void* hz6_linux_mmap_reserve(size_t bytes, size_t align);
+int hz6_linux_mmap_release(void* p, size_t bytes);
 
 #ifdef __cplusplus
 }

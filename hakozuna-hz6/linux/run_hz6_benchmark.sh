@@ -10,14 +10,17 @@ SKIP_BUILD=0
 LOCAL_ITERS=1000000
 REMOTE_ITERS=200000
 REUSE_ITERS=100000
+PHASE_REUSE_ITERS=64
 
 LOCAL_SIZES="8192,65536"
 REMOTE_SIZES="131072"
 REUSE_SIZES="131072"
+PHASE_REUSE_SIZES="128"
 
 LOCAL_PROFILES="strict,speed,rss,remote"
 REMOTE_PROFILES="speed,rss,remote"
 REUSE_PROFILES="speed,rss,remote"
+PHASE_REUSE_PROFILES="speed"
 
 usage() {
   cat <<'EOF'
@@ -32,12 +35,15 @@ Options:
   --local-iters N         iterations for local mode (default: 1000000)
   --remote-iters N        iterations for remote mode (default: 200000)
   --reuse-iters N         iterations for reuse mode (default: 100000)
+  --phase-reuse-iters N   iterations for phase-reuse mode (default: 64)
   --local-sizes LIST      comma-separated local sizes (default: 8192,65536)
   --remote-sizes LIST     comma-separated remote sizes (default: 131072)
   --reuse-sizes LIST      comma-separated reuse sizes (default: 131072)
+  --phase-reuse-sizes LIST comma-separated phase-reuse sizes (default: 128)
   --local-profiles LIST   comma-separated local profiles
   --remote-profiles LIST  comma-separated remote profiles
   --reuse-profiles LIST   comma-separated reuse profiles
+  --phase-reuse-profiles LIST comma-separated phase-reuse profiles
   --help                  show this message
 EOF
 }
@@ -51,12 +57,15 @@ while [[ $# -gt 0 ]]; do
     --local-iters) LOCAL_ITERS="$2"; shift 2 ;;
     --remote-iters) REMOTE_ITERS="$2"; shift 2 ;;
     --reuse-iters) REUSE_ITERS="$2"; shift 2 ;;
+    --phase-reuse-iters) PHASE_REUSE_ITERS="$2"; shift 2 ;;
     --local-sizes) LOCAL_SIZES="$2"; shift 2 ;;
     --remote-sizes) REMOTE_SIZES="$2"; shift 2 ;;
     --reuse-sizes) REUSE_SIZES="$2"; shift 2 ;;
+    --phase-reuse-sizes) PHASE_REUSE_SIZES="$2"; shift 2 ;;
     --local-profiles) LOCAL_PROFILES="$2"; shift 2 ;;
     --remote-profiles) REMOTE_PROFILES="$2"; shift 2 ;;
     --reuse-profiles) REUSE_PROFILES="$2"; shift 2 ;;
+    --phase-reuse-profiles) PHASE_REUSE_PROFILES="$2"; shift 2 ;;
     --help|-h) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -95,9 +104,11 @@ split_list() {
 split_list "$LOCAL_SIZES" local_sizes
 split_list "$REMOTE_SIZES" remote_sizes
 split_list "$REUSE_SIZES" reuse_sizes
+split_list "$PHASE_REUSE_SIZES" phase_reuse_sizes
 split_list "$LOCAL_PROFILES" local_profiles
 split_list "$REMOTE_PROFILES" remote_profiles
 split_list "$REUSE_PROFILES" reuse_profiles
+split_list "$PHASE_REUSE_PROFILES" phase_reuse_profiles
 
 {
   echo "[HZ6_BENCHMARK]"
@@ -108,12 +119,15 @@ split_list "$REUSE_PROFILES" reuse_profiles
   echo "local_iters=${LOCAL_ITERS}"
   echo "remote_iters=${REMOTE_ITERS}"
   echo "reuse_iters=${REUSE_ITERS}"
+  echo "phase_reuse_iters=${PHASE_REUSE_ITERS}"
   echo "local_sizes=${LOCAL_SIZES}"
   echo "remote_sizes=${REMOTE_SIZES}"
   echo "reuse_sizes=${REUSE_SIZES}"
+  echo "phase_reuse_sizes=${PHASE_REUSE_SIZES}"
   echo "local_profiles=${LOCAL_PROFILES}"
   echo "remote_profiles=${REMOTE_PROFILES}"
   echo "reuse_profiles=${REUSE_PROFILES}"
+  echo "phase_reuse_profiles=${PHASE_REUSE_PROFILES}"
   echo "bench_bin=${BENCH_BIN}"
   echo ""
 } | tee "${OUTDIR}/README.log"
@@ -161,6 +175,11 @@ for run in $(seq 1 "$RUNS"); do
   for size in "${reuse_sizes[@]}"; do
     for profile in "${reuse_profiles[@]}"; do
       run_case reuse "$profile" "$run" "$REUSE_ITERS" "$size"
+    done
+  done
+  for size in "${phase_reuse_sizes[@]}"; do
+    for profile in "${phase_reuse_profiles[@]}"; do
+      run_case phase-reuse "$profile" "$run" "$PHASE_REUSE_ITERS" "$size"
     done
   done
 done

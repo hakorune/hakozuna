@@ -27,6 +27,37 @@
   size_t elastic_descriptor_overflow_exhausted = 0;
   size_t route_register_fail = 0;
   size_t source_block_exhausted = 0;
+  size_t toy2_descriptor_fail = 0;
+  size_t toy2_descriptor_fail_active_max = 0;
+  size_t toy2_descriptor_fail_local_free_max = 0;
+  size_t toy2_descriptor_fail_transfer_free_max = 0;
+  size_t toy2_descriptor_fail_remote_pending_max = 0;
+  size_t toy2_descriptor_fail_frontcache_max = 0;
+  size_t toy2_descriptor_fail_external_storage_max = 0;
+  size_t toy2_source_blocks_ref_zero_max = 0;
+  size_t toy2_source_blocks_low_ref_max = 0;
+  size_t toy2_source_blocks_full_max = 0;
+  size_t toy2_source_blocks_partial_max = 0;
+  size_t toy2_adaptive_descriptor_alloc = 0;
+  size_t toy2_adaptive_descriptor_segment_alloc = 0;
+  size_t toy2_adaptive_descriptor_segment_alloc_fail = 0;
+  size_t toy2_adaptive_descriptor_segment_max_block = 0;
+  size_t toy2_adaptive_descriptor_route_headroom_block = 0;
+  size_t toy2_adaptive_descriptor_double_allocate = 0;
+  size_t toy2_adaptive_descriptor_reuse_while_live = 0;
+  size_t toy2_adaptive_descriptor_storage_owner_mismatch = 0;
+  size_t toy2_adaptive_descriptor_live_current = 0;
+  size_t toy2_adaptive_descriptor_live_max = 0;
+  size_t toy2_adaptive_descriptor_segment_high_water = 0;
+  size_t toy2_construct_abort_attempt = 0;
+  size_t toy2_construct_abort_success = 0;
+  size_t toy2_construct_abort_ref_nonzero = 0;
+  size_t toy2_construct_abort_live_descriptor = 0;
+  size_t toy2_construct_abort_live_route = 0;
+  size_t toy2_construct_abort_pending_reference = 0;
+  size_t toy2_construct_abort_double_release = 0;
+  size_t toy2_construct_abort_release_fail = 0;
+  size_t toy2_unretained_active_block_after_abort = 0;
   size_t source_prefill_attempt = 0;
   size_t source_prefill_filled = 0;
   size_t source_prefill_fallback = 0;
@@ -49,6 +80,10 @@
   size_t route_unregister_reason_descriptorless_detach = 0;
   size_t route_unregister_reason_source_slot_release = 0;
   size_t route_unregister_reason_rehome = 0;
+  size_t route_unregister_while_pending = 0;
+  size_t route_replace_while_pending = 0;
+  size_t route_rehome_while_pending = 0;
+#include "hz6_preload_stats_print_rehome_vars.inc"
   size_t route_active_current = 0;
   size_t route_active_max = 0;
   size_t route_tombstone_current = 0;
@@ -59,12 +94,20 @@
   size_t route_tombstone_compact_success = 0;
   size_t route_tombstone_compact_fail_alloc = 0;
   size_t route_tombstone_compact_moved = 0;
+  size_t route_compact_deferred = 0;
+  size_t route_compact_owner_maintenance = 0;
+  size_t route_compact_remote_path_attempt = 0;
+  size_t route_lock_read_contended = 0;
+  size_t route_lock_write_contended = 0;
+  size_t route_lock_max_wait = 0;
   size_t route_tombstone_cond_probe = 0;
   size_t route_tombstone_cond_would_compact = 0;
   size_t route_tombstone_cond_ratio25 = 0;
   size_t route_tombstone_cond_occupancy75 = 0;
   size_t route_tombstone_cond_cooldown_blocked = 0;
   size_t route_tombstone_cond_highwater = 0;
+#include "hz6_preload_stats_print_shared_route_vars.inc"
+#include "hz6_preload_stats_print_resolve_vars.inc"
   size_t descriptor_live_max = 0;
   size_t source_block_active_max = 0;
   size_t frontcache_total_max = 0;
@@ -273,14 +316,98 @@
     local2p_source_alloc += stats.local2p_source_alloc;
     alloc_fail += stats.alloc_fail;
     descriptor_exhausted += stats.descriptor_exhausted;
-    elastic_descriptor_overflow_alloc +=
-        stats.elastic_descriptor_overflow_alloc;
-    elastic_descriptor_overflow_reset +=
-        stats.elastic_descriptor_overflow_reset;
-    elastic_descriptor_overflow_exhausted +=
-        stats.elastic_descriptor_overflow_exhausted;
+    elastic_descriptor_overflow_alloc += stats.elastic_descriptor_overflow_alloc;
+    elastic_descriptor_overflow_reset += stats.elastic_descriptor_overflow_reset;
+    elastic_descriptor_overflow_exhausted += stats.elastic_descriptor_overflow_exhausted;
     route_register_fail += stats.route_register_fail;
     source_block_exhausted += stats.source_block_exhausted;
+    toy2_descriptor_fail += stats.toy2_descriptor_fail;
+    if (stats.toy2_descriptor_fail_active_max >
+        toy2_descriptor_fail_active_max) {
+      toy2_descriptor_fail_active_max =
+          stats.toy2_descriptor_fail_active_max;
+    }
+    if (stats.toy2_descriptor_fail_local_free_max >
+        toy2_descriptor_fail_local_free_max) {
+      toy2_descriptor_fail_local_free_max =
+          stats.toy2_descriptor_fail_local_free_max;
+    }
+    if (stats.toy2_descriptor_fail_transfer_free_max >
+        toy2_descriptor_fail_transfer_free_max) {
+      toy2_descriptor_fail_transfer_free_max =
+          stats.toy2_descriptor_fail_transfer_free_max;
+    }
+    if (stats.toy2_descriptor_fail_remote_pending_max >
+        toy2_descriptor_fail_remote_pending_max) {
+      toy2_descriptor_fail_remote_pending_max =
+          stats.toy2_descriptor_fail_remote_pending_max;
+    }
+    if (stats.toy2_descriptor_fail_frontcache_max >
+        toy2_descriptor_fail_frontcache_max) {
+      toy2_descriptor_fail_frontcache_max =
+          stats.toy2_descriptor_fail_frontcache_max;
+    }
+    if (stats.toy2_descriptor_fail_external_storage_max >
+        toy2_descriptor_fail_external_storage_max) {
+      toy2_descriptor_fail_external_storage_max =
+          stats.toy2_descriptor_fail_external_storage_max;
+    }
+    if (stats.toy2_source_blocks_ref_zero_max >
+        toy2_source_blocks_ref_zero_max) {
+      toy2_source_blocks_ref_zero_max =
+          stats.toy2_source_blocks_ref_zero_max;
+    }
+    if (stats.toy2_source_blocks_low_ref_max >
+        toy2_source_blocks_low_ref_max) {
+      toy2_source_blocks_low_ref_max =
+          stats.toy2_source_blocks_low_ref_max;
+    }
+    if (stats.toy2_source_blocks_full_max > toy2_source_blocks_full_max) {
+      toy2_source_blocks_full_max = stats.toy2_source_blocks_full_max;
+    }
+    if (stats.toy2_source_blocks_partial_max >
+        toy2_source_blocks_partial_max) {
+      toy2_source_blocks_partial_max =
+          stats.toy2_source_blocks_partial_max;
+    }
+    toy2_adaptive_descriptor_alloc += stats.toy2_adaptive_descriptor_alloc;
+    toy2_adaptive_descriptor_segment_alloc +=
+        stats.toy2_adaptive_descriptor_segment_alloc;
+    toy2_adaptive_descriptor_segment_alloc_fail +=
+        stats.toy2_adaptive_descriptor_segment_alloc_fail;
+    toy2_adaptive_descriptor_segment_max_block +=
+        stats.toy2_adaptive_descriptor_segment_max_block;
+    toy2_adaptive_descriptor_route_headroom_block +=
+        stats.toy2_adaptive_descriptor_route_headroom_block;
+    toy2_adaptive_descriptor_double_allocate +=
+        stats.toy2_adaptive_descriptor_double_allocate;
+    toy2_adaptive_descriptor_reuse_while_live +=
+        stats.toy2_adaptive_descriptor_reuse_while_live;
+    toy2_adaptive_descriptor_storage_owner_mismatch +=
+        stats.toy2_adaptive_descriptor_storage_owner_mismatch;
+    toy2_adaptive_descriptor_live_current +=
+        stats.toy2_adaptive_descriptor_live_current;
+    toy2_adaptive_descriptor_live_max +=
+        stats.toy2_adaptive_descriptor_live_max;
+    if (stats.toy2_adaptive_descriptor_segment_high_water >
+        toy2_adaptive_descriptor_segment_high_water) {
+      toy2_adaptive_descriptor_segment_high_water =
+          stats.toy2_adaptive_descriptor_segment_high_water;
+    }
+    toy2_construct_abort_attempt += stats.toy2_construct_abort_attempt;
+    toy2_construct_abort_success += stats.toy2_construct_abort_success;
+    toy2_construct_abort_ref_nonzero += stats.toy2_construct_abort_ref_nonzero;
+    toy2_construct_abort_live_descriptor +=
+        stats.toy2_construct_abort_live_descriptor;
+    toy2_construct_abort_live_route += stats.toy2_construct_abort_live_route;
+    toy2_construct_abort_pending_reference +=
+        stats.toy2_construct_abort_pending_reference;
+    toy2_construct_abort_double_release +=
+        stats.toy2_construct_abort_double_release;
+    toy2_construct_abort_release_fail +=
+        stats.toy2_construct_abort_release_fail;
+    toy2_unretained_active_block_after_abort +=
+        stats.toy2_unretained_active_block_after_abort;
     source_prefill_attempt += stats.source_prefill_attempt;
     source_prefill_filled += stats.source_prefill_filled;
     source_prefill_fallback += stats.source_prefill_fallback;
@@ -299,23 +426,20 @@
       route_unregister_probe_max = stats.route_unregister_probe_max;
     }
     route_register_reason_unknown += stats.route_register_reason_unknown;
-    route_register_reason_source_run_slot +=
-        stats.route_register_reason_source_run_slot;
-    route_register_reason_direct_source +=
-        stats.route_register_reason_direct_source;
-    route_register_reason_materialize +=
-        stats.route_register_reason_materialize;
+    route_register_reason_source_run_slot += stats.route_register_reason_source_run_slot;
+    route_register_reason_direct_source += stats.route_register_reason_direct_source;
+    route_register_reason_materialize += stats.route_register_reason_materialize;
     route_register_reason_rehome += stats.route_register_reason_rehome;
     route_unregister_reason_unknown += stats.route_unregister_reason_unknown;
-    route_unregister_reason_frontcache_overflow +=
-        stats.route_unregister_reason_frontcache_overflow;
-    route_unregister_reason_cap_release +=
-        stats.route_unregister_reason_cap_release;
-    route_unregister_reason_descriptorless_detach +=
-        stats.route_unregister_reason_descriptorless_detach;
-    route_unregister_reason_source_slot_release +=
-        stats.route_unregister_reason_source_slot_release;
+    route_unregister_reason_frontcache_overflow += stats.route_unregister_reason_frontcache_overflow;
+    route_unregister_reason_cap_release += stats.route_unregister_reason_cap_release;
+    route_unregister_reason_descriptorless_detach += stats.route_unregister_reason_descriptorless_detach;
+    route_unregister_reason_source_slot_release += stats.route_unregister_reason_source_slot_release;
     route_unregister_reason_rehome += stats.route_unregister_reason_rehome;
+    route_unregister_while_pending += stats.route_unregister_while_pending;
+    route_replace_while_pending += stats.route_replace_while_pending;
+    route_rehome_while_pending += stats.route_rehome_while_pending;
+#include "hz6_preload_stats_print_rehome_accumulate.inc"
     route_active_current += stats.route_active_current;
     if (stats.route_active_max > route_active_max) {
       route_active_max = stats.route_active_max;
@@ -332,6 +456,16 @@
     route_tombstone_compact_fail_alloc +=
         stats.route_tombstone_compact_fail_alloc;
     route_tombstone_compact_moved += stats.route_tombstone_compact_moved;
+    route_compact_deferred += stats.route_compact_deferred;
+    route_compact_owner_maintenance +=
+        stats.route_compact_owner_maintenance;
+    route_compact_remote_path_attempt +=
+        stats.route_compact_remote_path_attempt;
+    route_lock_read_contended += stats.route_lock_read_contended;
+    route_lock_write_contended += stats.route_lock_write_contended;
+    if (stats.route_lock_max_wait > route_lock_max_wait) {
+      route_lock_max_wait = stats.route_lock_max_wait;
+    }
     route_tombstone_cond_probe += stats.route_tombstone_cond_probe;
     route_tombstone_cond_would_compact +=
         stats.route_tombstone_cond_would_compact;
@@ -345,6 +479,8 @@
       route_tombstone_cond_highwater =
           stats.route_tombstone_cond_highwater;
     }
+#include "hz6_preload_stats_print_shared_route_accumulate.inc"
+#include "hz6_preload_stats_print_resolve_accumulate.inc"
     if (stats.descriptor_live_max > descriptor_live_max) {
       descriptor_live_max = stats.descriptor_live_max;
     }

@@ -15,6 +15,64 @@ hz6_preload_profile_selected_cflags() {
   hz6_preload_effective_selected_cflags "$out_name" "$enable_midpage_boundary"
 }
 
+hz6_preload_profile_owner_inbox_external_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_external_cflags \
+    "$out_name" "$enable_midpage_boundary"
+}
+
+hz6_preload_profile_owner_inbox_direct_reuse_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_external_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_REUSE_L1 1
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_CLAIM_L1 1
+  hz6_preload_replace_define "$out_name" HZ6_REMOTE_PENDING_DIRECT_OBSERVE_L1 0
+}
+
+hz6_preload_profile_owner_inbox_toy2_split_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_external_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define \
+    "$out_name" HZ6_REMOTE_PENDING_TOY_CLASS2_FRONT_MAINTENANCE_GATE_L1 1
+  hz6_preload_replace_define \
+    "$out_name" HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
+}
+
+hz6_preload_profile_owner_inbox_toy2_route_before_maps_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_profile_owner_inbox_toy2_split_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 1
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 1
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1 1
+}
+
+hz6_preload_profile_owner_inbox_off_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_off_cflags \
+    "$out_name" "$enable_midpage_boundary"
+}
+
+hz6_preload_profile_high_remote_transfer_presence_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_off_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define "$out_name" HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+  hz6_preload_replace_define "$out_name" \
+    HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL '((size_t)192)'
+}
+
 hz6_preload_profile_build() {
   local -n flags_ref="$1"
   local default_out_dir="$2"

@@ -53,9 +53,15 @@ static void* hz6_front_source_block_reserved_slot(
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_descriptor_fail;
 #endif
+    descriptor = hz6_allocator_find_toy2_adaptive_descriptor(
+        allocator, front_id, class_id);
+  }
+  if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
+    hz6_allocator_note_toy2_descriptor_pressure_fail(allocator, front_id,
+                                                     class_id);
     return NULL;
   }
 
@@ -233,9 +239,15 @@ static void* hz6_front_source_block_slot_with_descriptor(
     }
   }
   if (!descriptor) {
+    descriptor = hz6_allocator_find_toy2_adaptive_descriptor(
+        allocator, front_id, class_id);
+  }
+  if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
+    hz6_allocator_note_toy2_descriptor_pressure_fail(allocator, front_id,
+                                                     class_id);
     return NULL;
   }
   if (!hz6_source_block_route_registered(source_block)) {
@@ -338,6 +350,8 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
 #else
   (void)has_front_index;
 #endif
+  hz6_allocator_remote_pending_note_prefill_attempt(allocator, front_id,
+                                                   class_id);
 
   size_t filled = hz6_front_prefill_from_source_run(
       allocator, front_id, class_id, slot_bytes, block_bytes, source_kind,
@@ -350,6 +364,8 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
       allocator->stats.front_source_prefill_filled[front_index] += filled;
     }
 #endif
+    hz6_allocator_remote_pending_note_prefill_commit(allocator, front_id,
+                                                    class_id);
     return filled;
   }
 
@@ -436,7 +452,17 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 
   if (filled == 0) {
+#if HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1
+    if (front_id == HZ6_FRONT_TOY && class_id == 2) {
+      if (!hz6_allocator_abort_unretained_source_block(allocator, block)) {
+        hz6_allocator_release_source_block(allocator, block);
+      }
+    } else {
+      hz6_allocator_release_source_block(allocator, block);
+    }
+#else
     hz6_allocator_release_source_block(allocator, block);
+#endif
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_prefill_fallback;
     if (has_front_index) {
@@ -454,5 +480,9 @@ size_t hz6_front_prefill_source_block_kind(Hz6Allocator* allocator,
   }
 #endif
   hz6_allocator_note_source_alloc_for_front(allocator, front_id);
+  hz6_allocator_remote_pending_note_prefill_commit(allocator, front_id,
+                                                  class_id);
+  hz6_allocator_remote_pending_note_source_block_commit(allocator, front_id,
+                                                       class_id);
   return filled;
 }

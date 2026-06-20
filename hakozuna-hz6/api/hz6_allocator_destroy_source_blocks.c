@@ -1,4 +1,5 @@
 #include "hz6_allocator_destroy_internal.h"
+#include "hz6_allocator_route_domain.h"
 
 #include <stdlib.h>
 
@@ -20,9 +21,11 @@ void hz6_allocator_destroy_source_blocks(Hz6Allocator* allocator) {
                                                             block->ptr);
 #endif
       } else {
+        hz6_allocator_route_domain_lock(allocator);
         hz6_route_backend_unregister_invalid_range(&allocator->route_backend,
                                                    block->ptr,
                                                    NULL);
+        hz6_allocator_route_domain_unlock(allocator);
       }
     }
     if (block->source_release) {

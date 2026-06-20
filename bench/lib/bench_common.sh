@@ -367,6 +367,55 @@ bench_find_hz6_workload_capacity_mid_target_library() {
     hz6-preload-workload-capacity-mid-target
 }
 
+bench_find_hz6_high_remote_owner_inbox_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_HIGH_REMOTE_OWNER_INBOX_TARGET_PRELOAD_SO \
+    hz6_preload_high_remote_owner_inbox \
+    hz6-preload-high-remote-owner-inbox-target
+}
+
+bench_find_hz6_high_remote_owner_inbox_direct_reuse_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_HIGH_REMOTE_OWNER_INBOX_DIRECT_REUSE_TARGET_PRELOAD_SO \
+    hz6_preload_high_remote_owner_inbox_direct_reuse \
+    hz6-preload-high-remote-owner-inbox-direct-reuse-target
+}
+
+bench_find_hz6_high_remote_transfer_presence_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_HIGH_REMOTE_TRANSFER_PRESENCE_TARGET_PRELOAD_SO \
+    hz6_preload_high_remote_transfer_presence \
+    hz6-preload-high-remote-transfer-presence-target
+}
+
+bench_find_hz6_cross128_toy2_split_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_CROSS128_TOY2_SPLIT_TARGET_PRELOAD_SO \
+    hz6_preload_cross128_toy2_split \
+    hz6-preload-cross128-toy2-split-target
+}
+
+bench_find_hz6_cross128_toy2_route_before_maps_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_CROSS128_TOY2_ROUTE_BEFORE_MAPS_TARGET_PRELOAD_SO \
+    hz6_preload_cross128_toy2_route_before_maps \
+    hz6-preload-cross128-toy2-route-before-maps-target
+}
+
+bench_find_hz6_transfer_class_shard_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO \
+    hz6_preload_transfer_class_shard \
+    hz6-preload-transfer-class-shard-target
+}
+
+bench_find_hz6_transfer_small_class_shard_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_TRANSFER_SMALL_CLASS_SHARD_TARGET_PRELOAD_SO \
+    hz6_preload_transfer_small_class_shard \
+    hz6-preload-transfer-small-class-shard-target
+}
+
 bench_find_hz6_midpage_trusted_class_target_library() {
   bench_find_hz6_preload_output \
     HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO \
@@ -502,6 +551,27 @@ bench_find_allocator_library() {
       ;;
     hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
       bench_find_hz6_workload_capacity_mid_target_library
+      ;;
+    hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
+      bench_find_hz6_high_remote_owner_inbox_target_library
+      ;;
+    hz6-high-remote-owner-inbox-direct-reuse-target|hz6_high_remote_owner_inbox_direct_reuse_target)
+      bench_find_hz6_high_remote_owner_inbox_direct_reuse_target_library
+      ;;
+    hz6-high-remote-transfer-presence-target|hz6_high_remote_transfer_presence_target)
+      bench_find_hz6_high_remote_transfer_presence_target_library
+      ;;
+    hz6-cross128-toy2-split-target|hz6_cross128_toy2_split_target)
+      bench_find_hz6_cross128_toy2_split_target_library
+      ;;
+    hz6-cross128-toy2-route-before-maps-target|hz6_cross128_toy2_route_before_maps_target)
+      bench_find_hz6_cross128_toy2_route_before_maps_target_library
+      ;;
+    hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
+      bench_find_hz6_transfer_class_shard_target_library
+      ;;
+    hz6-transfer-small-class-shard-target|hz6_transfer_small_class_shard_target)
+      bench_find_hz6_transfer_small_class_shard_target_library
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       bench_find_hz6_midpage_trusted_class_target_library
@@ -640,6 +710,21 @@ bench_print_allocator_hints() {
       ;;
     hz6-workload-capacity-mid-target|hz6_workload_capacity_mid_target)
       echo "hint: build the HZ6 workload-capacity mid target lane with './hakozuna-hz6/linux/build_hz6_preload_workload_capacity_mid_target.sh' or set HZ6_WORKLOAD_CAPACITY_MID_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-high-remote-owner-inbox-target|hz6_high_remote_owner_inbox_target)
+      echo "hint: build the HZ6 high-remote owner-inbox target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_target.sh' or set HZ6_HIGH_REMOTE_OWNER_INBOX_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-high-remote-owner-inbox-direct-reuse-target|hz6_high_remote_owner_inbox_direct_reuse_target)
+      echo "hint: build the HZ6 high-remote owner-inbox DirectReuse target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh' or set HZ6_HIGH_REMOTE_OWNER_INBOX_DIRECT_REUSE_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-high-remote-transfer-presence-target|hz6_high_remote_transfer_presence_target)
+      echo "hint: build the HZ6 high-remote transfer-presence target lane with './hakozuna-hz6/linux/build_hz6_preload_high_remote_transfer_presence_target.sh' or set HZ6_HIGH_REMOTE_TRANSFER_PRESENCE_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
+      echo "hint: build the HZ6 transfer class-shard target lane with './hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh' or set HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO" >&2
+      ;;
+    hz6-transfer-small-class-shard-target|hz6_transfer_small_class_shard_target)
+      echo "hint: build the HZ6 transfer small-class-shard target lane with './hakozuna-hz6/linux/build_hz6_preload_transfer_small_class_shard_target.sh' or set HZ6_TRANSFER_SMALL_CLASS_SHARD_TARGET_PRELOAD_SO" >&2
       ;;
     hz6-midpage-trusted-class|hz6_midpage_trusted_class)
       echo "hint: build the HZ6 MidPage trusted-class target lane with './hakozuna-hz6/linux/build_hz6_preload_midpage_trusted_class_target.sh' or set HZ6_MIDPAGE_TRUSTED_CLASS_TARGET_PRELOAD_SO" >&2

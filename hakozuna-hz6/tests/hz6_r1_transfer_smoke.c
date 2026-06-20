@@ -201,6 +201,94 @@ int main(void) {
   hz6_free(&strict_remote_allocator, strict_remote_reused);
   hz6_allocator_destroy(&strict_remote_allocator);
 
+#if HZ6_REMOTE_PENDING_INBOX_CORE_L1 && HZ6_DIAGNOSTIC_PROBES
+  Hz6Allocator inline_pending_allocator;
+  hz6_allocator_init_with_profile(&inline_pending_allocator, HZ6_PROFILE_SPEED);
+  void* inline_pending = hz6_malloc(&inline_pending_allocator, 128);
+  Hz6RouteResult inline_pending_route =
+      hz6_allocator_route_lookup(&inline_pending_allocator, inline_pending);
+  Hz6ObjectDescriptor* inline_pending_descriptor =
+      (Hz6ObjectDescriptor*)inline_pending_route.descriptor;
+  if (!expect(inline_pending != NULL, "inline pending malloc") ||
+      !expect(inline_pending_route.kind == HZ6_ROUTE_VALID,
+              "inline pending route") ||
+      !expect(hz6_allocator_remote_pending_enqueue(
+                  &inline_pending_allocator, inline_pending_descriptor,
+                  inline_pending, inline_pending_route.generation,
+                  inline_pending_route.front_id, inline_pending_route.class_id),
+              "inline pending enqueue")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&inline_pending_allocator);
+  Hz6StatsSnapshot inline_pending_destroy_stats =
+      hz6_stats_snapshot(&inline_pending_allocator);
+  if (!expect(inline_pending_destroy_stats.remote_pending_destroy_inline_closeout ==
+                  1,
+              "inline pending destroy closeout") ||
+      !expect(inline_pending_destroy_stats.remote_pending_after_allocator_destroy ==
+                  0,
+              "inline pending after destroy clear")) {
+    return 1;
+  }
+
+#if HZ6_REMOTE_PENDING_EXTERNAL_TICKET_L1
+  Hz6Allocator external_origin_allocator;
+  Hz6Allocator external_storage_allocator;
+  hz6_allocator_init_with_profile(&external_origin_allocator,
+                                  HZ6_PROFILE_SPEED);
+  hz6_allocator_init_with_profile(&external_storage_allocator,
+                                  HZ6_PROFILE_SPEED);
+  void* external_pending = hz6_malloc(&external_storage_allocator, 128);
+  Hz6RouteResult external_storage_route =
+      hz6_allocator_route_lookup(&external_storage_allocator, external_pending);
+  Hz6ObjectDescriptor* external_descriptor =
+      (Hz6ObjectDescriptor*)external_storage_route.descriptor;
+  if (!expect(external_pending != NULL, "external pending malloc") ||
+      !expect(external_storage_route.kind == HZ6_ROUTE_VALID,
+              "external pending storage route") ||
+      !expect(external_descriptor != NULL, "external pending descriptor")) {
+    return 1;
+  }
+  hz6_allocator_route_unregister_exact(&external_storage_allocator,
+                                       external_pending);
+  hz6_allocator_set_descriptor_owner(&external_origin_allocator,
+                                     external_descriptor,
+                                     external_origin_allocator.owner.token);
+  if (!expect(hz6_allocator_route_register_exact(
+                  &external_origin_allocator, external_pending,
+                  external_descriptor->bytes, external_storage_route.front_id,
+                  external_storage_route.class_id,
+                  external_storage_route.generation, external_descriptor),
+              "external pending origin route") ||
+      !expect(hz6_allocator_remote_pending_external_ticket_publish(
+                  &external_origin_allocator, external_descriptor,
+                  external_pending, external_storage_route.generation,
+                  external_storage_route.front_id,
+                  external_storage_route.class_id),
+              "external pending ticket publish")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&external_origin_allocator);
+  Hz6StatsSnapshot external_origin_destroy_stats =
+      hz6_stats_snapshot(&external_origin_allocator);
+  if (!expect(
+          external_origin_destroy_stats.remote_pending_destroy_external_closeout ==
+              1,
+          "external pending destroy closeout") ||
+      !expect(external_origin_destroy_stats
+                  .remote_pending_destroy_external_release_fail == 0,
+              "external pending destroy release") ||
+      !expect(external_origin_destroy_stats.remote_pending_after_allocator_destroy ==
+                  0,
+              "external pending after origin destroy clear") ||
+      !expect(external_descriptor->state == HZ6_STATE_DEAD,
+              "external pending storage descriptor released")) {
+    return 1;
+  }
+  hz6_allocator_destroy(&external_storage_allocator);
+#endif
+#endif
+
   printf("hz6-r1-transfer-smoke ok\n");
   return 0;
 }

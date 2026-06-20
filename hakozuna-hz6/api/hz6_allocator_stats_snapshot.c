@@ -1,4 +1,6 @@
 #include "hz6_allocator.h"
+#include "hz6_allocator_api_route_transfer.h"
+#include "hz6_allocator_route_shared_directory.h"
 #include "../fronts/midpage/hz6_midpage_front.h"
 
 #if HZ6_DIAGNOSTIC_PROBES
@@ -286,6 +288,7 @@ static void hz6_stats_snapshot_memory_attribution(
       sizeof(allocator->transfer_objects);
   snapshot->memory_shared_route_directory_bytes =
       hz6_allocator_shared_route_directory_bytes();
+  hz6_shared_route_directory_note_stats(snapshot);
   snapshot->memory_owner_locality_index_bytes =
       hz6_allocator_owner_locality_index_bytes();
   snapshot->memory_ownerlocality_index_bytes =
@@ -571,6 +574,9 @@ Hz6StatsSnapshot hz6_stats_snapshot(const Hz6Allocator* allocator) {
   }
   Hz6StatsSnapshot snapshot = allocator->stats;
 #if HZ6_DIAGNOSTIC_PROBES
+  hz6_allocator_remote_pending_note_accounting_snapshot(allocator, &snapshot);
+  hz6_transfer_backend_note_class_presence_stats(&allocator->transfer_backend,
+                                                 &snapshot);
   hz6_stats_snapshot_memory_attribution(allocator, &snapshot);
 #endif
   return snapshot;

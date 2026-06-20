@@ -9,6 +9,8 @@ For cleanup rules and the next source modularization target, see
 For the Ubuntu LD_PRELOAD lane ledger, see `HZ6_UBUNTU_PRELOAD_LANES.md`.
 For the post-MidPage-boundary Ubuntu selected speed/RSS balance read, see
 `HZ6_UBUNTU_SELECTED_BALANCE.md`.
+For the active MT remote-route repair phase shared by Ubuntu/Windows design
+work, see `HZ6_REMOTE_ROUTE_PHASE_PLAN.md`.
 
 Ubuntu note:
 `HZ6_ROUTE_LAST_HIT_CACHE_L1=1` is now the Linux/Ubuntu default route shortcut.
@@ -125,6 +127,16 @@ After the MidPage preload-boundary malloc skip, the balance row improves again:
 4096..16384 reaches `hz6 40.387M / 115.25 MiB`, beating HZ4 on both throughput
 and RSS and beating mimalloc/system strongly. At that checkpoint it still
 trailed HZ3 and tcmalloc on the speed/RSS frontier.
+
+MT remote-route warning:
+the 2026-06-19 debug pass showed that remote-positive MT rows are not yet a
+selected-final HZ6 claim on either Ubuntu or Windows.  The failure is at the
+route ownership boundary, not in Ubuntu's launcher: remote frees can degrade
+into page-table route misses, and tombstone compaction needs a writer boundary
+when remote rehome is active.  Keep the repair in the
+`RemoteFreeRouteResolve-L1` phase, not as a platform-wrapper owner hint, and do
+not mix its debug numbers into the selected-family tables until Ubuntu x86_64
+and Windows x64 both pass the RUNS=10 MT remote matrix.
 
 ## Selected Rows
 

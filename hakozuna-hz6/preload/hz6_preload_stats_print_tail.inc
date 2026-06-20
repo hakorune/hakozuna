@@ -254,7 +254,22 @@
           "free_source_run_route_prechecked=%zu "
           "free_route_lookup_after_maps=%zu free_route_valid_owned=%zu "
           "free_route_valid_foreign_visible=%zu free_route_invalid=%zu "
-          "free_route_miss_real=%zu mh_probe=%zu mh_would=%zu "
+          "free_route_miss_real=%zu free_route_retry_abort=%zu "
+          "free_route_integrity_abort=%zu "
+          "free_route_real_free_unproven=%zu "
+          "free_route_before_maps_attempt=%zu "
+          "free_route_before_maps_arm_skip=%zu "
+          "free_route_before_maps_foreign_dispatch=%zu "
+          "free_route_before_maps_local_dispatch=%zu "
+          "free_route_before_maps_external_dispatch=%zu "
+          "free_route_before_maps_fallback=%zu "
+          "free_route_before_maps_fallback_local_valid=%zu "
+          "free_route_before_maps_fallback_owned_invalid=%zu "
+          "free_route_before_maps_fallback_proven_external=%zu "
+          "free_route_before_maps_fallback_other=%zu "
+          "free_resolved_foreign_direct_dispatch=%zu "
+          "free_resolved_duplicate_route_lookup_avoided=%zu "
+          "mh_probe=%zu mh_would=%zu "
           "mh_true=%zu mh_false=%zu mh_miss=%zu\n",
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_attempt),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_toy_active_map_hit),
@@ -273,7 +288,31 @@
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_owned),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_valid_foreign_visible),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_invalid),
-          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_miss_real), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_probe),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_miss_real),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_retry_abort),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_integrity_abort),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_real_free_unproven),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_before_maps_attempt),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_before_maps_arm_skip),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_foreign_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_local_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_external_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_before_maps_fallback),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_local_valid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_owned_invalid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_proven_external),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_other),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_resolved_foreign_direct_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_resolved_duplicate_route_lookup_avoided),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_probe),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_would_first), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_true_midpage),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_false_positive), HZ6_PRELOAD_PHASE_LOAD_FIELD(free_midpage_hint_missed_midpage));
   fprintf(stderr,
@@ -424,14 +463,76 @@
               "toy_source_alloc=%zu midpage_source_alloc=%zu "
               "large_source_alloc=%zu local2p_source_alloc=%zu "
               "alloc_fail=%zu descriptor_exhausted=%zu "
-              "route_register_fail=%zu source_block_exhausted=%zu\n",
+              "route_register_fail=%zu source_block_exhausted=%zu "
+              "toy2_descriptor_fail=%zu "
+              "toy2_descriptor_fail_active_max=%zu "
+              "toy2_descriptor_fail_local_free_max=%zu "
+              "toy2_descriptor_fail_transfer_free_max=%zu "
+              "toy2_descriptor_fail_remote_pending_max=%zu "
+              "toy2_descriptor_fail_frontcache_max=%zu "
+              "toy2_descriptor_fail_external_storage_max=%zu "
+              "toy2_source_blocks_ref_zero_max=%zu "
+              "toy2_source_blocks_low_ref_max=%zu "
+              "toy2_source_blocks_full_max=%zu "
+              "toy2_source_blocks_partial_max=%zu "
+              "toy2_adaptive_descriptor_alloc=%zu "
+              "toy2_adaptive_descriptor_segment_alloc=%zu "
+              "toy2_adaptive_descriptor_segment_alloc_fail=%zu "
+              "toy2_adaptive_descriptor_segment_max_block=%zu "
+              "toy2_adaptive_descriptor_route_headroom_block=%zu "
+              "toy2_adaptive_descriptor_double_allocate=%zu "
+              "toy2_adaptive_descriptor_reuse_while_live=%zu "
+              "toy2_adaptive_descriptor_storage_owner_mismatch=%zu "
+              "toy2_adaptive_descriptor_live_current=%zu "
+              "toy2_adaptive_descriptor_live_max=%zu "
+              "toy2_adaptive_descriptor_segment_high_water=%zu "
+              "toy2_construct_abort_attempt=%zu "
+              "toy2_construct_abort_success=%zu "
+              "toy2_construct_abort_ref_nonzero=%zu "
+              "toy2_construct_abort_live_descriptor=%zu "
+              "toy2_construct_abort_live_route=%zu "
+              "toy2_construct_abort_pending_reference=%zu "
+              "toy2_construct_abort_double_release=%zu "
+              "toy2_construct_abort_release_fail=%zu "
+              "toy2_unretained_active_block_after_abort=%zu\n",
               i, (void*)allocator, stats.route_valid, stats.route_invalid,
               stats.route_miss, stats.transfer_push, stats.transfer_pop,
               stats.source_alloc, stats.toy_source_alloc,
               stats.midpage_source_alloc, stats.large_source_alloc,
               stats.local2p_source_alloc, stats.alloc_fail,
               stats.descriptor_exhausted, stats.route_register_fail,
-              stats.source_block_exhausted);
+              stats.source_block_exhausted,
+              stats.toy2_descriptor_fail,
+              stats.toy2_descriptor_fail_active_max,
+              stats.toy2_descriptor_fail_local_free_max,
+              stats.toy2_descriptor_fail_transfer_free_max,
+              stats.toy2_descriptor_fail_remote_pending_max,
+              stats.toy2_descriptor_fail_frontcache_max,
+              stats.toy2_descriptor_fail_external_storage_max,
+              stats.toy2_source_blocks_ref_zero_max,
+              stats.toy2_source_blocks_low_ref_max,
+              stats.toy2_source_blocks_full_max,
+              stats.toy2_source_blocks_partial_max,
+              stats.toy2_adaptive_descriptor_alloc,
+              stats.toy2_adaptive_descriptor_segment_alloc,
+              stats.toy2_adaptive_descriptor_segment_alloc_fail,
+              stats.toy2_adaptive_descriptor_segment_max_block,
+              stats.toy2_adaptive_descriptor_route_headroom_block,
+              stats.toy2_adaptive_descriptor_double_allocate,
+              stats.toy2_adaptive_descriptor_reuse_while_live,
+              stats.toy2_adaptive_descriptor_storage_owner_mismatch,
+              stats.toy2_adaptive_descriptor_live_current,
+              stats.toy2_adaptive_descriptor_live_max,
+              stats.toy2_adaptive_descriptor_segment_high_water,
+              stats.toy2_construct_abort_attempt,
+              stats.toy2_construct_abort_success,
+              stats.toy2_construct_abort_ref_nonzero,
+              stats.toy2_construct_abort_live_descriptor,
+              stats.toy2_construct_abort_live_route,
+              stats.toy2_construct_abort_pending_reference,
+              stats.toy2_construct_abort_double_release,
+              stats.toy2_construct_abort_release_fail,
+              stats.toy2_unretained_active_block_after_abort);
     }
     pthread_mutex_unlock(&g_hz6_preload_allocator_registry_mutex);
   }

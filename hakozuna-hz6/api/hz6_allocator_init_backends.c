@@ -1,6 +1,10 @@
 #include "hz6_allocator_init_internal.h"
+#include "hz6_allocator_route_domain.h"
 
 void hz6_allocator_init_backends(Hz6Allocator* allocator) {
+  hz6_allocator_route_domain_init(allocator);
+  hz6_allocator_remote_pending_inbox_init(allocator);
+  hz6_allocator_origin_transfer_phase_audit_init(allocator);
   switch (allocator->profile.route_backend_policy) {
     case HZ6_ROUTE_POLICY_PAGE_TABLE:
       hz6_route_backend_init_page_table_with_granularity(
@@ -34,4 +38,9 @@ void hz6_allocator_init_backends(Hz6Allocator* allocator) {
                                      allocator->transfer_objects,
                                      transfer_capacity);
   }
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  hz6_transfer_init(&allocator->remote_free_overflow_cache,
+                    allocator->remote_free_overflow_objects,
+                    HZ6_REMOTE_FREE_OVERFLOW_CAPACITY);
+#endif
 }

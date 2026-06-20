@@ -1,0 +1,275 @@
+#ifndef HZ6_ALLOCATOR_REMOTE_FREE_STATUS_DISPATCH_H
+#define HZ6_ALLOCATOR_REMOTE_FREE_STATUS_DISPATCH_H
+
+#include "hz6_allocator.h"
+#include "hz6_allocator_backpressure_policy_clock.h"
+
+static inline int hz6_remote_free_status_dispatch_transfer_eligible(
+    Hz6RouteResult route) {
+  return route.front_id == HZ6_FRONT_TOY ||
+         route.front_id == HZ6_FRONT_MIDPAGE ||
+         route.front_id == HZ6_FRONT_LOCAL2P;
+}
+
+static inline Hz6RemoteFreeCommitStatus
+hz6_remote_free_status_dispatch_transfer(Hz6Allocator* allocator,
+                                         void* ptr,
+                                         Hz6RouteResult route,
+                                         int* handled) {
+#if HZ6_REMOTE_FREE_STATUS_DISPATCH_L1
+  if (handled) {
+    *handled = 0;
+  }
+  if (!allocator || !ptr || route.kind != HZ6_ROUTE_VALID ||
+      !route.descriptor ||
+      !hz6_remote_free_status_dispatch_transfer_eligible(route)) {
+    return HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
+  }
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor->class_id != route.class_id || descriptor->ptr != ptr) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_status_integrity_failure;
+#endif
+    if (handled) {
+      *handled = 1;
+    }
+    return HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE;
+  }
+  if (handled) {
+    *handled = 1;
+  }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.remote_free_status_dispatch_transfer;
+#endif
+  return hz6_allocator_remote_free_active_descriptor_status(
+      allocator, descriptor, ptr);
+#else
+  (void)allocator;
+  (void)ptr;
+  (void)route;
+  if (handled) {
+    *handled = 0;
+  }
+  return HZ6_REMOTE_FREE_COMMIT_STATUS_STALE;
+#endif
+}
+
+static inline void hz6_remote_free_status_note_return(
+    Hz6Allocator* allocator,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  if (!allocator) {
+    return;
+  }
+  switch (status) {
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE:
+      ++allocator->stats.remote_free_returned_backpressure;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_INTEGRITY_FAILURE:
+      ++allocator->stats.remote_free_returned_integrity_failure;
+      ++allocator->stats.remote_free_returned_uncommitted;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_STALE:
+      ++allocator->stats.remote_free_returned_stale;
+      ++allocator->stats.remote_free_returned_uncommitted;
+      break;
+    case HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED:
+    default:
+      break;
+  }
+#else
+  (void)allocator;
+  (void)status;
+#endif
+}
+
+static inline int hz6_remote_free_status_try_owner_inbox(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_BACKPRESSURE_OWNER_INBOX_L1 && \
+    HZ6_REMOTE_PENDING_INBOX_CORE_L1
+  if (!allocator || !ptr ||
+      status != HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE ||
+      route.kind != HZ6_ROUTE_VALID || !route.descriptor ||
+      !route.route_allocator || route.route_allocator == allocator) {
+    return 0;
+  }
+  Hz6Allocator* origin = route.route_allocator;
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor < origin->descriptors ||
+      descriptor >= origin->descriptors + HZ6_OBJECT_DESCRIPTOR_CAPACITY) {
+    if (hz6_allocator_remote_pending_external_ticket_publish(
+            origin, descriptor, ptr, route.generation, route.front_id,
+            route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.remote_free_origin_pending_commit;
+      ++allocator->stats.remote_free_pending_no_rehome;
+#endif
+      return 1;
+    }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_pending_owner_inbox_storage_ineligible;
+#endif
+    return 0;
+  }
+  if (descriptor->ptr != ptr || descriptor->state != HZ6_STATE_ACTIVE ||
+      descriptor->generation != route.generation ||
+      descriptor->class_id != route.class_id) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_descriptor_mismatch;
+#endif
+    return 0;
+  }
+  if (!hz6_owner_is_alive(&origin->owner, origin->owner.token)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_owner_dead;
+#endif
+    return 0;
+  }
+  if (!hz6_allocator_descriptor_owner_equal_at(
+          origin, descriptor, origin->owner.token,
+          HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_owner_mismatch;
+#endif
+    return 0;
+  }
+  if (!hz6_allocator_remote_pending_enqueue(origin, descriptor, ptr,
+                                            route.generation,
+                                            route.front_id,
+                                            route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_pending_publish_fail;
+    ++allocator->stats.remote_pending_owner_inbox_enqueue_fail;
+#endif
+    return 0;
+  }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.remote_free_origin_pending_commit;
+  ++allocator->stats.remote_free_pending_no_rehome;
+#endif
+  return 1;
+#else
+  (void)allocator;
+  (void)ptr;
+  (void)route;
+  (void)status;
+  return 0;
+#endif
+}
+
+static inline int hz6_remote_free_status_try_origin_transfer(
+    Hz6Allocator* allocator,
+    void* ptr,
+    Hz6RouteResult route,
+    Hz6RemoteFreeCommitStatus status) {
+#if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1
+  if (!allocator || !ptr ||
+      status != HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE ||
+      route.kind != HZ6_ROUTE_VALID || !route.descriptor ||
+      !route.route_allocator || route.route_allocator == allocator) {
+    return 0;
+  }
+#if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE > 1
+  if (!hz6_allocator_backpressure_policy_stride_hit(
+          allocator, HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_STRIDE)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats
+          .remote_free_backpressure_origin_transfer_stride_skip;
+#endif
+    return 0;
+  }
+#endif
+  Hz6Allocator* origin = route.route_allocator;
+  Hz6ObjectDescriptor* descriptor =
+      (Hz6ObjectDescriptor*)route.descriptor;
+  if (descriptor->ptr != ptr || descriptor->state != HZ6_STATE_ACTIVE ||
+      descriptor->generation != route.generation ||
+      descriptor->class_id != route.class_id ||
+      !hz6_owner_is_alive(&origin->owner, origin->owner.token) ||
+      !hz6_allocator_descriptor_owner_equal_at(
+          origin, descriptor, origin->owner.token,
+          HZ6_OWNER_EQUAL_SITE_REMOTE_PENDING)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_backpressure_origin_transfer_fail;
+    ++allocator->stats
+          .remote_free_backpressure_origin_transfer_validation_fail;
+#endif
+    return 0;
+  }
+  Hz6RemoteFreeCommitStatus origin_status =
+      hz6_allocator_remote_free_active_descriptor_status_with_audit(
+          origin, descriptor, ptr, HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK,
+          allocator->owner.token);
+#if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
+  if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_backpressure_origin_drain_attempt;
+#endif
+    if (hz6_allocator_remote_free_drain_transfer_one(origin,
+                                                     route.class_id)) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.remote_free_backpressure_origin_drain_success;
+#endif
+      origin_status =
+          hz6_allocator_remote_free_active_descriptor_status_with_audit(
+              origin, descriptor, ptr, HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK,
+              allocator->owner.token);
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+      if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
+        ++allocator->stats
+              .remote_free_backpressure_origin_drain_retry_success;
+      }
+#endif
+    }
+  }
+#endif
+  if (origin_status != HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.remote_free_backpressure_origin_transfer_fail;
+    if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
+      ++allocator->stats.remote_free_backpressure_origin_transfer_full;
+      size_t origin_transfer_count = hz6_allocator_transfer_count(origin);
+      size_t origin_class_count =
+          hz6_allocator_transfer_count_class(origin, route.class_id);
+      hz6_allocator_origin_transfer_audit_note_origin_full(
+          allocator, origin, route.class_id);
+      hz6_allocator_origin_transfer_phase_audit_note_origin_full(
+          allocator, origin, route.class_id);
+      allocator->stats.remote_free_backpressure_origin_full_transfer_count_total +=
+          origin_transfer_count;
+      allocator->stats.remote_free_backpressure_origin_full_class_count_total +=
+          origin_class_count;
+      if (origin_class_count >
+          allocator->stats.remote_free_backpressure_origin_full_class_count_max) {
+        allocator->stats.remote_free_backpressure_origin_full_class_count_max =
+            origin_class_count;
+      }
+    } else {
+      ++allocator->stats
+            .remote_free_backpressure_origin_transfer_validation_fail;
+    }
+#endif
+    return 0;
+  }
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.remote_free_backpressure_origin_transfer_success;
+#endif
+  return 1;
+#else
+  (void)allocator;
+  (void)ptr;
+  (void)route;
+  (void)status;
+  return 0;
+#endif
+}
+
+#endif

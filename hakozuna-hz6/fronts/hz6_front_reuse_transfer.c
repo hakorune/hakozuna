@@ -505,6 +505,62 @@ static Hz6ObjectDescriptor* hz6_front_try_elastic_depot_descriptor_rehome(
 }
 #endif
 
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+static int hz6_front_rehome_transfer_on_reuse(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id,
+    const Hz6TransferObject* transfer) {
+  if (!allocator || !transfer || !transfer->ptr || !transfer->descriptor) {
+    return 0;
+  }
+  Hz6RouteResult route =
+      hz6_allocator_route_shared_directory_lookup_exact(allocator,
+                                                        transfer->ptr);
+  if (route.kind != HZ6_ROUTE_VALID || route.descriptor != transfer->descriptor ||
+      route.generation != transfer->generation || route.front_id != front_id ||
+      route.class_id != class_id || !route.route_allocator) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reuse_rehome_fail;
+#endif
+    return 0;
+  }
+  if (route.route_allocator == allocator) {
+    return 1;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.transfer_reuse_rehome_attempt;
+  ++allocator->stats.route_rehome_commit_enter;
+#endif
+  if (!hz6_allocator_route_rehome_exact(allocator, &route)) {
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reuse_rehome_fail;
+    ++allocator->stats.route_rehome_fail;
+#endif
+    return 0;
+  }
+#if HZ6_DIAGNOSTIC_PROBES
+  ++allocator->stats.transfer_reuse_rehome_success;
+  ++allocator->stats.route_rehome_success;
+#if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1
+  ++allocator->stats.route_rehome_commit_success;
+#endif
+#endif
+  return 1;
+}
+
+static void hz6_front_requeue_transfer_after_rehome_fail(
+    Hz6Allocator* allocator,
+    Hz6TransferObject transfer) {
+  if (!allocator) {
+    return;
+  }
+  if (hz6_allocator_transfer_push(allocator, transfer)) {
+    hz6_allocator_note_transfer_push(allocator);
+  }
+}
+#endif
+
 void* hz6_front_reuse_transfer_with_descriptor(
     Hz6Allocator* allocator,
     uint16_t front_id,
@@ -518,13 +574,26 @@ void* hz6_front_reuse_transfer_with_descriptor(
       !hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
   }
+  hz6_allocator_origin_transfer_phase_audit_note_demand(allocator,
+                                                        class_id);
 
-  Hz6TransferObject transfer;
+  Hz6TransferObject transfer = {0};
+  hz6_allocator_origin_transfer_audit_note_pop_attempt(allocator);
+  int saw_transfer_object = 0;
   while (hz6_allocator_transfer_pop(allocator, class_id, &transfer)) {
+    saw_transfer_object = 1;
     Hz6ObjectDescriptor* descriptor =
         (Hz6ObjectDescriptor*)transfer.descriptor;
+#if HZ6_REMOTE_FREE_CONSUMER_REHOME_L1
+    if (!hz6_front_rehome_transfer_on_reuse(allocator, front_id, class_id,
+                                            &transfer)) {
+      hz6_front_requeue_transfer_after_rehome_fail(allocator, transfer);
+      break;
+    }
+#endif
     if (!hz6_allocator_activate_descriptor(allocator, descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
             transfer.generation, hz6_allocator_owner_token(allocator))) {
+      hz6_allocator_origin_transfer_audit_note_pop_invalid(allocator);
 #if HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.transfer_reuse_invalid;
 #endif
@@ -575,8 +644,48 @@ void* hz6_front_reuse_transfer_with_descriptor(
     if (out_descriptor) {
       *out_descriptor = descriptor;
     }
+    hz6_allocator_origin_transfer_audit_note_pop_hit(allocator);
     return transfer.ptr;
   }
+  if (!saw_transfer_object) {
+    hz6_allocator_origin_transfer_audit_note_pop_empty(allocator);
+    hz6_allocator_origin_transfer_phase_audit_note_pop_empty(allocator,
+                                                            class_id);
+  }
+
+#if HZ6_REMOTE_FREE_OVERFLOW_L1
+  while (hz6_allocator_remote_free_overflow_pop(allocator, class_id,
+                                                &transfer)) {
+    Hz6ObjectDescriptor* descriptor =
+        (Hz6ObjectDescriptor*)transfer.descriptor;
+    if (!hz6_allocator_activate_descriptor(
+            allocator, descriptor, HZ6_STATE_TRANSFER_FREE, transfer.ptr,
+            transfer.generation, hz6_allocator_owner_token(allocator))) {
+#if HZ6_DIAGNOSTIC_PROBES
+      ++allocator->stats.transfer_reuse_invalid;
+#endif
+      continue;
+    }
+#if HZ6_ELASTIC_DEPOT_DESCRIPTOR_REHOME_L1
+    descriptor = hz6_front_try_elastic_depot_descriptor_rehome(
+        allocator, descriptor, front_id, class_id);
+#endif
+#if HZ6_DIAGNOSTIC_PROBES
+    ++allocator->stats.transfer_reuse_hit;
+    ++allocator->stats.remote_free_overflow_pop;
+#endif
+    if (path) {
+      *path = HZ6_ALLOC_PATH_TRANSFER_REUSE;
+    } else {
+      hz6_allocator_note_front_alloc_path(allocator, front_id,
+                                          HZ6_ALLOC_PATH_TRANSFER_REUSE);
+    }
+    if (out_descriptor) {
+      *out_descriptor = descriptor;
+    }
+    return transfer.ptr;
+  }
+#endif
 
   return NULL;
 }

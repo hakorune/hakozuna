@@ -46,6 +46,28 @@ void free(void* ptr) {
         &g_hz6_preload_phase_stats.free_midpage_hint_would_first);
   }
 #endif
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1
+  if (hz6_preload_foreign_route_before_maps_try(allocator, ptr)) {
+    g_hz6_preload_reentry = 0;
+    return;
+  }
+#endif
+#if HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
+  if (page_kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+    goto hz6_preload_after_active_maps;
+  }
+#endif
 #if HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
   if (page_kind == HZ6_PAGE_KIND_MIDPAGE) {
     hz6_preload_phase_count(
@@ -358,6 +380,9 @@ void free(void* ptr) {
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
 #endif
+#if HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
+hz6_preload_after_active_maps:
+#endif
 #if HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
   int source_run_route_prechecked = 0;
@@ -457,29 +482,57 @@ void free(void* ptr) {
     } else {
       hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_route_invalid);
     }
-#if HZ6_PRELOAD_FAST_FREE_L1
-    hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
-                                   preload_route.visible_hit);
-#elif HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
-    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
-    if (source_run_route_prechecked) {
+    int preload_route_dispatched = 0;
+#if HZ6_PRELOAD_FOREIGN_RESOLVED_DISPATCH_L1
+    if (preload_route.resolve_kind == HZ6_FREE_ROUTE_FOREIGN_VALID &&
+        preload_route.route.kind == HZ6_ROUTE_VALID &&
+        preload_route.visible_hit) {
       hz6_preload_phase_count(
-          &g_hz6_preload_phase_stats.free_source_run_route_prechecked);
-      hz6_free_with_route_prechecked(allocator, ptr, preload_route.route, 0);
-    } else {
-      hz6_free(allocator, ptr);
+          &g_hz6_preload_phase_stats.free_resolved_foreign_direct_dispatch);
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats
+               .free_resolved_duplicate_route_lookup_avoided);
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+      g_hz6_preload_foreign_route_before_maps_armed = 1;
+#endif
+      hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                              preload_route.route,
+                                              preload_route.visible_hit);
+      preload_route_dispatched = 1;
     }
-#elif HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
-    if (midpage_fast_free) {
+#endif
+    if (!preload_route_dispatched) {
+#if HZ6_PRELOAD_FAST_FREE_L1
       hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
                                      preload_route.visible_hit);
-    } else {
-      hz6_free(allocator, ptr);
-    }
+#elif HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
+    HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
+      if (source_run_route_prechecked) {
+        hz6_preload_phase_count(
+            &g_hz6_preload_phase_stats.free_source_run_route_prechecked);
+        hz6_free_with_route_prechecked(allocator, ptr, preload_route.route, 0);
+      } else {
+        hz6_free(allocator, ptr);
+      }
+#elif HZ6_PRELOAD_MIDPAGE_FAST_FREE_L1
+      if (midpage_fast_free) {
+        hz6_free_with_route_prechecked(allocator, ptr, preload_route.route,
+                                       preload_route.visible_hit);
+      } else {
+        hz6_free(allocator, ptr);
+      }
 #else
-    hz6_free(allocator, ptr);
+      hz6_free(allocator, ptr);
 #endif
+    }
   } else {
+    hz6_preload_route_fail_fast_if_integrity(preload_route);
+    if (!hz6_preload_route_real_fallback_allowed(preload_route)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_route_real_free_unproven);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
     hz6_preload_phase_count(&g_hz6_preload_phase_stats.free_route_miss_real);
     hz6_preload_real_free(ptr);
   }
@@ -562,6 +615,10 @@ void* realloc(void* ptr, size_t size) {
   }
   g_hz6_preload_reentry = 0;
   if (old_size == 0) {
+    hz6_preload_route_fail_fast_if_integrity(preload_route);
+    if (!hz6_preload_route_real_fallback_allowed(preload_route)) {
+      return NULL;
+    }
     hz6_preload_phase_count(&g_hz6_preload_phase_stats.realloc_real_fallback);
     return hz6_preload_real_realloc(ptr, size);
   }
@@ -691,12 +748,17 @@ size_t malloc_usable_size(void* ptr) {
   if (!g_hz6_preload_reentry) {
     g_hz6_preload_reentry = 1;
     Hz6Allocator* allocator = hz6_preload_allocator();
-    size_t bytes = hz6_preload_usable_size(allocator, ptr);
+    Hz6PreloadRoute preload_route = hz6_preload_route(allocator, ptr);
+    size_t bytes = hz6_preload_usable_size_from_route(preload_route);
     g_hz6_preload_reentry = 0;
     if (bytes != 0) {
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats.malloc_usable_size_owned);
       return bytes;
+    }
+    hz6_preload_route_fail_fast_if_integrity(preload_route);
+    if (!hz6_preload_route_real_fallback_allowed(preload_route)) {
+      return 0;
     }
   }
   hz6_preload_phase_count(
