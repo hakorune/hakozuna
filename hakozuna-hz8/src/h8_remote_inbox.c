@@ -20,6 +20,7 @@ void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
 
 static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner,
                                                      size_t slot, void* ptr) {
+  (void)ptr;
   if (span->owner_slot != owner->slot ||
       span->owner_generation != owner->generation) {
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
@@ -35,12 +36,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     return H8_PUBLISH_INVALID;
   }
   h8_bitmap_test_and_set((_Atomic uint64_t*)span->pending_bits, slot);
-  uintptr_t head = atomic_load_explicit(&span->remote_head, memory_order_relaxed);
-  do {
-    *(void**)ptr = (void*)head;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &span->remote_head, &head, (uintptr_t)ptr, memory_order_release,
-      memory_order_relaxed));
   atomic_fetch_add_explicit(&h8g.remote_publish_count, 1, memory_order_relaxed);
   h8_span_notify(owner, span);
   return H8_PUBLISH_OK;
@@ -74,15 +69,13 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     return;
   }
 
-  uintptr_t head = atomic_exchange_explicit(&span->remote_head, (uintptr_t)NULL,
-                                            memory_order_acq_rel);
-  while (head) {
-    void* node = (void*)head;
-    head = (uintptr_t)*(void**)node;
-    size_t slot = h8_slot_index_from_ptr(span, node);
-    if (!h8_bitmap_test((_Atomic uint64_t*)span->pending_bits, slot) ||
-        !h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  for (uint32_t slot = 0; slot < span->slot_count; ++slot) {
+    if (!h8_bitmap_test((_Atomic uint64_t*)span->pending_bits, slot)) {
+      continue;
+    }
+    if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
       atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+      h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
       continue;
     }
     h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
@@ -96,8 +89,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
-  if (atomic_load_explicit(&span->remote_head, memory_order_acquire) != 0 ||
-      h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
+  if (h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
                          h8_word_count_for_slots(span->slot_count)) != 0) {
     h8_span_notify(owner, span);
   }

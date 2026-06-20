@@ -87,3 +87,17 @@ metadata layout, owner model, queue type, or route contract.
 For v0, do not expose a public policy/profile selector at all.  Keep collection
 budgets and empty-span caps as fixed internal constants until `v0-fusion-small`
 passes its default gates.
+
+## Build and Bench
+
+```text
+make smoke
+make preload
+make bench
+```
+
+Guard-row bring-up example:
+
+```text
+./h8_bench --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0
+```

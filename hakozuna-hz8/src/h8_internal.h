@@ -64,7 +64,6 @@ struct H8Span {
   _Atomic uint32_t span_epoch;
   _Atomic uint32_t bump_index;
   _Atomic uint32_t local_free_head;
-  _Atomic uintptr_t remote_head;
   _Atomic size_t used_count;
   uint64_t* live_bits;
   uint64_t* pending_bits;
