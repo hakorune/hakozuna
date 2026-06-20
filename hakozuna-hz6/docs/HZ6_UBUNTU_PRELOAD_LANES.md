@@ -4585,16 +4585,19 @@ Raw output:
 
 ```text
 hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150436
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150907
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150918
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151024
 ```
 
-R1 summary:
+R1 summary after correcting `*_scan_max` aggregation to use max, not sum:
 
 ```text
 variant                         row             hit_total  hit_max  empty_total  empty_max  false_zero
-p0_transfer_class_presence_min192 cross128_r90    376486    155      11350896     516        0
-p0_transfer_class_presence_min192 remote90_short  262712    2584     6495121      4065       0
-p0_transfer_class_presence_min192_armed cross128  703272    181      30328110     1025       0
-p0_transfer_class_presence_min192_armed remote90  286901    2621     6031844      3997       0
+p0_transfer_class_presence_min192 cross128_r90    381866    117      19810091     573        0
+p0_transfer_class_presence_min192 remote90_short  280908    831      6042559      1024       0
+p0_transfer_class_presence_min192_armed cross128  435380    119      32570877     725        0
+p0_transfer_class_presence_min192_armed remote90  231494    806      9043920      1024       0
 ```
 
 Decision: `GO(tooling)/HOLD(behavior)`.  The audit confirms that class-negative

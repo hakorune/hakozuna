@@ -32,6 +32,12 @@ static void hz6_transfer_max_u32(_Atomic uint32_t* value, uint32_t amount) {
   }
 }
 
+static void hz6_transfer_snapshot_max(size_t* value, size_t candidate) {
+  if (value && *value < candidate) {
+    *value = candidate;
+  }
+}
+
 #define HZ6_TRANSFER_PRESENCE_NOTE(cache, field) \
   hz6_transfer_inc_u32(&(cache)->field)
 #define HZ6_TRANSFER_PRESENCE_ADD(cache, field, amount) \
@@ -504,12 +510,14 @@ void hz6_transfer_note_class_presence_stats(
       hz6_transfer_load_u32(&cache->presence_unarmed_probe);
   snapshot->transfer_class_presence_pop_hit_scan_total +=
       hz6_transfer_load_u32(&cache->presence_pop_hit_scan_total);
-  snapshot->transfer_class_presence_pop_hit_scan_max +=
-      hz6_transfer_load_u32(&cache->presence_pop_hit_scan_max);
+  hz6_transfer_snapshot_max(
+      &snapshot->transfer_class_presence_pop_hit_scan_max,
+      hz6_transfer_load_u32(&cache->presence_pop_hit_scan_max));
   snapshot->transfer_class_presence_pop_empty_scan_total +=
       hz6_transfer_load_u32(&cache->presence_pop_empty_scan_total);
-  snapshot->transfer_class_presence_pop_empty_scan_max +=
-      hz6_transfer_load_u32(&cache->presence_pop_empty_scan_max);
+  hz6_transfer_snapshot_max(
+      &snapshot->transfer_class_presence_pop_empty_scan_max,
+      hz6_transfer_load_u32(&cache->presence_pop_empty_scan_max));
   snapshot->transfer_class_presence_invalid_class +=
       hz6_transfer_load_u32(&cache->presence_invalid_class);
   snapshot->transfer_class_presence_underflow +=
