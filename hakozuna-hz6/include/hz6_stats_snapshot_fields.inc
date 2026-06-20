@@ -34,6 +34,9 @@
   size_t transfer_class_presence_update_below_min_increment;
   size_t transfer_class_presence_update_below_min_decrement;
   size_t transfer_class_presence_update_below_min_commit;
+  size_t transfer_class_presence_arm_rebuild;
+  size_t transfer_class_presence_arm_disarm;
+  size_t transfer_class_presence_unarmed_probe;
   size_t transfer_class_presence_invalid_class;
   size_t transfer_class_presence_underflow;
   size_t transfer_class_presence_over_capacity;

@@ -72,6 +72,12 @@
         stats.transfer_class_presence_update_below_min_decrement;
     transfer_class_presence_update_below_min_commit +=
         stats.transfer_class_presence_update_below_min_commit;
+    transfer_class_presence_arm_rebuild +=
+        stats.transfer_class_presence_arm_rebuild;
+    transfer_class_presence_arm_disarm +=
+        stats.transfer_class_presence_arm_disarm;
+    transfer_class_presence_unarmed_probe +=
+        stats.transfer_class_presence_unarmed_probe;
     transfer_class_presence_invalid_class +=
         stats.transfer_class_presence_invalid_class;
     transfer_class_presence_underflow +=

@@ -10,6 +10,10 @@ extern "C" {
 
 typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
 
+#ifndef HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+#define HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1 0
+#endif
+
 typedef struct Hz6TransferObject {
   void* ptr;
   void* descriptor;
@@ -26,6 +30,9 @@ typedef struct Hz6TransferCache {
   size_t count;
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   _Atomic uint32_t class_count[HZ6_FRONT_CACHE_CLASS_COUNT];
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  uint8_t presence_armed;
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   _Atomic uint32_t presence_gate_check;
   _Atomic uint32_t presence_gate_hit;
@@ -36,6 +43,9 @@ typedef struct Hz6TransferCache {
   _Atomic uint32_t presence_update_below_min_increment;
   _Atomic uint32_t presence_update_below_min_decrement;
   _Atomic uint32_t presence_update_below_min_commit;
+  _Atomic uint32_t presence_arm_rebuild;
+  _Atomic uint32_t presence_arm_disarm;
+  _Atomic uint32_t presence_unarmed_probe;
   _Atomic uint32_t presence_invalid_class;
   _Atomic uint32_t presence_underflow;
   _Atomic uint32_t presence_over_capacity;

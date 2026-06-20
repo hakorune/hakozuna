@@ -100,6 +100,9 @@
           "transfer_class_presence_update_below_min_increment=%zu "
           "transfer_class_presence_update_below_min_decrement=%zu "
           "transfer_class_presence_update_below_min_commit=%zu "
+          "transfer_class_presence_arm_rebuild=%zu "
+          "transfer_class_presence_arm_disarm=%zu "
+          "transfer_class_presence_unarmed_probe=%zu "
           "transfer_class_presence_invalid_class=%zu "
           "transfer_class_presence_underflow=%zu "
           "transfer_class_presence_over_capacity=%zu "
@@ -428,6 +431,9 @@
           transfer_class_presence_update_below_min_increment,
           transfer_class_presence_update_below_min_decrement,
           transfer_class_presence_update_below_min_commit,
+          transfer_class_presence_arm_rebuild,
+          transfer_class_presence_arm_disarm,
+          transfer_class_presence_unarmed_probe,
           transfer_class_presence_invalid_class,
           transfer_class_presence_underflow,
           transfer_class_presence_over_capacity,

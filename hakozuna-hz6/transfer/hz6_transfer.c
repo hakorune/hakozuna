@@ -43,6 +43,55 @@ static int hz6_transfer_object_counts_for_presence(
          hz6_transfer_class_valid(object->class_id);
 }
 
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+static void hz6_transfer_zero_class_counts(Hz6TransferCache* cache) {
+  if (!cache) {
+    return;
+  }
+  for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
+    atomic_store_explicit(&cache->class_count[i], 0, memory_order_release);
+  }
+}
+
+static int hz6_transfer_presence_armed(const Hz6TransferCache* cache) {
+  return cache && cache->presence_armed;
+}
+
+static void hz6_transfer_presence_rebuild_counts(Hz6TransferCache* cache) {
+  if (!cache || !cache->objects) {
+    return;
+  }
+  hz6_transfer_zero_class_counts(cache);
+  for (size_t i = 0; i < cache->count; ++i) {
+    const Hz6TransferObject* object = &cache->objects[i];
+    if (hz6_transfer_object_counts_for_presence(object)) {
+      atomic_fetch_add_explicit(&cache->class_count[object->class_id], 1u,
+                                memory_order_release);
+    }
+  }
+}
+
+static void hz6_transfer_presence_maybe_arm(Hz6TransferCache* cache) {
+  if (!cache || cache->presence_armed ||
+      cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    return;
+  }
+  hz6_transfer_presence_rebuild_counts(cache);
+  cache->presence_armed = 1;
+  HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_arm_rebuild);
+}
+
+static void hz6_transfer_presence_maybe_disarm(Hz6TransferCache* cache) {
+  if (!cache || !cache->presence_armed ||
+      cache->count >= HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    return;
+  }
+  cache->presence_armed = 0;
+  hz6_transfer_zero_class_counts(cache);
+  HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_arm_disarm);
+}
+#endif
+
 static void hz6_transfer_presence_increment(Hz6TransferCache* cache,
                                             const Hz6TransferObject* object) {
   if (!cache || !object) {
@@ -55,6 +104,11 @@ static void hz6_transfer_presence_increment(Hz6TransferCache* cache,
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  if (!hz6_transfer_presence_armed(cache)) {
+    return;
+  }
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_increment);
@@ -80,6 +134,11 @@ static void hz6_transfer_presence_decrement(Hz6TransferCache* cache,
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  if (!hz6_transfer_presence_armed(cache)) {
+    return;
+  }
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_decrement);
@@ -119,6 +178,9 @@ void hz6_transfer_init(Hz6TransferCache* cache,
   for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
     atomic_store_explicit(&cache->class_count[i], 0, memory_order_relaxed);
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  cache->presence_armed = 0;
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   atomic_store_explicit(&cache->presence_gate_check, 0, memory_order_relaxed);
   atomic_store_explicit(&cache->presence_gate_hit, 0, memory_order_relaxed);
@@ -134,6 +196,12 @@ void hz6_transfer_init(Hz6TransferCache* cache,
   atomic_store_explicit(&cache->presence_update_below_min_decrement, 0,
                         memory_order_relaxed);
   atomic_store_explicit(&cache->presence_update_below_min_commit, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_arm_rebuild, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_arm_disarm, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_unarmed_probe, 0,
                         memory_order_relaxed);
   atomic_store_explicit(&cache->presence_invalid_class, 0,
                         memory_order_relaxed);
@@ -165,6 +233,10 @@ int hz6_transfer_push(Hz6TransferCache* cache, Hz6TransferObject object) {
   hz6_transfer_presence_increment(cache, &object);
 #endif
   cache->objects[cache->count++] = object;
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
+    HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  hz6_transfer_presence_maybe_arm(cache);
+#endif
   return 1;
 }
 
@@ -191,6 +263,10 @@ void hz6_transfer_cancel(Hz6TransferReservation* reservation) {
   Hz6TransferCache* cache = reservation->cache;
   if (reservation->index < cache->count) {
     cache->objects[reservation->index] = cache->objects[--cache->count];
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
+    HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+    hz6_transfer_presence_maybe_disarm(cache);
+#endif
   }
   reservation->cache = NULL;
   reservation->index = 0;
@@ -213,12 +289,20 @@ void hz6_transfer_commit(Hz6TransferReservation* reservation,
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
     hz6_transfer_presence_increment(cache, &object);
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
-    if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+        && hz6_transfer_presence_armed(cache)
+#endif
+    ) {
       HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_commit);
     }
 #endif
 #endif
     cache->objects[reservation->index] = object;
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
+    HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+    hz6_transfer_presence_maybe_arm(cache);
+#endif
   }
   reservation->cache = NULL;
   reservation->index = 0;
@@ -268,6 +352,9 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
     cache->objects[index] = cache->objects[--cache->count];
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
     hz6_transfer_presence_decrement(cache, out);
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+    hz6_transfer_presence_maybe_disarm(cache);
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
     if (presence_below_min) {
       HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_below_min_hit);
@@ -320,6 +407,12 @@ int hz6_transfer_class_maybe_present(Hz6TransferCache* cache,
   if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
     return 1;
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
+  if (!hz6_transfer_presence_armed(cache)) {
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_unarmed_probe);
+    return 1;
+  }
+#endif
   HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_check);
   if (hz6_transfer_load_u32(&cache->class_count[class_id]) == 0) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_miss);
@@ -360,6 +453,12 @@ void hz6_transfer_note_class_presence_stats(
       hz6_transfer_load_u32(&cache->presence_update_below_min_decrement);
   snapshot->transfer_class_presence_update_below_min_commit +=
       hz6_transfer_load_u32(&cache->presence_update_below_min_commit);
+  snapshot->transfer_class_presence_arm_rebuild +=
+      hz6_transfer_load_u32(&cache->presence_arm_rebuild);
+  snapshot->transfer_class_presence_arm_disarm +=
+      hz6_transfer_load_u32(&cache->presence_arm_disarm);
+  snapshot->transfer_class_presence_unarmed_probe +=
+      hz6_transfer_load_u32(&cache->presence_unarmed_probe);
   snapshot->transfer_class_presence_invalid_class +=
       hz6_transfer_load_u32(&cache->presence_invalid_class);
   snapshot->transfer_class_presence_underflow +=

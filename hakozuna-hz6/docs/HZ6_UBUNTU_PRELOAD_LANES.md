@@ -4460,3 +4460,91 @@ drop below threshold:
 
 Do not implement this as a blind `if (count < min) skip increment` patch; that
 would produce false-zero counts after the cache later crosses the threshold.
+
+## 2026-06-20 Transfer Presence Armed Maintenance
+
+`TransferPresenceArmedMaintenance-L1` is an opt-in research box:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1=1
+```
+
+Shape:
+
+```text
+below threshold:
+  class_count is not maintained
+  presence lookup always dense-scans
+
+threshold crossing:
+  class_count is rebuilt from the dense cache
+  cache becomes armed
+
+armed:
+  class_count is incrementally maintained
+  presence lookup may skip absent classes
+
+drop below threshold:
+  cache is disarmed
+  class_count is cleared
+```
+
+The owner-inbox tax runner exposes:
+
+```text
+p0_transfer_class_presence_min192_armed
+```
+
+Diagnostic command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_145349
+```
+
+Diagnostic R1:
+
+```text
+row                            min192  armed
+update_below_min_increment     374922  0
+update_below_min_decrement     370716  0
+update_below_min_commit        374922  0
+false_zero_shadow              0       0
+```
+
+Production R3:
+
+```text
+DIAGNOSTIC=0 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 3 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_145701
+```
+
+```text
+row             p0_off  armed
+cross128_r90    0.40M   0.39M
+remote90_short  2.66M   2.50M
+```
+
+Decision: `GO(research)/NO-GO(profile)`.  The armed design removes the
+below-threshold class_count update counters without introducing observed
+false-zero shadows, but the production R3 does not beat selected/off on the
+rows that matter.  Keep it as an opt-in research switch only.  Do not add it to
+`hz6-high-remote-transfer-presence-target`.
