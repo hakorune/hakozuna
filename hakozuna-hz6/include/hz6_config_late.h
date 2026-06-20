@@ -400,6 +400,13 @@
 #define HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1 0
 #endif
 
+#ifndef HZ6_ORIGIN_TRANSFER_PHASE_AGE_AUDIT_L1
+/* Diagnostic-only transfer phase age audit.  Stamps committed transfer objects
+ * with owner-local demand epochs and classifies pop/full/empty age shapes
+ * without changing allocator behavior. */
+#define HZ6_ORIGIN_TRANSFER_PHASE_AGE_AUDIT_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_INBOX_CORE_L1
 /* Owner-stable remote pending inbox core.  Producers publish descriptor
  * indices into an owner allocator per-class inbox; behavior stays off until a

@@ -574,8 +574,10 @@ void* hz6_front_reuse_transfer_with_descriptor(
       !hz6_allocator_profile_transfer_first(allocator)) {
     return NULL;
   }
+  hz6_allocator_origin_transfer_phase_audit_note_demand(allocator,
+                                                        class_id);
 
-  Hz6TransferObject transfer;
+  Hz6TransferObject transfer = {0};
   hz6_allocator_origin_transfer_audit_note_pop_attempt(allocator);
   int saw_transfer_object = 0;
   while (hz6_allocator_transfer_pop(allocator, class_id, &transfer)) {
@@ -647,6 +649,8 @@ void* hz6_front_reuse_transfer_with_descriptor(
   }
   if (!saw_transfer_object) {
     hz6_allocator_origin_transfer_audit_note_pop_empty(allocator);
+    hz6_allocator_origin_transfer_phase_audit_note_pop_empty(allocator,
+                                                            class_id);
   }
 
 #if HZ6_REMOTE_FREE_OVERFLOW_L1

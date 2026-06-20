@@ -5,11 +5,22 @@ int hz6_allocator_transfer_push(Hz6Allocator* allocator,
   if (!allocator) {
     return 0;
   }
+  hz6_allocator_origin_transfer_phase_audit_stamp(
+      allocator, &object, HZ6_TRANSFER_PUBLISH_DESTINATION,
+      allocator->owner.token);
+  hz6_allocator_origin_transfer_phase_audit_note_commit(allocator,
+                                                        &object);
   size_t producer_shard = hz6_profile_transfer_producer_shard(
       &allocator->profile, allocator->owner.token.slot, object.class_id);
-  return hz6_transfer_backend_push_to_shard(&allocator->transfer_backend,
-                                            object,
-                                            producer_shard);
+  int ok = hz6_transfer_backend_push_to_shard(&allocator->transfer_backend,
+                                              object,
+                                              producer_shard);
+  if (ok) {
+    return 1;
+  }
+  hz6_allocator_origin_transfer_phase_audit_note_commit_cancel(allocator,
+                                                               &object);
+  return 0;
 }
 
 int hz6_allocator_transfer_reserve(Hz6Allocator* allocator,
@@ -42,10 +53,14 @@ int hz6_allocator_transfer_pop(Hz6Allocator* allocator,
   }
   size_t home_shard = hz6_profile_transfer_consumer_shard(
       &allocator->profile, allocator->owner.token.slot, class_id);
-  return hz6_transfer_backend_pop_from_shard(&allocator->transfer_backend,
-                                             class_id,
-                                             home_shard,
-                                             out);
+  int ok = hz6_transfer_backend_pop_from_shard(&allocator->transfer_backend,
+                                               class_id,
+                                               home_shard,
+                                               out);
+  if (ok) {
+    hz6_allocator_origin_transfer_phase_audit_note_pop(allocator, out);
+  }
+  return ok;
 }
 
 int hz6_allocator_remote_free_overflow_reserve(

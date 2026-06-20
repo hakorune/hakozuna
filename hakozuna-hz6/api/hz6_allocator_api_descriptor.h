@@ -517,6 +517,14 @@ Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
     Hz6ObjectDescriptor* descriptor,
     void* ptr);
 
+Hz6RemoteFreeCommitStatus
+hz6_allocator_remote_free_active_descriptor_status_with_audit(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr,
+    Hz6TransferPublishKind publish_kind,
+    Hz6OwnerToken producer_token);
+
 int hz6_allocator_remote_free_active_descriptor(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,

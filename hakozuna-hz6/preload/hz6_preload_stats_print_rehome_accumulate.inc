@@ -436,6 +436,124 @@
         stats.origin_transfer_full_same_class_lt_3quarter;
     origin_transfer_full_same_class_ge_3quarter +=
         stats.origin_transfer_full_same_class_ge_3quarter;
+    origin_phase_audit_destination_publish +=
+        stats.origin_phase_audit_destination_publish;
+    origin_phase_audit_origin_fallback_publish +=
+        stats.origin_phase_audit_origin_fallback_publish;
+    origin_phase_audit_commit_without_stamp +=
+        stats.origin_phase_audit_commit_without_stamp;
+    origin_phase_audit_pop_without_stamp +=
+        stats.origin_phase_audit_pop_without_stamp;
+    origin_phase_audit_unknown_publish_kind +=
+        stats.origin_phase_audit_unknown_publish_kind;
+    origin_phase_audit_invalid_class +=
+        stats.origin_phase_audit_invalid_class;
+    origin_phase_audit_class_count_underflow +=
+        stats.origin_phase_audit_class_count_underflow;
+    origin_phase_audit_class_count_over_capacity +=
+        stats.origin_phase_audit_class_count_over_capacity;
+    origin_phase_audit_occupancy_sum_mismatch +=
+        stats.origin_phase_audit_occupancy_sum_mismatch;
+    origin_phase_audit_producer_count_underflow +=
+        stats.origin_phase_audit_producer_count_underflow;
+    origin_phase_audit_generation_mismatch +=
+        stats.origin_phase_audit_generation_mismatch;
+    origin_phase_audit_epoch_order_invalid +=
+        stats.origin_phase_audit_epoch_order_invalid;
+    origin_phase_audit_pop_global_age_0 +=
+        stats.origin_phase_audit_pop_global_age_0;
+    origin_phase_audit_pop_global_age_1 +=
+        stats.origin_phase_audit_pop_global_age_1;
+    origin_phase_audit_pop_global_age_2_3 +=
+        stats.origin_phase_audit_pop_global_age_2_3;
+    origin_phase_audit_pop_global_age_4_7 +=
+        stats.origin_phase_audit_pop_global_age_4_7;
+    origin_phase_audit_pop_global_age_8_15 +=
+        stats.origin_phase_audit_pop_global_age_8_15;
+    origin_phase_audit_pop_global_age_16_63 +=
+        stats.origin_phase_audit_pop_global_age_16_63;
+    origin_phase_audit_pop_global_age_64_plus +=
+        stats.origin_phase_audit_pop_global_age_64_plus;
+    origin_phase_audit_pop_class_age_0 +=
+        stats.origin_phase_audit_pop_class_age_0;
+    origin_phase_audit_pop_class_age_1 +=
+        stats.origin_phase_audit_pop_class_age_1;
+    origin_phase_audit_pop_class_age_2_3 +=
+        stats.origin_phase_audit_pop_class_age_2_3;
+    origin_phase_audit_pop_class_age_4_7 +=
+        stats.origin_phase_audit_pop_class_age_4_7;
+    origin_phase_audit_pop_class_age_8_15 +=
+        stats.origin_phase_audit_pop_class_age_8_15;
+    origin_phase_audit_pop_class_age_16_63 +=
+        stats.origin_phase_audit_pop_class_age_16_63;
+    origin_phase_audit_pop_class_age_64_plus +=
+        stats.origin_phase_audit_pop_class_age_64_plus;
+    origin_phase_audit_full_requested_age_0 +=
+        stats.origin_phase_audit_full_requested_age_0;
+    origin_phase_audit_full_requested_age_1 +=
+        stats.origin_phase_audit_full_requested_age_1;
+    origin_phase_audit_full_requested_age_2_3 +=
+        stats.origin_phase_audit_full_requested_age_2_3;
+    origin_phase_audit_full_requested_age_4_7 +=
+        stats.origin_phase_audit_full_requested_age_4_7;
+    origin_phase_audit_full_requested_age_8_15 +=
+        stats.origin_phase_audit_full_requested_age_8_15;
+    origin_phase_audit_full_requested_age_16_63 +=
+        stats.origin_phase_audit_full_requested_age_16_63;
+    origin_phase_audit_full_requested_age_64_plus +=
+        stats.origin_phase_audit_full_requested_age_64_plus;
+    origin_phase_audit_empty_requested_age_0 +=
+        stats.origin_phase_audit_empty_requested_age_0;
+    origin_phase_audit_empty_requested_age_1 +=
+        stats.origin_phase_audit_empty_requested_age_1;
+    origin_phase_audit_empty_requested_age_2_3 +=
+        stats.origin_phase_audit_empty_requested_age_2_3;
+    origin_phase_audit_empty_requested_age_4_7 +=
+        stats.origin_phase_audit_empty_requested_age_4_7;
+    origin_phase_audit_empty_requested_age_8_15 +=
+        stats.origin_phase_audit_empty_requested_age_8_15;
+    origin_phase_audit_empty_requested_age_16_63 +=
+        stats.origin_phase_audit_empty_requested_age_16_63;
+    origin_phase_audit_empty_requested_age_64_plus +=
+        stats.origin_phase_audit_empty_requested_age_64_plus;
+    origin_phase_audit_full_destination_occupancy_total +=
+        stats.origin_phase_audit_full_destination_occupancy_total;
+    origin_phase_audit_full_origin_fallback_occupancy_total +=
+        stats.origin_phase_audit_full_origin_fallback_occupancy_total;
+    if (stats.origin_phase_audit_full_destination_occupancy_max >
+        origin_phase_audit_full_destination_occupancy_max) {
+      origin_phase_audit_full_destination_occupancy_max =
+          stats.origin_phase_audit_full_destination_occupancy_max;
+    }
+    if (stats.origin_phase_audit_full_origin_fallback_occupancy_max >
+        origin_phase_audit_full_origin_fallback_occupancy_max) {
+      origin_phase_audit_full_origin_fallback_occupancy_max =
+          stats.origin_phase_audit_full_origin_fallback_occupancy_max;
+    }
+    origin_phase_audit_empty_destination_occupancy_total +=
+        stats.origin_phase_audit_empty_destination_occupancy_total;
+    origin_phase_audit_empty_origin_fallback_occupancy_total +=
+        stats.origin_phase_audit_empty_origin_fallback_occupancy_total;
+    if (stats.origin_phase_audit_empty_destination_occupancy_max >
+        origin_phase_audit_empty_destination_occupancy_max) {
+      origin_phase_audit_empty_destination_occupancy_max =
+          stats.origin_phase_audit_empty_destination_occupancy_max;
+    }
+    if (stats.origin_phase_audit_empty_origin_fallback_occupancy_max >
+        origin_phase_audit_empty_origin_fallback_occupancy_max) {
+      origin_phase_audit_empty_origin_fallback_occupancy_max =
+          stats.origin_phase_audit_empty_origin_fallback_occupancy_max;
+    }
+    if (stats.origin_phase_audit_full_largest_producer_bucket_max >
+        origin_phase_audit_full_largest_producer_bucket_max) {
+      origin_phase_audit_full_largest_producer_bucket_max =
+          stats.origin_phase_audit_full_largest_producer_bucket_max;
+    }
+    if (stats.origin_phase_audit_full_distinct_producer_bucket_max >
+        origin_phase_audit_full_distinct_producer_bucket_max) {
+      origin_phase_audit_full_distinct_producer_bucket_max =
+          stats.origin_phase_audit_full_distinct_producer_bucket_max;
+    }
     remote_free_backpressure_origin_drain_attempt +=
         stats.remote_free_backpressure_origin_drain_attempt;
     remote_free_backpressure_origin_drain_success +=

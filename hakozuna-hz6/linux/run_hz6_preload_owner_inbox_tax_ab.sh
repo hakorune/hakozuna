@@ -197,7 +197,7 @@ build_variant() {
   esac
   OUT_DIR="${OUTDIR}/build/${variant}" \
     HZ6_PRELOAD_PRESERVE_PHASE_COUNTERS="$DIAGNOSTIC" \
-    HZ6_EXTRA_CFLAGS="${HZ6_EXTRA_CFLAGS:-}$([[ "$DIAGNOSTIC" -ne 0 ]] && printf ' -DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1')" \
+    HZ6_EXTRA_CFLAGS="${HZ6_EXTRA_CFLAGS:-}$([[ "$DIAGNOSTIC" -ne 0 ]] && printf ' -DHZ6_DIAGNOSTIC_PROBES=1 -DHZ6_TOY_SMALL_HOTPATH_DIAG_L1=1 -DHZ6_ORIGIN_TRANSFER_PHASE_AGE_AUDIT_L1=1')" \
     HZ6_PRELOAD_DEFAULT_CFLAGS="$(hz6_preload_join_flags "${flags[@]}")" \
     "${HZ6_DIR}/linux/build_hz6_preload.sh" \
     > "${OUTDIR}/${variant}_build.log" 2>&1
@@ -295,6 +295,56 @@ counter_keys=(
   origin_transfer_full_same_class_lt_half
   origin_transfer_full_same_class_lt_3quarter
   origin_transfer_full_same_class_ge_3quarter
+  origin_phase_audit_destination_publish
+  origin_phase_audit_origin_fallback_publish
+  origin_phase_audit_commit_without_stamp
+  origin_phase_audit_pop_without_stamp
+  origin_phase_audit_unknown_publish_kind
+  origin_phase_audit_invalid_class
+  origin_phase_audit_class_count_underflow
+  origin_phase_audit_class_count_over_capacity
+  origin_phase_audit_occupancy_sum_mismatch
+  origin_phase_audit_producer_count_underflow
+  origin_phase_audit_generation_mismatch
+  origin_phase_audit_epoch_order_invalid
+  origin_phase_audit_pop_global_age_0
+  origin_phase_audit_pop_global_age_1
+  origin_phase_audit_pop_global_age_2_3
+  origin_phase_audit_pop_global_age_4_7
+  origin_phase_audit_pop_global_age_8_15
+  origin_phase_audit_pop_global_age_16_63
+  origin_phase_audit_pop_global_age_64_plus
+  origin_phase_audit_pop_class_age_0
+  origin_phase_audit_pop_class_age_1
+  origin_phase_audit_pop_class_age_2_3
+  origin_phase_audit_pop_class_age_4_7
+  origin_phase_audit_pop_class_age_8_15
+  origin_phase_audit_pop_class_age_16_63
+  origin_phase_audit_pop_class_age_64_plus
+  origin_phase_audit_full_requested_age_0
+  origin_phase_audit_full_requested_age_1
+  origin_phase_audit_full_requested_age_2_3
+  origin_phase_audit_full_requested_age_4_7
+  origin_phase_audit_full_requested_age_8_15
+  origin_phase_audit_full_requested_age_16_63
+  origin_phase_audit_full_requested_age_64_plus
+  origin_phase_audit_empty_requested_age_0
+  origin_phase_audit_empty_requested_age_1
+  origin_phase_audit_empty_requested_age_2_3
+  origin_phase_audit_empty_requested_age_4_7
+  origin_phase_audit_empty_requested_age_8_15
+  origin_phase_audit_empty_requested_age_16_63
+  origin_phase_audit_empty_requested_age_64_plus
+  origin_phase_audit_full_destination_occupancy_total
+  origin_phase_audit_full_origin_fallback_occupancy_total
+  origin_phase_audit_full_destination_occupancy_max
+  origin_phase_audit_full_origin_fallback_occupancy_max
+  origin_phase_audit_empty_destination_occupancy_total
+  origin_phase_audit_empty_origin_fallback_occupancy_total
+  origin_phase_audit_empty_destination_occupancy_max
+  origin_phase_audit_empty_origin_fallback_occupancy_max
+  origin_phase_audit_full_largest_producer_bucket_max
+  origin_phase_audit_full_distinct_producer_bucket_max
   remote_pending_direct_gate_load
   remote_pending_direct_gate_hit
   remote_pending_direct_claim_attempt

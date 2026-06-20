@@ -51,6 +51,7 @@ HZ6_LIB_SOURCES=(
   "${HZ6_DIR}/api/hz6_allocator_descriptor_release.c"
   "${HZ6_DIR}/api/hz6_allocator_owner_dead.c"
   "${HZ6_DIR}/api/hz6_allocator_origin_transfer_demand_audit.c"
+  "${HZ6_DIR}/api/hz6_allocator_origin_transfer_phase_audit.c"
   "${HZ6_DIR}/api/hz6_allocator_orphan_release.c"
   "${HZ6_DIR}/api/hz6_allocator_orphan_adopt_prepare.c"
   "${HZ6_DIR}/api/hz6_allocator_orphan_adopt_commit.c"

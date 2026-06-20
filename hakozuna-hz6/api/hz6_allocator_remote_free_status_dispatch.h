@@ -205,9 +205,9 @@ static inline int hz6_remote_free_status_try_origin_transfer(
     return 0;
   }
   Hz6RemoteFreeCommitStatus origin_status =
-      hz6_allocator_remote_free_active_descriptor_status(origin,
-                                                        descriptor,
-                                                        ptr);
+      hz6_allocator_remote_free_active_descriptor_status_with_audit(
+          origin, descriptor, ptr, HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK,
+          allocator->owner.token);
 #if HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_DRAIN_L1
   if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_BACKPRESSURE) {
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
@@ -218,8 +218,10 @@ static inline int hz6_remote_free_status_try_origin_transfer(
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
       ++allocator->stats.remote_free_backpressure_origin_drain_success;
 #endif
-      origin_status = hz6_allocator_remote_free_active_descriptor_status(
-          origin, descriptor, ptr);
+      origin_status =
+          hz6_allocator_remote_free_active_descriptor_status_with_audit(
+              origin, descriptor, ptr, HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK,
+              allocator->owner.token);
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
       if (origin_status == HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED) {
         ++allocator->stats
@@ -238,6 +240,8 @@ static inline int hz6_remote_free_status_try_origin_transfer(
       size_t origin_class_count =
           hz6_allocator_transfer_count_class(origin, route.class_id);
       hz6_allocator_origin_transfer_audit_note_origin_full(
+          allocator, origin, route.class_id);
+      hz6_allocator_origin_transfer_phase_audit_note_origin_full(
           allocator, origin, route.class_id);
       allocator->stats.remote_free_backpressure_origin_full_transfer_count_total +=
           origin_transfer_count;

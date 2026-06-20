@@ -3794,6 +3794,74 @@ class mismatch and producer/consumer phase timing explicitly.  This result does
 not justify broad capacity increase, remote-thread drain, owner-inbox
 reintroduction, or generic overflow.
 
+## 2026-06-20 OriginTransferPhaseAgeAudit-L1
+
+Added a diagnostic-only phase-age audit for transfer inventory.  The audit
+records owner-local demand epochs, stamps committed transfer objects with
+destination-vs-origin-fallback publish kind, and reports pop/full/empty age
+buckets plus publish-kind occupancy snapshots.  With the flag off, production
+layout and production counters stay unchanged.
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_095645
+```
+
+Observed diagnostic counters:
+
+```text
+row             origin_success  destination_publish  origin_fallback_publish
+remote50                 7810                 2980                     7810
+remote90_short           5048                50713                     5048
+
+row             unknown_kind  commit_without_stamp  pop_without_stamp  generation_mismatch
+remote50                  0                     0                  0                    0
+remote90_short            0                     0                  0                    0
+
+row             full_dest_occ_total  full_origin_occ_total  full_dest_max  full_origin_max
+remote50                   122187                7288532             10              259
+remote90_short              30293                  12761            238              210
+```
+
+Production smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 1 \
+  --rows remote50 \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_095655
+```
+
+The production run reports all `origin_phase_audit_*` counters as zero because
+the audit flag is off.  The diagnostic smoke initially exposed uninitialized
+audit tags on stack-created `Hz6TransferObject`s; those construction sites now
+zero-initialize the object before stamping.
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The audit now separates normal
+destination transfer inventory from origin-fallback inventory and shows the
+remaining full/empty tail can be classified without changing transfer behavior.
+Use the next design step to decide whether stale cross-class inventory,
+fresh phase lag, or demanded-not-consumed inventory dominates before adding any
+owner-local maintenance or victim policy.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

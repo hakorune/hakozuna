@@ -364,6 +364,39 @@ void hz6_allocator_origin_transfer_audit_note_origin_full(
     const Hz6Allocator* origin,
     uint16_t class_id);
 
+void hz6_allocator_origin_transfer_phase_audit_init(Hz6Allocator* allocator);
+
+void hz6_allocator_origin_transfer_phase_audit_note_demand(
+    Hz6Allocator* allocator,
+    uint16_t class_id);
+
+void hz6_allocator_origin_transfer_phase_audit_stamp(
+    Hz6Allocator* allocator,
+    Hz6TransferObject* object,
+    Hz6TransferPublishKind publish_kind,
+    Hz6OwnerToken producer_token);
+
+void hz6_allocator_origin_transfer_phase_audit_note_commit(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_commit_cancel(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_pop(
+    Hz6Allocator* allocator,
+    const Hz6TransferObject* object);
+
+void hz6_allocator_origin_transfer_phase_audit_note_origin_full(
+    Hz6Allocator* observer,
+    const Hz6Allocator* origin,
+    uint16_t requested_class_id);
+
+void hz6_allocator_origin_transfer_phase_audit_note_pop_empty(
+    Hz6Allocator* allocator,
+    uint16_t requested_class_id);
+
 void hz6_allocator_origin_transfer_audit_note_pop_invalid(
     Hz6Allocator* allocator);
 

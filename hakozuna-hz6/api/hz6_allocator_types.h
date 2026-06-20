@@ -450,6 +450,16 @@ struct Hz6Allocator {
 #endif
   Hz6TransferObject transfer_objects[HZ6_TRANSFER_CACHE_CAPACITY];
   Hz6TransferBackend transfer_backend;
+#if HZ6_ORIGIN_TRANSFER_PHASE_AGE_AUDIT_L1 && HZ6_DIAGNOSTIC_PROBES
+  _Atomic uint32_t transfer_phase_demand_epoch;
+  _Atomic uint32_t
+      transfer_phase_class_demand_epoch[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t
+      transfer_phase_class_occupancy[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t transfer_phase_destination_occupancy;
+  _Atomic uint32_t transfer_phase_origin_fallback_occupancy;
+  _Atomic uint32_t transfer_phase_producer_bucket_occupancy[16];
+#endif
 #if HZ6_REMOTE_FREE_OVERFLOW_L1
   Hz6TransferObject remote_free_overflow_objects
       [HZ6_REMOTE_FREE_OVERFLOW_CAPACITY];

@@ -201,10 +201,13 @@ static Hz6RemoteFreeCommitStatus hz6_remote_free_commit_status_note(
   return status;
 }
 
-Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
+Hz6RemoteFreeCommitStatus
+hz6_allocator_remote_free_active_descriptor_status_with_audit(
     Hz6Allocator* allocator,
     Hz6ObjectDescriptor* descriptor,
-    void* ptr) {
+    void* ptr,
+    Hz6TransferPublishKind publish_kind,
+    Hz6OwnerToken producer_token) {
   if (!allocator || !descriptor || !ptr ||
       descriptor->state != HZ6_STATE_ACTIVE || descriptor->ptr != ptr) {
     return hz6_remote_free_commit_status_note(
@@ -225,11 +228,13 @@ Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
         allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
   }
 
-  Hz6TransferObject object;
+  Hz6TransferObject object = {0};
   object.ptr = ptr;
   object.descriptor = descriptor;
   object.class_id = descriptor->class_id;
   object.generation = descriptor->generation;
+  hz6_allocator_origin_transfer_phase_audit_stamp(
+      allocator, &object, publish_kind, producer_token);
 
 #if HZ6_REMOTE_FREE_COMMIT_L1
   Hz6TransferReservation reservation = {0};
@@ -270,6 +275,7 @@ Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
   descriptor->state = HZ6_STATE_TRANSFER_FREE;
   hz6_allocator_set_descriptor_owner(allocator, descriptor,
                                      (Hz6OwnerToken){0});
+  hz6_allocator_origin_transfer_phase_audit_note_commit(allocator, &object);
   hz6_allocator_transfer_commit(&reservation, object);
 #if HZ6_REMOTE_FREE_COMMIT_OBSERVE_L1 && HZ6_DIAGNOSTIC_PROBES
   ++allocator->stats.transfer_reserve_success;
@@ -304,6 +310,15 @@ Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
   return hz6_remote_free_commit_status_note(
       allocator, HZ6_REMOTE_FREE_COMMIT_STATUS_COMMITTED);
 #endif
+}
+
+Hz6RemoteFreeCommitStatus hz6_allocator_remote_free_active_descriptor_status(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    void* ptr) {
+  return hz6_allocator_remote_free_active_descriptor_status_with_audit(
+      allocator, descriptor, ptr, HZ6_TRANSFER_PUBLISH_DESTINATION,
+      allocator ? allocator->owner.token : (Hz6OwnerToken){0});
 }
 
 int hz6_allocator_remote_free_active_descriptor(
