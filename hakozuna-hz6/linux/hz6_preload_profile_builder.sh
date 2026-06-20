@@ -52,6 +52,8 @@ hz6_preload_profile_owner_inbox_toy2_route_before_maps_cflags() {
     "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 1
   hz6_preload_replace_define \
     "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 1
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1 1
 }
 
 hz6_preload_profile_owner_inbox_off_cflags() {

@@ -260,7 +260,12 @@
           "free_route_before_maps_attempt=%zu "
           "free_route_before_maps_arm_skip=%zu "
           "free_route_before_maps_foreign_dispatch=%zu "
+          "free_route_before_maps_local_dispatch=%zu "
           "free_route_before_maps_fallback=%zu "
+          "free_route_before_maps_fallback_local_valid=%zu "
+          "free_route_before_maps_fallback_owned_invalid=%zu "
+          "free_route_before_maps_fallback_proven_external=%zu "
+          "free_route_before_maps_fallback_other=%zu "
           "free_resolved_foreign_direct_dispatch=%zu "
           "free_resolved_duplicate_route_lookup_avoided=%zu "
           "mh_probe=%zu mh_would=%zu "
@@ -290,7 +295,17 @@
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_before_maps_arm_skip),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(
               free_route_before_maps_foreign_dispatch),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_local_dispatch),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_route_before_maps_fallback),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_local_valid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_owned_invalid),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_proven_external),
+          HZ6_PRELOAD_PHASE_LOAD_FIELD(
+              free_route_before_maps_fallback_other),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(free_resolved_foreign_direct_dispatch),
           HZ6_PRELOAD_PHASE_LOAD_FIELD(
               free_resolved_duplicate_route_lookup_avoided),

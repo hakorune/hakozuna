@@ -335,8 +335,35 @@ static int hz6_preload_foreign_route_before_maps_try(Hz6Allocator* allocator,
                                             before_maps_route.visible_hit);
     return 1;
   }
+#if HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_LOCAL_VALID &&
+      before_maps_route.route.kind == HZ6_ROUTE_VALID &&
+      !before_maps_route.visible_hit) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_local_dispatch);
+    hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                            before_maps_route.route,
+                                            before_maps_route.visible_hit);
+    return 1;
+  }
+#endif
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.free_route_before_maps_fallback);
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_LOCAL_VALID) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_route_before_maps_fallback_local_valid);
+  } else if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_OWNED_INVALID) {
+    hz6_preload_phase_count(&g_hz6_preload_phase_stats
+                                 .free_route_before_maps_fallback_owned_invalid);
+  } else if (before_maps_route.resolve_kind ==
+             HZ6_FREE_ROUTE_PROVEN_EXTERNAL) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats
+             .free_route_before_maps_fallback_proven_external);
+  } else {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_fallback_other);
+  }
   return 0;
 }
 #endif

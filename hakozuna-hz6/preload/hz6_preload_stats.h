@@ -63,7 +63,12 @@ typedef struct Hz6PreloadPhaseStats {
   _Atomic(size_t) free_route_before_maps_attempt;
   _Atomic(size_t) free_route_before_maps_arm_skip;
   _Atomic(size_t) free_route_before_maps_foreign_dispatch;
+  _Atomic(size_t) free_route_before_maps_local_dispatch;
   _Atomic(size_t) free_route_before_maps_fallback;
+  _Atomic(size_t) free_route_before_maps_fallback_local_valid;
+  _Atomic(size_t) free_route_before_maps_fallback_owned_invalid;
+  _Atomic(size_t) free_route_before_maps_fallback_proven_external;
+  _Atomic(size_t) free_route_before_maps_fallback_other;
   _Atomic(size_t) free_resolved_foreign_direct_dispatch;
   _Atomic(size_t) free_resolved_duplicate_route_lookup_avoided;
   _Atomic(size_t) free_midpage_hint_probe;

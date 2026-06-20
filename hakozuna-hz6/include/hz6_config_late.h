@@ -766,6 +766,13 @@
 #define HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1
+/* Optional route-before-maps extension: after the arming gate is open, consume
+ * authoritative local-valid resolver proofs directly instead of falling back to
+ * active maps and a second route lookup. */
+#define HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1 0
+#endif
+
 #if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 || \
     HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 || \
     HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1

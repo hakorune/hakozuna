@@ -68,6 +68,45 @@ Stats R1:
 | `remote90` | 960,452 | 863,622 | 74,064 |
 | `cross128_r90` | 960,452 | 857,621 | 59,814 |
 
+Follow-up observation:
+
+`PreloadRouteBeforeMapsLocalDispatch-L1` keeps the same TLS-armed boundary, but
+also consumes local-valid resolver proof before active-map probes when the
+resolver did not find a visible active-map hit:
+
+```text
+LOCAL_VALID + valid route + visible_hit == 0:
+  dispatch with hz6_free_with_resolved_route_after_maps()
+```
+
+Stats R1:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_local_dispatch_stats_r1_20260620_191635`
+
+| row | before-map attempts | early foreign dispatch | early local dispatch | fallback | fallback proven external | after-map route lookup |
+|---|---:|---:|---:|---:|---:|---:|
+| `local0` | 0 | 0 | 0 | 0 | 0 | 81 |
+| `remote50` | 80,302 | 39,697 | 40,605 | 0 | 0 | 19 |
+| `remote90` | 960,421 | 859,777 | 96,191 | 4,453 | 4,453 | 4,473 |
+| `cross128_r90` | 960,327 | 850,617 | 95,276 | 14,434 | 14,434 | 14,453 |
+
+This removes most remaining after-map route lookups in mixed remote rows, but
+the stats build is intentionally not used for performance judgment.
+
+Production-shaped R10:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_local_dispatch_r10_20260620_191859`
+
+| row | toy2_split base | local-dispatch route-before-maps | Decision |
+|---|---:|---:|---|
+| `local0` | 16.29M | 16.51M | improved / no local tax |
+| `remote50` | 13.87M | 14.10M | improved |
+| `remote90` | 11.23M | 11.46M | improved |
+| `cross128_r90` | 10.78M | 28.59M | improved |
+
+The local-valid branch removes the remaining mixed-row route lookup tail without
+losing the TLS-armed cross128 gain in this paired run.
+
 ## Decision
 
 ```text
@@ -78,13 +117,19 @@ PreloadForeignRouteBeforeMaps-L1:
 PreloadForeignRouteBeforeMapsArmed-L1:
   GO(explicit cross128 profile candidate)
   HOLD(default)
+
+PreloadRouteBeforeMapsLocalDispatch-L1:
+  GO(explicit profile candidate)
+  HOLD(default)
 ```
 
 The box directly attacks the tiny cross-owner free-path work count by consuming
 foreign resolver proof before active-map probes.  It is strong on
 `cross128_r90` and does not hurt `remote50` in the paired R10.  TLS arming
-removes the local0 tax, but `remote90` is still slightly lower, so this remains
-an explicit profile candidate rather than selected/default.
+removes the local0 tax, and local-valid dispatch recovers the remaining
+`remote90` tax in the paired production run.  This is now the shape used by the
+explicit profile candidate, but it remains separate from selected/default until
+broader allocator comparisons and cross-platform checks are done.
 
 Explicit alias:
 
@@ -101,17 +146,17 @@ hz6-cross128-toy2-route-before-maps-target
 
 ## Next
 
-The next box should preserve the early-foreign win while reducing the remaining
-`remote90` tax.
+The next box should preserve this explicit profile shape and avoid stacking
+additional broad free-path changes without fresh A/B evidence.
 Candidates:
 
 ```text
-Remote90AwareRouteBeforeMapsGate-L1
-  reduce fallback resolver attempts on mixed remote90
-
 Cross128ProfileRouteBeforeMaps-L1
-  keep as explicit profile if mixed remote90 remains lower
+  keep as explicit profile and compare against allocator frontier
+
+SelectedDefaultRouteBeforeMaps-L1
+  HOLD until Linux x86_64, Windows x64, and local/guard rows all pass
 ```
 
 Do not enable route-before-maps unconditionally in the selected/default preload
-lane.
+lane without a separate default-promotion box.
