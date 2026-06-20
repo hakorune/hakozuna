@@ -33,6 +33,14 @@ typedef struct H8Stats {
   size_t local_free_count;
   size_t remote_publish_count;
   size_t remote_collect_count;
+  size_t owner_publish_enter_count;
+  size_t owner_publish_exit_count;
+  size_t owner_exit_count;
+  size_t pending_enqueue_count;
+  size_t pending_dequeue_count;
+  size_t orphan_handoff_count;
+  size_t adopt_success_count;
+  size_t adopt_fail_count;
   size_t invalid_count;
   size_t miss_count;
   size_t owner_transition_count;

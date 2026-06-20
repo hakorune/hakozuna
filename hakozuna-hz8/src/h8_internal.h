@@ -110,6 +110,14 @@ typedef struct H8Global {
   atomic_size_t local_free_count;
   atomic_size_t remote_publish_count;
   atomic_size_t remote_collect_count;
+  atomic_size_t owner_publish_enter_count;
+  atomic_size_t owner_publish_exit_count;
+  atomic_size_t owner_exit_count;
+  atomic_size_t pending_enqueue_count;
+  atomic_size_t pending_dequeue_count;
+  atomic_size_t orphan_handoff_count;
+  atomic_size_t adopt_success_count;
+  atomic_size_t adopt_fail_count;
   atomic_size_t invalid_count;
   atomic_size_t miss_count;
   atomic_size_t owner_transition_count;
@@ -299,6 +307,7 @@ void h8_owner_remove_owned_span(H8OwnerRecord* owner, H8Span* span);
 void h8_owner_add_orphan_span(H8OwnerRecord* owner, H8Span* span);
 void h8_owner_remove_orphan_span(H8OwnerRecord* owner, H8Span* span);
 bool h8_owner_acquire_span_as_orphan(H8OwnerRecord* owner, H8Span* span);
+bool h8_owner_wait_publishers_zero(H8OwnerRecord* owner);
 static inline H8OwnerRecord* h8_owner_by_slot(uint32_t slot) {
   if (slot >= H8_OWNER_MAX) {
     return NULL;

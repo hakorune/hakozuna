@@ -1,8 +1,5 @@
 #include "h8_internal.h"
 
-#include <sched.h>
-#include <string.h>
-
 static void h8_owner_close_gate(H8OwnerRecord* owner) {
   uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
   for (;;) {
@@ -16,6 +13,7 @@ static void h8_owner_close_gate(H8OwnerRecord* owner) {
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
+      atomic_fetch_add_explicit(&h8g.owner_exit_count, 1, memory_order_relaxed);
       return;
     }
   }
@@ -26,10 +24,9 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     return;
   }
   h8_owner_close_gate(owner);
-  while (h8_ctl_unpack(atomic_load_explicit(&owner->control, memory_order_acquire)).publish_refs != 0) {
-    sched_yield();
-  }
+  h8_owner_wait_publishers_zero(owner);
   h8_collect_owner_pending(owner);
+
   pthread_mutex_lock(&owner->owned_lock);
   H8Span* span = owner->owned_head;
   owner->owned_head = NULL;
@@ -46,6 +43,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
       span->owner_generation = h8_orphan_owner()->generation;
       h8_owner_add_orphan_span(h8_orphan_owner(), span);
       atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
+      atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
     }
     span = next;
   }

@@ -7,6 +7,7 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   } while (!atomic_compare_exchange_weak_explicit(
       &owner->pending_head, &head, span, memory_order_release,
       memory_order_relaxed));
+  atomic_fetch_add_explicit(&h8g.pending_enqueue_count, 1, memory_order_relaxed);
 }
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
@@ -23,7 +24,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   (void)ptr;
   if (span->owner_slot != owner->slot ||
       span->owner_generation != owner->generation) {
-    atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   if (span->span_state != H8_SPAN_OWNED_ACTIVE) {
@@ -86,6 +86,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
                           memory_order_release);
     atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
     atomic_fetch_add_explicit(&h8g.remote_collect_count, 1, memory_order_relaxed);
+    atomic_fetch_add_explicit(&h8g.pending_dequeue_count, 1, memory_order_relaxed);
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
