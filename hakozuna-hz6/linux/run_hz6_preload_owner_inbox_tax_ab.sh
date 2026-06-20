@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192,p0_transfer_presence_class1,p0_transfer_presence_class2,p0_transfer_presence_small_class,p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_armed_lock,p0_transfer_class_presence_min192_scan64,p0_transfer_class_presence_min192_armed,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
+  --variants CSV p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192,p0_transfer_presence_class1,p0_transfer_presence_class2,p0_transfer_presence_small_class,p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_armed_lock,p0_transfer_class_presence_min192_scan64,p0_transfer_class_presence_min192_armed,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_split_maintenance_class2,p1_external_split_maintenance_small_class,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short,cross128_r90 (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -49,6 +49,10 @@ Variants:
   p1_external_route_pin      p1_external plus production inline route-pin trust
   p1_external_split_maintenance
                               external-only front maintenance, full source-gate maintenance
+  p1_external_split_maintenance_class2
+                              split maintenance plus Toy class <=2 transfer shard selection
+  p1_external_split_maintenance_small_class
+                              split maintenance plus Toy class <=3 transfer shard selection
   p1_external_small_class    p1_external plus HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID=3
   p0_transfer_presence_class1
                               p0 transfer presence plus class-id shard for Toy <=64B
@@ -94,7 +98,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p0_transfer_class_presence|p0_transfer_class_presence_min192|p0_transfer_presence_class1|p0_transfer_presence_class2|p0_transfer_presence_small_class|p0_transfer_class_presence_min192_lock|p0_transfer_class_presence_min192_armed_lock|p0_transfer_class_presence_min192_scan64|p0_transfer_class_presence_min192_armed|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p0_transfer_class_presence|p0_transfer_class_presence_min192|p0_transfer_presence_class1|p0_transfer_presence_class2|p0_transfer_presence_small_class|p0_transfer_class_presence_min192_lock|p0_transfer_class_presence_min192_armed_lock|p0_transfer_class_presence_min192_scan64|p0_transfer_class_presence_min192_armed|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_split_maintenance_class2|p1_external_split_maintenance_small_class|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -237,6 +241,18 @@ build_variant() {
       hz6_preload_effective_owner_inbox_external_cflags flags 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
+      ;;
+    p1_external_split_maintenance_class2)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID 2
+      ;;
+    p1_external_split_maintenance_small_class)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_FRONT_MAINTENANCE_EXTERNAL_ONLY_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_PROFILE_TRANSFER_SHARD_CLASS_MAX_ID 3
       ;;
     p1_external_small_class)
       hz6_preload_effective_owner_inbox_external_cflags flags 1

@@ -398,3 +398,53 @@ R3 jump.  This keeps the maintenance-shape direction alive while ruling out a
 simple selected promotion of the existing split variant.  The next code box
 should be narrower than the current split maintenance flag: target Toy class 2
 pending consumption directly and keep guard rows for `remote50` and `remote90`.
+
+## Split-Maintenance Class-Shard Probe
+
+Raw outputs:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_class_shard_prod_r3_20260620_174125`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_class2_prod_r10_20260620_174204`
+
+New runner variants:
+
+```text
+p1_external_split_maintenance_class2
+p1_external_split_maintenance_small_class
+```
+
+These combine the owner-inbox split-maintenance shape with Toy class-id transfer
+shard selection.
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external_split_maintenance` | `remote50` | 13.78M | 13.57M | 13.88M | 74.9 MiB |
+| `p1_external_split_maintenance_class2` | `remote50` | 13.17M | 11.59M | 14.15M | 74.8 MiB |
+| `p1_external_split_maintenance_small_class` | `remote50` | 13.78M | 13.27M | 13.95M | 74.8 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.65M | 10.58M | 10.71M | 77.5 MiB |
+| `p1_external_split_maintenance_class2` | `remote90` | 10.66M | 10.37M | 10.75M | 77.6 MiB |
+| `p1_external_split_maintenance_small_class` | `remote90` | 10.86M | 10.80M | 11.07M | 77.4 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 3.93M | 1.57M | 7.30M | 78.1 MiB |
+| `p1_external_split_maintenance_class2` | `cross128_r90` | 15.37M | 7.74M | 15.44M | 72.1 MiB |
+| `p1_external_split_maintenance_small_class` | `cross128_r90` | 3.45M | 3.03M | 6.23M | 75.9 MiB |
+
+Production R10 on `cross128_r90`:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external_split_maintenance` | 11.68M | 5.59M | 17.34M | 73.4 MiB |
+| `p1_external_split_maintenance_class2` | 4.46M | 2.48M | 6.44M | 75.4 MiB |
+
+Decision:
+
+```text
+Split maintenance + Toy class shard:
+  NO-GO for the next selected candidate
+```
+
+The class2 combination looked promising in R3, but failed the focused R10 and
+was worse than split maintenance alone.  The runner variants remain useful for
+reproduction, but the next implementation box should not combine owner-inbox
+maintenance with transfer class-shard placement.
