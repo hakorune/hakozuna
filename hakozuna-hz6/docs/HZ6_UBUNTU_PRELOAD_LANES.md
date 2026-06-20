@@ -4548,3 +4548,58 @@ below-threshold class_count update counters without introducing observed
 false-zero shadows, but the production R3 does not beat selected/off on the
 rows that matter.  Keep it as an opt-in research switch only.  Do not add it to
 `hz6-high-remote-transfer-presence-target`.
+
+## 2026-06-20 Transfer Presence Pop Scan Audit
+
+Box:
+
+```text
+TransferPresencePopScanAudit-L1
+```
+
+Purpose: observe how much dense transfer-cache scan work remains when the class
+presence hint is skipped or disabled by the high-occupancy threshold.  The box is
+diagnostic-only and does not change transfer routing, publication, or class
+presence behavior.
+
+New counters:
+
+```text
+transfer_class_presence_pop_hit_scan_total
+transfer_class_presence_pop_hit_scan_max
+transfer_class_presence_pop_empty_scan_total
+transfer_class_presence_pop_empty_scan_max
+```
+
+Diagnostic command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_armed
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_150436
+```
+
+R1 summary:
+
+```text
+variant                         row             hit_total  hit_max  empty_total  empty_max  false_zero
+p0_transfer_class_presence_min192 cross128_r90    376486    155      11350896     516        0
+p0_transfer_class_presence_min192 remote90_short  262712    2584     6495121      4065       0
+p0_transfer_class_presence_min192_armed cross128  703272    181      30328110     1025       0
+p0_transfer_class_presence_min192_armed remote90  286901    2621     6031844      3997       0
+```
+
+Decision: `GO(tooling)/HOLD(behavior)`.  The audit confirms that class-negative
+dense scan work remains visible when the presence gate is not firing, with
+empty-scan totals much larger than hit-scan totals on the measured rows.  Keep
+the counters as diagnostic evidence only; do not stack another behavior change
+until the next design decision chooses whether to address scan shape, cache
+layout, or profile packaging.

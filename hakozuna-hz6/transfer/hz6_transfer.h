@@ -46,6 +46,10 @@ typedef struct Hz6TransferCache {
   _Atomic uint32_t presence_arm_rebuild;
   _Atomic uint32_t presence_arm_disarm;
   _Atomic uint32_t presence_unarmed_probe;
+  _Atomic uint32_t presence_pop_hit_scan_total;
+  _Atomic uint32_t presence_pop_hit_scan_max;
+  _Atomic uint32_t presence_pop_empty_scan_total;
+  _Atomic uint32_t presence_pop_empty_scan_max;
   _Atomic uint32_t presence_invalid_class;
   _Atomic uint32_t presence_underflow;
   _Atomic uint32_t presence_over_capacity;

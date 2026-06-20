@@ -78,6 +78,14 @@
         stats.transfer_class_presence_arm_disarm;
     transfer_class_presence_unarmed_probe +=
         stats.transfer_class_presence_unarmed_probe;
+    transfer_class_presence_pop_hit_scan_total +=
+        stats.transfer_class_presence_pop_hit_scan_total;
+    transfer_class_presence_pop_hit_scan_max +=
+        stats.transfer_class_presence_pop_hit_scan_max;
+    transfer_class_presence_pop_empty_scan_total +=
+        stats.transfer_class_presence_pop_empty_scan_total;
+    transfer_class_presence_pop_empty_scan_max +=
+        stats.transfer_class_presence_pop_empty_scan_max;
     transfer_class_presence_invalid_class +=
         stats.transfer_class_presence_invalid_class;
     transfer_class_presence_underflow +=

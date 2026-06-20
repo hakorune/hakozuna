@@ -37,6 +37,10 @@
   size_t transfer_class_presence_arm_rebuild;
   size_t transfer_class_presence_arm_disarm;
   size_t transfer_class_presence_unarmed_probe;
+  size_t transfer_class_presence_pop_hit_scan_total;
+  size_t transfer_class_presence_pop_hit_scan_max;
+  size_t transfer_class_presence_pop_empty_scan_total;
+  size_t transfer_class_presence_pop_empty_scan_max;
   size_t transfer_class_presence_invalid_class;
   size_t transfer_class_presence_underflow;
   size_t transfer_class_presence_over_capacity;
