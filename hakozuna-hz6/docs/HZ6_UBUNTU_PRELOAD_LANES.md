@@ -4160,6 +4160,92 @@ and `cross128_r90` regressed.  The next behavior box should either be
 transfer caches, or a profile-only cut if the cross128/local guard remains
 negative after occupancy gating.
 
+## 2026-06-20 HighOccupancyPresenceGate-L1
+
+Added a narrow arming threshold for `TransferClassPresenceGate-L1`:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL
+```
+
+When a transfer cache has fewer objects than this threshold, pop skips the
+class-count hint and uses the existing dense scan.  The default remains
+`1`, which preserves the previous presence-gate behavior.  The runner exposes
+`p0_transfer_class_presence_min192` as the tested high-occupancy variant.
+
+Implementation note:
+
+```text
+min64 smoke initially timed out because the first patch returned success from
+hz6_transfer_pop() before filling the output object.  That bug was fixed before
+the recorded min192 runs; the fixed min64 R3 no longer timed out, but min64 did
+not improve the cross128 guard enough to keep as a named variant.
+```
+
+Tax runner RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_142026
+```
+
+```text
+row             p0_off      presence      min192
+local0          16.71M      16.14M        16.22M
+remote50        14.82M      15.14M        14.86M
+remote90         3.78M      10.51M        10.71M
+remote90_short   4.60M       8.76M         8.91M
+```
+
+Paired gate RUNS=10:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p0_transfer_class_presence,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_142114
+```
+
+```text
+row             p0_selected_off   presence      min192
+local0          15.95M            16.25M        16.42M
+remote50        14.80M            15.00M        15.44M
+remote90         3.58M            10.58M        10.86M
+cross128_r90    10.73M             3.50M         6.07M
+```
+
+Read:
+
+```text
+min192:
+  Keeps the remote90 and remote90_short win.
+  Improves local0/remote50 shape relative to always-on presence in the paired
+  gate.
+  Partially recovers cross128_r90 versus always-on presence, but still trails
+  p0 selected-off.
+```
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  `min192` is the best
+presence shape so far and should replace always-on presence as the candidate
+when benchmarking this line.  Do not promote to selected/default because
+`cross128_r90` remains below p0.  The next decision is design-level: either
+package `min192` as an explicit high-remote profile, or investigate a
+cross128-specific interaction before another behavior tweak.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

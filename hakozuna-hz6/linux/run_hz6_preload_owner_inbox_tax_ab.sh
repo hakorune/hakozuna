@@ -90,7 +90,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p0_transfer_class_presence|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p0_transfer_class_presence|p0_transfer_class_presence_min192|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -122,6 +122,10 @@ build_variant() {
       ;;
     p0_transfer_class_presence)
       hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+      ;;
+    p0_transfer_class_presence_min192)
+      hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+      hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL '((size_t)192)'
       ;;
     p0_no_origin_transfer)
       hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1 0

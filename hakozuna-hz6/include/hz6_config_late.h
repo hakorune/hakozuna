@@ -418,6 +418,10 @@
 #define HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1 HZ6_DIAGNOSTIC_PROBES
 #endif
 
+#ifndef HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL
+#define HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL ((size_t)1)
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_INBOX_CORE_L1
 /* Owner-stable remote pending inbox core.  Producers publish descriptor
  * indices into an owner allocator per-class inbox; behavior stays off until a

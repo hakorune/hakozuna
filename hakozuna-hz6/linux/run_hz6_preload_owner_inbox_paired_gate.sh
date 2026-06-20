@@ -18,7 +18,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_selected_off,p1_owner_inbox,p0_transfer_class_presence
+  --variants CSV p0_selected_off,p1_owner_inbox,p0_transfer_class_presence,p0_transfer_class_presence_min192
   --outdir DIR    output directory
   --help          show this message
 
@@ -53,7 +53,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_selected_off|p1_owner_inbox|p0_transfer_class_presence)
+    p0_selected_off|p1_owner_inbox|p0_transfer_class_presence|p0_transfer_class_presence_min192)
       variants+=("$variant")
       ;;
     "") ;;
@@ -86,6 +86,11 @@ build_variant() {
     p0_transfer_class_presence)
       hz6_preload_effective_owner_inbox_off_cflags flags 1
       hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+      ;;
+    p0_transfer_class_presence_min192)
+      hz6_preload_effective_owner_inbox_off_cflags flags 1
+      hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+      hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL '((size_t)192)'
       ;;
   esac
   OUT_DIR="${OUTDIR}/build/${variant}" \

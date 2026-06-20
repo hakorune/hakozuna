@@ -270,6 +270,9 @@ int hz6_transfer_class_maybe_present(Hz6TransferCache* cache,
   if (cache->count == 0) {
     return 0;
   }
+  if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    return 1;
+  }
   HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_check);
   if (hz6_transfer_load_u32(&cache->class_count[class_id]) == 0) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_miss);
