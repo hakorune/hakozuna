@@ -47,22 +47,10 @@ void free(void* ptr) {
   }
 #endif
 #if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1
-  hz6_preload_phase_count(
-      &g_hz6_preload_phase_stats.free_route_before_maps_attempt);
-  Hz6PreloadRoute before_maps_route = hz6_preload_route(allocator, ptr);
-  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_FOREIGN_VALID &&
-      before_maps_route.route.kind == HZ6_ROUTE_VALID &&
-      before_maps_route.visible_hit) {
-    hz6_preload_phase_count(
-        &g_hz6_preload_phase_stats.free_route_before_maps_foreign_dispatch);
-    hz6_free_with_resolved_route_after_maps(allocator, ptr,
-                                            before_maps_route.route,
-                                            before_maps_route.visible_hit);
+  if (hz6_preload_foreign_route_before_maps_try(allocator, ptr)) {
     g_hz6_preload_reentry = 0;
     return;
   }
-  hz6_preload_phase_count(
-      &g_hz6_preload_phase_stats.free_route_before_maps_fallback);
 #endif
 #if HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
   if (page_kind == HZ6_PAGE_KIND_TOY) {
@@ -504,6 +492,9 @@ hz6_preload_after_active_maps:
       hz6_preload_phase_count(
           &g_hz6_preload_phase_stats
                .free_resolved_duplicate_route_lookup_avoided);
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+      g_hz6_preload_foreign_route_before_maps_armed = 1;
+#endif
       hz6_free_with_resolved_route_after_maps(allocator, ptr,
                                               preload_route.route,
                                               preload_route.visible_hit);

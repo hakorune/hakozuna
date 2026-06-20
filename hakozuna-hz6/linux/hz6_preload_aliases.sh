@@ -149,6 +149,11 @@ hz6_preload_build_requested_aliases() {
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_cross128_toy2_split_target.sh"
   fi
   if hz6_preload_allocator_requested "$allocators_csv" \
+      "hz6-cross128-toy2-route-before-maps-target" \
+      "hz6_cross128_toy2_route_before_maps_target"; then
+    "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_cross128_toy2_route_before_maps_target.sh"
+  fi
+  if hz6_preload_allocator_requested "$allocators_csv" \
       "hz6-transfer-class-shard-target" \
       "hz6_transfer_class_shard_target"; then
     "${root_dir}/hakozuna-hz6/linux/build_hz6_preload_transfer_class_shard_target.sh"

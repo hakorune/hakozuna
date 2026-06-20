@@ -43,6 +43,17 @@ hz6_preload_profile_owner_inbox_toy2_split_cflags() {
     "$out_name" HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
 }
 
+hz6_preload_profile_owner_inbox_toy2_route_before_maps_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_profile_owner_inbox_toy2_split_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 1
+  hz6_preload_replace_define \
+    "$out_name" HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 1
+}
+
 hz6_preload_profile_owner_inbox_off_cflags() {
   local out_name="$1"
   local enable_midpage_boundary="${2:-1}"

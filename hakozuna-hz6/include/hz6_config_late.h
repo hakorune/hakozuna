@@ -760,6 +760,12 @@
 #define HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+/* Optional arming gate for route-before-maps: skip the early resolver until
+ * this allocator has observed at least one foreign-owner visible route hit. */
+#define HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 0
+#endif
+
 #if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 || \
     HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 || \
     HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1

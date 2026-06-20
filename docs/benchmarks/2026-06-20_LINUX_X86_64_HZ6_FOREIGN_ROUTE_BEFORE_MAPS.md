@@ -38,6 +38,17 @@ Production-shaped R10:
 | `remote90` | 11.42M | 11.34M | roughly flat / slight regression |
 | `cross128_r90` | 5.93M | 15.67M | improved |
 
+TLS-armed R10:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_foreign_route_before_maps_armed_tls_r10_20260620_191029`
+
+| row | toy2_split base | TLS-armed route-before-maps | Decision |
+|---|---:|---:|---|
+| `local0` | 16.09M | 16.71M | improved / no local tax |
+| `remote50` | 14.11M | 14.24M | roughly flat / slight improvement |
+| `remote90` | 11.27M | 11.09M | slight regression |
+| `cross128_r90` | 11.77M | 18.52M | improved |
+
 Local guard R3:
 
 - `hakozuna-hz6/private/raw-results/linux/hz6_foreign_route_before_maps_local0_r3_20260620_190425`
@@ -49,6 +60,7 @@ Local guard R3:
 Stats R1:
 
 - `hakozuna-hz6/private/raw-results/linux/hz6_foreign_route_before_maps_stats_r1_20260620_190208`
+- `hakozuna-hz6/private/raw-results/linux/hz6_foreign_route_before_maps_armed_tls_stats_r1_20260620_190937`
 
 | row | before-map attempts | early foreign dispatch | after-map route lookup |
 |---|---:|---:|---:|
@@ -62,30 +74,43 @@ Stats R1:
 PreloadForeignRouteBeforeMaps-L1:
   GO(profile candidate)
   HOLD(default)
+
+PreloadForeignRouteBeforeMapsArmed-L1:
+  GO(explicit cross128 profile candidate)
+  HOLD(default)
 ```
 
 The box directly attacks the tiny cross-owner free-path work count by consuming
 foreign resolver proof before active-map probes.  It is strong on
-`cross128_r90` and does not hurt `remote50` in the paired R10, but the local0
-tax means it should not be selected/default without an arming gate.
+`cross128_r90` and does not hurt `remote50` in the paired R10.  TLS arming
+removes the local0 tax, but `remote90` is still slightly lower, so this remains
+an explicit profile candidate rather than selected/default.
+
+Explicit alias:
+
+```text
+hz6-cross128-toy2-route-before-maps-target
+```
 
 ## Checks
 
 - `./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh`
 - default `./hakozuna-hz6/linux/build_hz6_preload.sh`
 - default `./hakozuna-hz6/linux/run_hz6_preload_integrity_smoke.sh`
+- `./hakozuna-hz6/linux/build_hz6_preload_cross128_toy2_route_before_maps_target.sh`
 
 ## Next
 
-The next box should preserve the early-foreign win while avoiding local0 tax.
+The next box should preserve the early-foreign win while reducing the remaining
+`remote90` tax.
 Candidates:
 
 ```text
-RemotePressureArmedRouteBeforeMaps-L1
-  arm only after recent foreign-visible resolver hits
+Remote90AwareRouteBeforeMapsGate-L1
+  reduce fallback resolver attempts on mixed remote90
 
-Toy2ProfileRouteBeforeMaps-L1
-  keep as an explicit high-remote/cross128 profile flag
+Cross128ProfileRouteBeforeMaps-L1
+  keep as explicit profile if mixed remote90 remains lower
 ```
 
 Do not enable route-before-maps unconditionally in the selected/default preload

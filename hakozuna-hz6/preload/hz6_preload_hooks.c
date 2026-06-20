@@ -34,6 +34,10 @@ typedef struct Hz6PreloadRoute {
 
 static __thread Hz6Allocator* g_hz6_preload_allocator;
 
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+static __thread unsigned char g_hz6_preload_foreign_route_before_maps_armed;
+#endif
+
 #if HZ6_PRELOAD_REALLOC_BOUNDARY_ADAPTIVE_4K_L1
 static __thread unsigned char g_hz6_preload_realloc_boundary_adapt_4k;
 #endif
@@ -304,6 +308,38 @@ static void hz6_preload_route_fail_fast_if_integrity(Hz6PreloadRoute route) {
     abort();
   }
 }
+
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1
+static int hz6_preload_foreign_route_before_maps_try(Hz6Allocator* allocator,
+                                                     void* ptr) {
+  if (!allocator || !ptr) {
+    return 0;
+  }
+#if HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1
+  if (!g_hz6_preload_foreign_route_before_maps_armed) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_arm_skip);
+    return 0;
+  }
+#endif
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_route_before_maps_attempt);
+  Hz6PreloadRoute before_maps_route = hz6_preload_route(allocator, ptr);
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_FOREIGN_VALID &&
+      before_maps_route.route.kind == HZ6_ROUTE_VALID &&
+      before_maps_route.visible_hit) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_foreign_dispatch);
+    hz6_free_with_resolved_route_after_maps(allocator, ptr,
+                                            before_maps_route.route,
+                                            before_maps_route.visible_hit);
+    return 1;
+  }
+  hz6_preload_phase_count(
+      &g_hz6_preload_phase_stats.free_route_before_maps_fallback);
+  return 0;
+}
+#endif
 
 #if HZ6_PRELOAD_FREE_MIDPAGE_CURRENT_BIAS_FIRST_L1 || \
     HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
