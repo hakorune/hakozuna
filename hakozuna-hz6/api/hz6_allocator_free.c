@@ -27,9 +27,11 @@ void hz6_free(Hz6Allocator* allocator, void* ptr) {
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     return;
   }
+#if !HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     return;
   }
+#endif
 
 #if HZ6_SOURCE_BLOCK_ROUTE_DRYRUN_L1 && HZ6_DIAGNOSTIC_PROBES
   hz6_allocator_source_block_route_dryrun(allocator, ptr);
@@ -182,9 +184,11 @@ void hz6_free_with_route_prechecked(Hz6Allocator* allocator,
   if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
     return;
   }
+#if !HZ6_FREE_SKIP_MIDPAGE_ACTIVE_MAP_L1
   if (hz6_midpage_active_map_try_free(allocator, ptr)) {
     return;
   }
+#endif
 
   hz6_free_route_dispatch(allocator, ptr, route, visible_hit);
 }
