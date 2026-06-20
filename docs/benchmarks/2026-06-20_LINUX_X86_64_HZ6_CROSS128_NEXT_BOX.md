@@ -506,3 +506,44 @@ are deferred and the source-gate path performs the actual consumption.  This
 explains why the existing split flag can improve lower-tail behavior without
 being a stable selected candidate.  A future implementation should make this
 boundary explicit for Toy class 2 instead of relying on the broad split flag.
+
+## Split Source-Gate DirectReuse Probe
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_split_source_gate_prod_r3_20260620_175026`
+
+New runner variants:
+
+```text
+p1_external_split_source_gate
+p1_external_split_source_gate_observe
+```
+
+These combine the split-maintenance shape with existing source-boundary
+DirectReuse controls.  This tests whether the useful part of split maintenance
+can be made more explicit by using the pending direct reuse source-demand gate.
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external_split_maintenance` | `remote50` | 13.81M | 13.13M | 13.93M | 74.6 MiB |
+| `p1_external_split_source_gate` | `remote50` | 12.85M | 12.70M | 13.37M | 74.8 MiB |
+| `p1_external_split_maintenance` | `remote90` | 11.01M | 10.96M | 11.03M | 77.5 MiB |
+| `p1_external_split_source_gate` | `remote90` | 4.07M | 3.95M | 4.30M | 80.1 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 7.69M | 5.42M | 19.35M | 74.5 MiB |
+| `p1_external_split_source_gate` | `cross128_r90` | 2.13M | 1.72M | 4.17M | 77.9 MiB |
+
+Decision:
+
+```text
+Split maintenance + source-boundary DirectReuse:
+  NO-GO
+```
+
+The source-boundary DirectReuse gate sharply regresses `remote90` and also
+regresses `cross128_r90`.  The next implementation should not stack DirectReuse
+onto split maintenance.  The remaining useful direction is still narrower:
+make the front-side maintenance gate explicit for Toy class 2 without changing
+activation/reuse ordering through the DirectReuse path.
