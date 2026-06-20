@@ -1,0 +1,131 @@
+#include "h8_internal.h"
+
+#include <string.h>
+
+static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
+                                      H8Span* span, uint32_t class_id) {
+  uint32_t class_size = h8_class_size(class_id);
+  uint32_t local_head = atomic_load_explicit(&span->local_free_head,
+                                             memory_order_acquire);
+  if (local_head != UINT32_MAX) {
+    uint32_t slot = local_head;
+    atomic_store_explicit(&span->local_free_head, span->next_free[slot],
+                          memory_order_release);
+    h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
+    h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, slot);
+    atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
+    atomic_fetch_add_explicit(&h8g.local_alloc_count, 1, memory_order_relaxed);
+    return h8_slot_ptr(span, slot);
+  }
+
+  uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_relaxed);
+  if (bump < span->slot_count) {
+    if (atomic_compare_exchange_strong_explicit(
+            &span->bump_index, &bump, bump + 1, memory_order_acq_rel,
+            memory_order_relaxed)) {
+      h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, bump);
+      atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
+      atomic_fetch_add_explicit(&h8g.local_alloc_count, 1, memory_order_relaxed);
+      return h8_slot_ptr(span, bump);
+    }
+  }
+
+  (void)class_size;
+  h8_pressure_owner_collect(owner);
+  (void)ctx;
+  return NULL;
+}
+
+static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
+  pthread_mutex_lock(&owner->owned_lock);
+  for (H8Span* span = owner->owned_head; span; span = span->next_owned) {
+    if (span->class_id == class_id && span->span_state == H8_SPAN_OWNED_ACTIVE &&
+        atomic_load_explicit(&span->used_count, memory_order_acquire) <
+            span->slot_count) {
+      pthread_mutex_unlock(&owner->owned_lock);
+      return span;
+    }
+  }
+  pthread_mutex_unlock(&owner->owned_lock);
+  return NULL;
+}
+
+void* h8_malloc_inner(size_t size) {
+  h8_init();
+  if (size == 0) {
+    size = 1;
+  }
+  if (size > H8_MAX_SMALL_SIZE) {
+    return h8_sys_malloc(size);
+  }
+  H8ThreadCtx* ctx = h8_thread_ctx_get();
+  if (!ctx) {
+    return NULL;
+  }
+  uint32_t class_id = h8_class_for_size(size);
+  H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
+  H8Span* span = ctx->active_spans[class_id];
+  if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
+      span->span_state == H8_SPAN_OWNED_ACTIVE) {
+    void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
+    if (ptr) {
+      return ptr;
+    }
+  }
+  h8_collect_owner_pending(owner);
+  span = h8_find_active_span(owner, class_id);
+  if (!span) {
+    span = h8_span_commit_for_class(owner, class_id);
+  }
+  if (!span) {
+    atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+    return NULL;
+  }
+  ctx->active_spans[class_id] = span;
+  return h8_small_alloc_from_span(ctx, owner, span, class_id);
+}
+
+static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
+  if (span->owner_slot != owner->slot ||
+      span->owner_generation != owner->generation ||
+      span->span_state != H8_SPAN_OWNED_ACTIVE) {
+    return false;
+  }
+  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+    return false;
+  }
+  h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
+  h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
+  span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
+                                               memory_order_relaxed);
+  atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_release);
+  atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
+  atomic_fetch_add_explicit(&h8g.local_free_count, 1, memory_order_relaxed);
+  return true;
+}
+
+void h8_free_inner(void* ptr) {
+  h8_init();
+  if (!ptr) {
+    return;
+  }
+  if (!h8_arena_contains(ptr)) {
+    atomic_fetch_add_explicit(&h8g.miss_count, 1, memory_order_relaxed);
+    h8_sys_free(ptr);
+    return;
+  }
+  size_t slot = 0;
+  H8Span* span = h8_span_from_ptr_checked(ptr, &slot);
+  if (!span) {
+    atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+    return;
+  }
+  H8OwnerRecord* owner = h8_owner_current();
+  if (h8_local_free(owner, span, slot)) {
+    return;
+  }
+  if (h8_remote_free_publish(ptr) == H8_PUBLISH_OK) {
+    return;
+  }
+  atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+}

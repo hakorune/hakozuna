@@ -1,0 +1,27 @@
+.PHONY: all clean smoke preload
+.NOTPARALLEL: clean
+
+CC ?= gcc
+CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
+LDFLAGS ?=
+LDLIBS ?= -pthread -ldl
+ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
+INC := -I$(ROOT)/include -I$(ROOT)/src
+SRC := $(wildcard $(ROOT)/src/*.c)
+CORE_SRC := $(filter-out $(ROOT)/src/h8_preload_boundary.c,$(SRC))
+SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_smoke.c
+
+all: smoke preload
+
+preload: $(ROOT)/libhakozuna_hz8_preload.so
+
+smoke: $(ROOT)/h8_smoke
+
+$(ROOT)/libhakozuna_hz8_preload.so: $(SRC)
+	$(CC) $(CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_smoke: $(SMOKE_SRC)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
+clean:
+	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/h8_smoke
