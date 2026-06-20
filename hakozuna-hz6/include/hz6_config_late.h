@@ -746,8 +746,16 @@
 #define HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 0
 #endif
 
+#ifndef HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
+/* Behavior control for Toy-only free dispatch.  A page-kind Toy prediction
+ * tries the Toy active map and, on miss, skips the MidPage active-map probe.
+ * Unknown, mixed, and MidPage predictions keep the selected free ordering. */
+#define HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1 0
+#endif
+
 #if HZ6_PAGE_KIND_FREE_SELECTOR_DRYRUN_L1 || \
-    HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
+    HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1 || \
+    HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
 #define HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1 1
 #else
 #define HZ6_PAGE_KIND_FREE_SELECTOR_ACTIVE_L1 0

@@ -46,6 +46,22 @@ void free(void* ptr) {
         &g_hz6_preload_phase_stats.free_midpage_hint_would_first);
   }
 #endif
+#if HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
+  if (page_kind == HZ6_PAGE_KIND_TOY) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_attempt);
+    if (hz6_toy_small_active_map_try_free(allocator, ptr)) {
+      hz6_preload_phase_count(
+          &g_hz6_preload_phase_stats.free_toy_active_map_hit);
+      hz6_preload_page_kind_selector_note_toy_hit(page_kind);
+      g_hz6_preload_reentry = 0;
+      return;
+    }
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_toy_active_map_miss);
+    goto hz6_preload_after_active_maps;
+  }
+#endif
 #if HZ6_PAGE_KIND_FREE_SELECTOR_FIRST_L1
   if (page_kind == HZ6_PAGE_KIND_MIDPAGE) {
     hz6_preload_phase_count(
@@ -357,6 +373,9 @@ void free(void* ptr) {
   }
   hz6_preload_phase_count(
       &g_hz6_preload_phase_stats.free_midpage_active_map_miss);
+#endif
+#if HZ6_PRELOAD_FREE_TOY_PAGE_SKIP_MIDPAGE_L1
+hz6_preload_after_active_maps:
 #endif
 #if HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_L1 || \
     HZ6_PRELOAD_SOURCE_RUN_ROUTE_AFTER_MAPS_DRYRUN_L1
