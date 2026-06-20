@@ -98,7 +98,7 @@ Follow-up default-off implementation results:
 Stats confirmed the mechanism: early external dispatch removed the
 `PROVEN_EXTERNAL` fallback and kept `free_route_real_free_unproven=0`.
 
-Production R10 rejected the profile shape:
+Production R10 rejected the profile shape for promotion:
 
 | row | toy2_split base | external-dispatch route-before-maps | Decision |
 |---|---:|---:|---|
@@ -108,6 +108,35 @@ Production R10 rejected the profile shape:
 | `cross128_r90` | 20.65M | 36.37M | improved |
 
 Do not include external dispatch in `hz6-cross128-toy2-route-before-maps-target`.
-The flag remains default-off for research only.  The next optimization should
-avoid broad real-free dispatch changes and instead isolate why the external
-path improves `cross128_r90` while destroying `remote90`.
+The flag remains default-off for research only.
+
+Follow-up attribution:
+
+- diagnostic off/on matrix:
+  `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_external_dispatch_diag_matrix_r3_20260620_194533`
+- production off/on verify:
+  `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_external_dispatch_prod_verify_r5_20260620_194706`
+
+The follow-up weakens the claim that external dispatch alone caused the
+`remote90` collapse:
+
+```text
+diagnostic remote90:
+  external_dispatch = 0 in both off/on builds
+  ops/s roughly flat between off/on
+
+production verify remote90:
+  external off median = 4.20M
+  external on  median = 3.97M
+```
+
+In the same session, the rebuilt `toy2_split` profile also measured only
+`3.39M-4.05M` on `remote90`, so this was a weak remote90 batch/profile-state
+signal rather than proof that `PROVEN_EXTERNAL` real-free directly destroys
+remote90.
+
+The conservative decision remains unchanged: do not include external dispatch in
+the explicit route-before-maps profile.  The evidence supports it as a
+cross128-only research switch, not a profile/default candidate.  The next
+optimization should separate cross128 tail improvement from remote90 stability
+with paired same-batch profile checks.
