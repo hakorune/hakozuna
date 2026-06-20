@@ -9,6 +9,10 @@
 #include "hz6_preload_real.h"
 #include "hz6_preload_stats.h"
 
+#ifndef HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1
+#define HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1 0
+#endif
+
 #include "../fronts/hz6_front.h"
 
 #include <errno.h>
@@ -344,6 +348,14 @@ static int hz6_preload_foreign_route_before_maps_try(Hz6Allocator* allocator,
     hz6_free_with_resolved_route_after_maps(allocator, ptr,
                                             before_maps_route.route,
                                             before_maps_route.visible_hit);
+    return 1;
+  }
+#endif
+#if HZ6_PRELOAD_ROUTE_BEFORE_MAPS_EXTERNAL_DISPATCH_L1
+  if (before_maps_route.resolve_kind == HZ6_FREE_ROUTE_PROVEN_EXTERNAL) {
+    hz6_preload_phase_count(
+        &g_hz6_preload_phase_stats.free_route_before_maps_external_dispatch);
+    hz6_preload_real_free(ptr);
     return 1;
   }
 #endif

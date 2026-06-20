@@ -84,9 +84,30 @@ RouteBeforeMapsCross128TailStats-L1:
   DESIGN checkpoint
 
 PreloadRouteBeforeMapsExternalDispatch-L1:
-  GO(next candidate)
-  HOLD(implementation)
+  NO-GO(profile)
+  HOLD(research flag)
 ```
 
-Do not tune pending drain volume or transfer backpressure from this observation.
-The observed tail is on the route-before-maps fallback path.
+Follow-up default-off implementation results:
+
+- stats R3:
+  `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_external_dispatch_stats_r3_20260620_194008`
+- production R10:
+  `hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_external_dispatch_r10_20260620_194051`
+
+Stats confirmed the mechanism: early external dispatch removed the
+`PROVEN_EXTERNAL` fallback and kept `free_route_real_free_unproven=0`.
+
+Production R10 rejected the profile shape:
+
+| row | toy2_split base | external-dispatch route-before-maps | Decision |
+|---|---:|---:|---|
+| `local0` | 16.20M | 16.00M | roughly flat / slight regression |
+| `remote50` | 13.82M | 13.94M | roughly flat |
+| `remote90` | 11.34M | 4.15M | regressed hard |
+| `cross128_r90` | 20.65M | 36.37M | improved |
+
+Do not include external dispatch in `hz6-cross128-toy2-route-before-maps-target`.
+The flag remains default-off for research only.  The next optimization should
+avoid broad real-free dispatch changes and instead isolate why the external
+path improves `cross128_r90` while destroying `remote90`.
