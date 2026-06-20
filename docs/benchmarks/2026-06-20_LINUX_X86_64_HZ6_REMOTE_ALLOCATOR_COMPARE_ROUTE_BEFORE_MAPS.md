@@ -77,3 +77,34 @@ still trails the tiny-object cross-owner frontier badly.
 The next useful optimization should not stack more broad route-before-map work.
 It should isolate the remaining HZ6 cross128 tail variance and instruction count
 against the HZ4/tcmalloc shape.
+
+## Interleaved Follow-Up
+
+The remote rows showed batch-level variance after this comparison.  The compare
+runner now has `--interleave-runs` so profile A/B can run in row/run/profile
+order instead of grouping all runs by allocator.
+
+Raw result:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_interleave_r5_20260620_195150
+```
+
+Command shape:
+
+```text
+RUNS=5
+ROWS=remote90,cross128_r90
+ALLOCATORS=toy2_split,route_before_maps
+--interleave-runs
+```
+
+| Profile | `remote90` median | `cross128_r90` median | Read |
+|---|---:|---:|---|
+| `toy2_split` | 4.07M | 4.57M | weak remote90 batch |
+| `route_before_maps` | 4.10M | 9.88M | remote90 flat, cross128 improved |
+
+This confirms that the weak `remote90` batch affected both profiles.  In the
+same batch, `route_before_maps` still improved `cross128_r90` without a material
+remote90 difference.  Use interleaved runs for future narrow HZ6 profile A/B
+before attributing a row-wide cliff to a single flag.

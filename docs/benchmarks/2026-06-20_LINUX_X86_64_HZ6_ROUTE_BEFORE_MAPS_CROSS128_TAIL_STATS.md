@@ -140,3 +140,11 @@ the explicit route-before-maps profile.  The evidence supports it as a
 cross128-only research switch, not a profile/default candidate.  The next
 optimization should separate cross128 tail improvement from remote90 stability
 with paired same-batch profile checks.
+
+Runner follow-up:
+
+`run_hz6_remote_allocator_compare.sh` now supports `--interleave-runs` to reduce
+batch drift when comparing narrow HZ6 profiles.  A first interleaved R5
+(`hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_interleave_r5_20260620_195150`)
+showed both `toy2_split` and `route_before_maps` in the same weak remote90 band,
+while `route_before_maps` still improved `cross128_r90` in that batch.

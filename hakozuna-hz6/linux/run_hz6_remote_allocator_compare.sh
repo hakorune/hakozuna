@@ -16,6 +16,7 @@ OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_remote_allocator_comp
 SKIP_BUILDS=0
 SKIP_PREPARE_ALLOCATORS=0
 KEEP_GOING=0
+INTERLEAVE_RUNS=0
 
 usage() {
   cat <<'EOF'
@@ -31,6 +32,7 @@ Options:
   --skip-builds      reuse existing HZ and benchmark builds
   --skip-prepare     reuse existing MIMALLOC_SO/TCMALLOC_SO
   --keep-going       keep collecting after an allocator/run failure
+  --interleave-runs  run row/run/allocator order to reduce batch drift
   --help             show this message
 
 This is an observe-only MT remote allocator frontier.  HZ6 profile aliases are
@@ -49,6 +51,7 @@ while [[ $# -gt 0 ]]; do
     --skip-builds) SKIP_BUILDS=1; shift ;;
     --skip-prepare) SKIP_PREPARE_ALLOCATORS=1; shift ;;
     --keep-going) KEEP_GOING=1; shift ;;
+    --interleave-runs) INTERLEAVE_RUNS=1; shift ;;
     --help|-h) usage; exit 0 ;;
     *) echo "unknown option: $1" >&2; usage >&2; exit 2 ;;
   esac
@@ -133,6 +136,7 @@ fi
   echo "rows=${ROWS_CSV}"
   echo "bench=${BENCH}"
   echo "keep_going=${KEEP_GOING}"
+  echo "interleave_runs=${INTERLEAVE_RUNS}"
   echo "git_sha=$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
   echo "uname=$(uname -a)"
 } > "${OUTDIR}/README.log"
@@ -185,15 +189,27 @@ run_one() {
   fi
 }
 
-for allocator in "${allocators[@]}"; do
+if [[ "$INTERLEAVE_RUNS" -eq 1 ]]; then
   for row in "${rows[@]}"; do
     read -r name threads iters ws min_size max_size remote_pct ring_slots <<<"$row"
     for run in $(seq 1 "$RUNS"); do
-      run_one "$allocator" "$name" "$run" \
-        "$threads" "$iters" "$ws" "$min_size" "$max_size" "$remote_pct" "$ring_slots"
+      for allocator in "${allocators[@]}"; do
+        run_one "$allocator" "$name" "$run" \
+          "$threads" "$iters" "$ws" "$min_size" "$max_size" "$remote_pct" "$ring_slots"
+      done
     done
   done
-done
+else
+  for allocator in "${allocators[@]}"; do
+    for row in "${rows[@]}"; do
+      read -r name threads iters ws min_size max_size remote_pct ring_slots <<<"$row"
+      for run in $(seq 1 "$RUNS"); do
+        run_one "$allocator" "$name" "$run" \
+          "$threads" "$iters" "$ws" "$min_size" "$max_size" "$remote_pct" "$ring_slots"
+      done
+    done
+  done
+fi
 
 python3 - "$OUTDIR/runs.tsv" <<'PY' | tee "${OUTDIR}/summary.tsv"
 import csv
@@ -211,13 +227,21 @@ with open(sys.argv[1], newline="") as f:
         rows[key]["ops"].append(float(row["ops_s"]))
         rows[key]["peak"].append(float(row["peak_kb"]) / 1024.0)
 
-print("allocator\trow\truns\tops_min\tops_median\tops_max\tpeak_mib_median")
+def pct(sorted_values, fraction):
+    if not sorted_values:
+        return 0.0
+    index = round((len(sorted_values) - 1) * fraction)
+    return sorted_values[index]
+
+print("allocator\trow\truns\tops_min\tops_p25\tops_median\tops_p75\tops_max\tpeak_mib_median")
 for key in sorted(rows):
-    ops = rows[key]["ops"]
+    ops = sorted(rows[key]["ops"])
     peak = rows[key]["peak"]
     print(
         f"{key[0]}\t{key[1]}\t{len(ops)}\t"
-        f"{min(ops):.2f}\t{statistics.median(ops):.2f}\t{max(ops):.2f}\t"
+        f"{min(ops):.2f}\t{pct(ops, 0.25):.2f}\t"
+        f"{statistics.median(ops):.2f}\t{pct(ops, 0.75):.2f}\t"
+        f"{max(ops):.2f}\t"
         f"{statistics.median(peak):.2f}"
     )
 PY
