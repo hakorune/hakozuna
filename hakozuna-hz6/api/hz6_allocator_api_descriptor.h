@@ -13,6 +13,37 @@ extern "C" {
 Hz6ObjectDescriptor* hz6_allocator_find_free_descriptor(
     Hz6Allocator* allocator);
 
+Hz6ObjectDescriptor* hz6_allocator_find_toy2_adaptive_descriptor(
+    Hz6Allocator* allocator,
+    uint16_t front_id,
+    uint16_t class_id);
+
+int hz6_allocator_toy2_adaptive_descriptor_owner(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken* owner);
+
+int hz6_allocator_toy2_adaptive_set_descriptor_owner(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    Hz6OwnerToken owner);
+
+int hz6_allocator_toy2_adaptive_descriptor_belongs_to(
+    const Hz6Allocator* allocator,
+    const Hz6ObjectDescriptor* descriptor);
+
+void hz6_allocator_toy2_adaptive_note_prepare(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor);
+
+void hz6_allocator_toy2_adaptive_note_reset(
+    Hz6Allocator* allocator,
+    Hz6ObjectDescriptor* descriptor,
+    int had_ptr);
+
+void hz6_allocator_destroy_toy2_adaptive_descriptors(
+    Hz6Allocator* allocator);
+
 #if HZ6_ELASTIC_DESCRIPTOR_OVERFLOW_L1
 int hz6_allocator_descriptor_is_depot(
     const Hz6ObjectDescriptor* descriptor);
@@ -196,6 +227,11 @@ static inline Hz6OwnerToken hz6_allocator_descriptor_owner(
       return hz6_allocator_descriptor_depot_owner(descriptor);
     }
 #endif
+    Hz6OwnerToken segment_owner = {0};
+    if (hz6_allocator_toy2_adaptive_descriptor_owner(
+            storage, descriptor, &segment_owner)) {
+      return segment_owner;
+    }
     return (Hz6OwnerToken){0};
   }
   return hz6_descriptor_unpack_owner16(
@@ -236,6 +272,8 @@ static inline void hz6_allocator_set_descriptor_owner(
       hz6_allocator_set_descriptor_depot_owner(descriptor, owner);
     }
 #endif
+    (void)hz6_allocator_toy2_adaptive_set_descriptor_owner(
+        storage, descriptor, owner);
     return;
   }
   storage->descriptor_side_owner16[index] =

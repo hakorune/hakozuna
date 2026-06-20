@@ -85,6 +85,11 @@ int hz6_allocator_prepare_descriptor(
   hz6_allocator_set_descriptor_owner(allocator, descriptor,
                                      allocator->owner.token);
   descriptor->generation = 1;
+#if HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_L1
+  if (!hz6_allocator_descriptor_belongs_to(allocator, descriptor)) {
+    hz6_allocator_toy2_adaptive_note_prepare(allocator, descriptor);
+  }
+#endif
   descriptor->state = (uint8_t)state;
 #if HZ6_THIN_DESCRIPTOR_L1
   if (!source_block &&

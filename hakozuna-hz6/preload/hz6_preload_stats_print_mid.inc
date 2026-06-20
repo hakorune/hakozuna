@@ -21,6 +21,17 @@
           "toy2_source_blocks_low_ref_max=%zu "
           "toy2_source_blocks_full_max=%zu "
           "toy2_source_blocks_partial_max=%zu "
+          "toy2_adaptive_descriptor_alloc=%zu "
+          "toy2_adaptive_descriptor_segment_alloc=%zu "
+          "toy2_adaptive_descriptor_segment_alloc_fail=%zu "
+          "toy2_adaptive_descriptor_segment_max_block=%zu "
+          "toy2_adaptive_descriptor_route_headroom_block=%zu "
+          "toy2_adaptive_descriptor_double_allocate=%zu "
+          "toy2_adaptive_descriptor_reuse_while_live=%zu "
+          "toy2_adaptive_descriptor_storage_owner_mismatch=%zu "
+          "toy2_adaptive_descriptor_live_current=%zu "
+          "toy2_adaptive_descriptor_live_max=%zu "
+          "toy2_adaptive_descriptor_segment_high_water=%zu "
           "toy2_construct_abort_attempt=%zu "
           "toy2_construct_abort_success=%zu "
           "toy2_construct_abort_ref_nonzero=%zu "
@@ -64,6 +75,17 @@
           toy2_source_blocks_low_ref_max,
           toy2_source_blocks_full_max,
           toy2_source_blocks_partial_max,
+          toy2_adaptive_descriptor_alloc,
+          toy2_adaptive_descriptor_segment_alloc,
+          toy2_adaptive_descriptor_segment_alloc_fail,
+          toy2_adaptive_descriptor_segment_max_block,
+          toy2_adaptive_descriptor_route_headroom_block,
+          toy2_adaptive_descriptor_double_allocate,
+          toy2_adaptive_descriptor_reuse_while_live,
+          toy2_adaptive_descriptor_storage_owner_mismatch,
+          toy2_adaptive_descriptor_live_current,
+          toy2_adaptive_descriptor_live_max,
+          toy2_adaptive_descriptor_segment_high_water,
           toy2_construct_abort_attempt,
           toy2_construct_abort_success, toy2_construct_abort_ref_nonzero,
           toy2_construct_abort_live_descriptor,

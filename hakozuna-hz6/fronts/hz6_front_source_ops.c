@@ -48,6 +48,10 @@ void* hz6_front_reuse_or_source_ops(Hz6Allocator* allocator,
     }
   }
   if (!descriptor) {
+    descriptor = hz6_allocator_find_toy2_adaptive_descriptor(
+        allocator, front_id, class_id);
+  }
+  if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);

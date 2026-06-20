@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192,p0_transfer_presence_class1,p0_transfer_presence_class2,p0_transfer_presence_small_class,p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_armed_lock,p0_transfer_class_presence_min192_scan64,p0_transfer_class_presence_min192_armed,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_budget2,p1_external_budget4,p1_external_front_external_only,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_toy2_split_maintenance,p1_external_toy2_route_before_maps,p1_external_toy2_route_before_maps_abort,p1_external_toy2_split_skip_midmap,p1_external_split_maintenance_budget2,p1_external_split_maintenance_budget4,p1_external_split_source_gate,p1_external_split_source_gate_observe,p1_external_split_maintenance_class2,p1_external_split_maintenance_small_class,p1_external_small_class
+  --variants CSV p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192,p0_transfer_presence_class1,p0_transfer_presence_class2,p0_transfer_presence_small_class,p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_armed_lock,p0_transfer_class_presence_min192_scan64,p0_transfer_class_presence_min192_armed,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_budget2,p1_external_budget4,p1_external_front_external_only,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_toy2_split_maintenance,p1_external_toy2_route_before_maps,p1_external_toy2_route_before_maps_abort,p1_external_toy2_route_before_maps_adaptive,p1_external_toy2_split_skip_midmap,p1_external_split_maintenance_budget2,p1_external_split_maintenance_budget4,p1_external_split_source_gate,p1_external_split_source_gate_observe,p1_external_split_maintenance_class2,p1_external_split_maintenance_small_class,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short,cross128_r90 (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -59,6 +59,8 @@ Variants:
                               Toy2 split plus route-before-maps dispatch
   p1_external_toy2_route_before_maps_abort
                               route-before-maps plus Toy2 zero-ref block abort
+  p1_external_toy2_route_before_maps_adaptive
+                              abort plus Toy2 lazy descriptor segment
   p1_external_toy2_split_skip_midmap
                               Toy2 split plus MidPage active-map skip
   p1_external_split_maintenance_budget2
@@ -118,7 +120,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p0_transfer_class_presence|p0_transfer_class_presence_min192|p0_transfer_presence_class1|p0_transfer_presence_class2|p0_transfer_presence_small_class|p0_transfer_class_presence_min192_lock|p0_transfer_class_presence_min192_armed_lock|p0_transfer_class_presence_min192_scan64|p0_transfer_class_presence_min192_armed|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_budget2|p1_external_budget4|p1_external_front_external_only|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_toy2_split_maintenance|p1_external_toy2_route_before_maps|p1_external_toy2_route_before_maps_abort|p1_external_toy2_split_skip_midmap|p1_external_split_maintenance_budget2|p1_external_split_maintenance_budget4|p1_external_split_source_gate|p1_external_split_source_gate_observe|p1_external_split_maintenance_class2|p1_external_split_maintenance_small_class|p1_external_small_class)
+    p0_off|p0_transfer_class_presence|p0_transfer_class_presence_min192|p0_transfer_presence_class1|p0_transfer_presence_class2|p0_transfer_presence_small_class|p0_transfer_class_presence_min192_lock|p0_transfer_class_presence_min192_armed_lock|p0_transfer_class_presence_min192_scan64|p0_transfer_class_presence_min192_armed|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_budget2|p1_external_budget4|p1_external_front_external_only|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_toy2_split_maintenance|p1_external_toy2_route_before_maps|p1_external_toy2_route_before_maps_abort|p1_external_toy2_route_before_maps_adaptive|p1_external_toy2_split_skip_midmap|p1_external_split_maintenance_budget2|p1_external_split_maintenance_budget4|p1_external_split_source_gate|p1_external_split_source_gate_observe|p1_external_split_maintenance_class2|p1_external_split_maintenance_small_class|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -296,6 +298,16 @@ build_variant() {
       hz6_preload_replace_define flags HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1 1
       hz6_preload_replace_define flags HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1 1
       ;;
+    p1_external_toy2_route_before_maps_adaptive)
+      hz6_preload_effective_owner_inbox_external_cflags flags 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_TOY_CLASS2_FRONT_MAINTENANCE_GATE_L1 1
+      hz6_preload_replace_define flags HZ6_REMOTE_PENDING_SOURCE_GATE_MAINTENANCE_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_FOREIGN_ROUTE_BEFORE_MAPS_ARMED_L1 1
+      hz6_preload_replace_define flags HZ6_PRELOAD_ROUTE_BEFORE_MAPS_LOCAL_DISPATCH_L1 1
+      hz6_preload_replace_define flags HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1 1
+      hz6_preload_replace_define flags HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_L1 1
+      ;;
     p1_external_toy2_split_skip_midmap)
       hz6_preload_effective_owner_inbox_external_cflags flags 1
       hz6_preload_replace_define flags HZ6_REMOTE_PENDING_TOY_CLASS2_FRONT_MAINTENANCE_GATE_L1 1
@@ -388,6 +400,17 @@ counter_keys=(
   toy2_source_blocks_low_ref_max
   toy2_source_blocks_full_max
   toy2_source_blocks_partial_max
+  toy2_adaptive_descriptor_alloc
+  toy2_adaptive_descriptor_segment_alloc
+  toy2_adaptive_descriptor_segment_alloc_fail
+  toy2_adaptive_descriptor_segment_max_block
+  toy2_adaptive_descriptor_route_headroom_block
+  toy2_adaptive_descriptor_double_allocate
+  toy2_adaptive_descriptor_reuse_while_live
+  toy2_adaptive_descriptor_storage_owner_mismatch
+  toy2_adaptive_descriptor_live_current
+  toy2_adaptive_descriptor_live_max
+  toy2_adaptive_descriptor_segment_high_water
   toy2_construct_abort_attempt
   toy2_construct_abort_success
   toy2_construct_abort_ref_nonzero

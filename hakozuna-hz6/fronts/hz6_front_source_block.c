@@ -53,6 +53,10 @@ static void* hz6_front_source_block_reserved_slot(
 #if HZ6_DIAGNOSTIC_PROBES
     ++allocator->stats.source_run_reuse_descriptor_fail;
 #endif
+    descriptor = hz6_allocator_find_toy2_adaptive_descriptor(
+        allocator, front_id, class_id);
+  }
+  if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,
                                                           class_id);
     hz6_allocator_note_descgov_descriptor_fail(allocator, class_id);
@@ -233,6 +237,10 @@ static void* hz6_front_source_block_slot_with_descriptor(
       }
 #endif
     }
+  }
+  if (!descriptor) {
+    descriptor = hz6_allocator_find_toy2_adaptive_descriptor(
+        allocator, front_id, class_id);
   }
   if (!descriptor) {
     hz6_allocator_note_descriptor_frontcache_reuse_dryrun(allocator,

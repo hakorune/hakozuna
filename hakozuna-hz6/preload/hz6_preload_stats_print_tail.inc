@@ -475,6 +475,17 @@
               "toy2_source_blocks_low_ref_max=%zu "
               "toy2_source_blocks_full_max=%zu "
               "toy2_source_blocks_partial_max=%zu "
+              "toy2_adaptive_descriptor_alloc=%zu "
+              "toy2_adaptive_descriptor_segment_alloc=%zu "
+              "toy2_adaptive_descriptor_segment_alloc_fail=%zu "
+              "toy2_adaptive_descriptor_segment_max_block=%zu "
+              "toy2_adaptive_descriptor_route_headroom_block=%zu "
+              "toy2_adaptive_descriptor_double_allocate=%zu "
+              "toy2_adaptive_descriptor_reuse_while_live=%zu "
+              "toy2_adaptive_descriptor_storage_owner_mismatch=%zu "
+              "toy2_adaptive_descriptor_live_current=%zu "
+              "toy2_adaptive_descriptor_live_max=%zu "
+              "toy2_adaptive_descriptor_segment_high_water=%zu "
               "toy2_construct_abort_attempt=%zu "
               "toy2_construct_abort_success=%zu "
               "toy2_construct_abort_ref_nonzero=%zu "
@@ -502,6 +513,17 @@
               stats.toy2_source_blocks_low_ref_max,
               stats.toy2_source_blocks_full_max,
               stats.toy2_source_blocks_partial_max,
+              stats.toy2_adaptive_descriptor_alloc,
+              stats.toy2_adaptive_descriptor_segment_alloc,
+              stats.toy2_adaptive_descriptor_segment_alloc_fail,
+              stats.toy2_adaptive_descriptor_segment_max_block,
+              stats.toy2_adaptive_descriptor_route_headroom_block,
+              stats.toy2_adaptive_descriptor_double_allocate,
+              stats.toy2_adaptive_descriptor_reuse_while_live,
+              stats.toy2_adaptive_descriptor_storage_owner_mismatch,
+              stats.toy2_adaptive_descriptor_live_current,
+              stats.toy2_adaptive_descriptor_live_max,
+              stats.toy2_adaptive_descriptor_segment_high_water,
               stats.toy2_construct_abort_attempt,
               stats.toy2_construct_abort_success,
               stats.toy2_construct_abort_ref_nonzero,

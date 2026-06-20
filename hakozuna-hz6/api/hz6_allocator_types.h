@@ -303,6 +303,16 @@ typedef struct Hz6ObjectDescriptor {
   uint8_t state;
 } Hz6ObjectDescriptor;
 
+typedef struct Hz6Toy2DescriptorSegment {
+  Hz6ObjectDescriptor descriptors[HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE];
+  Hz6OwnerToken owners[HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE];
+  size_t live_count;
+  size_t next_index;
+  struct Hz6Toy2DescriptorSegment* next;
+  struct Hz6Allocator* storage_owner;
+  uint32_t storage_generation;
+} Hz6Toy2DescriptorSegment;
+
 #if HZ6_THIN_DESCRIPTOR_L1
 typedef struct Hz6DescriptorColdSource {
   void* source_ptr;

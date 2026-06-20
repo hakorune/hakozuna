@@ -681,6 +681,29 @@
 #define HZ6_TOY2_UNRETAINED_SOURCE_BLOCK_ABORT_L1 0
 #endif
 
+#ifndef HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_L1
+/* Default-off Toy class2 descriptor capacity probe.  Allocators that exhaust
+ * their base descriptor table may lazily allocate small Toy2-only descriptor
+ * segments when route-table headroom is still available. */
+#define HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_L1 0
+#endif
+
+#ifndef HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE
+#define HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_SIZE ((size_t)512)
+#endif
+
+#ifndef HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_MAX
+#define HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT_MAX ((size_t)16)
+#endif
+
+#ifndef HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_NUMERATOR
+#define HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_NUMERATOR ((size_t)3)
+#endif
+
+#ifndef HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_DENOMINATOR
+#define HZ6_TOY2_ADAPTIVE_DESCRIPTOR_ROUTE_LOAD_DENOMINATOR ((size_t)4)
+#endif
+
 #ifndef HZ6_PRELOAD_CALLOC_REAL_FALLBACK_L1
 /* Default-off calloc control.  When enabled, preload calloc delegates to the
  * next real calloc implementation instead of hz6 malloc plus memset. */

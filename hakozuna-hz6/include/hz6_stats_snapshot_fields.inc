@@ -743,6 +743,17 @@
   size_t toy2_source_blocks_low_ref_max;
   size_t toy2_source_blocks_full_max;
   size_t toy2_source_blocks_partial_max;
+  size_t toy2_adaptive_descriptor_alloc;
+  size_t toy2_adaptive_descriptor_segment_alloc;
+  size_t toy2_adaptive_descriptor_segment_alloc_fail;
+  size_t toy2_adaptive_descriptor_segment_max_block;
+  size_t toy2_adaptive_descriptor_route_headroom_block;
+  size_t toy2_adaptive_descriptor_double_allocate;
+  size_t toy2_adaptive_descriptor_reuse_while_live;
+  size_t toy2_adaptive_descriptor_storage_owner_mismatch;
+  size_t toy2_adaptive_descriptor_live_current;
+  size_t toy2_adaptive_descriptor_live_max;
+  size_t toy2_adaptive_descriptor_segment_high_water;
   size_t descriptor_frontcache_reuse_dryrun_calls;
   size_t descriptor_frontcache_reuse_requested_nonempty;
   size_t descriptor_frontcache_reuse_requested_total;

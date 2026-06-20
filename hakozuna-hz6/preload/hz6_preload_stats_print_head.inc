@@ -38,6 +38,17 @@
   size_t toy2_source_blocks_low_ref_max = 0;
   size_t toy2_source_blocks_full_max = 0;
   size_t toy2_source_blocks_partial_max = 0;
+  size_t toy2_adaptive_descriptor_alloc = 0;
+  size_t toy2_adaptive_descriptor_segment_alloc = 0;
+  size_t toy2_adaptive_descriptor_segment_alloc_fail = 0;
+  size_t toy2_adaptive_descriptor_segment_max_block = 0;
+  size_t toy2_adaptive_descriptor_route_headroom_block = 0;
+  size_t toy2_adaptive_descriptor_double_allocate = 0;
+  size_t toy2_adaptive_descriptor_reuse_while_live = 0;
+  size_t toy2_adaptive_descriptor_storage_owner_mismatch = 0;
+  size_t toy2_adaptive_descriptor_live_current = 0;
+  size_t toy2_adaptive_descriptor_live_max = 0;
+  size_t toy2_adaptive_descriptor_segment_high_water = 0;
   size_t toy2_construct_abort_attempt = 0;
   size_t toy2_construct_abort_success = 0;
   size_t toy2_construct_abort_ref_nonzero = 0;
@@ -358,6 +369,30 @@
         toy2_source_blocks_partial_max) {
       toy2_source_blocks_partial_max =
           stats.toy2_source_blocks_partial_max;
+    }
+    toy2_adaptive_descriptor_alloc += stats.toy2_adaptive_descriptor_alloc;
+    toy2_adaptive_descriptor_segment_alloc +=
+        stats.toy2_adaptive_descriptor_segment_alloc;
+    toy2_adaptive_descriptor_segment_alloc_fail +=
+        stats.toy2_adaptive_descriptor_segment_alloc_fail;
+    toy2_adaptive_descriptor_segment_max_block +=
+        stats.toy2_adaptive_descriptor_segment_max_block;
+    toy2_adaptive_descriptor_route_headroom_block +=
+        stats.toy2_adaptive_descriptor_route_headroom_block;
+    toy2_adaptive_descriptor_double_allocate +=
+        stats.toy2_adaptive_descriptor_double_allocate;
+    toy2_adaptive_descriptor_reuse_while_live +=
+        stats.toy2_adaptive_descriptor_reuse_while_live;
+    toy2_adaptive_descriptor_storage_owner_mismatch +=
+        stats.toy2_adaptive_descriptor_storage_owner_mismatch;
+    toy2_adaptive_descriptor_live_current +=
+        stats.toy2_adaptive_descriptor_live_current;
+    toy2_adaptive_descriptor_live_max +=
+        stats.toy2_adaptive_descriptor_live_max;
+    if (stats.toy2_adaptive_descriptor_segment_high_water >
+        toy2_adaptive_descriptor_segment_high_water) {
+      toy2_adaptive_descriptor_segment_high_water =
+          stats.toy2_adaptive_descriptor_segment_high_water;
     }
     toy2_construct_abort_attempt += stats.toy2_construct_abort_attempt;
     toy2_construct_abort_success += stats.toy2_construct_abort_success;
