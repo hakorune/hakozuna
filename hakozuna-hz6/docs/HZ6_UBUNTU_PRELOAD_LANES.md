@@ -4657,3 +4657,45 @@ but the production rows do not improve.  The likely tradeoff is that bounded
 scan misses older same-class transfer entries and pushes work into later reuse
 or source paths.  Keep the flag as an opt-in research switch only; do not add it
 to `hz6-high-remote-transfer-presence-target`.
+
+## 2026-06-20 Transfer Class Negative Memo
+
+Box:
+
+```text
+TransferClassNegativeMemo-L1
+```
+
+Attempted shape: remember a class as absent after a full dense scan miss, then
+skip later below-threshold pop attempts for that class until a publish epoch
+changes.  The implementation was tested locally as a default-off research
+variant and then removed rather than committed, because the diagnostic shadow
+oracle found false-zero cases.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_negmemo
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_151734
+```
+
+Key result:
+
+```text
+row           false_zero_shadow
+cross128_r90 11917
+```
+
+Decision: `NO-GO(correctness)`.  The idea reduces repeated empty scans, but it
+can report class absence while the diagnostic dense scan still finds that class.
+Do not keep a negative absence memo without a stronger synchronization boundary
+or a real per-class index.
