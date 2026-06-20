@@ -5,6 +5,7 @@ This page is the public pointer list for dated benchmark summaries.
 ## Current Summaries
 
 - [Linux x86_64 HZ6 cross128 next box, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_CROSS128_NEXT_BOX.md)
+- [Linux x86_64 HZ6 remote allocator compare with route-before-maps, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_ROUTE_BEFORE_MAPS.md)
 - [Linux x86_64 HZ6 foreign route before maps, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_FOREIGN_ROUTE_BEFORE_MAPS.md)
 - [Linux x86_64 HZ6 Toy-only free hint plan, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY_ONLY_FREE_HINT_PLAN.md)
 - [Linux x86_64 HZ6 skip MidPage free map probe, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_SKIP_MIDMAP_FREE.md)
