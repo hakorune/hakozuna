@@ -122,3 +122,62 @@ Increasing the overflow sink reduces backpressure, but not enough to close the
 row, and the production result is still below the clean `p0_off` R10 median.
 This points back to owner-side consumption and transfer pressure shape rather
 than a simple reserve-capacity fix.
+
+## Owner-Inbox Sink Probe
+
+Raw outputs:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_sink_r3_20260620_171429`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_sink_prod_r3_20260620_171626`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_sink_prod_r10_20260620_171650`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_source_gate_prod_r10_20260620_171821`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_small_class_prod_r10_20260620_171905`
+- `hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_small_class_guard_prod_r3_20260620_172016`
+
+Diagnostic R3:
+
+| Variant | Median ops/s | returned backpressure | origin pending commit | pending current | transfer pop |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| `p0_off` | 0.402M | 124.8K | 0 | 0 | 372.9K |
+| `p1_external` | 0.467M | 0 | 542.4K | 123.1K | 9.7K |
+
+Production R10:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p0_off` | 5.43M | 1.19M | 9.10M | 70.0 MiB |
+| `p1_external` | 5.56M | 3.50M | 8.38M | 74.1 MiB |
+
+`p1_external` turns the free-completion sink problem into owner-local pending
+inventory.  It removes returned backpressure in diagnostic runs and improves
+the low-percentile production result, but the median is only slightly better
+and RSS rises by about 4 MiB in this row.
+
+Follow-up variants:
+
+| Variant | Median ops/s | p25 | p75 | Decision |
+| --- | ---: | ---: | ---: | --- |
+| `p1_external_source_gate` | 6.94M | 4.56M | 13.41M | HOLD; p75 improves but lower tail worsens |
+| `p1_external_small_class` | 5.99M | 2.82M | 15.23M | HOLD; cross128 variance high, guard rows mixed |
+
+Guard R3 for `p1_external_small_class` versus `p1_external`:
+
+| Row | `p1_external` median | `p1_external_small_class` median | Decision |
+| --- | ---: | ---: | --- |
+| `remote50` | 13.85M | 14.32M | OK |
+| `remote90` | 10.98M | 10.61M | slight regression |
+| `cross128_r90` | 7.29M | 3.79M | regression in this batch |
+
+Decision:
+
+```text
+OwnerInboxExternal for cross128:
+  GO as sink direction
+
+SourceGate / SmallClass on top:
+  HOLD
+```
+
+The next implementation box should not add another broad placement policy.  It
+should either make owner-inbox pending cheaper to consume for Toy class 2 or
+reduce the fixed RSS/metadata tax of enabling owner inbox in the selected lane.
