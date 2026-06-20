@@ -55,6 +55,11 @@ static void hz6_transfer_presence_increment(Hz6TransferCache* cache,
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
+  if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_increment);
+  }
+#endif
   uint32_t previous = atomic_fetch_add_explicit(
       &cache->class_count[object->class_id], 1u, memory_order_release);
   if ((size_t)previous + 1u > cache->capacity) {
@@ -75,6 +80,11 @@ static void hz6_transfer_presence_decrement(Hz6TransferCache* cache,
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
+  if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_decrement);
+  }
+#endif
   if (!hz6_transfer_dec_u32(&cache->class_count[object->class_id])) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_underflow);
   }
@@ -118,6 +128,12 @@ void hz6_transfer_init(Hz6TransferCache* cache,
   atomic_store_explicit(&cache->presence_below_min_hit, 0,
                         memory_order_relaxed);
   atomic_store_explicit(&cache->presence_below_min_miss, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_update_below_min_increment, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_update_below_min_decrement, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&cache->presence_update_below_min_commit, 0,
                         memory_order_relaxed);
   atomic_store_explicit(&cache->presence_invalid_class, 0,
                         memory_order_relaxed);
@@ -196,6 +212,11 @@ void hz6_transfer_commit(Hz6TransferReservation* reservation,
 #endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
     hz6_transfer_presence_increment(cache, &object);
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
+    if (cache->count < HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL) {
+      HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_update_below_min_commit);
+    }
+#endif
 #endif
     cache->objects[reservation->index] = object;
   }
@@ -333,6 +354,12 @@ void hz6_transfer_note_class_presence_stats(
       hz6_transfer_load_u32(&cache->presence_below_min_hit);
   snapshot->transfer_class_presence_below_min_miss +=
       hz6_transfer_load_u32(&cache->presence_below_min_miss);
+  snapshot->transfer_class_presence_update_below_min_increment +=
+      hz6_transfer_load_u32(&cache->presence_update_below_min_increment);
+  snapshot->transfer_class_presence_update_below_min_decrement +=
+      hz6_transfer_load_u32(&cache->presence_update_below_min_decrement);
+  snapshot->transfer_class_presence_update_below_min_commit +=
+      hz6_transfer_load_u32(&cache->presence_update_below_min_commit);
   snapshot->transfer_class_presence_invalid_class +=
       hz6_transfer_load_u32(&cache->presence_invalid_class);
   snapshot->transfer_class_presence_underflow +=

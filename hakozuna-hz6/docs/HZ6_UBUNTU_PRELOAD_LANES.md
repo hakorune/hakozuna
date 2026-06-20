@@ -4384,3 +4384,79 @@ explicit profile.  Do not promote presence to default.  A behavior fix for
 cross128 would need an armed-count design that avoids low-occupancy atomic
 maintenance without creating false-zero counts when the cache crosses the
 threshold.
+
+## 2026-06-20 Transfer Presence Update Cost Audit
+
+`TransferPresenceUpdateCostAudit-L1` extends the threshold audit to the update
+side.  It counts class-presence atomic maintenance performed while the cache is
+still below `HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL`.
+
+New counters:
+
+```text
+transfer_class_presence_update_below_min_increment
+transfer_class_presence_update_below_min_decrement
+transfer_class_presence_update_below_min_commit
+```
+
+Command:
+
+```text
+DIAGNOSTIC=1 \
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --runs 1 \
+  --rows cross128_r90 \
+  --variants p0_off,p0_transfer_class_presence_min192
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_144712
+```
+
+Diagnostic R1:
+
+```text
+row                         p0_off  min192
+presence_gate_check         0       0
+below_min_check             0       1270083
+below_min_hit               0       659117
+below_min_miss              0       610966
+update_below_min_increment  0       661631
+update_below_min_decrement  0       659031
+update_below_min_commit     0       661631
+false_zero_shadow           0       0
+```
+
+Read:
+
+```text
+cross128 remains almost entirely below the min192 arming threshold in this
+diagnostic run.  The presence hint never fires, but class_count maintenance
+still performs hundreds of thousands of low-occupancy atomic increments and
+decrements.  Raising MIN_TOTAL alone cannot remove this tax.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  The next behavior, if pursued,
+should be an armed/lazy class-count maintenance box:
+
+```text
+below threshold:
+  do not maintain class_count
+  always dense scan
+
+threshold crossing:
+  rebuild class_count from the dense cache under the same mutation boundary
+  mark counts armed
+
+armed:
+  maintain class_count incrementally
+  allow class-presence skip
+
+drop below threshold:
+  mark unarmed and stop maintaining counts
+```
+
+Do not implement this as a blind `if (count < min) skip increment` patch; that
+would produce false-zero counts after the cache later crosses the threshold.

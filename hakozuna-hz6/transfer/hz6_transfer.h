@@ -33,6 +33,9 @@ typedef struct Hz6TransferCache {
   _Atomic uint32_t presence_below_min_check;
   _Atomic uint32_t presence_below_min_hit;
   _Atomic uint32_t presence_below_min_miss;
+  _Atomic uint32_t presence_update_below_min_increment;
+  _Atomic uint32_t presence_update_below_min_decrement;
+  _Atomic uint32_t presence_update_below_min_commit;
   _Atomic uint32_t presence_invalid_class;
   _Atomic uint32_t presence_underflow;
   _Atomic uint32_t presence_over_capacity;

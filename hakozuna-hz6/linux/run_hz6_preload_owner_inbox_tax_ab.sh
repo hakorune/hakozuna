@@ -274,6 +274,9 @@ counter_keys=(
   transfer_class_presence_below_min_check
   transfer_class_presence_below_min_hit
   transfer_class_presence_below_min_miss
+  transfer_class_presence_update_below_min_increment
+  transfer_class_presence_update_below_min_decrement
+  transfer_class_presence_update_below_min_commit
   transfer_class_presence_invalid_class
   transfer_class_presence_underflow
   transfer_class_presence_over_capacity
