@@ -4743,3 +4743,78 @@ consumer paths without a dedicated list lock, and the side index diverged from
 the dense array/counts under diagnostic smoke.  Do not revive this shape unless
 the transfer cache first gets a real synchronization/transaction boundary or is
 replaced by a class-indexed storage design.
+
+## 2026-06-20 Transfer Cache Lock
+
+Box:
+
+```text
+TransferCacheLock-L1
+```
+
+Shape: add a default-off `HZ6_TRANSFER_CACHE_LOCK_L1` spin-lock boundary to
+`Hz6TransferCache`.  Plain push/pop operations take and release the cache lock.
+Reservation success keeps the lock held until commit or cancel, so placeholder
+publication and final commit/cancel are serialized with pop and push.  The tax
+runner exposes this as:
+
+```text
+p0_transfer_class_presence_min192_lock
+```
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_153225
+```
+
+Key diagnostic result:
+
+```text
+variant                                  underflow  scan_mismatch  false_zero
+p0_transfer_class_presence_min192        1          5              0
+p0_transfer_class_presence_min192_lock   0          0              0
+```
+
+Production guard:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_153337
+```
+
+Median result:
+
+```text
+row             min192    min192_lock
+local0          16.64M    16.49M
+remote50        14.98M    14.66M
+cross128_r90     3.68M     8.18M
+remote90_short   8.88M     9.26M
+```
+
+Decision: `GO(sync prerequisite)/HOLD(default, profile)`.  The lock boundary
+removes the live diagnostic divergence seen by the sidecar/index experiments
+and materially improves the unstable `cross128_r90` median in this batch.  It
+also has a measurable `remote50` cost, so it is not a selected/default change.
+Keep it as a boxed research switch and use it as the prerequisite boundary for a
+future class-indexed transfer storage design.

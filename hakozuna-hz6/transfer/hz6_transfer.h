@@ -4,12 +4,6 @@
 #include "../include/hz6_contract.h"
 #include "hz6_transfer_audit_tag.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
-
 #ifndef HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
 #define HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1 0
 #endif
@@ -17,6 +11,20 @@ typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
 #ifndef HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT
 #define HZ6_TRANSFER_BELOW_MIN_POP_SCAN_LIMIT 0
 #endif
+
+#ifndef HZ6_TRANSFER_CACHE_LOCK_L1
+#define HZ6_TRANSFER_CACHE_LOCK_L1 0
+#endif
+
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+#include <stdatomic.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
 
 typedef struct Hz6TransferObject {
   void* ptr;
@@ -32,6 +40,9 @@ typedef struct Hz6TransferCache {
   Hz6TransferObject* objects;
   size_t capacity;
   size_t count;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  atomic_flag lock;
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   _Atomic uint32_t class_count[HZ6_FRONT_CACHE_CLASS_COUNT];
 #if HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
@@ -71,6 +82,9 @@ typedef struct Hz6TransferReservation {
   Hz6TransferCache* cache;
   size_t index;
   int reserved;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  int lock_held;
+#endif
 } Hz6TransferReservation;
 
 void hz6_transfer_init(Hz6TransferCache* cache,

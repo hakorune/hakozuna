@@ -1,8 +1,26 @@
 #include "hz6_transfer.h"
 #include "../include/hz6_stats_snapshot.h"
 
-#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 || HZ6_TRANSFER_CACHE_LOCK_L1
 #include <stdatomic.h>
+#endif
+
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+static void hz6_transfer_lock(Hz6TransferCache* cache) {
+  if (!cache) {
+    return;
+  }
+  while (atomic_flag_test_and_set_explicit(&cache->lock,
+                                           memory_order_acquire)) {
+  }
+}
+
+static void hz6_transfer_unlock(Hz6TransferCache* cache) {
+  if (!cache) {
+    return;
+  }
+  atomic_flag_clear_explicit(&cache->lock, memory_order_release);
+}
 #endif
 
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
@@ -201,6 +219,9 @@ void hz6_transfer_init(Hz6TransferCache* cache,
   cache->objects = objects;
   cache->capacity = capacity;
   cache->count = 0;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  atomic_flag_clear_explicit(&cache->lock, memory_order_release);
+#endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
     atomic_store_explicit(&cache->class_count[i], 0, memory_order_relaxed);
@@ -260,8 +281,16 @@ void hz6_transfer_init(Hz6TransferCache* cache,
 }
 
 int hz6_transfer_push(Hz6TransferCache* cache, Hz6TransferObject object) {
-  if (!cache || !cache->objects || !object.ptr ||
-      cache->count >= cache->capacity) {
+  if (!cache || !cache->objects || !object.ptr) {
+    return 0;
+  }
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  hz6_transfer_lock(cache);
+#endif
+  if (cache->count >= cache->capacity) {
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
+#endif
     return 0;
   }
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
@@ -272,13 +301,25 @@ int hz6_transfer_push(Hz6TransferCache* cache, Hz6TransferObject object) {
     HZ6_TRANSFER_CLASS_PRESENCE_ARMED_L1
   hz6_transfer_presence_maybe_arm(cache);
 #endif
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  hz6_transfer_unlock(cache);
+#endif
   return 1;
 }
 
 int hz6_transfer_reserve(Hz6TransferCache* cache,
                          Hz6TransferReservation* out) {
-  if (!cache || !cache->objects || !out ||
-      cache->count >= cache->capacity) {
+  if (!cache || !cache->objects || !out) {
+    return 0;
+  }
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  hz6_transfer_lock(cache);
+  out->lock_held = 0;
+#endif
+  if (cache->count >= cache->capacity) {
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
+#endif
     return 0;
   }
 
@@ -287,6 +328,9 @@ int hz6_transfer_reserve(Hz6TransferCache* cache,
   out->cache = cache;
   out->index = cache->count;
   out->reserved = 1;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  out->lock_held = 1;
+#endif
   cache->objects[cache->count++] = placeholder;
   return 1;
 }
@@ -306,6 +350,12 @@ void hz6_transfer_cancel(Hz6TransferReservation* reservation) {
   reservation->cache = NULL;
   reservation->index = 0;
   reservation->reserved = 0;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  if (reservation->lock_held) {
+    reservation->lock_held = 0;
+    hz6_transfer_unlock(cache);
+  }
+#endif
 }
 
 void hz6_transfer_commit(Hz6TransferReservation* reservation,
@@ -342,6 +392,12 @@ void hz6_transfer_commit(Hz6TransferReservation* reservation,
   reservation->cache = NULL;
   reservation->index = 0;
   reservation->reserved = 0;
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  if (reservation->lock_held) {
+    reservation->lock_held = 0;
+    hz6_transfer_unlock(cache);
+  }
+#endif
 }
 
 int hz6_transfer_pop(Hz6TransferCache* cache,
@@ -350,13 +406,22 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
   if (!cache || !cache->objects || !out) {
     return 0;
   }
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  hz6_transfer_lock(cache);
+#endif
 
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   if (!hz6_transfer_class_valid(class_id)) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
+#endif
     return 0;
   }
   if (cache->count == 0) {
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
+#endif
     return 0;
   }
 #if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
@@ -368,6 +433,9 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
     if (hz6_transfer_dense_has_class(cache, class_id)) {
       HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_false_zero_shadow);
     }
+#endif
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
 #endif
     return 0;
   }
@@ -416,6 +484,9 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
     }
 #endif
 #endif
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+    hz6_transfer_unlock(cache);
+#endif
     return 1;
   }
 
@@ -426,6 +497,9 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
   if (presence_below_min) {
     HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_below_min_miss);
   }
+#endif
+#if HZ6_TRANSFER_CACHE_LOCK_L1
+  hz6_transfer_unlock(cache);
 #endif
   return 0;
 }
