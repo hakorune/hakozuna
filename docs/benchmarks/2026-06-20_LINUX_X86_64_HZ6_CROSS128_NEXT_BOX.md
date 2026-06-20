@@ -547,3 +547,45 @@ regresses `cross128_r90`.  The next implementation should not stack DirectReuse
 onto split maintenance.  The remaining useful direction is still narrower:
 make the front-side maintenance gate explicit for Toy class 2 without changing
 activation/reuse ordering through the DirectReuse path.
+
+## Front External-Only Maintenance Probe
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_front_external_only_prod_r3_20260620_175329`
+
+New runner variant:
+
+```text
+p1_external_front_external_only
+```
+
+This isolates one half of split maintenance: front-side maintenance consumes
+only external tickets and does not run inline pending maintenance there.
+
+Production R3:
+
+| Variant | Row | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | --- | ---: | ---: | ---: | ---: |
+| `p1_external` | `remote50` | 13.17M | 11.76M | 13.83M | 74.9 MiB |
+| `p1_external_front_external_only` | `remote50` | 13.71M | 12.92M | 13.97M | 75.0 MiB |
+| `p1_external_split_maintenance` | `remote50` | 13.39M | 12.73M | 13.97M | 75.0 MiB |
+| `p1_external` | `remote90` | 10.49M | 10.45M | 10.92M | 77.4 MiB |
+| `p1_external_front_external_only` | `remote90` | 10.78M | 10.67M | 10.88M | 77.6 MiB |
+| `p1_external_split_maintenance` | `remote90` | 10.84M | 10.81M | 10.88M | 77.5 MiB |
+| `p1_external` | `cross128_r90` | 5.79M | 2.33M | 10.06M | 75.0 MiB |
+| `p1_external_front_external_only` | `cross128_r90` | 1.76M | 0.76M | 2.94M | 81.3 MiB |
+| `p1_external_split_maintenance` | `cross128_r90` | 2.74M | 2.20M | 8.64M | 74.6 MiB |
+
+Decision:
+
+```text
+Front external-only maintenance:
+  NO-GO for cross128
+```
+
+Disabling inline maintenance on the front side without a stable replacement
+regresses `cross128_r90`.  The next implementation should not simply skip
+front inline maintenance.  It needs a narrow Toy class 2 policy that decides
+when front-side inline maintenance is worth doing, instead of a broad
+external-only rule.
