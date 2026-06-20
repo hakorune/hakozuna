@@ -10,7 +10,7 @@ ARCH="${ARCH:-x86_64}"
 BENCH="${HZ6_BENCH_REMOTE_MT:-/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc}"
 RUNS="${RUNS:-3}"
 RUN_TIMEOUT="${HZ6_REMOTE_ALLOCATOR_COMPARE_TIMEOUT:-90}"
-ALLOCATORS_CSV="${ALLOCATORS:-system,hz3,hz4,hz6,transfer_presence,owner_inbox_external,small_class_shard,mimalloc,tcmalloc}"
+ALLOCATORS_CSV="${ALLOCATORS:-system,hz3,hz4,hz6,transfer_presence,owner_inbox_external,small_class_shard,toy2_split,mimalloc,tcmalloc}"
 ROWS_CSV="${ROWS:-remote50,remote90,cross128_r90}"
 OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_remote_allocator_compare_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
@@ -25,7 +25,7 @@ Usage:
 Options:
   --arch ARCH        target arch for legacy builds/prep (default: x86_64)
   --runs N           repeat count per row/allocator (default: 3)
-  --allocators CSV   system,hz3,hz4,hz6,transfer_presence,owner_inbox_external,small_class_shard,mimalloc,tcmalloc
+  --allocators CSV   system,hz3,hz4,hz6,transfer_presence,owner_inbox_external,small_class_shard,toy2_split,mimalloc,tcmalloc
   --rows CSV         local0,remote50,remote90,remote90_short,cross128_r90
   --outdir DIR       output directory
   --skip-builds      reuse existing HZ and benchmark builds
@@ -65,7 +65,7 @@ allocators=()
 IFS=',' read -r -a raw_allocators <<< "$ALLOCATORS_CSV"
 for allocator in "${raw_allocators[@]}"; do
   case "$allocator" in
-    system|hz3|hz4|hz6|transfer_presence|owner_inbox_external|small_class_shard|mimalloc|tcmalloc)
+    system|hz3|hz4|hz6|transfer_presence|owner_inbox_external|small_class_shard|toy2_split|mimalloc|tcmalloc)
       allocators+=("$allocator")
       ;;
     "") ;;
@@ -92,6 +92,7 @@ lookup_name() {
     transfer_presence) echo "hz6-high-remote-transfer-presence-target" ;;
     owner_inbox_external) echo "hz6-high-remote-owner-inbox-target" ;;
     small_class_shard) echo "hz6-transfer-small-class-shard-target" ;;
+    toy2_split) echo "hz6-cross128-toy2-split-target" ;;
     *) echo "$1" ;;
   esac
 }
@@ -107,6 +108,9 @@ if [[ "$SKIP_BUILDS" -ne 1 ]]; then
     "$ROOT_DIR"
   hz6_preload_build_requested_aliases \
     "${ALLOCATORS_CSV/small_class_shard/hz6-transfer-small-class-shard-target}" \
+    "$ROOT_DIR"
+  hz6_preload_build_requested_aliases \
+    "${ALLOCATORS_CSV/toy2_split/hz6-cross128-toy2-split-target}" \
     "$ROOT_DIR"
 fi
 
