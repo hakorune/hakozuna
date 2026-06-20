@@ -85,15 +85,16 @@ Hakozuna には、metadata と ownership の流し方が違う4つの allocator 
 同じマシンの Ubuntu-native MT snapshot です。HZ5 は単一既定 profile ではなく
 profile family なので、Best HZ5 と採用 row を分けて示します。HZ6 は
 `2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md` の
-full allocator frontier run から追加しています。この表での HZ6 は throughput winner
-ではなく、RSS が低く平坦な production line として読むのが安全です。
+full allocator frontier run から追加し、`guard_r0` は同じマシン・同じ runner の
+selected-row rerun で補完しています。この表での HZ6 は throughput winner ではなく、
+RSS が低く平坦な production line として読むのが安全です。
 
 | Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ5 row | HZ6 | HZ6 RSS | HZ6 row |
 |------|-----|-----|----------|----------|----------|---------|-----|--------:|---------|
 | main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | hz5-pagerun64-main | 16.88M | 67.38 MiB | hz6 / local0 |
 | main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | hz5-large128-transfer128 | 15.08M | 69.50 MiB | hz6 / remote50 |
 | main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | hz5-pagerun64-cross128 | 10.99M | 72.07 MiB | hz6 / remote90 |
-| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main | n/a | n/a | HZ6 full R10 対象外 |
+| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | hz5-pagerun64-main | 189.48M | 65.88 MiB | HZ6 selected row |
 | cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | hz5-large128-transfer128 | 6.38M | 68.91 MiB | hz6 / cross128_r90 |
 
 HZ5 Linux profile family
