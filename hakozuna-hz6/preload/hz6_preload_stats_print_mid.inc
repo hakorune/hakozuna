@@ -308,10 +308,24 @@
           "origin_phase_audit_full_origin_fallback_occupancy_total=%zu "
           "origin_phase_audit_full_destination_occupancy_max=%zu "
           "origin_phase_audit_full_origin_fallback_occupancy_max=%zu "
+          "origin_phase_audit_full_same_class_destination_total=%zu "
+          "origin_phase_audit_full_same_class_origin_fallback_total=%zu "
+          "origin_phase_audit_full_cross_class_destination_total=%zu "
+          "origin_phase_audit_full_cross_class_origin_fallback_total=%zu "
+          "origin_phase_audit_full_cross_resident_fresh_total=%zu "
+          "origin_phase_audit_full_cross_resident_recent_total=%zu "
+          "origin_phase_audit_full_cross_resident_stale_total=%zu "
           "origin_phase_audit_empty_destination_occupancy_total=%zu "
           "origin_phase_audit_empty_origin_fallback_occupancy_total=%zu "
           "origin_phase_audit_empty_destination_occupancy_max=%zu "
           "origin_phase_audit_empty_origin_fallback_occupancy_max=%zu "
+          "origin_phase_audit_empty_same_class_destination_total=%zu "
+          "origin_phase_audit_empty_same_class_origin_fallback_total=%zu "
+          "origin_phase_audit_empty_cross_class_destination_total=%zu "
+          "origin_phase_audit_empty_cross_class_origin_fallback_total=%zu "
+          "origin_phase_audit_empty_cross_resident_fresh_total=%zu "
+          "origin_phase_audit_empty_cross_resident_recent_total=%zu "
+          "origin_phase_audit_empty_cross_resident_stale_total=%zu "
           "origin_phase_audit_full_largest_producer_bucket_max=%zu "
           "origin_phase_audit_full_distinct_producer_bucket_max=%zu "
           "remote_free_backpressure_origin_drain_attempt=%zu "
@@ -601,10 +615,24 @@
           origin_phase_audit_full_origin_fallback_occupancy_total,
           origin_phase_audit_full_destination_occupancy_max,
           origin_phase_audit_full_origin_fallback_occupancy_max,
+          origin_phase_audit_full_same_class_destination_total,
+          origin_phase_audit_full_same_class_origin_fallback_total,
+          origin_phase_audit_full_cross_class_destination_total,
+          origin_phase_audit_full_cross_class_origin_fallback_total,
+          origin_phase_audit_full_cross_resident_fresh_total,
+          origin_phase_audit_full_cross_resident_recent_total,
+          origin_phase_audit_full_cross_resident_stale_total,
           origin_phase_audit_empty_destination_occupancy_total,
           origin_phase_audit_empty_origin_fallback_occupancy_total,
           origin_phase_audit_empty_destination_occupancy_max,
           origin_phase_audit_empty_origin_fallback_occupancy_max,
+          origin_phase_audit_empty_same_class_destination_total,
+          origin_phase_audit_empty_same_class_origin_fallback_total,
+          origin_phase_audit_empty_cross_class_destination_total,
+          origin_phase_audit_empty_cross_class_origin_fallback_total,
+          origin_phase_audit_empty_cross_resident_fresh_total,
+          origin_phase_audit_empty_cross_resident_recent_total,
+          origin_phase_audit_empty_cross_resident_stale_total,
           origin_phase_audit_full_largest_producer_bucket_max,
           origin_phase_audit_full_distinct_producer_bucket_max,
           remote_free_backpressure_origin_drain_attempt,

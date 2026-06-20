@@ -530,6 +530,20 @@
       origin_phase_audit_full_origin_fallback_occupancy_max =
           stats.origin_phase_audit_full_origin_fallback_occupancy_max;
     }
+    origin_phase_audit_full_same_class_destination_total +=
+        stats.origin_phase_audit_full_same_class_destination_total;
+    origin_phase_audit_full_same_class_origin_fallback_total +=
+        stats.origin_phase_audit_full_same_class_origin_fallback_total;
+    origin_phase_audit_full_cross_class_destination_total +=
+        stats.origin_phase_audit_full_cross_class_destination_total;
+    origin_phase_audit_full_cross_class_origin_fallback_total +=
+        stats.origin_phase_audit_full_cross_class_origin_fallback_total;
+    origin_phase_audit_full_cross_resident_fresh_total +=
+        stats.origin_phase_audit_full_cross_resident_fresh_total;
+    origin_phase_audit_full_cross_resident_recent_total +=
+        stats.origin_phase_audit_full_cross_resident_recent_total;
+    origin_phase_audit_full_cross_resident_stale_total +=
+        stats.origin_phase_audit_full_cross_resident_stale_total;
     origin_phase_audit_empty_destination_occupancy_total +=
         stats.origin_phase_audit_empty_destination_occupancy_total;
     origin_phase_audit_empty_origin_fallback_occupancy_total +=
@@ -544,6 +558,20 @@
       origin_phase_audit_empty_origin_fallback_occupancy_max =
           stats.origin_phase_audit_empty_origin_fallback_occupancy_max;
     }
+    origin_phase_audit_empty_same_class_destination_total +=
+        stats.origin_phase_audit_empty_same_class_destination_total;
+    origin_phase_audit_empty_same_class_origin_fallback_total +=
+        stats.origin_phase_audit_empty_same_class_origin_fallback_total;
+    origin_phase_audit_empty_cross_class_destination_total +=
+        stats.origin_phase_audit_empty_cross_class_destination_total;
+    origin_phase_audit_empty_cross_class_origin_fallback_total +=
+        stats.origin_phase_audit_empty_cross_class_origin_fallback_total;
+    origin_phase_audit_empty_cross_resident_fresh_total +=
+        stats.origin_phase_audit_empty_cross_resident_fresh_total;
+    origin_phase_audit_empty_cross_resident_recent_total +=
+        stats.origin_phase_audit_empty_cross_resident_recent_total;
+    origin_phase_audit_empty_cross_resident_stale_total +=
+        stats.origin_phase_audit_empty_cross_resident_stale_total;
     if (stats.origin_phase_audit_full_largest_producer_bucket_max >
         origin_phase_audit_full_largest_producer_bucket_max) {
       origin_phase_audit_full_largest_producer_bucket_max =

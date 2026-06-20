@@ -117,6 +117,84 @@ static void hz6_origin_phase_note_kind_occupancy(
   }
 }
 
+static void hz6_origin_phase_note_resident_split(
+    Hz6Allocator* observer,
+    const Hz6Allocator* owner,
+    uint16_t requested_class_id,
+    int for_empty) {
+  if (!observer || !owner ||
+      requested_class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
+    return;
+  }
+  uint32_t global_epoch =
+      hz6_origin_phase_load_u32(&owner->transfer_phase_demand_epoch);
+  for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
+    uint32_t destination = hz6_origin_phase_load_u32(
+        &owner->transfer_phase_destination_class_occupancy[i]);
+    uint32_t origin_fallback = hz6_origin_phase_load_u32(
+        &owner->transfer_phase_origin_fallback_class_occupancy[i]);
+    uint32_t total = destination + origin_fallback;
+    if (total == 0) {
+      continue;
+    }
+    if (i == requested_class_id) {
+      if (for_empty) {
+        observer->stats
+            .origin_phase_audit_empty_same_class_destination_total +=
+            destination;
+        observer->stats
+            .origin_phase_audit_empty_same_class_origin_fallback_total +=
+            origin_fallback;
+      } else {
+        observer->stats
+            .origin_phase_audit_full_same_class_destination_total +=
+            destination;
+        observer->stats
+            .origin_phase_audit_full_same_class_origin_fallback_total +=
+            origin_fallback;
+      }
+      continue;
+    }
+    uint32_t resident_epoch = hz6_origin_phase_load_u32(
+        &owner->transfer_phase_class_demand_epoch[i]);
+    uint32_t resident_age = global_epoch - resident_epoch;
+    if (for_empty) {
+      observer->stats
+          .origin_phase_audit_empty_cross_class_destination_total +=
+          destination;
+      observer->stats
+          .origin_phase_audit_empty_cross_class_origin_fallback_total +=
+          origin_fallback;
+      if (resident_age == 0) {
+        observer->stats.origin_phase_audit_empty_cross_resident_fresh_total +=
+            total;
+      } else if (resident_age <= 15) {
+        observer->stats.origin_phase_audit_empty_cross_resident_recent_total +=
+            total;
+      } else {
+        observer->stats.origin_phase_audit_empty_cross_resident_stale_total +=
+            total;
+      }
+    } else {
+      observer->stats.origin_phase_audit_full_cross_class_destination_total +=
+          destination;
+      observer->stats
+          .origin_phase_audit_full_cross_class_origin_fallback_total +=
+          origin_fallback;
+      if (resident_age == 0) {
+        observer->stats.origin_phase_audit_full_cross_resident_fresh_total +=
+            total;
+      } else if (resident_age <= 15) {
+        observer->stats.origin_phase_audit_full_cross_resident_recent_total +=
+            total;
+      } else {
+        observer->stats.origin_phase_audit_full_cross_resident_stale_total +=
+            total;
+      }
+    }
+  }
+}
+
 static void hz6_origin_phase_note_capacity_bounds(
     Hz6Allocator* observer,
     const Hz6Allocator* owner) {
@@ -181,6 +259,12 @@ void hz6_allocator_origin_transfer_phase_audit_init(
                           0, memory_order_relaxed);
     atomic_store_explicit(&allocator->transfer_phase_class_occupancy[i], 0,
                           memory_order_relaxed);
+    atomic_store_explicit(
+        &allocator->transfer_phase_destination_class_occupancy[i], 0,
+        memory_order_relaxed);
+    atomic_store_explicit(
+        &allocator->transfer_phase_origin_fallback_class_occupancy[i], 0,
+        memory_order_relaxed);
   }
   for (size_t i = 0; i < 16; ++i) {
     atomic_store_explicit(&allocator->transfer_phase_producer_bucket_occupancy[i],
@@ -275,11 +359,17 @@ void hz6_allocator_origin_transfer_phase_audit_note_commit(
     ++allocator->stats.origin_phase_audit_destination_publish;
     hz6_origin_phase_inc_u32(
         &allocator->transfer_phase_destination_occupancy);
+    hz6_origin_phase_inc_u32(
+        &allocator->transfer_phase_destination_class_occupancy
+             [object->class_id]);
   } else if (object->audit_tag.publish_kind ==
              HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK) {
     ++allocator->stats.origin_phase_audit_origin_fallback_publish;
     hz6_origin_phase_inc_u32(
         &allocator->transfer_phase_origin_fallback_occupancy);
+    hz6_origin_phase_inc_u32(
+        &allocator->transfer_phase_origin_fallback_class_occupancy
+             [object->class_id]);
   } else {
     ++allocator->stats.origin_phase_audit_unknown_publish_kind;
   }
@@ -327,10 +417,16 @@ void hz6_allocator_origin_transfer_phase_audit_note_pop(
   if (object->audit_tag.publish_kind == HZ6_TRANSFER_PUBLISH_DESTINATION) {
     hz6_origin_phase_dec_u32(
         &allocator->transfer_phase_destination_occupancy);
+    hz6_origin_phase_dec_u32(
+        &allocator->transfer_phase_destination_class_occupancy
+             [object->class_id]);
   } else if (object->audit_tag.publish_kind ==
              HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK) {
     hz6_origin_phase_dec_u32(
         &allocator->transfer_phase_origin_fallback_occupancy);
+    hz6_origin_phase_dec_u32(
+        &allocator->transfer_phase_origin_fallback_class_occupancy
+             [object->class_id]);
   } else {
     ++allocator->stats.origin_phase_audit_unknown_publish_kind;
   }
@@ -369,10 +465,16 @@ void hz6_allocator_origin_transfer_phase_audit_note_commit_cancel(
   if (object->audit_tag.publish_kind == HZ6_TRANSFER_PUBLISH_DESTINATION) {
     hz6_origin_phase_dec_u32(
         &allocator->transfer_phase_destination_occupancy);
+    hz6_origin_phase_dec_u32(
+        &allocator->transfer_phase_destination_class_occupancy
+             [object->class_id]);
   } else if (object->audit_tag.publish_kind ==
              HZ6_TRANSFER_PUBLISH_ORIGIN_FALLBACK) {
     hz6_origin_phase_dec_u32(
         &allocator->transfer_phase_origin_fallback_occupancy);
+    hz6_origin_phase_dec_u32(
+        &allocator->transfer_phase_origin_fallback_class_occupancy
+             [object->class_id]);
   }
 #else
   (void)allocator;
@@ -396,6 +498,8 @@ void hz6_allocator_origin_transfer_phase_audit_note_origin_full(
       observer, requested_class_id,
       &observer->stats.origin_phase_audit_full_requested_age_0);
   hz6_origin_phase_note_kind_occupancy(observer, origin, 0);
+  hz6_origin_phase_note_resident_split(observer, origin, requested_class_id,
+                                       0);
   hz6_origin_phase_note_producer_snapshot(observer, origin);
   hz6_origin_phase_note_capacity_bounds(observer, origin);
 #else
@@ -419,6 +523,8 @@ void hz6_allocator_origin_transfer_phase_audit_note_pop_empty(
       allocator, requested_class_id,
       &allocator->stats.origin_phase_audit_empty_requested_age_0);
   hz6_origin_phase_note_kind_occupancy(allocator, allocator, 1);
+  hz6_origin_phase_note_resident_split(allocator, allocator,
+                                       requested_class_id, 1);
   hz6_origin_phase_note_capacity_bounds(allocator, allocator);
 #else
   (void)allocator;

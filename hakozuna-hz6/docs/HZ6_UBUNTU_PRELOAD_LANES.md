@@ -3862,6 +3862,65 @@ Use the next design step to decide whether stale cross-class inventory,
 fresh phase lag, or demanded-not-consumed inventory dominates before adding any
 owner-local maintenance or victim policy.
 
+## 2026-06-20 OriginTransferResidentSplitAudit-L1
+
+Extended `OriginTransferPhaseAgeAudit-L1` with requested-vs-resident occupancy
+splits.  The new counters keep per-class destination/origin-fallback occupancy
+aggregates and classify cross-class resident inventory by owner demand age:
+
+```text
+fresh:  resident demand age == 0
+recent: resident demand age <= 15
+stale:  resident demand age > 15
+```
+
+Diagnostic RUNS=3:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 3 \
+  --rows remote50,remote90_short \
+  --variants p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_101127
+```
+
+Median resident split:
+
+```text
+row             full same d/o   full cross d/o      full cross fresh/recent/stale
+remote50        2527/4430858    124118/2940712     1173133/1092881/754389
+remote90_short  7515/7141       21309/6998         2442/9659/20908
+
+row             empty same d/o  empty cross d/o       empty cross fresh/recent/stale
+remote50        0/249           9785/3498             0/4097/9186
+remote90_short  0/2             3641643/570593        0/2287702/1924534
+```
+
+Read:
+
+```text
+remote50 origin-full:
+  origin-fallback inventory dominates, but both same-class and cross-class are
+  substantial.  Cross resident inventory is mixed fresh/recent/stale.
+
+remote90_short pop-empty:
+  requested-class inventory is essentially absent while cross-class resident
+  inventory is huge.  That cross inventory is mostly recent/stale rather than
+  a pure old-inventory tail.
+```
+
+Decision: `GO(tooling)/DESIGN checkpoint`.  This does not justify an aged
+victim or owner-local demotion box yet: the cross-class resident inventory is
+not purely stale, and `remote90_short` still has a large recent component.
+The next design question should focus on transfer placement/partitioning or a
+resident-class-aware consumer boundary, not on discard/admission rejection.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

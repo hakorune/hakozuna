@@ -456,6 +456,10 @@ struct Hz6Allocator {
       transfer_phase_class_demand_epoch[HZ6_FRONT_CACHE_CLASS_COUNT];
   _Atomic uint32_t
       transfer_phase_class_occupancy[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t
+      transfer_phase_destination_class_occupancy[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t
+      transfer_phase_origin_fallback_class_occupancy[HZ6_FRONT_CACHE_CLASS_COUNT];
   _Atomic uint32_t transfer_phase_destination_occupancy;
   _Atomic uint32_t transfer_phase_origin_fallback_occupancy;
   _Atomic uint32_t transfer_phase_producer_bucket_occupancy[16];
