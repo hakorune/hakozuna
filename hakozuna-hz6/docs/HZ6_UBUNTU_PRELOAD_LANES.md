@@ -4699,3 +4699,47 @@ Decision: `NO-GO(correctness)`.  The idea reduces repeated empty scans, but it
 can report class absence while the diagnostic dense scan still finds that class.
 Do not keep a negative absence memo without a stronger synchronization boundary
 or a real per-class index.
+
+## 2026-06-20 Transfer Class Index
+
+Box:
+
+```text
+TransferClassIndex-L1
+```
+
+Attempted shape: keep the dense shared slot pool, but add sidecar
+`class_head/slot_next/slot_prev` links so class-specific pop can remove the head
+entry in O(1).  The implementation was tested locally as a default-off research
+variant and then removed before commit.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_152335
+```
+
+Key result:
+
+```text
+row             over_capacity  scan_mismatch
+cross128_r90    187909         19
+remote90_short  8              742
+```
+
+Decision: `NO-GO(correctness)`.  A sidecar per-class linked index is not safe on
+the current transfer cache boundary.  The cache is mutated by producer and
+consumer paths without a dedicated list lock, and the side index diverged from
+the dense array/counts under diagnostic smoke.  Do not revive this shape unless
+the transfer cache first gets a real synchronization/transaction boundary or is
+replaced by a class-indexed storage design.
