@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Linux x86_64 HZ6 remote profile frontier, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_REMOTE_PROFILE_FRONTIER.md)
 - [Linux x86_64 HZ6 transfer small-class shard, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TRANSFER_SMALL_CLASS_SHARD.md)
 - [Linux x86_64 HZ6 remote free owner inbox, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_FREE_OWNER_INBOX.md)
 - [Linux x86_64 HZ6 remote pending inbox core, 2026-06-19](./2026-06-19_LINUX_X86_64_HZ6_REMOTE_PENDING_INBOX_CORE.md)
