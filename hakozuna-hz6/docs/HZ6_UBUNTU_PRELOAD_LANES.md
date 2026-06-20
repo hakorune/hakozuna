@@ -4818,3 +4818,74 @@ and materially improves the unstable `cross128_r90` median in this batch.  It
 also has a measurable `remote50` cost, so it is not a selected/default change.
 Keep it as a boxed research switch and use it as the prerequisite boundary for a
 future class-indexed transfer storage design.
+
+## 2026-06-20 Transfer Class Index Locked
+
+Box:
+
+```text
+TransferClassIndexLocked-L1
+```
+
+Attempted shape: revive the per-class slot index only under
+`HZ6_TRANSFER_CACHE_LOCK_L1`, keeping the dense shared slot pool and adding
+`class_head/slot_next/slot_prev` links so class-specific pop can remove a
+same-class entry without a dense scan.  The implementation was tested locally as
+a default-off research variant and then removed before commit.
+
+Diagnostic command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_lock_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154033
+```
+
+Key diagnostic result:
+
+```text
+variant              row             underflow  scan_mismatch  false_zero  pop_scan_total
+lock_index           cross128_r90     0          0              0           0
+lock_index           remote90_short   0          0              0           0
+```
+
+Production command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,cross128_r90,remote90_short \
+  --variants p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_lock_index
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154149
+```
+
+Median result:
+
+```text
+row             lock      lock_index
+local0          16.75M    16.43M
+remote50        15.02M    14.39M
+cross128_r90    13.29M     3.27M
+remote90_short   8.60M     8.86M
+```
+
+Decision: `NO-GO(performance)`.  The lock makes the side index coherent in this
+smoke, and the index removes pop scan work, but maintaining and following the
+side links badly hurts `cross128_r90` and also regresses `remote50`.  Do not
+revive this dense-slot side index.  If class-indexed transfer storage is tried
+again, replace the storage layout rather than layering a linked side index onto
+the dense shared array.
