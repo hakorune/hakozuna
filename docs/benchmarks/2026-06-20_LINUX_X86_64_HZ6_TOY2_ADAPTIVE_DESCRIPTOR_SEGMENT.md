@@ -28,6 +28,7 @@ longer interleaved guard before being folded into a named profile target.
 
 - `hakozuna-hz6/private/raw-results/linux/hz6_toy2_adaptive_descriptor_fastpath_r5_20260620_232941`
 - `hakozuna-hz6/private/raw-results/linux/hz6_toy2_adaptive_descriptor_local_remote50_r5_20260620_233109`
+- `hakozuna-hz6/private/raw-results/linux/hz6_toy2_adaptive_descriptor_interleave_r10_20260620_235034`
 - Earlier failed profile check before the base fast-path guard:
   `hakozuna-hz6/private/raw-results/linux/hz6_toy2_adaptive_descriptor_max16_r5_20260620_232723`
 
@@ -62,6 +63,34 @@ On the paired R5 cross128 row:
 base-table exhaustion attempts before the adaptive fallback succeeds.  The final
 failure counters are the relevant gate here: `alloc_fail=0`,
 `source_block_exhausted=0`, and `toy2_descriptor_fail=0`.
+
+## Interleaved R10
+
+The interleaved `RUNS=10` follow-up is the better promotion signal because it
+removes batch drift between variants.
+
+| Row | Abort median | Adaptive median | Abort p25 | Adaptive p25 | Note |
+|---|---:|---:|---:|---:|---|
+| local0 | 16.58M | 16.58M | 16.02M | 16.24M | flat |
+| remote50 | 14.21M | 14.22M | 14.12M | 13.86M | flat |
+| remote90 | 3.70M | 11.09M | 2.43M | 11.01M | adaptive preserves the good row |
+| cross128_r90 | 35.84M | 34.78M | 3.48M | 31.16M | adaptive removes the cliff |
+
+Adaptive counters on the interleaved cross128 row stayed clean:
+
+- `alloc_fail=0`
+- `source_block_exhausted=0`
+- `toy2_descriptor_fail=0`
+- `toy2_adaptive_descriptor_segment_alloc=2`
+- `toy2_adaptive_descriptor_segment_high_water=2`
+- `toy2_adaptive_descriptor_route_headroom_block=0`
+- `toy2_adaptive_descriptor_segment_alloc_fail=0`
+- `toy2_adaptive_descriptor_storage_owner_mismatch=0`
+
+`abort` still has the higher median on the cross128 row in this batch, but its
+tail is unstable enough that it is not the better profile choice.  The adaptive
+variant is the more defensible candidate because it keeps `remote90` stable and
+removes the `alloc_fail` / `toy2_descriptor_fail` cliff without extra RSS.
 
 ## Hard Gates
 

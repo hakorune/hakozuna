@@ -10,6 +10,7 @@ VARIANTS_CSV="${VARIANTS:-p0_off,p1_metadata,p1_inline_no_maintenance,p1_inline,
 ROWS_CSV="${ROWS:-local0,remote50}"
 OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_owner_inbox_tax_ab_$(date +%Y%m%d_%H%M%S)}"
 DIAGNOSTIC="${HZ6_OWNER_INBOX_TAX_DIAGNOSTIC:-1}"
+INTERLEAVE_RUNS=0
 
 source "${HZ6_DIR}/linux/hz6_preload_flags.sh"
 
@@ -23,6 +24,8 @@ Options:
   --variants CSV p0_off,p0_transfer_class_presence,p0_transfer_class_presence_min192,p0_transfer_presence_class1,p0_transfer_presence_class2,p0_transfer_presence_small_class,p0_transfer_class_presence_min192_lock,p0_transfer_class_presence_min192_armed_lock,p0_transfer_class_presence_min192_scan64,p0_transfer_class_presence_min192_armed,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_budget2,p1_external_budget4,p1_external_front_external_only,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_toy2_split_maintenance,p1_external_toy2_route_before_maps,p1_external_toy2_route_before_maps_abort,p1_external_toy2_route_before_maps_adaptive,p1_external_toy2_split_skip_midmap,p1_external_split_maintenance_budget2,p1_external_split_maintenance_budget4,p1_external_split_source_gate,p1_external_split_source_gate_observe,p1_external_split_maintenance_class2,p1_external_split_maintenance_small_class,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short,cross128_r90 (default: local0,remote50)
   --outdir DIR    output directory
+  --interleave-runs
+                   run row/run/variant order to reduce batch drift
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
   --production    build production-shaped DSOs; some counters will be NA
   --help          show this message
@@ -100,6 +103,7 @@ while [[ $# -gt 0 ]]; do
     --variants) VARIANTS_CSV="$2"; shift 2 ;;
     --rows) ROWS_CSV="$2"; shift 2 ;;
     --outdir) OUTDIR="$2"; shift 2 ;;
+    --interleave-runs) INTERLEAVE_RUNS=1; shift ;;
     --diagnostic) DIAGNOSTIC=1; shift ;;
     --production) DIAGNOSTIC=0; shift ;;
     --help|-h) usage; exit 0 ;;
@@ -129,6 +133,7 @@ for variant in "${raw_variants[@]}"; do
 done
 
 mkdir -p "$OUTDIR/build"
+declare -A variant_so_paths=()
 
 write_meta() {
   {
@@ -136,6 +141,7 @@ write_meta() {
     echo "variants=${VARIANTS_CSV}"
     echo "rows=${ROWS_CSV}"
     echo "diagnostic=${DIAGNOSTIC}"
+    echo "interleave_runs=${INTERLEAVE_RUNS}"
     echo "bench=${BENCH}"
     echo "git_sha=$(git -C "$ROOT_DIR" rev-parse --short HEAD 2>/dev/null || echo nogit)"
     echo "uname=$(uname -a)"
@@ -680,39 +686,62 @@ for variant in "${variants[@]}"; do
   build_variant "$variant"
   so="${OUTDIR}/build/${variant}/libhakozuna_hz6_preload.so"
   [[ -f "$so" ]] || { echo "missing preload: $so" >&2; exit 3; }
+  variant_so_paths["$variant"]="$so"
+done
+
+run_one() {
+  local variant="$1"
+  local row="$2"
+  local run="$3"
+  local so="${variant_so_paths[$variant]}"
+  local name threads iters ws min_size max_size remote_pct ring_slots
+  read -r name threads iters ws min_size max_size remote_pct ring_slots <<<"$row"
+  local log="${OUTDIR}/${variant}_${name}_r${run}.log"
+  local time_log="${OUTDIR}/${variant}_${name}_r${run}.time"
+  local status=0
+  timeout "$RUN_TIMEOUT" /usr/bin/time -f 'peak_kb=%M' -o "$time_log" \
+    env -i \
+      PATH="${PATH:-/usr/bin:/bin}" \
+      HOME="${HOME:-/tmp}" \
+      HZ6_PRELOAD_STATS=1 \
+      LD_PRELOAD="$so" \
+      "$BENCH" "$threads" "$iters" "$ws" "$min_size" "$max_size" \
+      "$remote_pct" "$ring_slots" \
+      > "$log" 2>&1 || status=$?
+  if [[ "$status" -eq 0 ]] && ! grep -q 'fallback_rate=0.00%' "$log"; then
+    status=30
+  fi
+  if [[ "$status" -eq 0 ]] &&
+     ! grep -q 'overflow_sent=0 overflow_received=0' "$log"; then
+    status=40
+  fi
+  ops="$(awk -F'ops/s=' '/bench_random_mixed_mt_remote/ { print $2; exit }' "$log")"
+  peak="$(awk -F= '/^peak_kb=/ { print $2; exit }' "$time_log")"
+  printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
+    "$variant" "$name" "$run" "$status" "${ops:-NA}" \
+    "${peak:-NA}" "$log" >> "${OUTDIR}/runs.tsv"
+  extract_counters "$variant" "$name" "$run" "$log" >> "${OUTDIR}/counters.tsv"
+  echo "[hz6][owner-inbox-tax] ${variant} ${name} run=${run} status=${status} ops/s=${ops:-NA} peak_kb=${peak:-NA}" >&2
+  [[ "$status" -eq 0 ]] || exit "$status"
+}
+
+if [[ "$INTERLEAVE_RUNS" -eq 1 ]]; then
   for row in "${rows[@]}"; do
-    read -r name threads iters ws min_size max_size remote_pct ring_slots <<<"$row"
     for run in $(seq 1 "$RUNS"); do
-      log="${OUTDIR}/${variant}_${name}_r${run}.log"
-      time_log="${OUTDIR}/${variant}_${name}_r${run}.time"
-      status=0
-      timeout "$RUN_TIMEOUT" /usr/bin/time -f 'peak_kb=%M' -o "$time_log" \
-        env -i \
-          PATH="${PATH:-/usr/bin:/bin}" \
-          HOME="${HOME:-/tmp}" \
-          HZ6_PRELOAD_STATS=1 \
-          LD_PRELOAD="$so" \
-          "$BENCH" "$threads" "$iters" "$ws" "$min_size" "$max_size" \
-          "$remote_pct" "$ring_slots" \
-          > "$log" 2>&1 || status=$?
-      if [[ "$status" -eq 0 ]] && ! grep -q 'fallback_rate=0.00%' "$log"; then
-        status=30
-      fi
-      if [[ "$status" -eq 0 ]] &&
-         ! grep -q 'overflow_sent=0 overflow_received=0' "$log"; then
-        status=40
-      fi
-      ops="$(awk -F'ops/s=' '/bench_random_mixed_mt_remote/ { print $2; exit }' "$log")"
-      peak="$(awk -F= '/^peak_kb=/ { print $2; exit }' "$time_log")"
-      printf '%s\t%s\t%s\t%s\t%s\t%s\t%s\n' \
-        "$variant" "$name" "$run" "$status" "${ops:-NA}" \
-        "${peak:-NA}" "$log" >> "${OUTDIR}/runs.tsv"
-      extract_counters "$variant" "$name" "$run" "$log" >> "${OUTDIR}/counters.tsv"
-      echo "[hz6][owner-inbox-tax] ${variant} ${name} run=${run} status=${status} ops/s=${ops:-NA} peak_kb=${peak:-NA}" >&2
-      [[ "$status" -eq 0 ]] || exit "$status"
+      for variant in "${variants[@]}"; do
+        run_one "$variant" "$row" "$run"
+      done
     done
   done
-done
+else
+  for variant in "${variants[@]}"; do
+    for row in "${rows[@]}"; do
+      for run in $(seq 1 "$RUNS"); do
+        run_one "$variant" "$row" "$run"
+      done
+    done
+  done
+fi
 
 python3 - "$OUTDIR/runs.tsv" "$OUTDIR/counters.tsv" <<'PY' | tee "${OUTDIR}/summary.tsv"
 import csv
