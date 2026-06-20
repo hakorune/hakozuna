@@ -26,6 +26,7 @@ typedef struct Hz6TransferCache {
   size_t count;
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   _Atomic uint32_t class_count[HZ6_FRONT_CACHE_CLASS_COUNT];
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   _Atomic uint32_t presence_gate_check;
   _Atomic uint32_t presence_gate_hit;
   _Atomic uint32_t presence_gate_miss;
@@ -38,6 +39,7 @@ typedef struct Hz6TransferCache {
   _Atomic uint32_t presence_sum_mismatch;
   _Atomic uint32_t presence_scan_mismatch;
   _Atomic uint32_t presence_false_zero_shadow;
+#endif
 #endif
 } Hz6TransferCache;
 

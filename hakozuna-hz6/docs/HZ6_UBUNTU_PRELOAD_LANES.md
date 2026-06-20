@@ -4021,6 +4021,145 @@ diagnosis.  It should not replace selected/default until the local0 tax is
 reduced and the false-zero/snapshot mismatch story is either eliminated or
 documented as an accepted diagnostic-only race with a stronger shadow check.
 
+## 2026-06-20 TransferClassPresenceProductionShape-L1
+
+Cleaned the production code shape for `TransferClassPresenceGate-L1` without
+changing the class-count update order or memory ordering:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1 defaults to HZ6_DIAGNOSTIC_PROBES
+production keeps class_count[] only
+gate check/hit/miss and shadow counters compile out of production
+empty transfer cache returns before class-count atomic load
+```
+
+Clean R3 smoke after the shape cleanup:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0,remote50,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140516
+```
+
+Median result:
+
+```text
+row             p0_off      presence clean
+local0          16.35M      16.06M
+remote50        14.72M      15.21M
+remote90_short   4.96M       8.75M
+```
+
+Promotion evidence, tax runner batch 1:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140552
+```
+
+```text
+row             p0_off      presence clean
+local0          16.80M      16.27M
+remote50        14.80M      14.90M
+remote90         3.61M      10.53M
+remote90_short   4.54M       8.89M
+```
+
+Promotion evidence, tax runner batch 2 with variant order reversed:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 10 \
+  --rows local0,remote50,remote90,remote90_short \
+  --variants p0_transfer_class_presence,p0_off
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_140634
+```
+
+```text
+row             p0_off      presence clean
+local0          16.35M      16.13M
+remote50        14.94M      14.77M
+remote90         3.62M      10.55M
+remote90_short   4.74M       8.91M
+```
+
+Paired gate with cross128:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_paired_gate.sh \
+  --runs 10 \
+  --variants p0_selected_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_paired_gate_20260620_140738
+```
+
+```text
+row             p0_selected_off   presence clean
+local0          16.31M            16.21M
+remote50        14.86M            14.92M
+remote90         3.73M            10.66M
+cross128_r90     8.73M             4.76M
+```
+
+Read:
+
+```text
+production shape cleanup:
+  Removed the likely hot-path instrumentation tax.  Production presence
+  counters now stay zero unless diagnostic observe is enabled.
+
+remote90:
+  Strong and repeatable.  Both tax batches and the paired gate show about
+  2.9x improvement with lower and more stable peak RSS.
+
+remote90_short:
+  Strong and repeatable in both tax batches.
+
+local0/remote50:
+  Much closer after cleanup, but not fully settled.  The tax runner still has
+  local0 down by more than 1% in both batches, while the paired gate shows
+  local0 within 1% and remote50 slightly positive.
+
+cross128_r90:
+  Still a blocker for default.  The row is highly variant, but median regressed
+  in the paired gate.
+```
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  The production-shape box
+worked: the obvious hot-path stats RMW is gone and remote90 remains a large
+win.  Do not promote to selected/default yet because local0 evidence is mixed
+and `cross128_r90` regressed.  The next behavior box should either be
+`HighOccupancyPresenceGate-L1` to avoid class-count checks on low-occupancy
+transfer caches, or a profile-only cut if the cross128/local guard remains
+negative after occupancy gating.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

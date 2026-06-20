@@ -14,9 +14,16 @@ static uint32_t hz6_transfer_load_u32(const _Atomic uint32_t* value) {
   return atomic_load_explicit(value, memory_order_acquire);
 }
 
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
 static void hz6_transfer_inc_u32(_Atomic uint32_t* value) {
   atomic_fetch_add_explicit(value, 1u, memory_order_release);
 }
+
+#define HZ6_TRANSFER_PRESENCE_NOTE(cache, field) \
+  hz6_transfer_inc_u32(&(cache)->field)
+#else
+#define HZ6_TRANSFER_PRESENCE_NOTE(cache, field) ((void)(cache))
+#endif
 
 static int hz6_transfer_dec_u32(_Atomic uint32_t* value) {
   uint32_t current = hz6_transfer_load_u32(value);
@@ -45,13 +52,13 @@ static void hz6_transfer_presence_increment(Hz6TransferCache* cache,
     return;
   }
   if (!hz6_transfer_class_valid(object->class_id)) {
-    hz6_transfer_inc_u32(&cache->presence_invalid_class);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
   uint32_t previous = atomic_fetch_add_explicit(
       &cache->class_count[object->class_id], 1u, memory_order_release);
   if ((size_t)previous + 1u > cache->capacity) {
-    hz6_transfer_inc_u32(&cache->presence_over_capacity);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_over_capacity);
   }
 }
 
@@ -61,15 +68,15 @@ static void hz6_transfer_presence_decrement(Hz6TransferCache* cache,
     return;
   }
   if (!object->ptr || object->class_id == UINT16_MAX) {
-    hz6_transfer_inc_u32(&cache->presence_placeholder_counted);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_placeholder_counted);
     return;
   }
   if (!hz6_transfer_class_valid(object->class_id)) {
-    hz6_transfer_inc_u32(&cache->presence_invalid_class);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     return;
   }
   if (!hz6_transfer_dec_u32(&cache->class_count[object->class_id])) {
-    hz6_transfer_inc_u32(&cache->presence_underflow);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_underflow);
   }
 }
 
@@ -102,6 +109,7 @@ void hz6_transfer_init(Hz6TransferCache* cache,
   for (size_t i = 0; i < HZ6_FRONT_CACHE_CLASS_COUNT; ++i) {
     atomic_store_explicit(&cache->class_count[i], 0, memory_order_relaxed);
   }
+#if HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   atomic_store_explicit(&cache->presence_gate_check, 0, memory_order_relaxed);
   atomic_store_explicit(&cache->presence_gate_hit, 0, memory_order_relaxed);
   atomic_store_explicit(&cache->presence_gate_miss, 0, memory_order_relaxed);
@@ -122,6 +130,7 @@ void hz6_transfer_init(Hz6TransferCache* cache,
                         memory_order_relaxed);
   atomic_store_explicit(&cache->presence_false_zero_shadow, 0,
                         memory_order_relaxed);
+#endif
 #endif
 }
 
@@ -176,7 +185,7 @@ void hz6_transfer_commit(Hz6TransferReservation* reservation,
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
     if (hz6_transfer_object_counts_for_presence(
             &cache->objects[reservation->index])) {
-      hz6_transfer_inc_u32(&cache->presence_double_increment);
+      HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_double_increment);
     }
 #endif
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
@@ -198,13 +207,16 @@ int hz6_transfer_pop(Hz6TransferCache* cache,
 
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   if (!hz6_transfer_class_valid(class_id)) {
-    hz6_transfer_inc_u32(&cache->presence_invalid_class);
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
+    return 0;
+  }
+  if (cache->count == 0) {
     return 0;
   }
   if (!hz6_transfer_class_maybe_present(cache, class_id)) {
 #if HZ6_DIAGNOSTIC_PROBES
     if (hz6_transfer_dense_has_class(cache, class_id)) {
-      hz6_transfer_inc_u32(&cache->presence_false_zero_shadow);
+      HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_false_zero_shadow);
     }
 #endif
     return 0;
@@ -251,16 +263,19 @@ int hz6_transfer_class_maybe_present(Hz6TransferCache* cache,
 #if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
   if (!cache || class_id >= HZ6_FRONT_CACHE_CLASS_COUNT) {
     if (cache) {
-      hz6_transfer_inc_u32(&cache->presence_invalid_class);
+      HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_invalid_class);
     }
     return 0;
   }
-  hz6_transfer_inc_u32(&cache->presence_gate_check);
-  if (hz6_transfer_load_u32(&cache->class_count[class_id]) == 0) {
-    hz6_transfer_inc_u32(&cache->presence_gate_miss);
+  if (cache->count == 0) {
     return 0;
   }
-  hz6_transfer_inc_u32(&cache->presence_gate_hit);
+  HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_check);
+  if (hz6_transfer_load_u32(&cache->class_count[class_id]) == 0) {
+    HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_miss);
+    return 0;
+  }
+  HZ6_TRANSFER_PRESENCE_NOTE(cache, presence_gate_hit);
   return 1;
 #else
   (void)cache;
@@ -272,7 +287,8 @@ int hz6_transfer_class_maybe_present(Hz6TransferCache* cache,
 void hz6_transfer_note_class_presence_stats(
     const Hz6TransferCache* cache,
     Hz6StatsSnapshot* snapshot) {
-#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && HZ6_DIAGNOSTIC_PROBES
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 && \
+    HZ6_TRANSFER_CLASS_PRESENCE_OBSERVE_L1
   if (!cache || !snapshot) {
     return;
   }
