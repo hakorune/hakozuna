@@ -206,3 +206,29 @@ Skipping production inline route validation through route-pin trust does not
 improve the Toy class 2 sink path.  It sharply regresses throughput and RSS in
 this row, so pending optimization should stay on storage footprint and
 consumer scheduling rather than weakening route validation.
+
+## Owner-Maintenance Required Probe
+
+Raw output:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_owner_inbox_maintenance_prod_r10_20260620_172854`
+
+Production R10 on `cross128_r90`:
+
+| Variant | Median ops/s | p25 | p75 | Peak RSS median |
+| --- | ---: | ---: | ---: | ---: |
+| `p1_external_no_maintenance` | 0.52M | 0.42M | 0.66M | 87.5 MiB |
+| `p1_external` | 3.29M | 2.25M | 14.47M | 76.6 MiB |
+
+Decision:
+
+```text
+Disable owner-local pending maintenance:
+  NO-GO
+```
+
+The owner-inbox sink needs owner-local maintenance to turn pending inventory
+back into reusable objects.  Producer-side sink-only behavior removes
+backpressure but leaves cross128 too slow and increases RSS.  The next box
+should keep maintenance enabled and reduce either storage footprint or
+maintenance scheduling cost.
