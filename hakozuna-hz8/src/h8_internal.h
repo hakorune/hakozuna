@@ -35,6 +35,11 @@ typedef enum H8SpanState {
   H8_SPAN_RETIRED = 4
 } H8SpanState;
 
+typedef enum H8OwnerPlacement {
+  H8_OWNER_PLACEMENT_OWNED = 0,
+  H8_OWNER_PLACEMENT_ORPHAN = 1
+} H8OwnerPlacement;
+
 typedef struct H8OwnerRecord H8OwnerRecord;
 typedef struct H8Span H8Span;
 typedef struct H8ThreadCtx H8ThreadCtx;
@@ -78,6 +83,7 @@ struct H8OwnerRecord {
   uint32_t slot;
   uint32_t generation;
   bool permanent;
+  H8OwnerPlacement placement;
   _Atomic(H8Span*) pending_head;
   H8Span* owned_head;
   H8Span* orphan_head;

@@ -492,8 +492,9 @@ old owner ALIVE
 
 That handoff must be a whole-span transition, not a per-object rehome.  The
 implementation surface should stay generic (`h8_span_handoff(...)`) so v1 can
-add regular-owner adoption later, but v0 must pin the target to the permanent
-orphan owner only.
+add regular-owner adoption later.  The destination owner placement selects the
+list (`orphan_head` vs `owned_head`), but v0 must still pin the target to the
+permanent orphan owner only.
 
 ## Atomic Ordering
 

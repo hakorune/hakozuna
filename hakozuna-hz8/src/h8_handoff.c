@@ -18,11 +18,19 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
     atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
     return false;
   }
-  if (target_owner != h8_orphan_owner()) {
+  if (!h8_owner_is_alive_and_open(target_owner)) {
     atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
     return false;
   }
-  if (!h8_owner_is_alive_and_open(target_owner)) {
+
+  bool target_is_orphan = false;
+  switch (target_owner->placement) {
+  case H8_OWNER_PLACEMENT_ORPHAN:
+    target_is_orphan = true;
+    break;
+  case H8_OWNER_PLACEMENT_OWNED:
+    break;
+  default:
     atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
     return false;
   }
@@ -38,10 +46,14 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
   atomic_fetch_add_explicit(&span->span_epoch, 1, memory_order_acq_rel);
   span->owner_slot = target_owner->slot;
   span->owner_generation = target_owner->generation;
-  h8_owner_add_orphan_span(target_owner, span);
+  if (target_is_orphan) {
+    h8_owner_add_orphan_span(target_owner, span);
+    atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
+    atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
+  } else {
+    h8_owner_add_owned_span(target_owner, span);
+  }
   span->span_state = H8_SPAN_OWNED_ACTIVE;
-  atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&h8g.handoff_success_count, 1, memory_order_relaxed);
   return true;
 }
