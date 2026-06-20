@@ -4275,3 +4275,49 @@ Decision: `GO(evidence)/HOLD(policy)`.  This confirms the aliases work in the
 shared profile frontier.  It also reinforces the current policy: high-remote
 owner-inbox should stay remote-heavy only, and transfer class-shard is not a
 broad default despite good small/mixed rows.
+
+## 2026-06-20 High-Remote Transfer Presence Profile
+
+`HighRemoteTransferPresenceProfile-L1` packages the best current transfer
+class-presence shape as an explicit profile alias, without changing
+selected/default flags.
+
+Profile alias:
+
+```text
+hz6-high-remote-transfer-presence-target
+```
+
+Builder:
+
+```text
+hakozuna-hz6/linux/build_hz6_preload_high_remote_transfer_presence_target.sh
+```
+
+Flag shape:
+
+```text
+HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1=1
+HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL=((size_t)192)
+```
+
+Validation:
+
+```text
+./hakozuna-hz6/linux/check_hz6_preload_profile_registry.sh
+./hakozuna-hz6/linux/build_hz6_preload_high_remote_transfer_presence_target.sh
+bench_find_allocator_library hz6-high-remote-transfer-presence-target
+```
+
+LD_PRELOAD smoke:
+
+```text
+bench_random_mixed_mt_remote:
+  threads=16 ops=459389 time=0.053871 ops/s=8527519.41
+  fallback_rate=0.00%
+  overflow_sent=0 overflow_received=0
+```
+
+Decision: `GO(profile)/HOLD(default)`.  Use this alias for high-remote
+presence experiments and profile-frontier comparisons.  Do not move it into
+selected/default until the cross128_r90 regression is explained or bounded.

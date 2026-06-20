@@ -39,6 +39,16 @@ hz6_preload_profile_owner_inbox_off_cflags() {
     "$out_name" "$enable_midpage_boundary"
 }
 
+hz6_preload_profile_high_remote_transfer_presence_cflags() {
+  local out_name="$1"
+  local enable_midpage_boundary="${2:-1}"
+  hz6_preload_effective_owner_inbox_off_cflags \
+    "$out_name" "$enable_midpage_boundary"
+  hz6_preload_replace_define "$out_name" HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
+  hz6_preload_replace_define "$out_name" \
+    HZ6_TRANSFER_CLASS_PRESENCE_MIN_TOTAL '((size_t)192)'
+}
+
 hz6_preload_profile_build() {
   local -n flags_ref="$1"
   local default_out_dir="$2"
