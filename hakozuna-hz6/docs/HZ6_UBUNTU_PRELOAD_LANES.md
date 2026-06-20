@@ -4889,3 +4889,79 @@ side links badly hurts `cross128_r90` and also regresses `remote50`.  Do not
 revive this dense-slot side index.  If class-indexed transfer storage is tried
 again, replace the storage layout rather than layering a linked side index onto
 the dense shared array.
+
+## 2026-06-20 Transfer Cache Lock Profile Check
+
+Question: should `HZ6_TRANSFER_CACHE_LOCK_L1` be mixed into the existing
+`hz6-high-remote-transfer-presence-target` profile?
+
+Production command:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote90 \
+  --variants p0_off,p0_transfer_class_presence_min192,p0_transfer_class_presence_min192_lock
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_154439
+```
+
+Median result:
+
+```text
+variant                         remote90
+p0_off                           3.61M
+p0_transfer_class_presence_min192 10.77M
+p0_transfer_class_presence_min192_lock 10.84M
+```
+
+Decision: `NO-GO(profile change)`.  The lock does not materially improve the
+main `remote90` row over the existing min192 high-remote candidate, while earlier
+guards showed `remote50` tax.  Keep the high-remote transfer-presence profile as
+min192 without the transfer-cache lock.
+
+## 2026-06-20 Transfer Class Slot Pool
+
+Box:
+
+```text
+TransferClassSlotPool-L1
+```
+
+Attempted shape: replace the dense transfer array behavior under
+`HZ6_TRANSFER_CACHE_LOCK_L1` with a free-slot pool plus per-class heads.  Push
+and reserve take a free slot; commit links the slot to its class; pop removes
+the class head in O(1).  The implementation was tested locally as a default-off
+research variant and then removed before commit.
+
+Diagnostic raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_155050
+```
+
+Production raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_155147
+```
+
+Median production result:
+
+```text
+row             lock      slot_pool
+cross128_r90    15.06M     3.70M
+remote90_short   8.41M     9.02M
+```
+
+Decision: `NO-GO(performance)`.  The replacement storage removes transfer pop
+scan work and helps the narrow `remote90_short` row, but it destroys
+`cross128_r90`.  Do not use this slot-pool layout for the high-remote profile or
+default.  The remaining useful direction is not a linked dense side index or
+this simple slot pool; it needs a different transfer layout or workload-specific
+profile decision.
