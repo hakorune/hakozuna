@@ -16,6 +16,8 @@ evidence changes the problem.  Keep this file short and decision-oriented.
 | Profile-specific metadata layout | NO-GO | Turns HZ8 into an evidence family instead of one allocator. |
 | Public v0 profile/policy selector | NO-GO | v0 must prove one balanced layout before exposing policy knobs. |
 | Policy reads on malloc/free hit paths | NO-GO | Profiles may tune slow-path policy only. |
+| Owner generation bump during span adoption | NO-GO | Owner generation represents owner slot incarnation. Span adoption uses `span_ownership_epoch`. |
+| Boolean remote queued marker | NO-GO | Use `IDLE / QUEUED / DRAINING` and finish recheck to close lost wakeups. |
 | Medium/large per-4KiB route registration | NO-GO | Recreates known remote-tail pressure from page-level registration. |
 | All sizes in v0 | NO-GO | Hides whether local small, remote small, or boundary safety caused a result. |
 

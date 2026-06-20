@@ -19,6 +19,7 @@ per-object descriptor and not in a global exact route table.
 ```text
 docs/HZ8_ARCHITECTURE.md
 docs/HZ8_OWNERSHIP_CONTRACT.md
+docs/HZ8_OWNER_LIFECYCLE.md
 docs/HZ8_BENCH_GATE.md
 docs/HZ8_NO_GO_LEDGER.md
 ```

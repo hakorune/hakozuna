@@ -77,18 +77,24 @@ how dead_owner_publish_lost remains zero
 Required owner-death ordering:
 
 ```text
-1. owner publishes DYING with release ordering
+1. owner atomically publishes DYING and closes the publish gate
 2. owner stops creating new active spans
-3. owner drains its pending-span queue while producers still see DYING
-4. owner marks remaining spans ORPHAN_CANDIDATE only after remote_head,
-   remote_queued, and remote-pending bitmap are stable for adoption
-5. adopter claims the whole span with an owner_generation bump
-6. new owner may collect only after the generation bump is visible
+3. owner waits until publish_refcount reaches zero
+4. owner drains its pending-span queue completely
+5. owner marks remaining spans ORPHAN_READY only after remote_head, qstate,
+   and remote-pending bitmap are stable for adoption
+6. adopter claims the whole span with a span_ownership_epoch bump
+7. new owner may collect only after the adopted owner token is visible
 ```
 
 Foreign producers that observe `DEAD` or a generation mismatch must not publish
 to the old owner's pending queue.  They route to orphan slow path or fail closed
 until the span has a visible adopted owner.
+
+Owner generation belongs to owner registry slot reuse, not to span adoption.
+Reusing an owner slot for a new thread bumps owner generation.  Whole-span
+adoption bumps `span_ownership_epoch` instead.  See
+`HZ8_OWNER_LIFECYCLE.md` for the full state machine.
 
 ## Local Same-Owner Free
 
@@ -171,7 +177,7 @@ do {
     memory_order_release,
     memory_order_relaxed));
 
-if (!atomic_exchange_explicit(&span->remote_queued, 1, memory_order_acq_rel)) {
+if (h8_span_qstate_idle_to_queued(span)) {
     h8_owner_pending_span_push(owner, span);
 }
 ```
@@ -204,13 +210,21 @@ for each node in head:
     push local free-list;
     span->used_count--;
 
-if (span has no remote_head and no remote-pending bits) {
-    atomic_store_explicit(&span->remote_queued, 0, memory_order_release);
-}
+store qstate = IDLE
+recheck remote_head and remote-pending summary
+if either is nonzero, notify/requeue the span
 ```
 
 The implementation must close the race where a producer publishes after the
-owner observes an empty list but before `remote_queued` is cleared.
+owner observes an empty list but before the span queue state returns to idle.
+Use a three-state queue state:
+
+```text
+IDLE -> QUEUED -> DRAINING -> IDLE
+```
+
+After storing `IDLE`, the collector must recheck `remote_head` and the pending
+summary.  If either is nonzero, it must notify/requeue the span.
 
 The pending-span queue is intentionally one-notification-per-span, but its
 collection cadence is a performance-sensitive contract.  Benchmark the three
@@ -237,7 +251,7 @@ A span may retire or decommit only when all are true:
 ```text
 used_count == 0
 remote_head == NULL
-remote_queued == 0
+qstate == IDLE
 remote-pending bitmap empty
 span is not on an owner pending queue
 owner lifecycle permits retirement

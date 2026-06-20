@@ -128,7 +128,7 @@ typedef struct H8SpanMeta {
     uint32_t used_count;
 
     _Atomic(uintptr_t) remote_head;
-    _Atomic(uint8_t) remote_queued;
+    _Atomic(uint8_t) qstate; /* IDLE / QUEUED / DRAINING */
 
     /*
      * live_bitmap is owner-written.
@@ -263,11 +263,28 @@ for each object in head:
     clear live bit
     push local free-list
     decrement used_count
-clear remote_queued when no pending remote work remains
+return qstate to IDLE, then recheck for missed remote work
 ```
 
 Remote pending objects keep `used_count` nonzero until the owner collects them.
 This prevents empty-span retirement while remote frees are still uncollected.
+
+The pending-span notification state is:
+
+```text
+IDLE:
+  no owner pending queue entry is active
+
+QUEUED:
+  span is on an owner pending queue
+
+DRAINING:
+  owner has popped the span and is collecting remote_head
+```
+
+Publishers transition only `IDLE -> QUEUED`.  Collectors transition
+`QUEUED -> DRAINING -> IDLE`.  If a publisher adds work while the span is
+`DRAINING`, the collector's finish recheck is responsible for requeueing.
 
 ## Medium and Large Direction
 
