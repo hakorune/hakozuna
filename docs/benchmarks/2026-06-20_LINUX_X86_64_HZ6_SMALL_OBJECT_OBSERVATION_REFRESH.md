@@ -148,6 +148,53 @@ Read:
 - Because the production tail regressed before adding any new fallback consumer,
   the next behavior should not be another `PROVEN_EXTERNAL` real-free variant.
 
+## Tail Split Follow-Up
+
+Production-shaped route-before-maps raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_cross128_tail_prod_counters_r10_20260620_215543
+```
+
+This reproduced the tail, but the production build compiles out the hook and
+pending phase counters.  The useful production-level counters showed
+`returned_backpressure=0`, `returned_uncommitted=0`, `origin_pending_commit=0`,
+and `transfer_reserve_full=0` in every run.  That rules out returned
+backpressure and owner-inbox pending publish as the visible production tail
+cause in this batch.
+
+Phase-counter-only route-before-maps raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_cross128_phase_counters_r10_20260620_215725
+```
+
+This build preserved phase counters without enabling diagnostic probes.
+
+| run | ops/s | `alloc_fail` | `descriptor_exhausted` | `source_block_exhausted` | route-after-maps | fallback proven external |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 10 | 1.36M | 17,331 | 38,855 | 13,165 | 17,351 | 17,331 |
+| 7 | 6.15M | 12,983 | 28,846 | 10,106 | 13,002 | 12,983 |
+| 6 | 6.18M | 11,641 | 25,202 | 9,723 | 11,662 | 11,641 |
+| 8 | 13.21M | 2,186 | 5,865 | 695 | 2,207 | 2,186 |
+| 2 | 18.01M | 677 | 2,032 | 0 | 697 | 677 |
+| 1 | 24.56M | 0 | 0 | 0 | 19 | 0 |
+| 3 | 27.09M | 0 | 0 | 0 | 20 | 0 |
+
+Read:
+
+- Low route-before-maps `cross128_r90` runs line up with descriptor/source
+  supply failures, not returned backpressure or pending publish.
+- In the phase-counter build, `alloc_fail` and
+  `free_route_before_maps_fallback_proven_external` are equal in the bad runs.
+  The later route-after-map count is the same signal plus the small valid-route
+  tail.
+- Fast runs have no descriptor/source exhaustion and almost no route-after-map
+  work.
+- The next viable behavior box is not external real-free consumption.  It should
+  first prevent or explain the descriptor/source exhaustion that makes valid HZ6
+  frees fall through as `PROVEN_EXTERNAL`.
+
 ## Decision
 
 ```text
@@ -156,8 +203,7 @@ SmallObjectObservationRefresh-L1:
   NO-GO(behavior from this evidence)
 ```
 
-Next work should explain the route-before-maps production tail before changing
-behavior: split the low cross128 runs by returned backpressure, origin-transfer
-fallback, and pending/external maintenance shape.  Do not add a narrower
-`PROVEN_EXTERNAL` fallback consumer until the production pair has a stable
-cross128 win with a neutral remote90 guard.
+Next work should target the descriptor/source exhaustion cliff in
+route-before-maps `cross128_r90`.  Do not add a narrower `PROVEN_EXTERNAL`
+fallback consumer until those fallthroughs are proven to be true platform
+external pointers rather than HZ6 source/descriptor exhaustion artifacts.
