@@ -109,15 +109,55 @@ Read:
 - Source allocation also falls (`1,059 -> 573`), but this remains secondary to
   the free-route dispatch shape.
 
+## Pair Guard Follow-Up
+
+Production/interleaved pair raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_pair_prod_interleave_r5_20260620_213806
+```
+
+| Profile | row | ops/s p25 | ops/s median | ops/s p75 |
+| --- | --- | ---: | ---: | ---: |
+| `toy2_split` | `remote90` | 3.82M | 4.04M | 4.19M |
+| `route_before_maps` | `remote90` | 3.97M | 3.98M | 4.03M |
+| `toy2_split` | `cross128_r90` | 35.72M | 36.81M | 37.44M |
+| `route_before_maps` | `cross128_r90` | 5.66M | 36.18M | 36.44M |
+
+Diagnostic pair raw:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_route_before_maps_pair_diag_r3_20260620_213845
+```
+
+| Variant | row | diag ops/s median | route-after-maps | before-maps foreign | before-maps local | before-maps fallback proven external | returned backpressure | uncommitted |
+| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| `p1_external_toy2_split_maintenance` | `remote90` | 3.06M | 783,512 | 0 | 0 | 0 | 0 | 94,333 |
+| `p1_external_toy2_route_before_maps` | `remote90` | 6.01M | 20 | 863,609 | 96,812 | 0 | 0 | 69,337 |
+| `p1_external_toy2_split_maintenance` | `cross128_r90` | 0.42M | 904,844 | 0 | 0 | 0 | 0 | 0 |
+| `p1_external_toy2_route_before_maps` | `cross128_r90` | 0.79M | 99,672 | 774,153 | 86,424 | 99,654 | 2,472 | 0 |
+
+Read:
+
+- The diagnostic shape still says route-before-maps removes most route-after-map
+  work on both rows.
+- The cross128 residual is still almost exactly `PROVEN_EXTERNAL` fallback.
+- The production/interleaved guard does not preserve the cross128 win: median is
+  slightly lower than `toy2_split`, and the route-before-maps p25 collapses to
+  about `5.66M`.
+- Because the production tail regressed before adding any new fallback consumer,
+  the next behavior should not be another `PROVEN_EXTERNAL` real-free variant.
+
 ## Decision
 
 ```text
 SmallObjectObservationRefresh-L1:
   GO(observation)
-  NEXT(production/interleaved profile pair)
+  NO-GO(behavior from this evidence)
 ```
 
-Next observation should be production/interleaved throughput on the same
-profile pair.  If that still shows a cross128 win, the next design box should
-target the remaining `PROVEN_EXTERNAL` fallback without reintroducing the
-remote90 ambiguity that made broad external dispatch a no-go.
+Next work should explain the route-before-maps production tail before changing
+behavior: split the low cross128 runs by returned backpressure, origin-transfer
+fallback, and pending/external maintenance shape.  Do not add a narrower
+`PROVEN_EXTERNAL` fallback consumer until the production pair has a stable
+cross128 win with a neutral remote90 guard.
