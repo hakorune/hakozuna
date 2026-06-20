@@ -54,6 +54,7 @@ Use them by passing `--allocators`.
 | `hz6-workload-capacity-target` | `build_hz6_preload_workload_capacity_target.sh` | Workload-proxy capacity profile; widens route/descriptors/source blocks for larger working sets. |
 | `hz6-high-remote-owner-inbox-direct-reuse-target` | `build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh` | Explicit owner-inbox DirectReuse profile candidate; improves remote50 in current p1 evidence but remains default-off because remote90 is not clearly better. |
 | `hz6-high-remote-transfer-presence-target` | `build_hz6_preload_high_remote_transfer_presence_target.sh` | Explicit high-remote transfer class-presence profile; uses min192 occupancy gating after remote90 gains stayed strong but cross128_r90 remained weaker than selected. |
+| `hz6-cross128-toy2-split-target` | `build_hz6_preload_cross128_toy2_split_target.sh` | Explicit cross128 specialist candidate; owner-inbox external profile plus Toy class 2 split pending maintenance, guarded by R10 remote50/remote90/cross128 evidence. |
 | `hz6-midpage-skip-transfer-target` | `build_hz6_preload_midpage_skip_transfer_target.sh` | Watch/control only; latest frontier regressed `16..4096` and `4096..16384`. |
 | `hz6-small-boundary-target` | `build_hz6_preload_small_boundary_target.sh` | Superseded by trusted profile for broad use. |
 | `hz6-small-boundary-fast-target` | `build_hz6_preload_small_boundary_fast_target.sh` | Raw-push component remains default-off. |

@@ -6,7 +6,7 @@ HZ6_DIR="${ROOT_DIR}/hakozuna-hz6"
 BENCH="${HZ6_BENCH_REMOTE_MT:-/mnt/workdisk/public_share/hakmem/hakozuna/out/bench_random_mixed_mt_remote_malloc}"
 RUNS="${RUNS:-3}"
 RUN_TIMEOUT="${HZ6_PRELOAD_REMOTE_TIMEOUT:-90}"
-PROFILES_CSV="${PROFILES:-selected,transfer_presence,owner_inbox,direct_reuse,small_class_shard}"
+PROFILES_CSV="${PROFILES:-selected,transfer_presence,owner_inbox,direct_reuse,small_class_shard,toy2_split}"
 ROWS_CSV="${ROWS:-remote50,remote90,cross128_r90}"
 OUTDIR="${OUTDIR:-${HZ6_DIR}/private/raw-results/linux/hz6_remote_profile_frontier_$(date +%Y%m%d_%H%M%S)}"
 SKIP_BUILDS=0
@@ -18,7 +18,7 @@ Usage:
 
 Options:
   --runs N         repeat count per row/profile (default: 3)
-  --profiles CSV   selected,transfer_presence,owner_inbox,direct_reuse,small_class_shard
+  --profiles CSV   selected,transfer_presence,owner_inbox,direct_reuse,small_class_shard,toy2_split
   --rows CSV       local0,remote50,remote90,remote90_short,cross128_r90
   --outdir DIR     output directory
   --skip-builds    reuse existing DSOs
@@ -53,7 +53,7 @@ profiles=()
 IFS=',' read -r -a raw_profiles <<< "$PROFILES_CSV"
 for profile in "${raw_profiles[@]}"; do
   case "$profile" in
-    selected|transfer_presence|owner_inbox|direct_reuse|small_class_shard)
+    selected|transfer_presence|owner_inbox|direct_reuse|small_class_shard|toy2_split)
       profiles+=("$profile")
       ;;
     "") ;;
@@ -82,6 +82,7 @@ build_profile() {
     owner_inbox) "${HZ6_DIR}/linux/build_hz6_preload_high_remote_owner_inbox_target.sh" ;;
     direct_reuse) "${HZ6_DIR}/linux/build_hz6_preload_high_remote_owner_inbox_direct_reuse_target.sh" ;;
     small_class_shard) "${HZ6_DIR}/linux/build_hz6_preload_transfer_small_class_shard_target.sh" ;;
+    toy2_split) "${HZ6_DIR}/linux/build_hz6_preload_cross128_toy2_split_target.sh" ;;
   esac
 }
 
@@ -92,6 +93,7 @@ profile_so() {
     owner_inbox) echo "${HZ6_DIR}/out/linux/hz6_preload_high_remote_owner_inbox/libhakozuna_hz6_preload.so" ;;
     direct_reuse) echo "${HZ6_DIR}/out/linux/hz6_preload_high_remote_owner_inbox_direct_reuse/libhakozuna_hz6_preload.so" ;;
     small_class_shard) echo "${HZ6_DIR}/out/linux/hz6_preload_transfer_small_class_shard/libhakozuna_hz6_preload.so" ;;
+    toy2_split) echo "${HZ6_DIR}/out/linux/hz6_preload_cross128_toy2_split/libhakozuna_hz6_preload.so" ;;
   esac
 }
 

@@ -769,3 +769,17 @@ The paired R10 guard matrix keeps `remote50` essentially flat, improves
 Broad split still wins the cross128 median, but it does not improve the guard
 rows.  The Toy2 gate is therefore the better boxed candidate for a cross128
 specialist profile; it is not a default candidate yet.
+
+Profile alias smoke:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_toy2_profile_frontier_r3_20260620_181523`
+
+R3 profile runner medians:
+
+| Profile | `remote50` | `remote90` | `cross128_r90` |
+| --- | ---: | ---: | ---: |
+| `selected` | 14.53M | 3.96M | 11.28M |
+| `toy2_split` | 13.47M | 11.28M | 33.73M |
+
+The real profile alias reproduces the expected shape: it is not a remote50 or
+default profile, but it is a strong high-remote/cross128 specialist candidate.

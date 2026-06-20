@@ -388,6 +388,13 @@ bench_find_hz6_high_remote_transfer_presence_target_library() {
     hz6-preload-high-remote-transfer-presence-target
 }
 
+bench_find_hz6_cross128_toy2_split_target_library() {
+  bench_find_hz6_preload_output \
+    HZ6_CROSS128_TOY2_SPLIT_TARGET_PRELOAD_SO \
+    hz6_preload_cross128_toy2_split \
+    hz6-preload-cross128-toy2-split-target
+}
+
 bench_find_hz6_transfer_class_shard_target_library() {
   bench_find_hz6_preload_output \
     HZ6_TRANSFER_CLASS_SHARD_TARGET_PRELOAD_SO \
@@ -546,6 +553,9 @@ bench_find_allocator_library() {
       ;;
     hz6-high-remote-transfer-presence-target|hz6_high_remote_transfer_presence_target)
       bench_find_hz6_high_remote_transfer_presence_target_library
+      ;;
+    hz6-cross128-toy2-split-target|hz6_cross128_toy2_split_target)
+      bench_find_hz6_cross128_toy2_split_target_library
       ;;
     hz6-transfer-class-shard-target|hz6_transfer_class_shard_target)
       bench_find_hz6_transfer_class_shard_target_library
