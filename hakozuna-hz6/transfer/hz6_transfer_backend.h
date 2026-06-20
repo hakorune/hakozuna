@@ -63,6 +63,10 @@ size_t hz6_transfer_backend_capacity(const Hz6TransferBackend* backend);
 size_t hz6_transfer_backend_count_class(const Hz6TransferBackend* backend,
                                         uint16_t class_id);
 
+void hz6_transfer_backend_note_class_presence_stats(
+    const Hz6TransferBackend* backend,
+    Hz6StatsSnapshot* snapshot);
+
 size_t hz6_transfer_backend_shard_count_at(const Hz6TransferBackend* backend,
                                            size_t shard_index);
 

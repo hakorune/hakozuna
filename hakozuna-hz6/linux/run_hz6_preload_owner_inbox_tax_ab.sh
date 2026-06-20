@@ -20,7 +20,7 @@ Usage:
 
 Options:
   --runs N        repeat count per row and variant (default: 3)
-  --variants CSV p0_off,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
+  --variants CSV p0_off,p0_transfer_class_presence,p0_no_origin_transfer,p1_metadata,p1_inline_no_maintenance,p1_inline,p1_external_no_maintenance,p1_external,p1_external_direct_reuse,p1_external_direct_reuse_observe,p1_external_source_gate,p1_external_source_gate_observe,p1_external_inline_skip_mid5,p1_external_inline_skip_mid4,p1_external_route_pin,p1_external_split_maintenance,p1_external_small_class
   --rows CSV     local0,remote50,remote90,remote90_short (default: local0,remote50)
   --outdir DIR    output directory
   --diagnostic    build with HZ6_DIAGNOSTIC_PROBES=1 for counter attribution (default)
@@ -29,6 +29,7 @@ Options:
 
 Variants:
   p0_off                     owner-inbox family forced off
+  p0_transfer_class_presence p0_off plus TransferClassPresenceGate-L1
   p0_no_origin_transfer      p0_off plus origin-transfer backpressure off
   p1_metadata                inbox structs compiled in, producer/consumer off
   p1_inline_no_maintenance   inline owner-inbox producer on, consumer off
@@ -89,7 +90,7 @@ variants=()
 IFS=',' read -r -a raw_variants <<< "$VARIANTS_CSV"
 for variant in "${raw_variants[@]}"; do
   case "$variant" in
-    p0_off|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
+    p0_off|p0_transfer_class_presence|p0_no_origin_transfer|p1_metadata|p1_inline_no_maintenance|p1_inline|p1_external_no_maintenance|p1_external|p1_external_direct_reuse|p1_external_direct_reuse_observe|p1_external_source_gate|p1_external_source_gate_observe|p1_external_inline_skip_mid5|p1_external_inline_skip_mid4|p1_external_route_pin|p1_external_split_maintenance|p1_external_small_class)
       variants+=("$variant")
       ;;
     "") ;;
@@ -118,6 +119,9 @@ build_variant() {
   hz6_preload_effective_owner_inbox_off_cflags flags 1
   case "$variant" in
     p0_off)
+      ;;
+    p0_transfer_class_presence)
+      hz6_preload_replace_define flags HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 1
       ;;
     p0_no_origin_transfer)
       hz6_preload_replace_define flags HZ6_REMOTE_FREE_BACKPRESSURE_ORIGIN_TRANSFER_L1 0
@@ -259,6 +263,18 @@ counter_keys=(
   remote_pending_external_ticket_duplicate_probe_max
   remote_pending_external_ticket_duplicate_index_stale
   transfer_reserve_full
+  transfer_class_presence_gate_check
+  transfer_class_presence_gate_hit
+  transfer_class_presence_gate_miss
+  transfer_class_presence_invalid_class
+  transfer_class_presence_underflow
+  transfer_class_presence_over_capacity
+  transfer_class_presence_placeholder_counted
+  transfer_class_presence_double_increment
+  transfer_class_presence_double_decrement
+  transfer_class_presence_sum_mismatch
+  transfer_class_presence_scan_mismatch
+  transfer_class_presence_false_zero_shadow
   remote_free_backpressure_origin_transfer_success
   remote_free_backpressure_origin_transfer_fail
   remote_free_backpressure_origin_transfer_stride_skip

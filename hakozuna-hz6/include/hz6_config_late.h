@@ -407,6 +407,13 @@
 #define HZ6_ORIGIN_TRANSFER_PHASE_AGE_AUDIT_L1 0
 #endif
 
+#ifndef HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
+/* Transfer-cache class presence hint.  Counts committed objects by class so a
+ * pop for an absent class can skip the dense scan.  The hint is not ownership
+ * authority and publish/reserve behavior is unchanged. */
+#define HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1 0
+#endif
+
 #ifndef HZ6_REMOTE_PENDING_INBOX_CORE_L1
 /* Owner-stable remote pending inbox core.  Producers publish descriptor
  * indices into an owner allocator per-class inbox; behavior stays off until a

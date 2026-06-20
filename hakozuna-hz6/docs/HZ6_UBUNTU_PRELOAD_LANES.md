@@ -3921,6 +3921,106 @@ not purely stale, and `remote90_short` still has a large recent component.
 The next design question should focus on transfer placement/partitioning or a
 resident-class-aware consumer boundary, not on discard/admission rejection.
 
+## 2026-06-20 TransferClassPresenceGate-L1
+
+Added an opt-in transfer-cache class presence gate.  Each transfer cache tracks
+committed objects by class, and class-specific pop returns before the dense
+array scan when the requested class count is zero.  Reservation placeholders
+are not counted, and the gate does not reject publish, move ownership, demote
+objects, or change descriptor state.
+
+Diagnostic smoke:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --diagnostic \
+  --runs 1 \
+  --rows remote50,remote90_short \
+  --variants p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134500
+```
+
+Production A/B:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows remote50,remote90,remote90_short \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134604
+```
+
+Median production result:
+
+```text
+row             p0_off      presence gate
+remote50        14.91M      14.79M
+remote90         3.75M      10.81M
+remote90_short   4.58M       8.54M
+```
+
+Local guard:
+
+```text
+./hakozuna-hz6/linux/run_hz6_preload_owner_inbox_tax_ab.sh \
+  --production \
+  --runs 3 \
+  --rows local0 \
+  --variants p0_off,p0_transfer_class_presence
+```
+
+Raw output:
+
+```text
+hakozuna-hz6/private/raw-results/linux/hz6_owner_inbox_tax_ab_20260620_134651
+```
+
+```text
+row      p0_off      presence gate
+local0   16.74M      16.27M
+```
+
+Read:
+
+```text
+remote90:
+  The class-negative pop path is a real cost.  Avoiding the dense scan when
+  requested-class inventory is absent removes a large part of the short-row
+  transfer tail.
+
+remote50:
+  The change is close to neutral but still slightly below p0 in the R3 sample.
+
+local0:
+  The opt-in gate regressed the local guard by about 2.8%, above the 1%
+  promotion budget.
+```
+
+Diagnostic integrity counters for invalid class, underflow, over-capacity,
+placeholder counted, double increment, and double decrement stayed zero in the
+smoke.  Snapshot-style `sum_mismatch`, `scan_mismatch`, and
+`false_zero_shadow` were nonzero under diagnostic observation, consistent with
+the current lockless transfer-cache mutation and snapshot race.  This does not
+lose a transfer object, but it blocks treating the class count as anything more
+than a hint and must be reconciled before default promotion.
+
+Decision: `GO(high-remote candidate)/HOLD(default)`.  The box is a strong
+remote90/remote90_short candidate and matches the class-negative lookup
+diagnosis.  It should not replace selected/default until the local0 tax is
+reduced and the false-zero/snapshot mismatch story is either eliminated or
+documented as an accepted diagnostic-only race with a stronger shadow check.
+
 ## 2026-06-20 Profile Frontier Alias Smoke
 
 The new profile aliases were exercised through the existing focused profile

@@ -25,6 +25,18 @@
   size_t transfer_reserve_success;
   size_t transfer_reserve_full;
   size_t transfer_reserve_full_after_state_mutation;
+  size_t transfer_class_presence_gate_check;
+  size_t transfer_class_presence_gate_hit;
+  size_t transfer_class_presence_gate_miss;
+  size_t transfer_class_presence_invalid_class;
+  size_t transfer_class_presence_underflow;
+  size_t transfer_class_presence_over_capacity;
+  size_t transfer_class_presence_placeholder_counted;
+  size_t transfer_class_presence_double_increment;
+  size_t transfer_class_presence_double_decrement;
+  size_t transfer_class_presence_sum_mismatch;
+  size_t transfer_class_presence_scan_mismatch;
+  size_t transfer_class_presence_false_zero_shadow;
   size_t route_rehome_commit_enter;
   size_t route_rehome_commit_success;
   size_t remote_free_backpressure;

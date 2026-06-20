@@ -91,6 +91,18 @@
           "transfer_reserve_success=%zu "
           "transfer_reserve_full=%zu "
           "transfer_reserve_full_after_state_mutation=%zu "
+          "transfer_class_presence_gate_check=%zu "
+          "transfer_class_presence_gate_hit=%zu "
+          "transfer_class_presence_gate_miss=%zu "
+          "transfer_class_presence_invalid_class=%zu "
+          "transfer_class_presence_underflow=%zu "
+          "transfer_class_presence_over_capacity=%zu "
+          "transfer_class_presence_placeholder_counted=%zu "
+          "transfer_class_presence_double_increment=%zu "
+          "transfer_class_presence_double_decrement=%zu "
+          "transfer_class_presence_sum_mismatch=%zu "
+          "transfer_class_presence_scan_mismatch=%zu "
+          "transfer_class_presence_false_zero_shadow=%zu "
           "route_rehome_commit_enter=%zu "
           "route_rehome_commit_success=%zu "
           "remote_free_backpressure=%zu "
@@ -401,6 +413,18 @@
           remote_free_status_dispatch_transfer, transfer_reserve_attempt,
           transfer_reserve_success, transfer_reserve_full,
           transfer_reserve_full_after_state_mutation,
+          transfer_class_presence_gate_check,
+          transfer_class_presence_gate_hit,
+          transfer_class_presence_gate_miss,
+          transfer_class_presence_invalid_class,
+          transfer_class_presence_underflow,
+          transfer_class_presence_over_capacity,
+          transfer_class_presence_placeholder_counted,
+          transfer_class_presence_double_increment,
+          transfer_class_presence_double_decrement,
+          transfer_class_presence_sum_mismatch,
+          transfer_class_presence_scan_mismatch,
+          transfer_class_presence_false_zero_shadow,
           route_rehome_commit_enter, route_rehome_commit_success,
           remote_free_backpressure, remote_free_returned_uncommitted,
           remote_free_returned_backpressure, remote_free_returned_stale,

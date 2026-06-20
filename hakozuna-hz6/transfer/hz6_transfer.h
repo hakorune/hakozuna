@@ -8,6 +8,8 @@
 extern "C" {
 #endif
 
+typedef struct Hz6StatsSnapshot Hz6StatsSnapshot;
+
 typedef struct Hz6TransferObject {
   void* ptr;
   void* descriptor;
@@ -22,6 +24,21 @@ typedef struct Hz6TransferCache {
   Hz6TransferObject* objects;
   size_t capacity;
   size_t count;
+#if HZ6_TRANSFER_CLASS_PRESENCE_GATE_L1
+  _Atomic uint32_t class_count[HZ6_FRONT_CACHE_CLASS_COUNT];
+  _Atomic uint32_t presence_gate_check;
+  _Atomic uint32_t presence_gate_hit;
+  _Atomic uint32_t presence_gate_miss;
+  _Atomic uint32_t presence_invalid_class;
+  _Atomic uint32_t presence_underflow;
+  _Atomic uint32_t presence_over_capacity;
+  _Atomic uint32_t presence_placeholder_counted;
+  _Atomic uint32_t presence_double_increment;
+  _Atomic uint32_t presence_double_decrement;
+  _Atomic uint32_t presence_sum_mismatch;
+  _Atomic uint32_t presence_scan_mismatch;
+  _Atomic uint32_t presence_false_zero_shadow;
+#endif
 } Hz6TransferCache;
 
 typedef struct Hz6TransferReservation {
@@ -52,6 +69,13 @@ size_t hz6_transfer_count(const Hz6TransferCache* cache);
 
 size_t hz6_transfer_count_class(const Hz6TransferCache* cache,
                                 uint16_t class_id);
+
+int hz6_transfer_class_maybe_present(Hz6TransferCache* cache,
+                                     uint16_t class_id);
+
+void hz6_transfer_note_class_presence_stats(
+    const Hz6TransferCache* cache,
+    Hz6StatsSnapshot* snapshot);
 
 #ifdef __cplusplus
 }

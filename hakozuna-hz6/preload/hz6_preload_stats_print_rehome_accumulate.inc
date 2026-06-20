@@ -54,6 +54,30 @@
     transfer_reserve_full += stats.transfer_reserve_full;
     transfer_reserve_full_after_state_mutation +=
         stats.transfer_reserve_full_after_state_mutation;
+    transfer_class_presence_gate_check +=
+        stats.transfer_class_presence_gate_check;
+    transfer_class_presence_gate_hit +=
+        stats.transfer_class_presence_gate_hit;
+    transfer_class_presence_gate_miss +=
+        stats.transfer_class_presence_gate_miss;
+    transfer_class_presence_invalid_class +=
+        stats.transfer_class_presence_invalid_class;
+    transfer_class_presence_underflow +=
+        stats.transfer_class_presence_underflow;
+    transfer_class_presence_over_capacity +=
+        stats.transfer_class_presence_over_capacity;
+    transfer_class_presence_placeholder_counted +=
+        stats.transfer_class_presence_placeholder_counted;
+    transfer_class_presence_double_increment +=
+        stats.transfer_class_presence_double_increment;
+    transfer_class_presence_double_decrement +=
+        stats.transfer_class_presence_double_decrement;
+    transfer_class_presence_sum_mismatch +=
+        stats.transfer_class_presence_sum_mismatch;
+    transfer_class_presence_scan_mismatch +=
+        stats.transfer_class_presence_scan_mismatch;
+    transfer_class_presence_false_zero_shadow +=
+        stats.transfer_class_presence_false_zero_shadow;
     route_rehome_commit_enter += stats.route_rehome_commit_enter;
     route_rehome_commit_success += stats.route_rehome_commit_success;
     remote_free_backpressure += stats.remote_free_backpressure;
