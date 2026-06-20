@@ -81,3 +81,44 @@ The class-shard variants reduce some transfer-pop counts, but they do not
 stabilize the row and regress the production median.  The next small-object
 box should target the remaining transfer full/backpressure sink behavior
 instead of widening class-id shard placement.
+
+## Overflow Sink Probe
+
+Raw outputs:
+
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_overflow64_r3_20260620_165920`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_overflow1024_r3_20260620_170030`
+- `hakozuna-hz6/private/raw-results/linux/hz6_cross128_overflow1024_prod_r3_20260620_170204`
+
+Existing default-off overflow sink controls:
+
+```text
+HZ6_REMOTE_FREE_OVERFLOW_L1=1
+HZ6_REMOTE_FREE_OVERFLOW_CAPACITY=64 or 1024
+```
+
+Diagnostic R3:
+
+| Variant | Median ops/s | returned backpressure | transfer reserve full |
+| --- | ---: | ---: | ---: |
+| `p0_off` baseline | 0.388M | 125.6K | 691.6K |
+| overflow64 | 0.435M | 124.0K | 722.0K |
+| overflow1024 | 0.449M | 107.2K | 592.1K |
+
+Production R3 for overflow1024:
+
+```text
+median cross128_r90 = 5.70M ops/s
+```
+
+Decision:
+
+```text
+RemoteFreeOverflowCapacity:
+  HOLD / not the next behavior box
+```
+
+Increasing the overflow sink reduces backpressure, but not enough to close the
+row, and the production result is still below the clean `p0_off` R10 median.
+This points back to owner-side consumption and transfer pressure shape rather
+than a simple reserve-capacity fix.
