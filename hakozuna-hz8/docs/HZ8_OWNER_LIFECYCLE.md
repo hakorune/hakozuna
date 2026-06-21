@@ -204,6 +204,10 @@ After owner admission reuse safety is closed, the next performance boxes are:
 5. OwnerAdmissionReadShape-L1
    Closed by removing the redundant plain owner generation read from remote
    publish admission.
+
+6. PendingWordPresenceMask-L1
+   Next collect-side work reduction.  Add a per-span pending-word summary mask
+   as a hint only, and keep quiescent full-bitmap verification.
 ```
 
 ## Regular Adoption Dry Run
@@ -225,6 +229,101 @@ possible without changing allocator behavior.
 validation by setting `H8_ENABLE_REGULAR_ADOPTION=1` before initialization.
 When disabled, the slow path still records dry-run opportunity counters but
 falls back to new span commit.
+
+## Pending Word Presence Consultation Result
+
+The next optimization box is collect-side work reduction, not another
+admission or lifecycle change.  The minimal next box is
+`PendingWordPresenceMask-L1`.
+
+Recommended order:
+
+```text
+1. PendingWordPresenceMask-L1
+2. PendingWordBulkCommit-L1 if density stays high
+3. regular adoption correctness closeout
+4. v0 fusion-small gate
+5. MediumRun v1
+```
+
+### Why collect-side first
+
+The current state already has:
+
+```text
+remote free per span: one lease path
+pending_count zero->one notify authority
+remote_orphan: rare in steady state
+carry/requeue: not dominant in the current short runs
+```
+
+That means the remaining obvious work is the number of pending bitmap words
+the collector must inspect per drained span.  Owner admission is already
+bounded; the next useful reduction is to avoid touching obviously empty words.
+
+### Pending word summary mask
+
+Each span may keep a 64-bit `pending_word_mask` as a hint only.
+
+```text
+bit N == 1:
+  pending_bits[N] may contain at least one pending slot
+```
+
+This mask must never become ownership truth.  The truth remains:
+
+```text
+pending bitmap
+pending_count
+live bitmap
+```
+
+The summary mask is only an acceleration aid for the collector.
+
+### Shadow-first rollout
+
+Start with shadow counters before changing collector behavior:
+
+```text
+pending_word_summary_set
+pending_word_summary_shadow_hit
+pending_word_summary_false_positive
+pending_word_summary_false_negative
+pending_word_summary_rearm
+pending_word_summary_repair
+```
+
+Only after quiescent mismatch stays at zero should the collector drain summary
+words instead of all words.
+
+### Collection order
+
+Keep the current quiescent rules:
+
+```text
+IDLE -> QUEUED -> DRAINING -> IDLE
+finish recheck of pending_count
+full-bitmap verification on exit/adoption
+```
+
+The summary mask is not allowed to weaken exit or adoption verification.
+
+### Density rule
+
+If `pending_words_nonzero / pending_words` stays low, summary skipping is the
+right direction.  If the density stays high, the next box is
+`PendingWordBulkCommit-L1` instead of a queue redesign.
+
+### Not to touch yet
+
+```text
+owner admission rechecks
+owner exit as a cold path
+remote producer-driven collect
+MediumRun
+profile splitting
+per-object descriptor
+```
 
 ## Remote Publish Protocol
 

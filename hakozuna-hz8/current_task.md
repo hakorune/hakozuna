@@ -11,10 +11,11 @@ HZ8 optimization is being implemented in this order:
 7. `RemoteAdmissionSingleLease-L1`
 8. `PendingZeroToOneNotify-L1`
 9. `RemoteDrainDensityAudit-L1`
+10. `PendingWordPresenceMask-L1`
 
 Current focus:
 
-- `RemoteDrainDensityAudit-L1`
+- `PendingWordPresenceMask-L1`
 
 Rules:
 
@@ -54,6 +55,9 @@ New gates for the current sequence:
 - `remote_publish_dual_lease = 0`
 - `post_lease_owner_word_mismatch = 0`
 - `pending_zero_to_one_without_notify = 0`
+- `pending_word_summary_false_negative_quiescent = 0`
+- `pending_word_summary_repair = 0`
+- `pending_word_summary_invalid_bit = 0`
 
 OwnerAdmissionReadShape-L1:
 
@@ -79,3 +83,11 @@ RemoteDrainDensityAudit-L1:
 - prefer audit counters over another queue redesign.
 - current implementation adds call / carry / requeue / word density counters.
 - stop here and ask the next design question before changing queue shape.
+
+PendingWordPresenceMask-L1:
+
+- next box is collect-side work reduction, not a new lifecycle path.
+- add a per-span pending-word summary mask as a hint only.
+- do not use the summary as ownership truth.
+- keep quiescent full-bitmap verification for exit/adoption.
+- start with shadow counters before switching behavior.
