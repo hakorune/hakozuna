@@ -82,9 +82,6 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   pthread_mutex_lock(&orphan->owned_lock);
   for (H8Span* span = orphan->orphan_by_class[class_id]; span;
        span = span->next_orphan_class) {
-    if (span->class_id != class_id) {
-      continue;
-    }
     if (!h8_span_has_free_slot(span)) {
       continue;
     }
@@ -140,9 +137,6 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     pthread_mutex_lock(&orphan->owned_lock);
     for (H8Span* span = orphan->orphan_by_class[class_id]; span;
          span = span->next_orphan_class) {
-      if (span->class_id != class_id) {
-        continue;
-      }
       if (!h8_span_has_free_slot(span)) {
         atomic_fetch_add_explicit(&h8g.adoption_block_quiesce_count, 1, memory_order_relaxed);
         continue;

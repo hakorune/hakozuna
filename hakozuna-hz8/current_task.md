@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `RegularAdoptionDryRun-L1` under `RegularAdoption-L1`
+- `RegularAdoption-L1`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `RegularAdoption-L1` after dry-run validation
+- `Stability sweep after adoption validation`
