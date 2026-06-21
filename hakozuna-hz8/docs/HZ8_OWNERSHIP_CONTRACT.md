@@ -81,8 +81,9 @@ Required owner-death ordering:
 2. owner stops creating new active spans
 3. owner waits until publish_refcount reaches zero
 4. owner drains its pending-span queue completely
-5. owner marks remaining spans ORPHAN_READY only after remote_head, qstate,
-   and remote-pending bitmap are stable for adoption
+5. owner quiesces each remaining non-empty span before handoff and marks it
+   ORPHAN_READY only after remote_head, qstate, and remote-pending bitmap are
+   stable for adoption
 6. adopter claims the whole span with a span_ownership_epoch bump
 7. new owner may collect only after the adopted owner token is visible
 ```

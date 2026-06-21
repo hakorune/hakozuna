@@ -21,6 +21,19 @@ static void h8_owner_close_gate(H8OwnerRecord* owner) {
   }
 }
 
+static void h8_owner_quiesce_span(H8Span* span) {
+  if (h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
+    h8_span_mark_orphan_quiescing(span);
+  }
+
+  if (h8_span_state_load(span) == H8_SPAN_ORPHAN_QUIESCING &&
+      atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
+      h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
+                         h8_word_count_for_slots(span->slot_count)) == 0) {
+    h8_span_mark_orphan_ready(span);
+  }
+}
+
 void h8_owner_exit(H8OwnerRecord* owner) {
   if (!owner || owner->permanent) {
     return;
@@ -39,9 +52,10 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
       h8_span_retire(span);
     } else {
+      h8_owner_quiesce_span(span);
       H8OwnerWord expected = h8_owner_word_make((uint8_t)owner->slot,
                                                 (uint16_t)owner->generation,
-                                                H8_SPAN_OWNED_ACTIVE,
+                                                h8_span_state_load(span),
                                                 atomic_load_explicit(&span->span_epoch,
                                                                      memory_order_acquire));
       if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
