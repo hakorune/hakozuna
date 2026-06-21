@@ -27,6 +27,7 @@ bool h8_span_publish_enter(H8Span* span) {
     if (atomic_compare_exchange_weak_explicit(&span->publish_refs, &cur, next,
                                               memory_order_acquire,
                                               memory_order_relaxed)) {
+      H8_DEBUG_INC(span_publish_enter_count);
       if (atomic_load_explicit(&span->publish_closed, memory_order_acquire) ||
           h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
         h8_span_publish_exit(span);
@@ -39,6 +40,7 @@ bool h8_span_publish_enter(H8Span* span) {
 
 void h8_span_publish_exit(H8Span* span) {
   atomic_fetch_sub_explicit(&span->publish_refs, 1, memory_order_acq_rel);
+  H8_DEBUG_INC(span_publish_exit_count);
 }
 
 void h8_span_close_publish(H8Span* span) {

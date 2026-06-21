@@ -47,6 +47,15 @@ typedef struct H8DebugStats {
   size_t owner_lifecycle_exit_count;
   size_t span_publish_enter_count;
   size_t span_publish_exit_count;
+  size_t remote_regular_admission_count;
+  size_t remote_orphan_admission_count;
+  size_t pending_notify_count;
+  size_t pending_collect_call_count;
+  size_t pending_collect_carry_hit_count;
+  size_t pending_collect_requeue_count;
+  size_t pending_collect_word_count;
+  size_t pending_collect_word_nonzero_count;
+  size_t pending_collect_bit_count;
   size_t orphan_quiesce_count;
   size_t orphan_ready_count;
   size_t adoption_dry_run_scan_count;

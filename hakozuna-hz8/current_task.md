@@ -8,10 +8,13 @@ HZ8 optimization is being implemented in this order:
 4. `PendingBitmapWordDrain-L1`
 5. `OrphanPublishNotifyOnly-L1`
 6. `OwnerAdmissionReadShape-L1`
+7. `RemoteAdmissionSingleLease-L1`
+8. `PendingZeroToOneNotify-L1`
+9. `RemoteDrainDensityAudit-L1`
 
 Current focus:
 
-- `OwnerAdmissionReadShape-L1` (closed)
+- `RemoteDrainDensityAudit-L1`
 
 Rules:
 
@@ -20,6 +23,7 @@ Rules:
 - Do not add a new global route on the hot path.
 - Keep the implementation under 800 lines per task slice.
 - Keep `active_spans[]` as a weak hint, not ownership truth.
+- Do not touch `MediumRun` until the small remote path is closed.
 
 Validation gates already in use:
 
@@ -45,9 +49,33 @@ New gates for the current sequence:
 - `pending_count_underflow = 0`
 - `pending_bit_without_live = 0`
 - `collect_same_slot_twice = 0`
+- `regular_publish_without_owner_lease = 0`
+- `orphan_publish_without_span_lease = 0`
+- `remote_publish_dual_lease = 0`
+- `post_lease_owner_word_mismatch = 0`
+- `pending_zero_to_one_without_notify = 0`
 
 OwnerAdmissionReadShape-L1:
 
 - closed by removing the redundant plain owner generation read from remote
   publish admission.
 - remaining owner generation uses are ownership state, not admission shape.
+
+RemoteAdmissionSingleLease-L1:
+
+- split remote admission so regular-owner spans use one lifecycle lease path and
+  permanent-orphan spans use one span-lease path.
+- keep the post-lease owner-word recheck in the first box.
+- do not elide the recheck until the debug counter proves it is stable.
+
+PendingZeroToOneNotify-L1:
+
+- make `pending_count == 0 -> 1` the authority for notify.
+- keep collector recheck and requeue logic unchanged for now.
+
+RemoteDrainDensityAudit-L1:
+
+- measure collect work density before changing drain shape again.
+- prefer audit counters over another queue redesign.
+- current implementation adds call / carry / requeue / word density counters.
+- stop here and ask the next design question before changing queue shape.

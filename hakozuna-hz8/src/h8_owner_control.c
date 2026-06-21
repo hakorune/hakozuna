@@ -95,6 +95,7 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
       H8_DEBUG_INC(owner_lifecycle_enter_count);
+      H8_DEBUG_INC(owner_publish_enter_count);
       return true;
     }
   }
@@ -117,6 +118,7 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
       H8_DEBUG_INC(owner_lifecycle_exit_count);
+      H8_DEBUG_INC(owner_publish_exit_count);
       return;
     }
   }

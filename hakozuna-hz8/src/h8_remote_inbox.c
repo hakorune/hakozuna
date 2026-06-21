@@ -21,6 +21,7 @@ static void h8_pending_count_dec(H8Span* span) {
 }
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
+  H8_DEBUG_INC(pending_notify_count);
   uint8_t expected = H8_Q_IDLE;
   if (atomic_compare_exchange_strong_explicit(&span->qstate, &expected, H8_Q_QUEUED,
                                               memory_order_acq_rel,
@@ -39,8 +40,10 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     return H8_PUBLISH_INVALID;
   }
   H8_DEBUG_INC(remote_publish_count);
-  atomic_fetch_add_explicit(&span->pending_count, 1, memory_order_relaxed);
-  h8_span_notify(owner, span);
+  size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1, memory_order_acq_rel);
+  if (prev == 0) {
+    h8_span_notify(owner, span);
+  }
   return H8_PUBLISH_OK;
 }
 
@@ -56,17 +59,22 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  if (!h8_span_publish_enter(span)) {
-    H8_DEBUG_INC(owner_transition_count);
-    return H8_PUBLISH_OWNER_TRANSITION;
+  if (owner->permanent) {
+    if (!h8_span_publish_enter(span)) {
+      H8_DEBUG_INC(owner_transition_count);
+      return H8_PUBLISH_OWNER_TRANSITION;
+    }
+    H8_DEBUG_INC(remote_orphan_admission_count);
+    H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
+    h8_span_publish_exit(span);
+    return res;
   }
   if (!h8_owner_publish_enter(owner, ow.generation)) {
-    h8_span_publish_exit(span);
     H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
+  H8_DEBUG_INC(remote_regular_admission_count);
   H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
-  h8_span_publish_exit(span);
   h8_owner_publish_exit(owner);
   return res;
 }
@@ -81,14 +89,19 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
 
   size_t words = h8_word_count_for_slots(span->slot_count);
   for (size_t word_index = 0; word_index < words; ++word_index) {
+    H8_DEBUG_INC(pending_collect_word_count);
     uint64_t bits = atomic_exchange_explicit(
         &((_Atomic uint64_t*)span->pending_bits)[word_index], 0,
         memory_order_acq_rel);
+    if (bits) {
+      H8_DEBUG_INC(pending_collect_word_nonzero_count);
+    }
     while (bits) {
       uint64_t bit = bits & (~bits + 1ull);
       size_t bit_index = (size_t)__builtin_ctzll(bits);
       size_t slot = (word_index << 6u) + bit_index;
       bits ^= bit;
+      H8_DEBUG_INC(pending_collect_bit_count);
       if (slot >= span->slot_count) {
         continue;
       }
@@ -144,6 +157,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   if (!owner || budget == 0) {
     return;
   }
+  H8_DEBUG_INC(pending_collect_call_count);
 
   pthread_mutex_lock(&owner->pending_lock);
 
@@ -152,9 +166,11 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   size_t collected = 0;
 
   if (carry) {
+    H8_DEBUG_INC(pending_collect_carry_hit_count);
     collected += h8_collect_pending_list(owner, carry, budget, &carry);
     if (carry) {
       owner->pending_carry = carry;
+      H8_DEBUG_INC(pending_collect_requeue_count);
       pthread_mutex_unlock(&owner->pending_lock);
       return;
     }
@@ -167,6 +183,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
     collected += h8_collect_pending_list(owner, list, budget - collected, &remainder);
     if (remainder) {
       owner->pending_carry = remainder;
+      H8_DEBUG_INC(pending_collect_requeue_count);
     }
   }
 

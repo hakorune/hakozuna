@@ -131,8 +131,17 @@ typedef struct H8Global {
   atomic_size_t owner_publish_enter_count;
   atomic_size_t owner_publish_exit_count;
   atomic_size_t owner_exit_count;
+  atomic_size_t remote_regular_admission_count;
+  atomic_size_t remote_orphan_admission_count;
+  atomic_size_t pending_notify_count;
+  atomic_size_t pending_collect_call_count;
+  atomic_size_t pending_collect_carry_hit_count;
+  atomic_size_t pending_collect_requeue_count;
   atomic_size_t pending_enqueue_count;
   atomic_size_t pending_dequeue_count;
+  atomic_size_t pending_collect_word_count;
+  atomic_size_t pending_collect_word_nonzero_count;
+  atomic_size_t pending_collect_bit_count;
   atomic_size_t orphan_handoff_count;
   atomic_size_t handoff_success_count;
   atomic_size_t owner_lifecycle_enter_count;
