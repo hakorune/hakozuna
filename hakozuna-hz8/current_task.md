@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `Stale active-span hint hardening`
+- `Stale active-span hint cleanup`
 
 Rules:
 

@@ -31,6 +31,9 @@ void h8_owner_remove_owned_span(H8OwnerRecord* owner, H8Span* span) {
   }
   span->next_owned = NULL;
   span->next_owned_class = NULL;
+  if (owner->active_spans[span->class_id] == span) {
+    owner->active_spans[span->class_id] = NULL;
+  }
   pthread_mutex_unlock(&owner->owned_lock);
 }
 
@@ -63,6 +66,9 @@ void h8_owner_remove_orphan_span(H8OwnerRecord* owner, H8Span* span) {
   }
   span->next_orphan = NULL;
   span->next_orphan_class = NULL;
+  if (owner->active_spans[span->class_id] == span) {
+    owner->active_spans[span->class_id] = NULL;
+  }
   pthread_mutex_unlock(&owner->owned_lock);
 }
 

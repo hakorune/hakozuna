@@ -209,6 +209,9 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
       continue;
     }
 
+    if (orphan->active_spans[candidate->class_id] == candidate) {
+      orphan->active_spans[candidate->class_id] = NULL;
+    }
     h8_owner_remove_orphan_span_locked(orphan, candidate);
     current.slot = (uint8_t)adopter->slot;
     current.generation = (uint16_t)adopter->generation;
