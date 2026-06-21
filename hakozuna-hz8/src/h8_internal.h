@@ -95,10 +95,12 @@ struct H8OwnerRecord {
   H8Span* owned_by_class[H8_CLASS_COUNT];
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
+  H8Span* pending_carry;
   H8Span* owned_head;
   H8Span* orphan_head;
   H8Span* orphan_by_class[H8_CLASS_COUNT];
   pthread_mutex_t owned_lock;
+  pthread_mutex_t pending_lock;
   struct H8OwnerRecord* free_next;
 };
 

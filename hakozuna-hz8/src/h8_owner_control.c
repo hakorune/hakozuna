@@ -22,6 +22,7 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   }
   atomic_store_explicit(&owner->pending_head, NULL, memory_order_relaxed);
   atomic_store_explicit(&owner->pending_span_count, 0, memory_order_relaxed);
+  owner->pending_carry = NULL;
   owner->owned_head = NULL;
   owner->orphan_head = NULL;
   for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {

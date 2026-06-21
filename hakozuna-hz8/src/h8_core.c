@@ -73,6 +73,7 @@ static void h8_init_once(void) {
   }
   H8OwnerRecord* orphan = &h8g.owners[0];
   pthread_mutex_init(&orphan->owned_lock, NULL);
+  pthread_mutex_init(&orphan->pending_lock, NULL);
   h8_owner_mark_alive(orphan, 0, kGenerationSeed, true);
   orphan->permanent = true;
   h8g.orphan_owner = orphan;
@@ -80,6 +81,7 @@ static void h8_init_once(void) {
   h8g.owner_free = NULL;
   for (uint32_t i = 1; i < H8_OWNER_MAX; ++i) {
     pthread_mutex_init(&h8g.owners[i].owned_lock, NULL);
+    pthread_mutex_init(&h8g.owners[i].pending_lock, NULL);
     h8_owner_mark_dead(&h8g.owners[i]);
     h8g.owners[i].slot = i;
     h8g.owners[i].free_next = h8g.owner_free;

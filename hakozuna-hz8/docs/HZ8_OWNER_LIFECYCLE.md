@@ -191,7 +191,8 @@ After owner admission reuse safety is closed, the next performance boxes are:
    `H8_ENABLE_DEBUG_STATS` builds.
 
 2. PendingCarry-L1
-   Make bounded collect truly O(budget) and fix pending count double-accounting.
+   Closed by owner-local carry.  Bounded collect now keeps remainder work in a
+   carry list and does not rescan it.
 
 3. PendingBitmapWordDrain-L1
    Replace all-slot collect scans with pending bitmap word draining.

@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `PendingCarry-L1`
+- `PendingBitmapWordDrain-L1`
 
 Rules:
 
@@ -48,5 +48,5 @@ New gates for the current sequence:
 
 Next attack:
 
-- `PendingCarry-L1`: make bounded collect truly O(budget) and remove the
-  remainder requeue scan.
+- `PendingBitmapWordDrain-L1`: replace all-slot collect scans with pending
+  bitmap word draining.
