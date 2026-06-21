@@ -71,6 +71,7 @@ struct H8Span {
   _Atomic uint16_t publish_refs;
   _Atomic uint8_t qstate;
   _Atomic size_t pending_count;
+  _Atomic uint64_t pending_word_mask;
   _Atomic uint32_t span_epoch;
   _Atomic uint32_t bump_index;
   _Atomic uint32_t local_free_head;
@@ -139,6 +140,12 @@ typedef struct H8Global {
   atomic_size_t pending_collect_requeue_count;
   atomic_size_t pending_enqueue_count;
   atomic_size_t pending_dequeue_count;
+  atomic_size_t pending_word_summary_set;
+  atomic_size_t pending_word_summary_shadow_hit;
+  atomic_size_t pending_word_summary_false_positive;
+  atomic_size_t pending_word_summary_false_negative;
+  atomic_size_t pending_word_summary_rearm;
+  atomic_size_t pending_word_summary_repair;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;

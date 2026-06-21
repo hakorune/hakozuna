@@ -53,6 +53,12 @@ typedef struct H8DebugStats {
   size_t pending_collect_call_count;
   size_t pending_collect_carry_hit_count;
   size_t pending_collect_requeue_count;
+  size_t pending_word_summary_set;
+  size_t pending_word_summary_shadow_hit;
+  size_t pending_word_summary_false_positive;
+  size_t pending_word_summary_false_negative;
+  size_t pending_word_summary_rearm;
+  size_t pending_word_summary_repair;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;

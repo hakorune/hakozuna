@@ -233,6 +233,18 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_collect_carry_hit_count, memory_order_acquire);
   out->pending_collect_requeue_count =
       atomic_load_explicit(&h8g.pending_collect_requeue_count, memory_order_acquire);
+  out->pending_word_summary_set =
+      atomic_load_explicit(&h8g.pending_word_summary_set, memory_order_acquire);
+  out->pending_word_summary_shadow_hit = atomic_load_explicit(
+      &h8g.pending_word_summary_shadow_hit, memory_order_acquire);
+  out->pending_word_summary_false_positive = atomic_load_explicit(
+      &h8g.pending_word_summary_false_positive, memory_order_acquire);
+  out->pending_word_summary_false_negative = atomic_load_explicit(
+      &h8g.pending_word_summary_false_negative, memory_order_acquire);
+  out->pending_word_summary_rearm =
+      atomic_load_explicit(&h8g.pending_word_summary_rearm, memory_order_acquire);
+  out->pending_word_summary_repair =
+      atomic_load_explicit(&h8g.pending_word_summary_repair, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

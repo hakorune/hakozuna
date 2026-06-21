@@ -15,7 +15,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `PendingWordPresenceMask-L1`
+- `PendingWordPresenceMask-L1` (shadow-first complete)
 
 Rules:
 
@@ -58,6 +58,10 @@ New gates for the current sequence:
 - `pending_word_summary_false_negative_quiescent = 0`
 - `pending_word_summary_repair = 0`
 - `pending_word_summary_invalid_bit = 0`
+- `pending_word_summary_set = 0`
+- `pending_word_summary_shadow_hit = 0`
+- `pending_word_summary_false_positive = 0`
+- `pending_word_summary_rearm = 0`
 
 OwnerAdmissionReadShape-L1:
 
@@ -90,4 +94,4 @@ PendingWordPresenceMask-L1:
 - add a per-span pending-word summary mask as a hint only.
 - do not use the summary as ownership truth.
 - keep quiescent full-bitmap verification for exit/adoption.
-- start with shadow counters before switching behavior.
+- shadow counters are wired; behavior switch waits for the next design call.
