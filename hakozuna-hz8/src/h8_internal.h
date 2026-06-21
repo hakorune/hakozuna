@@ -29,10 +29,11 @@ typedef enum H8SpanQueueState {
 
 typedef enum H8SpanState {
   H8_SPAN_OWNED_ACTIVE = 0,
-  H8_SPAN_ORPHAN_READY = 1,
-  H8_SPAN_ADOPTING = 2,
-  H8_SPAN_RETIRING = 3,
-  H8_SPAN_RETIRED = 4
+  H8_SPAN_ORPHAN_QUIESCING = 1,
+  H8_SPAN_ORPHAN_READY = 2,
+  H8_SPAN_ADOPTING = 3,
+  H8_SPAN_RETIRING = 4,
+  H8_SPAN_RETIRED = 5
 } H8SpanState;
 
 typedef enum H8OwnerPlacement {
@@ -64,7 +65,9 @@ struct H8Span {
   uint16_t slot_count;
   uint32_t owner_slot;
   uint16_t owner_generation;
-  uint16_t span_state;
+  _Atomic uint8_t span_state;
+  _Atomic uint8_t publish_closed;
+  _Atomic uint16_t publish_refs;
   _Atomic uint8_t qstate;
   _Atomic uint32_t span_epoch;
   _Atomic uint32_t bump_index;
@@ -232,6 +235,15 @@ static inline H8OwnerWord h8_owner_word_make(uint8_t slot, uint16_t generation,
   return ow;
 }
 
+static inline H8SpanState h8_span_state_load(const H8Span* span) {
+  return (H8SpanState)atomic_load_explicit(&span->span_state, memory_order_acquire);
+}
+
+static inline void h8_span_state_store(H8Span* span, H8SpanState state,
+                                       memory_order order) {
+  atomic_store_explicit(&span->span_state, (uint8_t)state, order);
+}
+
 static inline bool h8_owner_word_equal(H8OwnerWord a, H8OwnerWord b) {
   return a.slot == b.slot && a.generation == b.generation &&
          a.state == b.state && a.span_epoch == b.span_epoch;
@@ -300,6 +312,8 @@ void h8_span_notify(H8OwnerRecord* owner, H8Span* span);
 void h8_pressure_owner_collect(H8OwnerRecord* owner);
 void h8_collect_owner_pending(H8OwnerRecord* owner);
 void h8_owner_exit(H8OwnerRecord* owner);
+bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation);
+void h8_owner_lifecycle_exit(H8OwnerRecord* owner);
 bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation);
 void h8_owner_publish_exit(H8OwnerRecord* owner);
 void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generation,
@@ -313,8 +327,15 @@ void h8_owner_remove_owned_span(H8OwnerRecord* owner, H8Span* span);
 void h8_owner_add_orphan_span(H8OwnerRecord* owner, H8Span* span);
 void h8_owner_remove_orphan_span(H8OwnerRecord* owner, H8Span* span);
 bool h8_owner_wait_publishers_zero(H8OwnerRecord* owner);
+bool h8_span_publish_enter(H8Span* span);
+void h8_span_publish_exit(H8Span* span);
+void h8_span_close_publish(H8Span* span);
+void h8_span_wait_publishers_zero(H8Span* span);
+void h8_span_mark_orphan_quiescing(H8Span* span);
+void h8_span_mark_orphan_ready(H8Span* span);
 bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
                      H8OwnerRecord* target_owner);
+H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id);
 static inline H8OwnerRecord* h8_owner_by_slot(uint32_t slot) {
   if (slot >= H8_OWNER_MAX) {
     return NULL;

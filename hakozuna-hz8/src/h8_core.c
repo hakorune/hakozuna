@@ -53,12 +53,14 @@ static void h8_init_once(void) {
     abort();
   }
   H8OwnerRecord* orphan = &h8g.owners[0];
+  pthread_mutex_init(&orphan->owned_lock, NULL);
   h8_owner_mark_alive(orphan, 0, kGenerationSeed, true);
   orphan->permanent = true;
   h8g.orphan_owner = orphan;
   h8g.current_owner = orphan;
   h8g.owner_free = NULL;
   for (uint32_t i = 1; i < H8_OWNER_MAX; ++i) {
+    pthread_mutex_init(&h8g.owners[i].owned_lock, NULL);
     h8_owner_mark_dead(&h8g.owners[i]);
     h8g.owners[i].slot = i;
     h8g.owners[i].free_next = h8g.owner_free;
@@ -127,7 +129,7 @@ H8RouteKind h8_route_inner(void* ptr) {
     return H8_ROUTE_MISS;
   }
   H8Span* span = h8g.spans[h8_span_index_from_ptr(ptr)];
-  if (!span || span->span_state == H8_SPAN_RETIRED) {
+  if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return H8_ROUTE_INVALID;
   }
   size_t slot = h8_slot_index_from_ptr(span, ptr);

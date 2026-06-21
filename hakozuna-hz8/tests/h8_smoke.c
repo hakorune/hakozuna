@@ -69,10 +69,30 @@ int main(void) {
     fprintf(stderr, "route invalid after owner exit handoff\n");
     return 9;
   }
+  H8Stats before_claim = h8_stats();
+  void* adopted = h8_malloc(128);
+  if (!adopted) {
+    fprintf(stderr, "orphan adoption alloc failed\n");
+    return 11;
+  }
+  H8Stats after_claim = h8_stats();
+  if (after_claim.small_span_count != before_claim.small_span_count) {
+    fprintf(stderr, "orphan adoption committed a new span\n");
+    return 12;
+  }
+  if (h8_route(adopted) != H8_ROUTE_VALID) {
+    fprintf(stderr, "route invalid for adopted alloc\n");
+    return 13;
+  }
   h8_free(orphan_ptr);
   if (h8_route(orphan_ptr) == H8_ROUTE_VALID) {
     fprintf(stderr, "route still valid after orphan free\n");
-    return 10;
+    return 14;
+  }
+  h8_free(adopted);
+  if (h8_route(adopted) == H8_ROUTE_VALID) {
+    fprintf(stderr, "route still valid after adopted free\n");
+    return 15;
   }
   H8Stats stats = h8_stats();
   printf("arena=%zu committed=%zu owners=%zu local=%zu remote=%zu\n",

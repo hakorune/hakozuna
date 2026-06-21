@@ -50,7 +50,9 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
     span->slot_count = (uint16_t)h8_slot_count_for_class(class_id);
     span->owner_slot = owner->slot;
     span->owner_generation = owner->generation;
-    span->span_state = H8_SPAN_OWNED_ACTIVE;
+    h8_span_state_store(span, H8_SPAN_OWNED_ACTIVE, memory_order_relaxed);
+    atomic_store_explicit(&span->publish_closed, 0, memory_order_relaxed);
+    atomic_store_explicit(&span->publish_refs, 0, memory_order_relaxed);
     atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_relaxed);
     atomic_store_explicit(&span->span_epoch, 1, memory_order_relaxed);
     atomic_store_explicit(&span->bump_index, 0, memory_order_relaxed);
@@ -80,11 +82,11 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
 }
 
 void h8_span_retire(H8Span* span) {
-  if (!span || span->span_state == H8_SPAN_RETIRED) {
+  if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return;
   }
   h8_span_decommit_memory(span);
-  span->span_state = H8_SPAN_RETIRED;
+  h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
   h8_sys_free(span->live_bits);
   h8_sys_free(span->pending_bits);
   h8_sys_free(span->next_free);
@@ -97,7 +99,7 @@ H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {
   }
   size_t index = h8_span_index_from_ptr(ptr);
   H8Span* span = h8g.spans[index];
-  if (!span || span->span_state == H8_SPAN_RETIRED) {
+  if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return NULL;
   }
   size_t slot = h8_slot_index_from_ptr(span, ptr);

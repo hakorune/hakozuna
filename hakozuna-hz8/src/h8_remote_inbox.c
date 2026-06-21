@@ -26,7 +26,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
       span->owner_generation != owner->generation) {
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  if (span->span_state != H8_SPAN_OWNED_ACTIVE) {
+  if (h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
     return H8_PUBLISH_INVALID;
   }
   if (h8_bitmap_test((_Atomic uint64_t*)span->pending_bits, slot)) {
@@ -52,7 +52,12 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
+  if (!h8_span_publish_enter(span)) {
+    atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
+    return H8_PUBLISH_OWNER_TRANSITION;
+  }
   if (!h8_owner_publish_enter(owner, span->owner_generation)) {
+    h8_span_publish_exit(span);
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
@@ -60,6 +65,7 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
   if (res == H8_PUBLISH_OK && owner->placement == H8_OWNER_PLACEMENT_ORPHAN) {
     h8_collect_owner_pending(owner);
   }
+  h8_span_publish_exit(span);
   h8_owner_publish_exit(owner);
   return res;
 }
@@ -93,6 +99,12 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
+  if (h8_span_state_load(span) == H8_SPAN_ORPHAN_QUIESCING &&
+      atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
+      h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
+                         h8_word_count_for_slots(span->slot_count)) == 0) {
+    h8_span_mark_orphan_ready(span);
+  }
   if (h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
                          h8_word_count_for_slots(span->slot_count)) != 0) {
     h8_span_notify(owner, span);

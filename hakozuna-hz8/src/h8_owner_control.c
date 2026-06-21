@@ -25,7 +25,6 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
                                                 .publish_closed = 0,
                                                 .publish_refs = 0}),
                         memory_order_release);
-  pthread_mutex_init(&owner->owned_lock, NULL);
 }
 
 void h8_owner_mark_dying(H8OwnerRecord* owner) {
@@ -64,7 +63,7 @@ bool h8_owner_is_alive_and_open(H8OwnerRecord* owner) {
   return ctl.state == H8_OWNER_ALIVE && !ctl.publish_closed;
 }
 
-bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation) {
+bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation) {
   uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
   for (;;) {
     H8CtlWord ctl = h8_ctl_unpack(cur);
@@ -88,7 +87,7 @@ bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation) 
   }
 }
 
-void h8_owner_publish_exit(H8OwnerRecord* owner) {
+void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
   uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
   for (;;) {
     H8CtlWord ctl = h8_ctl_unpack(cur);
@@ -104,4 +103,12 @@ void h8_owner_publish_exit(H8OwnerRecord* owner) {
       return;
     }
   }
+}
+
+bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation) {
+  return h8_owner_lifecycle_enter(owner, expected_generation);
+}
+
+void h8_owner_publish_exit(H8OwnerRecord* owner) {
+  h8_owner_lifecycle_exit(owner);
 }
