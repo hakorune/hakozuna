@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `RegularAdoption-L1 follow-up`
+- `Stale active-span hint hardening`
 
 Rules:
 

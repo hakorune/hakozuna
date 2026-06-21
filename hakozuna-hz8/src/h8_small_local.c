@@ -46,6 +46,8 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
 static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
   H8Span* hint = owner->active_spans[class_id];
   if (hint && hint->class_id == class_id &&
+      hint->owner_slot == owner->slot &&
+      hint->owner_generation == owner->generation &&
       h8_span_state_load(hint) == H8_SPAN_OWNED_ACTIVE &&
       atomic_load_explicit(&hint->used_count, memory_order_acquire) <
           hint->slot_count) {
@@ -81,6 +83,7 @@ void* h8_malloc_inner(size_t size) {
   H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
   H8Span* span = owner->active_spans[class_id];
   if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
+      span->owner_generation == owner->generation &&
       h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
     void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
     if (ptr) {

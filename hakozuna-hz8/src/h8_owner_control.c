@@ -89,8 +89,14 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
         SIZE_MAX) {
       abort();
     }
-    H8CtlWord confirm = h8_ctl_unpack(atomic_load_explicit(&owner->control,
-                                                            memory_order_acquire));
+    /*
+     * Re-check the full control word after taking a ref. The owner slot can
+     * be drained, reused, and reopened between the initial load and this point.
+     * A publish_closed-only recheck would let a stale caller attach to the
+     * new incarnation.
+     */
+    H8CtlWord confirm =
+        h8_ctl_unpack(atomic_load_explicit(&owner->control, memory_order_acquire));
     if (confirm.generation != expected_generation ||
         confirm.state != H8_OWNER_ALIVE ||
         confirm.publish_closed) {
