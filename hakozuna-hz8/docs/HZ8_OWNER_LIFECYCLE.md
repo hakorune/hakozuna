@@ -187,6 +187,11 @@ then continue to the normal adoption path
 This lets `RegularAdoptionDryRun-L1` measure how often adoption would have been
 possible without changing allocator behavior.
 
+`RegularAdoption-L1` stays default-off in the allocator itself.  Enable it for
+validation by setting `H8_ENABLE_REGULAR_ADOPTION=1` before initialization.
+When disabled, the slow path still records dry-run opportunity counters but
+falls back to new span commit.
+
 ## Remote Publish Protocol
 
 Remote publish must distinguish owner transition from pointer invalidity:

@@ -15,6 +15,22 @@ static const uint16_t kGenerationSeed = 1;
 
 static void h8_init_once(void);
 
+static bool h8_parse_env_bool(const char* value) {
+  if (!value || !value[0]) {
+    return false;
+  }
+  switch (value[0]) {
+  case '1':
+  case 't':
+  case 'T':
+  case 'y':
+  case 'Y':
+    return true;
+  default:
+    return false;
+  }
+}
+
 void h8_init(void) {
   pthread_once(&h8g.once, h8_init_once);
 }
@@ -35,6 +51,9 @@ static H8OwnerRecord* h8_owner_free_stack_pop(void) {
 static void h8_init_once(void) {
   h8_system_init();
   pthread_mutex_init(&h8g.owner_lock, NULL);
+  atomic_store_explicit(&h8g.regular_adoption_enabled,
+                        h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
+                        memory_order_relaxed);
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
   h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_NONE,

@@ -2,6 +2,7 @@
 
 #include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 static void* worker(void* arg) {
@@ -26,6 +27,11 @@ static void* orphan_source(void* arg) {
 }
 
 int main(void) {
+  const char* mode = getenv("H8_SMOKE_REGULAR_ADOPTION");
+  int enable_regular_adoption = !(mode && mode[0] == '0');
+  if (enable_regular_adoption) {
+    setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
+  }
   h8_init();
   void* p = h8_malloc(32);
   if (!p) {
@@ -76,9 +82,16 @@ int main(void) {
     return 11;
   }
   H8Stats after_claim = h8_stats();
-  if (after_claim.small_span_count != before_claim.small_span_count) {
-    fprintf(stderr, "orphan adoption committed a new span\n");
-    return 12;
+  if (enable_regular_adoption) {
+    if (after_claim.small_span_count != before_claim.small_span_count) {
+      fprintf(stderr, "orphan adoption committed a new span\n");
+      return 12;
+    }
+  } else {
+    if (after_claim.small_span_count == before_claim.small_span_count) {
+      fprintf(stderr, "regular adoption unexpectedly reused an orphan span\n");
+      return 12;
+    }
   }
   if (h8_route(adopted) != H8_ROUTE_VALID) {
     fprintf(stderr, "route invalid for adopted alloc\n");

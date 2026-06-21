@@ -152,6 +152,7 @@ typedef struct H8Global {
   atomic_size_t adoption_empty_count;
   atomic_size_t adoption_target_closed_count;
   atomic_size_t adoption_success_count;
+  _Atomic bool regular_adoption_enabled;
 } H8Global;
 
 extern H8Global h8g;
@@ -303,6 +304,10 @@ static inline void h8_span_state_store(H8Span* span, H8SpanState state,
 static inline bool h8_owner_word_equal(H8OwnerWord a, H8OwnerWord b) {
   return a.slot == b.slot && a.generation == b.generation &&
          a.state == b.state && a.span_epoch == b.span_epoch;
+}
+
+static inline bool h8_regular_adoption_enabled(void) {
+  return atomic_load_explicit(&h8g.regular_adoption_enabled, memory_order_acquire);
 }
 
 static inline size_t h8_slot_index_from_ptr(const H8Span* span, const void* ptr) {
