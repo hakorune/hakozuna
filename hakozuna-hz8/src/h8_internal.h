@@ -88,6 +88,7 @@ struct H8OwnerRecord {
   uint32_t generation;
   bool permanent;
   H8OwnerPlacement placement;
+  H8Span* active_spans[H8_CLASS_COUNT];
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* owned_head;

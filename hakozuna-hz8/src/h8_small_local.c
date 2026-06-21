@@ -21,8 +21,9 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, slot);
     atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
     atomic_fetch_add_explicit(&h8g.local_alloc_count, 1, memory_order_relaxed);
-  return h8_slot_ptr(span, slot);
-}
+    owner->active_spans[class_id] = span;
+    return h8_slot_ptr(span, slot);
+  }
 
   uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_relaxed);
   if (bump < span->slot_count) {
@@ -43,6 +44,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
 }
 
 static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
+  H8Span* hint = owner->active_spans[class_id];
+  if (hint && hint->class_id == class_id &&
+      h8_span_state_load(hint) == H8_SPAN_OWNED_ACTIVE &&
+      atomic_load_explicit(&hint->used_count, memory_order_acquire) <
+          hint->slot_count) {
+    return hint;
+  }
   pthread_mutex_lock(&owner->owned_lock);
   for (H8Span* span = owner->owned_head; span; span = span->next_owned) {
     if (span->class_id == class_id && h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE &&
@@ -114,6 +122,7 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_release);
   atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&h8g.local_free_count, 1, memory_order_relaxed);
+  owner->active_spans[span->class_id] = span;
   return true;
 }
 
