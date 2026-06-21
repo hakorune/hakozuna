@@ -11,6 +11,8 @@
 
 #include <sys/mman.h>
 
+static pthread_mutex_t h8_span_table_lock = PTHREAD_MUTEX_INITIALIZER;
+
 static H8Span* h8_alloc_span_meta(void) {
   H8Span* span = h8_sys_calloc(1, sizeof(*span));
   return span;
@@ -37,12 +39,14 @@ static void h8_span_decommit_memory(H8Span* span) {
 
 H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   h8_init();
+  pthread_mutex_lock(&h8_span_table_lock);
   for (size_t i = 0; i < h8g.span_count; ++i) {
     if (h8g.spans[i]) {
       continue;
     }
     H8Span* span = h8_alloc_span_meta();
     if (!span) {
+      pthread_mutex_unlock(&h8_span_table_lock);
       return NULL;
     }
     span->base = h8_span_base_from_index(i);
@@ -69,6 +73,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
       h8_sys_free(span->pending_bits);
       h8_sys_free(span->next_free);
       h8_sys_free(span);
+      pthread_mutex_unlock(&h8_span_table_lock);
       return NULL;
     }
     for (uint32_t slot = 0; slot < span->slot_count; ++slot) {
@@ -77,8 +82,10 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
     h8_span_commit_memory(span);
     h8g.spans[i] = span;
     h8_owner_add_owned_span(owner, span);
+    pthread_mutex_unlock(&h8_span_table_lock);
     return span;
   }
+  pthread_mutex_unlock(&h8_span_table_lock);
   return NULL;
 }
 
@@ -86,6 +93,7 @@ void h8_span_retire(H8Span* span) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return;
   }
+  pthread_mutex_lock(&h8_span_table_lock);
   size_t index = h8_span_index_from_ptr(span->base);
   h8_span_decommit_memory(span);
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
@@ -99,6 +107,7 @@ void h8_span_retire(H8Span* span) {
   h8_sys_free(span->pending_bits);
   h8_sys_free(span->next_free);
   h8_sys_free(span);
+  pthread_mutex_unlock(&h8_span_table_lock);
 }
 
 H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {
