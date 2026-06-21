@@ -82,6 +82,7 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next,
                                               memory_order_acquire,
                                               memory_order_relaxed)) {
+      atomic_fetch_add_explicit(&h8g.owner_lifecycle_enter_count, 1, memory_order_relaxed);
       atomic_fetch_add_explicit(&h8g.owner_publish_enter_count, 1, memory_order_relaxed);
       return true;
     }
@@ -100,6 +101,7 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
+      atomic_fetch_add_explicit(&h8g.owner_lifecycle_exit_count, 1, memory_order_relaxed);
       atomic_fetch_add_explicit(&h8g.owner_publish_exit_count, 1, memory_order_relaxed);
       return;
     }

@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `SpanAtomicOwnership-L1`
+- `OrphanQuiescing-L1`
 
 Rules:
 

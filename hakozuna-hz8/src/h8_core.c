@@ -186,6 +186,18 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.owner_publish_enter_count, memory_order_acquire);
   out->owner_publish_exit_count =
       atomic_load_explicit(&h8g.owner_publish_exit_count, memory_order_acquire);
+  out->owner_lifecycle_enter_count =
+      atomic_load_explicit(&h8g.owner_lifecycle_enter_count, memory_order_acquire);
+  out->owner_lifecycle_exit_count =
+      atomic_load_explicit(&h8g.owner_lifecycle_exit_count, memory_order_acquire);
+  out->span_publish_enter_count =
+      atomic_load_explicit(&h8g.span_publish_enter_count, memory_order_acquire);
+  out->span_publish_exit_count =
+      atomic_load_explicit(&h8g.span_publish_exit_count, memory_order_acquire);
+  out->orphan_quiesce_count =
+      atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
+  out->orphan_ready_count =
+      atomic_load_explicit(&h8g.orphan_ready_count, memory_order_acquire);
   out->handoff_fail_count = atomic_load_explicit(&h8g.handoff_fail_count, memory_order_acquire);
   out->invalid_count = atomic_load_explicit(&h8g.invalid_count, memory_order_acquire);
   out->miss_count = atomic_load_explicit(&h8g.miss_count, memory_order_acquire);

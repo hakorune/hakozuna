@@ -33,6 +33,7 @@ bool h8_span_publish_enter(H8Span* span) {
         h8_span_publish_exit(span);
         return false;
       }
+      atomic_fetch_add_explicit(&h8g.span_publish_enter_count, 1, memory_order_relaxed);
       return true;
     }
   }
@@ -40,6 +41,7 @@ bool h8_span_publish_enter(H8Span* span) {
 
 void h8_span_publish_exit(H8Span* span) {
   atomic_fetch_sub_explicit(&span->publish_refs, 1, memory_order_acq_rel);
+  atomic_fetch_add_explicit(&h8g.span_publish_exit_count, 1, memory_order_relaxed);
 }
 
 void h8_span_close_publish(H8Span* span) {
@@ -58,10 +60,12 @@ void h8_span_wait_publishers_zero(H8Span* span) {
 void h8_span_mark_orphan_quiescing(H8Span* span) {
   h8_span_close_publish(span);
   h8_span_state_store(span, H8_SPAN_ORPHAN_QUIESCING, memory_order_release);
+  atomic_fetch_add_explicit(&h8g.orphan_quiesce_count, 1, memory_order_relaxed);
 }
 
 void h8_span_mark_orphan_ready(H8Span* span) {
   h8_span_state_store(span, H8_SPAN_ORPHAN_READY, memory_order_release);
+  atomic_fetch_add_explicit(&h8g.orphan_ready_count, 1, memory_order_relaxed);
 }
 
 bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,

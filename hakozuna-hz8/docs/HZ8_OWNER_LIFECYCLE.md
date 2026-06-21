@@ -165,6 +165,13 @@ waits for the reference count to reach zero before orphaning or releasing spans.
 A producer that only read an owner token but has no lease must retry if the gate
 has closed.
 
+The span publish lease is tracked separately from the owner lifecycle lease in
+the debug lane so slow-path adoption and remote publish behavior can be
+counted independently.
+
+`ORPHAN_QUIESCING` and `ORPHAN_READY` are also counted in the debug lane so
+quiescence and adoption readiness can be checked at quiescent slow-path points.
+
 ## Remote Publish Protocol
 
 Remote publish must distinguish owner transition from pointer invalidity:

@@ -43,6 +43,12 @@ typedef struct H8Stats {
 typedef struct H8DebugStats {
   size_t owner_publish_enter_count;
   size_t owner_publish_exit_count;
+  size_t owner_lifecycle_enter_count;
+  size_t owner_lifecycle_exit_count;
+  size_t span_publish_enter_count;
+  size_t span_publish_exit_count;
+  size_t orphan_quiesce_count;
+  size_t orphan_ready_count;
   size_t handoff_fail_count;
   size_t invalid_count;
   size_t miss_count;

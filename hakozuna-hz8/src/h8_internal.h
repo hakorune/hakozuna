@@ -128,6 +128,12 @@ typedef struct H8Global {
   atomic_size_t pending_dequeue_count;
   atomic_size_t orphan_handoff_count;
   atomic_size_t handoff_success_count;
+  atomic_size_t owner_lifecycle_enter_count;
+  atomic_size_t owner_lifecycle_exit_count;
+  atomic_size_t span_publish_enter_count;
+  atomic_size_t span_publish_exit_count;
+  atomic_size_t orphan_quiesce_count;
+  atomic_size_t orphan_ready_count;
   atomic_size_t handoff_fail_count;
   atomic_size_t invalid_count;
   atomic_size_t miss_count;
