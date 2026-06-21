@@ -17,10 +17,12 @@ HZ8 optimization is being implemented in this order:
 13. `PendingQueueContentionAudit-L1`
 14. `ThreadLocalContextFastPath-L1`
 15. `SmallLocalRelaxedAtomics-L1`
+16. `LocalPendingTouchElision-L1`
+17. `OwnerSingleWriterLiveWord-L1`
 
 Current focus:
 
-- `SmallLocalRelaxedAtomics-L1`
+- `OwnerSingleWriterLiveWord-L1`
 
 Rules:
 
@@ -82,6 +84,10 @@ New gates for the current sequence:
 - `used_count_underflow = 0`
 - `pending_count_bitmap_mismatch_quiescent = 0`
 - `used_count_live_bitmap_mismatch_quiescent = 0`
+- `local_alloc_pending_nonzero = 0`
+- `local_free_pending_nonzero = 0`
+- `owner_live_set_already_live = 0`
+- `owner_live_clear_already_free = 0`
 
 OwnerAdmissionReadShape-L1:
 
@@ -174,3 +180,18 @@ SmallLocalRelaxedAtomics-L1:
 - keep the same local allocation/free behavior.
 - use relaxed atomics for owner-only local free-list, bump, and bitmap updates.
 - do not change remote publish, collect, owner exit, or adoption ordering.
+
+LocalPendingTouchElision-L1:
+
+- remove local-path writes to the pending bitmap.
+- keep pending bitmap writes limited to remote producer claim and owner collect
+  clear.
+- local alloc/free must treat pending nonzero as a fail-closed integrity error.
+
+OwnerSingleWriterLiveWord-L1:
+
+- keep one authoritative live bitmap.
+- keep live bit updates immediate before malloc return / free return.
+- use owner single-writer load + release store for local live set/clear instead
+  of locked atomic RMW.
+- keep remote validation as acquire loads.

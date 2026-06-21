@@ -15,6 +15,12 @@
 #define H8_CLASS_COUNT 9u
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
 
+#if defined(__GNUC__) || defined(__clang__)
+#define H8_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#else
+#define H8_UNLIKELY(expr) (expr)
+#endif
+
 typedef enum H8OwnerState {
   H8_OWNER_ALIVE = 0,
   H8_OWNER_DYING = 1,
@@ -76,8 +82,8 @@ struct H8Span {
   _Atomic uint32_t bump_index;
   _Atomic uint32_t local_free_head;
   _Atomic size_t used_count;
-  uint64_t* live_bits;
-  uint64_t* pending_bits;
+  _Atomic uint64_t* live_bits;
+  _Atomic uint64_t* pending_bits;
   uint32_t* next_free;
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
@@ -166,6 +172,10 @@ typedef struct H8Global {
   atomic_size_t pending_slots_drained;
   atomic_size_t pending_words_rearmed;
   atomic_size_t pending_word_new_publish_during_drain;
+  atomic_size_t local_alloc_pending_nonzero;
+  atomic_size_t local_free_pending_nonzero;
+  atomic_size_t owner_live_set_already_live;
+  atomic_size_t owner_live_clear_already_free;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;
@@ -410,6 +420,30 @@ static inline void h8_bitmap_clear(_Atomic uint64_t* bits, size_t slot) {
 static inline void h8_bitmap_clear_relaxed(_Atomic uint64_t* bits, size_t slot) {
   uint64_t mask = ~h8_bit_mask(slot);
   atomic_fetch_and_explicit(&bits[h8_bit_word(slot)], mask, memory_order_relaxed);
+}
+
+static inline bool h8_owner_live_set(H8Span* span, size_t slot) {
+  _Atomic uint64_t* word = &span->live_bits[h8_bit_word(slot)];
+  uint64_t bit = h8_bit_mask(slot);
+  uint64_t old = atomic_load_explicit(word, memory_order_relaxed);
+  if ((old & bit) != 0) {
+    H8_DEBUG_INC(owner_live_set_already_live);
+    return false;
+  }
+  atomic_store_explicit(word, old | bit, memory_order_release);
+  return true;
+}
+
+static inline bool h8_owner_live_clear(H8Span* span, size_t slot) {
+  _Atomic uint64_t* word = &span->live_bits[h8_bit_word(slot)];
+  uint64_t bit = h8_bit_mask(slot);
+  uint64_t old = atomic_load_explicit(word, memory_order_relaxed);
+  if ((old & bit) == 0) {
+    H8_DEBUG_INC(owner_live_clear_already_free);
+    return false;
+  }
+  atomic_store_explicit(word, old & ~bit, memory_order_release);
+  return true;
 }
 
 static inline size_t h8_bitmap_popcount(const _Atomic uint64_t* bits, size_t words) {

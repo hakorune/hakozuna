@@ -17,8 +17,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     uint32_t slot = local_head;
     atomic_store_explicit(&span->local_free_head, span->next_free[slot],
                           memory_order_relaxed);
-    h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->pending_bits, slot);
-    h8_bitmap_test_and_set_relaxed((_Atomic uint64_t*)span->live_bits, slot);
+    if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
+      H8_DEBUG_INC(local_alloc_pending_nonzero);
+      abort();
+    }
+    if (H8_UNLIKELY(!h8_owner_live_set(span, slot))) {
+      abort();
+    }
     atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
     H8_DEBUG_INC(local_alloc_count);
     owner->active_spans[class_id] = span;
@@ -30,7 +35,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     if (atomic_compare_exchange_strong_explicit(
             &span->bump_index, &bump, bump + 1, memory_order_relaxed,
             memory_order_relaxed)) {
-      h8_bitmap_test_and_set_relaxed((_Atomic uint64_t*)span->live_bits, bump);
+      if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, bump))) {
+        H8_DEBUG_INC(local_alloc_pending_nonzero);
+        abort();
+      }
+      if (H8_UNLIKELY(!h8_owner_live_set(span, bump))) {
+        abort();
+      }
       atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
       H8_DEBUG_INC(local_alloc_count);
       return h8_slot_ptr(span, bump);
@@ -115,11 +126,16 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
       h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
     return false;
   }
-  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  if (!h8_bitmap_test(span->live_bits, slot)) {
     return false;
   }
-  h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->live_bits, slot);
-  h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->pending_bits, slot);
+  if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
+    H8_DEBUG_INC(local_free_pending_nonzero);
+    return false;
+  }
+  if (H8_UNLIKELY(!h8_owner_live_clear(span, slot))) {
+    return false;
+  }
   span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
                                                memory_order_relaxed);
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_relaxed);

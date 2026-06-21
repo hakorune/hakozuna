@@ -293,6 +293,14 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.pending_words_rearmed, memory_order_acquire);
   out->pending_word_new_publish_during_drain = atomic_load_explicit(
       &h8g.pending_word_new_publish_during_drain, memory_order_acquire);
+  out->local_alloc_pending_nonzero =
+      atomic_load_explicit(&h8g.local_alloc_pending_nonzero, memory_order_acquire);
+  out->local_free_pending_nonzero =
+      atomic_load_explicit(&h8g.local_free_pending_nonzero, memory_order_acquire);
+  out->owner_live_set_already_live =
+      atomic_load_explicit(&h8g.owner_live_set_already_live, memory_order_acquire);
+  out->owner_live_clear_already_free =
+      atomic_load_explicit(&h8g.owner_live_clear_already_free, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

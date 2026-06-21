@@ -78,6 +78,10 @@ typedef struct H8DebugStats {
   size_t pending_slots_drained;
   size_t pending_words_rearmed;
   size_t pending_word_new_publish_during_drain;
+  size_t local_alloc_pending_nonzero;
+  size_t local_free_pending_nonzero;
+  size_t owner_live_set_already_live;
+  size_t owner_live_clear_already_free;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;

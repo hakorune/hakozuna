@@ -384,6 +384,11 @@ int main(int argc, char** argv) {
          debug.owner_lifecycle_enter_cas_retry_count,
          debug.owner_lifecycle_exit_cas_retry_count,
          debug.remote_publish_pending_claim_duplicate_count);
+  printf("local_zero_gates alloc_pending=%zu free_pending=%zu live_set_already=%zu live_clear_free=%zu\n",
+         debug.local_alloc_pending_nonzero,
+         debug.local_free_pending_nonzero,
+         debug.owner_live_set_already_live,
+         debug.owner_live_clear_already_free);
 
   free(throughput);
   free(rss);
