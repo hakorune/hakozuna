@@ -177,13 +177,11 @@ quiescence and adoption readiness can be checked at quiescent slow-path points.
 Keep `active_spans[]` as a weak hint, not as ownership truth.  The full recheck
 in `h8_owner_lifecycle_enter()` prevents stale callers from attaching to a new
 owner incarnation, but it does not fully close the race between owner slot reuse
-and the separately initialized `lifecycle_refs`.
+and a separately initialized admission ref.
 
-`OwnerAdmissionReuseSafety-L1` is now the next correctness box.  If owner slots
-continue to be reused, move lifecycle refs into the owner control word so
-generation, state, admission gate, and refs are acquired by one CAS.  If packed
-admission is deferred, v0 must instead forbid owner slot reuse or quarantine dead
-owner slots before reuse.
+`OwnerAdmissionReuseSafety-L1` is now closed by packing lifecycle refs into the
+owner control word.  Generation, state, admission gate, and refs are acquired by
+one CAS, so owner slot reuse no longer has a separate ref initialization race.
 
 After owner admission reuse safety is closed, the next performance boxes are:
 

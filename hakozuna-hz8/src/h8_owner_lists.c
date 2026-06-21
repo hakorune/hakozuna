@@ -77,7 +77,9 @@ bool h8_owner_wait_publishers_zero(H8OwnerRecord* owner) {
     return true;
   }
   for (;;) {
-    if (atomic_load_explicit(&owner->lifecycle_refs, memory_order_acquire) == 0) {
+    H8CtlWord ctl = h8_ctl_unpack(atomic_load_explicit(&owner->control,
+                                                        memory_order_acquire));
+    if (ctl.publish_refs == 0) {
       return true;
     }
     sched_yield();

@@ -16,7 +16,6 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   owner->permanent = permanent;
   owner->placement = permanent ? H8_OWNER_PLACEMENT_ORPHAN
                                : H8_OWNER_PLACEMENT_OWNED;
-  atomic_store_explicit(&owner->lifecycle_refs, 0, memory_order_relaxed);
   for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {
     owner->active_spans[i] = NULL;
     owner->owned_by_class[i] = NULL;
@@ -85,27 +84,18 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
       atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
       return false;
     }
-    if (atomic_fetch_add_explicit(&owner->lifecycle_refs, 1, memory_order_acq_rel) ==
-        SIZE_MAX) {
+    if (ctl.publish_refs == UINT16_MAX) {
       abort();
     }
-    /*
-     * Re-check the full control word after taking a ref. The owner slot can
-     * be drained, reused, and reopened between the initial load and this point.
-     * A publish_closed-only recheck would let a stale caller attach to the
-     * new incarnation.
-     */
-    H8CtlWord confirm =
-        h8_ctl_unpack(atomic_load_explicit(&owner->control, memory_order_acquire));
-    if (confirm.generation != expected_generation ||
-        confirm.state != H8_OWNER_ALIVE ||
-        confirm.publish_closed) {
-      atomic_fetch_sub_explicit(&owner->lifecycle_refs, 1, memory_order_acq_rel);
-      atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
-      return false;
+    H8CtlWord next = ctl;
+    next.publish_refs++;
+    uint64_t next_raw = h8_ctl_pack(next);
+    if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next_raw,
+                                              memory_order_acq_rel,
+                                              memory_order_acquire)) {
+      atomic_fetch_add_explicit(&h8g.owner_lifecycle_enter_count, 1, memory_order_relaxed);
+      return true;
     }
-    atomic_fetch_add_explicit(&h8g.owner_lifecycle_enter_count, 1, memory_order_relaxed);
-    return true;
   }
 }
 
@@ -113,11 +103,22 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
   if (owner->permanent) {
     return;
   }
-  size_t refs = atomic_fetch_sub_explicit(&owner->lifecycle_refs, 1, memory_order_acq_rel);
-  if (refs == 0) {
-    abort();
+  uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
+  for (;;) {
+    H8CtlWord ctl = h8_ctl_unpack(cur);
+    if (ctl.publish_refs == 0) {
+      abort();
+    }
+    H8CtlWord next = ctl;
+    next.publish_refs--;
+    uint64_t next_raw = h8_ctl_pack(next);
+    if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next_raw,
+                                              memory_order_acq_rel,
+                                              memory_order_acquire)) {
+      atomic_fetch_add_explicit(&h8g.owner_lifecycle_exit_count, 1, memory_order_relaxed);
+      return;
+    }
   }
-  atomic_fetch_add_explicit(&h8g.owner_lifecycle_exit_count, 1, memory_order_relaxed);
 }
 
 bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation) {

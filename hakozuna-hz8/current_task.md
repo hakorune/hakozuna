@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `OwnerAdmissionReuseSafety-L1`
+- `HotPathStatsShape-L1`
 
 Rules:
 
@@ -48,6 +48,5 @@ New gates for the current sequence:
 
 Next attack:
 
-- Implement `OwnerAdmissionReuseSafety-L1`: packed lifecycle refs or v0 owner
-  slot reuse quarantine. Packed lifecycle refs are preferred if owner slots
-  continue to be reused.
+- `HotPathStatsShape-L1`: move hot-path diagnostic counters out of the normal
+  build and keep the production fast path clean.

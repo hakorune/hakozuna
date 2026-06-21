@@ -91,7 +91,6 @@ struct H8OwnerRecord {
   uint32_t generation;
   bool permanent;
   H8OwnerPlacement placement;
-  _Atomic size_t lifecycle_refs;
   H8Span* active_spans[H8_CLASS_COUNT];
   H8Span* owned_by_class[H8_CLASS_COUNT];
   _Atomic(H8Span*) pending_head;
