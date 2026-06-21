@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `RegularAdoption-L1`
+- `Class-local owned list fast path` under `RegularAdoption-L1`
 
 Rules:
 
@@ -29,3 +29,7 @@ Validation gates already in use:
 - `span_decommit_while_pending = 0`
 - `invalid_owned_fallback = 0`
 - `dead_owner_publish_lost = 0`
+
+Next attack:
+
+- `SpanPublishLease-L1` polish after class-local owned list validation

@@ -26,6 +26,8 @@ static void h8_owner_unlock_pair(H8OwnerRecord* a, H8OwnerRecord* b) {
 static void h8_owner_add_owned_span_locked(H8OwnerRecord* owner, H8Span* span) {
   span->next_owned = owner->owned_head;
   owner->owned_head = span;
+  span->next_owned_class = owner->owned_by_class[span->class_id];
+  owner->owned_by_class[span->class_id] = span;
 }
 
 static void h8_owner_remove_orphan_span_locked(H8OwnerRecord* owner, H8Span* span) {

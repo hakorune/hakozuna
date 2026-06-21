@@ -6,6 +6,8 @@ void h8_owner_add_owned_span(H8OwnerRecord* owner, H8Span* span) {
   pthread_mutex_lock(&owner->owned_lock);
   span->next_owned = owner->owned_head;
   owner->owned_head = span;
+  span->next_owned_class = owner->owned_by_class[span->class_id];
+  owner->owned_by_class[span->class_id] = span;
   pthread_mutex_unlock(&owner->owned_lock);
 }
 
@@ -19,6 +21,16 @@ void h8_owner_remove_owned_span(H8OwnerRecord* owner, H8Span* span) {
     }
     cur = &(*cur)->next_owned;
   }
+  cur = &owner->owned_by_class[span->class_id];
+  while (*cur) {
+    if (*cur == span) {
+      *cur = span->next_owned_class;
+      break;
+    }
+    cur = &(*cur)->next_owned_class;
+  }
+  span->next_owned = NULL;
+  span->next_owned_class = NULL;
   pthread_mutex_unlock(&owner->owned_lock);
 }
 

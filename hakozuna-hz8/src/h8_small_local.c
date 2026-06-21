@@ -52,7 +52,8 @@ static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
     return hint;
   }
   pthread_mutex_lock(&owner->owned_lock);
-  for (H8Span* span = owner->owned_head; span; span = span->next_owned) {
+  for (H8Span* span = owner->owned_by_class[class_id]; span;
+       span = span->next_owned_class) {
     if (span->class_id == class_id && h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE &&
         atomic_load_explicit(&span->used_count, memory_order_acquire) <
             span->slot_count) {

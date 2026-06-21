@@ -78,6 +78,7 @@ struct H8Span {
   uint64_t* pending_bits;
   uint32_t* next_free;
   struct H8Span* next_owned;
+  struct H8Span* next_owned_class;
   struct H8Span* next_pending;
   struct H8Span* next_orphan;
 };
@@ -89,6 +90,7 @@ struct H8OwnerRecord {
   bool permanent;
   H8OwnerPlacement placement;
   H8Span* active_spans[H8_CLASS_COUNT];
+  H8Span* owned_by_class[H8_CLASS_COUNT];
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* owned_head;
