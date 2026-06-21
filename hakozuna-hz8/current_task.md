@@ -21,10 +21,11 @@ HZ8 optimization is being implemented in this order:
 17. `OwnerSingleWriterLiveWord-L1`
 18. `OwnerLocalScalarState-L1`
 19. `LocalPathAttribution-L1`
+20. `LocalHotLineAudit-L1`
 
 Current focus:
 
-- `LocalPathAttribution-L1`
+- `LocalHotLineAudit-L1`
 
 Rules:
 
@@ -214,3 +215,10 @@ LocalPathAttribution-L1:
 - measure active hint hits/misses, freelist vs bump allocation, slow collect,
   span commit, class-list scans, and local free reject reasons before choosing
   the next optimization.
+
+LocalHotLineAudit-L1:
+
+- add debug-only counters for local hot metadata touches.
+- measure live bitmap word distribution for local alloc/free.
+- measure local free-head, pending-check, and used-count touch counts.
+- do not change layout or behavior before the audit data is available.

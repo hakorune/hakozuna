@@ -325,6 +325,32 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_free_reject_state, memory_order_acquire);
   out->local_free_reject_live =
       atomic_load_explicit(&h8g.local_free_reject_live, memory_order_acquire);
+  out->local_live_touch_alloc =
+      atomic_load_explicit(&h8g.local_live_touch_alloc, memory_order_acquire);
+  out->local_live_touch_free =
+      atomic_load_explicit(&h8g.local_live_touch_free, memory_order_acquire);
+  out->local_live_word_0 =
+      atomic_load_explicit(&h8g.local_live_word_0, memory_order_acquire);
+  out->local_live_word_1 =
+      atomic_load_explicit(&h8g.local_live_word_1, memory_order_acquire);
+  out->local_live_word_2_7 =
+      atomic_load_explicit(&h8g.local_live_word_2_7, memory_order_acquire);
+  out->local_live_word_8_31 =
+      atomic_load_explicit(&h8g.local_live_word_8_31, memory_order_acquire);
+  out->local_live_word_32_63 =
+      atomic_load_explicit(&h8g.local_live_word_32_63, memory_order_acquire);
+  out->local_free_head_touch_alloc = atomic_load_explicit(
+      &h8g.local_free_head_touch_alloc, memory_order_acquire);
+  out->local_free_head_touch_free = atomic_load_explicit(
+      &h8g.local_free_head_touch_free, memory_order_acquire);
+  out->local_pending_check_alloc =
+      atomic_load_explicit(&h8g.local_pending_check_alloc, memory_order_acquire);
+  out->local_pending_check_free =
+      atomic_load_explicit(&h8g.local_pending_check_free, memory_order_acquire);
+  out->local_used_touch_alloc =
+      atomic_load_explicit(&h8g.local_used_touch_alloc, memory_order_acquire);
+  out->local_used_touch_free =
+      atomic_load_explicit(&h8g.local_used_touch_free, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

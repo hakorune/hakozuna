@@ -402,6 +402,20 @@ int main(int argc, char** argv) {
          debug.local_free_reject_owner,
          debug.local_free_reject_state,
          debug.local_free_reject_live);
+  printf("local_hot live_alloc=%zu live_free=%zu word0=%zu word1=%zu word2_7=%zu word8_31=%zu word32_63=%zu free_head_alloc=%zu free_head_free=%zu pending_alloc=%zu pending_free=%zu used_alloc=%zu used_free=%zu\n",
+         debug.local_live_touch_alloc,
+         debug.local_live_touch_free,
+         debug.local_live_word_0,
+         debug.local_live_word_1,
+         debug.local_live_word_2_7,
+         debug.local_live_word_8_31,
+         debug.local_live_word_32_63,
+         debug.local_free_head_touch_alloc,
+         debug.local_free_head_touch_free,
+         debug.local_pending_check_alloc,
+         debug.local_pending_check_free,
+         debug.local_used_touch_alloc,
+         debug.local_used_touch_free);
 
   free(throughput);
   free(rss);

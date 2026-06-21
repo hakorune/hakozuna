@@ -188,6 +188,19 @@ typedef struct H8Global {
   atomic_size_t local_free_reject_owner;
   atomic_size_t local_free_reject_state;
   atomic_size_t local_free_reject_live;
+  atomic_size_t local_live_touch_alloc;
+  atomic_size_t local_live_touch_free;
+  atomic_size_t local_live_word_0;
+  atomic_size_t local_live_word_1;
+  atomic_size_t local_live_word_2_7;
+  atomic_size_t local_live_word_8_31;
+  atomic_size_t local_live_word_32_63;
+  atomic_size_t local_free_head_touch_alloc;
+  atomic_size_t local_free_head_touch_free;
+  atomic_size_t local_pending_check_alloc;
+  atomic_size_t local_pending_check_free;
+  atomic_size_t local_used_touch_alloc;
+  atomic_size_t local_used_touch_free;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;
@@ -402,6 +415,25 @@ static inline uint64_t h8_bit_mask(size_t slot) {
 
 static inline size_t h8_bit_word(size_t slot) {
   return slot >> 6u;
+}
+
+static inline void h8_debug_local_live_word(size_t slot) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  size_t word = h8_bit_word(slot);
+  if (word == 0) {
+    H8_DEBUG_INC(local_live_word_0);
+  } else if (word == 1) {
+    H8_DEBUG_INC(local_live_word_1);
+  } else if (word <= 7) {
+    H8_DEBUG_INC(local_live_word_2_7);
+  } else if (word <= 31) {
+    H8_DEBUG_INC(local_live_word_8_31);
+  } else {
+    H8_DEBUG_INC(local_live_word_32_63);
+  }
+#else
+  (void)slot;
+#endif
 }
 
 static inline bool h8_bitmap_test(_Atomic uint64_t* bits, size_t slot) {
