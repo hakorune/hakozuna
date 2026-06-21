@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `PendingBitmapWordDrain-L1`
+- `OrphanPublishNotifyOnly-L1`
 
 Rules:
 
@@ -48,5 +48,5 @@ New gates for the current sequence:
 
 Next attack:
 
-- `PendingBitmapWordDrain-L1`: replace all-slot collect scans with pending
-  bitmap word draining.
+- `OrphanPublishNotifyOnly-L1`: stop permanent-orphan remote producers from
+  draining all pending work.

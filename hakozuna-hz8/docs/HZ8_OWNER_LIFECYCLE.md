@@ -195,7 +195,7 @@ After owner admission reuse safety is closed, the next performance boxes are:
    carry list and does not rescan it.
 
 3. PendingBitmapWordDrain-L1
-   Replace all-slot collect scans with pending bitmap word draining.
+   Closed by draining pending bitmap words instead of scanning every slot.
 
 4. OrphanPublishNotifyOnly-L1
    Stop permanent-orphan remote producers from draining all pending work.

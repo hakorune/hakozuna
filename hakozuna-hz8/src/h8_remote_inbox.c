@@ -1,5 +1,7 @@
 #include "h8_internal.h"
 
+#include <stdlib.h>
+
 static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   H8Span* head = atomic_load_explicit(&owner->pending_head, memory_order_relaxed);
   do {
@@ -9,6 +11,13 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
       memory_order_relaxed));
   atomic_fetch_add_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
   H8_DEBUG_INC(pending_enqueue_count);
+}
+
+static void h8_pending_count_dec(H8Span* span) {
+  size_t prev = atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
+  if (prev == 0) {
+    abort();
+  }
 }
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
@@ -73,26 +82,33 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     return;
   }
 
-  for (uint32_t slot = 0; slot < span->slot_count; ++slot) {
-    if (!h8_bitmap_test((_Atomic uint64_t*)span->pending_bits, slot)) {
-      continue;
+  size_t words = h8_word_count_for_slots(span->slot_count);
+  for (size_t word_index = 0; word_index < words; ++word_index) {
+    uint64_t bits = atomic_exchange_explicit(
+        &((_Atomic uint64_t*)span->pending_bits)[word_index], 0,
+        memory_order_acq_rel);
+    while (bits) {
+      uint64_t bit = bits & (~bits + 1ull);
+      size_t bit_index = (size_t)__builtin_ctzll(bits);
+      size_t slot = (word_index << 6u) + bit_index;
+      bits ^= bit;
+      if (slot >= span->slot_count) {
+        continue;
+      }
+      h8_pending_count_dec(span);
+      if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+        H8_DEBUG_INC(invalid_count);
+        continue;
+      }
+      h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
+      span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
+                                                   memory_order_relaxed);
+      atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
+                            memory_order_release);
+      atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(remote_collect_count);
+      H8_DEBUG_INC(pending_dequeue_count);
     }
-    if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-      H8_DEBUG_INC(invalid_count);
-      h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
-      atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
-      continue;
-    }
-    h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
-    h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
-    atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
-    span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
-                                                 memory_order_relaxed);
-    atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
-                          memory_order_release);
-    atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
-    H8_DEBUG_INC(remote_collect_count);
-    H8_DEBUG_INC(pending_dequeue_count);
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
