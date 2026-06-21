@@ -70,6 +70,7 @@ struct H8Span {
   _Atomic uint8_t publish_closed;
   _Atomic uint16_t publish_refs;
   _Atomic uint8_t qstate;
+  _Atomic size_t pending_count;
   _Atomic uint32_t span_epoch;
   _Atomic uint32_t bump_index;
   _Atomic uint32_t local_free_head;

@@ -9,8 +9,7 @@ static H8OwnerWord h8_owner_word_from_span(const H8Span* span) {
 
 static bool h8_span_handoff_quiescent(const H8Span* span) {
   return atomic_load_explicit(&span->qstate, memory_order_acquire) == H8_Q_IDLE &&
-         h8_bitmap_popcount((const _Atomic uint64_t*)span->pending_bits,
-                            h8_word_count_for_slots(span->slot_count)) == 0 &&
+         atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0 &&
          atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0;
 }
 

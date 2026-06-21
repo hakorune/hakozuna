@@ -28,8 +28,7 @@ static void h8_owner_quiesce_span(H8Span* span) {
 
   if (h8_span_state_load(span) == H8_SPAN_ORPHAN_QUIESCING &&
       atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
-      h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
-                         h8_word_count_for_slots(span->slot_count)) == 0) {
+      atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {
     h8_span_mark_orphan_ready(span);
   }
 }

@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `OwnerLifecycleLease-L1` under `RegularAdoption-L1`
+- `OrphanQuiescing-L1` under `RegularAdoption-L1`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `OrphanQuiescing-L1` after lifecycle lease polish
+- `RegularAdoptionDryRun-L1` after orphan quiescing validation

@@ -60,6 +60,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
     atomic_store_explicit(&span->publish_closed, 0, memory_order_relaxed);
     atomic_store_explicit(&span->publish_refs, 0, memory_order_relaxed);
     atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_relaxed);
+    atomic_store_explicit(&span->pending_count, 0, memory_order_relaxed);
     atomic_store_explicit(&span->bump_index, 0, memory_order_relaxed);
     atomic_store_explicit(&span->local_free_head, UINT32_MAX, memory_order_relaxed);
     atomic_store_explicit(&span->used_count, 0, memory_order_relaxed);
