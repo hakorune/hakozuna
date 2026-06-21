@@ -174,11 +174,35 @@ quiescence and adoption readiness can be checked at quiescent slow-path points.
 
 ## Current Consultation Result
 
-Keep `h8_owner_lifecycle_enter()` on the full recheck path.  Keep
-`active_spans[]` as a weak hint, not as ownership truth.  Do not pack
-`lifecycle_refs` into the owner control word yet; the next optimization target
-is only the number of owner-admission reads, not a change in the ownership
-boundary itself.
+Keep `active_spans[]` as a weak hint, not as ownership truth.  The full recheck
+in `h8_owner_lifecycle_enter()` prevents stale callers from attaching to a new
+owner incarnation, but it does not fully close the race between owner slot reuse
+and the separately initialized `lifecycle_refs`.
+
+`OwnerAdmissionReuseSafety-L1` is now the next correctness box.  If owner slots
+continue to be reused, move lifecycle refs into the owner control word so
+generation, state, admission gate, and refs are acquired by one CAS.  If packed
+admission is deferred, v0 must instead forbid owner slot reuse or quarantine dead
+owner slots before reuse.
+
+After owner admission reuse safety is closed, the next performance boxes are:
+
+```text
+1. HotPathStatsShape-L1
+   Move hot-path diagnostic counters out of normal builds.
+
+2. PendingCarry-L1
+   Make bounded collect truly O(budget) and fix pending count double-accounting.
+
+3. PendingBitmapWordDrain-L1
+   Replace all-slot collect scans with pending bitmap word draining.
+
+4. OrphanPublishNotifyOnly-L1
+   Stop permanent-orphan remote producers from draining all pending work.
+
+5. OwnerAdmissionReadShape-L1
+   Remove redundant owner generation reads and A/B control/ref cacheline shape.
+```
 
 ## Regular Adoption Dry Run
 

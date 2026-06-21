@@ -1,18 +1,17 @@
 # Current Task
 
-HZ8 adoption path is being implemented in this order:
+HZ8 optimization is being implemented in this order:
 
-1. `AdoptionOpportunityAudit-L1`
-2. `SpanAtomicOwnership-L1`
-3. `SpanPublishLease-L1`
-4. `OwnerLifecycleLease-L1`
-5. `OrphanQuiescing-L1`
-6. `RegularAdoptionDryRun-L1`
-7. `RegularAdoption-L1`
+1. `OwnerAdmissionReuseSafety-L1`
+2. `HotPathStatsShape-L1`
+3. `PendingCarry-L1`
+4. `PendingBitmapWordDrain-L1`
+5. `OrphanPublishNotifyOnly-L1`
+6. `OwnerAdmissionReadShape-L1`
 
 Current focus:
 
-- `Stale active-span hint cleanup`
+- `OwnerAdmissionReuseSafety-L1`
 
 Rules:
 
@@ -20,6 +19,7 @@ Rules:
 - Keep v0 behavior stable until dry-run and zero gates are proven.
 - Do not add a new global route on the hot path.
 - Keep the implementation under 800 lines per task slice.
+- Keep `active_spans[]` as a weak hint, not ownership truth.
 
 Validation gates already in use:
 
@@ -30,6 +30,24 @@ Validation gates already in use:
 - `invalid_owned_fallback = 0`
 - `dead_owner_publish_lost = 0`
 
+New gates for the current sequence:
+
+- `lifecycle_ref_underflow = 0`
+- `stale_owner_lease_success = 0`
+- `owner_reuse_with_live_ref = 0`
+- `owner_dead_with_lifecycle_refs = 0`
+- `owner_generation_attach_mismatch = 0`
+- `pending_span_count_mismatch = 0`
+- `pending_carry_duplicate = 0`
+- `pending_span_dual_membership = 0`
+- `qstate_idle_while_queued = 0`
+- `pending_word_lost = 0`
+- `pending_count_underflow = 0`
+- `pending_bit_without_live = 0`
+- `collect_same_slot_twice = 0`
+
 Next attack:
 
-- `Design consult` after this follow-up slice
+- Implement `OwnerAdmissionReuseSafety-L1`: packed lifecycle refs or v0 owner
+  slot reuse quarantine. Packed lifecycle refs are preferred if owner slots
+  continue to be reused.
