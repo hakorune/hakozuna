@@ -299,16 +299,22 @@ int main(int argc, char** argv) {
          rss[0], rss[(size_t)opt.runs - 1u]);
 
   H8Stats stats = h8_stats();
-  printf("counters publish_enter=%zu publish_exit=%zu owner_exit=%zu pending_enqueue=%zu pending_dequeue=%zu orphan_handoff=%zu handoff_ok=%zu handoff_fail=%zu owner_transition=%zu\n",
-         stats.owner_publish_enter_count,
-         stats.owner_publish_exit_count,
+  H8DebugStats debug = h8_debug_stats();
+  printf("counters_prod owner_exit=%zu pending_enqueue=%zu pending_dequeue=%zu orphan_handoff=%zu handoff_ok=%zu local=%zu remote=%zu\n",
          stats.owner_exit_count,
          stats.pending_enqueue_count,
          stats.pending_dequeue_count,
          stats.orphan_handoff_count,
          stats.handoff_success_count,
-         stats.handoff_fail_count,
-         stats.owner_transition_count);
+         stats.local_alloc_count,
+         stats.remote_collect_count);
+  printf("counters_dbg publish_enter=%zu publish_exit=%zu handoff_fail=%zu invalid=%zu miss=%zu owner_transition=%zu\n",
+         debug.owner_publish_enter_count,
+         debug.owner_publish_exit_count,
+         debug.handoff_fail_count,
+         debug.invalid_count,
+         debug.miss_count,
+         debug.owner_transition_count);
 
   free(throughput);
   free(rss);

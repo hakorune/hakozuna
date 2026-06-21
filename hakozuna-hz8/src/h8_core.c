@@ -163,10 +163,6 @@ void h8_stats_snapshot(H8Stats* out) {
   out->local_free_count = atomic_load_explicit(&h8g.local_free_count, memory_order_acquire);
   out->remote_publish_count = atomic_load_explicit(&h8g.remote_publish_count, memory_order_acquire);
   out->remote_collect_count = atomic_load_explicit(&h8g.remote_collect_count, memory_order_acquire);
-  out->owner_publish_enter_count =
-      atomic_load_explicit(&h8g.owner_publish_enter_count, memory_order_acquire);
-  out->owner_publish_exit_count =
-      atomic_load_explicit(&h8g.owner_publish_exit_count, memory_order_acquire);
   out->owner_exit_count = atomic_load_explicit(&h8g.owner_exit_count, memory_order_acquire);
   out->pending_enqueue_count =
       atomic_load_explicit(&h8g.pending_enqueue_count, memory_order_acquire);
@@ -176,6 +172,20 @@ void h8_stats_snapshot(H8Stats* out) {
       atomic_load_explicit(&h8g.orphan_handoff_count, memory_order_acquire);
   out->handoff_success_count =
       atomic_load_explicit(&h8g.handoff_success_count, memory_order_acquire);
+}
+
+H8Stats h8_stats(void) {
+  H8Stats stats;
+  memset(&stats, 0, sizeof(stats));
+  h8_stats_snapshot(&stats);
+  return stats;
+}
+
+void h8_debug_stats_snapshot(H8DebugStats* out) {
+  out->owner_publish_enter_count =
+      atomic_load_explicit(&h8g.owner_publish_enter_count, memory_order_acquire);
+  out->owner_publish_exit_count =
+      atomic_load_explicit(&h8g.owner_publish_exit_count, memory_order_acquire);
   out->handoff_fail_count = atomic_load_explicit(&h8g.handoff_fail_count, memory_order_acquire);
   out->invalid_count = atomic_load_explicit(&h8g.invalid_count, memory_order_acquire);
   out->miss_count = atomic_load_explicit(&h8g.miss_count, memory_order_acquire);
@@ -183,9 +193,9 @@ void h8_stats_snapshot(H8Stats* out) {
       atomic_load_explicit(&h8g.owner_transition_count, memory_order_acquire);
 }
 
-H8Stats h8_stats(void) {
-  H8Stats stats;
+H8DebugStats h8_debug_stats(void) {
+  H8DebugStats stats;
   memset(&stats, 0, sizeof(stats));
-  h8_stats_snapshot(&stats);
+  h8_debug_stats_snapshot(&stats);
   return stats;
 }

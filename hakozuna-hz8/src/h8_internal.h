@@ -343,6 +343,7 @@ static inline H8OwnerRecord* h8_owner_by_slot(uint32_t slot) {
   return &h8g.owners[slot];
 }
 void h8_stats_snapshot(H8Stats* out);
+void h8_debug_stats_snapshot(H8DebugStats* out);
 
 H8PublishResult h8_remote_free_publish(void* ptr);
 H8RouteKind h8_route_inner(void* ptr);

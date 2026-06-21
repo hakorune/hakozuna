@@ -33,18 +33,21 @@ typedef struct H8Stats {
   size_t local_free_count;
   size_t remote_publish_count;
   size_t remote_collect_count;
-  size_t owner_publish_enter_count;
-  size_t owner_publish_exit_count;
   size_t owner_exit_count;
   size_t pending_enqueue_count;
   size_t pending_dequeue_count;
   size_t orphan_handoff_count;
   size_t handoff_success_count;
+} H8Stats;
+
+typedef struct H8DebugStats {
+  size_t owner_publish_enter_count;
+  size_t owner_publish_exit_count;
   size_t handoff_fail_count;
   size_t invalid_count;
   size_t miss_count;
   size_t owner_transition_count;
-} H8Stats;
+} H8DebugStats;
 
 void h8_init(void);
 void h8_shutdown(void);
@@ -53,6 +56,7 @@ void* h8_calloc(size_t count, size_t size);
 void h8_free(void* ptr);
 H8RouteKind h8_route(void* ptr);
 H8Stats h8_stats(void);
+H8DebugStats h8_debug_stats(void);
 
 #ifdef __cplusplus
 }
