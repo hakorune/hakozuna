@@ -19,10 +19,11 @@ HZ8 optimization is being implemented in this order:
 15. `SmallLocalRelaxedAtomics-L1`
 16. `LocalPendingTouchElision-L1`
 17. `OwnerSingleWriterLiveWord-L1`
+18. `OwnerLocalScalarState-L1`
 
 Current focus:
 
-- `OwnerSingleWriterLiveWord-L1`
+- `OwnerLocalScalarState-L1`
 
 Rules:
 
@@ -195,3 +196,12 @@ OwnerSingleWriterLiveWord-L1:
 - use owner single-writer load + release store for local live set/clear instead
   of locked atomic RMW.
 - keep remote validation as acquire loads.
+
+OwnerLocalScalarState-L1:
+
+- keep scalar accounting fields atomic for cross-thread observation.
+- remove owner-side locked RMW from `bump_index` and `used_count`.
+- update `bump_index` with owner-only load/store.
+- update `used_count` with checked owner-only load/store in local path and owner
+  collect.
+- do not change remote producer behavior or lifecycle/adoption verification.

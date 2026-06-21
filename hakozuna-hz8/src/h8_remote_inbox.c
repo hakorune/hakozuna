@@ -35,11 +35,11 @@ static void h8_pending_count_sub(H8Span* span, size_t count) {
 }
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
-  size_t prev =
-      atomic_fetch_sub_explicit(&span->used_count, count, memory_order_relaxed);
-  if (prev < count) {
+  size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
+  if (used < count) {
     abort();
   }
+  atomic_store_explicit(&span->used_count, used - count, memory_order_relaxed);
 }
 
 static uint64_t h8_word_valid_mask(H8Span* span, size_t word_index) {
