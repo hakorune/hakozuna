@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `OrphanQuiescing-L1`
+- `RegularAdoptionDryRun-L1`
 
 Rules:
 

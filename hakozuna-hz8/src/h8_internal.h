@@ -134,6 +134,13 @@ typedef struct H8Global {
   atomic_size_t span_publish_exit_count;
   atomic_size_t orphan_quiesce_count;
   atomic_size_t orphan_ready_count;
+  atomic_size_t adoption_dry_run_scan_count;
+  atomic_size_t adoption_dry_run_candidate_count;
+  atomic_size_t adoption_dry_run_block_state_count;
+  atomic_size_t adoption_dry_run_block_quiesce_count;
+  atomic_size_t adoption_dry_run_empty_count;
+  atomic_size_t adoption_dry_run_target_closed_count;
+  atomic_size_t adoption_dry_run_would_adopt_count;
   atomic_size_t handoff_fail_count;
   atomic_size_t invalid_count;
   atomic_size_t miss_count;
@@ -370,6 +377,7 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
 void h8_owner_mark_dying(H8OwnerRecord* owner);
 void h8_owner_mark_dead(H8OwnerRecord* owner);
 bool h8_owner_is_alive_and_open(H8OwnerRecord* owner);
+void h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id);
 void h8_owner_free_stack_push(H8OwnerRecord* owner);
 void h8_owner_add_owned_span(H8OwnerRecord* owner, H8Span* span);
 void h8_owner_remove_owned_span(H8OwnerRecord* owner, H8Span* span);

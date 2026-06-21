@@ -198,6 +198,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =
       atomic_load_explicit(&h8g.orphan_ready_count, memory_order_acquire);
+  out->adoption_dry_run_scan_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_scan_count, memory_order_acquire);
+  out->adoption_dry_run_candidate_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_candidate_count, memory_order_acquire);
+  out->adoption_dry_run_block_state_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_block_state_count, memory_order_acquire);
+  out->adoption_dry_run_block_quiesce_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_block_quiesce_count, memory_order_acquire);
+  out->adoption_dry_run_empty_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_empty_count, memory_order_acquire);
+  out->adoption_dry_run_target_closed_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_target_closed_count, memory_order_acquire);
+  out->adoption_dry_run_would_adopt_count =
+      atomic_load_explicit(&h8g.adoption_dry_run_would_adopt_count, memory_order_acquire);
   out->handoff_fail_count = atomic_load_explicit(&h8g.handoff_fail_count, memory_order_acquire);
   out->invalid_count = atomic_load_explicit(&h8g.invalid_count, memory_order_acquire);
   out->miss_count = atomic_load_explicit(&h8g.miss_count, memory_order_acquire);

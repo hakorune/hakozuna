@@ -49,6 +49,13 @@ typedef struct H8DebugStats {
   size_t span_publish_exit_count;
   size_t orphan_quiesce_count;
   size_t orphan_ready_count;
+  size_t adoption_dry_run_scan_count;
+  size_t adoption_dry_run_candidate_count;
+  size_t adoption_dry_run_block_state_count;
+  size_t adoption_dry_run_block_quiesce_count;
+  size_t adoption_dry_run_empty_count;
+  size_t adoption_dry_run_target_closed_count;
+  size_t adoption_dry_run_would_adopt_count;
   size_t handoff_fail_count;
   size_t invalid_count;
   size_t miss_count;

@@ -172,6 +172,21 @@ counted independently.
 `ORPHAN_QUIESCING` and `ORPHAN_READY` are also counted in the debug lane so
 quiescence and adoption readiness can be checked at quiescent slow-path points.
 
+## Regular Adoption Dry Run
+
+Before default-on adoption is enabled, the small allocator slow path performs a
+read-only orphan adoption probe:
+
+```text
+scan orphan spans for the requested class
+record candidate / block reason counters
+do not mutate span ownership
+then continue to the normal adoption path
+```
+
+This lets `RegularAdoptionDryRun-L1` measure how often adoption would have been
+possible without changing allocator behavior.
+
 ## Remote Publish Protocol
 
 Remote publish must distinguish owner transition from pointer invalidity:
