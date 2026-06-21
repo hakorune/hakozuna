@@ -35,11 +35,20 @@ static void h8_owner_remove_orphan_span_locked(H8OwnerRecord* owner, H8Span* spa
   while (*cur) {
     if (*cur == span) {
       *cur = span->next_orphan;
-      span->next_orphan = NULL;
-      return;
+      break;
     }
     cur = &(*cur)->next_orphan;
   }
+  cur = &owner->orphan_by_class[span->class_id];
+  while (*cur) {
+    if (*cur == span) {
+      *cur = span->next_orphan_class;
+      break;
+    }
+    cur = &(*cur)->next_orphan_class;
+  }
+  span->next_orphan = NULL;
+  span->next_orphan_class = NULL;
 }
 
 static bool h8_span_quiescent_for_adoption(const H8Span* span) {
@@ -71,7 +80,8 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   bool saw_candidate = false;
 
   pthread_mutex_lock(&orphan->owned_lock);
-  for (H8Span* span = orphan->orphan_head; span; span = span->next_orphan) {
+  for (H8Span* span = orphan->orphan_by_class[class_id]; span;
+       span = span->next_orphan_class) {
     if (span->class_id != class_id) {
       continue;
     }
@@ -128,7 +138,8 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     H8SpanState candidate_state = H8_SPAN_RETIRED;
 
     pthread_mutex_lock(&orphan->owned_lock);
-    for (H8Span* span = orphan->orphan_head; span; span = span->next_orphan) {
+    for (H8Span* span = orphan->orphan_by_class[class_id]; span;
+         span = span->next_orphan_class) {
       if (span->class_id != class_id) {
         continue;
       }

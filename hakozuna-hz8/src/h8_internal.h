@@ -82,6 +82,7 @@ struct H8Span {
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
   struct H8Span* next_orphan;
+  struct H8Span* next_orphan_class;
 };
 
 struct H8OwnerRecord {
@@ -97,6 +98,7 @@ struct H8OwnerRecord {
   _Atomic size_t pending_span_count;
   H8Span* owned_head;
   H8Span* orphan_head;
+  H8Span* orphan_by_class[H8_CLASS_COUNT];
   pthread_mutex_t owned_lock;
   struct H8OwnerRecord* free_next;
 };

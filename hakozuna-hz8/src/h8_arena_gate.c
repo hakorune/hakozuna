@@ -103,7 +103,9 @@ void h8_span_retire(H8Span* span) {
   }
   h8_span_decommit_memory(span);
   span->next_owned = NULL;
+  span->next_owned_class = NULL;
   span->next_orphan = NULL;
+  span->next_orphan_class = NULL;
   span->next_pending = NULL;
   h8_sys_free(span->live_bits);
   h8_sys_free(span->pending_bits);

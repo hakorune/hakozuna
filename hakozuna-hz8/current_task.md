@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `OrphanQuiescing-L1` under `RegularAdoption-L1`
+- `RegularAdoptionDryRun-L1` under `RegularAdoption-L1`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `RegularAdoptionDryRun-L1` after orphan quiescing validation
+- `RegularAdoption-L1` after dry-run validation

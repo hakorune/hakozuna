@@ -38,6 +38,8 @@ void h8_owner_add_orphan_span(H8OwnerRecord* owner, H8Span* span) {
   pthread_mutex_lock(&owner->owned_lock);
   span->next_orphan = owner->orphan_head;
   owner->orphan_head = span;
+  span->next_orphan_class = owner->orphan_by_class[span->class_id];
+  owner->orphan_by_class[span->class_id] = span;
   pthread_mutex_unlock(&owner->owned_lock);
 }
 
@@ -51,6 +53,16 @@ void h8_owner_remove_orphan_span(H8OwnerRecord* owner, H8Span* span) {
     }
     cur = &(*cur)->next_orphan;
   }
+  cur = &owner->orphan_by_class[span->class_id];
+  while (*cur) {
+    if (*cur == span) {
+      *cur = span->next_orphan_class;
+      break;
+    }
+    cur = &(*cur)->next_orphan_class;
+  }
+  span->next_orphan = NULL;
+  span->next_orphan_class = NULL;
   pthread_mutex_unlock(&owner->owned_lock);
 }
 
