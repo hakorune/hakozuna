@@ -99,7 +99,6 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
       return false;
     }
     atomic_fetch_add_explicit(&h8g.owner_lifecycle_enter_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.owner_publish_enter_count, 1, memory_order_relaxed);
     return true;
   }
 }
@@ -113,7 +112,6 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
     abort();
   }
   atomic_fetch_add_explicit(&h8g.owner_lifecycle_exit_count, 1, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h8g.owner_publish_exit_count, 1, memory_order_relaxed);
 }
 
 bool h8_owner_publish_enter(H8OwnerRecord* owner, uint16_t expected_generation) {
