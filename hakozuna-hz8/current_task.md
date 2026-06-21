@@ -14,10 +14,11 @@ HZ8 optimization is being implemented in this order:
 10. `PendingWordPresenceMask-L1`
 11. `PendingWordBulkOpportunity-L1`
 12. `PendingWordBulkCommit-L1`
+13. `PendingQueueContentionAudit-L1`
 
 Current focus:
 
-- `PendingWordBulkCommit-L1`
+- `PendingQueueContentionAudit-L1`
 
 Rules:
 
@@ -151,3 +152,10 @@ ReleaseBenchTarget-L1:
 - keep debug `bench` for counter attribution.
 - add `bench-release` for throughput numbers without debug hot-path counters.
 - do not speed-rank debug builds.
+
+PendingQueueContentionAudit-L1:
+
+- add debug-only counters for qstate notify and pending-head push contention.
+- add debug-only counters for owner lifecycle CAS retries.
+- do not change remote queue behavior in this box.
+- use `bench` for attribution and `bench-release` for throughput.

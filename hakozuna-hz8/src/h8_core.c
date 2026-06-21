@@ -227,6 +227,24 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.remote_orphan_admission_count, memory_order_acquire);
   out->pending_notify_count =
       atomic_load_explicit(&h8g.pending_notify_count, memory_order_acquire);
+  out->qstate_notify_attempt_count =
+      atomic_load_explicit(&h8g.qstate_notify_attempt_count, memory_order_acquire);
+  out->qstate_notify_success_count =
+      atomic_load_explicit(&h8g.qstate_notify_success_count, memory_order_acquire);
+  out->qstate_notify_skip_nonidle_count = atomic_load_explicit(
+      &h8g.qstate_notify_skip_nonidle_count, memory_order_acquire);
+  out->pending_head_push_attempt_count = atomic_load_explicit(
+      &h8g.pending_head_push_attempt_count, memory_order_acquire);
+  out->pending_head_push_retry_count =
+      atomic_load_explicit(&h8g.pending_head_push_retry_count, memory_order_acquire);
+  out->pending_head_push_success_count = atomic_load_explicit(
+      &h8g.pending_head_push_success_count, memory_order_acquire);
+  out->owner_lifecycle_enter_cas_retry_count = atomic_load_explicit(
+      &h8g.owner_lifecycle_enter_cas_retry_count, memory_order_acquire);
+  out->owner_lifecycle_exit_cas_retry_count = atomic_load_explicit(
+      &h8g.owner_lifecycle_exit_cas_retry_count, memory_order_acquire);
+  out->remote_publish_pending_claim_duplicate_count = atomic_load_explicit(
+      &h8g.remote_publish_pending_claim_duplicate_count, memory_order_acquire);
   out->pending_collect_call_count =
       atomic_load_explicit(&h8g.pending_collect_call_count, memory_order_acquire);
   out->pending_collect_carry_hit_count = atomic_load_explicit(

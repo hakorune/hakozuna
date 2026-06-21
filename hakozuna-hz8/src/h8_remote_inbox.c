@@ -3,12 +3,18 @@
 #include <stdlib.h>
 
 static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
+  H8_DEBUG_INC(pending_head_push_attempt_count);
   H8Span* head = atomic_load_explicit(&owner->pending_head, memory_order_relaxed);
-  do {
+  for (;;) {
     span->next_pending = head;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &owner->pending_head, &head, span, memory_order_release,
-      memory_order_relaxed));
+    if (atomic_compare_exchange_weak_explicit(&owner->pending_head, &head, span,
+                                              memory_order_release,
+                                              memory_order_relaxed)) {
+      break;
+    }
+    H8_DEBUG_INC(pending_head_push_retry_count);
+  }
+  H8_DEBUG_INC(pending_head_push_success_count);
   atomic_fetch_add_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
   H8_DEBUG_INC(pending_enqueue_count);
 }
@@ -182,11 +188,15 @@ static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_s
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_notify_count);
+  H8_DEBUG_INC(qstate_notify_attempt_count);
   uint8_t expected = H8_Q_IDLE;
   if (atomic_compare_exchange_strong_explicit(&span->qstate, &expected, H8_Q_QUEUED,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
+    H8_DEBUG_INC(qstate_notify_success_count);
     h8_pending_queue_push(owner, span);
+  } else {
+    H8_DEBUG_INC(qstate_notify_skip_nonidle_count);
   }
 }
 
@@ -199,6 +209,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   uint64_t old_word = atomic_fetch_or_explicit(
       pending_word, slot_bit, memory_order_acq_rel);
   if (old_word & slot_bit) {
+    H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
   if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {

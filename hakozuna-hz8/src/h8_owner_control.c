@@ -98,6 +98,7 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
       H8_DEBUG_INC(owner_publish_enter_count);
       return true;
     }
+    H8_DEBUG_INC(owner_lifecycle_enter_cas_retry_count);
   }
 }
 
@@ -121,6 +122,7 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
       H8_DEBUG_INC(owner_publish_exit_count);
       return;
     }
+    H8_DEBUG_INC(owner_lifecycle_exit_cas_retry_count);
   }
 }
 

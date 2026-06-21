@@ -374,6 +374,16 @@ int main(int argc, char** argv) {
          slots_per_nonzero_word,
          singleton_ratio,
          multi_ratio);
+  printf("queue_contention qstate_attempt=%zu qstate_success=%zu qstate_skip=%zu pending_push_attempt=%zu pending_push_retry=%zu pending_push_success=%zu owner_enter_retry=%zu owner_exit_retry=%zu duplicate_claim=%zu\n",
+         debug.qstate_notify_attempt_count,
+         debug.qstate_notify_success_count,
+         debug.qstate_notify_skip_nonidle_count,
+         debug.pending_head_push_attempt_count,
+         debug.pending_head_push_retry_count,
+         debug.pending_head_push_success_count,
+         debug.owner_lifecycle_enter_cas_retry_count,
+         debug.owner_lifecycle_exit_cas_retry_count,
+         debug.remote_publish_pending_claim_duplicate_count);
 
   free(throughput);
   free(rss);

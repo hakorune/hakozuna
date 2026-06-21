@@ -50,6 +50,15 @@ typedef struct H8DebugStats {
   size_t remote_regular_admission_count;
   size_t remote_orphan_admission_count;
   size_t pending_notify_count;
+  size_t qstate_notify_attempt_count;
+  size_t qstate_notify_success_count;
+  size_t qstate_notify_skip_nonidle_count;
+  size_t pending_head_push_attempt_count;
+  size_t pending_head_push_retry_count;
+  size_t pending_head_push_success_count;
+  size_t owner_lifecycle_enter_cas_retry_count;
+  size_t owner_lifecycle_exit_cas_retry_count;
+  size_t remote_publish_pending_claim_duplicate_count;
   size_t pending_collect_call_count;
   size_t pending_collect_carry_hit_count;
   size_t pending_collect_requeue_count;
