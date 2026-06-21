@@ -20,6 +20,61 @@ static void h8_pending_count_dec(H8Span* span) {
   }
 }
 
+static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_summary) {
+  uint64_t summary_bit = UINT64_C(1) << word_index;
+  H8_DEBUG_INC(pending_collect_word_count);
+  uint64_t bits = atomic_exchange_explicit(
+      &((_Atomic uint64_t*)span->pending_bits)[word_index], 0, memory_order_acq_rel);
+  bool bits_present = bits != 0;
+
+  if (from_summary && bits_present) {
+    H8_DEBUG_INC(pending_word_summary_shadow_hit);
+  } else if (from_summary && !bits_present) {
+    H8_DEBUG_INC(pending_word_summary_false_positive);
+  } else if (!from_summary && bits_present) {
+    H8_DEBUG_INC(pending_word_summary_false_negative);
+  }
+
+  if (bits) {
+    H8_DEBUG_INC(pending_collect_word_nonzero_count);
+  }
+
+  while (bits) {
+    uint64_t bit = bits & (~bits + 1ull);
+    size_t bit_index = (size_t)__builtin_ctzll(bits);
+    size_t slot = (word_index << 6u) + bit_index;
+    bits ^= bit;
+    H8_DEBUG_INC(pending_collect_bit_count);
+    if (slot >= span->slot_count) {
+      continue;
+    }
+    h8_pending_count_dec(span);
+    if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+      H8_DEBUG_INC(invalid_count);
+      continue;
+    }
+    h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
+    span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
+                                                 memory_order_relaxed);
+    atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
+                          memory_order_release);
+    atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(remote_collect_count);
+    H8_DEBUG_INC(pending_dequeue_count);
+  }
+
+  uint64_t remaining = atomic_load_explicit(
+      &((_Atomic uint64_t*)span->pending_bits)[word_index], memory_order_acquire);
+  if (remaining != 0) {
+    atomic_fetch_or_explicit(&span->pending_word_mask, summary_bit,
+                             memory_order_release);
+    H8_DEBUG_INC(pending_word_summary_rearm);
+  } else {
+    atomic_fetch_and_explicit(&span->pending_word_mask, ~summary_bit,
+                              memory_order_release);
+  }
+}
+
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_notify_count);
   uint8_t expected = H8_Q_IDLE;
@@ -99,64 +154,22 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 
   size_t words = h8_word_count_for_slots(span->slot_count);
-  for (size_t word_index = 0; word_index < words; ++word_index) {
-    uint64_t summary_bit = UINT64_C(1) << word_index;
-    uint64_t summary = atomic_load_explicit(&span->pending_word_mask,
-                                            memory_order_acquire);
-    bool summary_present = (summary & summary_bit) != 0;
-    H8_DEBUG_INC(pending_collect_word_count);
-    uint64_t bits = atomic_exchange_explicit(
-        &((_Atomic uint64_t*)span->pending_bits)[word_index], 0,
-        memory_order_acq_rel);
-    bool bits_present = bits != 0;
-    if (summary_present && bits_present) {
-      H8_DEBUG_INC(pending_word_summary_shadow_hit);
-    } else if (summary_present && !bits_present) {
-      H8_DEBUG_INC(pending_word_summary_false_positive);
-    } else if (!summary_present && bits_present) {
-      H8_DEBUG_INC(pending_word_summary_false_negative);
+  uint64_t word_mask = atomic_exchange_explicit(&span->pending_word_mask, 0,
+                                                memory_order_acq_rel);
+  while (word_mask) {
+    size_t word_index = (size_t)__builtin_ctzll(word_mask);
+    word_mask &= word_mask - 1;
+    if (word_index >= words) {
+      continue;
     }
-    if (bits) {
-      H8_DEBUG_INC(pending_collect_word_nonzero_count);
-    }
-    while (bits) {
-      uint64_t bit = bits & (~bits + 1ull);
-      size_t bit_index = (size_t)__builtin_ctzll(bits);
-      size_t slot = (word_index << 6u) + bit_index;
-      bits ^= bit;
-      H8_DEBUG_INC(pending_collect_bit_count);
-      if (slot >= span->slot_count) {
-        continue;
-      }
-      h8_pending_count_dec(span);
-      if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-        H8_DEBUG_INC(invalid_count);
-        continue;
-      }
-      h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
-      span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
-                                                   memory_order_relaxed);
-      atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
-                            memory_order_release);
-      atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
-      H8_DEBUG_INC(remote_collect_count);
-      H8_DEBUG_INC(pending_dequeue_count);
-    }
-    uint64_t remaining = atomic_load_explicit(
-        &((_Atomic uint64_t*)span->pending_bits)[word_index], memory_order_acquire);
-    if (remaining != 0) {
-      atomic_fetch_or_explicit(&span->pending_word_mask, summary_bit,
-                               memory_order_release);
-      H8_DEBUG_INC(pending_word_summary_rearm);
-      if (!summary_present) {
-        H8_DEBUG_INC(pending_word_summary_repair);
-      }
-    } else {
-      atomic_fetch_and_explicit(&span->pending_word_mask, ~summary_bit,
-                                memory_order_release);
-      if (summary_present) {
-        H8_DEBUG_INC(pending_word_summary_repair);
-      }
+    h8_collect_pending_word(span, word_index, true);
+  }
+
+  if (atomic_load_explicit(&span->pending_count, memory_order_acquire) != 0 &&
+      atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) == 0) {
+    H8_DEBUG_INC(pending_word_summary_repair);
+    for (size_t word_index = 0; word_index < words; ++word_index) {
+      h8_collect_pending_word(span, word_index, false);
     }
   }
 

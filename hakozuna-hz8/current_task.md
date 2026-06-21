@@ -15,7 +15,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `PendingWordPresenceMask-L1` (shadow-first complete)
+- `PendingWordPresenceMask-L1` (behavior complete)
 
 Rules:
 
@@ -94,4 +94,5 @@ PendingWordPresenceMask-L1:
 - add a per-span pending-word summary mask as a hint only.
 - do not use the summary as ownership truth.
 - keep quiescent full-bitmap verification for exit/adoption.
-- shadow counters are wired; behavior switch waits for the next design call.
+- summary-driven drain is live; next design question is whether density
+  justifies `PendingWordBulkCommit-L1`.

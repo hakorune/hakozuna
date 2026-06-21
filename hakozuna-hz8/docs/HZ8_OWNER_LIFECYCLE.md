@@ -261,6 +261,9 @@ That means the remaining obvious work is the number of pending bitmap words
 the collector must inspect per drained span.  Owner admission is already
 bounded; the next useful reduction is to avoid touching obviously empty words.
 
+The summary-driven drain is now the live behavior.  If future density stays
+high, the next box is `PendingWordBulkCommit-L1`.
+
 ### Pending word summary mask
 
 Each span may keep a 64-bit `pending_word_mask` as a hint only.
