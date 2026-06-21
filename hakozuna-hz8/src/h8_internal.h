@@ -117,6 +117,7 @@ typedef struct H8Global {
   size_t arena_bytes;
   size_t span_count;
   atomic_size_t arena_committed_bytes;
+  atomic_size_t span_alloc_cursor;
   _Atomic(H8Span*)* spans;
   H8OwnerRecord owners[H8_OWNER_MAX];
   H8OwnerRecord* owner_free;

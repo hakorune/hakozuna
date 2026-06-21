@@ -29,6 +29,10 @@ static void h8_span_commit_memory(H8Span* span) {
 }
 
 static void h8_span_decommit_memory(H8Span* span) {
+  if (madvise(span->base, H8_SPAN_BYTES, MADV_DONTNEED) != 0) {
+    perror("madvise");
+    abort();
+  }
   if (mprotect(span->base, H8_SPAN_BYTES, PROT_NONE) != 0) {
     perror("mprotect");
     abort();
@@ -40,7 +44,10 @@ static void h8_span_decommit_memory(H8Span* span) {
 H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   h8_init();
   pthread_mutex_lock(&h8_span_table_lock);
-  for (size_t i = 0; i < h8g.span_count; ++i) {
+  size_t start =
+      atomic_fetch_add_explicit(&h8g.span_alloc_cursor, 1, memory_order_relaxed);
+  for (size_t n = 0; n < h8g.span_count; ++n) {
+    size_t i = (start + n) % h8g.span_count;
     if (atomic_load_explicit(&h8g.spans[i], memory_order_acquire)) {
       continue;
     }

@@ -13,10 +13,11 @@ HZ8 optimization is being implemented in this order:
 9. `RemoteDrainDensityAudit-L1`
 10. `PendingWordPresenceMask-L1`
 11. `PendingWordBulkOpportunity-L1`
+12. `PendingWordBulkCommit-L1`
 
 Current focus:
 
-- `PendingWordBulkOpportunity-L1`
+- `PendingWordBulkCommit-L1`
 
 Rules:
 
@@ -73,6 +74,11 @@ New gates for the current sequence:
 - `pending_slots_drained = 0`
 - `pending_words_rearmed = 0`
 - `pending_word_new_publish_during_drain = 0`
+- `pending_bulk_live_missing = 0`
+- `pending_bulk_pending_missing = 0`
+- `used_count_underflow = 0`
+- `pending_count_bitmap_mismatch_quiescent = 0`
+- `used_count_live_bitmap_mismatch_quiescent = 0`
 
 OwnerAdmissionReadShape-L1:
 
@@ -115,3 +121,33 @@ PendingWordBulkOpportunity-L1:
 - collect popcount buckets and slots-per-nonzero-word in debug lane.
 - only move to bulk commit if the density gates actually justify it.
 - diagnostics are wired; bulk commit stays for the next design question.
+
+PendingWordBulkCommit-L1:
+
+- GO condition was met by density diagnostics.
+- implement one span / one word only.
+- keep `popcount == 1` on the existing single-slot path.
+- use bulk commit only for `popcount >= 2`.
+- clear live bits before pending bits.
+- clear pending bits with `fetch_and(~claimed)`, not store-zero.
+- splice the local free chain once per word.
+- subtract `pending_count` and `used_count` once per word.
+- do not change owner exit, adoption default, MediumRun, or profile policy.
+
+PressureDecommitDiscard-L1:
+
+- `mprotect(PROT_NONE)` alone does not discard resident pages on Linux.
+- call `madvise(MADV_DONTNEED)` before decommitting an empty retired span.
+- this is RSS accounting/pressure cleanup, not a new allocation policy.
+
+SpanCommitCursor-L1:
+
+- avoid starting every span-table allocation scan at index zero.
+- keep the existing reserved arena and span table shape.
+- use a monotonic cursor as a placement hint only.
+
+ReleaseBenchTarget-L1:
+
+- keep debug `bench` for counter attribution.
+- add `bench-release` for throughput numbers without debug hot-path counters.
+- do not speed-rank debug builds.

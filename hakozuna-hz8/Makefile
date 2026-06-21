@@ -1,4 +1,4 @@
-.PHONY: all clean smoke preload bench
+.PHONY: all clean smoke preload bench bench-release
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -20,6 +20,8 @@ smoke: $(ROOT)/h8_smoke
 
 bench: $(ROOT)/h8_bench
 
+bench-release: $(ROOT)/h8_bench_release
+
 $(ROOT)/libhakozuna_hz8_preload.so: $(SRC)
 	$(CC) $(CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -29,5 +31,8 @@ $(ROOT)/h8_smoke: $(SMOKE_SRC)
 $(ROOT)/h8_bench: $(SRC) $(ROOT)/bench/h8_bench.c
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_bench_release: $(SRC) $(ROOT)/bench/h8_bench.c
+	$(CC) $(CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(LDFLAGS) $(LDLIBS)
+
 clean:
-	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/h8_smoke $(ROOT)/h8_bench
+	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/h8_smoke $(ROOT)/h8_bench $(ROOT)/h8_bench_release

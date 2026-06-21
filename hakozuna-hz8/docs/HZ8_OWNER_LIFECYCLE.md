@@ -339,8 +339,38 @@ NO-GO:
 If the word population remains singleton-heavy, stay with summary-driven drain
 and move on to the v0 gate rather than adding bulk commit complexity.
 
-This box is diagnostics-only.  It does not change drain behavior yet; it only
-feeds the next design question about `PendingWordBulkCommit-L1`.
+The diagnostics met the strong GO threshold, so `PendingWordBulkCommit-L1` is
+now the active implementation box.
+
+### Pending word bulk commit
+
+Bulk commit is intentionally narrow:
+
+```text
+scope:
+  one span / one pending bitmap word
+
+single slot:
+  popcount == 1 keeps the single-slot path
+
+bulk slot set:
+  popcount >= 2 uses the bulk path
+```
+
+The bulk path must keep this order:
+
+```text
+1. snapshot committed pending bits
+2. clear live bits with one word RMW
+3. clear pending bits with one word RMW
+4. splice the local free chain once
+5. subtract pending_count once
+6. subtract used_count once
+```
+
+`pending_bits` must be cleared with `fetch_and(~claimed)`, not store-zero, so
+new remote publishes arriving during collect remain visible and can rearm the
+summary mask.
 
 ### Not yet
 
