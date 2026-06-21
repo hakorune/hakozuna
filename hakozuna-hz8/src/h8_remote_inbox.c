@@ -44,22 +44,7 @@ void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
 }
 
 static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner,
-                                                     size_t slot, void* ptr) {
-  (void)ptr;
-  H8OwnerWord ow = h8_span_owner_word_load(span);
-  if (ow.slot != owner->slot ||
-      ow.generation != owner->generation) {
-    return H8_PUBLISH_OWNER_TRANSITION;
-  }
-  H8SpanState state = (H8SpanState)ow.state;
-  if (state == H8_SPAN_ORPHAN_QUIESCING ||
-      state == H8_SPAN_ORPHAN_READY ||
-      state == H8_SPAN_ADOPTING) {
-    return H8_PUBLISH_OWNER_TRANSITION;
-  }
-  if (state != H8_SPAN_OWNED_ACTIVE) {
-    return H8_PUBLISH_INVALID;
-  }
+                                                     size_t slot) {
   if (h8_bitmap_test_and_set((_Atomic uint64_t*)span->pending_bits, slot)) {
     return H8_PUBLISH_DOUBLE_FREE;
   }
@@ -93,7 +78,7 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot, ptr);
+  H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
   if (res == H8_PUBLISH_OK && owner->placement == H8_OWNER_PLACEMENT_ORPHAN) {
     h8_collect_owner_pending(owner);
   }

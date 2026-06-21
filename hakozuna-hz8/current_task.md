@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `Class-local owned list fast path` under `RegularAdoption-L1`
+- `SpanPublishLease-L1` under `RegularAdoption-L1`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `SpanPublishLease-L1` polish after class-local owned list validation
+- `OwnerLifecycleLease-L1` follow-up after publish lease polish
