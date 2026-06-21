@@ -11,6 +11,7 @@ H8Global h8g = {
     .once = PTHREAD_ONCE_INIT,
 };
 
+static _Thread_local H8ThreadCtx* h8_tls_ctx;
 static const uint16_t kGenerationSeed = 1;
 
 static void h8_init_once(void);
@@ -115,14 +116,20 @@ static H8ThreadCtx* h8_thread_ctx_new(void) {
 
 H8ThreadCtx* h8_thread_ctx_get(void) {
   h8_init();
-  H8ThreadCtx* ctx = pthread_getspecific(h8g.thread_key);
+  H8ThreadCtx* ctx = h8_tls_ctx;
   if (ctx) {
+    return ctx;
+  }
+  ctx = pthread_getspecific(h8g.thread_key);
+  if (ctx) {
+    h8_tls_ctx = ctx;
     return ctx;
   }
   ctx = h8_thread_ctx_new();
   if (!ctx) {
     return NULL;
   }
+  h8_tls_ctx = ctx;
   pthread_setspecific(h8g.thread_key, ctx);
   return ctx;
 }
@@ -136,6 +143,9 @@ void h8_thread_shutdown(void* arg) {
   H8ThreadCtx* ctx = arg;
   if (!ctx) {
     return;
+  }
+  if (h8_tls_ctx == ctx) {
+    h8_tls_ctx = NULL;
   }
   h8_owner_exit(ctx->owner);
   h8_sys_free(ctx);

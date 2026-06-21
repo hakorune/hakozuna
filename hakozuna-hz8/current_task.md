@@ -15,10 +15,12 @@ HZ8 optimization is being implemented in this order:
 11. `PendingWordBulkOpportunity-L1`
 12. `PendingWordBulkCommit-L1`
 13. `PendingQueueContentionAudit-L1`
+14. `ThreadLocalContextFastPath-L1`
+15. `SmallLocalRelaxedAtomics-L1`
 
 Current focus:
 
-- `PendingQueueContentionAudit-L1`
+- `SmallLocalRelaxedAtomics-L1`
 
 Rules:
 
@@ -159,3 +161,16 @@ PendingQueueContentionAudit-L1:
 - add debug-only counters for owner lifecycle CAS retries.
 - do not change remote queue behavior in this box.
 - use `bench` for attribution and `bench-release` for throughput.
+
+ThreadLocalContextFastPath-L1:
+
+- avoid `pthread_getspecific()` on every malloc/free when the thread context is
+  already known.
+- keep the pthread key destructor as the owner-exit authority.
+- clear the thread-local fast pointer during thread shutdown.
+
+SmallLocalRelaxedAtomics-L1:
+
+- keep the same local allocation/free behavior.
+- use relaxed atomics for owner-only local free-list, bump, and bitmap updates.
+- do not change remote publish, collect, owner exit, or adoption ordering.

@@ -394,9 +394,22 @@ static inline bool h8_bitmap_test_and_set(_Atomic uint64_t* bits, size_t slot) {
   return (old & mask) != 0;
 }
 
+static inline bool h8_bitmap_test_and_set_relaxed(_Atomic uint64_t* bits,
+                                                  size_t slot) {
+  uint64_t mask = h8_bit_mask(slot);
+  uint64_t old =
+      atomic_fetch_or_explicit(&bits[h8_bit_word(slot)], mask, memory_order_relaxed);
+  return (old & mask) != 0;
+}
+
 static inline void h8_bitmap_clear(_Atomic uint64_t* bits, size_t slot) {
   uint64_t mask = ~h8_bit_mask(slot);
   atomic_fetch_and_explicit(&bits[h8_bit_word(slot)], mask, memory_order_release);
+}
+
+static inline void h8_bitmap_clear_relaxed(_Atomic uint64_t* bits, size_t slot) {
+  uint64_t mask = ~h8_bit_mask(slot);
+  atomic_fetch_and_explicit(&bits[h8_bit_word(slot)], mask, memory_order_relaxed);
 }
 
 static inline size_t h8_bitmap_popcount(const _Atomic uint64_t* bits, size_t words) {

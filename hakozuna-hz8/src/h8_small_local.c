@@ -12,13 +12,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                       H8Span* span, uint32_t class_id) {
   uint32_t class_size = h8_class_size(class_id);
   uint32_t local_head = atomic_load_explicit(&span->local_free_head,
-                                             memory_order_acquire);
+                                             memory_order_relaxed);
   if (local_head != UINT32_MAX) {
     uint32_t slot = local_head;
     atomic_store_explicit(&span->local_free_head, span->next_free[slot],
-                          memory_order_release);
-    h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
-    h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, slot);
+                          memory_order_relaxed);
+    h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->pending_bits, slot);
+    h8_bitmap_test_and_set_relaxed((_Atomic uint64_t*)span->live_bits, slot);
     atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
     H8_DEBUG_INC(local_alloc_count);
     owner->active_spans[class_id] = span;
@@ -28,9 +28,9 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_relaxed);
   if (bump < span->slot_count) {
     if (atomic_compare_exchange_strong_explicit(
-            &span->bump_index, &bump, bump + 1, memory_order_acq_rel,
+            &span->bump_index, &bump, bump + 1, memory_order_relaxed,
             memory_order_relaxed)) {
-      h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, bump);
+      h8_bitmap_test_and_set_relaxed((_Atomic uint64_t*)span->live_bits, bump);
       atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
       H8_DEBUG_INC(local_alloc_count);
       return h8_slot_ptr(span, bump);
@@ -118,11 +118,11 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
     return false;
   }
-  h8_bitmap_clear((_Atomic uint64_t*)span->live_bits, slot);
-  h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
+  h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->live_bits, slot);
+  h8_bitmap_clear_relaxed((_Atomic uint64_t*)span->pending_bits, slot);
   span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
                                                memory_order_relaxed);
-  atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_release);
+  atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_relaxed);
   atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
   H8_DEBUG_INC(local_free_count);
   owner->active_spans[span->class_id] = span;
