@@ -1,8 +1,15 @@
 # Allocator Matrix
 
-This is a conceptual comparison sheet for the current HZ work.  It is meant to
-show where `mimalloc`, `tcmalloc`, and the HZ series sit relative to each other
-in design shape, not as a vendor-spec audit.
+This is a comparison sheet for the current HZ work.  It shows where
+`mimalloc`, `tcmalloc`, and the HZ series sit relative to each other in design
+shape and in the current public benchmark snapshot.
+
+Benchmark source for the numeric rows below:
+
+- Public Hakozuna README snapshot, 2026-05-26:
+  <https://github.com/hakorune/hakozuna#benchmark-snapshot-ubuntu-native>
+- HZ8 gate targets:
+  `docs/HZ8_BENCH_GATE.md`
 
 ## Matrix
 
@@ -16,6 +23,37 @@ in design shape, not as a vendor-spec audit.
 | `HZ6` | Boundary-first design | Remote and ownership checks are contract-driven | Contract-first metadata | `MISS / VALID / INVALID` boundary contract | RSS discipline with fail-closed checks | Safety reference |
 | `HZ7` | Route-safe / tiny-route model | Stronger route validation and diagnostics | Route-heavy experimentation | Strong validation and no-go pruning | Diagnostic-heavy experimentation | Transition point before HZ8 fusion |
 | `HZ8` | HZ3 local leaf + HZ4 ownership backbone | Owner-stable intrusive MPSC, notify-only remote producer | Span-local ownership with boundary contract | HZ6-style fail-closed boundary with HZ3/HZ4 fast path | HZ5 pressure control on slow paths only | Target fusion point |
+
+## Numeric Matrix
+
+### Throughput snapshot
+
+Median ops/s, `RUNS=10`, `T=16`.
+
+| Row | `mimalloc` | `tcmalloc` | `HZ3` | `HZ4` | `Best HZ5` | `HZ6` | `HZ8 gate` |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `main_r0` | 146.73M | 318.82M | 292.15M | 85.63M | 157.44M | 16.88M | 235M |
+| `main_r50` | 14.26M | 64.87M | 31.46M | 62.32M | 79.43M | 15.08M | 52M |
+| `main_r90` | 7.72M | 45.42M | 22.31M | 67.14M | 62.31M | 10.99M | 54M |
+| `guard_r0` | 258.19M | 375.71M | 318.98M | 156.68M | 149.00M | 189.48M | 255M |
+| `cross128_r90` | 3.52M | 7.21M | 2.78M | 27.66M | 22.39M | 6.38M | 22M |
+
+### RSS / pressure notes
+
+The public HZ snapshot gives HZ5 selected-row RSS and HZ6 peak RSS medians.
+
+| Row | HZ5 RSS | tcmalloc RSS | HZ6 peak RSS |
+|---|---:|---:|---:|
+| `t=8 main r50` | 24MB | 474MB | n/a |
+| `t=8 main r90` | 33MB | 367MB | n/a |
+| `t=8 mid_only r50` | 8MB | 497MB | n/a |
+| `t=8 cross128 r90` | 57MB | 183MB | n/a |
+| `t=8 large128 r90` | 145MB | 182MB | n/a |
+| `main_r0` | n/a | n/a | 67.38 MiB |
+| `main_r50` | n/a | n/a | 69.50 MiB |
+| `main_r90` | n/a | n/a | 72.07 MiB |
+| `guard_r0` | n/a | n/a | 65.88 MiB |
+| `cross128_r90` | n/a | n/a | 68.91 MiB |
 
 ## One-line positioning
 
@@ -57,6 +95,15 @@ For HZ8 bring-up, the current interpretation is:
 | `main_r50` | HZ4 / tcmalloc band |
 | `main_r90` | HZ4 / tcmalloc band under remote pressure |
 | `cross128_r90` | HZ4-style ownership plus MediumRun v1 |
+
+## Reading guide
+
+- The throughput matrix is a public snapshot, not a claim that one allocator
+  wins every row.
+- `HZ8 gate` is the current bring-up target from `docs/HZ8_BENCH_GATE.md`.
+- `HZ5 RSS` and `HZ6 peak RSS` are pulled from different public sub-snapshots,
+  so they are shown separately instead of being mixed into a single misleading
+  number line.
 
 ## Usage
 
