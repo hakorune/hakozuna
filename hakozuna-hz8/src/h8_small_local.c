@@ -78,14 +78,14 @@ void* h8_malloc_inner(size_t size) {
       return ptr;
     }
   }
-  h8_pressure_owner_collect(owner);
   span = h8_find_active_span(owner, class_id);
   if (!span) {
-    bool adoption_enabled = h8_regular_adoption_enabled();
-    bool adoptable = h8_orphan_adoption_dry_run(owner, class_id);
-    if (adoption_enabled && adoptable) {
-      span = h8_orphan_adopt_span(owner, class_id);
-    }
+    h8_pressure_owner_collect(owner);
+    span = h8_find_active_span(owner, class_id);
+  }
+  if (!span && h8_regular_adoption_enabled() &&
+      atomic_load_explicit(&h8g.orphan_span_count, memory_order_acquire) > 0) {
+    span = h8_orphan_adopt_span(owner, class_id);
   }
   if (!span) {
     span = h8_span_commit_for_class(owner, class_id);
