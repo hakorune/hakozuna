@@ -41,7 +41,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   h8_init();
   pthread_mutex_lock(&h8_span_table_lock);
   for (size_t i = 0; i < h8g.span_count; ++i) {
-    if (h8g.spans[i]) {
+    if (atomic_load_explicit(&h8g.spans[i], memory_order_acquire)) {
       continue;
     }
     H8Span* span = h8_alloc_span_meta();
@@ -80,7 +80,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
       span->next_free[slot] = UINT32_MAX;
     }
     h8_span_commit_memory(span);
-    h8g.spans[i] = span;
+    atomic_store_explicit(&h8g.spans[i], span, memory_order_release);
     h8_owner_add_owned_span(owner, span);
     pthread_mutex_unlock(&h8_span_table_lock);
     return span;
@@ -95,11 +95,12 @@ void h8_span_retire(H8Span* span) {
   }
   pthread_mutex_lock(&h8_span_table_lock);
   size_t index = h8_span_index_from_ptr(span->base);
-  h8_span_decommit_memory(span);
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
-  if (index < h8g.span_count && h8g.spans[index] == span) {
-    h8g.spans[index] = NULL;
+  if (index < h8g.span_count &&
+      atomic_load_explicit(&h8g.spans[index], memory_order_acquire) == span) {
+    atomic_store_explicit(&h8g.spans[index], NULL, memory_order_release);
   }
+  h8_span_decommit_memory(span);
   span->next_owned = NULL;
   span->next_orphan = NULL;
   span->next_pending = NULL;
@@ -115,7 +116,7 @@ H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {
     return NULL;
   }
   size_t index = h8_span_index_from_ptr(ptr);
-  H8Span* span = h8g.spans[index];
+  H8Span* span = atomic_load_explicit(&h8g.spans[index], memory_order_acquire);
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return NULL;
   }
