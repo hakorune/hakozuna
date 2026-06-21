@@ -12,10 +12,11 @@ HZ8 optimization is being implemented in this order:
 8. `PendingZeroToOneNotify-L1`
 9. `RemoteDrainDensityAudit-L1`
 10. `PendingWordPresenceMask-L1`
+11. `PendingWordBulkOpportunity-L1`
 
 Current focus:
 
-- `PendingWordPresenceMask-L1` (behavior complete)
+- `PendingWordBulkOpportunity-L1`
 
 Rules:
 
@@ -62,6 +63,16 @@ New gates for the current sequence:
 - `pending_word_summary_shadow_hit = 0`
 - `pending_word_summary_false_positive = 0`
 - `pending_word_summary_rearm = 0`
+- `pending_word_drain_count = 0`
+- `pending_word_popcount_1 = 0`
+- `pending_word_popcount_2 = 0`
+- `pending_word_popcount_3_4 = 0`
+- `pending_word_popcount_5_8 = 0`
+- `pending_word_popcount_9_16 = 0`
+- `pending_word_popcount_17_plus = 0`
+- `pending_slots_drained = 0`
+- `pending_words_rearmed = 0`
+- `pending_word_new_publish_during_drain = 0`
 
 OwnerAdmissionReadShape-L1:
 
@@ -96,3 +107,10 @@ PendingWordPresenceMask-L1:
 - keep quiescent full-bitmap verification for exit/adoption.
 - summary-driven drain is live; next design question is whether density
   justifies `PendingWordBulkCommit-L1`.
+
+PendingWordBulkOpportunity-L1:
+
+- measure whether non-empty words are dense enough for bulk commit.
+- keep the current summary-driven drain behavior unchanged.
+- collect popcount buckets and slots-per-nonzero-word in debug lane.
+- only move to bulk commit if the density gates actually justify it.

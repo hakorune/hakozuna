@@ -264,6 +264,94 @@ bounded; the next useful reduction is to avoid touching obviously empty words.
 The summary-driven drain is now the live behavior.  If future density stays
 high, the next box is `PendingWordBulkCommit-L1`.
 
+## Pending Word Bulk Opportunity Consultation Result
+
+Before introducing `PendingWordBulkCommit-L1`, keep a short diagnostics box
+open:
+
+```text
+PendingWordBulkOpportunity-L1
+```
+
+This box does not change behavior.  It only measures whether non-empty pending
+words are dense enough to justify bulk commit.
+
+### Recommended order
+
+```text
+1. PendingWordBulkOpportunity-L1
+2. PendingWordBulkCommit-L1 only if density gates pass
+3. owner-exit / orphan-handoff stress
+4. regular adoption correctness closeout
+5. v0 fusion-small gate
+6. MediumRun v1
+```
+
+### Density counters
+
+Collect these in debug builds:
+
+```text
+pending_word_drain_count
+pending_word_popcount_1
+pending_word_popcount_2
+pending_word_popcount_3_4
+pending_word_popcount_5_8
+pending_word_popcount_9_16
+pending_word_popcount_17_plus
+pending_slots_drained
+pending_words_rearmed
+pending_word_new_publish_during_drain
+```
+
+Derived values:
+
+```text
+slots_per_nonzero_word =
+  pending_slots_drained / pending_word_drain_count
+
+singleton_ratio =
+  pending_word_popcount_1 / pending_word_drain_count
+
+multi_ratio =
+  1 - singleton_ratio
+```
+
+### Bulk commit gate
+
+Use these thresholds:
+
+```text
+GO:
+  slots_per_nonzero_word >= 2.0
+  and multi_ratio >= 40%
+
+STRONG GO:
+  slots_per_nonzero_word >= 4.0
+
+HOLD:
+  slots_per_nonzero_word in 1.5..2.0
+
+NO-GO:
+  singleton_ratio >= 70%
+```
+
+If the word population remains singleton-heavy, stay with summary-driven drain
+and move on to the v0 gate rather than adding bulk commit complexity.
+
+### Not yet
+
+Do not change:
+
+```text
+owner admission rechecks
+owner exit behavior
+remote producer-driven collect
+MediumRun
+profile splitting
+per-object descriptor
+```
+
 ### Pending word summary mask
 
 Each span may keep a 64-bit `pending_word_mask` as a hint only.
