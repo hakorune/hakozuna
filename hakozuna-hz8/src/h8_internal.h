@@ -99,7 +99,6 @@ struct H8OwnerRecord {
 
 struct H8ThreadCtx {
   H8OwnerRecord* owner;
-  H8Span* active_spans[H8_CLASS_COUNT];
 };
 
 typedef struct H8Global {

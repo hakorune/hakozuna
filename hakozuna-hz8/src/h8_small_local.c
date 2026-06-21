@@ -78,7 +78,7 @@ void* h8_malloc_inner(size_t size) {
   }
   uint32_t class_id = h8_class_for_size(size);
   H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
-  H8Span* span = ctx->active_spans[class_id];
+  H8Span* span = owner->active_spans[class_id];
   if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
       h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
     void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
@@ -102,7 +102,6 @@ void* h8_malloc_inner(size_t size) {
     atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
     return NULL;
   }
-  ctx->active_spans[class_id] = span;
   return h8_small_alloc_from_span(ctx, owner, span, class_id);
 }
 
