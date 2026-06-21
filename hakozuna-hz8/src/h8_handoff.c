@@ -32,7 +32,6 @@ bool h8_span_publish_enter(H8Span* span) {
         h8_span_publish_exit(span);
         return false;
       }
-      atomic_fetch_add_explicit(&h8g.span_publish_enter_count, 1, memory_order_relaxed);
       return true;
     }
   }
@@ -40,7 +39,6 @@ bool h8_span_publish_enter(H8Span* span) {
 
 void h8_span_publish_exit(H8Span* span) {
   atomic_fetch_sub_explicit(&span->publish_refs, 1, memory_order_acq_rel);
-  atomic_fetch_add_explicit(&h8g.span_publish_exit_count, 1, memory_order_relaxed);
 }
 
 void h8_span_close_publish(H8Span* span) {

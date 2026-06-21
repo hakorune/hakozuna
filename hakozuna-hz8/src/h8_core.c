@@ -209,10 +209,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.owner_lifecycle_exit_count, memory_order_acquire);
   out->owner_publish_enter_count = out->owner_lifecycle_enter_count;
   out->owner_publish_exit_count = out->owner_lifecycle_exit_count;
-  out->span_publish_enter_count =
-      atomic_load_explicit(&h8g.span_publish_enter_count, memory_order_acquire);
-  out->span_publish_exit_count =
-      atomic_load_explicit(&h8g.span_publish_exit_count, memory_order_acquire);
+  out->span_publish_enter_count = out->owner_lifecycle_enter_count;
+  out->span_publish_exit_count = out->owner_lifecycle_exit_count;
   out->orphan_quiesce_count =
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =

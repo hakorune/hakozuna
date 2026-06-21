@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `Stability sweep after adoption validation`
+- `RegularAdoption-L1 follow-up`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `RegularAdoption-L1` follow-up if the sweep stays clean
+- `Design consult` after this follow-up slice
