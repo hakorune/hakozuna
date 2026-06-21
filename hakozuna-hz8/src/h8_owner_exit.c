@@ -15,7 +15,7 @@ static void h8_owner_close_gate(H8OwnerRecord* owner) {
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
-      atomic_fetch_add_explicit(&h8g.owner_exit_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(owner_exit_count);
       return;
     }
   }
@@ -57,7 +57,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
         owner->active_spans[span->class_id] = NULL;
       }
       if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
-        atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(invalid_count);
         abort();
       }
     }

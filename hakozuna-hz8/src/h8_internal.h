@@ -162,6 +162,16 @@ typedef struct H8Global {
 
 extern H8Global h8g;
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+#define H8_DEBUG_INC(field) \
+  atomic_fetch_add_explicit(&h8g.field, 1, memory_order_relaxed)
+#define H8_DEBUG_ADD(field, value) \
+  atomic_fetch_add_explicit(&h8g.field, (value), memory_order_relaxed)
+#else
+#define H8_DEBUG_INC(field) ((void)0)
+#define H8_DEBUG_ADD(field, value) ((void)0)
+#endif
+
 static inline uint32_t h8_round_up_u32(uint32_t value, uint32_t align) {
   return (value + align - 1u) & ~(align - 1u);
 }

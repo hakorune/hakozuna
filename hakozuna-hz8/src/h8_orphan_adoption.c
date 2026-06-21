@@ -71,8 +71,7 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
 
   H8CtlWord ctl = h8_ctl_unpack(atomic_load_explicit(&adopter->control, memory_order_acquire));
   if (ctl.state != H8_OWNER_ALIVE || ctl.publish_closed) {
-    atomic_fetch_add_explicit(&h8g.adoption_dry_run_target_closed_count,
-                              1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_dry_run_target_closed_count);
     return false;
   }
 
@@ -90,31 +89,27 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
     }
 
     saw_span = true;
-    atomic_fetch_add_explicit(&h8g.adoption_dry_run_scan_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_dry_run_scan_count);
 
     H8OwnerWord word = h8_span_owner_word_load(span);
     H8SpanState state = (H8SpanState)word.state;
     if (state == H8_SPAN_OWNED_ACTIVE || state == H8_SPAN_ORPHAN_READY) {
       saw_candidate = true;
-      atomic_fetch_add_explicit(&h8g.adoption_dry_run_candidate_count, 1,
-                                memory_order_relaxed);
+      H8_DEBUG_INC(adoption_dry_run_candidate_count);
       if (h8_span_quiescent_for_adoption(span)) {
-        atomic_fetch_add_explicit(&h8g.adoption_dry_run_would_adopt_count,
-                                  1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_dry_run_would_adopt_count);
       } else {
-        atomic_fetch_add_explicit(&h8g.adoption_dry_run_block_quiesce_count,
-                                  1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_dry_run_block_quiesce_count);
       }
       break;
     }
 
-    atomic_fetch_add_explicit(&h8g.adoption_dry_run_block_state_count,
-                              1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_dry_run_block_state_count);
   }
   pthread_mutex_unlock(&orphan->owned_lock);
 
   if (!saw_span) {
-    atomic_fetch_add_explicit(&h8g.adoption_dry_run_empty_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_dry_run_empty_count);
   }
 
   return saw_candidate;
@@ -126,7 +121,7 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     return NULL;
   }
   if (!h8_owner_lifecycle_enter(adopter, (uint16_t)adopter->generation)) {
-    atomic_fetch_add_explicit(&h8g.adoption_target_closed_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_target_closed_count);
     return NULL;
   }
 
@@ -138,35 +133,35 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     for (H8Span* span = orphan->orphan_by_class[class_id]; span;
          span = span->next_orphan_class) {
       if (!h8_span_has_free_slot(span)) {
-        atomic_fetch_add_explicit(&h8g.adoption_block_quiesce_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_block_quiesce_count);
         continue;
       }
       if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
         continue;
       }
-      atomic_fetch_add_explicit(&h8g.adoption_scan_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(adoption_scan_count);
       H8OwnerWord candidate_word = h8_span_owner_word_load(span);
       candidate_state = (H8SpanState)candidate_word.state;
       if (candidate_state == H8_SPAN_OWNED_ACTIVE) {
-        atomic_fetch_add_explicit(&h8g.adoption_candidate_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_candidate_count);
         h8_span_mark_orphan_quiescing(span);
         candidate = span;
         break;
       }
       if (candidate_state == H8_SPAN_ORPHAN_READY) {
-        atomic_fetch_add_explicit(&h8g.adoption_candidate_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_candidate_count);
         candidate = span;
         break;
       }
       if (candidate_state == H8_SPAN_ORPHAN_QUIESCING) {
-        atomic_fetch_add_explicit(&h8g.adoption_block_state_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_block_state_count);
         continue;
       }
       if (candidate_state == H8_SPAN_ADOPTING) {
-        atomic_fetch_add_explicit(&h8g.adoption_block_state_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_block_state_count);
         continue;
       }
-      atomic_fetch_add_explicit(&h8g.adoption_block_state_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(adoption_block_state_count);
       candidate = span;
       break;
     }
@@ -181,7 +176,7 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     h8_collect_owner_pending(orphan);
 
     if (atomic_load_explicit(&candidate->used_count, memory_order_acquire) == 0) {
-      atomic_fetch_add_explicit(&h8g.adoption_empty_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(adoption_empty_count);
       h8_span_mark_orphan_ready(candidate);
       atomic_store_explicit(&candidate->publish_closed, 0, memory_order_release);
       h8_owner_lifecycle_exit(adopter);
@@ -190,12 +185,12 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
 
     if (candidate_state == H8_SPAN_OWNED_ACTIVE) {
       if (!h8_span_quiescent_for_adoption(candidate)) {
-        atomic_fetch_add_explicit(&h8g.adoption_block_quiesce_count, 1, memory_order_relaxed);
+        H8_DEBUG_INC(adoption_block_quiesce_count);
         continue;
       }
       h8_span_mark_orphan_ready(candidate);
     } else if (!h8_span_quiescent_for_adoption(candidate)) {
-      atomic_fetch_add_explicit(&h8g.adoption_block_quiesce_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(adoption_block_quiesce_count);
       continue;
     }
 
@@ -226,9 +221,9 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     if (atomic_load_explicit(&h8g.orphan_span_count, memory_order_relaxed) > 0) {
       atomic_fetch_sub_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
     }
-    atomic_fetch_add_explicit(&h8g.adoption_success_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.handoff_success_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(adoption_success_count);
+    H8_DEBUG_INC(orphan_handoff_count);
+    H8_DEBUG_INC(handoff_success_count);
     h8_owner_unlock_pair(orphan, adopter);
     h8_owner_lifecycle_exit(adopter);
     return candidate;

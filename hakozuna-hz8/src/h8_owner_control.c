@@ -81,7 +81,7 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
     if (ctl.generation != expected_generation ||
         ctl.state != H8_OWNER_ALIVE ||
         ctl.publish_closed) {
-      atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(owner_transition_count);
       return false;
     }
     if (ctl.publish_refs == UINT16_MAX) {
@@ -93,7 +93,7 @@ bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next_raw,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
-      atomic_fetch_add_explicit(&h8g.owner_lifecycle_enter_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(owner_lifecycle_enter_count);
       return true;
     }
   }
@@ -115,7 +115,7 @@ void h8_owner_lifecycle_exit(H8OwnerRecord* owner) {
     if (atomic_compare_exchange_weak_explicit(&owner->control, &cur, next_raw,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
-      atomic_fetch_add_explicit(&h8g.owner_lifecycle_exit_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(owner_lifecycle_exit_count);
       return;
     }
   }

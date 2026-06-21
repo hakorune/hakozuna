@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `HotPathStatsShape-L1`
+- `PendingCarry-L1`
 
 Rules:
 
@@ -48,5 +48,5 @@ New gates for the current sequence:
 
 Next attack:
 
-- `HotPathStatsShape-L1`: move hot-path diagnostic counters out of the normal
-  build and keep the production fast path clean.
+- `PendingCarry-L1`: make bounded collect truly O(budget) and remove the
+  remainder requeue scan.

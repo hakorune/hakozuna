@@ -203,6 +203,10 @@ H8Stats h8_stats(void) {
 }
 
 void h8_debug_stats_snapshot(H8DebugStats* out) {
+#if !defined(H8_ENABLE_DEBUG_STATS)
+  memset(out, 0, sizeof(*out));
+  return;
+#else
   out->owner_lifecycle_enter_count =
       atomic_load_explicit(&h8g.owner_lifecycle_enter_count, memory_order_acquire);
   out->owner_lifecycle_exit_count =
@@ -248,6 +252,7 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.adoption_target_closed_count, memory_order_acquire);
   out->adoption_success_count =
       atomic_load_explicit(&h8g.adoption_success_count, memory_order_acquire);
+#endif
 }
 
 H8DebugStats h8_debug_stats(void) {

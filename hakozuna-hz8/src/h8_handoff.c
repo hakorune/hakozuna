@@ -57,22 +57,22 @@ void h8_span_wait_publishers_zero(H8Span* span) {
 void h8_span_mark_orphan_quiescing(H8Span* span) {
   h8_span_close_publish(span);
   h8_span_state_store(span, H8_SPAN_ORPHAN_QUIESCING, memory_order_release);
-  atomic_fetch_add_explicit(&h8g.orphan_quiesce_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(orphan_quiesce_count);
 }
 
 void h8_span_mark_orphan_ready(H8Span* span) {
   h8_span_state_store(span, H8_SPAN_ORPHAN_READY, memory_order_release);
-  atomic_fetch_add_explicit(&h8g.orphan_ready_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(orphan_ready_count);
 }
 
 bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
                      H8OwnerRecord* target_owner) {
   if (!span || !target_owner) {
-    atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(handoff_fail_count);
     return false;
   }
   if (!h8_owner_is_alive_and_open(target_owner)) {
-    atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(handoff_fail_count);
     return false;
   }
 
@@ -84,7 +84,7 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
   case H8_OWNER_PLACEMENT_OWNED:
     break;
   default:
-    atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(handoff_fail_count);
     return false;
   }
 
@@ -92,7 +92,7 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
   if (!h8_owner_word_equal(cur, expected_old_token) ||
       ((cur.state != H8_SPAN_OWNED_ACTIVE && cur.state != H8_SPAN_ORPHAN_READY) ||
        !h8_span_handoff_quiescent(span))) {
-    atomic_fetch_add_explicit(&h8g.handoff_fail_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(handoff_fail_count);
     return false;
   }
 
@@ -105,13 +105,13 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
   if (target_is_orphan) {
     h8_owner_add_orphan_span(target_owner, span);
     atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.orphan_handoff_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(orphan_handoff_count);
   } else {
     h8_owner_add_owned_span(target_owner, span);
   }
   next.state = H8_SPAN_OWNED_ACTIVE;
   h8_span_owner_word_store(span, next, memory_order_release);
   atomic_store_explicit(&span->publish_closed, 0, memory_order_release);
-  atomic_fetch_add_explicit(&h8g.handoff_success_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(handoff_success_count);
   return true;
 }

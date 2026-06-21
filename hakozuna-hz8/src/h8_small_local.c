@@ -5,7 +5,7 @@
 #include <stdlib.h>
 
 static void h8_fail_invalid_free(void) {
-  atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(invalid_count);
 }
 
 static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
@@ -20,7 +20,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
     h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, slot);
     atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.local_alloc_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(local_alloc_count);
     owner->active_spans[class_id] = span;
     return h8_slot_ptr(span, slot);
   }
@@ -32,7 +32,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
             memory_order_relaxed)) {
       h8_bitmap_test_and_set((_Atomic uint64_t*)span->live_bits, bump);
       atomic_fetch_add_explicit(&span->used_count, 1, memory_order_relaxed);
-      atomic_fetch_add_explicit(&h8g.local_alloc_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(local_alloc_count);
       return h8_slot_ptr(span, bump);
     }
   }
@@ -103,7 +103,7 @@ void* h8_malloc_inner(size_t size) {
     span = h8_span_commit_for_class(owner, class_id);
   }
   if (!span) {
-    atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(invalid_count);
     return NULL;
   }
   return h8_small_alloc_from_span(ctx, owner, span, class_id);
@@ -124,7 +124,7 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
                                                memory_order_relaxed);
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_release);
   atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h8g.local_free_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(local_free_count);
   owner->active_spans[span->class_id] = span;
   return true;
 }
@@ -135,7 +135,7 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
-    atomic_fetch_add_explicit(&h8g.miss_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(miss_count);
     h8_sys_free(ptr);
     return;
   }

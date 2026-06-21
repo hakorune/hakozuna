@@ -187,7 +187,8 @@ After owner admission reuse safety is closed, the next performance boxes are:
 
 ```text
 1. HotPathStatsShape-L1
-   Move hot-path diagnostic counters out of normal builds.
+   Closed by compiling hot-path diagnostic counters only in
+   `H8_ENABLE_DEBUG_STATS` builds.
 
 2. PendingCarry-L1
    Make bounded collect truly O(budget) and fix pending count double-accounting.

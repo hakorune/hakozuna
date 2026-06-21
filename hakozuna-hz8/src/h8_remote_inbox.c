@@ -8,7 +8,7 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
       &owner->pending_head, &head, span, memory_order_release,
       memory_order_relaxed));
   atomic_fetch_add_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h8g.pending_enqueue_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(pending_enqueue_count);
 }
 
 static void h8_pending_queue_push_list(H8OwnerRecord* owner, H8Span* list) {
@@ -31,7 +31,7 @@ static void h8_pending_queue_push_list(H8OwnerRecord* owner, H8Span* list) {
       &owner->pending_head, &head, list, memory_order_release,
       memory_order_relaxed));
   atomic_fetch_add_explicit(&owner->pending_span_count, count, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h8g.pending_enqueue_count, count, memory_order_relaxed);
+  H8_DEBUG_ADD(pending_enqueue_count, count);
 }
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
@@ -52,7 +52,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
     return H8_PUBLISH_INVALID;
   }
-  atomic_fetch_add_explicit(&h8g.remote_publish_count, 1, memory_order_relaxed);
+  H8_DEBUG_INC(remote_publish_count);
   atomic_fetch_add_explicit(&span->pending_count, 1, memory_order_relaxed);
   h8_span_notify(owner, span);
   return H8_PUBLISH_OK;
@@ -67,16 +67,16 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
   H8OwnerWord ow = h8_span_owner_word_load(span);
   H8OwnerRecord* owner = h8_owner_by_slot(ow.slot);
   if (!owner || owner->generation != ow.generation) {
-    atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   if (!h8_span_publish_enter(span)) {
-    atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   if (!h8_owner_publish_enter(owner, ow.generation)) {
     h8_span_publish_exit(span);
-    atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
@@ -101,7 +101,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
       continue;
     }
     if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-      atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+      H8_DEBUG_INC(invalid_count);
       h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
       atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
       continue;
@@ -114,8 +114,8 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
                           memory_order_release);
     atomic_fetch_sub_explicit(&span->used_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.remote_collect_count, 1, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h8g.pending_dequeue_count, 1, memory_order_relaxed);
+    H8_DEBUG_INC(remote_collect_count);
+    H8_DEBUG_INC(pending_dequeue_count);
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
