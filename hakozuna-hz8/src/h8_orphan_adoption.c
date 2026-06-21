@@ -48,6 +48,11 @@ static bool h8_span_quiescent_for_adoption(const H8Span* span) {
          atomic_load_explicit(&span->publish_closed, memory_order_acquire) != 0;
 }
 
+static bool h8_span_has_free_slot(const H8Span* span) {
+  return atomic_load_explicit(&span->used_count, memory_order_acquire) <
+         span->slot_count;
+}
+
 bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   H8OwnerRecord* orphan = h8_orphan_owner();
   if (!adopter || adopter == orphan) {
@@ -67,6 +72,9 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   pthread_mutex_lock(&orphan->owned_lock);
   for (H8Span* span = orphan->orphan_head; span; span = span->next_orphan) {
     if (span->class_id != class_id) {
+      continue;
+    }
+    if (!h8_span_has_free_slot(span)) {
       continue;
     }
     if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
@@ -121,6 +129,10 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     pthread_mutex_lock(&orphan->owned_lock);
     for (H8Span* span = orphan->orphan_head; span; span = span->next_orphan) {
       if (span->class_id != class_id) {
+        continue;
+      }
+      if (!h8_span_has_free_slot(span)) {
+        atomic_fetch_add_explicit(&h8g.adoption_block_quiesce_count, 1, memory_order_relaxed);
         continue;
       }
       if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {

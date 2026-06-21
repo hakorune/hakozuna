@@ -86,8 +86,15 @@ void h8_span_retire(H8Span* span) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return;
   }
+  size_t index = h8_span_index_from_ptr(span->base);
   h8_span_decommit_memory(span);
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
+  if (index < h8g.span_count && h8g.spans[index] == span) {
+    h8g.spans[index] = NULL;
+  }
+  span->next_owned = NULL;
+  span->next_orphan = NULL;
+  span->next_pending = NULL;
   h8_sys_free(span->live_bits);
   h8_sys_free(span->pending_bits);
   h8_sys_free(span->next_free);
