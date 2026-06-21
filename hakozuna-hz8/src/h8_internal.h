@@ -63,6 +63,7 @@ struct H8Span {
   uint8_t* base;
   uint16_t class_id;
   uint16_t slot_count;
+  _Atomic uint64_t owner_word;
   uint32_t owner_slot;
   uint16_t owner_generation;
   _Atomic uint8_t span_state;
@@ -131,6 +132,13 @@ typedef struct H8Global {
   atomic_size_t invalid_count;
   atomic_size_t miss_count;
   atomic_size_t owner_transition_count;
+  atomic_size_t adoption_scan_count;
+  atomic_size_t adoption_candidate_count;
+  atomic_size_t adoption_block_state_count;
+  atomic_size_t adoption_block_quiesce_count;
+  atomic_size_t adoption_empty_count;
+  atomic_size_t adoption_target_closed_count;
+  atomic_size_t adoption_success_count;
 } H8Global;
 
 extern H8Global h8g;
@@ -201,6 +209,22 @@ static inline uint64_t h8_ctl_pack(H8CtlWord ctl) {
          ((uint64_t)ctl.publish_refs << 19);
 }
 
+static inline uint64_t h8_owner_word_pack(H8OwnerWord ow) {
+  return ((uint64_t)ow.slot) |
+         ((uint64_t)ow.generation << 6) |
+         ((uint64_t)ow.state << 22) |
+         ((uint64_t)ow.span_epoch << 25);
+}
+
+static inline H8OwnerWord h8_owner_word_unpack(uint64_t raw) {
+  H8OwnerWord ow;
+  ow.slot = (uint8_t)(raw & 0x3Fu);
+  ow.generation = (uint16_t)((raw >> 6) & 0xFFFFu);
+  ow.state = (uint8_t)((raw >> 22) & 0x7u);
+  ow.span_epoch = (uint32_t)(raw >> 25);
+  return ow;
+}
+
 static inline H8CtlWord h8_ctl_set_state(H8CtlWord ctl, H8OwnerState state) {
   ctl.state = (uint8_t)state;
   return ctl;
@@ -236,6 +260,20 @@ static inline H8OwnerWord h8_owner_word_make(uint8_t slot, uint16_t generation,
   return ow;
 }
 
+static inline H8OwnerWord h8_span_owner_word_load(const H8Span* span) {
+  return h8_owner_word_unpack(
+      atomic_load_explicit(&span->owner_word, memory_order_acquire));
+}
+
+static inline void h8_span_owner_word_store(H8Span* span, H8OwnerWord word,
+                                            memory_order order) {
+  atomic_store_explicit(&span->owner_word, h8_owner_word_pack(word), order);
+  span->owner_slot = word.slot;
+  span->owner_generation = word.generation;
+  atomic_store_explicit(&span->span_state, (uint8_t)word.state, order);
+  atomic_store_explicit(&span->span_epoch, word.span_epoch, order);
+}
+
 static inline H8SpanState h8_span_state_load(const H8Span* span) {
   return (H8SpanState)atomic_load_explicit(&span->span_state, memory_order_acquire);
 }
@@ -243,6 +281,10 @@ static inline H8SpanState h8_span_state_load(const H8Span* span) {
 static inline void h8_span_state_store(H8Span* span, H8SpanState state,
                                        memory_order order) {
   atomic_store_explicit(&span->span_state, (uint8_t)state, order);
+  uint64_t raw = atomic_load_explicit(&span->owner_word, memory_order_relaxed);
+  H8OwnerWord word = h8_owner_word_unpack(raw);
+  word.state = (uint8_t)state;
+  atomic_store_explicit(&span->owner_word, h8_owner_word_pack(word), order);
 }
 
 static inline bool h8_owner_word_equal(H8OwnerWord a, H8OwnerWord b) {

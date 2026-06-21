@@ -53,11 +53,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
       h8_span_retire(span);
     } else {
       h8_owner_quiesce_span(span);
-      H8OwnerWord expected = h8_owner_word_make((uint8_t)owner->slot,
-                                                (uint16_t)owner->generation,
-                                                h8_span_state_load(span),
-                                                atomic_load_explicit(&span->span_epoch,
-                                                                     memory_order_acquire));
+      H8OwnerWord expected = h8_span_owner_word_load(span);
       if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
         atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
         abort();

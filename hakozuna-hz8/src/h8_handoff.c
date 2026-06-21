@@ -4,9 +4,7 @@
 #include <stdlib.h>
 
 static H8OwnerWord h8_owner_word_from_span(const H8Span* span) {
-  return h8_owner_word_make((uint8_t)span->owner_slot, span->owner_generation,
-                            h8_span_state_load(span),
-                            atomic_load_explicit(&span->span_epoch, memory_order_acquire));
+  return h8_span_owner_word_load(span);
 }
 
 static bool h8_span_handoff_quiescent(const H8Span* span) {
@@ -97,10 +95,12 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
     return false;
   }
 
-  h8_span_state_store(span, H8_SPAN_ADOPTING, memory_order_release);
-  atomic_fetch_add_explicit(&span->span_epoch, 1, memory_order_acq_rel);
-  span->owner_slot = target_owner->slot;
-  span->owner_generation = target_owner->generation;
+  H8OwnerWord next = cur;
+  next.state = H8_SPAN_ADOPTING;
+  next.span_epoch = (uint32_t)(next.span_epoch + 1u);
+  next.slot = (uint8_t)target_owner->slot;
+  next.generation = (uint16_t)target_owner->generation;
+  h8_span_owner_word_store(span, next, memory_order_release);
   if (target_is_orphan) {
     h8_owner_add_orphan_span(target_owner, span);
     atomic_fetch_add_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
@@ -108,8 +108,9 @@ bool h8_span_handoff(H8Span* span, H8OwnerWord expected_old_token,
   } else {
     h8_owner_add_owned_span(target_owner, span);
   }
+  next.state = H8_SPAN_OWNED_ACTIVE;
+  h8_span_owner_word_store(span, next, memory_order_release);
   atomic_store_explicit(&span->publish_closed, 0, memory_order_release);
-  h8_span_state_store(span, H8_SPAN_OWNED_ACTIVE, memory_order_release);
   atomic_fetch_add_explicit(&h8g.handoff_success_count, 1, memory_order_relaxed);
   return true;
 }

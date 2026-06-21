@@ -48,13 +48,14 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
     span->base = h8_span_base_from_index(i);
     span->class_id = (uint16_t)class_id;
     span->slot_count = (uint16_t)h8_slot_count_for_class(class_id);
-    span->owner_slot = owner->slot;
-    span->owner_generation = owner->generation;
-    h8_span_state_store(span, H8_SPAN_OWNED_ACTIVE, memory_order_relaxed);
+    h8_span_owner_word_store(
+        span,
+        h8_owner_word_make((uint8_t)owner->slot, (uint16_t)owner->generation,
+                           H8_SPAN_OWNED_ACTIVE, 1),
+        memory_order_relaxed);
     atomic_store_explicit(&span->publish_closed, 0, memory_order_relaxed);
     atomic_store_explicit(&span->publish_refs, 0, memory_order_relaxed);
     atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_relaxed);
-    atomic_store_explicit(&span->span_epoch, 1, memory_order_relaxed);
     atomic_store_explicit(&span->bump_index, 0, memory_order_relaxed);
     atomic_store_explicit(&span->local_free_head, UINT32_MAX, memory_order_relaxed);
     atomic_store_explicit(&span->used_count, 0, memory_order_relaxed);

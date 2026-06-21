@@ -191,6 +191,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
   out->miss_count = atomic_load_explicit(&h8g.miss_count, memory_order_acquire);
   out->owner_transition_count =
       atomic_load_explicit(&h8g.owner_transition_count, memory_order_acquire);
+  out->adoption_scan_count =
+      atomic_load_explicit(&h8g.adoption_scan_count, memory_order_acquire);
+  out->adoption_candidate_count =
+      atomic_load_explicit(&h8g.adoption_candidate_count, memory_order_acquire);
+  out->adoption_block_state_count =
+      atomic_load_explicit(&h8g.adoption_block_state_count, memory_order_acquire);
+  out->adoption_block_quiesce_count =
+      atomic_load_explicit(&h8g.adoption_block_quiesce_count, memory_order_acquire);
+  out->adoption_empty_count =
+      atomic_load_explicit(&h8g.adoption_empty_count, memory_order_acquire);
+  out->adoption_target_closed_count =
+      atomic_load_explicit(&h8g.adoption_target_closed_count, memory_order_acquire);
+  out->adoption_success_count =
+      atomic_load_explicit(&h8g.adoption_success_count, memory_order_acquire);
 }
 
 H8DebugStats h8_debug_stats(void) {

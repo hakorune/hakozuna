@@ -454,6 +454,25 @@ bool h8_adopt_span(H8OwnerRecord* adopter, H8Span* span)
 New-owner remote publish is allowed only after the final `ADOPTING -> ACTIVE`
 release store.
 
+## Adoption Audit Lane
+
+Adoption opportunity accounting lives in the debug lane and runs only on the
+slow path.  It records:
+
+```text
+candidate scans
+candidate-ready hits
+blocked-by-state
+blocked-by-quiesce
+empty-after-drain
+target-closed
+successful adoption
+```
+
+These counters must not change allocator behavior.  They exist to make later
+`RegularAdoptionDryRun-L1` decisions measurable before default-on adoption is
+enabled.
+
 ## v0 Simplification
 
 Evidence-only v0 may use:

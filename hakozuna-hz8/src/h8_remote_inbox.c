@@ -46,11 +46,12 @@ void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
 static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner,
                                                      size_t slot, void* ptr) {
   (void)ptr;
-  if (span->owner_slot != owner->slot ||
-      span->owner_generation != owner->generation) {
+  H8OwnerWord ow = h8_span_owner_word_load(span);
+  if (ow.slot != owner->slot ||
+      ow.generation != owner->generation) {
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  H8SpanState state = h8_span_state_load(span);
+  H8SpanState state = (H8SpanState)ow.state;
   if (state == H8_SPAN_ORPHAN_QUIESCING ||
       state == H8_SPAN_ORPHAN_READY ||
       state == H8_SPAN_ADOPTING) {
@@ -77,8 +78,9 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
   if (!span) {
     return H8_PUBLISH_MISS;
   }
-  H8OwnerRecord* owner = h8_owner_by_slot(span->owner_slot);
-  if (!owner || owner->generation != span->owner_generation) {
+  H8OwnerWord ow = h8_span_owner_word_load(span);
+  H8OwnerRecord* owner = h8_owner_by_slot(ow.slot);
+  if (!owner || owner->generation != ow.generation) {
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
@@ -86,7 +88,7 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  if (!h8_owner_publish_enter(owner, span->owner_generation)) {
+  if (!h8_owner_publish_enter(owner, ow.generation)) {
     h8_span_publish_exit(span);
     atomic_fetch_add_explicit(&h8g.owner_transition_count, 1, memory_order_relaxed);
     return H8_PUBLISH_OWNER_TRANSITION;
@@ -129,7 +131,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
-  if (h8_span_state_load(span) == H8_SPAN_ORPHAN_QUIESCING &&
+  if ((H8SpanState)h8_span_owner_word_load(span).state == H8_SPAN_ORPHAN_QUIESCING &&
       atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
       h8_bitmap_popcount((_Atomic uint64_t*)span->pending_bits,
                          h8_word_count_for_slots(span->slot_count)) == 0) {

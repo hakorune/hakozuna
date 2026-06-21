@@ -47,6 +47,13 @@ typedef struct H8DebugStats {
   size_t invalid_count;
   size_t miss_count;
   size_t owner_transition_count;
+  size_t adoption_scan_count;
+  size_t adoption_candidate_count;
+  size_t adoption_block_state_count;
+  size_t adoption_block_quiesce_count;
+  size_t adoption_empty_count;
+  size_t adoption_target_closed_count;
+  size_t adoption_success_count;
 } H8DebugStats;
 
 void h8_init(void);

@@ -308,13 +308,20 @@ int main(int argc, char** argv) {
          stats.handoff_success_count,
          stats.local_alloc_count,
          stats.remote_collect_count);
-  printf("counters_dbg publish_enter=%zu publish_exit=%zu handoff_fail=%zu invalid=%zu miss=%zu owner_transition=%zu\n",
+  printf("counters_dbg publish_enter=%zu publish_exit=%zu handoff_fail=%zu invalid=%zu miss=%zu owner_transition=%zu adopt_scan=%zu adopt_candidate=%zu adopt_block_state=%zu adopt_block_quiesce=%zu adopt_empty=%zu adopt_target_closed=%zu adopt_ok=%zu\n",
          debug.owner_publish_enter_count,
          debug.owner_publish_exit_count,
          debug.handoff_fail_count,
          debug.invalid_count,
          debug.miss_count,
-         debug.owner_transition_count);
+         debug.owner_transition_count,
+         debug.adoption_scan_count,
+         debug.adoption_candidate_count,
+         debug.adoption_block_state_count,
+         debug.adoption_block_quiesce_count,
+         debug.adoption_empty_count,
+         debug.adoption_target_closed_count,
+         debug.adoption_success_count);
 
   free(throughput);
   free(rss);
