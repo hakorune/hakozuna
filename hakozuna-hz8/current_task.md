@@ -20,10 +20,11 @@ HZ8 optimization is being implemented in this order:
 16. `LocalPendingTouchElision-L1`
 17. `OwnerSingleWriterLiveWord-L1`
 18. `OwnerLocalScalarState-L1`
+19. `LocalPathAttribution-L1`
 
 Current focus:
 
-- `OwnerLocalScalarState-L1`
+- `LocalPathAttribution-L1`
 
 Rules:
 
@@ -205,3 +206,11 @@ OwnerLocalScalarState-L1:
 - update `used_count` with checked owner-only load/store in local path and owner
   collect.
 - do not change remote producer behavior or lifecycle/adoption verification.
+
+LocalPathAttribution-L1:
+
+- add debug-only counters that explain local allocation/free shape.
+- keep production/release builds counter-free.
+- measure active hint hits/misses, freelist vs bump allocation, slow collect,
+  span commit, class-list scans, and local free reject reasons before choosing
+  the next optimization.

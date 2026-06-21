@@ -301,6 +301,30 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.owner_live_set_already_live, memory_order_acquire);
   out->owner_live_clear_already_free =
       atomic_load_explicit(&h8g.owner_live_clear_already_free, memory_order_acquire);
+  out->local_active_hit =
+      atomic_load_explicit(&h8g.local_active_hit, memory_order_acquire);
+  out->local_active_miss =
+      atomic_load_explicit(&h8g.local_active_miss, memory_order_acquire);
+  out->local_freelist_pop =
+      atomic_load_explicit(&h8g.local_freelist_pop, memory_order_acquire);
+  out->local_bump_alloc =
+      atomic_load_explicit(&h8g.local_bump_alloc, memory_order_acquire);
+  out->local_slow_collect =
+      atomic_load_explicit(&h8g.local_slow_collect, memory_order_acquire);
+  out->local_span_commit =
+      atomic_load_explicit(&h8g.local_span_commit, memory_order_acquire);
+  out->local_find_scan =
+      atomic_load_explicit(&h8g.local_find_scan, memory_order_acquire);
+  out->local_find_scan_span =
+      atomic_load_explicit(&h8g.local_find_scan_span, memory_order_acquire);
+  out->local_free_hit =
+      atomic_load_explicit(&h8g.local_free_hit, memory_order_acquire);
+  out->local_free_reject_owner =
+      atomic_load_explicit(&h8g.local_free_reject_owner, memory_order_acquire);
+  out->local_free_reject_state =
+      atomic_load_explicit(&h8g.local_free_reject_state, memory_order_acquire);
+  out->local_free_reject_live =
+      atomic_load_explicit(&h8g.local_free_reject_live, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

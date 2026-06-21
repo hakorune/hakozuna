@@ -176,6 +176,18 @@ typedef struct H8Global {
   atomic_size_t local_free_pending_nonzero;
   atomic_size_t owner_live_set_already_live;
   atomic_size_t owner_live_clear_already_free;
+  atomic_size_t local_active_hit;
+  atomic_size_t local_active_miss;
+  atomic_size_t local_freelist_pop;
+  atomic_size_t local_bump_alloc;
+  atomic_size_t local_slow_collect;
+  atomic_size_t local_span_commit;
+  atomic_size_t local_find_scan;
+  atomic_size_t local_find_scan_span;
+  atomic_size_t local_free_hit;
+  atomic_size_t local_free_reject_owner;
+  atomic_size_t local_free_reject_state;
+  atomic_size_t local_free_reject_live;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;

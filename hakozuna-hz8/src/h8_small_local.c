@@ -34,6 +34,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     uint32_t slot = local_head;
     atomic_store_explicit(&span->local_free_head, span->next_free[slot],
                           memory_order_relaxed);
+    H8_DEBUG_INC(local_freelist_pop);
     if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
       H8_DEBUG_INC(local_alloc_pending_nonzero);
       abort();
@@ -50,6 +51,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_relaxed);
   if (bump < span->slot_count) {
     atomic_store_explicit(&span->bump_index, bump + 1, memory_order_relaxed);
+    H8_DEBUG_INC(local_bump_alloc);
     if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, bump))) {
       H8_DEBUG_INC(local_alloc_pending_nonzero);
       abort();
@@ -69,6 +71,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
 }
 
 static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
+  H8_DEBUG_INC(local_find_scan);
   H8Span* hint = owner->active_spans[class_id];
   if (hint && hint->class_id == class_id &&
       hint->owner_slot == owner->slot &&
@@ -81,6 +84,7 @@ static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
   pthread_mutex_lock(&owner->owned_lock);
   for (H8Span* span = owner->owned_by_class[class_id]; span;
        span = span->next_owned_class) {
+    H8_DEBUG_INC(local_find_scan_span);
     if (h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE &&
         atomic_load_explicit(&span->used_count, memory_order_acquire) <
             span->slot_count) {
@@ -110,13 +114,16 @@ void* h8_malloc_inner(size_t size) {
   if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
       span->owner_generation == owner->generation &&
       h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
+    H8_DEBUG_INC(local_active_hit);
     void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
     if (ptr) {
       return ptr;
     }
   }
+  H8_DEBUG_INC(local_active_miss);
   span = h8_find_active_span(owner, class_id);
   if (!span) {
+    H8_DEBUG_INC(local_slow_collect);
     h8_pressure_owner_collect(owner);
     span = h8_find_active_span(owner, class_id);
   }
@@ -125,6 +132,7 @@ void* h8_malloc_inner(size_t size) {
     span = h8_orphan_adopt_span(owner, class_id);
   }
   if (!span) {
+    H8_DEBUG_INC(local_span_commit);
     span = h8_span_commit_for_class(owner, class_id);
   }
   if (!span) {
@@ -136,11 +144,16 @@ void* h8_malloc_inner(size_t size) {
 
 static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   if (span->owner_slot != owner->slot ||
-      span->owner_generation != owner->generation ||
-      h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+      span->owner_generation != owner->generation) {
+    H8_DEBUG_INC(local_free_reject_owner);
+    return false;
+  }
+  if (h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+    H8_DEBUG_INC(local_free_reject_state);
     return false;
   }
   if (!h8_bitmap_test(span->live_bits, slot)) {
+    H8_DEBUG_INC(local_free_reject_live);
     return false;
   }
   if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
@@ -157,6 +170,7 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
     abort();
   }
   H8_DEBUG_INC(local_free_count);
+  H8_DEBUG_INC(local_free_hit);
   owner->active_spans[span->class_id] = span;
   return true;
 }

@@ -389,6 +389,19 @@ int main(int argc, char** argv) {
          debug.local_free_pending_nonzero,
          debug.owner_live_set_already_live,
          debug.owner_live_clear_already_free);
+  printf("local_path active_hit=%zu active_miss=%zu freelist=%zu bump=%zu slow_collect=%zu span_commit=%zu find_scan=%zu scan_span=%zu free_hit=%zu reject_owner=%zu reject_state=%zu reject_live=%zu\n",
+         debug.local_active_hit,
+         debug.local_active_miss,
+         debug.local_freelist_pop,
+         debug.local_bump_alloc,
+         debug.local_slow_collect,
+         debug.local_span_commit,
+         debug.local_find_scan,
+         debug.local_find_scan_span,
+         debug.local_free_hit,
+         debug.local_free_reject_owner,
+         debug.local_free_reject_state,
+         debug.local_free_reject_live);
 
   free(throughput);
   free(rss);

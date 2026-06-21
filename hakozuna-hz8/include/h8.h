@@ -82,6 +82,18 @@ typedef struct H8DebugStats {
   size_t local_free_pending_nonzero;
   size_t owner_live_set_already_live;
   size_t owner_live_clear_already_free;
+  size_t local_active_hit;
+  size_t local_active_miss;
+  size_t local_freelist_pop;
+  size_t local_bump_alloc;
+  size_t local_slow_collect;
+  size_t local_span_commit;
+  size_t local_find_scan;
+  size_t local_find_scan_span;
+  size_t local_free_hit;
+  size_t local_free_reject_owner;
+  size_t local_free_reject_state;
+  size_t local_free_reject_live;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;
