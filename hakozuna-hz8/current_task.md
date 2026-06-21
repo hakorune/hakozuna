@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `SpanPublishLease-L1` under `RegularAdoption-L1`
+- `OwnerLifecycleLease-L1` under `RegularAdoption-L1`
 
 Rules:
 
@@ -32,4 +32,4 @@ Validation gates already in use:
 
 Next attack:
 
-- `OwnerLifecycleLease-L1` follow-up after publish lease polish
+- `OrphanQuiescing-L1` after lifecycle lease polish

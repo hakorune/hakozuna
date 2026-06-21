@@ -55,10 +55,11 @@ void h8_owner_remove_orphan_span(H8OwnerRecord* owner, H8Span* span) {
 }
 
 bool h8_owner_wait_publishers_zero(H8OwnerRecord* owner) {
+  if (owner->permanent) {
+    return true;
+  }
   for (;;) {
-    H8CtlWord ctl = h8_ctl_unpack(atomic_load_explicit(&owner->control,
-                                                      memory_order_acquire));
-    if (ctl.publish_refs == 0) {
+    if (atomic_load_explicit(&owner->lifecycle_refs, memory_order_acquire) == 0) {
       return true;
     }
     sched_yield();
