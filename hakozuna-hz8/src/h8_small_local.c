@@ -78,7 +78,7 @@ void* h8_malloc_inner(size_t size) {
       return ptr;
     }
   }
-  h8_collect_owner_pending(owner);
+  h8_pressure_owner_collect(owner);
   span = h8_find_active_span(owner, class_id);
   if (!span) {
     span = h8_orphan_adopt_span(owner, class_id);

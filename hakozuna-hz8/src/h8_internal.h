@@ -88,6 +88,7 @@ struct H8OwnerRecord {
   bool permanent;
   H8OwnerPlacement placement;
   _Atomic(H8Span*) pending_head;
+  _Atomic size_t pending_span_count;
   H8Span* owned_head;
   H8Span* orphan_head;
   pthread_mutex_t owned_lock;
@@ -349,5 +350,6 @@ H8PublishResult h8_remote_free_publish(void* ptr);
 H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void h8_free_inner(void* ptr);
+void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget);
 
 #endif

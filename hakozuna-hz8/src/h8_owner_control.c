@@ -17,6 +17,7 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   owner->placement = permanent ? H8_OWNER_PLACEMENT_ORPHAN
                                : H8_OWNER_PLACEMENT_OWNED;
   atomic_store_explicit(&owner->pending_head, NULL, memory_order_relaxed);
+  atomic_store_explicit(&owner->pending_span_count, 0, memory_order_relaxed);
   owner->owned_head = NULL;
   owner->orphan_head = NULL;
   atomic_store_explicit(&owner->control,

@@ -7,7 +7,31 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   } while (!atomic_compare_exchange_weak_explicit(
       &owner->pending_head, &head, span, memory_order_release,
       memory_order_relaxed));
+  atomic_fetch_add_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
   atomic_fetch_add_explicit(&h8g.pending_enqueue_count, 1, memory_order_relaxed);
+}
+
+static void h8_pending_queue_push_list(H8OwnerRecord* owner, H8Span* list) {
+  if (!list) {
+    return;
+  }
+  size_t count = 0;
+  H8Span* tail = list;
+  while (tail) {
+    ++count;
+    if (!tail->next_pending) {
+      break;
+    }
+    tail = tail->next_pending;
+  }
+  H8Span* head = atomic_load_explicit(&owner->pending_head, memory_order_relaxed);
+  do {
+    tail->next_pending = head;
+  } while (!atomic_compare_exchange_weak_explicit(
+      &owner->pending_head, &head, list, memory_order_release,
+      memory_order_relaxed));
+  atomic_fetch_add_explicit(&owner->pending_span_count, count, memory_order_relaxed);
+  atomic_fetch_add_explicit(&h8g.pending_enqueue_count, count, memory_order_relaxed);
 }
 
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
@@ -117,12 +141,35 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 }
 
-void h8_collect_owner_pending(H8OwnerRecord* owner) {
+void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   H8Span* list = atomic_exchange_explicit(&owner->pending_head, NULL,
                                           memory_order_acq_rel);
+  size_t collected = 0;
+  H8Span* remainder = NULL;
+  H8Span* remainder_tail = NULL;
   while (list) {
     H8Span* span = list;
     list = span->next_pending;
-    h8_span_collect_remote(owner, span);
+    span->next_pending = NULL;
+    if (collected < budget) {
+      h8_span_collect_remote(owner, span);
+      atomic_fetch_sub_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
+      ++collected;
+      continue;
+    }
+    if (!remainder) {
+      remainder = span;
+      remainder_tail = span;
+    } else {
+      remainder_tail->next_pending = span;
+      remainder_tail = span;
+    }
   }
+  if (remainder) {
+    h8_pending_queue_push_list(owner, remainder);
+  }
+}
+
+void h8_collect_owner_pending(H8OwnerRecord* owner) {
+  h8_collect_owner_pending_budget(owner, SIZE_MAX);
 }

@@ -253,6 +253,11 @@ path clean but can leave remote inventory cold long enough to distort locality
 and latency.  Do not collect the whole owner queue on every local miss either;
 that moves remote pressure cost into unrelated local allocations.
 
+The pressure controller should use a bounded batch derived from the owner's
+pending-span count on local misses.  Full queue drain is reserved for owner
+exit, orphan handoff, and other lifecycle transitions that already run on a
+slow path.
+
 Collection:
 
 ```text

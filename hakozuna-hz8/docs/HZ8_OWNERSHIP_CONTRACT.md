@@ -218,6 +218,9 @@ if either is nonzero, notify/requeue the span
 
 The implementation must close the race where a producer publishes after the
 owner observes an empty list but before the span queue state returns to idle.
+
+The pressure collector may stop after a bounded batch on the local-miss path.
+Only owner-exit and handoff paths perform full pending-queue drains.
 Use a three-state queue state:
 
 ```text
