@@ -172,6 +172,14 @@ counted independently.
 `ORPHAN_QUIESCING` and `ORPHAN_READY` are also counted in the debug lane so
 quiescence and adoption readiness can be checked at quiescent slow-path points.
 
+## Current Consultation Result
+
+Keep `h8_owner_lifecycle_enter()` on the full recheck path.  Keep
+`active_spans[]` as a weak hint, not as ownership truth.  Do not pack
+`lifecycle_refs` into the owner control word yet; the next optimization target
+is only the number of owner-admission reads, not a change in the ownership
+boundary itself.
+
 ## Regular Adoption Dry Run
 
 Before default-on adoption is enabled, the small allocator slow path performs a
