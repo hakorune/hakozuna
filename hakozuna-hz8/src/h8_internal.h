@@ -146,6 +146,16 @@ typedef struct H8Global {
   atomic_size_t pending_word_summary_false_negative;
   atomic_size_t pending_word_summary_rearm;
   atomic_size_t pending_word_summary_repair;
+  atomic_size_t pending_word_drain_count;
+  atomic_size_t pending_word_popcount_1;
+  atomic_size_t pending_word_popcount_2;
+  atomic_size_t pending_word_popcount_3_4;
+  atomic_size_t pending_word_popcount_5_8;
+  atomic_size_t pending_word_popcount_9_16;
+  atomic_size_t pending_word_popcount_17_plus;
+  atomic_size_t pending_slots_drained;
+  atomic_size_t pending_words_rearmed;
+  atomic_size_t pending_word_new_publish_during_drain;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;

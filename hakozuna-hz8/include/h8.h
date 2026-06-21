@@ -59,6 +59,16 @@ typedef struct H8DebugStats {
   size_t pending_word_summary_false_negative;
   size_t pending_word_summary_rearm;
   size_t pending_word_summary_repair;
+  size_t pending_word_drain_count;
+  size_t pending_word_popcount_1;
+  size_t pending_word_popcount_2;
+  size_t pending_word_popcount_3_4;
+  size_t pending_word_popcount_5_8;
+  size_t pending_word_popcount_9_16;
+  size_t pending_word_popcount_17_plus;
+  size_t pending_slots_drained;
+  size_t pending_words_rearmed;
+  size_t pending_word_new_publish_during_drain;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;

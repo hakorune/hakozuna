@@ -114,3 +114,4 @@ PendingWordBulkOpportunity-L1:
 - keep the current summary-driven drain behavior unchanged.
 - collect popcount buckets and slots-per-nonzero-word in debug lane.
 - only move to bulk commit if the density gates actually justify it.
+- diagnostics are wired; bulk commit stays for the next design question.

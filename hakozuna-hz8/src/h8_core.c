@@ -245,6 +245,26 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.pending_word_summary_rearm, memory_order_acquire);
   out->pending_word_summary_repair =
       atomic_load_explicit(&h8g.pending_word_summary_repair, memory_order_acquire);
+  out->pending_word_drain_count =
+      atomic_load_explicit(&h8g.pending_word_drain_count, memory_order_acquire);
+  out->pending_word_popcount_1 =
+      atomic_load_explicit(&h8g.pending_word_popcount_1, memory_order_acquire);
+  out->pending_word_popcount_2 =
+      atomic_load_explicit(&h8g.pending_word_popcount_2, memory_order_acquire);
+  out->pending_word_popcount_3_4 =
+      atomic_load_explicit(&h8g.pending_word_popcount_3_4, memory_order_acquire);
+  out->pending_word_popcount_5_8 =
+      atomic_load_explicit(&h8g.pending_word_popcount_5_8, memory_order_acquire);
+  out->pending_word_popcount_9_16 =
+      atomic_load_explicit(&h8g.pending_word_popcount_9_16, memory_order_acquire);
+  out->pending_word_popcount_17_plus =
+      atomic_load_explicit(&h8g.pending_word_popcount_17_plus, memory_order_acquire);
+  out->pending_slots_drained =
+      atomic_load_explicit(&h8g.pending_slots_drained, memory_order_acquire);
+  out->pending_words_rearmed =
+      atomic_load_explicit(&h8g.pending_words_rearmed, memory_order_acquire);
+  out->pending_word_new_publish_during_drain = atomic_load_explicit(
+      &h8g.pending_word_new_publish_during_drain, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

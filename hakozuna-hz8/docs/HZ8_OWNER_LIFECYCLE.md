@@ -339,6 +339,9 @@ NO-GO:
 If the word population remains singleton-heavy, stay with summary-driven drain
 and move on to the v0 gate rather than adding bulk commit complexity.
 
+This box is diagnostics-only.  It does not change drain behavior yet; it only
+feeds the next design question about `PendingWordBulkCommit-L1`.
+
 ### Not yet
 
 Do not change:

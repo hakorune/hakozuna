@@ -350,6 +350,30 @@ int main(int argc, char** argv) {
          debug.adoption_empty_count,
          debug.adoption_target_closed_count,
          debug.adoption_success_count);
+  double slots_per_nonzero_word = 0.0;
+  double singleton_ratio = 0.0;
+  double multi_ratio = 0.0;
+  if (debug.pending_word_drain_count != 0) {
+    slots_per_nonzero_word =
+        (double)debug.pending_slots_drained / (double)debug.pending_word_drain_count;
+    singleton_ratio =
+        (double)debug.pending_word_popcount_1 / (double)debug.pending_word_drain_count;
+    multi_ratio = 1.0 - singleton_ratio;
+  }
+  printf("pending_word_density drain=%zu pop1=%zu pop2=%zu pop3_4=%zu pop5_8=%zu pop9_16=%zu pop17p=%zu slots=%zu rearmed=%zu new_publish=%zu slots_per_nonzero_word=%.3f singleton_ratio=%.3f multi_ratio=%.3f\n",
+         debug.pending_word_drain_count,
+         debug.pending_word_popcount_1,
+         debug.pending_word_popcount_2,
+         debug.pending_word_popcount_3_4,
+         debug.pending_word_popcount_5_8,
+         debug.pending_word_popcount_9_16,
+         debug.pending_word_popcount_17_plus,
+         debug.pending_slots_drained,
+         debug.pending_words_rearmed,
+         debug.pending_word_new_publish_during_drain,
+         slots_per_nonzero_word,
+         singleton_ratio,
+         multi_ratio);
 
   free(throughput);
   free(rss);

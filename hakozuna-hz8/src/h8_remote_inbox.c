@@ -20,6 +20,22 @@ static void h8_pending_count_dec(H8Span* span) {
   }
 }
 
+static void h8_pending_word_bucket_add(size_t popcount) {
+  if (popcount == 1) {
+    H8_DEBUG_INC(pending_word_popcount_1);
+  } else if (popcount == 2) {
+    H8_DEBUG_INC(pending_word_popcount_2);
+  } else if (popcount <= 4) {
+    H8_DEBUG_INC(pending_word_popcount_3_4);
+  } else if (popcount <= 8) {
+    H8_DEBUG_INC(pending_word_popcount_5_8);
+  } else if (popcount <= 16) {
+    H8_DEBUG_INC(pending_word_popcount_9_16);
+  } else {
+    H8_DEBUG_INC(pending_word_popcount_17_plus);
+  }
+}
+
 static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_summary) {
   uint64_t summary_bit = UINT64_C(1) << word_index;
   H8_DEBUG_INC(pending_collect_word_count);
@@ -36,7 +52,14 @@ static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_s
   }
 
   if (bits) {
+    size_t word_popcount = (size_t)__builtin_popcountll(bits);
     H8_DEBUG_INC(pending_collect_word_nonzero_count);
+    H8_DEBUG_INC(pending_word_drain_count);
+    H8_DEBUG_ADD(pending_slots_drained, word_popcount);
+    h8_pending_word_bucket_add(word_popcount);
+    if (!from_summary) {
+      H8_DEBUG_INC(pending_word_new_publish_during_drain);
+    }
   }
 
   while (bits) {
@@ -69,6 +92,7 @@ static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_s
     atomic_fetch_or_explicit(&span->pending_word_mask, summary_bit,
                              memory_order_release);
     H8_DEBUG_INC(pending_word_summary_rearm);
+    H8_DEBUG_INC(pending_words_rearmed);
   } else {
     atomic_fetch_and_explicit(&span->pending_word_mask, ~summary_bit,
                               memory_order_release);
