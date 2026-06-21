@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `OwnerAdmissionReadShape-L1`
+- `OwnerAdmissionReadShape-L1` (closed)
 
 Rules:
 
@@ -46,7 +46,8 @@ New gates for the current sequence:
 - `pending_bit_without_live = 0`
 - `collect_same_slot_twice = 0`
 
-Next attack:
+OwnerAdmissionReadShape-L1:
 
-- `OwnerAdmissionReadShape-L1`: remove redundant owner generation reads and
-  A/B the control/ref cacheline shape.
+- closed by removing the redundant plain owner generation read from remote
+  publish admission.
+- remaining owner generation uses are ownership state, not admission shape.

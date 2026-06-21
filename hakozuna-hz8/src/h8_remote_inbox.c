@@ -52,7 +52,7 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
   }
   H8OwnerWord ow = h8_span_owner_word_load(span);
   H8OwnerRecord* owner = h8_owner_by_slot(ow.slot);
-  if (!owner || owner->generation != ow.generation) {
+  if (!owner) {
     H8_DEBUG_INC(owner_transition_count);
     return H8_PUBLISH_OWNER_TRANSITION;
   }

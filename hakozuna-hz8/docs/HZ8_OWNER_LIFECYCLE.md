@@ -202,7 +202,8 @@ After owner admission reuse safety is closed, the next performance boxes are:
    stays on owner slow paths.
 
 5. OwnerAdmissionReadShape-L1
-   Remove redundant owner generation reads and A/B control/ref cacheline shape.
+   Closed by removing the redundant plain owner generation read from remote
+   publish admission.
 ```
 
 ## Regular Adoption Dry Run
