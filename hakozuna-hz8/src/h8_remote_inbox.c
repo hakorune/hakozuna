@@ -66,9 +66,6 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
-  if (res == H8_PUBLISH_OK && owner->placement == H8_OWNER_PLACEMENT_ORPHAN) {
-    h8_collect_owner_pending(owner);
-  }
   h8_span_publish_exit(span);
   h8_owner_publish_exit(owner);
   return res;

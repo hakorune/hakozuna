@@ -198,7 +198,8 @@ After owner admission reuse safety is closed, the next performance boxes are:
    Closed by draining pending bitmap words instead of scanning every slot.
 
 4. OrphanPublishNotifyOnly-L1
-   Stop permanent-orphan remote producers from draining all pending work.
+   Closed by making permanent-orphan remote producers notify only; draining
+   stays on owner slow paths.
 
 5. OwnerAdmissionReadShape-L1
    Remove redundant owner generation reads and A/B control/ref cacheline shape.

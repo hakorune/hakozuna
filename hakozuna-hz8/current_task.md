@@ -11,7 +11,7 @@ HZ8 optimization is being implemented in this order:
 
 Current focus:
 
-- `OrphanPublishNotifyOnly-L1`
+- `OwnerAdmissionReadShape-L1`
 
 Rules:
 
@@ -48,5 +48,5 @@ New gates for the current sequence:
 
 Next attack:
 
-- `OrphanPublishNotifyOnly-L1`: stop permanent-orphan remote producers from
-  draining all pending work.
+- `OwnerAdmissionReadShape-L1`: remove redundant owner generation reads and
+  A/B the control/ref cacheline shape.
