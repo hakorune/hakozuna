@@ -147,7 +147,8 @@ H8RouteKind h8_route_inner(void* ptr) {
   if (!h8_arena_contains(ptr)) {
     return H8_ROUTE_MISS;
   }
-  H8Span* span = h8g.spans[h8_span_index_from_ptr(ptr)];
+  H8Span* span = atomic_load_explicit(&h8g.spans[h8_span_index_from_ptr(ptr)],
+                                      memory_order_acquire);
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return H8_ROUTE_INVALID;
   }
@@ -168,7 +169,8 @@ H8RouteKind h8_route(void* ptr) {
 void h8_stats_snapshot(H8Stats* out) {
   size_t small_span_count = 0;
   for (size_t i = 0; i < h8g.span_count; ++i) {
-    if (h8g.spans && h8g.spans[i]) {
+    if (h8g.spans &&
+        atomic_load_explicit(&h8g.spans[i], memory_order_acquire)) {
       ++small_span_count;
     }
   }
