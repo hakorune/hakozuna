@@ -26,16 +26,22 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
       span->owner_generation != owner->generation) {
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  if (h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+  H8SpanState state = h8_span_state_load(span);
+  if (state == H8_SPAN_ORPHAN_QUIESCING ||
+      state == H8_SPAN_ORPHAN_READY ||
+      state == H8_SPAN_ADOPTING) {
+    return H8_PUBLISH_OWNER_TRANSITION;
+  }
+  if (state != H8_SPAN_OWNED_ACTIVE) {
     return H8_PUBLISH_INVALID;
   }
-  if (h8_bitmap_test((_Atomic uint64_t*)span->pending_bits, slot)) {
+  if (h8_bitmap_test_and_set((_Atomic uint64_t*)span->pending_bits, slot)) {
     return H8_PUBLISH_DOUBLE_FREE;
   }
   if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+    h8_bitmap_clear((_Atomic uint64_t*)span->pending_bits, slot);
     return H8_PUBLISH_INVALID;
   }
-  h8_bitmap_test_and_set((_Atomic uint64_t*)span->pending_bits, slot);
   atomic_fetch_add_explicit(&h8g.remote_publish_count, 1, memory_order_relaxed);
   h8_span_notify(owner, span);
   return H8_PUBLISH_OK;

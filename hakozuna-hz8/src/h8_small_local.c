@@ -2,6 +2,11 @@
 
 #include <string.h>
 #include <sched.h>
+#include <stdlib.h>
+
+static void h8_fail_invalid_free(void) {
+  atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+}
 
 static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                       H8Span* span, uint32_t class_id) {
@@ -121,7 +126,7 @@ void h8_free_inner(void* ptr) {
   size_t slot = 0;
   H8Span* span = h8_span_from_ptr_checked(ptr, &slot);
   if (!span) {
-    atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+    h8_fail_invalid_free();
     return;
   }
   H8OwnerRecord* owner = h8_owner_current();
@@ -138,5 +143,5 @@ void h8_free_inner(void* ptr) {
     }
     sched_yield();
   }
-  atomic_fetch_add_explicit(&h8g.invalid_count, 1, memory_order_relaxed);
+  h8_fail_invalid_free();
 }
