@@ -12,7 +12,7 @@ HZ8 adoption path is being implemented in this order:
 
 Current focus:
 
-- `RegularAdoptionDryRun-L1`
+- `RegularAdoption-L1`
 
 Rules:
 

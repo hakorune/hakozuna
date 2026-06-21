@@ -48,20 +48,21 @@ static bool h8_span_quiescent_for_adoption(const H8Span* span) {
          atomic_load_explicit(&span->publish_closed, memory_order_acquire) != 0;
 }
 
-void h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
+bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   H8OwnerRecord* orphan = h8_orphan_owner();
   if (!adopter || adopter == orphan) {
-    return;
+    return false;
   }
 
   H8CtlWord ctl = h8_ctl_unpack(atomic_load_explicit(&adopter->control, memory_order_acquire));
   if (ctl.state != H8_OWNER_ALIVE || ctl.publish_closed) {
     atomic_fetch_add_explicit(&h8g.adoption_dry_run_target_closed_count,
                               1, memory_order_relaxed);
-    return;
+    return false;
   }
 
   bool saw_span = false;
+  bool saw_candidate = false;
 
   pthread_mutex_lock(&orphan->owned_lock);
   for (H8Span* span = orphan->orphan_head; span; span = span->next_orphan) {
@@ -78,6 +79,7 @@ void h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
     H8OwnerWord word = h8_span_owner_word_load(span);
     H8SpanState state = (H8SpanState)word.state;
     if (state == H8_SPAN_OWNED_ACTIVE || state == H8_SPAN_ORPHAN_READY) {
+      saw_candidate = true;
       atomic_fetch_add_explicit(&h8g.adoption_dry_run_candidate_count, 1,
                                 memory_order_relaxed);
       if (h8_span_quiescent_for_adoption(span)) {
@@ -98,6 +100,8 @@ void h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   if (!saw_span) {
     atomic_fetch_add_explicit(&h8g.adoption_dry_run_empty_count, 1, memory_order_relaxed);
   }
+
+  return saw_candidate;
 }
 
 H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {

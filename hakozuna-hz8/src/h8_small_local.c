@@ -81,8 +81,9 @@ void* h8_malloc_inner(size_t size) {
   h8_pressure_owner_collect(owner);
   span = h8_find_active_span(owner, class_id);
   if (!span) {
-    h8_orphan_adoption_dry_run(owner, class_id);
-    span = h8_orphan_adopt_span(owner, class_id);
+    if (h8_orphan_adoption_dry_run(owner, class_id)) {
+      span = h8_orphan_adopt_span(owner, class_id);
+    }
   }
   if (!span) {
     span = h8_span_commit_for_class(owner, class_id);
