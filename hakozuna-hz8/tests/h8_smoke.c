@@ -26,6 +26,17 @@ static void* orphan_source(void* arg) {
   return p;
 }
 
+static void* adoption_roundtrip(void* arg) {
+  size_t size = *(size_t*)arg;
+  void* p = h8_malloc(size);
+  if (!p) {
+    return (void*)1;
+  }
+  memset(p, 0xC3, size);
+  h8_free(p);
+  return NULL;
+}
+
 int main(void) {
   const char* mode = getenv("H8_SMOKE_REGULAR_ADOPTION");
   int enable_regular_adoption = !(mode && mode[0] == '0');
@@ -97,6 +108,51 @@ int main(void) {
     fprintf(stderr, "route invalid for adopted alloc\n");
     return 13;
   }
+
+  if (enable_regular_adoption) {
+    const int rounds = 32;
+    size_t size = 128;
+    H8Stats before_roundtrip = h8_stats();
+    H8DebugStats before_dbg = h8_debug_stats();
+    for (int i = 0; i < rounds; ++i) {
+      pthread_t src;
+      if (pthread_create(&src, NULL, orphan_source, NULL) != 0) {
+        perror("pthread_create source");
+        return 16;
+      }
+      void* round_orphan = NULL;
+      if (pthread_join(src, &round_orphan) != 0) {
+        perror("pthread_join source");
+        return 17;
+      }
+      if (!round_orphan || round_orphan == (void*)1) {
+        fprintf(stderr, "round source alloc failed\n");
+        return 18;
+      }
+
+      pthread_t round_adopter;
+      if (pthread_create(&round_adopter, NULL, adoption_roundtrip, &size) != 0) {
+        perror("pthread_create adopter");
+        return 19;
+      }
+      if (pthread_join(round_adopter, NULL) != 0) {
+        perror("pthread_join adopter");
+        return 20;
+      }
+      h8_free(round_orphan);
+    }
+    H8Stats after_roundtrip = h8_stats();
+    H8DebugStats after_dbg = h8_debug_stats();
+    if (after_dbg.adoption_success_count != before_dbg.adoption_success_count + (size_t)rounds) {
+      fprintf(stderr, "adoption roundtrip count mismatch\n");
+      return 21;
+    }
+    if (after_roundtrip.small_span_count != before_roundtrip.small_span_count + (size_t)rounds) {
+      fprintf(stderr, "adoption roundtrip span count mismatch\n");
+      return 22;
+    }
+  }
+
   h8_free(orphan_ptr);
   if (h8_route(orphan_ptr) == H8_ROUTE_VALID) {
     fprintf(stderr, "route still valid after orphan free\n");
