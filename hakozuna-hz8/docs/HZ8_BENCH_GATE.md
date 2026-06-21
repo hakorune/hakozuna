@@ -3,6 +3,9 @@
 HZ8 must use median-based gates and stability gates from the first runnable
 version.  Single-row wins are not promotion evidence.
 
+For a design-level allocator comparison matrix, see
+[`ALLOCATOR_MATRIX.md`](ALLOCATOR_MATRIX.md).
+
 ## Common Rules
 
 Use:
