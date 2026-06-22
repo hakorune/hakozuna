@@ -127,9 +127,10 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   return NULL;
 }
 
-static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
+static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
+                                   uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
-  H8Span* hint = owner->active_spans[class_id];
+  H8Span* hint = ctx->active_spans[class_id];
   bool hint_full = false;
   if (!hint) {
     H8_DEBUG_INC(local_active_hint_null);
@@ -185,7 +186,7 @@ void* h8_malloc_inner(size_t size) {
   }
   uint32_t class_id = h8_class_for_size(size);
   H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
-  H8Span* span = owner->active_spans[class_id];
+  H8Span* span = ctx->active_spans[class_id];
   if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
       span->owner_generation == owner->generation &&
       h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
@@ -196,11 +197,11 @@ void* h8_malloc_inner(size_t size) {
     }
   }
   H8_DEBUG_INC(local_active_miss);
-  span = h8_find_active_span(owner, class_id);
+  span = h8_find_active_span(ctx, owner, class_id);
   if (!span) {
     H8_DEBUG_INC(local_slow_collect);
     h8_pressure_owner_collect(owner);
-    span = h8_find_active_span(owner, class_id);
+    span = h8_find_active_span(ctx, owner, class_id);
   }
   if (!span && h8_regular_adoption_enabled() &&
       atomic_load_explicit(&h8g.orphan_span_count, memory_order_acquire) > 0) {
@@ -214,11 +215,12 @@ void* h8_malloc_inner(size_t size) {
     H8_DEBUG_INC(invalid_count);
     return NULL;
   }
-  owner->active_spans[class_id] = span;
+  ctx->active_spans[class_id] = span;
   return h8_small_alloc_from_span(ctx, owner, span, class_id);
 }
 
-static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
+static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
+                          size_t slot) {
   if (span->owner_slot != owner->slot ||
       span->owner_generation != owner->generation) {
     H8_DEBUG_INC(local_free_reject_owner);
@@ -269,8 +271,8 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   }
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
-  if (owner->active_spans[span->class_id] != span) {
-    owner->active_spans[span->class_id] = span;
+  if (ctx->active_spans[span->class_id] != span) {
+    ctx->active_spans[span->class_id] = span;
   }
   return true;
 }
@@ -291,8 +293,13 @@ void h8_free_inner(void* ptr) {
     h8_fail_invalid_free();
     return;
   }
-  H8OwnerRecord* owner = h8_owner_current();
-  if (h8_local_free(owner, span, slot)) {
+  H8ThreadCtx* ctx = h8_thread_ctx_get();
+  if (!ctx) {
+    h8_fail_invalid_free();
+    return;
+  }
+  H8OwnerRecord* owner = ctx && ctx->owner ? ctx->owner : h8_orphan_owner();
+  if (h8_local_free(ctx, owner, span, slot)) {
     return;
   }
   for (;;) {

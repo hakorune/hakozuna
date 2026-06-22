@@ -108,9 +108,6 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     } else {
       h8_owner_quiesce_span(span);
       H8OwnerWord expected = h8_span_owner_word_load(span);
-      if (owner->active_spans[span->class_id] == span) {
-        owner->active_spans[span->class_id] = NULL;
-      }
       if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
         H8_DEBUG_INC(invalid_count);
         abort();
