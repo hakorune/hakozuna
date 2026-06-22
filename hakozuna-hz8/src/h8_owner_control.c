@@ -25,6 +25,8 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   owner->pending_carry = NULL;
   owner->owned_head = NULL;
   owner->orphan_head = NULL;
+  owner->span_chunk_next = 0;
+  owner->span_chunk_end = 0;
   for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {
     owner->orphan_by_class[i] = NULL;
   }

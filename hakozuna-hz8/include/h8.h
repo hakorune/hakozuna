@@ -161,6 +161,13 @@ typedef struct H8DebugStats {
   size_t span_retire_lock_wait_ns;
   size_t span_retire_madvise_ns;
   size_t span_retire_meta_free_ns;
+  size_t span_purge_run_count;
+  size_t span_purge_run_spans_total;
+  size_t span_purge_run_max;
+  size_t span_purge_singleton_runs;
+  size_t span_purge_madvise_calls;
+  size_t span_purge_madvise_bytes;
+  size_t span_purge_madvise_ns;
   size_t slot_shadow_valid_mismatch;
   size_t slot_shadow_invalid_mismatch;
   size_t slot_shadow_pending_nonallocated;

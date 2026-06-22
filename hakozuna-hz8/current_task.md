@@ -4,14 +4,14 @@
 
 Current focus:
 
-- `SpanRetireTail-L1`
+- `OwnerSpanChunkPlacement-L1`
 
 Immediate goal:
 
-- Remove the phase-separated remote90 lifecycle tail caused by serializing
-  every span retire behind `h8_span_table_lock`.
-- Keep the lock only around span-table unlink and `RETIRED` publication.
-- Move `madvise` and metadata free outside the global lock.
+- Make owner-owned spans physically adjacent so owner-exit purge can batch
+  larger payload ranges.
+- Reserve span indices in owner-local chunks on malloc slow path.
+- Keep v0 monotonic span allocation and avoid hot-path profile branches.
 
 Current evidence:
 
@@ -56,6 +56,32 @@ Current evidence:
     `11.4ms`.
   - release interleaved remote90 remains healthy in the quick check:
     median `24.1M ops/s`, RSS median `16.0 MiB`.
+- Design review selected `SpanRetireBatchMadvise-L1` next:
+  logical retire is the correctness boundary, while physical page return can
+  be batched within owner exit.  Metadata is outside the payload arena and can
+  stay alive until batch purge completes.
+- Added purge shape counters:
+  `span_purge_run_count`, `span_purge_run_spans_total`,
+  `span_purge_run_max`, `span_purge_singleton_runs`,
+  `span_purge_madvise_calls`, `span_purge_madvise_bytes`,
+  `span_purge_madvise_ns`.
+- Natural batching result:
+  - debug phase-separated remote90 had `avg_spans_per_run ~= 1.03`.
+  - `madvise_calls` remained about `88089` for `90886` retired spans.
+  - release phase-separated remote90 stayed around `4.67M ops/s`, so natural
+    owner-list batching is not enough.
+- `OwnerSpanChunkPlacement-L1` now reserves `32` span indices per owner chunk.
+  This should reduce global cursor RMWs and create longer contiguous ranges for
+  owner-exit batch purge without changing the hot malloc/free leaf shape.
+- `OwnerSpanChunkPlacement-L1` first result:
+  - debug phase-separated remote90: `avg_spans_per_run ~= 31.6`,
+    `madvise_calls = 2876` for `90886` retired spans.
+  - debug `span_retire_madvise_ms` dropped from about `3429` to about `2491`.
+  - release phase-separated remote90, `RUNS=10`, `T=16`, `iters=100000`:
+    median `5.69M ops/s`, alloc phase median `200.7ms`, remote phase median
+    `11.3ms`.
+  - release local0 quick check: median `136.0M ops/s`.
+  - release interleaved remote90 quick check: median `28.3M ops/s`.
 - `RemoteSpanScanAudit-L1` found remote90 was wasting work on full span scans.
 - `FullHintNoPendingScanSkip-L1` removed that scan in the bench shape:
   `scan_span` went from millions to zero.

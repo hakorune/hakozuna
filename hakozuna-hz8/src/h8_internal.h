@@ -12,6 +12,7 @@
 #define H8_SPAN_BYTES 65536u
 #define H8_MAX_SMALL_SIZE 4096u
 #define H8_OWNER_MAX 64u
+#define H8_OWNER_SPAN_CHUNK 32u
 #define H8_CLASS_COUNT 9u
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
 
@@ -108,6 +109,8 @@ struct H8OwnerRecord {
   H8Span* owned_head;
   H8Span* orphan_head;
   H8Span* orphan_by_class[H8_CLASS_COUNT];
+  size_t span_chunk_next;
+  size_t span_chunk_end;
   pthread_mutex_t owned_lock;
   pthread_mutex_t pending_lock;
   struct H8OwnerRecord* free_next;
@@ -257,6 +260,13 @@ typedef struct H8Global {
   atomic_size_t span_retire_lock_wait_ns;
   atomic_size_t span_retire_madvise_ns;
   atomic_size_t span_retire_meta_free_ns;
+  atomic_size_t span_purge_run_count;
+  atomic_size_t span_purge_run_spans_total;
+  atomic_size_t span_purge_run_max;
+  atomic_size_t span_purge_singleton_runs;
+  atomic_size_t span_purge_madvise_calls;
+  atomic_size_t span_purge_madvise_bytes;
+  atomic_size_t span_purge_madvise_ns;
   atomic_size_t slot_shadow_valid_mismatch;
   atomic_size_t slot_shadow_invalid_mismatch;
   atomic_size_t slot_shadow_pending_nonallocated;
@@ -625,6 +635,8 @@ void h8_thread_shutdown(void* arg);
 H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out);
 H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id);
 void h8_span_retire(H8Span* span);
+H8Span* h8_span_retire_logical(H8Span* span);
+void h8_span_purge_retired_batch(H8Span* spans);
 void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span);
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span);
 void h8_pressure_owner_collect(H8OwnerRecord* owner);

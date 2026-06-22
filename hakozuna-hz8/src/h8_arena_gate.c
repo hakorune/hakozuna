@@ -29,18 +29,34 @@ static H8Span* h8_alloc_span_meta(void) {
   return span;
 }
 
+static size_t h8_owner_next_span_index(H8OwnerRecord* owner) {
+  if (owner->span_chunk_next < owner->span_chunk_end) {
+    return owner->span_chunk_next++;
+  }
+  size_t start = atomic_fetch_add_explicit(&h8g.span_alloc_cursor,
+                                           H8_OWNER_SPAN_CHUNK,
+                                           memory_order_relaxed);
+  size_t end = start + H8_OWNER_SPAN_CHUNK;
+  if (end > h8g.span_count) {
+    end = h8g.span_count;
+  }
+  owner->span_chunk_next = start + 1u;
+  owner->span_chunk_end = end;
+  return start;
+}
+
 static void h8_span_commit_memory(H8Span* span) {
   (void)span;
   atomic_fetch_add_explicit(&h8g.arena_committed_bytes, H8_SPAN_BYTES,
                             memory_order_relaxed);
 }
 
-static void h8_span_decommit_memory(H8Span* span) {
-  if (madvise(span->base, H8_SPAN_BYTES, MADV_DONTNEED) != 0) {
+static void h8_span_decommit_range(void* base, size_t bytes) {
+  if (madvise(base, bytes, MADV_DONTNEED) != 0) {
     perror("madvise");
     abort();
   }
-  atomic_fetch_sub_explicit(&h8g.arena_committed_bytes, H8_SPAN_BYTES,
+  atomic_fetch_sub_explicit(&h8g.arena_committed_bytes, bytes,
                             memory_order_relaxed);
 }
 
@@ -49,8 +65,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t total_start = h8_debug_now_ns();
 #endif
-  size_t i =
-      atomic_fetch_add_explicit(&h8g.span_alloc_cursor, 1, memory_order_relaxed);
+  size_t i = h8_owner_next_span_index(owner);
   if (i >= h8g.span_count) {
     return NULL;
   }
@@ -119,9 +134,9 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   return span;
 }
 
-void h8_span_retire(H8Span* span) {
+H8Span* h8_span_retire_logical(H8Span* span) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
-    return;
+    return NULL;
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t total_start = h8_debug_now_ns();
@@ -135,7 +150,7 @@ void h8_span_retire(H8Span* span) {
   size_t index = h8_span_index_from_ptr(span->base);
   if (h8_span_state_load(span) == H8_SPAN_RETIRED) {
     pthread_mutex_unlock(&h8_span_table_lock);
-    return;
+    return NULL;
   }
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_release);
   if (index < h8g.span_count &&
@@ -144,13 +159,14 @@ void h8_span_retire(H8Span* span) {
   }
   pthread_mutex_unlock(&h8_span_table_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
-  uint64_t madvise_start = h8_debug_now_ns();
+  H8_DEBUG_INC(span_retire_count);
+  H8_DEBUG_ADD(span_retire_total_ns,
+               (size_t)(h8_debug_now_ns() - total_start));
 #endif
-  h8_span_decommit_memory(span);
-#if defined(H8_ENABLE_DEBUG_STATS)
-  H8_DEBUG_ADD(span_retire_madvise_ns,
-               (size_t)(h8_debug_now_ns() - madvise_start));
-#endif
+  return span;
+}
+
+static void h8_span_free_retired_meta(H8Span* span) {
   span->next_owned = NULL;
   span->next_owned_class = NULL;
   span->next_orphan = NULL;
@@ -168,11 +184,76 @@ void h8_span_retire(H8Span* span) {
   H8_DEBUG_ADD(span_retire_meta_free_ns,
                (size_t)(h8_debug_now_ns() - free_start));
 #endif
+}
+
+static void h8_span_record_purge_run(size_t spans) {
 #if defined(H8_ENABLE_DEBUG_STATS)
-  H8_DEBUG_INC(span_retire_count);
-  H8_DEBUG_ADD(span_retire_total_ns,
-               (size_t)(h8_debug_now_ns() - total_start));
+  H8_DEBUG_INC(span_purge_run_count);
+  H8_DEBUG_ADD(span_purge_run_spans_total, spans);
+  if (spans == 1) {
+    H8_DEBUG_INC(span_purge_singleton_runs);
+  }
+  size_t cur = atomic_load_explicit(&h8g.span_purge_run_max, memory_order_relaxed);
+  while (spans > cur &&
+         !atomic_compare_exchange_weak_explicit(&h8g.span_purge_run_max, &cur,
+                                                spans, memory_order_relaxed,
+                                                memory_order_relaxed)) {
+  }
+#else
+  (void)spans;
 #endif
+}
+
+static void h8_span_purge_range(uint8_t* base, size_t spans) {
+  size_t bytes = spans * H8_SPAN_BYTES;
+  h8_span_record_purge_run(spans);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t madvise_start = h8_debug_now_ns();
+#endif
+  h8_span_decommit_range(base, bytes);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  size_t elapsed = (size_t)(h8_debug_now_ns() - madvise_start);
+  H8_DEBUG_INC(span_purge_madvise_calls);
+  H8_DEBUG_ADD(span_purge_madvise_bytes, bytes);
+  H8_DEBUG_ADD(span_purge_madvise_ns, elapsed);
+  H8_DEBUG_ADD(span_retire_madvise_ns, elapsed);
+#endif
+}
+
+void h8_span_purge_retired_batch(H8Span* spans) {
+  uint8_t* run_base = NULL;
+  size_t run_spans = 0;
+  H8Span* span = spans;
+  while (span) {
+    H8Span* next = span->next_owned;
+    uint8_t* base = span->base;
+    if (!run_base) {
+      run_base = base;
+      run_spans = 1;
+    } else if (base + H8_SPAN_BYTES == run_base) {
+      run_base = base;
+      ++run_spans;
+    } else if (run_base + run_spans * H8_SPAN_BYTES == base) {
+      ++run_spans;
+    } else {
+      h8_span_purge_range(run_base, run_spans);
+      run_base = base;
+      run_spans = 1;
+    }
+    h8_span_free_retired_meta(span);
+    span = next;
+  }
+  if (run_base) {
+    h8_span_purge_range(run_base, run_spans);
+  }
+}
+
+void h8_span_retire(H8Span* span) {
+  H8Span* retired = h8_span_retire_logical(span);
+  if (retired) {
+    retired->next_owned = NULL;
+    h8_span_purge_retired_batch(retired);
+  }
 }
 
 H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {

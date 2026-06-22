@@ -633,6 +633,20 @@ int main(int argc, char** argv) {
          (double)debug.span_retire_lock_wait_ns / 1e6,
          (double)debug.span_retire_madvise_ns / 1e6,
          (double)debug.span_retire_meta_free_ns / 1e6);
+  double purge_avg =
+      debug.span_purge_run_count
+          ? (double)debug.span_purge_run_spans_total /
+                (double)debug.span_purge_run_count
+          : 0.0;
+  printf("span_purge runs=%zu spans=%zu avg_spans_per_run=%.3f max_run=%zu singleton_runs=%zu madvise_calls=%zu madvise_bytes=%zu madvise_ms=%.3f\n",
+         debug.span_purge_run_count,
+         debug.span_purge_run_spans_total,
+         purge_avg,
+         debug.span_purge_run_max,
+         debug.span_purge_singleton_runs,
+         debug.span_purge_madvise_calls,
+         debug.span_purge_madvise_bytes,
+         (double)debug.span_purge_madvise_ns / 1e6);
   printf("slot_shadow valid_mismatch=%zu invalid_mismatch=%zu pending_nonallocated=%zu free_unreachable=%zu free_duplicate=%zu free_cycle=%zu bad_next=%zu never_used_below_bump=%zu nonvirgin_above_bump=%zu used_mismatch=%zu reserved_quiescent=%zu\n",
          debug.slot_shadow_valid_mismatch,
          debug.slot_shadow_invalid_mismatch,

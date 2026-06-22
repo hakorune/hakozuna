@@ -464,6 +464,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.span_retire_madvise_ns, memory_order_acquire);
   out->span_retire_meta_free_ns =
       atomic_load_explicit(&h8g.span_retire_meta_free_ns, memory_order_acquire);
+  out->span_purge_run_count =
+      atomic_load_explicit(&h8g.span_purge_run_count, memory_order_acquire);
+  out->span_purge_run_spans_total =
+      atomic_load_explicit(&h8g.span_purge_run_spans_total, memory_order_acquire);
+  out->span_purge_run_max =
+      atomic_load_explicit(&h8g.span_purge_run_max, memory_order_acquire);
+  out->span_purge_singleton_runs =
+      atomic_load_explicit(&h8g.span_purge_singleton_runs, memory_order_acquire);
+  out->span_purge_madvise_calls =
+      atomic_load_explicit(&h8g.span_purge_madvise_calls, memory_order_acquire);
+  out->span_purge_madvise_bytes =
+      atomic_load_explicit(&h8g.span_purge_madvise_bytes, memory_order_acquire);
+  out->span_purge_madvise_ns =
+      atomic_load_explicit(&h8g.span_purge_madvise_ns, memory_order_acquire);
   out->slot_shadow_valid_mismatch =
       atomic_load_explicit(&h8g.slot_shadow_valid_mismatch, memory_order_acquire);
   out->slot_shadow_invalid_mismatch =
