@@ -4,14 +4,13 @@
 
 Current focus:
 
-- `PendingWordMaskAuthority-L1`
+- `RemoteClaimCloseOrdering-L1`
 
 Immediate goal:
 
-- Remove release hot-path `pending_count` RMW.
-- Keep `pending_count` only in debug builds as shadow accounting.
-- Use `pending_bits + pending_word_mask + qstate DIRTY` as the runtime pending
-  authority.
+- Close the collector-side remote claim before clearing pending bits.
+- For slot-state authority, publish `FREE` before pending bit clear.
+- Keep free-list head publication last.
 
 Current evidence:
 
@@ -97,6 +96,11 @@ Current evidence:
     `9 MiB`.
   - phase-separated remote90 passes with median about `1.16M ops/s`.
   - no RSS leak is visible in these rows.
+- `RemoteClaimCloseOrdering-L1` remains the next v0 hard gate before treating
+  small remote as closed.
+- `RemoteClaimCloseOrdering-L1` now publishes slot-state FREE before pending
+  clear when slot-state authority is enabled.  Both default and slot-authority
+  debug interleaved rows keep the existing zero gates clean.
 
 Current measured baseline:
 
@@ -212,11 +216,16 @@ Current measured baseline:
      checks.
 
 13. `PendingWordMaskAuthority-L1`
-   - implemented; under measurement.
+   - completed.
    - remove release per-object pending_count RMW.
    - keep debug shadow count.
 
-14. `IntrusiveRemoteHead-L1`
+14. `RemoteClaimCloseOrdering-L1`
+   - implemented; under measurement.
+   - ensure collector publishes non-allocated state before clearing pending
+     claim bits.
+
+15. `IntrusiveRemoteHead-L1`
    - HOLD.
    - only revisit if mask-authority data shows collect CPU still dominates.
 
@@ -448,6 +457,33 @@ Current measured baseline:
   - the measured 2-thread interleaved row is noisy and not yet a clear
     throughput win; keep the change because it removes an invalid production
     dependency on count authority.
+
+### RemoteClaimCloseOrdering-L1
+
+- Problem:
+  - pending bitmap is the remote/remote duplicate claim truth.
+  - if collector clears pending before publishing a non-allocated slot state,
+    a stale producer can observe ALLOCATED and re-claim the same object.
+- Required ordering for slot-state authority:
+  - validate `ALLOCATED`
+  - publish `FREE(next)`
+  - clear pending bit
+  - publish free-list head
+- Non-slot-state release mode:
+  - live bit remains allocation authority.
+  - live clear already happens before pending clear.
+- Scope:
+  - single-slot remote collect
+  - bulk word remote collect
+  - no intrusive remote head changes in this box.
+- Current checks:
+  - default smoke passes.
+  - slot-state authority smoke passes.
+  - regular adoption smoke passes.
+  - default debug interleaved remote90 passes.
+  - slot-state authority debug interleaved remote90 passes.
+  - release interleaved remote90 passes, representative median about
+    `11.4M ops/s`.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

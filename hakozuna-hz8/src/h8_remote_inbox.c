@@ -164,6 +164,11 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
       abort();
     }
   }
+  uint32_t old_head = atomic_load_explicit(&span->local_free_head,
+                                           memory_order_relaxed);
+  if (slot_authority && h8_slot_shadow_active(slot_authority)) {
+    h8_slot_shadow_set_free(span, slot, old_head);
+  }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
   if ((old_pending & bit) == 0) {
@@ -171,13 +176,11 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
     abort();
   }
   h8_pending_count_dec(span);
-  uint32_t old_head = atomic_load_explicit(&span->local_free_head,
-                                           memory_order_relaxed);
   if (!slot_authority) {
     span->next_free[slot] = old_head;
-  }
-  if (h8_slot_shadow_active(slot_authority)) {
-    h8_slot_shadow_set_free(span, slot, old_head);
+    if (h8_slot_shadow_active(slot_authority)) {
+      h8_slot_shadow_set_free(span, slot, old_head);
+    }
   }
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
                         memory_order_release);
@@ -220,6 +223,20 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       abort();
     }
   }
+  uint32_t head = atomic_load_explicit(&span->local_free_head, memory_order_relaxed);
+  if (slot_authority) {
+    uint64_t slots = claimed;
+    while (slots) {
+      uint64_t bit = slots & (~slots + 1ull);
+      size_t bit_index = (size_t)__builtin_ctzll(slots);
+      size_t slot = (word_index << 6u) + bit_index;
+      slots ^= bit;
+      if (h8_slot_shadow_active(slot_authority)) {
+        h8_slot_shadow_set_free(span, slot, head);
+      }
+      head = (uint32_t)slot;
+    }
+  }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
   if ((old_pending & claimed) != claimed) {
@@ -227,20 +244,19 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     abort();
   }
 
-  uint32_t head = atomic_load_explicit(&span->local_free_head, memory_order_relaxed);
-  uint64_t slots = claimed;
-  while (slots) {
-    uint64_t bit = slots & (~slots + 1ull);
-    size_t bit_index = (size_t)__builtin_ctzll(slots);
-    size_t slot = (word_index << 6u) + bit_index;
-    slots ^= bit;
-    if (!slot_authority) {
+  if (!slot_authority) {
+    uint64_t slots = claimed;
+    while (slots) {
+      uint64_t bit = slots & (~slots + 1ull);
+      size_t bit_index = (size_t)__builtin_ctzll(slots);
+      size_t slot = (word_index << 6u) + bit_index;
+      slots ^= bit;
       span->next_free[slot] = head;
+      if (h8_slot_shadow_active(slot_authority)) {
+        h8_slot_shadow_set_free(span, slot, head);
+      }
+      head = (uint32_t)slot;
     }
-    if (h8_slot_shadow_active(slot_authority)) {
-      h8_slot_shadow_set_free(span, slot, head);
-    }
-    head = (uint32_t)slot;
   }
   atomic_store_explicit(&span->local_free_head, head, memory_order_release);
   h8_pending_count_sub(span, count);
