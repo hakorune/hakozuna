@@ -42,6 +42,11 @@ typedef struct H8BenchThread {
   int error;
 } H8BenchThread;
 
+typedef struct H8MemorySample {
+  size_t rss_bytes;
+  size_t hwm_bytes;
+} H8MemorySample;
+
 static uint32_t h8_rng_next(uint32_t* state) {
   uint32_t x = *state;
   x ^= x << 13;
@@ -82,20 +87,23 @@ static uint64_t h8_now_ns(void) {
   return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
 }
 
-static size_t h8_read_rss_bytes(void) {
+static H8MemorySample h8_read_memory_sample(void) {
+  H8MemorySample sample = {0, 0};
   FILE* f = fopen("/proc/self/status", "r");
   if (!f) {
-    return 0;
+    return sample;
   }
   char line[256];
-  size_t rss_kib = 0;
   while (fgets(line, sizeof(line), f)) {
-    if (sscanf(line, "VmRSS: %zu kB", &rss_kib) == 1) {
-      break;
+    size_t kib = 0;
+    if (sscanf(line, "VmRSS: %zu kB", &kib) == 1) {
+      sample.rss_bytes = kib * 1024u;
+    } else if (sscanf(line, "VmHWM: %zu kB", &kib) == 1) {
+      sample.hwm_bytes = kib * 1024u;
     }
   }
   fclose(f);
-  return rss_kib * 1024u;
+  return sample;
 }
 
 static int h8_spsc_push(H8Inbox* inbox, void* ptr) {
@@ -338,16 +346,18 @@ int main(int argc, char** argv) {
 
   double* throughput = calloc((size_t)opt.runs, sizeof(*throughput));
   size_t* rss = calloc((size_t)opt.runs, sizeof(*rss));
+  size_t* peak_rss = calloc((size_t)opt.runs, sizeof(*peak_rss));
   double* alloc_phase_ms = calloc((size_t)opt.runs, sizeof(*alloc_phase_ms));
   double* remote_phase_ms = calloc((size_t)opt.runs, sizeof(*remote_phase_ms));
   size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
   size_t* span_lower_bound = calloc((size_t)opt.runs, sizeof(*span_lower_bound));
   size_t* remote_live_objects = calloc((size_t)opt.runs, sizeof(*remote_live_objects));
-  if (!throughput || !rss || !alloc_phase_ms || !remote_phase_ms ||
+  if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
       !minor_faults || !span_lower_bound || !remote_live_objects) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
+    free(peak_rss);
     free(alloc_phase_ms);
     free(remote_phase_ms);
     free(minor_faults);
@@ -369,6 +379,7 @@ int main(int argc, char** argv) {
       free(done);
       free(throughput);
       free(rss);
+      free(peak_rss);
       free(alloc_phase_ms);
       free(remote_phase_ms);
       free(minor_faults);
@@ -443,14 +454,17 @@ int main(int argc, char** argv) {
       }
     }
     throughput[run] = ops / seconds;
-    rss[run] = h8_read_rss_bytes();
+    H8MemorySample mem = h8_read_memory_sample();
+    rss[run] = mem.rss_bytes;
+    peak_rss[run] = mem.hwm_bytes;
     span_lower_bound[run] = lower;
     remote_live_objects[run] = live_objects;
     long minflt_delta = usage_after.ru_minflt - usage_before.ru_minflt;
     minor_faults[run] = minflt_delta > 0 ? (size_t)minflt_delta : 0;
     alloc_phase_ms[run] = (double)alloc_ns_max / 1e6;
     remote_phase_ms[run] = (double)remote_ns_max / 1e6;
-    printf("run=%d ops/s=%.3f rss=%zu\n", run + 1, throughput[run], rss[run]);
+    printf("run=%d ops/s=%.3f post_rss=%zu peak_rss=%zu\n",
+           run + 1, throughput[run], rss[run], peak_rss[run]);
     if (!opt.interleaved) {
       printf("run_phase=%d alloc_ms=%.3f remote_ms=%.3f\n", run + 1,
              alloc_phase_ms[run], remote_phase_ms[run]);
@@ -467,6 +481,7 @@ int main(int argc, char** argv) {
 
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), h8_cmp_double);
   qsort(rss, (size_t)opt.runs, sizeof(*rss), h8_cmp_size_t);
+  qsort(peak_rss, (size_t)opt.runs, sizeof(*peak_rss), h8_cmp_size_t);
   qsort(minor_faults, (size_t)opt.runs, sizeof(*minor_faults), h8_cmp_size_t);
   qsort(span_lower_bound, (size_t)opt.runs, sizeof(*span_lower_bound), h8_cmp_size_t);
   qsort(remote_live_objects, (size_t)opt.runs, sizeof(*remote_live_objects),
@@ -482,9 +497,12 @@ int main(int argc, char** argv) {
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
          h8_percentile(throughput, (size_t)opt.runs, 0.75),
          throughput[0], throughput[(size_t)opt.runs - 1u]);
-  printf("rss median=%zu min=%zu max=%zu\n",
+  printf("post_rss median=%zu min=%zu max=%zu\n",
          h8_percentile_size_t(rss, (size_t)opt.runs, 0.50),
          rss[0], rss[(size_t)opt.runs - 1u]);
+  printf("peak_rss median=%zu min=%zu max=%zu source=VmHWM_process\n",
+         h8_percentile_size_t(peak_rss, (size_t)opt.runs, 0.50),
+         peak_rss[0], peak_rss[(size_t)opt.runs - 1u]);
   printf("page_faults minor_median=%zu minor_min=%zu minor_max=%zu\n",
          h8_percentile_size_t(minor_faults, (size_t)opt.runs, 0.50),
          minor_faults[0], minor_faults[(size_t)opt.runs - 1u]);
@@ -717,6 +735,7 @@ int main(int argc, char** argv) {
 
   free(throughput);
   free(rss);
+  free(peak_rss);
   free(alloc_phase_ms);
   free(remote_phase_ms);
   free(minor_faults);

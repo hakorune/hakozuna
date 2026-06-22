@@ -4,70 +4,70 @@
 
 Current focus:
 
-- `SmallPointerIdentityShift-L1`
+- `TaggedSlotStateReleaseCutover-L1`
 
 Immediate goal:
 
-- Treat interior and misaligned small pointers as `INVALID`.
-- Replace runtime class-size division in pointer-to-slot classification with
-  power-of-two shift/mask arithmetic.
-- Keep `MISS` limited to pointers outside the HZ8 arena.
+- Promote slot-state authority from opt-in to release default.
+- Remove live bitmap / `next_free` from release metadata.
+- Keep live bitmap only as debug shadow.
+- Remove runtime authority flag loads from the hot leaf where possible.
 
 Why this is first:
 
-- HZ8's contract says owned-looking interior pointers must not fall through to
-  the platform allocator.
+- `SmallPointerIdentityShift-L1` is complete:
+  route/local/remote lookup now reject misaligned/interior slot pointers and
+  use shift/mask slot arithmetic.
+- `BenchLanePeakRssContract-L1` is complete:
+  bench output now reports `post_rss` from `VmRSS` and `peak_rss` from
+  process `VmHWM`.
+- First peak RSS check shows phase-separated remote90 is a peak-live stress:
+  `post_rss ~= 25 MiB` while `peak_rss ~= 1.87 GiB`.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not README `main_*` (`16..32768`).
-- Current RSS readings are post-owner-exit/post-purge `VmRSS`, not peak RSS.
-  Peak RSS needs a separate `VmHWM`/child-process contract.
+- `VmHWM` is process-wide high-water. Exact per-run peak still needs a
+  child-process runner, but the current output prevents post-purge RSS from
+  being mistaken for peak RSS.
 
 Implementation notes:
 
-- Add one checked slot helper used by route, local free lookup, and remote
-  publish lookup.
-- Class sizes are powers of two, so `shift = 4 + class_id`.
-- Reject `offset & ((1 << shift) - 1)` before computing `slot`.
-- Default non-slot-state route must also reject `pending` slots.
-- Default remote publish must validate live state before claiming pending.
+- Release authority target:
+  `slot_state + pending bitmap`.
+- Debug authority target:
+  slot_state authority with live bitmap shadow checks.
+- Boundary target:
+  `ALLOCATED && pending==0 -> VALID`; all other arena-internal states are
+  `INVALID`.
+- Collector ordering target:
+  publish `FREE(next)` before clearing pending.
 
 Acceptance:
 
 - `make smoke`
 - `make bench-release`
-- quick `local0` and `remote90` sanity checks
+- default and slot-state smoke rows
+- quick `local0`, interleaved remote90, and phase-separated remote90 checks
 - no source file over 800 lines
 - worktree clean after removing generated binaries
 
 ## Next
 
-1. `BenchLanePeakRssContract-L1`
-   - Split reported RSS into peak RSS (`VmHWM`/`ru_maxrss`) and post-purge
-     `VmRSS`.
-   - Document `guard_*`, phase-separated, and interleaved lanes separately.
-
-2. `TaggedSlotStateReleaseCutover-L1`
-   - Make slot-state authority the release default.
-   - Remove live bitmap / `next_free` from release metadata.
-   - Keep live bitmap only as debug shadow.
-   - Inline slot-state helpers in the hot leaf.
-
-3. `ActiveSpanRedundantStoreElision-L1`
+1. `ActiveSpanRedundantStoreElision-L1`
    - Do not rewrite the same active span on every successful fast-path alloc.
    - Update active hint only when slow path selects a new span or free changes
      the active hint.
 
-4. `TlsActiveSpanArray-L1`
+2. `TlsActiveSpanArray-L1`
    - Move `active_spans[]` from `H8OwnerRecord` to `H8ThreadCtx`.
 
-5. `RemoteLookupReuse-L1`
+3. `RemoteLookupReuse-L1`
    - Reuse the first local-free classification span/slot when falling into
      remote publish.
 
-6. `SpanHotRemoteSplit-L1`
+4. `SpanHotRemoteSplit-L1`
    - Split local hot, remote hot, and immutable span metadata cache lines after
      slot-state release shape is stable.
 
-7. `ClassFragmentationAudit-L1`
+5. `ClassFragmentationAudit-L1`
    - Measure requested live bytes, rounded live bytes, rounding ratio, and
      per-class span contribution.
