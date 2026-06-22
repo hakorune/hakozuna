@@ -133,11 +133,16 @@ void h8_span_retire(H8Span* span) {
                (size_t)(h8_debug_now_ns() - lock_start));
 #endif
   size_t index = h8_span_index_from_ptr(span->base);
-  h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
+  if (h8_span_state_load(span) == H8_SPAN_RETIRED) {
+    pthread_mutex_unlock(&h8_span_table_lock);
+    return;
+  }
+  h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_release);
   if (index < h8g.span_count &&
       atomic_load_explicit(&h8g.spans[index], memory_order_acquire) == span) {
     atomic_store_explicit(&h8g.spans[index], NULL, memory_order_release);
   }
+  pthread_mutex_unlock(&h8_span_table_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t madvise_start = h8_debug_now_ns();
 #endif
@@ -163,7 +168,6 @@ void h8_span_retire(H8Span* span) {
   H8_DEBUG_ADD(span_retire_meta_free_ns,
                (size_t)(h8_debug_now_ns() - free_start));
 #endif
-  pthread_mutex_unlock(&h8_span_table_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(span_retire_count);
   H8_DEBUG_ADD(span_retire_total_ns,

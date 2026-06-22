@@ -4,17 +4,14 @@
 
 Current focus:
 
-- `PhaseSeparatedLifecycleAudit-L1`
+- `SpanRetireTail-L1`
 
 Immediate goal:
 
-- Split phase-separated remote90 wall time into measured pieces:
-  allocation phase, remote publish phase, owner-exit tail, span-retire tail,
-  and process minor page faults.
-- Confirm whether the remaining `remote90` gap is allocator remote publish,
-  compulsory peak-live span generation, payload first-touch, or thread-exit
-  lifecycle cleanup.
-- Do not change allocator behavior in this box.
+- Remove the phase-separated remote90 lifecycle tail caused by serializing
+  every span retire behind `h8_span_table_lock`.
+- Keep the lock only around span-table unlink and `RETIRED` publication.
+- Move `madvise` and metadata free outside the global lock.
 
 Current evidence:
 
@@ -44,6 +41,21 @@ Current evidence:
     `span_retire_meta_free_ms ~= 16`.
   - conclusion: phase-separated remote90 is currently dominated by
     span-retire tail lock contention, not remote publish.
+- `SpanRetireTail-L1` follows directly from that evidence.  The lock protects
+  the global span-table slot, not the kernel `madvise` or metadata free.  Once
+  the table entry is NULL and the span state is `RETIRED`, new pointer lookup
+  cannot acquire the retiring span.
+- `SpanRetireTail-L1` first result:
+  - lock scope now covers only `RETIRED` publication and span-table unlink.
+  - debug phase-separated remote90 improved from about `2.07M` to `3.25M ops/s`.
+  - `span_retire_lock_wait_ms` dropped from about `14834` to about `248`.
+  - `span_retire_madvise_ms` is now the dominant retire subcomponent at about
+    `3099`.
+  - release phase-separated remote90, `RUNS=10`, `T=16`, `iters=100000`:
+    median `4.72M ops/s`, alloc phase median `246.2ms`, remote phase median
+    `11.4ms`.
+  - release interleaved remote90 remains healthy in the quick check:
+    median `24.1M ops/s`, RSS median `16.0 MiB`.
 - `RemoteSpanScanAudit-L1` found remote90 was wasting work on full span scans.
 - `FullHintNoPendingScanSkip-L1` removed that scan in the bench shape:
   `scan_span` went from millions to zero.
