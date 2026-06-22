@@ -9,14 +9,19 @@ Current focus:
 - `QuiescentPendingBitmapGate-L1` / MOSTLY DONE, verify before count removal
 - `RemotePublishMicrobench-L1` / DONE
 - `TailDrainPolicyAudit-L1` / DONE
+- `PerfLanePurification-L1` / DONE
 
 Immediate goal:
 
 - Keep `p2-v0` frozen as the v0 default class map.
 - Use the new release/debug attribution lanes to decide the next remote
   closeout box without adding production hot counters.
+- Treat `h8_bench_release` as the performance lane and
+  `h8_bench_release_audit` / `h8_bench` as attribution lanes.
 - Remove `pending_count` from release only after quiescent bitmap gates are
   confirmed clean.
+- Next allocator box is `TlsLeafEntryFastPath-L1`: remove repeated
+  `pthread_once` / TLS getter fixed cost from the steady malloc/free leaf.
 
 Why this is first:
 
@@ -211,9 +216,25 @@ Why this is first:
     `76ms`.
   - `live_window=1024`: peak RSS lower again, but `push_yields=108388` and
     throughput remains noisy.
-  Interpretation: reducing the benchmark live window trades RSS for producer
-  stalls and does not expose a clear allocator win.  Keep this as a bench
-  classification knob, not an allocator policy.
+	  Interpretation: reducing the benchmark live window trades RSS for producer
+	  stalls and does not expose a clear allocator win.  Keep this as a bench
+	  classification knob, not an allocator policy.
+- `PerfLanePurification-L1` is complete:
+  `bench-release` no longer compiles per-op attribution or fragmentation
+  candidate accounting.  `bench-release-audit` preserves the release-build
+  attribution lane, and debug `bench` keeps both allocator debug counters and
+  bench attribution.  Bench summaries now print `bench_attribution=0/1` and
+  `steady_work throughput_median` separately from end-to-end throughput.
+  Short verification:
+  - `bench-release` interleaved remote90, RUNS=3, 16 threads x 100k:
+    end-to-end median about `46.7M ops/s`, steady-work median about
+    `47.9M ops/s`, tail median about `15.0ms`, `push_yields=0`,
+    `fragmentation attribution=disabled`.
+  - `bench-release-audit` short run reports `bench_attribution=1` and keeps
+    fragmentation output (`rounding_ratio` about `1.33` for `16..2048`).
+  Interpretation: prior interleaved rows mixed allocator work with benchmark
+  attribution.  Future performance comparisons should use `bench-release`;
+  use audit lanes only when attribution is explicitly needed.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -256,14 +277,19 @@ Acceptance:
 
 ## Next
 
-1. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
-2. `PendingWordMaskAuthority-L1`
+1. `TlsLeafEntryFastPath-L1`
+   - steady state should load the TLS context directly
+   - slow helper handles `h8_init`, owner creation, and pthread TLS setup
+   - affects local0 and interleaved rows because every iteration enters malloc
+     and most frees still need owner context
+2. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
+3. `PendingWordMaskAuthority-L1`
    - release: no `pending_count` update/load in remote publish or collect
    - debug: keep `pending_count` as a shadow and quiescent consistency check
-3. If interleaved remains below `40M`, ask design review whether to attack:
+4. If interleaved remains below `40M`, ask design review whether to attack:
    - owner publish lease shape
    - slot-state validation duplication
    - tail drain/finish policy
    - or a dedicated remote publish microbench
-4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+5. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.

@@ -27,7 +27,9 @@ static void* h8_bench_thread_interleaved(void* arg) {
     }
 
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
+#if defined(H8_BENCH_ATTRIBUTION)
     h8_bench_note_alloc(th, size);
+#endif
     void* ptr = h8_malloc(size);
     if (!ptr) {
       th->error = 1;
@@ -102,7 +104,9 @@ static void* h8_bench_thread_main(void* arg) {
   uint64_t alloc_start = h8_now_ns();
   for (size_t i = 0; i < opt->iters_per_thread; ++i) {
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
+#if defined(H8_BENCH_ATTRIBUTION)
     uint32_t class_id = h8_bench_note_alloc(th, size);
+#endif
     void* ptr = h8_malloc(size);
     if (!ptr) {
       th->error = 1;
@@ -118,8 +122,10 @@ static void* h8_bench_thread_main(void* arg) {
         th->error = 2;
         break;
       }
+#if defined(H8_BENCH_ATTRIBUTION)
       (void)class_id;
       h8_bench_note_remote_live(th, size);
+#endif
       next_inbox->items[next_inbox->count++] = ptr;
     } else {
       h8_free(ptr);
@@ -166,6 +172,7 @@ int main(int argc, char** argv) {
   size_t* peak_rss = calloc((size_t)opt.runs, sizeof(*peak_rss));
   double* alloc_phase_ms = calloc((size_t)opt.runs, sizeof(*alloc_phase_ms));
   double* remote_phase_ms = calloc((size_t)opt.runs, sizeof(*remote_phase_ms));
+  double* work_throughput = calloc((size_t)opt.runs, sizeof(*work_throughput));
   size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
   size_t* span_lower_bound = calloc((size_t)opt.runs, sizeof(*span_lower_bound));
   size_t* remote_live_objects = calloc((size_t)opt.runs, sizeof(*remote_live_objects));
@@ -173,12 +180,14 @@ int main(int argc, char** argv) {
       calloc((size_t)opt.runs, sizeof(*upper1536_span_lower_bound));
   size_t* upper1p5_span_lower_bound =
       calloc((size_t)opt.runs, sizeof(*upper1p5_span_lower_bound));
+#if defined(H8_BENCH_ATTRIBUTION)
   uint64_t frag_requested_total = 0;
   uint64_t frag_rounded_total = 0;
   uint64_t frag_upper1536_total = 0;
   uint64_t frag_upper1p5_total = 0;
   uint64_t frag_rounded_by_class[9] = {0};
   size_t frag_allocs_by_class[9] = {0};
+#endif
   size_t interleaved_remote_enqueue_total = 0;
   size_t interleaved_local_free_total = 0;
   size_t interleaved_drain_calls_total = 0;
@@ -187,7 +196,7 @@ int main(int argc, char** argv) {
   size_t interleaved_push_yields_total = 0;
   size_t interleaved_finish_yields_total = 0;
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
-      !minor_faults || !span_lower_bound || !remote_live_objects ||
+      !work_throughput || !minor_faults || !span_lower_bound || !remote_live_objects ||
       !upper1536_span_lower_bound || !upper1p5_span_lower_bound) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
@@ -195,6 +204,7 @@ int main(int argc, char** argv) {
     free(peak_rss);
     free(alloc_phase_ms);
     free(remote_phase_ms);
+    free(work_throughput);
     free(minor_faults);
     free(span_lower_bound);
     free(remote_live_objects);
@@ -295,6 +305,7 @@ int main(int argc, char** argv) {
     size_t upper1536_lower = 0;
     size_t upper1p5_lower = 0;
     size_t live_objects = 0;
+#if defined(H8_BENCH_ATTRIBUTION)
     uint64_t run_requested = 0;
     uint64_t run_rounded = 0;
     if (!opt.interleaved) {
@@ -329,6 +340,7 @@ int main(int argc, char** argv) {
     }
     frag_requested_total += run_requested;
     frag_rounded_total += run_rounded;
+#endif
     throughput[run] = ops / seconds;
     H8MemorySample mem = h8_read_memory_sample();
     rss[run] = mem.rss_bytes;
@@ -341,6 +353,8 @@ int main(int argc, char** argv) {
     minor_faults[run] = minflt_delta > 0 ? (size_t)minflt_delta : 0;
     alloc_phase_ms[run] = (double)alloc_ns_max / 1e6;
     remote_phase_ms[run] = (double)remote_ns_max / 1e6;
+    work_throughput[run] =
+        alloc_ns_max ? ops / ((double)alloc_ns_max / 1e9) : 0.0;
     printf("run=%d ops/s=%.3f post_rss=%zu peak_rss=%zu\n",
            run + 1, throughput[run], rss[run], peak_rss[run]);
     if (!opt.interleaved) {
@@ -370,10 +384,18 @@ int main(int argc, char** argv) {
         h8_cmp_size_t);
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
+  qsort(work_throughput, (size_t)opt.runs, sizeof(*work_throughput),
+        h8_cmp_double);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d live_window=%zu class_map_id=%s\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d live_window=%zu bench_attribution=%d class_map_id=%s\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved, opt.live_window, H8_CLASS_MAP_ID);
+         opt.remote_pct, opt.interleaved, opt.live_window,
+#if defined(H8_BENCH_ATTRIBUTION)
+         1,
+#else
+         0,
+#endif
+         H8_CLASS_MAP_ID);
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
@@ -388,6 +410,10 @@ int main(int argc, char** argv) {
   printf("page_faults minor_median=%zu minor_min=%zu minor_max=%zu\n",
          h8_percentile_size_t(minor_faults, (size_t)opt.runs, 0.50),
          minor_faults[0], minor_faults[(size_t)opt.runs - 1u]);
+  printf("steady_work throughput_median=%.3f p25=%.3f p75=%.3f\n",
+         h8_percentile(work_throughput, (size_t)opt.runs, 0.50),
+         h8_percentile(work_throughput, (size_t)opt.runs, 0.25),
+         h8_percentile(work_throughput, (size_t)opt.runs, 0.75));
   if (!opt.interleaved) {
     printf("phase_ms alloc_median=%.3f remote_median=%.3f\n",
            h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
@@ -413,6 +439,7 @@ int main(int argc, char** argv) {
            interleaved_push_yields_total,
            interleaved_finish_yields_total);
   }
+#if defined(H8_BENCH_ATTRIBUTION)
   double frag_ratio = frag_requested_total
                           ? (double)frag_rounded_total /
                                 (double)frag_requested_total
@@ -438,6 +465,9 @@ int main(int argc, char** argv) {
          frag_rounded_by_class[3], frag_rounded_by_class[4],
          frag_rounded_by_class[5], frag_rounded_by_class[6],
          frag_rounded_by_class[7], frag_rounded_by_class[8]);
+#else
+  printf("fragmentation attribution=disabled\n");
+#endif
 
   H8Stats stats = h8_stats();
   H8DebugStats debug = h8_debug_stats();
@@ -662,6 +692,7 @@ int main(int argc, char** argv) {
   free(peak_rss);
   free(alloc_phase_ms);
   free(remote_phase_ms);
+  free(work_throughput);
   free(minor_faults);
   free(span_lower_bound);
   free(remote_live_objects);
