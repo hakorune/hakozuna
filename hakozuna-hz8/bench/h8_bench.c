@@ -517,6 +517,9 @@ int main(int argc, char** argv) {
          debug.qstate_dirty_set,
          debug.qstate_dirty_self_set,
          debug.qstate_dirty_requeue);
+  printf("quiescent_pending bitmap_nonzero=%zu repair=%zu\n",
+         debug.quiescent_pending_bitmap_nonzero,
+         debug.quiescent_pending_repair);
   printf("queue_contention qstate_attempt=%zu qstate_success=%zu qstate_skip=%zu pending_push_attempt=%zu pending_push_retry=%zu pending_push_success=%zu owner_enter_retry=%zu owner_exit_retry=%zu duplicate_claim=%zu\n",
          debug.qstate_notify_attempt_count,
          debug.qstate_notify_success_count,

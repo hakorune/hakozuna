@@ -4,16 +4,14 @@
 
 Current focus:
 
-- `PendingCountRuntimeDecisionElision-L1`
+- `QuiescentPendingBitmapGate-L1`
 
 Immediate goal:
 
-- Remove `pending_count` from runtime notify / scan / requeue decisions while
-  keeping the count updates as a debug/quiescent shadow.
-- Prove runtime progress with `pending_bits + pending_word_mask + qstate DIRTY`
-  before removing the release count RMW.
-- Treat live `count_mask0_bitmap1` as diagnostic only; quiescent bitmap gates
-  are the hard blocker.
+- Replace cold/quiescent `pending_count == 0` gates with stable
+  `qstate == IDLE`, `pending_word_mask == 0`, and full pending bitmap scan.
+- Keep `pending_count` as a shadow until `PendingWordMaskAuthority-L1`.
+- Add cold repair/diagnostic hooks for quiescent mask loss.
 
 Current evidence:
 
@@ -86,6 +84,12 @@ Current evidence:
   - `duplicate_claim = 0`
 - Raw `count_mask0_bitmap1` can still be nonzero because the diagnostic is not
   a coherent snapshot and can see the bit-before-mask publish window.
+- `QuiescentPendingBitmapGate-L1` is the next correctness box:
+  owner exit, handoff, and adoption must not rely on count-zero as the pending
+  truth.
+- `QuiescentPendingBitmapGate-L1` now uses full pending bitmap checks for
+  owner exit, handoff, and adoption quiescence.  Representative checks pass
+  with `quiescent_pending_repair = 0`.
 
 Current measured baseline:
 
@@ -189,13 +193,13 @@ Current measured baseline:
      `qstate_dirty_requeue`.
 
 11. `PendingCountRuntimeDecisionElision-L1`
-   - current task.
+   - completed.
    - keep pending_count updates.
    - remove count from runtime notify / scan / requeue decisions.
    - use count only for shadow counters and cold/quiescent paths.
 
 12. `QuiescentPendingBitmapGate-L1`
-   - next correctness box.
+   - implemented; under measurement.
    - replace owner exit / handoff / adoption count-zero checks with stable
      publish-gate-closed, refs-zero, qstate-IDLE, mask-zero, full-bitmap-zero
      checks.
@@ -376,6 +380,41 @@ Current measured baseline:
   - runtime progress can be made without count decisions.
   - next correctness box should replace cold quiescent count gates with stable
     full pending bitmap verification before removing release count RMW.
+
+### QuiescentPendingBitmapGate-L1
+
+- Applied:
+  - add shared full pending bitmap quiescent helper.
+  - owner exit uses qstate/mask/full-bitmap instead of count-zero to decide a
+    span is pending-clean.
+  - handoff precondition uses the same pending-clean helper.
+  - orphan adoption quiescent checks use the same pending-clean helper.
+  - cold repair can rearm `pending_word_mask` from full bitmap and queue the
+    span.
+- Scope:
+  - owner exit span quiesce
+  - span handoff precondition
+  - orphan adoption quiescent checks
+- Required gate:
+  - publish admission closed by caller where applicable
+  - publisher refs zero
+  - `qstate == IDLE`
+  - `pending_word_mask == 0`
+  - full pending bitmap scan is zero
+- Count handling:
+  - `pending_count` may still be updated in release in this box.
+  - it is not pending truth for quiescent ownership transitions.
+  - it remains a shadow until `PendingWordMaskAuthority-L1`.
+- Cold repair:
+  - if the bitmap has pending bits but mask is zero at a quiescent attempt,
+    rearm mask from the full bitmap and queue the span.
+  - repair must be rare and becomes a promotion diagnostic.
+- Current checks:
+  - smoke passes.
+  - regular adoption opt-in smoke passes.
+  - debug interleaved remote90 passes with existing zero gates intact.
+  - release interleaved remote90 passes.
+  - representative `quiescent_pending_repair = 0`.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

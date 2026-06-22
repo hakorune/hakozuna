@@ -53,8 +53,7 @@ static void h8_owner_remove_orphan_span_locked(H8OwnerRecord* owner, H8Span* spa
 
 static bool h8_span_quiescent_for_adoption(const H8Span* span) {
   return atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
-         atomic_load_explicit(&span->qstate, memory_order_acquire) == H8_Q_IDLE &&
-         atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0 &&
+         h8_span_pending_quiescent((H8Span*)span) &&
          atomic_load_explicit(&span->publish_closed, memory_order_acquire) != 0;
 }
 
@@ -174,6 +173,9 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
 
     h8_span_wait_publishers_zero(candidate);
     h8_collect_owner_pending(orphan);
+    if (h8_span_repair_pending_mask(orphan, candidate)) {
+      h8_collect_owner_pending(orphan);
+    }
 
     if (atomic_load_explicit(&candidate->used_count, memory_order_acquire) == 0) {
       H8_DEBUG_INC(adoption_empty_count);

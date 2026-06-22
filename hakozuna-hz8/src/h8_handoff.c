@@ -8,9 +8,8 @@ static H8OwnerWord h8_owner_word_from_span(const H8Span* span) {
 }
 
 static bool h8_span_handoff_quiescent(const H8Span* span) {
-  return atomic_load_explicit(&span->qstate, memory_order_acquire) == H8_Q_IDLE &&
-         atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0 &&
-         atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0;
+  return atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
+         h8_span_pending_quiescent((H8Span*)span);
 }
 
 bool h8_span_publish_enter(H8Span* span) {

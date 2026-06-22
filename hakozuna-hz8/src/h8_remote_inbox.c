@@ -92,6 +92,40 @@ static bool h8_pending_bitmap_any(H8Span* span, size_t words) {
 }
 #endif
 
+bool h8_span_pending_quiescent(H8Span* span) {
+  size_t words = h8_word_count_for_slots(span->slot_count);
+  if (atomic_load_explicit(&span->qstate, memory_order_acquire) != H8_Q_IDLE ||
+      atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) != 0) {
+    return false;
+  }
+  for (size_t i = 0; i < words; ++i) {
+    if (atomic_load_explicit(&span->pending_bits[i], memory_order_acquire) &
+        h8_word_valid_mask(span, i)) {
+      H8_DEBUG_INC(quiescent_pending_bitmap_nonzero);
+      return false;
+    }
+  }
+  return true;
+}
+
+bool h8_span_repair_pending_mask(H8OwnerRecord* owner, H8Span* span) {
+  size_t words = h8_word_count_for_slots(span->slot_count);
+  uint64_t mask = 0;
+  for (size_t i = 0; i < words; ++i) {
+    if (atomic_load_explicit(&span->pending_bits[i], memory_order_acquire) &
+        h8_word_valid_mask(span, i)) {
+      mask |= UINT64_C(1) << i;
+    }
+  }
+  if (mask == 0) {
+    return false;
+  }
+  atomic_fetch_or_explicit(&span->pending_word_mask, mask, memory_order_release);
+  H8_DEBUG_INC(quiescent_pending_repair);
+  h8_span_notify(owner, span);
+  return true;
+}
+
 static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   size_t bit_index = (size_t)__builtin_ctzll(bit);
   size_t slot = (word_index << 6u) + bit_index;

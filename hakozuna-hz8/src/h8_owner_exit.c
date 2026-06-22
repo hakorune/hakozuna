@@ -31,13 +31,16 @@ static void h8_owner_quiesce_span(H8Span* span) {
 
   for (;;) {
     uint8_t qstate = atomic_load_explicit(&span->qstate, memory_order_acquire);
-    size_t pending = atomic_load_explicit(&span->pending_count, memory_order_acquire);
-    if (qstate == H8_Q_IDLE && pending == 0) {
+    if (h8_span_pending_quiescent(span)) {
       break;
     }
-    if (qstate == H8_Q_IDLE && pending != 0) {
-      h8_span_notify(owner, span);
-      qstate = H8_Q_QUEUED;
+    if (qstate == H8_Q_IDLE) {
+      if (atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) != 0) {
+        h8_span_notify(owner, span);
+        qstate = H8_Q_QUEUED;
+      } else if (h8_span_repair_pending_mask(owner, span)) {
+        qstate = H8_Q_QUEUED;
+      }
     }
     if (qstate == H8_Q_QUEUED) {
       h8_span_collect_remote(owner, span);
@@ -49,9 +52,8 @@ static void h8_owner_quiesce_span(H8Span* span) {
   }
 
   if (h8_span_state_load(span) == H8_SPAN_ORPHAN_QUIESCING &&
-      atomic_load_explicit(&span->qstate, memory_order_acquire) == H8_Q_IDLE &&
       atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
-      atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {
+      h8_span_pending_quiescent(span)) {
     h8_span_mark_orphan_ready(span);
   }
 }

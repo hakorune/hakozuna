@@ -110,6 +110,8 @@ typedef struct H8DebugStats {
   size_t qstate_dirty_set;
   size_t qstate_dirty_self_set;
   size_t qstate_dirty_requeue;
+  size_t quiescent_pending_bitmap_nonzero;
+  size_t quiescent_pending_repair;
   size_t local_alloc_pending_nonzero;
   size_t local_free_pending_nonzero;
   size_t owner_live_set_already_live;

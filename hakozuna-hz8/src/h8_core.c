@@ -486,6 +486,10 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.qstate_dirty_self_set, memory_order_acquire);
   out->qstate_dirty_requeue =
       atomic_load_explicit(&h8g.qstate_dirty_requeue, memory_order_acquire);
+  out->quiescent_pending_bitmap_nonzero = atomic_load_explicit(
+      &h8g.quiescent_pending_bitmap_nonzero, memory_order_acquire);
+  out->quiescent_pending_repair =
+      atomic_load_explicit(&h8g.quiescent_pending_repair, memory_order_acquire);
   out->orphan_quiesce_count =
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =

@@ -206,6 +206,8 @@ typedef struct H8Global {
   atomic_size_t qstate_dirty_set;
   atomic_size_t qstate_dirty_self_set;
   atomic_size_t qstate_dirty_requeue;
+  atomic_size_t quiescent_pending_bitmap_nonzero;
+  atomic_size_t quiescent_pending_repair;
   atomic_size_t local_alloc_pending_nonzero;
   atomic_size_t local_free_pending_nonzero;
   atomic_size_t owner_live_set_already_live;
@@ -654,6 +656,8 @@ H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void h8_free_inner(void* ptr);
 void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget);
+bool h8_span_pending_quiescent(H8Span* span);
+bool h8_span_repair_pending_mask(H8OwnerRecord* owner, H8Span* span);
 void h8_slot_shadow_set_allocated(H8Span* span, size_t slot);
 void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next);
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag);
