@@ -76,13 +76,28 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   uint64_t clear_mask = ~bit;
   _Atomic uint64_t* live_word = &((_Atomic uint64_t*)span->live_bits)[word_index];
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
+  bool slot_authority = h8_slot_state_authority_enabled();
 
   H8_DEBUG_INC(pending_collect_bit_count);
-  uint64_t old_live =
-      atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
-  if ((old_live & bit) == 0) {
-    H8_DEBUG_INC(invalid_count);
-    abort();
+  if (slot_authority) {
+    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+      H8_DEBUG_INC(invalid_count);
+      abort();
+    }
+  }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  bool update_live = true;
+#else
+  bool update_live = !slot_authority;
+#endif
+  if (update_live) {
+    uint64_t old_live =
+        atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
+    if ((old_live & bit) == 0) {
+      H8_DEBUG_INC(invalid_count);
+      abort();
+    }
   }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
@@ -107,12 +122,34 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
   _Atomic uint64_t* live_word = &((_Atomic uint64_t*)span->live_bits)[word_index];
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
   uint64_t clear_mask = ~claimed;
+  bool slot_authority = h8_slot_state_authority_enabled();
 
-  uint64_t old_live =
-      atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
-  if ((old_live & claimed) != claimed) {
-    H8_DEBUG_INC(invalid_count);
-    abort();
+  if (slot_authority) {
+    uint64_t slots = claimed;
+    while (slots) {
+      uint64_t bit = slots & (~slots + 1ull);
+      size_t bit_index = (size_t)__builtin_ctzll(slots);
+      size_t slot = (word_index << 6u) + bit_index;
+      slots ^= bit;
+      uint32_t state = h8_slot_state_load_acquire(span, slot);
+      if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+        H8_DEBUG_INC(invalid_count);
+        abort();
+      }
+    }
+  }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  bool update_live = true;
+#else
+  bool update_live = !slot_authority;
+#endif
+  if (update_live) {
+    uint64_t old_live =
+        atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
+    if ((old_live & claimed) != claimed) {
+      H8_DEBUG_INC(invalid_count);
+      abort();
+    }
   }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
@@ -209,15 +246,28 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   uint64_t slot_bit = UINT64_C(1) << (slot & 63u);
   uint64_t word_bit = UINT64_C(1) << word_index;
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
+  bool slot_authority = h8_slot_state_authority_enabled();
+  if (slot_authority) {
+    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+      return H8_PUBLISH_INVALID;
+    }
+  }
   uint64_t old_word = atomic_fetch_or_explicit(
       pending_word, slot_bit, memory_order_acq_rel);
   if (old_word & slot_bit) {
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
-  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-    atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
-    return H8_PUBLISH_INVALID;
+  if (slot_authority) {
+    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      return H8_PUBLISH_INVALID;
+    }
+  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      return H8_PUBLISH_INVALID;
   }
   h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
   H8_DEBUG_INC(remote_publish_count);

@@ -55,6 +55,10 @@ static void h8_init_once(void) {
   atomic_store_explicit(&h8g.regular_adoption_enabled,
                         h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
                         memory_order_relaxed);
+  atomic_store_explicit(
+      &h8g.slot_state_authority_enabled,
+      h8_parse_env_bool(getenv("H8_ENABLE_SLOT_STATE_AUTHORITY")),
+      memory_order_relaxed);
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
   h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_NONE,
@@ -166,6 +170,14 @@ H8RouteKind h8_route_inner(void* ptr) {
   size_t slot = h8_slot_index_from_ptr(span, ptr);
   if (slot >= span->slot_count) {
     return H8_ROUTE_INVALID;
+  }
+  if (h8_slot_state_authority_enabled()) {
+    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
+        h8_bitmap_test(span->pending_bits, slot)) {
+      return H8_ROUTE_INVALID;
+    }
+    return H8_ROUTE_VALID;
   }
   if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
     return H8_ROUTE_INVALID;

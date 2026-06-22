@@ -2,28 +2,32 @@
 
 #include <stdlib.h>
 
-#if defined(H8_ENABLE_DEBUG_STATS)
-static uint32_t h8_slot_shadow_load(H8Span* span, size_t slot) {
-  if (!span->slot_state_shadow) {
+uint32_t h8_slot_state_load_acquire(H8Span* span, size_t slot) {
+  if (!span->slot_state) {
     return H8_SLOT_POISON;
   }
-  return atomic_load_explicit(&span->slot_state_shadow[slot], memory_order_acquire);
+  return atomic_load_explicit(&span->slot_state[slot], memory_order_acquire);
 }
 
 void h8_slot_shadow_set_allocated(H8Span* span, size_t slot) {
-  if (!span->slot_state_shadow) {
+  if (!span->slot_state) {
     return;
   }
-  atomic_store_explicit(&span->slot_state_shadow[slot], H8_SLOT_ALLOCATED,
+  atomic_store_explicit(&span->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
 }
 
 void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next) {
-  if (!span->slot_state_shadow) {
+  if (!span->slot_state) {
     return;
   }
-  atomic_store_explicit(&span->slot_state_shadow[slot], h8_slot_state_free(next),
+  atomic_store_explicit(&span->slot_state[slot], h8_slot_state_free(next),
                         memory_order_release);
+}
+
+#if defined(H8_ENABLE_DEBUG_STATS)
+static uint32_t h8_slot_shadow_load(H8Span* span, size_t slot) {
+  return h8_slot_state_load_acquire(span, slot);
 }
 
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag) {
@@ -67,7 +71,7 @@ static void h8_slot_shadow_verify_chain(H8Span* span, uint8_t* seen) {
 }
 
 void h8_slot_shadow_verify_span(H8Span* span) {
-  if (!span || !span->slot_state_shadow) {
+  if (!span || !span->slot_state) {
     return;
   }
   uint8_t* seen = h8_sys_calloc(span->slot_count, sizeof(uint8_t));
@@ -140,17 +144,6 @@ void h8_slot_shadow_verify_span(H8Span* span) {
   h8_sys_free(seen);
 }
 #else
-void h8_slot_shadow_set_allocated(H8Span* span, size_t slot) {
-  (void)span;
-  (void)slot;
-}
-
-void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next) {
-  (void)span;
-  (void)slot;
-  (void)next;
-}
-
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag) {
   (void)span;
   (void)slot;

@@ -85,9 +85,7 @@ struct H8Span {
   _Atomic uint64_t* live_bits;
   _Atomic uint64_t* pending_bits;
   uint32_t* next_free;
-#if defined(H8_ENABLE_DEBUG_STATS)
-  _Atomic uint32_t* slot_state_shadow;
-#endif
+  _Atomic uint32_t* slot_state;
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
@@ -244,6 +242,7 @@ typedef struct H8Global {
   atomic_size_t adoption_empty_count;
   atomic_size_t adoption_target_closed_count;
   atomic_size_t adoption_success_count;
+  _Atomic bool slot_state_authority_enabled;
   _Atomic bool regular_adoption_enabled;
 } H8Global;
 
@@ -440,6 +439,11 @@ static inline bool h8_regular_adoption_enabled(void) {
   return atomic_load_explicit(&h8g.regular_adoption_enabled, memory_order_acquire);
 }
 
+static inline bool h8_slot_state_authority_enabled(void) {
+  return atomic_load_explicit(&h8g.slot_state_authority_enabled,
+                              memory_order_acquire);
+}
+
 static inline size_t h8_slot_index_from_ptr(const H8Span* span, const void* ptr) {
   uintptr_t addr = (uintptr_t)ptr;
   uintptr_t base = (uintptr_t)span->base;
@@ -602,5 +606,6 @@ void h8_slot_shadow_set_allocated(H8Span* span, size_t slot);
 void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next);
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag);
 void h8_slot_shadow_verify_span(H8Span* span);
+uint32_t h8_slot_state_load_acquire(H8Span* span, size_t slot);
 
 #endif

@@ -25,10 +25,11 @@ HZ8 optimization is being implemented in this order:
 21. `InitOnceLeafElision-L1`
 22. `LocalFreelistProofElision-L1`
 23. `TaggedSlotStateShadow-L1`
+24. `TaggedSlotStateAuthority-L1`
 
 Current focus:
 
-- `TaggedSlotStateShadow-L1`
+- `TaggedSlotStateAuthority-L1`
 
 Rules:
 
@@ -247,3 +248,10 @@ TaggedSlotStateShadow-L1:
 - update shadow state beside existing local and collect transitions.
 - verify shadow/live/pending/used/free-chain equivalence at quiescent points.
 - do not use slot state for boundary classification or remote admission yet.
+
+TaggedSlotStateAuthority-L1:
+
+- add an opt-in `H8_ENABLE_SLOT_STATE_AUTHORITY=1` path.
+- keep default behavior on live bitmap authority until stress and A/B pass.
+- when enabled, classify and remote-validate with `slot_state + pending`.
+- keep live bitmap as debug shadow during the transition.
