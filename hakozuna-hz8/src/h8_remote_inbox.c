@@ -436,14 +436,8 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   return H8_PUBLISH_OK;
 }
 
-H8PublishResult h8_remote_free_publish(void* ptr) {
+H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot) {
   H8_DEBUG_INC(remote_stage_enter);
-  size_t slot = 0;
-  H8Span* span = h8_remote_span_from_ptr_checked(ptr, &slot);
-  if (!span) {
-    H8_DEBUG_INC(remote_stage_span_miss);
-    return H8_PUBLISH_MISS;
-  }
   H8OwnerWord ow = h8_span_owner_word_load(span);
   H8_DEBUG_INC(remote_owner_word_load);
   H8OwnerRecord* owner = h8_owner_by_slot(ow.slot);
@@ -483,6 +477,17 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
   H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
   h8_owner_publish_exit(owner);
   return res;
+}
+
+H8PublishResult h8_remote_free_publish(void* ptr) {
+  size_t slot = 0;
+  H8Span* span = h8_remote_span_from_ptr_checked(ptr, &slot);
+  if (!span) {
+    H8_DEBUG_INC(remote_stage_enter);
+    H8_DEBUG_INC(remote_stage_span_miss);
+    return H8_PUBLISH_MISS;
+  }
+  return h8_remote_free_publish_known(span, slot);
 }
 
 void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {

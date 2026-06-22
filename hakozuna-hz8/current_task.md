@@ -4,14 +4,14 @@
 
 Current focus:
 
-- `RemoteLookupReuse-L1`
+- `SpanHotRemoteSplit-L1`
 
 Immediate goal:
 
-- Reuse the already-classified `span + slot` from `h8_free_inner()` when
-  falling through from local free to remote publish.
-- Avoid a second arena/span/slot lookup on the common remote-free success path.
-- Keep full pointer retry for owner transition.
+- Split local hot, remote hot, and immutable span metadata cache lines.
+- Do not change ownership or route semantics.
+- Use measurement after split to decide whether further field packing is worth
+  the complexity.
 
 Why this is first:
 
@@ -39,6 +39,12 @@ Why this is first:
   Representative quick checks:
   - `local0`: about `154.6M ops/s`
   - interleaved remote90: about `30.1M ops/s`
+- `RemoteLookupReuse-L1` is complete:
+  `h8_free_inner()` reuses the first `span + slot` classification for the
+  common remote publish path and falls back to full pointer retry only for
+  owner transition.  Representative checks:
+  - interleaved remote90: about `30.8M ops/s`
+  - phase-separated remote90: about `5.7M ops/s`
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not README `main_*` (`16..32768`).
 - `VmHWM` is process-wide high-water. Exact per-run peak still needs a
@@ -47,11 +53,12 @@ Why this is first:
 
 Implementation notes:
 
-- `h8_free_inner()` already calls `h8_span_from_ptr_checked(ptr, &slot)`.
-- If local free rejects only because owner differs, remote publish can start
-  from that span/slot.
-- If remote publish returns `OWNER_TRANSITION`, retry with full pointer lookup
-  to handle handoff/adoption races.
+- Candidate local hot fields:
+  `bump_index`, `local_free_head`, `used_count`.
+- Candidate remote hot fields:
+  `owner_word`, publish gate/refs, `qstate`, `pending_word_mask`.
+- Immutable fields:
+  `base`, `class_id`, `slot_count`, metadata pointers.
 
 Acceptance:
 
@@ -64,10 +71,6 @@ Acceptance:
 
 ## Next
 
-1. `SpanHotRemoteSplit-L1`
-   - Split local hot, remote hot, and immutable span metadata cache lines after
-     slot-state release shape is stable.
-
-2. `ClassFragmentationAudit-L1`
+1. `ClassFragmentationAudit-L1`
    - Measure requested live bytes, rounded live bytes, rounding ratio, and
      per-class span contribution.

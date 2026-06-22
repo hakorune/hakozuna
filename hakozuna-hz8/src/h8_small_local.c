@@ -302,6 +302,14 @@ void h8_free_inner(void* ptr) {
   if (h8_local_free(ctx, owner, span, slot)) {
     return;
   }
+  H8PublishResult first = h8_remote_free_publish_known(span, slot);
+  if (first == H8_PUBLISH_OK) {
+    return;
+  }
+  if (first != H8_PUBLISH_OWNER_TRANSITION) {
+    h8_fail_invalid_free();
+    return;
+  }
   for (;;) {
     H8PublishResult res = h8_remote_free_publish(ptr);
     if (res == H8_PUBLISH_OK) {

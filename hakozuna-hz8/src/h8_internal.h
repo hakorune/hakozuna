@@ -708,6 +708,7 @@ void h8_stats_snapshot(H8Stats* out);
 void h8_debug_stats_snapshot(H8DebugStats* out);
 
 H8PublishResult h8_remote_free_publish(void* ptr);
+H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot);
 H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void h8_free_inner(void* ptr);
