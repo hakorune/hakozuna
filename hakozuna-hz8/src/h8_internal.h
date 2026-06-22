@@ -6,6 +6,7 @@
 #include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdint.h>
 
 #define H8_SMALL_ARENA_BYTES (1ull << 36)
@@ -15,11 +16,14 @@
 #define H8_OWNER_SPAN_CHUNK 32u
 #define H8_CLASS_COUNT 9u
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
+#define H8_CACHELINE_BYTES 64u
 
 #if defined(__GNUC__) || defined(__clang__)
 #define H8_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
+#define H8_CACHELINE_ALIGNED __attribute__((aligned(H8_CACHELINE_BYTES)))
 #else
 #define H8_UNLIKELY(expr) (expr)
+#define H8_CACHELINE_ALIGNED
 #endif
 
 typedef enum H8OwnerState {
@@ -68,33 +72,81 @@ typedef struct H8CtlWord {
 } H8CtlWord;
 
 struct H8Span {
-  uint8_t* base;
-  uint16_t class_id;
-  uint16_t slot_count;
-  _Atomic uint64_t owner_word;
-  uint32_t owner_slot;
-  uint16_t owner_generation;
-  _Atomic uint8_t span_state;
-  _Atomic uint8_t publish_closed;
-  _Atomic uint16_t publish_refs;
-  _Atomic uint8_t qstate;
-  _Atomic size_t pending_count;
-  _Atomic uint64_t pending_word_mask;
-  _Atomic uint32_t span_epoch;
-  _Atomic uint32_t bump_index;
-  _Atomic uint32_t local_free_head;
-  _Atomic size_t used_count;
-  _Atomic uint64_t* live_bits;
-  _Atomic uint64_t* pending_bits;
-  uint32_t* next_free;
-  _Atomic uint32_t* slot_state;
-  bool meta_bundled;
+  union {
+    struct {
+      uint8_t* base;
+      uint16_t class_id;
+      uint16_t slot_count;
+      _Atomic uint64_t* live_bits;
+      _Atomic uint64_t* pending_bits;
+      uint32_t* next_free;
+      _Atomic uint32_t* slot_state;
+      void* meta_alloc_base;
+      bool meta_bundled;
+    };
+    struct {
+      uint8_t* immutable_base;
+      uint16_t immutable_class_id;
+      uint16_t immutable_slot_count;
+      _Atomic uint64_t* immutable_live_bits;
+      _Atomic uint64_t* immutable_pending_bits;
+      uint32_t* immutable_next_free;
+      _Atomic uint32_t* immutable_slot_state;
+      void* immutable_meta_alloc_base;
+      bool immutable_meta_bundled;
+    } immutable;
+  };
+  union {
+    struct {
+      _Atomic uint64_t owner_word;
+      uint32_t owner_slot;
+      uint16_t owner_generation;
+      _Atomic uint8_t span_state;
+      _Atomic uint8_t publish_closed;
+      _Atomic uint16_t publish_refs;
+      _Atomic uint8_t qstate;
+      _Atomic size_t pending_count;
+      _Atomic uint64_t pending_word_mask;
+      _Atomic uint32_t span_epoch;
+    };
+    struct {
+      _Atomic uint64_t remote_owner_word;
+      uint32_t remote_owner_slot;
+      uint16_t remote_owner_generation;
+      _Atomic uint8_t remote_span_state;
+      _Atomic uint8_t remote_publish_closed;
+      _Atomic uint16_t remote_publish_refs;
+      _Atomic uint8_t remote_qstate;
+      _Atomic size_t remote_pending_count;
+      _Atomic uint64_t remote_pending_word_mask;
+      _Atomic uint32_t remote_span_epoch;
+    } remote_hot;
+  } H8_CACHELINE_ALIGNED;
+  union {
+    struct {
+      _Atomic uint32_t bump_index;
+      _Atomic uint32_t local_free_head;
+      _Atomic size_t used_count;
+    };
+    struct {
+      _Atomic uint32_t local_bump_index;
+      _Atomic uint32_t local_free_head_word;
+      _Atomic size_t local_used_count;
+    } local_hot;
+  } H8_CACHELINE_ALIGNED;
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
   struct H8Span* next_orphan;
   struct H8Span* next_orphan_class;
 };
+
+_Static_assert(_Alignof(H8Span) >= H8_CACHELINE_BYTES,
+               "H8Span must be cacheline aligned");
+_Static_assert(offsetof(H8Span, remote_hot) % H8_CACHELINE_BYTES == 0,
+               "remote span hot fields must start on a cacheline");
+_Static_assert(offsetof(H8Span, local_hot) % H8_CACHELINE_BYTES == 0,
+               "local span hot fields must start on a cacheline");
 
 struct H8OwnerRecord {
   _Atomic uint64_t control;

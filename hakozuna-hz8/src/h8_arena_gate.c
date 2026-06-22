@@ -24,6 +24,18 @@ static uint64_t h8_debug_now_ns(void) {
 }
 #endif
 
+static void* h8_aligned_zero_alloc(size_t align, size_t size, void** raw_out) {
+  size_t total = size + align - 1u + sizeof(void*);
+  uint8_t* raw = h8_sys_calloc(1, total);
+  if (!raw) {
+    return NULL;
+  }
+  uintptr_t start = (uintptr_t)(raw + sizeof(void*));
+  uintptr_t aligned = (start + align - 1u) & ~(uintptr_t)(align - 1u);
+  *raw_out = raw;
+  return (void*)aligned;
+}
+
 static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
   size_t words = h8_word_count_for_slots(slot_count);
   size_t off = h8_round_up_size(sizeof(H8Span), sizeof(uint64_t));
@@ -40,11 +52,14 @@ static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
     off += (size_t)slot_count * sizeof(_Atomic uint32_t);
   }
 
-  uint8_t* block = h8_sys_calloc(1, off);
+  void* raw = NULL;
+  uint8_t* block =
+      h8_aligned_zero_alloc(H8_CACHELINE_BYTES, off, &raw);
   if (!block) {
     return NULL;
   }
   H8Span* span = (H8Span*)block;
+  span->meta_alloc_base = raw;
 #if defined(H8_ENABLE_DEBUG_STATS)
   span->live_bits = (_Atomic uint64_t*)(void*)(block + live_off);
 #else
@@ -191,7 +206,7 @@ static void h8_span_free_retired_meta(H8Span* span) {
     h8_sys_free(span->next_free);
     h8_sys_free(span->slot_state);
   }
-  h8_sys_free(span);
+  h8_sys_free(span->meta_alloc_base ? span->meta_alloc_base : span);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_retire_meta_free_ns,
                (size_t)(h8_debug_now_ns() - free_start));

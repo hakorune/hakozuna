@@ -4,14 +4,14 @@
 
 Current focus:
 
-- `SpanHotRemoteSplit-L1`
+- `ClassFragmentationAudit-L1`
 
 Immediate goal:
 
-- Split local hot, remote hot, and immutable span metadata cache lines.
-- Do not change ownership or route semantics.
-- Use measurement after split to decide whether further field packing is worth
-  the complexity.
+- Measure requested live bytes, rounded live bytes, rounding ratio, and
+  per-class span contribution.
+- Use that data to decide whether size-class refinement is worth opening.
+- Do not change allocation policy in this box.
 
 Why this is first:
 
@@ -45,6 +45,14 @@ Why this is first:
   owner transition.  Representative checks:
   - interleaved remote90: about `30.8M ops/s`
   - phase-separated remote90: about `5.7M ops/s`
+- `SpanHotRemoteSplit-L1` is complete:
+  immutable span fields, remote hot fields, and local hot fields are separated;
+  remote and local hot groups start on cacheline boundaries, and span metadata
+  bundles are allocated at 64B alignment.
+  Fresh-process quick checks after the split:
+  - `local0`: best quick runs about `141M..152M ops/s`; noisy low runs remain
+    possible on this host.
+  - interleaved remote90: about `28M..31M ops/s` on clean quick runs.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -54,12 +62,12 @@ Why this is first:
 
 Implementation notes:
 
-- Candidate local hot fields:
-  `bump_index`, `local_free_head`, `used_count`.
-- Candidate remote hot fields:
-  `owner_word`, publish gate/refs, `qstate`, `pending_word_mask`.
-- Immutable fields:
-  `base`, `class_id`, `slot_count`, metadata pointers.
+- Class fragmentation audit should be counter-only first.
+- Current class map is pure power-of-two:
+  `16, 32, 64, 128, 256, 512, 1024, 2048, 4096`.
+- Phase-separated remote90 already showed span lower-bound ratio near `1.0`
+  for the current class map, so the next question is class-map rounding waste,
+  not excess span commits.
 
 Acceptance:
 
@@ -72,6 +80,7 @@ Acceptance:
 
 ## Next
 
-1. `ClassFragmentationAudit-L1`
-   - Measure requested live bytes, rounded live bytes, rounding ratio, and
-     per-class span contribution.
+1. `RemoteClaimCloseOrdering-L1`
+   - Recheck collector ordering before final v0 small remote gate.
+   - Pending bitmap is remote/remote duplicate-claim authority, so pending
+     clear must not expose stale `ALLOCATED` state to a second producer.
