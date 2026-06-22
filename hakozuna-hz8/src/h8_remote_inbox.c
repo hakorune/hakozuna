@@ -364,8 +364,8 @@ static H8Span* h8_remote_span_from_ptr_checked(void* ptr, size_t* slot_out) {
     H8_DEBUG_INC(remote_lookup_retired);
     return NULL;
   }
-  size_t slot = h8_slot_index_from_ptr(span, ptr);
-  if (slot >= span->slot_count) {
+  size_t slot = 0;
+  if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
     H8_DEBUG_INC(remote_lookup_slot_oob);
     return NULL;
   }
@@ -388,8 +388,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
       H8_DEBUG_INC(remote_stage_validate_fail);
       return H8_PUBLISH_INVALID;
     }
-  } else if (pending_elision &&
-             !h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
     H8_DEBUG_INC(remote_stage_validate_fail);
     return H8_PUBLISH_INVALID;
   }

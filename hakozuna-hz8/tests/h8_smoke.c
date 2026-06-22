@@ -56,6 +56,11 @@ int main(void) {
     fprintf(stderr, "route invalid for live alloc\n");
     return 2;
   }
+  if (h8_route((char*)p + 1) != H8_ROUTE_INVALID ||
+      h8_route((char*)p + 31) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "interior pointer was not invalid\n");
+    return 23;
+  }
   h8_free(p);
   if (h8_route(p) == H8_ROUTE_VALID) {
     fprintf(stderr, "route still valid after free\n");

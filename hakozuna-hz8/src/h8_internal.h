@@ -340,6 +340,10 @@ static inline uint32_t h8_class_size(uint32_t class_id) {
   return sizes[class_id];
 }
 
+static inline uint32_t h8_class_shift(uint32_t class_id) {
+  return 4u + class_id;
+}
+
 static inline uint32_t h8_class_for_size(size_t size) {
   if (size <= 16u) return 0;
   if (size <= 32u) return 1;
@@ -522,15 +526,27 @@ static inline bool h8_remote_pending_publish_elision_enabled(void) {
                               memory_order_acquire);
 }
 
-static inline size_t h8_slot_index_from_ptr(const H8Span* span, const void* ptr) {
+static inline bool h8_slot_index_from_ptr_checked(const H8Span* span,
+                                                  const void* ptr,
+                                                  size_t* slot_out) {
   uintptr_t addr = (uintptr_t)ptr;
   uintptr_t base = (uintptr_t)span->base;
-  size_t class_size = h8_class_size(span->class_id);
-  return (size_t)((addr - base) / class_size);
+  uintptr_t offset = addr - base;
+  uint32_t shift = h8_class_shift(span->class_id);
+  uintptr_t mask = ((uintptr_t)1 << shift) - (uintptr_t)1;
+  if ((offset & mask) != 0) {
+    return false;
+  }
+  size_t slot = (size_t)(offset >> shift);
+  if (slot >= span->slot_count) {
+    return false;
+  }
+  *slot_out = slot;
+  return true;
 }
 
 static inline void* h8_slot_ptr(const H8Span* span, size_t slot) {
-  return span->base + slot * h8_class_size(span->class_id);
+  return span->base + (slot << h8_class_shift(span->class_id));
 }
 
 static inline uint64_t h8_bit_mask(size_t slot) {

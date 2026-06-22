@@ -275,8 +275,8 @@ H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return NULL;
   }
-  size_t slot = h8_slot_index_from_ptr(span, ptr);
-  if (slot >= span->slot_count) {
+  size_t slot = 0;
+  if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
     return NULL;
   }
   if (slot_out) {

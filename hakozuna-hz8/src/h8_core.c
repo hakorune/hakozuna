@@ -189,8 +189,8 @@ H8RouteKind h8_route_inner(void* ptr) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return H8_ROUTE_INVALID;
   }
-  size_t slot = h8_slot_index_from_ptr(span, ptr);
-  if (slot >= span->slot_count) {
+  size_t slot = 0;
+  if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
     return H8_ROUTE_INVALID;
   }
   if (h8_slot_state_authority_enabled()) {
@@ -201,7 +201,8 @@ H8RouteKind h8_route_inner(void* ptr) {
     }
     return H8_ROUTE_VALID;
   }
-  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot) ||
+      h8_bitmap_test(span->pending_bits, slot)) {
     return H8_ROUTE_INVALID;
   }
   return H8_ROUTE_VALID;
