@@ -24,8 +24,35 @@ static uint64_t h8_debug_now_ns(void) {
 }
 #endif
 
-static H8Span* h8_alloc_span_meta(void) {
-  H8Span* span = h8_sys_calloc(1, sizeof(*span));
+static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
+  size_t words = h8_word_count_for_slots(slot_count);
+  size_t off = h8_round_up_size(sizeof(H8Span), sizeof(uint64_t));
+  size_t live_off = off;
+  off += words * sizeof(_Atomic uint64_t);
+  off = h8_round_up_size(off, sizeof(uint64_t));
+  size_t pending_off = off;
+  off += words * sizeof(_Atomic uint64_t);
+  off = h8_round_up_size(off, sizeof(uint32_t));
+  size_t next_off = off;
+  off += (size_t)slot_count * sizeof(uint32_t);
+  off = h8_round_up_size(off, sizeof(uint32_t));
+  size_t slot_state_off = off;
+  if (use_slot_state) {
+    off += (size_t)slot_count * sizeof(_Atomic uint32_t);
+  }
+
+  uint8_t* block = h8_sys_calloc(1, off);
+  if (!block) {
+    return NULL;
+  }
+  H8Span* span = (H8Span*)block;
+  span->live_bits = (_Atomic uint64_t*)(void*)(block + live_off);
+  span->pending_bits = (_Atomic uint64_t*)(void*)(block + pending_off);
+  span->next_free = (uint32_t*)(void*)(block + next_off);
+  if (use_slot_state) {
+    span->slot_state = (_Atomic uint32_t*)(void*)(block + slot_state_off);
+  }
+  span->meta_bundled = true;
   return span;
 }
 
@@ -72,13 +99,19 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t meta_start = h8_debug_now_ns();
 #endif
-  H8Span* span = h8_alloc_span_meta();
+  uint16_t slot_count = (uint16_t)h8_slot_count_for_class(class_id);
+  bool use_slot_state = h8_slot_state_authority_enabled()
+#if defined(H8_ENABLE_DEBUG_STATS)
+                        || true
+#endif
+      ;
+  H8Span* span = h8_alloc_span_meta(slot_count, use_slot_state);
   if (!span) {
     return NULL;
   }
   span->base = h8_span_base_from_index(i);
   span->class_id = (uint16_t)class_id;
-  span->slot_count = (uint16_t)h8_slot_count_for_class(class_id);
+  span->slot_count = slot_count;
   h8_span_owner_word_store(
       span,
       h8_owner_word_make((uint8_t)owner->slot, (uint16_t)owner->generation,
@@ -92,31 +125,6 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   atomic_store_explicit(&span->bump_index, 0, memory_order_relaxed);
   atomic_store_explicit(&span->local_free_head, UINT32_MAX, memory_order_relaxed);
   atomic_store_explicit(&span->used_count, 0, memory_order_relaxed);
-  span->live_bits = h8_sys_calloc(h8_word_count_for_slots(span->slot_count),
-                                  sizeof(_Atomic uint64_t));
-  span->pending_bits = h8_sys_calloc(h8_word_count_for_slots(span->slot_count),
-                                     sizeof(_Atomic uint64_t));
-  span->next_free = h8_sys_calloc(span->slot_count, sizeof(uint32_t));
-  bool use_slot_state = h8_slot_state_authority_enabled()
-#if defined(H8_ENABLE_DEBUG_STATS)
-                        || true
-#endif
-      ;
-  if (use_slot_state) {
-    span->slot_state = h8_sys_calloc(span->slot_count, sizeof(_Atomic uint32_t));
-  }
-  if (!span->live_bits || !span->pending_bits || !span->next_free ||
-      (use_slot_state && !span->slot_state)) {
-    h8_sys_free(span->live_bits);
-    h8_sys_free(span->pending_bits);
-    h8_sys_free(span->next_free);
-    h8_sys_free(span->slot_state);
-    h8_sys_free(span);
-    return NULL;
-  }
-  for (uint32_t slot = 0; slot < span->slot_count; ++slot) {
-    span->next_free[slot] = UINT32_MAX;
-  }
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_commit_meta_ns, (size_t)(h8_debug_now_ns() - meta_start));
   uint64_t mprotect_start = h8_debug_now_ns();
@@ -175,10 +183,12 @@ static void h8_span_free_retired_meta(H8Span* span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t free_start = h8_debug_now_ns();
 #endif
-  h8_sys_free(span->live_bits);
-  h8_sys_free(span->pending_bits);
-  h8_sys_free(span->next_free);
-  h8_sys_free(span->slot_state);
+  if (!span->meta_bundled) {
+    h8_sys_free(span->live_bits);
+    h8_sys_free(span->pending_bits);
+    h8_sys_free(span->next_free);
+    h8_sys_free(span->slot_state);
+  }
   h8_sys_free(span);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_retire_meta_free_ns,

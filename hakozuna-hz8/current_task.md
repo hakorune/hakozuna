@@ -4,14 +4,16 @@
 
 Current focus:
 
-- `OwnerSpanChunkPlacement-L1`
+- `ClassSizedSpanMetaBundle-L1`
 
 Immediate goal:
 
-- Make owner-owned spans physically adjacent so owner-exit purge can batch
-  larger payload ranges.
-- Reserve span indices in owner-local chunks on malloc slow path.
-- Keep v0 monotonic span allocation and avoid hot-path profile branches.
+- Collapse per-span metadata allocation from several small allocations into a
+  class-sized bundle.
+- Keep live bitmap, pending bitmap, `next_free`, and optional slot-state in one
+  zeroed block with `H8Span`.
+- Remove full `next_free[] = UINT32_MAX` initialization; entries are only read
+  after owner/collector writes them into the free chain.
 
 Current evidence:
 
@@ -82,6 +84,18 @@ Current evidence:
     `11.3ms`.
   - release local0 quick check: median `136.0M ops/s`.
   - release interleaved remote90 quick check: median `28.3M ops/s`.
+- `ClassSizedSpanMetaBundle-L1` is the next allocation-phase box:
+  span creation still pays multiple `calloc` calls plus a full `next_free`
+  initialization loop.  This box is behavior-preserving and should primarily
+  affect phase-separated peak-live rows and span commit metadata timing.
+- `ClassSizedSpanMetaBundle-L1` first result:
+  - `H8Span`, live bitmap, pending bitmap, `next_free`, and optional slot-state
+    now live in one class-sized zeroed allocation.
+  - full `next_free[] = UINT32_MAX` initialization was removed.
+  - debug phase-separated remote90: `span_commit_meta_ms ~= 110 -> 85`.
+  - release phase-separated remote90 remains healthy: median `5.79M ops/s`.
+  - release local0 check: median `143.1M ops/s`.
+  - release interleaved remote90 check: median `28.7M ops/s`.
 - `RemoteSpanScanAudit-L1` found remote90 was wasting work on full span scans.
 - `FullHintNoPendingScanSkip-L1` removed that scan in the bench shape:
   `scan_span` went from millions to zero.

@@ -88,6 +88,7 @@ struct H8Span {
   _Atomic uint64_t* pending_bits;
   uint32_t* next_free;
   _Atomic uint32_t* slot_state;
+  bool meta_bundled;
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
