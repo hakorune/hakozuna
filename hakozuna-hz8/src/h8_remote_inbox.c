@@ -79,6 +79,19 @@ static void h8_pending_word_bucket_add(size_t popcount) {
   }
 }
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+static bool h8_pending_bitmap_any(H8Span* span, size_t words) {
+  for (size_t i = 0; i < words; ++i) {
+    if (atomic_load_explicit(&((_Atomic uint64_t*)span->pending_bits)[i],
+                             memory_order_acquire) &
+        h8_word_valid_mask(span, i)) {
+      return true;
+    }
+  }
+  return false;
+}
+#endif
+
 static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   size_t bit_index = (size_t)__builtin_ctzll(bit);
   size_t slot = (word_index << 6u) + bit_index;
@@ -310,13 +323,17 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   }
   size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1,
                                           memory_order_acq_rel);
-  uint64_t old_word = atomic_load_explicit(pending_word, memory_order_acquire);
-  if (old_word == 0) {
+  uint64_t before_word = atomic_load_explicit(pending_word, memory_order_acquire);
+  if (before_word == 0) {
     atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
                              memory_order_release);
     H8_DEBUG_INC(pending_word_summary_set);
   }
-  old_word = atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
+  uint64_t old_word =
+      atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
+  if (before_word == 0 && old_word != 0) {
+    H8_DEBUG_INC(pending_publish_mask_arm_raced_nonempty);
+  }
   if (old_word & slot_bit) {
     h8_pending_count_dec(span);
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
@@ -436,6 +453,22 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   } else if (finish_mask == 0 && finish_count != 0) {
     H8_DEBUG_INC(pending_count_requeue_without_mask);
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  bool finish_bitmap_any = h8_pending_bitmap_any(span, words);
+  if (finish_count != 0 && finish_mask == 0) {
+    if (finish_bitmap_any) {
+      H8_DEBUG_INC(pending_finish_count_mask_zero_bitmap_nonzero);
+    } else {
+      H8_DEBUG_INC(pending_finish_count_mask_zero_bitmap_zero);
+    }
+  } else if (finish_mask != 0) {
+    if (finish_bitmap_any) {
+      H8_DEBUG_INC(pending_finish_mask_nonzero_bitmap_nonzero);
+    } else {
+      H8_DEBUG_INC(pending_finish_mask_nonzero_bitmap_zero);
+    }
+  }
+#endif
   if (finish_count != 0) {
     h8_span_notify(owner, span);
   }

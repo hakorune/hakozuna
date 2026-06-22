@@ -197,6 +197,11 @@ typedef struct H8Global {
   atomic_size_t pending_count_notify_without_mask;
   atomic_size_t pending_mask_requeue_without_count;
   atomic_size_t pending_count_requeue_without_mask;
+  atomic_size_t pending_finish_count_mask_zero_bitmap_zero;
+  atomic_size_t pending_finish_count_mask_zero_bitmap_nonzero;
+  atomic_size_t pending_finish_mask_nonzero_bitmap_zero;
+  atomic_size_t pending_finish_mask_nonzero_bitmap_nonzero;
+  atomic_size_t pending_publish_mask_arm_raced_nonempty;
   atomic_size_t local_alloc_pending_nonzero;
   atomic_size_t local_free_pending_nonzero;
   atomic_size_t owner_live_set_already_live;

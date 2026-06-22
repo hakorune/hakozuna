@@ -60,6 +60,14 @@ Current evidence:
 - `PendingWordMaskExactness-L1` moved summary arm before pending bit publish for
   empty pending words.  This reduced but did not eliminate debug false-negative
   / repair observations.
+- Additional finish counters show the remaining blocker clearly:
+  - `count_mask0_bitmap1` is nonzero, so there are real cases where pending
+    bitmap still has work while the word mask is zero.
+  - `count_mask0_bitmap0` is also nonzero, so some count-only observations are
+    transient/stale count windows.
+  - `publish_arm_raced_nonempty` is zero in the representative run, so the
+    current mismatch is not caused by another producer filling the same word
+    between the pre-load and the pending bit publish.
 
 Current measured baseline:
 
@@ -274,6 +282,10 @@ Current measured baseline:
 - Current representative debug interleaved observation:
   - `pending_word_false_neg` around tens, down from around hundreds.
   - `count_requeue_without_mask` still nonzero.
+  - `count_mask0_bitmap1` remains nonzero, proving direct mask authority is not
+    safe yet.
+  - first-word extra notify and post-publish double-arm were tested locally but
+    did not eliminate the mismatch, so they were not kept.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

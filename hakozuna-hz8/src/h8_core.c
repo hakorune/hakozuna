@@ -470,6 +470,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_mask_requeue_without_count, memory_order_acquire);
   out->pending_count_requeue_without_mask = atomic_load_explicit(
       &h8g.pending_count_requeue_without_mask, memory_order_acquire);
+  out->pending_finish_count_mask_zero_bitmap_zero = atomic_load_explicit(
+      &h8g.pending_finish_count_mask_zero_bitmap_zero, memory_order_acquire);
+  out->pending_finish_count_mask_zero_bitmap_nonzero = atomic_load_explicit(
+      &h8g.pending_finish_count_mask_zero_bitmap_nonzero, memory_order_acquire);
+  out->pending_finish_mask_nonzero_bitmap_zero = atomic_load_explicit(
+      &h8g.pending_finish_mask_nonzero_bitmap_zero, memory_order_acquire);
+  out->pending_finish_mask_nonzero_bitmap_nonzero = atomic_load_explicit(
+      &h8g.pending_finish_mask_nonzero_bitmap_nonzero, memory_order_acquire);
+  out->pending_publish_mask_arm_raced_nonempty = atomic_load_explicit(
+      &h8g.pending_publish_mask_arm_raced_nonempty, memory_order_acquire);
   out->orphan_quiesce_count =
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =
