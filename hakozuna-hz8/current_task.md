@@ -157,6 +157,33 @@ Why this is first:
   Owner exit, handoff, and adoption use this helper rather than a count-zero
   shortcut.  Before deleting release `pending_count` updates completely, run one
   focused verification pass over owner-exit and adoption paths.
+- Observation after count runtime elision:
+  - release local0 RUNS=5, 16 threads x 100k: median about `121.6M ops/s`
+    with one low outlier; local rows remain noisy on this host.
+  - release interleaved remote90 RUNS=3, 16 threads x 100k:
+    median about `34.8M ops/s`, peak RSS median about `37.9MiB`,
+    `push_yields=0`.
+  - release phase-separated remote90 RUNS=3:
+    median about `5.85M ops/s`, peak RSS about `1.87GiB`,
+    alloc phase about `196.7ms`, remote publish phase about `11.5ms`.
+  - debug interleaved remote90, 16 threads x 50k:
+    `publish_ok=720429`, `validate_fail=0`, `duplicate_claim=0`,
+    `remote_lookup enter=0`, `owner_word=720429`,
+    `pending_word_density slots_per_nonzero_word=10.250`,
+    `multi_ratio=0.839`, `quiescent_pending bitmap_nonzero=0 repair=0`.
+  - debug phase-separated remote90, 16 threads x 50k:
+    `slots_per_nonzero_word=42.403`, `multi_ratio=1.000`,
+    `quiescent_pending bitmap_nonzero=0 repair=0`.
+  Interpretation: pending word drain is dense; intrusive remote-head is still
+  not the next obvious win.  Interleaved remote is closer to the v0 `40M` gate,
+  but still short.  Queue push contention is negligible; remaining hot cost is
+  more likely owner publish lease, pending bit claim, slot-state validation, and
+  tail drain/finish behavior.
+- Unsafe evidence knobs:
+  `H8_ENABLE_REMOTE_PENDING_PUBLISH_ELISION=1` is not a valid performance
+  proxy because it intentionally drops remote-free publication and explodes
+  RSS.  `H8_ENABLE_REMOTE_LEASE_ELISION=1` was noisy and slower in a short
+  run, so it should not drive design without a safer microbench.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -203,9 +230,10 @@ Acceptance:
 2. `PendingWordMaskAuthority-L1`
    - release: no `pending_count` update/load in remote publish or collect
    - debug: keep `pending_count` as a shadow and quiescent consistency check
-3. Re-measure:
-   - release interleaved remote90
-   - debug interleaved remote90 zero gates
-   - phase-separated remote90 lifecycle/RSS
+3. If interleaved remains below `40M`, ask design review whether to attack:
+   - owner publish lease shape
+   - slot-state validation duplication
+   - tail drain/finish policy
+   - or a dedicated remote publish microbench
 4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.
