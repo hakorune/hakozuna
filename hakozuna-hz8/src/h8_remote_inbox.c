@@ -310,8 +310,13 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   }
   size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1,
                                           memory_order_acq_rel);
-  uint64_t old_word = atomic_fetch_or_explicit(pending_word, slot_bit,
-                                               memory_order_acq_rel);
+  uint64_t old_word = atomic_load_explicit(pending_word, memory_order_acquire);
+  if (old_word == 0) {
+    atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
+                             memory_order_release);
+    H8_DEBUG_INC(pending_word_summary_set);
+  }
+  old_word = atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
   if (old_word & slot_bit) {
     h8_pending_count_dec(span);
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
@@ -323,11 +328,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
 #endif
   H8_DEBUG_INC(remote_publish_count);
-  if (old_word == 0) {
-    atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
-                             memory_order_release);
-    H8_DEBUG_INC(pending_word_summary_set);
-  }
   if (old_word == 0 && prev != 0) {
     H8_DEBUG_INC(pending_mask_notify_without_count);
   } else if (old_word != 0 && prev == 0) {

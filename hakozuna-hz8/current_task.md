@@ -57,6 +57,9 @@ Current evidence:
   - `count_requeue_without_mask` is also nonzero, so count still catches some
     work not visible through mask at finish time.
   - Therefore direct count removal is still HOLD.
+- `PendingWordMaskExactness-L1` moved summary arm before pending bit publish for
+  empty pending words.  This reduced but did not eliminate debug false-negative
+  / repair observations.
 
 Current measured baseline:
 
@@ -137,16 +140,23 @@ Current measured baseline:
    - hard requirement before count elision or mask authority.
 
 8. `PendingCountElisionShadow-L1`
-   - current task.
+   - implemented.
    - compare pending_count authority with pending_word_mask authority.
    - keep pending_count in production until mask exactness is proven.
    - shadow counters are implemented.
 
-9. `PendingWordMaskAuthority-L1`
+9. `PendingWordMaskExactness-L1`
+   - current task.
+   - arm the pending word mask before making the first pending bit visible.
+   - reduce mask false-negative and repair events.
+   - direct authority removal remains blocked while false-negative / repair are
+     nonzero.
+
+10. `PendingWordMaskAuthority-L1`
    - behavior candidate after shadow evidence.
    - remove release per-object pending_count RMW only after zero gates hold.
 
-10. `IntrusiveRemoteHead-L1`
+11. `IntrusiveRemoteHead-L1`
    - HOLD.
    - only revisit if mask-authority data shows collect CPU still dominates.
 
@@ -251,6 +261,19 @@ Current measured baseline:
   - release interleaved remote90:
     passes, median about `10M ops/s` on the current 2-thread small row.
   - next step is mask exactness repair, not authority removal.
+
+### PendingWordMaskExactness-L1
+
+- Applied:
+  - when a pending word is currently empty, arm `pending_word_mask` before
+    publishing the first pending bit.
+- Effect:
+  - debug interleaved false-negative / repair counters dropped but are still
+    nonzero.
+  - mask authority remains HOLD.
+- Current representative debug interleaved observation:
+  - `pending_word_false_neg` around tens, down from around hundreds.
+  - `count_requeue_without_mask` still nonzero.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 
