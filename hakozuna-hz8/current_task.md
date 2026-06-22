@@ -46,7 +46,8 @@ Why this is first:
   - interleaved remote90: about `30.8M ops/s`
   - phase-separated remote90: about `5.7M ops/s`
 - The current benchmark rows are `guard_*`-equivalent because they use
-  `16..2048`, not README `main_*` (`16..32768`).
+  `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
+  rows (`16..32768`).
 - `VmHWM` is process-wide high-water. Exact per-run peak still needs a
   child-process runner, but the current output prevents post-purge RSS from
   being mistaken for peak RSS.

@@ -13,13 +13,18 @@ Use:
 ```text
 RUNS=10
 fresh batches=2 for promotion
-run order interleaved when comparing allocators
+allocator comparison order alternated/mixed across allocators
 same machine / same runner for table rows
-peak RSS reported with throughput
+peak_rss reported with throughput
+post_rss reported separately when available
 timeout=0
 abort=0
 safety zero gates all zero
 ```
+
+`allocator comparison order alternated/mixed` is not the same as benchmark
+`--interleaved 1`.  The former is run-order hygiene across allocators; the
+latter changes the remote-free workload shape.
 
 Stability gate:
 
@@ -46,6 +51,40 @@ boundary safety
 Rows above 4KiB are explicit fallback rows in v0 and are not HZ8 throughput
 claims.
 
+## Current Runnable Rows
+
+These are the rows the current HZ8 v0 harness can report without claiming
+MediumRun coverage:
+
+```text
+guard_local0:
+  T=16
+  size=16..2048
+  remote_pct=0
+  interleaved=0
+
+guard_remote50_phase:
+  T=16
+  size=16..2048
+  remote_pct=50
+  interleaved=0
+
+guard_remote90_phase:
+  T=16
+  size=16..2048
+  remote_pct=90
+  interleaved=0
+
+guard_remote90_interleaved:
+  T=16
+  size=16..2048
+  remote_pct=90
+  interleaved=1
+```
+
+Do not label these rows as `main_*`.  Default-candidate `main_*` rows are
+`16..32768` rows and require MediumRun/default-candidate coverage.
+
 ## v0 Performance Gates
 
 Initial v0 gates:
@@ -57,20 +96,57 @@ guard_r0:
   remote_pct=0
   median >= 200M ops/s
 
-small_remote90:
+small_interleaved_remote90:
   T=16
   size=16..4096
   remote_pct=90
+  interleaved=1
   median >= 40M ops/s
 
 local small alloc/free micro:
   >= 70% of HZ3 local-small reference
 
 RSS:
-  peak <= 96MiB
+  peak_rss <= 96MiB for the specified gate workload
+  post_rss tracked separately
 ```
 
 These are bring-up gates, not final performance claims.
+
+## v0 Stress / Diagnostic Rows
+
+These rows remain required but should not be interpreted as the primary
+steady-state remote throughput lane:
+
+```text
+small_phase_remote50:
+  T=16
+  size=16..2048 or 16..4096
+  remote_pct=50
+  interleaved=0
+
+small_phase_remote90:
+  T=16
+  size=16..2048 or 16..4096
+  remote_pct=90
+  interleaved=0
+```
+
+Phase-separated remote rows allocate up to a barrier and then remote-free.
+They primarily measure:
+
+```text
+peak live set
+payload first-touch
+span metadata construction
+owner-exit / purge tail
+remote publish phase timing
+```
+
+They are valuable lifecycle/RSS stress rows, but they are not equivalent to
+README `main_r50/main_r90` until the same size range and runner are used.
+They also must not be judged against the interleaved/local RSS gate; report
+both `peak_rss` and `post_rss` and treat the row as a peak-live stress.
 
 ## Default Candidate Gates
 
@@ -114,9 +190,9 @@ cross128_r90:
 RSS gates:
 
 ```text
-local0 <= 82MiB
-remote90 <= 90MiB
-cross128 <= 96MiB
+local0 peak_rss <= 82MiB
+remote90 peak_rss <= 90MiB
+cross128 peak_rss <= 96MiB
 ```
 
 ## Stretch Goals
@@ -155,6 +231,7 @@ p75
 min
 max
 median peak RSS
+median post-purge RSS when available
 safety zero-gate summary
 raw result path
 ```

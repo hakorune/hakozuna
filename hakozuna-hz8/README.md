@@ -47,8 +47,8 @@ local path:
 
 remote path:
   stable span owner
-  intrusive per-span MPSC remote free list
   remote-pending bitmap
+  pending word mask / qstate notification
   owner batch collect
 
 safety:
@@ -60,6 +60,20 @@ out of v0:
   direct large retention
   profile family
   production hot-path diagnostics
+```
+
+Lane note:
+
+```text
+guard_* rows:
+  16..2048
+
+v0 small remote diagnostic rows:
+  16..2048 or 16..4096
+
+main_* rows:
+  16..32768
+  not HZ8 v0 claims until MediumRun/default-candidate coverage exists
 ```
 
 ## Design Laws
@@ -93,11 +107,61 @@ passes its default gates.
 ```text
 make smoke
 make preload
-make bench
+make bench          # debug/counter build
+make bench-release  # release throughput build
 ```
 
-Guard-row bring-up example:
+Guard-row throughput bring-up example (`guard_r0`, not `main_r0`):
 
 ```text
-./h8_bench --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0
+./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 0
+```
+
+Release row examples:
+
+```text
+./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0
+./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 50
+./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 90
+./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 90 --interleaved 1
+```
+
+## Current Lane Semantics
+
+HZ8 v0 benchmark rows are small-only rows unless explicitly stated otherwise.
+
+```text
+guard/local0:
+  size=16..2048
+  remote_pct=0
+  comparable to guard_r0 shape, not the default-candidate main_r0 row
+
+small_phase_remote50 / small_phase_remote90:
+  size=16..2048 or 16..4096
+  phase-separated allocation barrier then remote-free phase
+  peak-live / first-touch / owner-lifecycle stress
+
+small_interleaved_remote90:
+  size=16..2048 or 16..4096
+  producer/consumer remote frees during allocation
+  primary v0 steady-state remote-performance lane
+
+main_*:
+  size=16..32768
+  not a v0 claim until MediumRun exists
+
+cross128_r90:
+  not a v0 claim
+  requires MediumRun v1
+```
+
+Benchmark output reports both:
+
+```text
+post_rss:
+  VmRSS sampled after worker join and owner-exit purge
+
+peak_rss:
+  process VmHWM high-water
+  exact per-run peak still requires a child-process runner
 ```
