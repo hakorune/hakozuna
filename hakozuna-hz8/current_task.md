@@ -24,10 +24,11 @@ HZ8 optimization is being implemented in this order:
 20. `LocalHotLineAudit-L1`
 21. `InitOnceLeafElision-L1`
 22. `LocalFreelistProofElision-L1`
+23. `TaggedSlotStateShadow-L1`
 
 Current focus:
 
-- `LocalFreelistProofElision-L1`
+- `TaggedSlotStateShadow-L1`
 
 Rules:
 
@@ -238,3 +239,11 @@ LocalFreelistProofElision-L1:
 - make freelist/bump allocation pending checks debug-only.
 - remove the separate local-free live test and use live-clear old value as the
   same-incarnation double-free authority.
+
+TaggedSlotStateShadow-L1:
+
+- add debug-only tagged slot state as a shadow map.
+- keep live bitmap as the only authority in this box.
+- update shadow state beside existing local and collect transitions.
+- verify shadow/live/pending/used/free-chain equivalence at quiescent points.
+- do not use slot state for boundary classification or remote admission yet.

@@ -91,8 +91,10 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
     abort();
   }
   h8_pending_count_dec(span);
-  span->next_free[slot] = atomic_load_explicit(&span->local_free_head,
-                                               memory_order_relaxed);
+  uint32_t old_head = atomic_load_explicit(&span->local_free_head,
+                                           memory_order_relaxed);
+  span->next_free[slot] = old_head;
+  h8_slot_shadow_set_free(span, slot, old_head);
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
                         memory_order_release);
   h8_used_count_sub(span, 1);
@@ -127,6 +129,7 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     size_t slot = (word_index << 6u) + bit_index;
     slots ^= bit;
     span->next_free[slot] = head;
+    h8_slot_shadow_set_free(span, slot, head);
     head = (uint32_t)slot;
   }
   atomic_store_explicit(&span->local_free_head, head, memory_order_release);
@@ -216,6 +219,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
     return H8_PUBLISH_INVALID;
   }
+  h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
   H8_DEBUG_INC(remote_publish_count);
   if (old_word == 0) {
     atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
@@ -295,6 +299,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
       atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {
     h8_span_mark_orphan_ready(span);
   }
+  h8_slot_shadow_verify_span(span);
   if (atomic_load_explicit(&span->pending_count, memory_order_acquire) != 0) {
     h8_span_notify(owner, span);
   }

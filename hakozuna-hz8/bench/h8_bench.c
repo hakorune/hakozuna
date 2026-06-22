@@ -416,6 +416,18 @@ int main(int argc, char** argv) {
          debug.local_pending_check_free,
          debug.local_used_touch_alloc,
          debug.local_used_touch_free);
+  printf("slot_shadow valid_mismatch=%zu invalid_mismatch=%zu pending_nonallocated=%zu free_unreachable=%zu free_duplicate=%zu free_cycle=%zu bad_next=%zu never_used_below_bump=%zu nonvirgin_above_bump=%zu used_mismatch=%zu reserved_quiescent=%zu\n",
+         debug.slot_shadow_valid_mismatch,
+         debug.slot_shadow_invalid_mismatch,
+         debug.slot_shadow_pending_nonallocated,
+         debug.slot_shadow_free_unreachable,
+         debug.slot_shadow_free_duplicate,
+         debug.slot_shadow_free_cycle,
+         debug.slot_shadow_bad_next,
+         debug.slot_shadow_never_used_below_bump,
+         debug.slot_shadow_nonvirgin_above_bump,
+         debug.slot_shadow_used_mismatch,
+         debug.slot_shadow_reserved_quiescent);
 
   free(throughput);
   free(rss);

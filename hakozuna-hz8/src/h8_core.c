@@ -350,6 +350,28 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_used_touch_alloc, memory_order_acquire);
   out->local_used_touch_free =
       atomic_load_explicit(&h8g.local_used_touch_free, memory_order_acquire);
+  out->slot_shadow_valid_mismatch =
+      atomic_load_explicit(&h8g.slot_shadow_valid_mismatch, memory_order_acquire);
+  out->slot_shadow_invalid_mismatch =
+      atomic_load_explicit(&h8g.slot_shadow_invalid_mismatch, memory_order_acquire);
+  out->slot_shadow_pending_nonallocated = atomic_load_explicit(
+      &h8g.slot_shadow_pending_nonallocated, memory_order_acquire);
+  out->slot_shadow_free_unreachable =
+      atomic_load_explicit(&h8g.slot_shadow_free_unreachable, memory_order_acquire);
+  out->slot_shadow_free_duplicate =
+      atomic_load_explicit(&h8g.slot_shadow_free_duplicate, memory_order_acquire);
+  out->slot_shadow_free_cycle =
+      atomic_load_explicit(&h8g.slot_shadow_free_cycle, memory_order_acquire);
+  out->slot_shadow_bad_next =
+      atomic_load_explicit(&h8g.slot_shadow_bad_next, memory_order_acquire);
+  out->slot_shadow_never_used_below_bump = atomic_load_explicit(
+      &h8g.slot_shadow_never_used_below_bump, memory_order_acquire);
+  out->slot_shadow_nonvirgin_above_bump = atomic_load_explicit(
+      &h8g.slot_shadow_nonvirgin_above_bump, memory_order_acquire);
+  out->slot_shadow_used_mismatch =
+      atomic_load_explicit(&h8g.slot_shadow_used_mismatch, memory_order_acquire);
+  out->slot_shadow_reserved_quiescent = atomic_load_explicit(
+      &h8g.slot_shadow_reserved_quiescent, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

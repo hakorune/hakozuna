@@ -77,10 +77,21 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
     span->pending_bits = h8_sys_calloc(h8_word_count_for_slots(span->slot_count),
                                        sizeof(_Atomic uint64_t));
     span->next_free = h8_sys_calloc(span->slot_count, sizeof(uint32_t));
-    if (!span->live_bits || !span->pending_bits || !span->next_free) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    span->slot_state_shadow =
+        h8_sys_calloc(span->slot_count, sizeof(_Atomic uint32_t));
+#endif
+    if (!span->live_bits || !span->pending_bits || !span->next_free
+#if defined(H8_ENABLE_DEBUG_STATS)
+        || !span->slot_state_shadow
+#endif
+    ) {
       h8_sys_free(span->live_bits);
       h8_sys_free(span->pending_bits);
       h8_sys_free(span->next_free);
+#if defined(H8_ENABLE_DEBUG_STATS)
+      h8_sys_free(span->slot_state_shadow);
+#endif
       h8_sys_free(span);
       pthread_mutex_unlock(&h8_span_table_lock);
       return NULL;
@@ -118,6 +129,9 @@ void h8_span_retire(H8Span* span) {
   h8_sys_free(span->live_bits);
   h8_sys_free(span->pending_bits);
   h8_sys_free(span->next_free);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_sys_free(span->slot_state_shadow);
+#endif
   h8_sys_free(span);
   pthread_mutex_unlock(&h8_span_table_lock);
 }

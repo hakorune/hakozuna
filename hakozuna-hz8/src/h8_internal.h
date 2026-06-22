@@ -85,6 +85,9 @@ struct H8Span {
   _Atomic uint64_t* live_bits;
   _Atomic uint64_t* pending_bits;
   uint32_t* next_free;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  _Atomic uint32_t* slot_state_shadow;
+#endif
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
@@ -201,6 +204,17 @@ typedef struct H8Global {
   atomic_size_t local_pending_check_free;
   atomic_size_t local_used_touch_alloc;
   atomic_size_t local_used_touch_free;
+  atomic_size_t slot_shadow_valid_mismatch;
+  atomic_size_t slot_shadow_invalid_mismatch;
+  atomic_size_t slot_shadow_pending_nonallocated;
+  atomic_size_t slot_shadow_free_unreachable;
+  atomic_size_t slot_shadow_free_duplicate;
+  atomic_size_t slot_shadow_free_cycle;
+  atomic_size_t slot_shadow_bad_next;
+  atomic_size_t slot_shadow_never_used_below_bump;
+  atomic_size_t slot_shadow_nonvirgin_above_bump;
+  atomic_size_t slot_shadow_used_mismatch;
+  atomic_size_t slot_shadow_reserved_quiescent;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;
@@ -293,6 +307,34 @@ static inline size_t h8_slot_count_for_class(uint32_t class_id) {
 
 static inline size_t h8_word_count_for_slots(size_t slots) {
   return (slots + 63u) / 64u;
+}
+
+#define H8_SLOT_TAG_SHIFT 30u
+#define H8_SLOT_PAYLOAD_MASK ((UINT32_C(1) << H8_SLOT_TAG_SHIFT) - 1u)
+#define H8_SLOT_NONE H8_SLOT_PAYLOAD_MASK
+#define H8_SLOT_NEVER_USED (UINT32_C(0) << H8_SLOT_TAG_SHIFT)
+#define H8_SLOT_ALLOCATED (UINT32_C(1) << H8_SLOT_TAG_SHIFT)
+#define H8_SLOT_FREE (UINT32_C(2) << H8_SLOT_TAG_SHIFT)
+#define H8_SLOT_POISON (UINT32_C(3) << H8_SLOT_TAG_SHIFT)
+
+static inline uint32_t h8_slot_state_tag(uint32_t state) {
+  return state >> H8_SLOT_TAG_SHIFT;
+}
+
+static inline uint32_t h8_slot_state_payload(uint32_t state) {
+  return state & H8_SLOT_PAYLOAD_MASK;
+}
+
+static inline uint32_t h8_slot_state_next_payload(uint32_t next) {
+  return next == UINT32_MAX ? H8_SLOT_NONE : next;
+}
+
+static inline uint32_t h8_slot_state_decode_next(uint32_t payload) {
+  return payload == H8_SLOT_NONE ? UINT32_MAX : payload;
+}
+
+static inline uint32_t h8_slot_state_free(uint32_t next) {
+  return H8_SLOT_FREE | h8_slot_state_next_payload(next);
 }
 
 static inline H8CtlWord h8_ctl_unpack(uint64_t raw) {
@@ -556,5 +598,9 @@ H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void h8_free_inner(void* ptr);
 void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget);
+void h8_slot_shadow_set_allocated(H8Span* span, size_t slot);
+void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next);
+void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag);
+void h8_slot_shadow_verify_span(H8Span* span);
 
 #endif

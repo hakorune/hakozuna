@@ -107,6 +107,17 @@ typedef struct H8DebugStats {
   size_t local_pending_check_free;
   size_t local_used_touch_alloc;
   size_t local_used_touch_free;
+  size_t slot_shadow_valid_mismatch;
+  size_t slot_shadow_invalid_mismatch;
+  size_t slot_shadow_pending_nonallocated;
+  size_t slot_shadow_free_unreachable;
+  size_t slot_shadow_free_duplicate;
+  size_t slot_shadow_free_cycle;
+  size_t slot_shadow_bad_next;
+  size_t slot_shadow_never_used_below_bump;
+  size_t slot_shadow_nonvirgin_above_bump;
+  size_t slot_shadow_used_mismatch;
+  size_t slot_shadow_reserved_quiescent;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;
