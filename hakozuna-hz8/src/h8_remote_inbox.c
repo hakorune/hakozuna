@@ -29,18 +29,27 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
 }
 
 static void h8_pending_count_dec(H8Span* span) {
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t prev = atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
   if (prev == 0) {
     abort();
   }
+#else
+  (void)span;
+#endif
 }
 
 static void h8_pending_count_sub(H8Span* span, size_t count) {
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t prev =
       atomic_fetch_sub_explicit(&span->pending_count, count, memory_order_relaxed);
   if (prev < count) {
     abort();
   }
+#else
+  (void)span;
+  (void)count;
+#endif
 }
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
@@ -377,8 +386,12 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     H8_DEBUG_INC(remote_stage_publish_ok);
     return H8_PUBLISH_OK;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1,
                                           memory_order_acq_rel);
+#else
+  size_t prev = 1;
+#endif
   uint64_t old_word =
       atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
   if (old_word & slot_bit) {
@@ -503,7 +516,7 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
   if ((H8SpanState)h8_span_owner_word_load(span).state == H8_SPAN_ORPHAN_QUIESCING &&
       atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
-      atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {
+      h8_span_pending_quiescent(span)) {
     h8_span_mark_orphan_ready(span);
   }
 #if defined(H8_ENABLE_DEBUG_STATS)

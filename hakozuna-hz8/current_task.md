@@ -4,14 +4,14 @@
 
 Current focus:
 
-- `QuiescentPendingBitmapGate-L1`
+- `PendingWordMaskAuthority-L1`
 
 Immediate goal:
 
-- Replace cold/quiescent `pending_count == 0` gates with stable
-  `qstate == IDLE`, `pending_word_mask == 0`, and full pending bitmap scan.
-- Keep `pending_count` as a shadow until `PendingWordMaskAuthority-L1`.
-- Add cold repair/diagnostic hooks for quiescent mask loss.
+- Remove release hot-path `pending_count` RMW.
+- Keep `pending_count` only in debug builds as shadow accounting.
+- Use `pending_bits + pending_word_mask + qstate DIRTY` as the runtime pending
+  authority.
 
 Current evidence:
 
@@ -90,6 +90,13 @@ Current evidence:
 - `QuiescentPendingBitmapGate-L1` now uses full pending bitmap checks for
   owner exit, handoff, and adoption quiescence.  Representative checks pass
   with `quiescent_pending_repair = 0`.
+- `PendingWordMaskAuthority-L1` is now being applied:
+  release builds no longer update `pending_count` on remote publish/collect.
+- Representative release checks after count RMW removal:
+  - interleaved remote90 passes with median about `9.9M ops/s`, RSS about
+    `9 MiB`.
+  - phase-separated remote90 passes with median about `1.16M ops/s`.
+  - no RSS leak is visible in these rows.
 
 Current measured baseline:
 
@@ -199,14 +206,15 @@ Current measured baseline:
    - use count only for shadow counters and cold/quiescent paths.
 
 12. `QuiescentPendingBitmapGate-L1`
-   - implemented; under measurement.
+   - completed.
    - replace owner exit / handoff / adoption count-zero checks with stable
      publish-gate-closed, refs-zero, qstate-IDLE, mask-zero, full-bitmap-zero
      checks.
 
 13. `PendingWordMaskAuthority-L1`
-   - behavior candidate after shadow evidence.
-   - remove release per-object pending_count RMW only after zero gates hold.
+   - implemented; under measurement.
+   - remove release per-object pending_count RMW.
+   - keep debug shadow count.
 
 14. `IntrusiveRemoteHead-L1`
    - HOLD.
@@ -415,6 +423,31 @@ Current measured baseline:
   - debug interleaved remote90 passes with existing zero gates intact.
   - release interleaved remote90 passes.
   - representative `quiescent_pending_repair = 0`.
+
+### PendingWordMaskAuthority-L1
+
+- Applied:
+  - release build does not increment `pending_count` in remote publish.
+  - release build does not decrement `pending_count` in remote collect.
+  - debug build keeps `pending_count` as a reserved-or-committed pending
+    obligation shadow.
+- Required checks:
+  - debug interleaved remote90 remains clean.
+  - release interleaved remote90 does not leak RSS.
+  - phase-separated remote90 remains clean.
+  - quiescent pending repair remains zero in representative rows.
+- Current result:
+  - smoke and regular-adoption smoke pass.
+  - debug interleaved remote90 remains clean:
+    `pending_word_false_neg = 0`, `pending_word_repair = 0`,
+    `quiescent_pending_repair = 0`.
+  - release interleaved remote90 passes without visible RSS leak.
+  - release phase-separated remote90 passes.
+- Note:
+  - this removes one remote publish/collect RMW from release builds.
+  - the measured 2-thread interleaved row is noisy and not yet a clear
+    throughput win; keep the change because it removes an invalid production
+    dependency on count authority.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 
