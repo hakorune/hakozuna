@@ -244,6 +244,11 @@ typedef struct H8Global {
   atomic_size_t local_pending_check_free;
   atomic_size_t local_used_touch_alloc;
   atomic_size_t local_used_touch_free;
+  atomic_size_t span_commit_total_ns;
+  atomic_size_t span_commit_lock_wait_ns;
+  atomic_size_t span_commit_table_scan_ns;
+  atomic_size_t span_commit_meta_ns;
+  atomic_size_t span_commit_mprotect_ns;
   atomic_size_t slot_shadow_valid_mismatch;
   atomic_size_t slot_shadow_invalid_mismatch;
   atomic_size_t slot_shadow_pending_nonallocated;

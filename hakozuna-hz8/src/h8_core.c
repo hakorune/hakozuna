@@ -79,8 +79,12 @@ static void h8_init_once(void) {
       memory_order_relaxed);
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
-  h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_NONE,
-                        MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+  int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#ifdef MAP_NORESERVE
+  mmap_flags |= MAP_NORESERVE;
+#endif
+  h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_READ | PROT_WRITE,
+                        mmap_flags, -1, 0);
   if (h8g.arena_base == MAP_FAILED) {
     fprintf(stderr, "HZ8 arena reservation failed\n");
     abort();
@@ -434,6 +438,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_used_touch_alloc, memory_order_acquire);
   out->local_used_touch_free =
       atomic_load_explicit(&h8g.local_used_touch_free, memory_order_acquire);
+  out->span_commit_total_ns =
+      atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
+  out->span_commit_lock_wait_ns =
+      atomic_load_explicit(&h8g.span_commit_lock_wait_ns, memory_order_acquire);
+  out->span_commit_table_scan_ns =
+      atomic_load_explicit(&h8g.span_commit_table_scan_ns, memory_order_acquire);
+  out->span_commit_meta_ns =
+      atomic_load_explicit(&h8g.span_commit_meta_ns, memory_order_acquire);
+  out->span_commit_mprotect_ns =
+      atomic_load_explicit(&h8g.span_commit_mprotect_ns, memory_order_acquire);
   out->slot_shadow_valid_mismatch =
       atomic_load_explicit(&h8g.slot_shadow_valid_mismatch, memory_order_acquire);
   out->slot_shadow_invalid_mismatch =

@@ -35,6 +35,8 @@ typedef struct H8BenchThread {
   _Atomic int* done;
   pthread_barrier_t* barrier;
   uint32_t rng;
+  uint64_t alloc_ns;
+  uint64_t remote_ns;
   int error;
 } H8BenchThread;
 
@@ -174,6 +176,7 @@ static void* h8_bench_thread_main(void* arg) {
   H8Inbox* next_inbox = &th->inboxes[next];
   H8Inbox* my_inbox = &th->inboxes[th->index];
 
+  uint64_t alloc_start = h8_now_ns();
   for (size_t i = 0; i < opt->iters_per_thread; ++i) {
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
     void* ptr = h8_malloc(size);
@@ -196,13 +199,16 @@ static void* h8_bench_thread_main(void* arg) {
       h8_free(ptr);
     }
   }
+  th->alloc_ns = h8_now_ns() - alloc_start;
 
   pthread_barrier_wait(th->barrier);
 
   if (!th->error) {
+    uint64_t remote_start = h8_now_ns();
     for (size_t i = 0; i < my_inbox->count; ++i) {
       h8_free(my_inbox->items[i]);
     }
+    th->remote_ns = h8_now_ns() - remote_start;
   }
 
   pthread_barrier_wait(th->barrier);
@@ -312,10 +318,14 @@ int main(int argc, char** argv) {
 
   double* throughput = calloc((size_t)opt.runs, sizeof(*throughput));
   size_t* rss = calloc((size_t)opt.runs, sizeof(*rss));
-  if (!throughput || !rss) {
+  double* alloc_phase_ms = calloc((size_t)opt.runs, sizeof(*alloc_phase_ms));
+  double* remote_phase_ms = calloc((size_t)opt.runs, sizeof(*remote_phase_ms));
+  if (!throughput || !rss || !alloc_phase_ms || !remote_phase_ms) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
+    free(alloc_phase_ms);
+    free(remote_phase_ms);
     return 1;
   }
 
@@ -332,6 +342,8 @@ int main(int argc, char** argv) {
       free(done);
       free(throughput);
       free(rss);
+      free(alloc_phase_ms);
+      free(remote_phase_ms);
       return 1;
     }
 
@@ -360,10 +372,18 @@ int main(int argc, char** argv) {
     }
 
     int error = 0;
+    uint64_t alloc_ns_max = 0;
+    uint64_t remote_ns_max = 0;
     for (int i = 0; i < opt.threads; ++i) {
       pthread_join(tids[i], NULL);
       if (th[i].error != 0) {
         error = th[i].error;
+      }
+      if (th[i].alloc_ns > alloc_ns_max) {
+        alloc_ns_max = th[i].alloc_ns;
+      }
+      if (th[i].remote_ns > remote_ns_max) {
+        remote_ns_max = th[i].remote_ns;
       }
     }
     uint64_t end = h8_now_ns();
@@ -378,7 +398,13 @@ int main(int argc, char** argv) {
     double ops = (double)opt.threads * (double)opt.iters_per_thread;
     throughput[run] = ops / seconds;
     rss[run] = h8_read_rss_bytes();
+    alloc_phase_ms[run] = (double)alloc_ns_max / 1e6;
+    remote_phase_ms[run] = (double)remote_ns_max / 1e6;
     printf("run=%d ops/s=%.3f rss=%zu\n", run + 1, throughput[run], rss[run]);
+    if (!opt.interleaved) {
+      printf("run_phase=%d alloc_ms=%.3f remote_ms=%.3f\n", run + 1,
+             alloc_phase_ms[run], remote_phase_ms[run]);
+    }
 
     for (int i = 0; i < opt.threads; ++i) {
       free(inboxes[i].items);
@@ -391,6 +417,8 @@ int main(int argc, char** argv) {
 
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), h8_cmp_double);
   qsort(rss, (size_t)opt.runs, sizeof(*rss), h8_cmp_size_t);
+  qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
+  qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
 
   printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
@@ -403,6 +431,11 @@ int main(int argc, char** argv) {
   printf("rss median=%zu min=%zu max=%zu\n",
          h8_percentile_size_t(rss, (size_t)opt.runs, 0.50),
          rss[0], rss[(size_t)opt.runs - 1u]);
+  if (!opt.interleaved) {
+    printf("phase_ms alloc_median=%.3f remote_median=%.3f\n",
+           h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
+           h8_percentile(remote_phase_ms, (size_t)opt.runs, 0.50));
+  }
 
   H8Stats stats = h8_stats();
   H8DebugStats debug = h8_debug_stats();
@@ -570,6 +603,12 @@ int main(int argc, char** argv) {
          debug.local_pending_check_free,
          debug.local_used_touch_alloc,
          debug.local_used_touch_free);
+  printf("span_commit_timing total_ms=%.3f lock_wait_ms=%.3f table_scan_ms=%.3f meta_ms=%.3f mprotect_ms=%.3f\n",
+         (double)debug.span_commit_total_ns / 1e6,
+         (double)debug.span_commit_lock_wait_ns / 1e6,
+         (double)debug.span_commit_table_scan_ns / 1e6,
+         (double)debug.span_commit_meta_ns / 1e6,
+         (double)debug.span_commit_mprotect_ns / 1e6);
   printf("slot_shadow valid_mismatch=%zu invalid_mismatch=%zu pending_nonallocated=%zu free_unreachable=%zu free_duplicate=%zu free_cycle=%zu bad_next=%zu never_used_below_bump=%zu nonvirgin_above_bump=%zu used_mismatch=%zu reserved_quiescent=%zu\n",
          debug.slot_shadow_valid_mismatch,
          debug.slot_shadow_invalid_mismatch,
@@ -585,5 +624,7 @@ int main(int argc, char** argv) {
 
   free(throughput);
   free(rss);
+  free(alloc_phase_ms);
+  free(remote_phase_ms);
   return 0;
 }

@@ -4,13 +4,14 @@
 
 Current focus:
 
-- `RemoteClaimCloseOrdering-L1`
+- `SpanCommitMprotectElision-L1`
 
 Immediate goal:
 
-- Close the collector-side remote claim before clearing pending bits.
-- For slot-state authority, publish `FREE` before pending bit clear.
-- Keep free-list head publication last.
+- Remove per-span `mprotect` from commit.
+- Reserve the small arena RW and rely on lazy page allocation for RSS.
+- Keep retire as `madvise(MADV_DONTNEED)` without switching pages back to
+  PROT_NONE.
 
 Current evidence:
 
@@ -101,6 +102,22 @@ Current evidence:
 - `RemoteClaimCloseOrdering-L1` now publishes slot-state FREE before pending
   clear when slot-state authority is enabled.  Both default and slot-authority
   debug interleaved rows keep the existing zero gates clean.
+- Phase timing shows phase-separated remote90 is allocation/span-commit bound:
+  alloc phase median about `644ms`, remote free phase about `12ms`.
+- Debug span commit timing attributes the cost to global table lock wait:
+  `span_commit_total_ms ~= 23721`, `lock_wait_ms ~= 22235`,
+  `mprotect_ms ~= 1239`.
+- After lock elision, debug span commit timing shifts to mprotect:
+  `lock_wait_ms = 0`, `mprotect_ms ~= 9434` cumulative in debug remote90.
+- `SpanCommitMprotectElision-L1` removes per-span mprotect by reserving the
+  arena RW with `MAP_NORESERVE`.
+- Representative release results after RW arena:
+  - local0: median about `150.24M ops/s`
+  - remote50 phase-separated: median about `4.65M ops/s`
+  - remote90 phase-separated: median about `2.70M ops/s`
+  - debug span commit timing: `total_ms ~= 148`, `mprotect_ms ~= 7`
+- Interleaved remote90 became noisy and lower in the representative run; track
+  this separately before claiming an interleaved win.
 
 Current measured baseline:
 
@@ -232,11 +249,22 @@ Current measured baseline:
    - keep debug shadow count.
 
 14. `RemoteClaimCloseOrdering-L1`
-   - implemented; under measurement.
+   - completed.
    - ensure collector publishes non-allocated state before clearing pending
      claim bits.
 
-15. `IntrusiveRemoteHead-L1`
+15. `SpanCommitLockElision-L1`
+   - implemented; under measurement.
+   - allocate span table indices monotonically with `span_alloc_cursor`.
+   - no table scan / global table lock on commit.
+   - keep retire-side lock as-is.
+
+16. `SpanCommitMprotectElision-L1`
+   - implemented; under measurement.
+   - reserve arena as RW.
+   - remove commit/decommit mprotect calls.
+
+17. `IntrusiveRemoteHead-L1`
    - HOLD.
    - only revisit if mask-authority data shows collect CPU still dominates.
 
@@ -495,6 +523,42 @@ Current measured baseline:
   - slot-state authority debug interleaved remote90 passes.
   - release interleaved remote90 passes, representative median about
     `11.4M ops/s`.
+
+### SpanCommitLockElision-L1
+
+- Applied:
+  - new span commit uses monotonic `span_alloc_cursor`.
+  - commit no longer takes `h8_span_table_lock`.
+  - retired span table slots are not reused in v0.
+- Evidence:
+  - phase-separated remote90 alloc phase drops from about `644ms` to about
+    `406ms`.
+  - release remote90 median improves from about `1.37M` to about `1.71M`.
+  - debug timing shows lock wait is eliminated and mprotect becomes the next
+    dominant commit cost.
+
+### SpanCommitMprotectElision-L1
+
+- Rationale:
+  - the reserved small arena prevents system allocator collisions.
+  - allocator safety is MISS/VALID/INVALID classification, not SIGSEGV on stale
+    user payload access.
+  - RW anonymous mappings still allocate physical pages lazily on first touch.
+- Scope:
+  - reserve small arena as RW.
+  - span commit does not call `mprotect`.
+  - span retire uses `madvise(MADV_DONTNEED)` but does not restore PROT_NONE.
+- Current checks:
+  - smoke passes.
+  - regular adoption smoke passes.
+  - release remote90 phase-separated improves to about `2.70M ops/s`.
+  - release remote50 phase-separated improves to about `4.65M ops/s`.
+  - release local0 improves to about `150.24M ops/s`.
+  - debug remote90 keeps pending/remote zero gates clean.
+- Follow-up:
+  - interleaved remote90 variance worsened in the representative run.  This is
+    likely a page-fault/RSS timing artifact of lazy RW arena commit and needs a
+    separate interleaved stability audit.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

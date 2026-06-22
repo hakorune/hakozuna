@@ -148,6 +148,11 @@ typedef struct H8DebugStats {
   size_t local_pending_check_free;
   size_t local_used_touch_alloc;
   size_t local_used_touch_free;
+  size_t span_commit_total_ns;
+  size_t span_commit_lock_wait_ns;
+  size_t span_commit_table_scan_ns;
+  size_t span_commit_meta_ns;
+  size_t span_commit_mprotect_ns;
   size_t slot_shadow_valid_mismatch;
   size_t slot_shadow_invalid_mismatch;
   size_t slot_shadow_pending_nonallocated;
