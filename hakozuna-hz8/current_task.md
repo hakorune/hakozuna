@@ -104,13 +104,24 @@ Current evidence:
 
 Current measured baseline:
 
-- release local r0: about `31M ops/s`
-- release remote90, 2-thread small bench: about `1.3M ops/s`
-- release remote90 with unsafe remote lease elision: about `1.38M ops/s`
-- release remote90 with unsafe dropped pending publish, RUNS=1:
-  about `1.58M ops/s`, with RSS around `1.25 GiB`
-- release remote90 with both lease and pending publish elision, RUNS=1:
-  about `1.73M ops/s`, with RSS around `1.25 GiB`
+- Release baseline after `RemoteClaimCloseOrdering-L1`, `RUNS=10`, `T=16`,
+  `iters=100000`, `size=16..2048`:
+  - local0: median `114.59M ops/s`, RSS median `15.0 MiB`
+  - remote50 phase-separated: median `2.45M ops/s`, RSS median `22.5 MiB`
+  - remote90 phase-separated: median `1.37M ops/s`, RSS median `28.7 MiB`
+  - remote90 interleaved: median `26.98M ops/s`, RSS median `15.4 MiB`
+- Debug safety rows:
+  - smoke: pass
+  - regular-adoption smoke: pass
+  - debug remote90: `invalid=0`, `validate_fail=0`,
+    `duplicate_claim=0`, `pending_word_false_neg=0`,
+    `pending_word_repair=0`, `quiescent_pending_repair=0`
+  - debug interleaved remote90: same pending/remote zero gates are clean
+  - slot-state authority debug interleaved remote90: same pending/remote zero
+    gates are clean
+- Known debug note:
+  - slot shadow live-snapshot counters can be nonzero during interleaved
+    stress; they are not currently the pending authority promotion blocker.
 
 ## Rules
 
