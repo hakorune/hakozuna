@@ -173,14 +173,13 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
 }
 
 void* h8_malloc_inner(size_t size) {
-  h8_init();
   if (size == 0) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
     return h8_sys_malloc(size);
   }
-  H8ThreadCtx* ctx = h8_thread_ctx_get();
+  H8ThreadCtx* ctx = h8_thread_ctx_fast();
   if (!ctx) {
     return NULL;
   }
@@ -293,7 +292,7 @@ void h8_free_inner(void* ptr) {
     h8_fail_invalid_free();
     return;
   }
-  H8ThreadCtx* ctx = h8_thread_ctx_get();
+  H8ThreadCtx* ctx = h8_thread_ctx_fast();
   if (!ctx) {
     h8_fail_invalid_free();
     return;

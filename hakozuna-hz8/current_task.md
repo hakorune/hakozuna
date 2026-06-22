@@ -10,6 +10,7 @@ Current focus:
 - `RemotePublishMicrobench-L1` / DONE
 - `TailDrainPolicyAudit-L1` / DONE
 - `PerfLanePurification-L1` / DONE
+- `TlsLeafEntryFastPath-L1` / DONE
 
 Immediate goal:
 
@@ -20,8 +21,10 @@ Immediate goal:
   `h8_bench_release_audit` / `h8_bench` as attribution lanes.
 - Remove `pending_count` from release only after quiescent bitmap gates are
   confirmed clean.
-- Next allocator box is `TlsLeafEntryFastPath-L1`: remove repeated
-  `pthread_once` / TLS getter fixed cost from the steady malloc/free leaf.
+- Next allocator box should be chosen from the remaining local leaf shape:
+  active-hit validation trust shadow, class lookup width, or used-count/local-hot
+  scalar shape.  Do not reopen owner lease or intrusive remote-head until the
+  cleaned perf lane says remote protocol is the blocker again.
 
 Why this is first:
 
@@ -235,6 +238,27 @@ Why this is first:
   Interpretation: prior interleaved rows mixed allocator work with benchmark
   attribution.  Future performance comparisons should use `bench-release`;
   use audit lanes only when attribution is explicitly needed.
+- `TlsLeafEntryFastPath-L1` is complete:
+  `h8_thread_ctx_fast()` reads the `_Thread_local` context directly and calls the
+  slow helper only on first use.  The slow helper owns `h8_init`,
+  `pthread_getspecific`, owner creation, and `pthread_setspecific`.  Small malloc
+  no longer calls `h8_init()` before the TLS fast check; free keeps the arena gate
+  initialization but uses the fast context lookup after classification.
+  Short checks:
+  - `make smoke bench-release bench-release-audit bench`
+  - smoke passes
+  - `bench-release` local0, RUNS=3, 16 threads x 100k:
+    end-to-end median about `251.9M ops/s`, steady-work median about
+    `274.7M ops/s`
+  - `bench-release` interleaved remote90, RUNS=3, 16 threads x 100k:
+    end-to-end median about `50.4M ops/s`, steady-work median about
+    `52.5M ops/s`, `push_yields=0`, tail median about `13.7ms`
+  - debug `bench` short interleaved remote90:
+    `publish_ok=72050`, `validate_fail=0`, `duplicate_claim=0`,
+    `quiescent_pending bitmap_nonzero=0 repair=0`
+  Interpretation: the repeated init/TLS getter cost was a real primary blocker.
+  Current quick numbers clear the v0 local/interleaved small performance gates,
+  but need RUNS=10 x 2 confirmation before freezing.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -277,19 +301,22 @@ Acceptance:
 
 ## Next
 
-1. `TlsLeafEntryFastPath-L1`
-   - steady state should load the TLS context directly
-   - slow helper handles `h8_init`, owner creation, and pthread TLS setup
-   - affects local0 and interleaved rows because every iteration enters malloc
-     and most frees still need owner context
+1. Run paired/stable confirmation for the cleaned perf lane:
+   - `local0`
+   - interleaved remote90
+   - phase-separated remote90 as lifecycle/RSS stress
+   - RUNS=10 x 2 when the host is quiet
 2. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
-3. `PendingWordMaskAuthority-L1`
+3. Consider `TlsActiveHintTrustShadow-L1`
+   - shadow whether an active TLS span can skip owner/class/state revalidation
+   - no behavior change until mismatch counters are proven zero
+4. `PendingWordMaskAuthority-L1`
    - release: no `pending_count` update/load in remote publish or collect
    - debug: keep `pending_count` as a shadow and quiescent consistency check
-4. If interleaved remains below `40M`, ask design review whether to attack:
+5. If confirmed interleaved remains below `40M`, ask design review whether to attack:
    - owner publish lease shape
    - slot-state validation duplication
    - tail drain/finish policy
    - or a dedicated remote publish microbench
-5. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+6. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.

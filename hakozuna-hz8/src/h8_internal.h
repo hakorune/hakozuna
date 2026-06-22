@@ -18,9 +18,11 @@
 #define H8_CACHELINE_BYTES 64u
 
 #if defined(__GNUC__) || defined(__clang__)
+#define H8_LIKELY(expr) __builtin_expect(!!(expr), 1)
 #define H8_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
 #define H8_CACHELINE_ALIGNED __attribute__((aligned(H8_CACHELINE_BYTES)))
 #else
+#define H8_LIKELY(expr) (expr)
 #define H8_UNLIKELY(expr) (expr)
 #define H8_CACHELINE_ALIGNED
 #endif
@@ -366,6 +368,7 @@ typedef struct H8Global {
 } H8Global;
 
 extern H8Global h8g;
+extern _Thread_local H8ThreadCtx* h8_tls_ctx;
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 #define H8_DEBUG_INC(field) \
@@ -700,10 +703,19 @@ void* h8_sys_malloc(size_t size);
 void* h8_sys_calloc(size_t count, size_t size);
 void h8_sys_free(void* ptr);
 
+H8ThreadCtx* h8_thread_ctx_get_slow(void);
 H8ThreadCtx* h8_thread_ctx_get(void);
 H8OwnerRecord* h8_owner_current(void);
 H8OwnerRecord* h8_orphan_owner(void);
 void h8_thread_shutdown(void* arg);
+
+static inline H8ThreadCtx* h8_thread_ctx_fast(void) {
+  H8ThreadCtx* ctx = h8_tls_ctx;
+  if (H8_LIKELY(ctx != NULL)) {
+    return ctx;
+  }
+  return h8_thread_ctx_get_slow();
+}
 
 H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out);
 H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id);
