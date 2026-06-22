@@ -2,6 +2,7 @@
 #define H8_INTERNAL_H
 
 #include "../include/h8.h"
+#include "h8_class_map.h"
 
 #include <pthread.h>
 #include <stdatomic.h>
@@ -11,10 +12,8 @@
 
 #define H8_SMALL_ARENA_BYTES (1ull << 36)
 #define H8_SPAN_BYTES 65536u
-#define H8_MAX_SMALL_SIZE 4096u
 #define H8_OWNER_MAX 64u
 #define H8_OWNER_SPAN_CHUNK 32u
-#define H8_CLASS_COUNT 9u
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
 #define H8_CACHELINE_BYTES 64u
 
@@ -386,28 +385,6 @@ static inline size_t h8_round_up_size(size_t value, size_t align) {
   return (value + align - 1u) & ~(align - 1u);
 }
 
-static inline uint32_t h8_class_size(uint32_t class_id) {
-  static const uint32_t sizes[H8_CLASS_COUNT] = {
-      16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-  return sizes[class_id];
-}
-
-static inline uint32_t h8_class_shift(uint32_t class_id) {
-  return 4u + class_id;
-}
-
-static inline uint32_t h8_class_for_size(size_t size) {
-  if (size <= 16u) return 0;
-  if (size <= 32u) return 1;
-  if (size <= 64u) return 2;
-  if (size <= 128u) return 3;
-  if (size <= 256u) return 4;
-  if (size <= 512u) return 5;
-  if (size <= 1024u) return 6;
-  if (size <= 2048u) return 7;
-  return 8;
-}
-
 static inline size_t h8_span_index_from_ptr(const void* ptr) {
   uintptr_t base = (uintptr_t)h8g.arena_base;
   uintptr_t addr = (uintptr_t)ptr;
@@ -425,7 +402,7 @@ static inline bool h8_arena_contains(const void* ptr) {
 }
 
 static inline size_t h8_slot_count_for_class(uint32_t class_id) {
-  return H8_SPAN_BYTES / h8_class_size(class_id);
+  return h8_class_slot_count(class_id);
 }
 
 static inline size_t h8_word_count_for_slots(size_t slots) {

@@ -91,7 +91,8 @@ static void* h8_bench_thread_main(void* arg) {
         th->error = 2;
         break;
       }
-      ++th->remote_live_by_class[class_id];
+      (void)class_id;
+      h8_bench_note_remote_live(th, size);
       next_inbox->items[next_inbox->count++] = ptr;
     } else {
       h8_free(ptr);
@@ -140,12 +141,19 @@ int main(int argc, char** argv) {
   size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
   size_t* span_lower_bound = calloc((size_t)opt.runs, sizeof(*span_lower_bound));
   size_t* remote_live_objects = calloc((size_t)opt.runs, sizeof(*remote_live_objects));
+  size_t* upper1536_span_lower_bound =
+      calloc((size_t)opt.runs, sizeof(*upper1536_span_lower_bound));
+  size_t* upper1p5_span_lower_bound =
+      calloc((size_t)opt.runs, sizeof(*upper1p5_span_lower_bound));
   uint64_t frag_requested_total = 0;
   uint64_t frag_rounded_total = 0;
+  uint64_t frag_upper1536_total = 0;
+  uint64_t frag_upper1p5_total = 0;
   uint64_t frag_rounded_by_class[9] = {0};
   size_t frag_allocs_by_class[9] = {0};
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
-      !minor_faults || !span_lower_bound || !remote_live_objects) {
+      !minor_faults || !span_lower_bound || !remote_live_objects ||
+      !upper1536_span_lower_bound || !upper1p5_span_lower_bound) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
@@ -155,6 +163,8 @@ int main(int argc, char** argv) {
     free(minor_faults);
     free(span_lower_bound);
     free(remote_live_objects);
+    free(upper1536_span_lower_bound);
+    free(upper1p5_span_lower_bound);
     return 1;
   }
 
@@ -177,6 +187,8 @@ int main(int argc, char** argv) {
       free(minor_faults);
       free(span_lower_bound);
       free(remote_live_objects);
+      free(upper1536_span_lower_bound);
+      free(upper1p5_span_lower_bound);
       return 1;
     }
 
@@ -234,6 +246,8 @@ int main(int argc, char** argv) {
     double seconds = (double)(end - start) / 1e9;
     double ops = (double)opt.threads * (double)opt.iters_per_thread;
     size_t lower = 0;
+    size_t upper1536_lower = 0;
+    size_t upper1p5_lower = 0;
     size_t live_objects = 0;
     uint64_t run_requested = 0;
     uint64_t run_rounded = 0;
@@ -245,6 +259,16 @@ int main(int argc, char** argv) {
           live_objects += live;
           lower += (live + slots - 1u) / slots;
         }
+        for (uint32_t c = 0; c < H8_BENCH_CANDIDATE_UPPER1536_COUNT; ++c) {
+          size_t live = th[i].remote_live_upper1536[c];
+          size_t slots = h8_bench_upper1536_slots_for_class(c);
+          upper1536_lower += (live + slots - 1u) / slots;
+        }
+        for (uint32_t c = 0; c < H8_BENCH_CANDIDATE_UPPER1P5_COUNT; ++c) {
+          size_t live = th[i].remote_live_upper1p5[c];
+          size_t slots = h8_bench_upper1p5_slots_for_class(c);
+          upper1p5_lower += (live + slots - 1u) / slots;
+        }
       }
     }
     for (int i = 0; i < opt.threads; ++i) {
@@ -254,6 +278,8 @@ int main(int argc, char** argv) {
         frag_rounded_by_class[c] += th[i].rounded_bytes_by_class[c];
         frag_allocs_by_class[c] += th[i].alloc_count_by_class[c];
       }
+      frag_upper1536_total += th[i].rounded_upper1536_bytes;
+      frag_upper1p5_total += th[i].rounded_upper1p5_bytes;
     }
     frag_requested_total += run_requested;
     frag_rounded_total += run_rounded;
@@ -262,6 +288,8 @@ int main(int argc, char** argv) {
     rss[run] = mem.rss_bytes;
     peak_rss[run] = mem.hwm_bytes;
     span_lower_bound[run] = lower;
+    upper1536_span_lower_bound[run] = upper1536_lower;
+    upper1p5_span_lower_bound[run] = upper1p5_lower;
     remote_live_objects[run] = live_objects;
     long minflt_delta = usage_after.ru_minflt - usage_before.ru_minflt;
     minor_faults[run] = minflt_delta > 0 ? (size_t)minflt_delta : 0;
@@ -288,14 +316,18 @@ int main(int argc, char** argv) {
   qsort(peak_rss, (size_t)opt.runs, sizeof(*peak_rss), h8_cmp_size_t);
   qsort(minor_faults, (size_t)opt.runs, sizeof(*minor_faults), h8_cmp_size_t);
   qsort(span_lower_bound, (size_t)opt.runs, sizeof(*span_lower_bound), h8_cmp_size_t);
+  qsort(upper1536_span_lower_bound, (size_t)opt.runs,
+        sizeof(*upper1536_span_lower_bound), h8_cmp_size_t);
+  qsort(upper1p5_span_lower_bound, (size_t)opt.runs,
+        sizeof(*upper1p5_span_lower_bound), h8_cmp_size_t);
   qsort(remote_live_objects, (size_t)opt.runs, sizeof(*remote_live_objects),
         h8_cmp_size_t);
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d class_map_id=%s\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved);
+         opt.remote_pct, opt.interleaved, H8_CLASS_MAP_ID);
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
@@ -317,6 +349,11 @@ int main(int argc, char** argv) {
     printf("live_span_lower_bound remote_live_median=%zu spans_median=%zu\n",
            h8_percentile_size_t(remote_live_objects, (size_t)opt.runs, 0.50),
            h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50));
+    printf("candidate_span_lower_bound upper1536_median=%zu upper1p5_median=%zu\n",
+           h8_percentile_size_t(upper1536_span_lower_bound, (size_t)opt.runs,
+                                0.50),
+           h8_percentile_size_t(upper1p5_span_lower_bound, (size_t)opt.runs,
+                                0.50));
   }
   double frag_ratio = frag_requested_total
                           ? (double)frag_rounded_total /
@@ -324,6 +361,15 @@ int main(int argc, char** argv) {
                           : 0.0;
   printf("fragmentation requested_bytes=%" PRIu64 " rounded_bytes=%" PRIu64 " rounding_ratio=%.6f\n",
          frag_requested_total, frag_rounded_total, frag_ratio);
+  printf("fragmentation_candidates upper1536_rounded_bytes=%" PRIu64 " upper1536_ratio=%.6f upper1p5_rounded_bytes=%" PRIu64 " upper1p5_ratio=%.6f\n",
+         frag_upper1536_total,
+         frag_requested_total ? (double)frag_upper1536_total /
+                                    (double)frag_requested_total
+                              : 0.0,
+         frag_upper1p5_total,
+         frag_requested_total ? (double)frag_upper1p5_total /
+                                    (double)frag_requested_total
+                              : 0.0);
   printf("fragmentation_by_class allocs=[%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=[%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]\n",
          frag_allocs_by_class[0], frag_allocs_by_class[1],
          frag_allocs_by_class[2], frag_allocs_by_class[3],
@@ -561,5 +607,7 @@ int main(int argc, char** argv) {
   free(minor_faults);
   free(span_lower_bound);
   free(remote_live_objects);
+  free(upper1536_span_lower_bound);
+  free(upper1p5_span_lower_bound);
   return 0;
 }
