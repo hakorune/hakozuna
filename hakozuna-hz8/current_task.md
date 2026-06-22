@@ -4,13 +4,15 @@
 
 Current focus:
 
-- `RemoteClaimCloseOrdering-L1`
+- `ClassMapPolicyQuestion-L1`
 
 Immediate goal:
 
-- Recheck and fix collector close ordering before final v0 small remote gate.
-- Pending bitmap is remote/remote duplicate-claim authority.
-- Pending clear must not expose stale `ALLOCATED` state to a second producer.
+- Decide whether to ask for a size-class policy change after the remote safety
+  closeout.
+- Use `ClassFragmentationAudit-L1` evidence: `16..2048` rounding ratio is
+  around `1.33`, with most rounded bytes in the 2048B class.
+- Do not implement class-map changes before design review.
 
 Why this is first:
 
@@ -58,6 +60,15 @@ Why this is first:
   `1.33`, with the 2048B class dominating rounded bytes.  This is a real
   future optimization lane, but it changes size-class policy and should wait
   until the remote safety closeout is clean.
+- `RemoteClaimCloseOrdering-L1` is complete:
+  remote publish now revalidates slot/live authority after the pending bit
+  claim.  If collector publication made the slot non-allocated before the
+  producer claimed, the producer rolls back the pending bit and returns
+  `INVALID`.
+  Short debug interleaved check:
+  - `remote_stage validate_fail=0`
+  - `duplicate_claim=0`
+  - `quiescent_pending bitmap_nonzero=0 repair=0`
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -67,10 +78,11 @@ Why this is first:
 
 Implementation notes:
 
-- Collector must publish slot non-allocated state before it releases the
-  pending claim.
-- Single-slot and bulk collect paths both need the same ordering.
-- Keep this as a correctness box.  Do not introduce new queue or class policy.
+- `slot_shadow_used_mismatch` can still appear in live remote-collect debug
+  snapshots because `h8_slot_shadow_verify_span()` is called outside a closed
+  publish gate.  Treat quiescent checks as the hard safety authority.
+- Class-map policy affects compatibility, active span array size, fragmentation,
+  and all matrix comparability.  Do not change it silently.
 
 Acceptance:
 
@@ -83,7 +95,6 @@ Acceptance:
 
 ## Next
 
-1. `ClassMapPolicyQuestion-L1`
-   - Ask whether 3-4 classes per doubling are worth opening after v0 remote
-     safety is closed.
-   - Use observed rounding ratio around `1.33` as the input evidence.
+1. `BenchSplit-L1`
+   - `bench/h8_bench.c` is now 794 lines.
+   - Split benchmark helpers before adding more counters.

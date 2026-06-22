@@ -414,6 +414,20 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
+  if (slot_authority) {
+    uint32_t state = h8_slot_state_load_hot(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      h8_pending_count_dec(span);
+      H8_DEBUG_INC(remote_stage_validate_fail);
+      return H8_PUBLISH_INVALID;
+    }
+  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+    atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+    h8_pending_count_dec(span);
+    H8_DEBUG_INC(remote_stage_validate_fail);
+    return H8_PUBLISH_INVALID;
+  }
   /* The pending bit is the publish commit point; collectors may process it now. */
   H8_DEBUG_INC(remote_stage_pending_claim_ok);
 #if defined(H8_ENABLE_DEBUG_STATS)
