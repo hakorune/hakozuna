@@ -249,6 +249,14 @@ typedef struct H8Global {
   atomic_size_t span_commit_table_scan_ns;
   atomic_size_t span_commit_meta_ns;
   atomic_size_t span_commit_mprotect_ns;
+  atomic_size_t owner_exit_total_ns;
+  atomic_size_t owner_exit_collect_ns;
+  atomic_size_t owner_exit_span_walk_ns;
+  atomic_size_t span_retire_count;
+  atomic_size_t span_retire_total_ns;
+  atomic_size_t span_retire_lock_wait_ns;
+  atomic_size_t span_retire_madvise_ns;
+  atomic_size_t span_retire_meta_free_ns;
   atomic_size_t slot_shadow_valid_mismatch;
   atomic_size_t slot_shadow_invalid_mismatch;
   atomic_size_t slot_shadow_pending_nonallocated;

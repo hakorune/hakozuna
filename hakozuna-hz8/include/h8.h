@@ -153,6 +153,14 @@ typedef struct H8DebugStats {
   size_t span_commit_table_scan_ns;
   size_t span_commit_meta_ns;
   size_t span_commit_mprotect_ns;
+  size_t owner_exit_total_ns;
+  size_t owner_exit_collect_ns;
+  size_t owner_exit_span_walk_ns;
+  size_t span_retire_count;
+  size_t span_retire_total_ns;
+  size_t span_retire_lock_wait_ns;
+  size_t span_retire_madvise_ns;
+  size_t span_retire_meta_free_ns;
   size_t slot_shadow_valid_mismatch;
   size_t slot_shadow_invalid_mismatch;
   size_t slot_shadow_pending_nonallocated;

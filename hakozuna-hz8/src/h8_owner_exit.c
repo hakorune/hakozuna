@@ -2,6 +2,17 @@
 
 #include <sched.h>
 #include <stdlib.h>
+#if defined(H8_ENABLE_DEBUG_STATS)
+#include <time.h>
+#endif
+
+#if defined(H8_ENABLE_DEBUG_STATS)
+static uint64_t h8_owner_exit_now_ns(void) {
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+}
+#endif
 
 static void h8_owner_close_gate(H8OwnerRecord* owner) {
   uint64_t cur = atomic_load_explicit(&owner->control, memory_order_acquire);
@@ -62,15 +73,28 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   if (!owner || owner->permanent) {
     return;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t total_start = h8_owner_exit_now_ns();
+#endif
   h8_owner_close_gate(owner);
   h8_owner_wait_publishers_zero(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t collect_start = h8_owner_exit_now_ns();
+#endif
   h8_collect_owner_pending(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(owner_exit_collect_ns,
+               (size_t)(h8_owner_exit_now_ns() - collect_start));
+#endif
 
   pthread_mutex_lock(&owner->owned_lock);
   H8Span* span = owner->owned_head;
   owner->owned_head = NULL;
   pthread_mutex_unlock(&owner->owned_lock);
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t walk_start = h8_owner_exit_now_ns();
+#endif
   while (span) {
     H8Span* next = span->next_owned;
     h8_slot_shadow_verify_span(span);
@@ -89,6 +113,14 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     }
     span = next;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(owner_exit_span_walk_ns,
+               (size_t)(h8_owner_exit_now_ns() - walk_start));
+#endif
   h8_owner_mark_dead(owner);
   h8_owner_free_stack_push(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(owner_exit_total_ns,
+               (size_t)(h8_owner_exit_now_ns() - total_start));
+#endif
 }

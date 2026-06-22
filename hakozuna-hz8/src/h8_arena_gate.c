@@ -123,25 +123,52 @@ void h8_span_retire(H8Span* span) {
   if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
     return;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t total_start = h8_debug_now_ns();
+  uint64_t lock_start = total_start;
+#endif
   pthread_mutex_lock(&h8_span_table_lock);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(span_retire_lock_wait_ns,
+               (size_t)(h8_debug_now_ns() - lock_start));
+#endif
   size_t index = h8_span_index_from_ptr(span->base);
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_relaxed);
   if (index < h8g.span_count &&
       atomic_load_explicit(&h8g.spans[index], memory_order_acquire) == span) {
     atomic_store_explicit(&h8g.spans[index], NULL, memory_order_release);
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t madvise_start = h8_debug_now_ns();
+#endif
   h8_span_decommit_memory(span);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(span_retire_madvise_ns,
+               (size_t)(h8_debug_now_ns() - madvise_start));
+#endif
   span->next_owned = NULL;
   span->next_owned_class = NULL;
   span->next_orphan = NULL;
   span->next_orphan_class = NULL;
   span->next_pending = NULL;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t free_start = h8_debug_now_ns();
+#endif
   h8_sys_free(span->live_bits);
   h8_sys_free(span->pending_bits);
   h8_sys_free(span->next_free);
   h8_sys_free(span->slot_state);
   h8_sys_free(span);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(span_retire_meta_free_ns,
+               (size_t)(h8_debug_now_ns() - free_start));
+#endif
   pthread_mutex_unlock(&h8_span_table_lock);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(span_retire_count);
+  H8_DEBUG_ADD(span_retire_total_ns,
+               (size_t)(h8_debug_now_ns() - total_start));
+#endif
 }
 
 H8Span* h8_span_from_ptr_checked(void* ptr, size_t* slot_out) {

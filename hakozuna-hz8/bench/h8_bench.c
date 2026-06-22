@@ -9,6 +9,7 @@
 #include <string.h>
 #include <stdatomic.h>
 #include <time.h>
+#include <sys/resource.h>
 
 typedef struct H8BenchOptions {
   int runs;
@@ -320,12 +321,15 @@ int main(int argc, char** argv) {
   size_t* rss = calloc((size_t)opt.runs, sizeof(*rss));
   double* alloc_phase_ms = calloc((size_t)opt.runs, sizeof(*alloc_phase_ms));
   double* remote_phase_ms = calloc((size_t)opt.runs, sizeof(*remote_phase_ms));
-  if (!throughput || !rss || !alloc_phase_ms || !remote_phase_ms) {
+  size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
+  if (!throughput || !rss || !alloc_phase_ms || !remote_phase_ms ||
+      !minor_faults) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
     free(alloc_phase_ms);
     free(remote_phase_ms);
+    free(minor_faults);
     return 1;
   }
 
@@ -344,6 +348,7 @@ int main(int argc, char** argv) {
       free(rss);
       free(alloc_phase_ms);
       free(remote_phase_ms);
+      free(minor_faults);
       return 1;
     }
 
@@ -359,6 +364,9 @@ int main(int argc, char** argv) {
 
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, (unsigned)opt.threads);
+    struct rusage usage_before;
+    struct rusage usage_after;
+    getrusage(RUSAGE_SELF, &usage_before);
     uint64_t start = h8_now_ns();
     for (int i = 0; i < opt.threads; ++i) {
       th[i].index = i;
@@ -387,6 +395,7 @@ int main(int argc, char** argv) {
       }
     }
     uint64_t end = h8_now_ns();
+    getrusage(RUSAGE_SELF, &usage_after);
     pthread_barrier_destroy(&barrier);
 
     if (error != 0) {
@@ -398,6 +407,8 @@ int main(int argc, char** argv) {
     double ops = (double)opt.threads * (double)opt.iters_per_thread;
     throughput[run] = ops / seconds;
     rss[run] = h8_read_rss_bytes();
+    long minflt_delta = usage_after.ru_minflt - usage_before.ru_minflt;
+    minor_faults[run] = minflt_delta > 0 ? (size_t)minflt_delta : 0;
     alloc_phase_ms[run] = (double)alloc_ns_max / 1e6;
     remote_phase_ms[run] = (double)remote_ns_max / 1e6;
     printf("run=%d ops/s=%.3f rss=%zu\n", run + 1, throughput[run], rss[run]);
@@ -417,6 +428,7 @@ int main(int argc, char** argv) {
 
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), h8_cmp_double);
   qsort(rss, (size_t)opt.runs, sizeof(*rss), h8_cmp_size_t);
+  qsort(minor_faults, (size_t)opt.runs, sizeof(*minor_faults), h8_cmp_size_t);
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
 
@@ -431,6 +443,9 @@ int main(int argc, char** argv) {
   printf("rss median=%zu min=%zu max=%zu\n",
          h8_percentile_size_t(rss, (size_t)opt.runs, 0.50),
          rss[0], rss[(size_t)opt.runs - 1u]);
+  printf("page_faults minor_median=%zu minor_min=%zu minor_max=%zu\n",
+         h8_percentile_size_t(minor_faults, (size_t)opt.runs, 0.50),
+         minor_faults[0], minor_faults[(size_t)opt.runs - 1u]);
   if (!opt.interleaved) {
     printf("phase_ms alloc_median=%.3f remote_median=%.3f\n",
            h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
@@ -609,6 +624,15 @@ int main(int argc, char** argv) {
          (double)debug.span_commit_table_scan_ns / 1e6,
          (double)debug.span_commit_meta_ns / 1e6,
          (double)debug.span_commit_mprotect_ns / 1e6);
+  printf("lifecycle_timing owner_exit_total_ms=%.3f owner_exit_collect_ms=%.3f owner_exit_span_walk_ms=%.3f span_retire_count=%zu span_retire_total_ms=%.3f span_retire_lock_wait_ms=%.3f span_retire_madvise_ms=%.3f span_retire_meta_free_ms=%.3f\n",
+         (double)debug.owner_exit_total_ns / 1e6,
+         (double)debug.owner_exit_collect_ns / 1e6,
+         (double)debug.owner_exit_span_walk_ns / 1e6,
+         debug.span_retire_count,
+         (double)debug.span_retire_total_ns / 1e6,
+         (double)debug.span_retire_lock_wait_ns / 1e6,
+         (double)debug.span_retire_madvise_ns / 1e6,
+         (double)debug.span_retire_meta_free_ns / 1e6);
   printf("slot_shadow valid_mismatch=%zu invalid_mismatch=%zu pending_nonallocated=%zu free_unreachable=%zu free_duplicate=%zu free_cycle=%zu bad_next=%zu never_used_below_bump=%zu nonvirgin_above_bump=%zu used_mismatch=%zu reserved_quiescent=%zu\n",
          debug.slot_shadow_valid_mismatch,
          debug.slot_shadow_invalid_mismatch,
@@ -626,5 +650,6 @@ int main(int argc, char** argv) {
   free(rss);
   free(alloc_phase_ms);
   free(remote_phase_ms);
+  free(minor_faults);
   return 0;
 }

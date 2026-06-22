@@ -448,6 +448,22 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.span_commit_meta_ns, memory_order_acquire);
   out->span_commit_mprotect_ns =
       atomic_load_explicit(&h8g.span_commit_mprotect_ns, memory_order_acquire);
+  out->owner_exit_total_ns =
+      atomic_load_explicit(&h8g.owner_exit_total_ns, memory_order_acquire);
+  out->owner_exit_collect_ns =
+      atomic_load_explicit(&h8g.owner_exit_collect_ns, memory_order_acquire);
+  out->owner_exit_span_walk_ns =
+      atomic_load_explicit(&h8g.owner_exit_span_walk_ns, memory_order_acquire);
+  out->span_retire_count =
+      atomic_load_explicit(&h8g.span_retire_count, memory_order_acquire);
+  out->span_retire_total_ns =
+      atomic_load_explicit(&h8g.span_retire_total_ns, memory_order_acquire);
+  out->span_retire_lock_wait_ns =
+      atomic_load_explicit(&h8g.span_retire_lock_wait_ns, memory_order_acquire);
+  out->span_retire_madvise_ns =
+      atomic_load_explicit(&h8g.span_retire_madvise_ns, memory_order_acquire);
+  out->span_retire_meta_free_ns =
+      atomic_load_explicit(&h8g.span_retire_meta_free_ns, memory_order_acquire);
   out->slot_shadow_valid_mismatch =
       atomic_load_explicit(&h8g.slot_shadow_valid_mismatch, memory_order_acquire);
   out->slot_shadow_invalid_mismatch =

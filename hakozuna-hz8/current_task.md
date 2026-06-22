@@ -4,17 +4,46 @@
 
 Current focus:
 
-- `SpanCommitMprotectElision-L1`
+- `PhaseSeparatedLifecycleAudit-L1`
 
 Immediate goal:
 
-- Remove per-span `mprotect` from commit.
-- Reserve the small arena RW and rely on lazy page allocation for RSS.
-- Keep retire as `madvise(MADV_DONTNEED)` without switching pages back to
-  PROT_NONE.
+- Split phase-separated remote90 wall time into measured pieces:
+  allocation phase, remote publish phase, owner-exit tail, span-retire tail,
+  and process minor page faults.
+- Confirm whether the remaining `remote90` gap is allocator remote publish,
+  compulsory peak-live span generation, payload first-touch, or thread-exit
+  lifecycle cleanup.
+- Do not change allocator behavior in this box.
 
 Current evidence:
 
+- `PhaseSeparatedLifecycleAudit-L1` is the next observation box selected by
+  design review.  `remote_ms` only covers the worker remote-free loop; total
+  throughput also includes TLS destructor / `h8_owner_exit()` after the worker
+  loop ends.
+- New debug counters should attribute owner-exit and retire tail:
+  `owner_exit_total_ns`, `owner_exit_collect_ns`,
+  `owner_exit_span_walk_ns`, `span_retire_count`, `span_retire_total_ns`,
+  `span_retire_lock_wait_ns`, `span_retire_madvise_ns`,
+  `span_retire_meta_free_ns`.
+- Bench output should also report process minor page faults per run as a rough
+  payload first-touch signal.
+- First audit result:
+  - release phase-separated remote90, `RUNS=5`, `T=16`, `iters=100000`:
+    median `2.67M ops/s`, alloc phase median `243.5ms`, remote phase median
+    `11.5ms`, minor faults median `483856`.
+  - total wall estimate is about `599ms`, so the measured worker phases leave
+    about `344ms` of lifecycle / thread-exit tail.
+  - debug phase-separated remote90 attributes the tail to owner exit:
+    `owner_exit_total_ms ~= 16054`, `owner_exit_collect_ms ~= 127`,
+    `owner_exit_span_walk_ms ~= 15927`.
+  - span retire is the dominant subcomponent:
+    `span_retire_count = 90886`, `span_retire_total_ms ~= 15877`,
+    `span_retire_lock_wait_ms ~= 14834`, `span_retire_madvise_ms ~= 919`,
+    `span_retire_meta_free_ms ~= 16`.
+  - conclusion: phase-separated remote90 is currently dominated by
+    span-retire tail lock contention, not remote publish.
 - `RemoteSpanScanAudit-L1` found remote90 was wasting work on full span scans.
 - `FullHintNoPendingScanSkip-L1` removed that scan in the bench shape:
   `scan_span` went from millions to zero.
