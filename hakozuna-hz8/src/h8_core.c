@@ -59,6 +59,14 @@ static void h8_init_once(void) {
       &h8g.slot_state_authority_enabled,
       h8_parse_env_bool(getenv("H8_ENABLE_SLOT_STATE_AUTHORITY")),
       memory_order_relaxed);
+  atomic_store_explicit(
+      &h8g.remote_lease_elision_enabled,
+      h8_parse_env_bool(getenv("H8_ENABLE_REMOTE_LEASE_ELISION")),
+      memory_order_relaxed);
+  atomic_store_explicit(
+      &h8g.remote_pending_publish_elision_enabled,
+      h8_parse_env_bool(getenv("H8_ENABLE_REMOTE_PENDING_PUBLISH_ELISION")),
+      memory_order_relaxed);
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
   h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_NONE,
@@ -246,6 +254,46 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.remote_regular_admission_count, memory_order_acquire);
   out->remote_orphan_admission_count =
       atomic_load_explicit(&h8g.remote_orphan_admission_count, memory_order_acquire);
+  out->remote_stage_enter =
+      atomic_load_explicit(&h8g.remote_stage_enter, memory_order_acquire);
+  out->remote_stage_span_miss =
+      atomic_load_explicit(&h8g.remote_stage_span_miss, memory_order_acquire);
+  out->remote_stage_owner_missing =
+      atomic_load_explicit(&h8g.remote_stage_owner_missing, memory_order_acquire);
+  out->remote_stage_regular_lease_ok =
+      atomic_load_explicit(&h8g.remote_stage_regular_lease_ok, memory_order_acquire);
+  out->remote_stage_regular_lease_fail = atomic_load_explicit(
+      &h8g.remote_stage_regular_lease_fail, memory_order_acquire);
+  out->remote_stage_regular_lease_elided = atomic_load_explicit(
+      &h8g.remote_stage_regular_lease_elided, memory_order_acquire);
+  out->remote_stage_orphan_lease_ok =
+      atomic_load_explicit(&h8g.remote_stage_orphan_lease_ok, memory_order_acquire);
+  out->remote_stage_orphan_lease_fail = atomic_load_explicit(
+      &h8g.remote_stage_orphan_lease_fail, memory_order_acquire);
+  out->remote_stage_pending_claim_ok =
+      atomic_load_explicit(&h8g.remote_stage_pending_claim_ok, memory_order_acquire);
+  out->remote_stage_validate_fail =
+      atomic_load_explicit(&h8g.remote_stage_validate_fail, memory_order_acquire);
+  out->remote_stage_notify_first =
+      atomic_load_explicit(&h8g.remote_stage_notify_first, memory_order_acquire);
+  out->remote_stage_publish_ok =
+      atomic_load_explicit(&h8g.remote_stage_publish_ok, memory_order_acquire);
+  out->remote_stage_pending_publish_elided = atomic_load_explicit(
+      &h8g.remote_stage_pending_publish_elided, memory_order_acquire);
+  out->remote_lookup_enter =
+      atomic_load_explicit(&h8g.remote_lookup_enter, memory_order_acquire);
+  out->remote_lookup_arena_miss =
+      atomic_load_explicit(&h8g.remote_lookup_arena_miss, memory_order_acquire);
+  out->remote_lookup_span_miss =
+      atomic_load_explicit(&h8g.remote_lookup_span_miss, memory_order_acquire);
+  out->remote_lookup_retired =
+      atomic_load_explicit(&h8g.remote_lookup_retired, memory_order_acquire);
+  out->remote_lookup_slot_oob =
+      atomic_load_explicit(&h8g.remote_lookup_slot_oob, memory_order_acquire);
+  out->remote_lookup_ok =
+      atomic_load_explicit(&h8g.remote_lookup_ok, memory_order_acquire);
+  out->remote_owner_word_load =
+      atomic_load_explicit(&h8g.remote_owner_word_load, memory_order_acquire);
   out->pending_notify_count =
       atomic_load_explicit(&h8g.pending_notify_count, memory_order_acquire);
   out->qstate_notify_attempt_count =

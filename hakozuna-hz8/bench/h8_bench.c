@@ -350,6 +350,28 @@ int main(int argc, char** argv) {
          debug.adoption_empty_count,
          debug.adoption_target_closed_count,
          debug.adoption_success_count);
+  printf("remote_stage enter=%zu span_miss=%zu owner_missing=%zu regular_lease_ok=%zu regular_lease_fail=%zu regular_lease_elided=%zu orphan_lease_ok=%zu orphan_lease_fail=%zu pending_claim_ok=%zu validate_fail=%zu notify_first=%zu publish_ok=%zu pending_publish_elided=%zu\n",
+         debug.remote_stage_enter,
+         debug.remote_stage_span_miss,
+         debug.remote_stage_owner_missing,
+         debug.remote_stage_regular_lease_ok,
+         debug.remote_stage_regular_lease_fail,
+         debug.remote_stage_regular_lease_elided,
+         debug.remote_stage_orphan_lease_ok,
+         debug.remote_stage_orphan_lease_fail,
+         debug.remote_stage_pending_claim_ok,
+         debug.remote_stage_validate_fail,
+         debug.remote_stage_notify_first,
+         debug.remote_stage_publish_ok,
+         debug.remote_stage_pending_publish_elided);
+  printf("remote_lookup enter=%zu arena_miss=%zu span_miss=%zu retired=%zu slot_oob=%zu ok=%zu owner_word=%zu\n",
+         debug.remote_lookup_enter,
+         debug.remote_lookup_arena_miss,
+         debug.remote_lookup_span_miss,
+         debug.remote_lookup_retired,
+         debug.remote_lookup_slot_oob,
+         debug.remote_lookup_ok,
+         debug.remote_owner_word_load);
   double slots_per_nonzero_word = 0.0;
   double singleton_ratio = 0.0;
   double multi_ratio = 0.0;

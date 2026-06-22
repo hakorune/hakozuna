@@ -142,6 +142,26 @@ typedef struct H8Global {
   atomic_size_t owner_exit_count;
   atomic_size_t remote_regular_admission_count;
   atomic_size_t remote_orphan_admission_count;
+  atomic_size_t remote_stage_enter;
+  atomic_size_t remote_stage_span_miss;
+  atomic_size_t remote_stage_owner_missing;
+  atomic_size_t remote_stage_regular_lease_ok;
+  atomic_size_t remote_stage_regular_lease_fail;
+  atomic_size_t remote_stage_regular_lease_elided;
+  atomic_size_t remote_stage_orphan_lease_ok;
+  atomic_size_t remote_stage_orphan_lease_fail;
+  atomic_size_t remote_stage_pending_claim_ok;
+  atomic_size_t remote_stage_validate_fail;
+  atomic_size_t remote_stage_notify_first;
+  atomic_size_t remote_stage_publish_ok;
+  atomic_size_t remote_stage_pending_publish_elided;
+  atomic_size_t remote_lookup_enter;
+  atomic_size_t remote_lookup_arena_miss;
+  atomic_size_t remote_lookup_span_miss;
+  atomic_size_t remote_lookup_retired;
+  atomic_size_t remote_lookup_slot_oob;
+  atomic_size_t remote_lookup_ok;
+  atomic_size_t remote_owner_word_load;
   atomic_size_t pending_notify_count;
   atomic_size_t qstate_notify_attempt_count;
   atomic_size_t qstate_notify_success_count;
@@ -251,6 +271,8 @@ typedef struct H8Global {
   atomic_size_t adoption_success_count;
   _Atomic bool slot_state_authority_enabled;
   _Atomic bool regular_adoption_enabled;
+  _Atomic bool remote_lease_elision_enabled;
+  _Atomic bool remote_pending_publish_elision_enabled;
 } H8Global;
 
 extern H8Global h8g;
@@ -448,6 +470,16 @@ static inline bool h8_regular_adoption_enabled(void) {
 
 static inline bool h8_slot_state_authority_enabled(void) {
   return atomic_load_explicit(&h8g.slot_state_authority_enabled,
+                              memory_order_acquire);
+}
+
+static inline bool h8_remote_lease_elision_enabled(void) {
+  return atomic_load_explicit(&h8g.remote_lease_elision_enabled,
+                              memory_order_acquire);
+}
+
+static inline bool h8_remote_pending_publish_elision_enabled(void) {
+  return atomic_load_explicit(&h8g.remote_pending_publish_elision_enabled,
                               memory_order_acquire);
 }
 
