@@ -5,15 +5,17 @@
 Current focus:
 
 - `LocalInterleavedAttribution-L1` / DONE
-- `PendingRemoteCloseout-L1` / NEXT
+- `PendingCountRuntimeDecisionElision-L1` / DONE
+- `QuiescentPendingBitmapGate-L1` / MOSTLY DONE, verify before count removal
+- `PendingWordMaskAuthority-L1` / NEXT
 
 Immediate goal:
 
 - Keep `p2-v0` frozen as the v0 default class map.
 - Use the new release/debug attribution lanes to decide the next remote
   closeout box without adding production hot counters.
-- Start with `PendingCountRuntimeDecisionElision-L1` before removing
-  `pending_count` RMW from release.
+- Remove `pending_count` from release only after quiescent bitmap gates are
+  confirmed clean.
 
 Why this is first:
 
@@ -136,6 +138,25 @@ Why this is first:
   Interpretation: queue push contention is not the current blocker; remote
   closeout should focus on count/mask authority before considering intrusive
   remote lists.
+- `PendingCountRuntimeDecisionElision-L1` is complete:
+  collector finish no longer reads `pending_count` in release builds.  Runtime
+  collection now relies on pending bitmap, pending word mask, and qstate dirty
+  handoff; count/mask/bitmap mismatch diagnostics remain debug-only.
+  Short checks:
+  - release interleaved remote90, 16 threads x 50k:
+    `quiescent_pending bitmap_nonzero=0 repair=0`,
+    `push_yields=0`.
+  - debug interleaved remote90, 16 threads x 20k:
+    `publish_ok=288298`, `validate_fail=0`, `duplicate_claim=0`,
+    `quiescent_pending bitmap_nonzero=0 repair=0`.
+    Live `count_mask0_bitmap1` remains nonzero as an informational race
+    counter, not a hard gate.
+- `QuiescentPendingBitmapGate-L1` is already mostly represented in code:
+  `h8_span_pending_quiescent()` requires `qstate == IDLE`,
+  `pending_word_mask == 0`, and a full pending-bitmap scan of all valid words.
+  Owner exit, handoff, and adoption use this helper rather than a count-zero
+  shortcut.  Before deleting release `pending_count` updates completely, run one
+  focused verification pass over owner-exit and adoption paths.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -178,16 +199,13 @@ Acceptance:
 
 ## Next
 
-1. `PendingCountRuntimeDecisionElision-L1`
-   - keep `pending_count` updates for now
-   - remove runtime decisions that depend on count
-   - use pending bitmap + pending word mask + qstate dirty handshake as runtime
-     authority
-2. `QuiescentPendingBitmapGate-L1`
-   - replace owner-exit/handoff/adoption count-zero assumptions with closed
-     gate + refs zero + full pending bitmap scan
-3. `PendingWordMaskAuthority-L1`
-   - only after the above passes, compile release `pending_count` RMW out and
-     keep it as debug/quiescent shadow
+1. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
+2. `PendingWordMaskAuthority-L1`
+   - release: no `pending_count` update/load in remote publish or collect
+   - debug: keep `pending_count` as a shadow and quiescent consistency check
+3. Re-measure:
+   - release interleaved remote90
+   - debug interleaved remote90 zero gates
+   - phase-separated remote90 lifecycle/RSS
 4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.

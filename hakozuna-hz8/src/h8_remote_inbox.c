@@ -555,7 +555,6 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_slot_shadow_verify_span(span);
-#endif
   size_t finish_count =
       atomic_load_explicit(&span->pending_count, memory_order_acquire);
   uint64_t finish_mask =
@@ -565,7 +564,6 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
   } else if (finish_mask == 0 && finish_count != 0) {
     H8_DEBUG_INC(pending_count_requeue_without_mask);
   }
-#if defined(H8_ENABLE_DEBUG_STATS)
   bool finish_bitmap_any = h8_pending_bitmap_any(span, words);
   if (finish_count != 0 && finish_mask == 0) {
     if (finish_bitmap_any) {
