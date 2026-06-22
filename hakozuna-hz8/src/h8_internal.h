@@ -575,21 +575,15 @@ static inline bool h8_slot_index_from_ptr_checked(const H8Span* span,
   uintptr_t addr = (uintptr_t)ptr;
   uintptr_t base = (uintptr_t)span->base;
   uintptr_t offset = addr - base;
-  size_t slot = 0;
-  if (h8_class_is_power2(span->class_id)) {
-    uint32_t shift = h8_class_shift(span->class_id);
-    uintptr_t mask = ((uintptr_t)1 << shift) - (uintptr_t)1;
-    if ((offset & mask) != 0) {
-      return false;
-    }
-    slot = (size_t)(offset >> shift);
-  } else {
-    uint32_t shift = h8_class_shift(span->class_id);
-    uintptr_t mask = ((uintptr_t)1 << shift) - (uintptr_t)1;
-    if ((offset & mask) != 0) {
-      return false;
-    }
-    uintptr_t quantum = offset >> shift;
+  uint32_t shift = h8_class_shift(span->class_id);
+  uintptr_t mask = ((uintptr_t)1 << shift) - (uintptr_t)1;
+  if ((offset & mask) != 0) {
+    return false;
+  }
+  uintptr_t quantum = offset >> shift;
+  uint32_t factor = h8_class_factor(span->class_id);
+  size_t slot = (size_t)quantum;
+  if (factor == 3u) {
     if ((quantum % 3u) != 0) {
       return false;
     }
@@ -603,10 +597,12 @@ static inline bool h8_slot_index_from_ptr_checked(const H8Span* span,
 }
 
 static inline void* h8_slot_ptr(const H8Span* span, size_t slot) {
-  if (h8_class_is_power2(span->class_id)) {
-    return span->base + (slot << h8_class_shift(span->class_id));
+  uint32_t factor = h8_class_factor(span->class_id);
+  uint32_t shift = h8_class_shift(span->class_id);
+  if (factor == 1u) {
+    return span->base + (slot << shift);
   }
-  return span->base + slot * h8_class_size(span->class_id);
+  return span->base + ((slot * factor) << shift);
 }
 
 static inline uint64_t h8_bit_mask(size_t slot) {

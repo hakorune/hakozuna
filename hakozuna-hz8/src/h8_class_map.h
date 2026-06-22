@@ -25,23 +25,22 @@ static inline uint32_t h8_class_size(uint32_t class_id) {
   return sizes[class_id];
 }
 
-static inline bool h8_class_is_power2(uint32_t class_id) {
-  uint32_t size = h8_class_size(class_id);
-  return (size & (size - 1u)) == 0;
-}
-
 static inline uint32_t h8_class_shift(uint32_t class_id) {
 #if defined(H8_CLASS_MAP_UPPER1P5)
-  uint32_t size = h8_class_size(class_id);
-  if (class_id == 7u) return 9u;  /* 1536 = 3 * 512 */
-  if (class_id == 9u) return 10u; /* 3072 = 3 * 1024 */
-  uint32_t shift = 0;
-  while ((UINT32_C(1) << shift) < size) {
-    ++shift;
-  }
-  return shift;
+  static const uint8_t shifts[H8_CLASS_COUNT] = {
+      4, 5, 6, 7, 8, 9, 10, 9, 11, 10, 12};
+  return shifts[class_id];
 #else
   return 4u + class_id;
+#endif
+}
+
+static inline uint32_t h8_class_factor(uint32_t class_id) {
+#if defined(H8_CLASS_MAP_UPPER1P5)
+  return (class_id == 7u || class_id == 9u) ? 3u : 1u;
+#else
+  (void)class_id;
+  return 1u;
 #endif
 }
 

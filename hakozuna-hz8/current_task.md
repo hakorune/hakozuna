@@ -4,15 +4,16 @@
 
 Current focus:
 
-- `Upper1p5ClassMap-AB-L1` / HOLD
+- `ClassMapDecodeSpecialization-L1` / DONE
+- `Upper1p5ClassMap-AB-L1` / HOLD as evidence-only target
 
 Immediate goal:
 
 - Keep upper 1.5x class map as an A/B build target only.
 - Do not merge it as default until paired A/B proves hot-path regression is
   acceptable.
-- Use the current result to decide whether to ask for a narrower 1536-only
-  experiment or hold class-map changes until MediumRun.
+- Treat `p2-v0` as the v0 default unless a later paired A/B clears the
+  local/interleaved hot gates.
 
 Why this is first:
 
@@ -89,7 +90,7 @@ Why this is first:
 - `Upper1p5ClassMap-AB-L1` is implemented as a build target, not default:
   `make bench-release-upper1p5` builds with
   `-DH8_CLASS_MAP_UPPER1P5` and `class_map_id=upper1p5-v0`.
-  Short RUNS=3 evidence:
+  Initial short RUNS=3 evidence before decode specialization:
   - local0 p2-v0 median around `103M`; upper1p5 around `93M`
   - interleaved remote90 p2-v0 median around `32.7M`; upper1p5 around `30.9M`
   - phase remote90 peak_rss improved about `2.01GiB -> 1.83GiB`
@@ -97,6 +98,22 @@ Why this is first:
   - phase remote90 lower-bound spans improved about `30296 -> 27601`
   Interpretation: memory/first-touch improves, but hot-path performance does
   not yet clear the review gate.
+- `ClassMapDecodeSpecialization-L1` is complete:
+  - `p2-v0` slot identity uses the direct `shift = 4 + class_id` shape.
+  - `upper1p5-v0` uses a fixed shift table and direct factor-3 cases for
+    `1536` and `3072`, with no runtime power-of-two test or shift loop.
+  - Short RUNS=3 post-specialization evidence:
+    - local0: p2-v0 median about `49.0M`, upper1p5 about `54.5M`
+      on a noisy batch; `alloc_median` still worse for upper1p5
+      (`16.8ms -> 26.2ms`).
+    - interleaved remote90: p2-v0 median about `16.4M`, upper1p5 about
+      `14.4M`.
+    - phase remote90: peak_rss still improves about `2.01GiB -> 1.83GiB`,
+      minor faults about `489k -> 446k`, lower-bound spans
+      `30296 -> 27601`.
+  - Interpretation: decode specialization removes implementation noise, but
+    upper1p5 still does not clearly pass the hot gate.  Keep it as an
+    evidence target; do not make it default for v0.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -116,6 +133,9 @@ Implementation notes:
   - `ClassMapSSOT-L1`: GO and completed
   - `ClassMapCandidateShadow-L1`: GO and completed
   - upper 1.5x limited A/B: conditional GO after shadow evidence
+  - `+1536-only`: NO-GO for current `16..2048` rows because it exercises the
+    same request classes as upper1p5; removing the unused `3072` entry is not
+    expected to recover the hot-path gap.
   - full 3-4 classes per doubling: HOLD until MediumRun design
 - Current A/B result:
   upper1p5 is not ready as default because local/interleaved throughput does
@@ -132,7 +152,11 @@ Acceptance:
 
 ## Next
 
-1. Ask design review:
-   - Should we try a narrower `+1536 only` build target?
-   - Or should class-map changes remain HOLD until local/interleaved gates are
-     closer and MediumRun design starts?
+1. Freeze `p2-v0` as the v0 default class map unless a later full paired A/B
+   contradicts the current evidence.
+2. Keep `upper1p5-v0` as a development A/B target for phase/RSS evidence.
+3. Resume the main performance lane rather than opening more class-map
+   variants:
+   - local/interleaved attribution
+   - pending remote closeout
+   - MediumRun design later, where full class-map redesign can be reopened.
