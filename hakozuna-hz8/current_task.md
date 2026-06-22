@@ -4,15 +4,16 @@
 
 Current focus:
 
-- `PendingWordMaskFinishProtocol-L1`
+- `PendingCountRuntimeDecisionElision-L1`
 
 Immediate goal:
 
-- Test whether qstate-level finish handoff can close the interleaved
-  publish/collect responsibility race.
-- Keep `pending_count` in production as the safety net for this box.
-- Do not promote pending word mask authority while count-only finish rescue
-  remains nonzero.
+- Remove `pending_count` from runtime notify / scan / requeue decisions while
+  keeping the count updates as a debug/quiescent shadow.
+- Prove runtime progress with `pending_bits + pending_word_mask + qstate DIRTY`
+  before removing the release count RMW.
+- Treat live `count_mask0_bitmap1` as diagnostic only; quiescent bitmap gates
+  are the hard blocker.
 
 Current evidence:
 
@@ -75,6 +76,16 @@ Current evidence:
   `count_mask0_bitmap1` remains nonzero.  The current code still increments
   `pending_count` before pending bit publication, so count-only windows remain.
   This keeps `PendingWordMaskAuthority-L1` on HOLD.
+- `PendingCountRuntimeDecisionElision-L1` removes runtime count-driven notify,
+  runtime count-driven full scan, and runtime count-driven finish requeue.
+- Representative debug interleaved remote90 after this change:
+  - `pending_word_false_neg = 0`
+  - `pending_word_repair = 0`
+  - `invalid = 0`
+  - `validate_fail = 0`
+  - `duplicate_claim = 0`
+- Raw `count_mask0_bitmap1` can still be nonzero because the diagnostic is not
+  a coherent snapshot and can see the bit-before-mask publish window.
 
 Current measured baseline:
 
@@ -168,7 +179,7 @@ Current measured baseline:
      nonzero.
 
 10. `PendingWordMaskFinishProtocol-L1`
-   - current task.
+   - completed as a runtime handoff protocol.
    - add `H8_Q_DRAINING_DIRTY`.
    - publish word-mask responsibility from the actual pending word `0 -> 1`
      transition.
@@ -177,11 +188,23 @@ Current measured baseline:
    - measure `qstate_dirty_set`, `qstate_dirty_self_set`, and
      `qstate_dirty_requeue`.
 
-11. `PendingWordMaskAuthority-L1`
+11. `PendingCountRuntimeDecisionElision-L1`
+   - current task.
+   - keep pending_count updates.
+   - remove count from runtime notify / scan / requeue decisions.
+   - use count only for shadow counters and cold/quiescent paths.
+
+12. `QuiescentPendingBitmapGate-L1`
+   - next correctness box.
+   - replace owner exit / handoff / adoption count-zero checks with stable
+     publish-gate-closed, refs-zero, qstate-IDLE, mask-zero, full-bitmap-zero
+     checks.
+
+13. `PendingWordMaskAuthority-L1`
    - behavior candidate after shadow evidence.
    - remove release per-object pending_count RMW only after zero gates hold.
 
-12. `IntrusiveRemoteHead-L1`
+14. `IntrusiveRemoteHead-L1`
    - HOLD.
    - only revisit if mask-authority data shows collect CPU still dominates.
 
@@ -331,6 +354,28 @@ Current measured baseline:
   - Next design decision should address whether to introduce an explicit
     publish in-flight marker, demote count earlier, or keep count authority and
     move to another bottleneck.
+
+### PendingCountRuntimeDecisionElision-L1
+
+- Applied:
+  - producer notify is now driven by actual pending word `0 -> nonzero` only.
+  - `prev == 0` / count-first notify is diagnostic only.
+  - collector no longer performs runtime full scan when `pending_count != 0`
+    and `pending_word_mask == 0`.
+  - collector finish no longer re-notifies only because `pending_count != 0`.
+- Still present:
+  - `pending_count++/--` remains in release for now.
+  - count shadow diagnostics remain.
+  - owner exit / handoff / adoption still use count-zero quiescent checks until
+    `QuiescentPendingBitmapGate-L1`.
+- Current representative checks:
+  - debug interleaved remote90 passes with no false negative / repair.
+  - phase-separated debug remote90 remains clean.
+  - release interleaved remote90 passes.
+- Interpretation:
+  - runtime progress can be made without count decisions.
+  - next correctness box should replace cold quiescent count gates with stable
+    full pending bitmap verification before removing release count RMW.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

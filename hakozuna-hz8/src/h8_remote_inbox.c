@@ -369,8 +369,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     h8_span_notify(owner, span);
   } else if (prev == 0) {
     H8_DEBUG_INC(pending_count_notify_without_mask);
-    H8_DEBUG_INC(remote_stage_notify_first);
-    h8_span_notify(owner, span);
   }
   H8_DEBUG_INC(remote_stage_publish_ok);
   return H8_PUBLISH_OK;
@@ -445,14 +443,6 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     h8_collect_pending_word(span, word_index, true);
   }
 
-  if (atomic_load_explicit(&span->pending_count, memory_order_acquire) != 0 &&
-      atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) == 0) {
-    H8_DEBUG_INC(pending_word_summary_repair);
-    for (size_t word_index = 0; word_index < words; ++word_index) {
-      h8_collect_pending_word(span, word_index, false);
-    }
-  }
-
   if (atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) != 0) {
     uint8_t expected_dirty = H8_Q_DRAINING;
     bool set_dirty = atomic_compare_exchange_strong_explicit(
@@ -510,9 +500,6 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     }
   }
 #endif
-  if (finish_count != 0) {
-    h8_span_notify(owner, span);
-  }
 }
 
 static size_t h8_collect_pending_list(H8OwnerRecord* owner, H8Span* list,
