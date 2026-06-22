@@ -256,14 +256,36 @@ static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_s
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_notify_count);
   H8_DEBUG_INC(qstate_notify_attempt_count);
-  uint8_t expected = H8_Q_IDLE;
-  if (atomic_compare_exchange_strong_explicit(&span->qstate, &expected, H8_Q_QUEUED,
-                                              memory_order_acq_rel,
-                                              memory_order_acquire)) {
-    H8_DEBUG_INC(qstate_notify_success_count);
-    h8_pending_queue_push(owner, span);
-  } else {
+  uint8_t cur = atomic_load_explicit(&span->qstate, memory_order_acquire);
+  for (;;) {
+    if (cur == H8_Q_IDLE) {
+      uint8_t expected = H8_Q_IDLE;
+      if (atomic_compare_exchange_weak_explicit(&span->qstate, &expected,
+                                                H8_Q_QUEUED,
+                                                memory_order_acq_rel,
+                                                memory_order_acquire)) {
+        H8_DEBUG_INC(qstate_notify_success_count);
+        h8_pending_queue_push(owner, span);
+        return;
+      }
+      cur = expected;
+      continue;
+    }
+    if (cur == H8_Q_DRAINING) {
+      uint8_t expected = H8_Q_DRAINING;
+      if (atomic_compare_exchange_weak_explicit(&span->qstate, &expected,
+                                                H8_Q_DRAINING_DIRTY,
+                                                memory_order_acq_rel,
+                                                memory_order_acquire)) {
+        H8_DEBUG_INC(qstate_dirty_set);
+        H8_DEBUG_INC(qstate_notify_success_count);
+        return;
+      }
+      cur = expected;
+      continue;
+    }
     H8_DEBUG_INC(qstate_notify_skip_nonidle_count);
+    return;
   }
 }
 
@@ -323,17 +345,8 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   }
   size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1,
                                           memory_order_acq_rel);
-  uint64_t before_word = atomic_load_explicit(pending_word, memory_order_acquire);
-  if (before_word == 0) {
-    atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
-                             memory_order_release);
-    H8_DEBUG_INC(pending_word_summary_set);
-  }
   uint64_t old_word =
       atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
-  if (before_word == 0 && old_word != 0) {
-    H8_DEBUG_INC(pending_publish_mask_arm_raced_nonempty);
-  }
   if (old_word & slot_bit) {
     h8_pending_count_dec(span);
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
@@ -345,12 +358,17 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
 #endif
   H8_DEBUG_INC(remote_publish_count);
-  if (old_word == 0 && prev != 0) {
-    H8_DEBUG_INC(pending_mask_notify_without_count);
-  } else if (old_word != 0 && prev == 0) {
+  if (old_word == 0) {
+    atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
+                             memory_order_release);
+    H8_DEBUG_INC(pending_word_summary_set);
+    if (prev != 0) {
+      H8_DEBUG_INC(pending_mask_notify_without_count);
+    }
+    H8_DEBUG_INC(remote_stage_notify_first);
+    h8_span_notify(owner, span);
+  } else if (prev == 0) {
     H8_DEBUG_INC(pending_count_notify_without_mask);
-  }
-  if (prev == 0) {
     H8_DEBUG_INC(remote_stage_notify_first);
     h8_span_notify(owner, span);
   }
@@ -435,7 +453,30 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
     }
   }
 
-  atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_release);
+  if (atomic_load_explicit(&span->pending_word_mask, memory_order_acquire) != 0) {
+    uint8_t expected_dirty = H8_Q_DRAINING;
+    bool set_dirty = atomic_compare_exchange_strong_explicit(
+        &span->qstate, &expected_dirty, H8_Q_DRAINING_DIRTY,
+        memory_order_acq_rel, memory_order_acquire);
+    if (set_dirty) {
+      H8_DEBUG_INC(qstate_dirty_self_set);
+    }
+  }
+
+  uint8_t expected_finish = H8_Q_DRAINING;
+  if (!atomic_compare_exchange_strong_explicit(&span->qstate, &expected_finish,
+                                               H8_Q_IDLE, memory_order_acq_rel,
+                                               memory_order_acquire)) {
+    if (expected_finish == H8_Q_DRAINING_DIRTY) {
+      uint8_t expected_dirty = H8_Q_DRAINING_DIRTY;
+      if (atomic_compare_exchange_strong_explicit(
+              &span->qstate, &expected_dirty, H8_Q_QUEUED,
+              memory_order_acq_rel, memory_order_acquire)) {
+        H8_DEBUG_INC(qstate_dirty_requeue);
+        h8_pending_queue_push(owner, span);
+      }
+    }
+  }
   if ((H8SpanState)h8_span_owner_word_load(span).state == H8_SPAN_ORPHAN_QUIESCING &&
       atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
       atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {

@@ -513,6 +513,10 @@ int main(int argc, char** argv) {
          debug.pending_finish_mask_nonzero_bitmap_zero,
          debug.pending_finish_mask_nonzero_bitmap_nonzero,
          debug.pending_publish_mask_arm_raced_nonempty);
+  printf("qstate_dirty set=%zu self_set=%zu requeue=%zu\n",
+         debug.qstate_dirty_set,
+         debug.qstate_dirty_self_set,
+         debug.qstate_dirty_requeue);
   printf("queue_contention qstate_attempt=%zu qstate_success=%zu qstate_skip=%zu pending_push_attempt=%zu pending_push_retry=%zu pending_push_success=%zu owner_enter_retry=%zu owner_exit_retry=%zu duplicate_claim=%zu\n",
          debug.qstate_notify_attempt_count,
          debug.qstate_notify_success_count,

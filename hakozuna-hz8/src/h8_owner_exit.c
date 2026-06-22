@@ -41,6 +41,8 @@ static void h8_owner_quiesce_span(H8Span* span) {
     }
     if (qstate == H8_Q_QUEUED) {
       h8_span_collect_remote(owner, span);
+    } else if (qstate == H8_Q_DRAINING_DIRTY) {
+      sched_yield();
     } else {
       sched_yield();
     }

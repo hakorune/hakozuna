@@ -4,14 +4,15 @@
 
 Current focus:
 
-- `PendingCountElisionShadow-L1`
+- `PendingWordMaskFinishProtocol-L1`
 
 Immediate goal:
 
-- Compare current `pending_count` authority against pending word mask authority.
-- Keep `pending_count` in production until mask exactness is proven.
-- Do not promote pending word mask authority until interleaved remote90 runs
-  without pending/live invariant failures.
+- Test whether qstate-level finish handoff can close the interleaved
+  publish/collect responsibility race.
+- Keep `pending_count` in production as the safety net for this box.
+- Do not promote pending word mask authority while count-only finish rescue
+  remains nonzero.
 
 Current evidence:
 
@@ -68,6 +69,12 @@ Current evidence:
   - `publish_arm_raced_nonempty` is zero in the representative run, so the
     current mismatch is not caused by another producer filling the same word
     between the pre-load and the pending bit publish.
+- `PendingWordMaskFinishProtocol-L1` adds `DRAINING_DIRTY` so producers can
+  hand off requeue responsibility to the collector while it is draining.
+- First observation: DIRTY is active in interleaved remote90, but
+  `count_mask0_bitmap1` remains nonzero.  The current code still increments
+  `pending_count` before pending bit publication, so count-only windows remain.
+  This keeps `PendingWordMaskAuthority-L1` on HOLD.
 
 Current measured baseline:
 
@@ -154,17 +161,27 @@ Current measured baseline:
    - shadow counters are implemented.
 
 9. `PendingWordMaskExactness-L1`
-   - current task.
+   - completed as a shadow repair attempt.
    - arm the pending word mask before making the first pending bit visible.
    - reduce mask false-negative and repair events.
    - direct authority removal remains blocked while false-negative / repair are
      nonzero.
 
-10. `PendingWordMaskAuthority-L1`
+10. `PendingWordMaskFinishProtocol-L1`
+   - current task.
+   - add `H8_Q_DRAINING_DIRTY`.
+   - publish word-mask responsibility from the actual pending word `0 -> 1`
+     transition.
+   - let producers mark draining spans dirty instead of pushing duplicates.
+   - let collectors convert DIRTY to QUEUED at finish.
+   - measure `qstate_dirty_set`, `qstate_dirty_self_set`, and
+     `qstate_dirty_requeue`.
+
+11. `PendingWordMaskAuthority-L1`
    - behavior candidate after shadow evidence.
    - remove release per-object pending_count RMW only after zero gates hold.
 
-11. `IntrusiveRemoteHead-L1`
+12. `IntrusiveRemoteHead-L1`
    - HOLD.
    - only revisit if mask-authority data shows collect CPU still dominates.
 
@@ -286,6 +303,34 @@ Current measured baseline:
     safe yet.
   - first-word extra notify and post-publish double-arm were tested locally but
     did not eliminate the mismatch, so they were not kept.
+
+### PendingWordMaskFinishProtocol-L1
+
+- Applied:
+  - add `H8_Q_DRAINING_DIRTY`.
+  - producers that publish a new pending word while a span is draining mark the
+    span DIRTY instead of pushing a duplicate pending queue entry.
+  - collectors that rearm work while draining also mark the span DIRTY.
+  - collector finish uses CAS:
+    - `DRAINING -> IDLE` if no dirty handoff happened.
+    - `DRAINING_DIRTY -> QUEUED` and one queue push if work arrived during the
+      drain.
+- New counters:
+  - `qstate_dirty_set`
+  - `qstate_dirty_self_set`
+  - `qstate_dirty_requeue`
+- Current representative debug interleaved observation:
+  - DIRTY handoff is active.
+  - `count_mask0_bitmap1` remains nonzero.
+  - `pending_count` still acts as the rescue authority.
+- Interpretation:
+  - The qstate finish handshake is useful attribution, but it does not by
+    itself prove pending word mask authority.
+  - The remaining mismatch is consistent with the current publish order where
+    `pending_count++` happens before the pending bit commit.
+  - Next design decision should address whether to introduce an explicit
+    publish in-flight marker, demote count earlier, or keep count authority and
+    move to another bottleneck.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 

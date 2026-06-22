@@ -480,6 +480,12 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_finish_mask_nonzero_bitmap_nonzero, memory_order_acquire);
   out->pending_publish_mask_arm_raced_nonempty = atomic_load_explicit(
       &h8g.pending_publish_mask_arm_raced_nonempty, memory_order_acquire);
+  out->qstate_dirty_set =
+      atomic_load_explicit(&h8g.qstate_dirty_set, memory_order_acquire);
+  out->qstate_dirty_self_set =
+      atomic_load_explicit(&h8g.qstate_dirty_self_set, memory_order_acquire);
+  out->qstate_dirty_requeue =
+      atomic_load_explicit(&h8g.qstate_dirty_requeue, memory_order_acquire);
   out->orphan_quiesce_count =
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =

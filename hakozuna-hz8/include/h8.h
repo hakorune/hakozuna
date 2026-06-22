@@ -107,6 +107,9 @@ typedef struct H8DebugStats {
   size_t pending_finish_mask_nonzero_bitmap_zero;
   size_t pending_finish_mask_nonzero_bitmap_nonzero;
   size_t pending_publish_mask_arm_raced_nonempty;
+  size_t qstate_dirty_set;
+  size_t qstate_dirty_self_set;
+  size_t qstate_dirty_requeue;
   size_t local_alloc_pending_nonzero;
   size_t local_free_pending_nonzero;
   size_t owner_live_set_already_live;
