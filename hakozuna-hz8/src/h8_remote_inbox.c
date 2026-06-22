@@ -108,7 +108,9 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   h8_pending_count_dec(span);
   uint32_t old_head = atomic_load_explicit(&span->local_free_head,
                                            memory_order_relaxed);
-  span->next_free[slot] = old_head;
+  if (!slot_authority) {
+    span->next_free[slot] = old_head;
+  }
   h8_slot_shadow_set_free(span, slot, old_head);
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
                         memory_order_release);
@@ -165,7 +167,9 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     size_t bit_index = (size_t)__builtin_ctzll(slots);
     size_t slot = (word_index << 6u) + bit_index;
     slots ^= bit;
-    span->next_free[slot] = head;
+    if (!slot_authority) {
+      span->next_free[slot] = head;
+    }
     h8_slot_shadow_set_free(span, slot, head);
     head = (uint32_t)slot;
   }

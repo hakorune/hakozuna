@@ -40,8 +40,12 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   if (local_head != UINT32_MAX) {
     uint32_t slot = local_head;
     h8_slot_shadow_expect(span, slot, H8_SLOT_FREE >> H8_SLOT_TAG_SHIFT);
-    atomic_store_explicit(&span->local_free_head, span->next_free[slot],
-                          memory_order_relaxed);
+    uint32_t next = span->next_free[slot];
+    if (slot_authority) {
+      uint32_t state = h8_slot_state_load_acquire(span, slot);
+      next = h8_slot_state_decode_next(h8_slot_state_payload(state));
+    }
+    atomic_store_explicit(&span->local_free_head, next, memory_order_relaxed);
     H8_DEBUG_INC(local_freelist_pop);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_INC(local_pending_check_alloc);
@@ -216,7 +220,9 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   H8_DEBUG_INC(local_free_head_touch_free);
   uint32_t old_head = atomic_load_explicit(&span->local_free_head,
                                            memory_order_relaxed);
-  span->next_free[slot] = old_head;
+  if (!slot_authority) {
+    span->next_free[slot] = old_head;
+  }
   h8_slot_shadow_set_free(span, slot, old_head);
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_relaxed);
   if (H8_UNLIKELY(!h8_owner_used_sub(span, 1))) {

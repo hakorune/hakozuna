@@ -26,10 +26,11 @@ HZ8 optimization is being implemented in this order:
 22. `LocalFreelistProofElision-L1`
 23. `TaggedSlotStateShadow-L1`
 24. `TaggedSlotStateAuthority-L1`
+25. `TaggedSlotStateNoNextFree-L1`
 
 Current focus:
 
-- `TaggedSlotStateAuthority-L1`
+- `TaggedSlotStateNoNextFree-L1`
 
 Rules:
 
@@ -255,3 +256,10 @@ TaggedSlotStateAuthority-L1:
 - keep default behavior on live bitmap authority until stress and A/B pass.
 - when enabled, classify and remote-validate with `slot_state + pending`.
 - keep live bitmap as debug shadow during the transition.
+
+TaggedSlotStateNoNextFree-L1:
+
+- keep authority path opt-in.
+- when authority is enabled, stop reading/writing `next_free[]`.
+- use `FREE(next)` payload as the free-list link.
+- keep default live-bitmap path on existing `next_free[]`.
