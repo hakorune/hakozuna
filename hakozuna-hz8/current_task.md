@@ -7,7 +7,8 @@ Current focus:
 - `LocalInterleavedAttribution-L1` / DONE
 - `PendingCountRuntimeDecisionElision-L1` / DONE
 - `QuiescentPendingBitmapGate-L1` / MOSTLY DONE, verify before count removal
-- `PendingWordMaskAuthority-L1` / NEXT
+- `RemotePublishMicrobench-L1` / DONE
+- `TailDrainPolicyAudit-L1` / NEXT
 
 Immediate goal:
 
@@ -184,6 +185,22 @@ Why this is first:
   proxy because it intentionally drops remote-free publication and explodes
   RSS.  `H8_ENABLE_REMOTE_LEASE_ELISION=1` was noisy and slower in a short
   run, so it should not drive design without a safer microbench.
+- `RemotePublishMicrobench-L1` is complete:
+  added `bench/h8_remote_micro.c` and Makefile targets
+  `remote-micro-release` / `remote-micro`.  The microbench uses a distributed
+  owner ring: each thread allocates its own objects, the neighboring thread
+  remote-frees them, and each owner then collects its own pending spans.
+  Short results:
+  - release, RUNS=5, 16 threads x 100k:
+    publish median about `128.0M ops/s`, publish phase about `12.5ms`,
+    owner collect about `0.7ms`.
+  - debug, RUNS=1, 16 threads x 50k:
+    `publish_ok=800000`, `lease_ok=800000`, `pending_claim_ok=800000`,
+    `validate_fail=0`, `duplicate_claim=0`, `quiescent_repair=0`.
+  Interpretation: distributed remote publish alone is not the blocker; it is
+  already in the same high-throughput band as the phase-separated remote
+  publish phase.  The remaining interleaved gap is more likely mixed
+  alloc/free/drain scheduling and tail behavior than owner lease CAS retry.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -227,13 +244,17 @@ Acceptance:
 ## Next
 
 1. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
-2. `PendingWordMaskAuthority-L1`
+2. `TailDrainPolicyAudit-L1`
+   - separate steady-state interleaved throughput from finish/tail drain
+   - quantify `finish_yields` and tail milliseconds under different live-window
+     sizes before changing allocator policy
+3. `PendingWordMaskAuthority-L1`
    - release: no `pending_count` update/load in remote publish or collect
    - debug: keep `pending_count` as a shadow and quiescent consistency check
-3. If interleaved remains below `40M`, ask design review whether to attack:
+4. If interleaved remains below `40M`, ask design review whether to attack:
    - owner publish lease shape
    - slot-state validation duplication
    - tail drain/finish policy
    - or a dedicated remote publish microbench
-4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+5. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.
