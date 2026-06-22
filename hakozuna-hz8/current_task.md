@@ -257,8 +257,17 @@ Why this is first:
     `publish_ok=72050`, `validate_fail=0`, `duplicate_claim=0`,
     `quiescent_pending bitmap_nonzero=0 repair=0`
   Interpretation: the repeated init/TLS getter cost was a real primary blocker.
-  Current quick numbers clear the v0 local/interleaved small performance gates,
-  but need RUNS=10 x 2 confirmation before freezing.
+  First RUNS=10 confirmation:
+  - local0: median about `265.8M ops/s`, p25 about `254.0M ops/s`,
+    steady-work median about `285.7M ops/s`
+  - interleaved remote90: median about `47.6M ops/s`, p25 about
+    `40.9M ops/s`, steady-work median about `49.5M ops/s`, `push_yields=0`
+  - phase-separated remote90 lifecycle/RSS stress, RUNS=5: median about
+    `6.70M ops/s`, alloc phase about `172.5ms`, remote publish phase about
+    `11.3ms`, peak RSS about `1.87GiB`, post-purge RSS about `30MiB`
+  Interpretation: local and interleaved remote now clear the v0 small gates in
+  a first stable batch.  Interleaved p25 is just over `40M`, so a second fresh
+  batch is still needed before freezing the gate.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -301,11 +310,10 @@ Acceptance:
 
 ## Next
 
-1. Run paired/stable confirmation for the cleaned perf lane:
+1. Run the second fresh stable confirmation batch for the cleaned perf lane:
    - `local0`
    - interleaved remote90
    - phase-separated remote90 as lifecycle/RSS stress
-   - RUNS=10 x 2 when the host is quiet
 2. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
 3. Consider `TlsActiveHintTrustShadow-L1`
    - shadow whether an active TLS span can skip owner/class/state revalidation
