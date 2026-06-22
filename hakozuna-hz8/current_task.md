@@ -4,13 +4,15 @@
 
 Current focus:
 
-- `Upper1p5ClassMap-AB-L1` / design review stop
+- `Upper1p5ClassMap-AB-L1` / HOLD
 
 Immediate goal:
 
-- Decide whether to open a side-branch paired A/B for upper 1.5x classes.
-- Candidate map is not mainline behavior yet.
-- If opened, it must include factor-3 pointer identity decode for 1536/3072.
+- Keep upper 1.5x class map as an A/B build target only.
+- Do not merge it as default until paired A/B proves hot-path regression is
+  acceptable.
+- Use the current result to decide whether to ask for a narrower 1536-only
+  experiment or hold class-map changes until MediumRun.
 
 Why this is first:
 
@@ -84,6 +86,17 @@ Why this is first:
   - `upper1536` / `upper1p5` shadow ratio: about `1.21`
   - current lower-bound spans: `95`
   - shadow lower-bound spans: `89`
+- `Upper1p5ClassMap-AB-L1` is implemented as a build target, not default:
+  `make bench-release-upper1p5` builds with
+  `-DH8_CLASS_MAP_UPPER1P5` and `class_map_id=upper1p5-v0`.
+  Short RUNS=3 evidence:
+  - local0 p2-v0 median around `103M`; upper1p5 around `93M`
+  - interleaved remote90 p2-v0 median around `32.7M`; upper1p5 around `30.9M`
+  - phase remote90 peak_rss improved about `2.01GiB -> 1.83GiB`
+  - phase remote90 minor faults improved about `489k -> 446k`
+  - phase remote90 lower-bound spans improved about `30296 -> 27601`
+  Interpretation: memory/first-touch improves, but hot-path performance does
+  not yet clear the review gate.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -104,6 +117,9 @@ Implementation notes:
   - `ClassMapCandidateShadow-L1`: GO and completed
   - upper 1.5x limited A/B: conditional GO after shadow evidence
   - full 3-4 classes per doubling: HOLD until MediumRun design
+- Current A/B result:
+  upper1p5 is not ready as default because local/interleaved throughput does
+  not meet the suggested no-regression gate.
 
 Acceptance:
 
@@ -116,7 +132,7 @@ Acceptance:
 
 ## Next
 
-1. `Upper1p5ClassMap-AB-L1`
-   - Only after candidate shadow confirms material rounded-byte/span benefit.
-   - Must include factor-3 pointer identity decode for 1536/3072.
-   - Must be paired A/B, not silent mainline behavior change.
+1. Ask design review:
+   - Should we try a narrower `+1536 only` build target?
+   - Or should class-map changes remain HOLD until local/interleaved gates are
+     closer and MediumRun design starts?
