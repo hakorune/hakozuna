@@ -39,6 +39,9 @@ typedef struct H8BenchThread {
   uint64_t alloc_ns;
   uint64_t remote_ns;
   size_t remote_live_by_class[9];
+  uint64_t requested_bytes_by_class[9];
+  uint64_t rounded_bytes_by_class[9];
+  size_t alloc_count_by_class[9];
   int error;
 } H8BenchThread;
 
@@ -76,9 +79,21 @@ static uint32_t h8_bench_class_for_size(size_t size) {
   return 8;
 }
 
-static size_t h8_bench_slots_for_class(uint32_t class_id) {
+static size_t h8_bench_class_size(uint32_t class_id) {
   static const size_t sizes[9] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-  return 65536u / sizes[class_id];
+  return sizes[class_id];
+}
+
+static size_t h8_bench_slots_for_class(uint32_t class_id) {
+  return 65536u / h8_bench_class_size(class_id);
+}
+
+static uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size) {
+  uint32_t class_id = h8_bench_class_for_size(size);
+  th->alloc_count_by_class[class_id]++;
+  th->requested_bytes_by_class[class_id] += (uint64_t)size;
+  th->rounded_bytes_by_class[class_id] += (uint64_t)h8_bench_class_size(class_id);
+  return class_id;
 }
 
 static uint64_t h8_now_ns(void) {
@@ -153,6 +168,7 @@ static void* h8_bench_thread_interleaved(void* arg) {
     h8_drain_inbox(my_inbox);
 
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
+    h8_bench_note_alloc(th, size);
     void* ptr = h8_malloc(size);
     if (!ptr) {
       th->error = 1;
@@ -206,6 +222,7 @@ static void* h8_bench_thread_main(void* arg) {
   uint64_t alloc_start = h8_now_ns();
   for (size_t i = 0; i < opt->iters_per_thread; ++i) {
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
+    uint32_t class_id = h8_bench_note_alloc(th, size);
     void* ptr = h8_malloc(size);
     if (!ptr) {
       th->error = 1;
@@ -221,7 +238,7 @@ static void* h8_bench_thread_main(void* arg) {
         th->error = 2;
         break;
       }
-      ++th->remote_live_by_class[h8_bench_class_for_size(size)];
+      ++th->remote_live_by_class[class_id];
       next_inbox->items[next_inbox->count++] = ptr;
     } else {
       h8_free(ptr);
@@ -352,6 +369,10 @@ int main(int argc, char** argv) {
   size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
   size_t* span_lower_bound = calloc((size_t)opt.runs, sizeof(*span_lower_bound));
   size_t* remote_live_objects = calloc((size_t)opt.runs, sizeof(*remote_live_objects));
+  uint64_t frag_requested_total = 0;
+  uint64_t frag_rounded_total = 0;
+  uint64_t frag_rounded_by_class[9] = {0};
+  size_t frag_allocs_by_class[9] = {0};
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
       !minor_faults || !span_lower_bound || !remote_live_objects) {
     fprintf(stderr, "bench allocation failed\n");
@@ -443,6 +464,8 @@ int main(int argc, char** argv) {
     double ops = (double)opt.threads * (double)opt.iters_per_thread;
     size_t lower = 0;
     size_t live_objects = 0;
+    uint64_t run_requested = 0;
+    uint64_t run_rounded = 0;
     if (!opt.interleaved) {
       for (int i = 0; i < opt.threads; ++i) {
         for (uint32_t c = 0; c < 9u; ++c) {
@@ -453,6 +476,16 @@ int main(int argc, char** argv) {
         }
       }
     }
+    for (int i = 0; i < opt.threads; ++i) {
+      for (uint32_t c = 0; c < 9u; ++c) {
+        run_requested += th[i].requested_bytes_by_class[c];
+        run_rounded += th[i].rounded_bytes_by_class[c];
+        frag_rounded_by_class[c] += th[i].rounded_bytes_by_class[c];
+        frag_allocs_by_class[c] += th[i].alloc_count_by_class[c];
+      }
+    }
+    frag_requested_total += run_requested;
+    frag_rounded_total += run_rounded;
     throughput[run] = ops / seconds;
     H8MemorySample mem = h8_read_memory_sample();
     rss[run] = mem.rss_bytes;
@@ -514,6 +547,22 @@ int main(int argc, char** argv) {
            h8_percentile_size_t(remote_live_objects, (size_t)opt.runs, 0.50),
            h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50));
   }
+  double frag_ratio = frag_requested_total
+                          ? (double)frag_rounded_total /
+                                (double)frag_requested_total
+                          : 0.0;
+  printf("fragmentation requested_bytes=%" PRIu64 " rounded_bytes=%" PRIu64 " rounding_ratio=%.6f\n",
+         frag_requested_total, frag_rounded_total, frag_ratio);
+  printf("fragmentation_by_class allocs=[%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=[%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]\n",
+         frag_allocs_by_class[0], frag_allocs_by_class[1],
+         frag_allocs_by_class[2], frag_allocs_by_class[3],
+         frag_allocs_by_class[4], frag_allocs_by_class[5],
+         frag_allocs_by_class[6], frag_allocs_by_class[7],
+         frag_allocs_by_class[8], frag_rounded_by_class[0],
+         frag_rounded_by_class[1], frag_rounded_by_class[2],
+         frag_rounded_by_class[3], frag_rounded_by_class[4],
+         frag_rounded_by_class[5], frag_rounded_by_class[6],
+         frag_rounded_by_class[7], frag_rounded_by_class[8]);
 
   H8Stats stats = h8_stats();
   H8DebugStats debug = h8_debug_stats();

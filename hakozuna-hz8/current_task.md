@@ -4,14 +4,13 @@
 
 Current focus:
 
-- `ClassFragmentationAudit-L1`
+- `RemoteClaimCloseOrdering-L1`
 
 Immediate goal:
 
-- Measure requested live bytes, rounded live bytes, rounding ratio, and
-  per-class span contribution.
-- Use that data to decide whether size-class refinement is worth opening.
-- Do not change allocation policy in this box.
+- Recheck and fix collector close ordering before final v0 small remote gate.
+- Pending bitmap is remote/remote duplicate-claim authority.
+- Pending clear must not expose stale `ALLOCATED` state to a second producer.
 
 Why this is first:
 
@@ -53,6 +52,12 @@ Why this is first:
   - `local0`: best quick runs about `141M..152M ops/s`; noisy low runs remain
     possible on this host.
   - interleaved remote90: about `28M..31M ops/s` on clean quick runs.
+- `ClassFragmentationAudit-L1` is complete:
+  bench now reports requested bytes, rounded bytes, rounding ratio, and
+  class contribution.  Short checks for `16..2048` show rounding ratio around
+  `1.33`, with the 2048B class dominating rounded bytes.  This is a real
+  future optimization lane, but it changes size-class policy and should wait
+  until the remote safety closeout is clean.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -62,12 +67,10 @@ Why this is first:
 
 Implementation notes:
 
-- Class fragmentation audit should be counter-only first.
-- Current class map is pure power-of-two:
-  `16, 32, 64, 128, 256, 512, 1024, 2048, 4096`.
-- Phase-separated remote90 already showed span lower-bound ratio near `1.0`
-  for the current class map, so the next question is class-map rounding waste,
-  not excess span commits.
+- Collector must publish slot non-allocated state before it releases the
+  pending claim.
+- Single-slot and bulk collect paths both need the same ordering.
+- Keep this as a correctness box.  Do not introduce new queue or class policy.
 
 Acceptance:
 
@@ -80,7 +83,7 @@ Acceptance:
 
 ## Next
 
-1. `RemoteClaimCloseOrdering-L1`
-   - Recheck collector ordering before final v0 small remote gate.
-   - Pending bitmap is remote/remote duplicate-claim authority, so pending
-     clear must not expose stale `ALLOCATED` state to a second producer.
+1. `ClassMapPolicyQuestion-L1`
+   - Ask whether 3-4 classes per doubling are worth opening after v0 remote
+     safety is closed.
+   - Use observed rounding ratio around `1.33` as the input evidence.
