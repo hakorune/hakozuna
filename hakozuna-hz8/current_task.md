@@ -4,7 +4,7 @@
 
 Current focus:
 
-- `ClassMapPolicyQuestion-L1`
+- `ClassMapPolicyQuestion-L1` / design review stop
 
 Immediate goal:
 
@@ -69,6 +69,12 @@ Why this is first:
   - `remote_stage validate_fail=0`
   - `duplicate_claim=0`
   - `quiescent_pending bitmap_nonzero=0 repair=0`
+- `BenchSplit-L1` is complete:
+  `bench/h8_bench.c` was split into support files before adding more counters.
+  Current line counts are safely under 800:
+  - `bench/h8_bench.c`: 565
+  - `bench/h8_bench_support.c`: 191
+  - `bench/h8_bench_support.h`: 64
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -95,6 +101,7 @@ Acceptance:
 
 ## Next
 
-1. `BenchSplit-L1`
-   - `bench/h8_bench.c` is now 794 lines.
-   - Split benchmark helpers before adding more counters.
+1. Ask design review:
+   - Should HZ8 v0 keep power-of-two classes until remote/local gates pass?
+   - Or should we open a class-map refinement box now, given observed
+     `16..2048` rounding ratio around `1.33`?
