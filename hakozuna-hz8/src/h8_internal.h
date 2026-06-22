@@ -280,6 +280,11 @@ typedef struct H8Global {
   atomic_size_t local_active_hint_null;
   atomic_size_t local_active_hint_full;
   atomic_size_t local_active_hint_state_blocked;
+  atomic_size_t local_active_hint_trusted;
+  atomic_size_t local_active_hint_class_mismatch;
+  atomic_size_t local_active_hint_owner_mismatch;
+  atomic_size_t local_active_hint_generation_mismatch;
+  atomic_size_t local_active_hint_state_mismatch;
   atomic_size_t local_find_scan_span_usable;
   atomic_size_t local_find_scan_span_full;
   atomic_size_t local_find_scan_span_state_blocked;

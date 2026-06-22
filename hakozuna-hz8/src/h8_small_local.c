@@ -127,6 +127,28 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   return NULL;
 }
 
+static bool h8_active_hint_matches(H8Span* span, H8OwnerRecord* owner,
+                                   uint32_t class_id) {
+  if (span->class_id != class_id) {
+    H8_DEBUG_INC(local_active_hint_class_mismatch);
+    return false;
+  }
+  if (span->owner_slot != owner->slot) {
+    H8_DEBUG_INC(local_active_hint_owner_mismatch);
+    return false;
+  }
+  if (span->owner_generation != owner->generation) {
+    H8_DEBUG_INC(local_active_hint_generation_mismatch);
+    return false;
+  }
+  if (h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+    H8_DEBUG_INC(local_active_hint_state_mismatch);
+    return false;
+  }
+  H8_DEBUG_INC(local_active_hint_trusted);
+  return true;
+}
+
 static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                    uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
@@ -134,10 +156,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   bool hint_full = false;
   if (!hint) {
     H8_DEBUG_INC(local_active_hint_null);
-  } else if (hint->class_id != class_id ||
-             hint->owner_slot != owner->slot ||
-             hint->owner_generation != owner->generation ||
-             h8_span_state_load(hint) != H8_SPAN_OWNED_ACTIVE) {
+  } else if (!h8_active_hint_matches(hint, owner, class_id)) {
     H8_DEBUG_INC(local_active_hint_state_blocked);
   } else if (atomic_load_explicit(&hint->used_count, memory_order_acquire) >=
              hint->slot_count) {
@@ -186,9 +205,16 @@ void* h8_malloc_inner(size_t size) {
   uint32_t class_id = h8_class_for_size(size);
   H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
   H8Span* span = ctx->active_spans[class_id];
-  if (span && span->class_id == class_id && span->owner_slot == owner->slot &&
-      span->owner_generation == owner->generation &&
-      h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
+  bool active_hint_ok = false;
+  if (span) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    active_hint_ok = h8_active_hint_matches(span, owner, class_id);
+#else
+    (void)owner;
+    active_hint_ok = true;
+#endif
+  }
+  if (active_hint_ok) {
     H8_DEBUG_INC(local_active_hit);
     void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
     if (ptr) {

@@ -623,10 +623,15 @@ int main(int argc, char** argv) {
           : 0.0;
   printf("span_commit_lower_bound actual_total=%zu actual_per_run=%.1f lower_bound_median=%zu excess_ratio=%.3f\n",
          debug.local_span_commit, actual_per_run, lower_median, span_excess_ratio);
-  printf("local_scan_detail hint_null=%zu hint_full=%zu hint_state_blocked=%zu scan_usable=%zu scan_full=%zu scan_state_blocked=%zu skip_no_pending=%zu\n",
+  printf("local_scan_detail hint_null=%zu hint_full=%zu hint_state_blocked=%zu hint_trusted=%zu hint_class_mismatch=%zu hint_owner_mismatch=%zu hint_generation_mismatch=%zu hint_state_mismatch=%zu scan_usable=%zu scan_full=%zu scan_state_blocked=%zu skip_no_pending=%zu\n",
          debug.local_active_hint_null,
          debug.local_active_hint_full,
          debug.local_active_hint_state_blocked,
+         debug.local_active_hint_trusted,
+         debug.local_active_hint_class_mismatch,
+         debug.local_active_hint_owner_mismatch,
+         debug.local_active_hint_generation_mismatch,
+         debug.local_active_hint_state_mismatch,
          debug.local_find_scan_span_usable,
          debug.local_find_scan_span_full,
          debug.local_find_scan_span_state_blocked,

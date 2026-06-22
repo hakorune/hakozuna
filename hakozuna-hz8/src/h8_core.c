@@ -398,6 +398,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_active_hint_full, memory_order_acquire);
   out->local_active_hint_state_blocked = atomic_load_explicit(
       &h8g.local_active_hint_state_blocked, memory_order_acquire);
+  out->local_active_hint_trusted =
+      atomic_load_explicit(&h8g.local_active_hint_trusted, memory_order_acquire);
+  out->local_active_hint_class_mismatch = atomic_load_explicit(
+      &h8g.local_active_hint_class_mismatch, memory_order_acquire);
+  out->local_active_hint_owner_mismatch = atomic_load_explicit(
+      &h8g.local_active_hint_owner_mismatch, memory_order_acquire);
+  out->local_active_hint_generation_mismatch = atomic_load_explicit(
+      &h8g.local_active_hint_generation_mismatch, memory_order_acquire);
+  out->local_active_hint_state_mismatch = atomic_load_explicit(
+      &h8g.local_active_hint_state_mismatch, memory_order_acquire);
   out->local_find_scan_span_usable = atomic_load_explicit(
       &h8g.local_find_scan_span_usable, memory_order_acquire);
   out->local_find_scan_span_full =

@@ -127,6 +127,11 @@ typedef struct H8DebugStats {
   size_t local_active_hint_null;
   size_t local_active_hint_full;
   size_t local_active_hint_state_blocked;
+  size_t local_active_hint_trusted;
+  size_t local_active_hint_class_mismatch;
+  size_t local_active_hint_owner_mismatch;
+  size_t local_active_hint_generation_mismatch;
+  size_t local_active_hint_state_mismatch;
   size_t local_find_scan_span_usable;
   size_t local_find_scan_span_full;
   size_t local_find_scan_span_state_blocked;

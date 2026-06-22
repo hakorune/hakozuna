@@ -115,6 +115,8 @@ RemoteLookupReuse-L1
 SpanHotRemoteSplit-L1
 PerfLanePurification-L1
 TlsLeafEntryFastPath-L1
+TlsActiveHintTrustShadow-L1
+TlsActiveHintTrustElision-L1
 ```
 
 Benchmark / evidence:
@@ -167,12 +169,16 @@ hard gates:
 Local leaf lane:
 
 ```text
-next allocator candidate:
-  TlsActiveHintTrustShadow-L1
+latest:
+  TlsActiveHintTrustShadow-L1 added mismatch attribution
+  TlsActiveHintTrustElision-L1 trusts direct TLS active hits in release builds
 
-purpose:
-  prove active-span hits are stable enough to remove redundant owner/class/state
-  validation from the trusted TLS hint path
+evidence:
+  debug local/interleaved short runs show class/owner/generation/state
+  mismatch == 0 for active hint checks
+
+next allocator candidate:
+  class lookup width or used-count/local-hot scalar shape
 ```
 
 Remote lane:
@@ -217,7 +223,8 @@ runtime profile / knob split
    `small_interleaved_remote90`.
 2. Run a short debug/audit pass for owner exit, orphan handoff, duplicate
    remote free, and quiescent pending gates.
-3. If both batches hold, start `TlsActiveHintTrustShadow-L1`.
+3. If both batches hold, pick the next local leaf box from class lookup width
+   or used-count/local-hot scalar shape.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 
