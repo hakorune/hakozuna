@@ -185,6 +185,13 @@ typedef struct H8Global {
   atomic_size_t local_span_commit;
   atomic_size_t local_find_scan;
   atomic_size_t local_find_scan_span;
+  atomic_size_t local_active_hint_null;
+  atomic_size_t local_active_hint_full;
+  atomic_size_t local_active_hint_state_blocked;
+  atomic_size_t local_find_scan_span_usable;
+  atomic_size_t local_find_scan_span_full;
+  atomic_size_t local_find_scan_span_state_blocked;
+  atomic_size_t local_find_skip_scan_no_pending;
   atomic_size_t local_free_hit;
   atomic_size_t local_free_reject_owner;
   atomic_size_t local_free_reject_state;

@@ -402,6 +402,14 @@ int main(int argc, char** argv) {
          debug.local_free_reject_owner,
          debug.local_free_reject_state,
          debug.local_free_reject_live);
+  printf("local_scan_detail hint_null=%zu hint_full=%zu hint_state_blocked=%zu scan_usable=%zu scan_full=%zu scan_state_blocked=%zu skip_no_pending=%zu\n",
+         debug.local_active_hint_null,
+         debug.local_active_hint_full,
+         debug.local_active_hint_state_blocked,
+         debug.local_find_scan_span_usable,
+         debug.local_find_scan_span_full,
+         debug.local_find_scan_span_state_blocked,
+         debug.local_find_skip_scan_no_pending);
   printf("local_hot live_alloc=%zu live_free=%zu word0=%zu word1=%zu word2_7=%zu word8_31=%zu word32_63=%zu free_head_alloc=%zu free_head_free=%zu pending_alloc=%zu pending_free=%zu used_alloc=%zu used_free=%zu\n",
          debug.local_live_touch_alloc,
          debug.local_live_touch_free,

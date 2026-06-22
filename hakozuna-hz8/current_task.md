@@ -28,10 +28,13 @@ HZ8 optimization is being implemented in this order:
 24. `TaggedSlotStateAuthority-L1`
 25. `TaggedSlotStateNoNextFree-L1`
 26. `TaggedSlotStateReleaseShadowElision-L1`
+27. `RemoteSpanScanAudit-L1`
+28. `BumpActiveSpanHint-L1`
+29. `FullHintNoPendingScanSkip-L1`
 
 Current focus:
 
-- `TaggedSlotStateReleaseShadowElision-L1`
+- `FullHintNoPendingScanSkip-L1`
 
 Rules:
 
@@ -273,3 +276,28 @@ TaggedSlotStateReleaseShadowElision-L1:
   hot paths.
 - preserve live bitmap authority and existing `next_free[]` behavior in default
   release mode.
+
+RemoteSpanScanAudit-L1:
+
+- behavior unchanged.
+- add debug-only attribution for active-span hint misses.
+- split owned-by-class scan into usable / full / state-blocked spans.
+- use this to decide whether remote90 is blocked by pending collection,
+  active-span placement, or list topology.
+
+BumpActiveSpanHint-L1:
+
+- keep `active_spans[]` as a weak hint.
+- publish the current span to `active_spans[class]` after successful bump
+  allocation, matching the existing freelist-pop path.
+- target remote-heavy rows where local free is rare and bump allocation is the
+  dominant local allocation path.
+
+FullHintNoPendingScanSkip-L1:
+
+- behavior policy is limited to allocation slow path.
+- if the active hint is full and the owner has no pending remote spans, skip the
+  owned-by-class full-span scan and commit/refill instead.
+- rely on local free updating the active hint when same-owner reusable slots
+  exist.
+- count skipped scans with `local_find_skip_scan_no_pending`.

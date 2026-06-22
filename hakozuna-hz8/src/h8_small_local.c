@@ -117,6 +117,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     }
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
+    owner->active_spans[class_id] = span;
     return h8_slot_ptr(span, bump);
   }
 
@@ -129,24 +130,42 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
 static H8Span* h8_find_active_span(H8OwnerRecord* owner, uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
   H8Span* hint = owner->active_spans[class_id];
-  if (hint && hint->class_id == class_id &&
-      hint->owner_slot == owner->slot &&
-      hint->owner_generation == owner->generation &&
-      h8_span_state_load(hint) == H8_SPAN_OWNED_ACTIVE &&
-      atomic_load_explicit(&hint->used_count, memory_order_acquire) <
-          hint->slot_count) {
+  bool hint_full = false;
+  if (!hint) {
+    H8_DEBUG_INC(local_active_hint_null);
+  } else if (hint->class_id != class_id ||
+             hint->owner_slot != owner->slot ||
+             hint->owner_generation != owner->generation ||
+             h8_span_state_load(hint) != H8_SPAN_OWNED_ACTIVE) {
+    H8_DEBUG_INC(local_active_hint_state_blocked);
+  } else if (atomic_load_explicit(&hint->used_count, memory_order_acquire) >=
+             hint->slot_count) {
+    H8_DEBUG_INC(local_active_hint_full);
+    hint_full = true;
+  } else {
     return hint;
+  }
+  if (hint_full &&
+      atomic_load_explicit(&owner->pending_span_count, memory_order_acquire) == 0) {
+    H8_DEBUG_INC(local_find_skip_scan_no_pending);
+    return NULL;
   }
   pthread_mutex_lock(&owner->owned_lock);
   for (H8Span* span = owner->owned_by_class[class_id]; span;
        span = span->next_owned_class) {
     H8_DEBUG_INC(local_find_scan_span);
-    if (h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE &&
-        atomic_load_explicit(&span->used_count, memory_order_acquire) <
-            span->slot_count) {
-      pthread_mutex_unlock(&owner->owned_lock);
-      return span;
+    if (h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+      H8_DEBUG_INC(local_find_scan_span_state_blocked);
+      continue;
     }
+    if (atomic_load_explicit(&span->used_count, memory_order_acquire) >=
+        span->slot_count) {
+      H8_DEBUG_INC(local_find_scan_span_full);
+      continue;
+    }
+    H8_DEBUG_INC(local_find_scan_span_usable);
+    pthread_mutex_unlock(&owner->owned_lock);
+    return span;
   }
   pthread_mutex_unlock(&owner->owned_lock);
   return NULL;

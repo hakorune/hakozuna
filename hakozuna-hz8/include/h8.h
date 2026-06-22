@@ -90,6 +90,13 @@ typedef struct H8DebugStats {
   size_t local_span_commit;
   size_t local_find_scan;
   size_t local_find_scan_span;
+  size_t local_active_hint_null;
+  size_t local_active_hint_full;
+  size_t local_active_hint_state_blocked;
+  size_t local_find_scan_span_usable;
+  size_t local_find_scan_span_full;
+  size_t local_find_scan_span_state_blocked;
+  size_t local_find_skip_scan_no_pending;
   size_t local_free_hit;
   size_t local_free_reject_owner;
   size_t local_free_reject_state;

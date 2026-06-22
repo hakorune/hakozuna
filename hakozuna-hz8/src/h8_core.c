@@ -328,6 +328,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_find_scan, memory_order_acquire);
   out->local_find_scan_span =
       atomic_load_explicit(&h8g.local_find_scan_span, memory_order_acquire);
+  out->local_active_hint_null =
+      atomic_load_explicit(&h8g.local_active_hint_null, memory_order_acquire);
+  out->local_active_hint_full =
+      atomic_load_explicit(&h8g.local_active_hint_full, memory_order_acquire);
+  out->local_active_hint_state_blocked = atomic_load_explicit(
+      &h8g.local_active_hint_state_blocked, memory_order_acquire);
+  out->local_find_scan_span_usable = atomic_load_explicit(
+      &h8g.local_find_scan_span_usable, memory_order_acquire);
+  out->local_find_scan_span_full =
+      atomic_load_explicit(&h8g.local_find_scan_span_full, memory_order_acquire);
+  out->local_find_scan_span_state_blocked = atomic_load_explicit(
+      &h8g.local_find_scan_span_state_blocked, memory_order_acquire);
+  out->local_find_skip_scan_no_pending = atomic_load_explicit(
+      &h8g.local_find_skip_scan_no_pending, memory_order_acquire);
   out->local_free_hit =
       atomic_load_explicit(&h8g.local_free_hit, memory_order_acquire);
   out->local_free_reject_owner =
