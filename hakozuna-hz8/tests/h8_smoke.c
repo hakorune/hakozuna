@@ -39,7 +39,10 @@ static void* adoption_roundtrip(void* arg) {
 
 int main(void) {
   const char* mode = getenv("H8_SMOKE_REGULAR_ADOPTION");
-  int enable_regular_adoption = !(mode && mode[0] == '0');
+  int enable_regular_adoption =
+      !(mode && (strcmp(mode, "0") == 0 || strcmp(mode, "false") == 0 ||
+                 strcmp(mode, "FALSE") == 0 || strcmp(mode, "off") == 0 ||
+                 strcmp(mode, "OFF") == 0));
   if (enable_regular_adoption) {
     setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
   }

@@ -16,20 +16,26 @@ static const uint16_t kGenerationSeed = 1;
 
 static void h8_init_once(void);
 
+static bool h8_env_is_one(const char* value) {
+  return value && strcmp(value, "1") == 0;
+}
+
 static bool h8_parse_env_bool(const char* value) {
   if (!value || !value[0]) {
     return false;
   }
-  switch (value[0]) {
-  case '1':
-  case 't':
-  case 'T':
-  case 'y':
-  case 'Y':
+  if (strcmp(value, "1") == 0 || strcmp(value, "true") == 0 ||
+      strcmp(value, "TRUE") == 0 || strcmp(value, "yes") == 0 ||
+      strcmp(value, "YES") == 0 || strcmp(value, "on") == 0 ||
+      strcmp(value, "ON") == 0) {
     return true;
-  default:
-    return false;
   }
+  return false;
+}
+
+static bool h8_parse_unsafe_evidence_env(const char* primary,
+                                         const char* deprecated) {
+  return h8_env_is_one(getenv(primary)) || h8_env_is_one(getenv(deprecated));
 }
 
 void h8_init(void) {
@@ -61,11 +67,15 @@ static void h8_init_once(void) {
       memory_order_relaxed);
   atomic_store_explicit(
       &h8g.remote_lease_elision_enabled,
-      h8_parse_env_bool(getenv("H8_ENABLE_REMOTE_LEASE_ELISION")),
+      h8_parse_unsafe_evidence_env(
+          "H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION",
+          "H8_ENABLE_REMOTE_LEASE_ELISION"),
       memory_order_relaxed);
   atomic_store_explicit(
       &h8g.remote_pending_publish_elision_enabled,
-      h8_parse_env_bool(getenv("H8_ENABLE_REMOTE_PENDING_PUBLISH_ELISION")),
+      h8_parse_unsafe_evidence_env(
+          "H8_UNSAFE_EVIDENCE_DROP_REMOTE_PENDING_PUBLISH",
+          "H8_ENABLE_REMOTE_PENDING_PUBLISH_ELISION"),
       memory_order_relaxed);
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;

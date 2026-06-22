@@ -237,9 +237,6 @@ static void h8_collect_pending_word(H8Span* span, size_t word_index, bool from_s
                              memory_order_release);
     H8_DEBUG_INC(pending_word_summary_rearm);
     H8_DEBUG_INC(pending_words_rearmed);
-  } else {
-    atomic_fetch_and_explicit(&span->pending_word_mask, ~summary_bit,
-                              memory_order_release);
   }
 }
 
@@ -303,27 +300,42 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     return H8_PUBLISH_INVALID;
   }
   if (pending_elision) {
+    /*
+     * Unsafe evidence mode: this intentionally drops remote-free publication
+     * after validation.  It is only a speed ceiling probe and leaks remote frees.
+     */
     H8_DEBUG_INC(remote_stage_pending_publish_elided);
     H8_DEBUG_INC(remote_stage_publish_ok);
     return H8_PUBLISH_OK;
   }
-  uint64_t old_word = atomic_fetch_or_explicit(
-      pending_word, slot_bit, memory_order_acq_rel);
+  size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1,
+                                          memory_order_acq_rel);
+  uint64_t old_word = atomic_fetch_or_explicit(pending_word, slot_bit,
+                                               memory_order_acq_rel);
   if (old_word & slot_bit) {
+    h8_pending_count_dec(span);
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
   if (slot_authority) {
     uint32_t state = h8_slot_state_load_acquire(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      uint64_t old_pending =
+          atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      if (old_pending & slot_bit) {
+        h8_pending_count_dec(span);
+      }
       H8_DEBUG_INC(remote_stage_validate_fail);
       return H8_PUBLISH_INVALID;
     }
   } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
-      H8_DEBUG_INC(remote_stage_validate_fail);
-      return H8_PUBLISH_INVALID;
+    uint64_t old_pending =
+        atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+    if (old_pending & slot_bit) {
+      h8_pending_count_dec(span);
+    }
+    H8_DEBUG_INC(remote_stage_validate_fail);
+    return H8_PUBLISH_INVALID;
   }
   H8_DEBUG_INC(remote_stage_pending_claim_ok);
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -335,7 +347,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
                              memory_order_release);
     H8_DEBUG_INC(pending_word_summary_set);
   }
-  size_t prev = atomic_fetch_add_explicit(&span->pending_count, 1, memory_order_acq_rel);
   if (prev == 0) {
     H8_DEBUG_INC(remote_stage_notify_first);
     h8_span_notify(owner, span);
@@ -373,6 +384,10 @@ H8PublishResult h8_remote_free_publish(void* ptr) {
     return res;
   }
   if (h8_remote_lease_elision_enabled()) {
+    /*
+     * Unsafe evidence mode: skipping the owner lifecycle lease removes the
+     * handoff/reuse protection and must not be used for correctness claims.
+     */
     H8_DEBUG_INC(remote_stage_regular_lease_elided);
     H8_DEBUG_INC(remote_regular_admission_count);
     return h8_remote_free_publish_locked(span, owner, slot);

@@ -5,7 +5,9 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sched.h>
 #include <string.h>
+#include <stdatomic.h>
 #include <time.h>
 
 typedef struct H8BenchOptions {
@@ -15,18 +17,22 @@ typedef struct H8BenchOptions {
   size_t min_size;
   size_t max_size;
   int remote_pct;
+  int interleaved;
 } H8BenchOptions;
 
 typedef struct H8Inbox {
   void** items;
   size_t count;
   size_t cap;
+  _Atomic size_t head;
+  _Atomic size_t tail;
 } H8Inbox;
 
 typedef struct H8BenchThread {
   int index;
   const H8BenchOptions* opt;
   H8Inbox* inboxes;
+  _Atomic int* done;
   pthread_barrier_t* barrier;
   uint32_t rng;
   int error;
@@ -71,9 +77,99 @@ static size_t h8_read_rss_bytes(void) {
   return rss_kib * 1024u;
 }
 
+static int h8_spsc_push(H8Inbox* inbox, void* ptr) {
+  size_t tail = atomic_load_explicit(&inbox->tail, memory_order_relaxed);
+  size_t head = atomic_load_explicit(&inbox->head, memory_order_acquire);
+  size_t next = tail + 1u;
+  if (next - head > inbox->cap) {
+    return 0;
+  }
+  inbox->items[tail % inbox->cap] = ptr;
+  atomic_store_explicit(&inbox->tail, next, memory_order_release);
+  return 1;
+}
+
+static void* h8_spsc_pop(H8Inbox* inbox) {
+  size_t head = atomic_load_explicit(&inbox->head, memory_order_relaxed);
+  size_t tail = atomic_load_explicit(&inbox->tail, memory_order_acquire);
+  if (head == tail) {
+    return NULL;
+  }
+  void* ptr = inbox->items[head % inbox->cap];
+  atomic_store_explicit(&inbox->head, head + 1u, memory_order_release);
+  return ptr;
+}
+
+static size_t h8_drain_inbox(H8Inbox* inbox) {
+  size_t drained = 0;
+  for (;;) {
+    void* ptr = h8_spsc_pop(inbox);
+    if (!ptr) {
+      return drained;
+    }
+    h8_free(ptr);
+    ++drained;
+  }
+}
+
+static void* h8_bench_thread_interleaved(void* arg) {
+  H8BenchThread* th = (H8BenchThread*)arg;
+  const H8BenchOptions* opt = th->opt;
+  int next = (th->index + 1) % opt->threads;
+  int prev = (th->index + opt->threads - 1) % opt->threads;
+  H8Inbox* next_inbox = &th->inboxes[next];
+  H8Inbox* my_inbox = &th->inboxes[th->index];
+
+  for (size_t i = 0; i < opt->iters_per_thread; ++i) {
+    h8_drain_inbox(my_inbox);
+
+    size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
+    void* ptr = h8_malloc(size);
+    if (!ptr) {
+      th->error = 1;
+      break;
+    }
+    ((volatile unsigned char*)ptr)[0] = (unsigned char)size;
+    if (size > 1) {
+      ((volatile unsigned char*)ptr)[size - 1] = (unsigned char)(size >> 8);
+    }
+    if (opt->remote_pct > 0 &&
+        (int)(h8_rng_next(&th->rng) % 100u) < opt->remote_pct) {
+      while (!h8_spsc_push(next_inbox, ptr)) {
+        h8_drain_inbox(my_inbox);
+        sched_yield();
+      }
+    } else {
+      h8_free(ptr);
+    }
+  }
+
+  atomic_store_explicit(&th->done[th->index], 1, memory_order_release);
+
+  for (;;) {
+    size_t drained = h8_drain_inbox(my_inbox);
+    if (atomic_load_explicit(&th->done[prev], memory_order_acquire) &&
+        drained == 0) {
+      if (h8_drain_inbox(my_inbox) == 0) {
+        break;
+      }
+    }
+    if (drained == 0) {
+      sched_yield();
+    }
+  }
+
+  pthread_barrier_wait(th->barrier);
+  return NULL;
+}
+
 static void* h8_bench_thread_main(void* arg) {
   H8BenchThread* th = (H8BenchThread*)arg;
   const H8BenchOptions* opt = th->opt;
+  if (opt->interleaved) {
+    return h8_bench_thread_interleaved(arg);
+  }
+
   int next = (th->index + 1) % opt->threads;
   H8Inbox* next_inbox = &th->inboxes[next];
   H8Inbox* my_inbox = &th->inboxes[th->index];
@@ -126,7 +222,8 @@ static int h8_parse_int(const char* s, int* out) {
 static void h8_usage(const char* argv0) {
   fprintf(stderr,
           "usage: %s [--runs N] [--threads N] [--iters N]\n"
-          "          [--min-size N] [--max-size N] [--remote-pct N]\n",
+          "          [--min-size N] [--max-size N] [--remote-pct N]\n"
+          "          [--interleaved 0|1]\n",
           argv0);
 }
 
@@ -151,6 +248,8 @@ static int h8_parse_options(int argc, char** argv, H8BenchOptions* opt) {
       opt->max_size = (size_t)tmp;
     } else if (strcmp(a, "--remote-pct") == 0 && i + 1 < argc) {
       if (h8_parse_int(argv[++i], &opt->remote_pct) != 0) return -1;
+    } else if (strcmp(a, "--interleaved") == 0 && i + 1 < argc) {
+      if (h8_parse_int(argv[++i], &opt->interleaved) != 0) return -1;
     } else {
       return -1;
     }
@@ -200,11 +299,13 @@ int main(int argc, char** argv) {
       .min_size = 16,
       .max_size = 2048,
       .remote_pct = 0,
+      .interleaved = 0,
   };
   if (h8_parse_options(argc, argv, &opt) != 0 ||
       opt.runs <= 0 || opt.threads <= 0 || opt.iters_per_thread == 0 ||
       opt.min_size == 0 || opt.max_size < opt.min_size ||
-      opt.remote_pct < 0 || opt.remote_pct > 100) {
+      opt.remote_pct < 0 || opt.remote_pct > 100 ||
+      opt.interleaved < 0 || opt.interleaved > 1) {
     h8_usage(argv[0]);
     return 1;
   }
@@ -222,19 +323,22 @@ int main(int argc, char** argv) {
     H8Inbox* inboxes = calloc((size_t)opt.threads, sizeof(*inboxes));
     H8BenchThread* th = calloc((size_t)opt.threads, sizeof(*th));
     pthread_t* tids = calloc((size_t)opt.threads, sizeof(*tids));
-    if (!inboxes || !th || !tids) {
+    _Atomic int* done = calloc((size_t)opt.threads, sizeof(*done));
+    if (!inboxes || !th || !tids || !done) {
       fprintf(stderr, "bench run allocation failed\n");
       free(inboxes);
       free(th);
       free(tids);
+      free(done);
       free(throughput);
       free(rss);
       return 1;
     }
 
     for (int i = 0; i < opt.threads; ++i) {
-      inboxes[i].cap = opt.iters_per_thread;
-      inboxes[i].items = calloc(opt.iters_per_thread, sizeof(void*));
+      inboxes[i].cap = opt.interleaved ? opt.iters_per_thread + 1u
+                                       : opt.iters_per_thread;
+      inboxes[i].items = calloc(inboxes[i].cap, sizeof(void*));
       if (!inboxes[i].items) {
         fprintf(stderr, "inbox allocation failed\n");
         return 1;
@@ -248,6 +352,7 @@ int main(int argc, char** argv) {
       th[i].index = i;
       th[i].opt = &opt;
       th[i].inboxes = inboxes;
+      th[i].done = done;
       th[i].barrier = &barrier;
       th[i].rng = 0x9E3779B9u ^ (uint32_t)(run * 131 + i * 17);
       th[i].error = 0;
@@ -281,14 +386,15 @@ int main(int argc, char** argv) {
     free(inboxes);
     free(th);
     free(tids);
+    free(done);
   }
 
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), h8_cmp_double);
   qsort(rss, (size_t)opt.runs, sizeof(*rss), h8_cmp_size_t);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct);
+         opt.remote_pct, opt.interleaved);
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
