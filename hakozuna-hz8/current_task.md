@@ -27,10 +27,11 @@ HZ8 optimization is being implemented in this order:
 23. `TaggedSlotStateShadow-L1`
 24. `TaggedSlotStateAuthority-L1`
 25. `TaggedSlotStateNoNextFree-L1`
+26. `TaggedSlotStateReleaseShadowElision-L1`
 
 Current focus:
 
-- `TaggedSlotStateNoNextFree-L1`
+- `TaggedSlotStateReleaseShadowElision-L1`
 
 Rules:
 
@@ -263,3 +264,12 @@ TaggedSlotStateNoNextFree-L1:
 - when authority is enabled, stop reading/writing `next_free[]`.
 - use `FREE(next)` payload as the free-list link.
 - keep default live-bitmap path on existing `next_free[]`.
+
+TaggedSlotStateReleaseShadowElision-L1:
+
+- keep tagged slot state as authority only when `H8_ENABLE_SLOT_STATE_AUTHORITY=1`.
+- keep debug shadow updates and verification under `H8_ENABLE_DEBUG_STATS`.
+- in release default mode, do not call slot shadow helpers from local or remote
+  hot paths.
+- preserve live bitmap authority and existing `next_free[]` behavior in default
+  release mode.

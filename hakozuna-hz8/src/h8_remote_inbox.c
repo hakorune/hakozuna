@@ -2,6 +2,15 @@
 
 #include <stdlib.h>
 
+static bool h8_slot_shadow_active(bool slot_authority) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  (void)slot_authority;
+  return true;
+#else
+  return slot_authority;
+#endif
+}
+
 static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_head_push_attempt_count);
   H8Span* head = atomic_load_explicit(&owner->pending_head, memory_order_relaxed);
@@ -111,7 +120,9 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   if (!slot_authority) {
     span->next_free[slot] = old_head;
   }
-  h8_slot_shadow_set_free(span, slot, old_head);
+  if (h8_slot_shadow_active(slot_authority)) {
+    h8_slot_shadow_set_free(span, slot, old_head);
+  }
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
                         memory_order_release);
   h8_used_count_sub(span, 1);
@@ -170,7 +181,9 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     if (!slot_authority) {
       span->next_free[slot] = head;
     }
-    h8_slot_shadow_set_free(span, slot, head);
+    if (h8_slot_shadow_active(slot_authority)) {
+      h8_slot_shadow_set_free(span, slot, head);
+    }
     head = (uint32_t)slot;
   }
   atomic_store_explicit(&span->local_free_head, head, memory_order_release);
@@ -273,7 +286,9 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
       atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
       return H8_PUBLISH_INVALID;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
   h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
+#endif
   H8_DEBUG_INC(remote_publish_count);
   if (old_word == 0) {
     atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
@@ -353,7 +368,9 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
       atomic_load_explicit(&span->pending_count, memory_order_acquire) == 0) {
     h8_span_mark_orphan_ready(span);
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
   h8_slot_shadow_verify_span(span);
+#endif
   if (atomic_load_explicit(&span->pending_count, memory_order_acquire) != 0) {
     h8_span_notify(owner, span);
   }
