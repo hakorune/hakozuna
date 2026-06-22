@@ -49,6 +49,7 @@ The current optimization sequence is:
 14. SpanCommitCursor-L1
 15. ReleaseBenchTarget-L1
 16. PendingQueueContentionAudit-L1
+17. PendingWordMaskAuthority-L1
 ```
 
 ## Admission Shape
@@ -86,7 +87,9 @@ owner exit:
   full drain is allowed because it is a cold path
 ```
 
-`PendingZeroToOneNotify-L1` makes `pending_count` 0 -> 1 the notify authority.
+`PendingZeroToOneNotify-L1` was the stepping stone that moved notify authority
+to the first pending episode.  After the authority cutover, `pending_word_mask`
+owns runtime work-set notification and `pending_count` remains debug shadow.
 This avoids trying the qstate enqueue CAS on every remote free in a burst.
 
 ## Pending Word Presence
@@ -98,17 +101,20 @@ bit N == 1:
   pending_bits[N] may contain at least one pending slot
 ```
 
-The mask is a hint only.  The truth remains:
+The mask is the runtime work-set authority.  The truth remains:
 
 ```text
 pending bitmap
-pending_count
 live bitmap
 ```
 
-The collector drains words from `pending_word_mask`.  If `pending_count != 0`
-and the mask is empty, the debug repair path falls back to a full word scan and
-increments `pending_word_summary_repair`.
+`pending_count` is now debug-shadow state only.  It is kept for quiescent
+consistency checks, but release remote publish and collect no longer update or
+load it.
+
+The collector drains words from `pending_word_mask`.  If the mask is empty and
+the quiescent debug shadow disagrees, the debug repair path falls back to a
+full word scan and increments `pending_word_summary_repair`.
 
 Quiescent exit/adoption verification must still scan the full pending bitmap.
 
@@ -134,6 +140,13 @@ qstate_idle_with_pending = 0
 remote_publish_lost = 0
 remote_collect_duplicate = 0
 ```
+
+## Authority Cutover
+
+`PendingWordMaskAuthority-L1` removes `pending_count` from the release
+publish/collect paths.  Runtime decisions are made from the pending bitmap,
+`pending_word_mask`, and qstate dirty handoff.  Debug builds keep `pending_count`
+as a shadow and quiescent consistency check.
 
 ## Bulk Opportunity
 
@@ -210,7 +223,7 @@ Required order:
 2. clear live bits with one word RMW
 3. clear pending bits with one word RMW
 4. splice the local free chain once
-5. subtract pending_count once
+5. subtract pending_count once in debug shadow
 6. subtract used_count once
 ```
 

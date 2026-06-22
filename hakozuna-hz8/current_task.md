@@ -11,6 +11,7 @@ Current focus:
 - `TailDrainPolicyAudit-L1` / DONE
 - `PerfLanePurification-L1` / DONE
 - `TlsLeafEntryFastPath-L1` / DONE
+- `PendingWordMaskAuthority-L1` / DONE
 
 Immediate goal:
 
@@ -268,6 +269,21 @@ Why this is first:
   Interpretation: local and interleaved remote now clear the v0 small gates in
   a first stable batch.  Interleaved p25 is just over `40M`, so a second fresh
   batch is still needed before freezing the gate.
+- `PendingWordMaskAuthority-L1` is complete:
+  release remote publish and collect no longer update or load `pending_count`.
+  `pending_word_mask` and qstate remain the runtime authority, while
+  `pending_count` stays as a debug shadow and quiescent consistency check.
+  Short verification:
+  - `make smoke bench-release bench-release-audit`
+  - smoke passes
+  - release interleaved remote90, RUNS=3, 16 threads x 100k:
+    median about `49.2M ops/s`, steady-work median about `50.8M ops/s`,
+    `quiescent_pending bitmap_nonzero=0 repair=0`
+  - audit interleaved remote90, RUNS=1, 4 threads x 20k:
+    `publish_ok=72050`, `validate_fail=0`, `duplicate_claim=0`,
+    `quiescent_pending bitmap_nonzero=0 repair=0`
+  Interpretation: runtime no longer depends on `pending_count`; the remaining
+  count shape is debug-only shadow state.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -297,7 +313,7 @@ Implementation notes:
 - Current attribution result:
   interleaved producer queues are not backpressuring (`push_yields=0` in the
   short release run).  Remaining remote work is in publish admission,
-  pending claim/mask/count, collect finish, and tail drain behavior.
+  pending claim/mask/qstate, collect finish, and tail drain behavior.
 
 Acceptance:
 
@@ -318,13 +334,10 @@ Acceptance:
 3. Consider `TlsActiveHintTrustShadow-L1`
    - shadow whether an active TLS span can skip owner/class/state revalidation
    - no behavior change until mismatch counters are proven zero
-4. `PendingWordMaskAuthority-L1`
-   - release: no `pending_count` update/load in remote publish or collect
-   - debug: keep `pending_count` as a shadow and quiescent consistency check
-5. If confirmed interleaved remains below `40M`, ask design review whether to attack:
+4. If confirmed interleaved remains below `40M`, ask design review whether to attack:
    - owner publish lease shape
    - slot-state validation duplication
    - tail drain/finish policy
    - or a dedicated remote publish microbench
-6. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+5. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.

@@ -28,29 +28,22 @@ static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_enqueue_count);
 }
 
-static void h8_pending_count_dec(H8Span* span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_pending_count_dec(H8Span* span) {
   size_t prev = atomic_fetch_sub_explicit(&span->pending_count, 1, memory_order_relaxed);
   if (prev == 0) {
     abort();
   }
-#else
-  (void)span;
-#endif
 }
 
 static void h8_pending_count_sub(H8Span* span, size_t count) {
-#if defined(H8_ENABLE_DEBUG_STATS)
   size_t prev =
       atomic_fetch_sub_explicit(&span->pending_count, count, memory_order_relaxed);
   if (prev < count) {
     abort();
   }
-#else
-  (void)span;
-  (void)count;
-#endif
 }
+#endif
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
   size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
@@ -175,7 +168,9 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
     H8_DEBUG_INC(invalid_count);
     abort();
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
   h8_pending_count_dec(span);
+#endif
   if (!slot_authority) {
     span->next_free[slot] = old_head;
     if (h8_slot_shadow_active(slot_authority)) {
@@ -259,7 +254,9 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     }
   }
   atomic_store_explicit(&span->local_free_head, head, memory_order_release);
+#if defined(H8_ENABLE_DEBUG_STATS)
   h8_pending_count_sub(span, count);
+#endif
   h8_used_count_sub(span, count);
   H8_DEBUG_ADD(pending_collect_bit_count, count);
   H8_DEBUG_ADD(remote_collect_count, count);
@@ -410,7 +407,9 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   uint64_t old_word =
       atomic_fetch_or_explicit(pending_word, slot_bit, memory_order_acq_rel);
   if (old_word & slot_bit) {
+#if defined(H8_ENABLE_DEBUG_STATS)
     h8_pending_count_dec(span);
+#endif
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
@@ -418,13 +417,17 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     uint32_t state = h8_slot_state_load_hot(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
       atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+#if defined(H8_ENABLE_DEBUG_STATS)
       h8_pending_count_dec(span);
+#endif
       H8_DEBUG_INC(remote_stage_validate_fail);
       return H8_PUBLISH_INVALID;
     }
   } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
     atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+#if defined(H8_ENABLE_DEBUG_STATS)
     h8_pending_count_dec(span);
+#endif
     H8_DEBUG_INC(remote_stage_validate_fail);
     return H8_PUBLISH_INVALID;
   }
