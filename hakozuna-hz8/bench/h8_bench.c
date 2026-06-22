@@ -502,6 +502,11 @@ int main(int argc, char** argv) {
          slots_per_nonzero_word,
          singleton_ratio,
          multi_ratio);
+  printf("pending_count_shadow mask_notify_without_count=%zu count_notify_without_mask=%zu mask_requeue_without_count=%zu count_requeue_without_mask=%zu\n",
+         debug.pending_mask_notify_without_count,
+         debug.pending_count_notify_without_mask,
+         debug.pending_mask_requeue_without_count,
+         debug.pending_count_requeue_without_mask);
   printf("queue_contention qstate_attempt=%zu qstate_success=%zu qstate_skip=%zu pending_push_attempt=%zu pending_push_retry=%zu pending_push_success=%zu owner_enter_retry=%zu owner_exit_retry=%zu duplicate_claim=%zu\n",
          debug.qstate_notify_attempt_count,
          debug.qstate_notify_success_count,

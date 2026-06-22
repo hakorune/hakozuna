@@ -462,6 +462,14 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_collect_word_nonzero_count, memory_order_acquire);
   out->pending_collect_bit_count =
       atomic_load_explicit(&h8g.pending_collect_bit_count, memory_order_acquire);
+  out->pending_mask_notify_without_count = atomic_load_explicit(
+      &h8g.pending_mask_notify_without_count, memory_order_acquire);
+  out->pending_count_notify_without_mask = atomic_load_explicit(
+      &h8g.pending_count_notify_without_mask, memory_order_acquire);
+  out->pending_mask_requeue_without_count = atomic_load_explicit(
+      &h8g.pending_mask_requeue_without_count, memory_order_acquire);
+  out->pending_count_requeue_without_mask = atomic_load_explicit(
+      &h8g.pending_count_requeue_without_mask, memory_order_acquire);
   out->orphan_quiesce_count =
       atomic_load_explicit(&h8g.orphan_quiesce_count, memory_order_acquire);
   out->orphan_ready_count =

@@ -193,6 +193,10 @@ typedef struct H8Global {
   atomic_size_t pending_slots_drained;
   atomic_size_t pending_words_rearmed;
   atomic_size_t pending_word_new_publish_during_drain;
+  atomic_size_t pending_mask_notify_without_count;
+  atomic_size_t pending_count_notify_without_mask;
+  atomic_size_t pending_mask_requeue_without_count;
+  atomic_size_t pending_count_requeue_without_mask;
   atomic_size_t local_alloc_pending_nonzero;
   atomic_size_t local_free_pending_nonzero;
   atomic_size_t owner_live_set_already_live;

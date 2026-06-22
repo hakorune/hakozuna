@@ -317,26 +317,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
-  if (slot_authority) {
-    uint32_t state = h8_slot_state_load_acquire(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      uint64_t old_pending =
-          atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
-      if (old_pending & slot_bit) {
-        h8_pending_count_dec(span);
-      }
-      H8_DEBUG_INC(remote_stage_validate_fail);
-      return H8_PUBLISH_INVALID;
-    }
-  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-    uint64_t old_pending =
-        atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
-    if (old_pending & slot_bit) {
-      h8_pending_count_dec(span);
-    }
-    H8_DEBUG_INC(remote_stage_validate_fail);
-    return H8_PUBLISH_INVALID;
-  }
+  /* The pending bit is the publish commit point; collectors may process it now. */
   H8_DEBUG_INC(remote_stage_pending_claim_ok);
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
@@ -346,6 +327,11 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
                              memory_order_release);
     H8_DEBUG_INC(pending_word_summary_set);
+  }
+  if (old_word == 0 && prev != 0) {
+    H8_DEBUG_INC(pending_mask_notify_without_count);
+  } else if (old_word != 0 && prev == 0) {
+    H8_DEBUG_INC(pending_count_notify_without_mask);
   }
   if (prev == 0) {
     H8_DEBUG_INC(remote_stage_notify_first);
@@ -441,7 +427,16 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_slot_shadow_verify_span(span);
 #endif
-  if (atomic_load_explicit(&span->pending_count, memory_order_acquire) != 0) {
+  size_t finish_count =
+      atomic_load_explicit(&span->pending_count, memory_order_acquire);
+  uint64_t finish_mask =
+      atomic_load_explicit(&span->pending_word_mask, memory_order_acquire);
+  if (finish_mask != 0 && finish_count == 0) {
+    H8_DEBUG_INC(pending_mask_requeue_without_count);
+  } else if (finish_mask == 0 && finish_count != 0) {
+    H8_DEBUG_INC(pending_count_requeue_without_mask);
+  }
+  if (finish_count != 0) {
     h8_span_notify(owner, span);
   }
 }

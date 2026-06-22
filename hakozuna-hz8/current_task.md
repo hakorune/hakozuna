@@ -4,18 +4,12 @@
 
 Current focus:
 
-- `EnvFlagSemantics-L1`
+- `PendingCountElisionShadow-L1`
 
 Immediate goal:
 
-- Make unsafe evidence flags explicit and exact.
-- Move environment flag documentation into stable docs.
-- Keep `PendingPublishCommitPoint-L1` blocked until env cleanup is committed.
-
-Next allocator goal:
-
-- Keep the new interleaved remote benchmark lane.
-- Close the pending publish commit-point race that the interleaved lane exposed.
+- Compare current `pending_count` authority against pending word mask authority.
+- Keep `pending_count` in production until mask exactness is proven.
 - Do not promote pending word mask authority until interleaved remote90 runs
   without pending/live invariant failures.
 
@@ -49,6 +43,20 @@ Current evidence:
 - The collector summary clear was removed as required by the design review:
   collectors may rearm remaining words, but must not clear a summary bit that a
   producer may have set concurrently.
+- `PendingPublishCommitPoint-L1` now uses the pending bit as the publish commit
+  point.  Post-claim rollback validation was removed.
+- Long release interleaved remote90 now runs without abort:
+  median about `9.5M ops/s` with `RUNS=3`, `T=2`, `iters=500k`.
+- Debug interleaved still observes transient mask repair / false-negative
+  counters.  This blocks `PendingWordMaskAuthority-L1` until shadow comparison
+  proves the mask can replace `pending_count`.
+- `PendingCountElisionShadow-L1` counters show the mismatch shape in debug
+  interleaved remote90:
+  - `mask_notify_without_count` is nonzero, so word-mask notify would enqueue
+    more often than current count authority.
+  - `count_requeue_without_mask` is also nonzero, so count still catches some
+    work not visible through mask at finish time.
+  - Therefore direct count removal is still HOLD.
 
 Current measured baseline:
 
@@ -109,7 +117,7 @@ Current measured baseline:
    - RUNS must be 1 because remote frees are intentionally not reclaimed.
 
 5. `EnvFlagSemantics-L1`
-   - current task.
+   - completed.
    - unsafe evidence flags accept exact `1` only.
    - unsafe flags are renamed under `H8_UNSAFE_EVIDENCE_*`.
    - deprecated aliases remain exact-`1` only for compatibility.
@@ -122,15 +130,17 @@ Current measured baseline:
    - no allocator behavior change.
 
 7. `PendingPublishCommitPoint-L1`
-   - next allocator task.
+   - completed for the release interleaved abort.
    - make pending bit visibility mean the remote free is committed enough for
      owner collect to process.
    - long interleaved remote90 must not abort.
    - hard requirement before count elision or mask authority.
 
 8. `PendingCountElisionShadow-L1`
+   - current task.
    - compare pending_count authority with pending_word_mask authority.
    - keep pending_count in production until mask exactness is proven.
+   - shadow counters are implemented.
 
 9. `PendingWordMaskAuthority-L1`
    - behavior candidate after shadow evidence.
@@ -209,16 +219,38 @@ Current measured baseline:
     state, or while local/collect state has already made the slot non-live.
 - Already applied:
   - reserve `pending_count` before making the pending bit visible.
-  - rollback `pending_count` only if the producer successfully clears its own
-    pending bit.
+  - remove post-claim rollback validation.  Once the pending bit is visible,
+    the remote free is committed and the owner collector may process it.
   - stop clearing `pending_word_mask` in the collector when a word has no
     remaining bits.
+- Commit contract:
+  - claim-before validation checks allocation validity.
+  - `pending_count++` reserves accounting.
+  - pending bit `0 -> 1` is the publish commit point.
+  - after the pending bit is visible, producer rollback is not allowed.
 - Still required:
-  - define a single commit point for pending bit visibility.
-  - decide whether the commit authority is pending bit, pending word mask, or an
-    additional in-flight guard.
-  - make long interleaved remote90 pass without `invalid`, `validate_fail`,
-    pending count underflow, or collect-on-non-live abort.
+  - keep long interleaved remote90 in the required check set.
+  - resolve transient debug mask repair / false-negative observations before
+    making the mask authoritative.
+
+### PendingCountElisionShadow-L1
+
+- Add shadow counters for:
+  - `old_word == 0` but current `pending_count` notify authority did not notify.
+  - `pending_count == 0` but word was already nonzero.
+  - collector finish where `pending_word_mask != 0` would requeue.
+  - collector finish where `pending_count != 0` but mask is zero.
+- Do not remove or change `pending_count` behavior in this phase.
+- Promotion prerequisite:
+  - phase-separated remote90: no regression.
+  - interleaved remote90: no abort.
+  - debug shadow mismatches understood and documented.
+- Current observation:
+  - debug interleaved remote90:
+    `mask_notify_without_count > 0` and `count_requeue_without_mask > 0`.
+  - release interleaved remote90:
+    passes, median about `10M ops/s` on the current 2-thread small row.
+  - next step is mask exactness repair, not authority removal.
 
 ### PendingWordMaskAuthority-L1 Design Notes
 
