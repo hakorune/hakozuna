@@ -194,7 +194,7 @@ H8RouteKind h8_route_inner(void* ptr) {
     return H8_ROUTE_INVALID;
   }
   if (h8_slot_state_authority_enabled()) {
-    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    uint32_t state = h8_slot_state_load_hot(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
         h8_bitmap_test(span->pending_bits, slot)) {
       return H8_ROUTE_INVALID;

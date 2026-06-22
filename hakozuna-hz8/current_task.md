@@ -4,14 +4,15 @@
 
 Current focus:
 
-- `TaggedSlotStateReleaseCutover-L1`
+- `ActiveSpanRedundantStoreElision-L1`
 
 Immediate goal:
 
-- Promote slot-state authority from opt-in to release default.
-- Remove live bitmap / `next_free` from release metadata.
-- Keep live bitmap only as debug shadow.
-- Remove runtime authority flag loads from the hot leaf where possible.
+- Stop rewriting `owner->active_spans[class]` on every successful fast-path
+  allocation.
+- Keep active span as a weak hint, not ownership truth.
+- Update the hint only when slow path selects a span or local free changes the
+  active span.
 
 Why this is first:
 
@@ -23,6 +24,14 @@ Why this is first:
   process `VmHWM`.
 - First peak RSS check shows phase-separated remote90 is a peak-live stress:
   `post_rss ~= 25 MiB` while `peak_rss ~= 1.87 GiB`.
+- `TaggedSlotStateReleaseCutover-L1` is complete:
+  slot-state authority is release default, release metadata no longer allocates
+  live bitmap / `next_free`, and hot slot-state helpers are inline.
+- Representative checks after cutover:
+  - `local0`: about `143.7M ops/s`
+  - interleaved remote90: about `29.5M ops/s`
+  - phase-separated remote90: about `5.8M ops/s`
+  - smoke passes
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not README `main_*` (`16..32768`).
 - `VmHWM` is process-wide high-water. Exact per-run peak still needs a
@@ -31,43 +40,34 @@ Why this is first:
 
 Implementation notes:
 
-- Release authority target:
-  `slot_state + pending bitmap`.
-- Debug authority target:
-  slot_state authority with live bitmap shadow checks.
-- Boundary target:
-  `ALLOCATED && pending==0 -> VALID`; all other arena-internal states are
-  `INVALID`.
-- Collector ordering target:
-  publish `FREE(next)` before clearing pending.
+- Fast allocation from current active span should not store the same active
+  pointer back.
+- Slow path should publish a new active hint once after selecting/committing a
+  usable span.
+- Local free can keep the current behavior only if it actually changes the hint.
 
 Acceptance:
 
 - `make smoke`
 - `make bench-release`
-- default and slot-state smoke rows
+- smoke
 - quick `local0`, interleaved remote90, and phase-separated remote90 checks
 - no source file over 800 lines
 - worktree clean after removing generated binaries
 
 ## Next
 
-1. `ActiveSpanRedundantStoreElision-L1`
-   - Do not rewrite the same active span on every successful fast-path alloc.
-   - Update active hint only when slow path selects a new span or free changes
-     the active hint.
-
-2. `TlsActiveSpanArray-L1`
+1. `TlsActiveSpanArray-L1`
    - Move `active_spans[]` from `H8OwnerRecord` to `H8ThreadCtx`.
 
-3. `RemoteLookupReuse-L1`
+2. `RemoteLookupReuse-L1`
    - Reuse the first local-free classification span/slot when falling into
      remote publish.
 
-4. `SpanHotRemoteSplit-L1`
+3. `SpanHotRemoteSplit-L1`
    - Split local hot, remote hot, and immutable span metadata cache lines after
      slot-state release shape is stable.
 
-5. `ClassFragmentationAudit-L1`
+4. `ClassFragmentationAudit-L1`
    - Measure requested live bytes, rounded live bytes, rounding ratio, and
      per-class span contribution.

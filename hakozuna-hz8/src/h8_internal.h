@@ -408,6 +408,21 @@ static inline uint32_t h8_slot_state_free(uint32_t next) {
   return H8_SLOT_FREE | h8_slot_state_next_payload(next);
 }
 
+static inline uint32_t h8_slot_state_load_hot(H8Span* span, size_t slot) {
+  return atomic_load_explicit(&span->slot_state[slot], memory_order_acquire);
+}
+
+static inline void h8_slot_state_store_allocated_hot(H8Span* span, size_t slot) {
+  atomic_store_explicit(&span->slot_state[slot], H8_SLOT_ALLOCATED,
+                        memory_order_release);
+}
+
+static inline void h8_slot_state_store_free_hot(H8Span* span, size_t slot,
+                                                uint32_t next) {
+  atomic_store_explicit(&span->slot_state[slot], h8_slot_state_free(next),
+                        memory_order_release);
+}
+
 static inline H8CtlWord h8_ctl_unpack(uint64_t raw) {
   H8CtlWord ctl;
   ctl.generation = (uint16_t)(raw & 0xFFFFu);
@@ -512,8 +527,7 @@ static inline bool h8_regular_adoption_enabled(void) {
 }
 
 static inline bool h8_slot_state_authority_enabled(void) {
-  return atomic_load_explicit(&h8g.slot_state_authority_enabled,
-                              memory_order_acquire);
+  return true;
 }
 
 static inline bool h8_remote_lease_elision_enabled(void) {

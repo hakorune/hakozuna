@@ -7,7 +7,7 @@ HZ8 environment flags are read once during `h8_init()`.
 | Flag | Accepted true value | Default | Status | Effect |
 | --- | --- | --- | --- | --- |
 | `H8_ENABLE_REGULAR_ADOPTION` | `1`, `true`, `TRUE`, `yes`, `YES`, `on`, `ON` | off | development | Enables regular-owner adoption of eligible orphan spans. |
-| `H8_ENABLE_SLOT_STATE_AUTHORITY` | `1`, `true`, `TRUE`, `yes`, `YES`, `on`, `ON` | off | development | Uses tagged slot state as allocation authority. |
+| `H8_ENABLE_SLOT_STATE_AUTHORITY` | ignored | on | deprecated compatibility | Tagged slot state is now the release-default allocation authority. |
 
 Any other value is treated as false.
 

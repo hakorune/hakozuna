@@ -139,13 +139,12 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   size_t bit_index = (size_t)__builtin_ctzll(bit);
   size_t slot = (word_index << 6u) + bit_index;
   uint64_t clear_mask = ~bit;
-  _Atomic uint64_t* live_word = &((_Atomic uint64_t*)span->live_bits)[word_index];
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
   bool slot_authority = h8_slot_state_authority_enabled();
 
   H8_DEBUG_INC(pending_collect_bit_count);
   if (slot_authority) {
-    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    uint32_t state = h8_slot_state_load_hot(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
       H8_DEBUG_INC(invalid_count);
       abort();
@@ -157,6 +156,7 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   bool update_live = !slot_authority;
 #endif
   if (update_live) {
+    _Atomic uint64_t* live_word = &span->live_bits[word_index];
     uint64_t old_live =
         atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
     if ((old_live & bit) == 0) {
@@ -167,7 +167,7 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   uint32_t old_head = atomic_load_explicit(&span->local_free_head,
                                            memory_order_relaxed);
   if (slot_authority && h8_slot_shadow_active(slot_authority)) {
-    h8_slot_shadow_set_free(span, slot, old_head);
+    h8_slot_state_store_free_hot(span, slot, old_head);
   }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
@@ -179,7 +179,7 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   if (!slot_authority) {
     span->next_free[slot] = old_head;
     if (h8_slot_shadow_active(slot_authority)) {
-      h8_slot_shadow_set_free(span, slot, old_head);
+      h8_slot_state_store_free_hot(span, slot, old_head);
     }
   }
   atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
@@ -191,7 +191,6 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
 
 static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claimed,
                                  size_t count) {
-  _Atomic uint64_t* live_word = &((_Atomic uint64_t*)span->live_bits)[word_index];
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
   uint64_t clear_mask = ~claimed;
   bool slot_authority = h8_slot_state_authority_enabled();
@@ -203,7 +202,7 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       size_t bit_index = (size_t)__builtin_ctzll(slots);
       size_t slot = (word_index << 6u) + bit_index;
       slots ^= bit;
-      uint32_t state = h8_slot_state_load_acquire(span, slot);
+      uint32_t state = h8_slot_state_load_hot(span, slot);
       if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
         H8_DEBUG_INC(invalid_count);
         abort();
@@ -216,6 +215,7 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
   bool update_live = !slot_authority;
 #endif
   if (update_live) {
+    _Atomic uint64_t* live_word = &span->live_bits[word_index];
     uint64_t old_live =
         atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
     if ((old_live & claimed) != claimed) {
@@ -232,7 +232,7 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       size_t slot = (word_index << 6u) + bit_index;
       slots ^= bit;
       if (h8_slot_shadow_active(slot_authority)) {
-        h8_slot_shadow_set_free(span, slot, head);
+        h8_slot_state_store_free_hot(span, slot, head);
       }
       head = (uint32_t)slot;
     }
@@ -253,7 +253,7 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       slots ^= bit;
       span->next_free[slot] = head;
       if (h8_slot_shadow_active(slot_authority)) {
-        h8_slot_shadow_set_free(span, slot, head);
+        h8_slot_state_store_free_hot(span, slot, head);
       }
       head = (uint32_t)slot;
     }
@@ -383,7 +383,7 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   bool slot_authority = h8_slot_state_authority_enabled();
   bool pending_elision = h8_remote_pending_publish_elision_enabled();
   if (slot_authority) {
-    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    uint32_t state = h8_slot_state_load_hot(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
       H8_DEBUG_INC(remote_stage_validate_fail);
       return H8_PUBLISH_INVALID;

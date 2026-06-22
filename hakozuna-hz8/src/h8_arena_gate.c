@@ -28,13 +28,12 @@ static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
   size_t words = h8_word_count_for_slots(slot_count);
   size_t off = h8_round_up_size(sizeof(H8Span), sizeof(uint64_t));
   size_t live_off = off;
+#if defined(H8_ENABLE_DEBUG_STATS)
   off += words * sizeof(_Atomic uint64_t);
   off = h8_round_up_size(off, sizeof(uint64_t));
+#endif
   size_t pending_off = off;
   off += words * sizeof(_Atomic uint64_t);
-  off = h8_round_up_size(off, sizeof(uint32_t));
-  size_t next_off = off;
-  off += (size_t)slot_count * sizeof(uint32_t);
   off = h8_round_up_size(off, sizeof(uint32_t));
   size_t slot_state_off = off;
   if (use_slot_state) {
@@ -46,9 +45,12 @@ static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
     return NULL;
   }
   H8Span* span = (H8Span*)block;
+#if defined(H8_ENABLE_DEBUG_STATS)
   span->live_bits = (_Atomic uint64_t*)(void*)(block + live_off);
+#else
+  (void)live_off;
+#endif
   span->pending_bits = (_Atomic uint64_t*)(void*)(block + pending_off);
-  span->next_free = (uint32_t*)(void*)(block + next_off);
   if (use_slot_state) {
     span->slot_state = (_Atomic uint32_t*)(void*)(block + slot_state_off);
   }
