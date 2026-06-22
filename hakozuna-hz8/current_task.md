@@ -4,15 +4,13 @@
 
 Current focus:
 
-- `ActiveSpanRedundantStoreElision-L1`
+- `TlsActiveSpanArray-L1`
 
 Immediate goal:
 
-- Stop rewriting `owner->active_spans[class]` on every successful fast-path
-  allocation.
-- Keep active span as a weak hint, not ownership truth.
-- Update the hint only when slow path selects a span or local free changes the
-  active span.
+- Move active span hints from `H8OwnerRecord` to `H8ThreadCtx`.
+- Keep owner lists as ownership truth.
+- Keep active spans as per-thread weak hints only.
 
 Why this is first:
 
@@ -32,6 +30,9 @@ Why this is first:
   - interleaved remote90: about `29.5M ops/s`
   - phase-separated remote90: about `5.8M ops/s`
   - smoke passes
+- `ActiveSpanRedundantStoreElision-L1` is complete:
+  fast-path allocation no longer rewrites the same active hint.  Representative
+  `local0` quick check is about `146.7M ops/s`.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not README `main_*` (`16..32768`).
 - `VmHWM` is process-wide high-water. Exact per-run peak still needs a
@@ -40,11 +41,11 @@ Why this is first:
 
 Implementation notes:
 
-- Fast allocation from current active span should not store the same active
-  pointer back.
-- Slow path should publish a new active hint once after selecting/committing a
-  usable span.
-- Local free can keep the current behavior only if it actually changes the hint.
+- `H8ThreadCtx` should own `active_spans[H8_CLASS_COUNT]`.
+- Owner-level list removal/exit/adoption must no longer assume active hints
+  live on the owner record.
+- If a TLS hint is stale, existing owner/span/generation/state validation must
+  reject it and fall back to scan/commit.
 
 Acceptance:
 
@@ -57,17 +58,14 @@ Acceptance:
 
 ## Next
 
-1. `TlsActiveSpanArray-L1`
-   - Move `active_spans[]` from `H8OwnerRecord` to `H8ThreadCtx`.
-
-2. `RemoteLookupReuse-L1`
+1. `RemoteLookupReuse-L1`
    - Reuse the first local-free classification span/slot when falling into
      remote publish.
 
-3. `SpanHotRemoteSplit-L1`
+2. `SpanHotRemoteSplit-L1`
    - Split local hot, remote hot, and immutable span metadata cache lines after
      slot-state release shape is stable.
 
-4. `ClassFragmentationAudit-L1`
+3. `ClassFragmentationAudit-L1`
    - Measure requested live bytes, rounded live bytes, rounding ratio, and
      per-class span contribution.

@@ -84,7 +84,6 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     }
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
-    owner->active_spans[class_id] = span;
     return h8_slot_ptr(span, slot);
   }
 
@@ -119,7 +118,6 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     }
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
-    owner->active_spans[class_id] = span;
     return h8_slot_ptr(span, bump);
   }
 
@@ -216,6 +214,7 @@ void* h8_malloc_inner(size_t size) {
     H8_DEBUG_INC(invalid_count);
     return NULL;
   }
+  owner->active_spans[class_id] = span;
   return h8_small_alloc_from_span(ctx, owner, span, class_id);
 }
 
@@ -270,7 +269,9 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   }
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
-  owner->active_spans[span->class_id] = span;
+  if (owner->active_spans[span->class_id] != span) {
+    owner->active_spans[span->class_id] = span;
+  }
   return true;
 }
 
