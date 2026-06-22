@@ -4,16 +4,15 @@
 
 Current focus:
 
-- `ClassSizedSpanMetaBundle-L1`
+- `LiveSetLowerBoundAudit-L1`
 
 Immediate goal:
 
-- Collapse per-span metadata allocation from several small allocations into a
-  class-sized bundle.
-- Keep live bitmap, pending bitmap, `next_free`, and optional slot-state in one
-  zeroed block with `H8Span`.
-- Remove full `next_free[] = UINT32_MAX` initialization; entries are only read
-  after owner/collector writes them into the free chain.
+- Quantify how much of phase-separated remote90 span creation is unavoidable.
+- For phase-separated rows, compute owner/thread + class lower bound from
+  remote objects that stay live until the remote-free barrier.
+- Compare debug `local_span_commit` with the lower bound to get
+  `span_commit_excess_ratio`.
 
 Current evidence:
 
@@ -96,6 +95,20 @@ Current evidence:
   - release phase-separated remote90 remains healthy: median `5.79M ops/s`.
   - release local0 check: median `143.1M ops/s`.
   - release interleaved remote90 check: median `28.7M ops/s`.
+- `LiveSetLowerBoundAudit-L1` is now active in the benchmark:
+  phase-separated rows report median remote live objects and the minimum span
+  count implied by per-thread/per-class live sets.  Debug rows additionally
+  print actual span commits and actual/lower-bound ratio.
+- `LiveSetLowerBoundAudit-L1` first result:
+  - phase-separated remote90 has about `1.44M` remote-live objects at the
+    barrier.
+  - lower-bound span count is `30296`.
+  - debug actual commits are `30295.3` per run with excess ratio `1.000`.
+  - conclusion: span commit count is already at the theoretical lower bound
+    for this workload shape.  Further phase-separated remote90 work should not
+    target span count reduction; it should target first-touch cost, metadata
+    construction cost, or benchmark gate classification.
+  - release phase-separated remote90 quick check remains about `5.81M ops/s`.
 - `RemoteSpanScanAudit-L1` found remote90 was wasting work on full span scans.
 - `FullHintNoPendingScanSkip-L1` removed that scan in the bench shape:
   `scan_span` went from millions to zero.

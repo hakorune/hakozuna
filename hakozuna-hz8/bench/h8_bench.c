@@ -38,6 +38,7 @@ typedef struct H8BenchThread {
   uint32_t rng;
   uint64_t alloc_ns;
   uint64_t remote_ns;
+  size_t remote_live_by_class[9];
   int error;
 } H8BenchThread;
 
@@ -56,6 +57,23 @@ static size_t h8_rand_range(uint32_t* state, size_t lo, size_t hi) {
   }
   uint32_t span = (uint32_t)(hi - lo + 1u);
   return lo + (size_t)(h8_rng_next(state) % span);
+}
+
+static uint32_t h8_bench_class_for_size(size_t size) {
+  if (size <= 16u) return 0;
+  if (size <= 32u) return 1;
+  if (size <= 64u) return 2;
+  if (size <= 128u) return 3;
+  if (size <= 256u) return 4;
+  if (size <= 512u) return 5;
+  if (size <= 1024u) return 6;
+  if (size <= 2048u) return 7;
+  return 8;
+}
+
+static size_t h8_bench_slots_for_class(uint32_t class_id) {
+  static const size_t sizes[9] = {16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
+  return 65536u / sizes[class_id];
 }
 
 static uint64_t h8_now_ns(void) {
@@ -195,6 +213,7 @@ static void* h8_bench_thread_main(void* arg) {
         th->error = 2;
         break;
       }
+      ++th->remote_live_by_class[h8_bench_class_for_size(size)];
       next_inbox->items[next_inbox->count++] = ptr;
     } else {
       h8_free(ptr);
@@ -322,14 +341,18 @@ int main(int argc, char** argv) {
   double* alloc_phase_ms = calloc((size_t)opt.runs, sizeof(*alloc_phase_ms));
   double* remote_phase_ms = calloc((size_t)opt.runs, sizeof(*remote_phase_ms));
   size_t* minor_faults = calloc((size_t)opt.runs, sizeof(*minor_faults));
+  size_t* span_lower_bound = calloc((size_t)opt.runs, sizeof(*span_lower_bound));
+  size_t* remote_live_objects = calloc((size_t)opt.runs, sizeof(*remote_live_objects));
   if (!throughput || !rss || !alloc_phase_ms || !remote_phase_ms ||
-      !minor_faults) {
+      !minor_faults || !span_lower_bound || !remote_live_objects) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
     free(alloc_phase_ms);
     free(remote_phase_ms);
     free(minor_faults);
+    free(span_lower_bound);
+    free(remote_live_objects);
     return 1;
   }
 
@@ -349,6 +372,8 @@ int main(int argc, char** argv) {
       free(alloc_phase_ms);
       free(remote_phase_ms);
       free(minor_faults);
+      free(span_lower_bound);
+      free(remote_live_objects);
       return 1;
     }
 
@@ -405,8 +430,22 @@ int main(int argc, char** argv) {
 
     double seconds = (double)(end - start) / 1e9;
     double ops = (double)opt.threads * (double)opt.iters_per_thread;
+    size_t lower = 0;
+    size_t live_objects = 0;
+    if (!opt.interleaved) {
+      for (int i = 0; i < opt.threads; ++i) {
+        for (uint32_t c = 0; c < 9u; ++c) {
+          size_t live = th[i].remote_live_by_class[c];
+          size_t slots = h8_bench_slots_for_class(c);
+          live_objects += live;
+          lower += (live + slots - 1u) / slots;
+        }
+      }
+    }
     throughput[run] = ops / seconds;
     rss[run] = h8_read_rss_bytes();
+    span_lower_bound[run] = lower;
+    remote_live_objects[run] = live_objects;
     long minflt_delta = usage_after.ru_minflt - usage_before.ru_minflt;
     minor_faults[run] = minflt_delta > 0 ? (size_t)minflt_delta : 0;
     alloc_phase_ms[run] = (double)alloc_ns_max / 1e6;
@@ -429,6 +468,9 @@ int main(int argc, char** argv) {
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), h8_cmp_double);
   qsort(rss, (size_t)opt.runs, sizeof(*rss), h8_cmp_size_t);
   qsort(minor_faults, (size_t)opt.runs, sizeof(*minor_faults), h8_cmp_size_t);
+  qsort(span_lower_bound, (size_t)opt.runs, sizeof(*span_lower_bound), h8_cmp_size_t);
+  qsort(remote_live_objects, (size_t)opt.runs, sizeof(*remote_live_objects),
+        h8_cmp_size_t);
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
 
@@ -450,6 +492,9 @@ int main(int argc, char** argv) {
     printf("phase_ms alloc_median=%.3f remote_median=%.3f\n",
            h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
            h8_percentile(remote_phase_ms, (size_t)opt.runs, 0.50));
+    printf("live_span_lower_bound remote_live_median=%zu spans_median=%zu\n",
+           h8_percentile_size_t(remote_live_objects, (size_t)opt.runs, 0.50),
+           h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50));
   }
 
   H8Stats stats = h8_stats();
@@ -596,6 +641,16 @@ int main(int argc, char** argv) {
          debug.local_free_reject_owner,
          debug.local_free_reject_state,
          debug.local_free_reject_live);
+  size_t lower_median =
+      h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50);
+  double actual_per_run =
+      opt.runs > 0 ? (double)debug.local_span_commit / (double)opt.runs : 0.0;
+  double span_excess_ratio =
+      lower_median && debug.local_span_commit
+          ? actual_per_run / (double)lower_median
+          : 0.0;
+  printf("span_commit_lower_bound actual_total=%zu actual_per_run=%.1f lower_bound_median=%zu excess_ratio=%.3f\n",
+         debug.local_span_commit, actual_per_run, lower_median, span_excess_ratio);
   printf("local_scan_detail hint_null=%zu hint_full=%zu hint_state_blocked=%zu scan_usable=%zu scan_full=%zu scan_state_blocked=%zu skip_no_pending=%zu\n",
          debug.local_active_hint_null,
          debug.local_active_hint_full,
@@ -665,5 +720,7 @@ int main(int argc, char** argv) {
   free(alloc_phase_ms);
   free(remote_phase_ms);
   free(minor_faults);
+  free(span_lower_bound);
+  free(remote_live_objects);
   return 0;
 }
