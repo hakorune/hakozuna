@@ -4,16 +4,16 @@
 
 Current focus:
 
-- `ClassMapDecodeSpecialization-L1` / DONE
-- `Upper1p5ClassMap-AB-L1` / HOLD as evidence-only target
+- `LocalInterleavedAttribution-L1` / DONE
+- `PendingRemoteCloseout-L1` / NEXT
 
 Immediate goal:
 
-- Keep upper 1.5x class map as an A/B build target only.
-- Do not merge it as default until paired A/B proves hot-path regression is
-  acceptable.
-- Treat `p2-v0` as the v0 default unless a later paired A/B clears the
-  local/interleaved hot gates.
+- Keep `p2-v0` frozen as the v0 default class map.
+- Use the new release/debug attribution lanes to decide the next remote
+  closeout box without adding production hot counters.
+- Start with `PendingCountRuntimeDecisionElision-L1` before removing
+  `pending_count` RMW from release.
 
 Why this is first:
 
@@ -114,6 +114,28 @@ Why this is first:
   - Interpretation: decode specialization removes implementation noise, but
     upper1p5 still does not clearly pass the hot gate.  Keep it as an
     evidence target; do not make it default for v0.
+- `LocalInterleavedAttribution-L1` is complete:
+  bench now separates release interleaved work from debug allocator counters.
+  Release lane adds:
+  - `interleaved_phase_ms work_median / tail_median`
+  - `interleaved_work remote_enqueue / local_free / drain_calls /
+    drain_objects / drain_empty / push_yields / finish_yields`
+  Debug lane keeps allocator-heavy counters under `H8_ENABLE_DEBUG_STATS`.
+  Short checks:
+  - release interleaved remote90, 16 threads x 50k:
+    `remote_enqueue=1440306`, `local_free=159694`,
+    `drain_objects=1440306`, `push_yields=0`,
+    `finish_yields=22095`.
+  - debug interleaved remote90, 16 threads x 20k:
+    `remote_stage publish_ok=288298`, `validate_fail=0`,
+    `duplicate_claim=0`, `remote_lookup enter=0`, `owner_word=288298`.
+    This confirms the common remote path reuses the first span/slot
+    classification and does not perform the second full pointer lookup.
+  - pending density remains high:
+    `slots_per_nonzero_word=13.456`, `multi_ratio=0.859`.
+  Interpretation: queue push contention is not the current blocker; remote
+  closeout should focus on count/mask authority before considering intrusive
+  remote lists.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -140,6 +162,10 @@ Implementation notes:
 - Current A/B result:
   upper1p5 is not ready as default because local/interleaved throughput does
   not meet the suggested no-regression gate.
+- Current attribution result:
+  interleaved producer queues are not backpressuring (`push_yields=0` in the
+  short release run).  Remaining remote work is in publish admission,
+  pending claim/mask/count, collect finish, and tail drain behavior.
 
 Acceptance:
 
@@ -152,11 +178,16 @@ Acceptance:
 
 ## Next
 
-1. Freeze `p2-v0` as the v0 default class map unless a later full paired A/B
-   contradicts the current evidence.
-2. Keep `upper1p5-v0` as a development A/B target for phase/RSS evidence.
-3. Resume the main performance lane rather than opening more class-map
-   variants:
-   - local/interleaved attribution
-   - pending remote closeout
-   - MediumRun design later, where full class-map redesign can be reopened.
+1. `PendingCountRuntimeDecisionElision-L1`
+   - keep `pending_count` updates for now
+   - remove runtime decisions that depend on count
+   - use pending bitmap + pending word mask + qstate dirty handshake as runtime
+     authority
+2. `QuiescentPendingBitmapGate-L1`
+   - replace owner-exit/handoff/adoption count-zero assumptions with closed
+     gate + refs zero + full pending bitmap scan
+3. `PendingWordMaskAuthority-L1`
+   - only after the above passes, compile release `pending_count` RMW out and
+     keep it as debug/quiescent shadow
+4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+   closer.

@@ -38,6 +38,13 @@ typedef struct H8BenchThread {
   uint32_t rng;
   uint64_t alloc_ns;
   uint64_t remote_ns;
+  size_t interleaved_remote_enqueue;
+  size_t interleaved_local_free;
+  size_t interleaved_drain_calls;
+  size_t interleaved_drain_objects;
+  size_t interleaved_drain_empty;
+  size_t interleaved_push_yields;
+  size_t interleaved_finish_yields;
   size_t remote_live_by_class[9];
   uint64_t requested_bytes_by_class[9];
   uint64_t rounded_bytes_by_class[9];

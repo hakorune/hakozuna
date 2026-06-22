@@ -17,8 +17,14 @@ static void* h8_bench_thread_interleaved(void* arg) {
   H8Inbox* next_inbox = &th->inboxes[next];
   H8Inbox* my_inbox = &th->inboxes[th->index];
 
+  uint64_t work_start = h8_now_ns();
   for (size_t i = 0; i < opt->iters_per_thread; ++i) {
-    h8_drain_inbox(my_inbox);
+    th->interleaved_drain_calls++;
+    size_t drained_now = h8_drain_inbox(my_inbox);
+    th->interleaved_drain_objects += drained_now;
+    if (drained_now == 0) {
+      th->interleaved_drain_empty++;
+    }
 
     size_t size = h8_rand_range(&th->rng, opt->min_size, opt->max_size);
     h8_bench_note_alloc(th, size);
@@ -34,28 +40,49 @@ static void* h8_bench_thread_interleaved(void* arg) {
     if (opt->remote_pct > 0 &&
         (int)(h8_rng_next(&th->rng) % 100u) < opt->remote_pct) {
       while (!h8_spsc_push(next_inbox, ptr)) {
-        h8_drain_inbox(my_inbox);
+        th->interleaved_push_yields++;
+        th->interleaved_drain_calls++;
+        size_t pushed_drain = h8_drain_inbox(my_inbox);
+        th->interleaved_drain_objects += pushed_drain;
+        if (pushed_drain == 0) {
+          th->interleaved_drain_empty++;
+        }
         sched_yield();
       }
+      th->interleaved_remote_enqueue++;
     } else {
+      th->interleaved_local_free++;
       h8_free(ptr);
     }
   }
+  th->alloc_ns = h8_now_ns() - work_start;
 
   atomic_store_explicit(&th->done[th->index], 1, memory_order_release);
 
+  uint64_t tail_start = h8_now_ns();
   for (;;) {
+    th->interleaved_drain_calls++;
     size_t drained = h8_drain_inbox(my_inbox);
+    th->interleaved_drain_objects += drained;
+    if (drained == 0) {
+      th->interleaved_drain_empty++;
+    }
     if (atomic_load_explicit(&th->done[prev], memory_order_acquire) &&
         drained == 0) {
-      if (h8_drain_inbox(my_inbox) == 0) {
+      th->interleaved_drain_calls++;
+      size_t final_drain = h8_drain_inbox(my_inbox);
+      th->interleaved_drain_objects += final_drain;
+      if (final_drain == 0) {
+        th->interleaved_drain_empty++;
         break;
       }
     }
     if (drained == 0) {
+      th->interleaved_finish_yields++;
       sched_yield();
     }
   }
+  th->remote_ns = h8_now_ns() - tail_start;
 
   pthread_barrier_wait(th->barrier);
   return NULL;
@@ -151,6 +178,13 @@ int main(int argc, char** argv) {
   uint64_t frag_upper1p5_total = 0;
   uint64_t frag_rounded_by_class[9] = {0};
   size_t frag_allocs_by_class[9] = {0};
+  size_t interleaved_remote_enqueue_total = 0;
+  size_t interleaved_local_free_total = 0;
+  size_t interleaved_drain_calls_total = 0;
+  size_t interleaved_drain_objects_total = 0;
+  size_t interleaved_drain_empty_total = 0;
+  size_t interleaved_push_yields_total = 0;
+  size_t interleaved_finish_yields_total = 0;
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
       !minor_faults || !span_lower_bound || !remote_live_objects ||
       !upper1536_span_lower_bound || !upper1p5_span_lower_bound) {
@@ -233,6 +267,13 @@ int main(int argc, char** argv) {
       if (th[i].remote_ns > remote_ns_max) {
         remote_ns_max = th[i].remote_ns;
       }
+      interleaved_remote_enqueue_total += th[i].interleaved_remote_enqueue;
+      interleaved_local_free_total += th[i].interleaved_local_free;
+      interleaved_drain_calls_total += th[i].interleaved_drain_calls;
+      interleaved_drain_objects_total += th[i].interleaved_drain_objects;
+      interleaved_drain_empty_total += th[i].interleaved_drain_empty;
+      interleaved_push_yields_total += th[i].interleaved_push_yields;
+      interleaved_finish_yields_total += th[i].interleaved_finish_yields;
     }
     uint64_t end = h8_now_ns();
     getrusage(RUSAGE_SELF, &usage_after);
@@ -354,6 +395,18 @@ int main(int argc, char** argv) {
                                 0.50),
            h8_percentile_size_t(upper1p5_span_lower_bound, (size_t)opt.runs,
                                 0.50));
+  } else {
+    printf("interleaved_phase_ms work_median=%.3f tail_median=%.3f\n",
+           h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
+           h8_percentile(remote_phase_ms, (size_t)opt.runs, 0.50));
+    printf("interleaved_work remote_enqueue=%zu local_free=%zu drain_calls=%zu drain_objects=%zu drain_empty=%zu push_yields=%zu finish_yields=%zu\n",
+           interleaved_remote_enqueue_total,
+           interleaved_local_free_total,
+           interleaved_drain_calls_total,
+           interleaved_drain_objects_total,
+           interleaved_drain_empty_total,
+           interleaved_push_yields_total,
+           interleaved_finish_yields_total);
   }
   double frag_ratio = frag_requested_total
                           ? (double)frag_rounded_total /
