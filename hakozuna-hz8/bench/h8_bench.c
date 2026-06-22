@@ -650,6 +650,13 @@ int main(int argc, char** argv) {
          debug.local_pending_check_free,
          debug.local_used_touch_alloc,
          debug.local_used_touch_free);
+  printf("used_count_detail load_alloc=%zu store_alloc=%zu load_free=%zu store_free=%zu full_check=%zu underflow=%zu\n",
+         debug.local_used_count_load_alloc,
+         debug.local_used_count_store_alloc,
+         debug.local_used_count_load_free,
+         debug.local_used_count_store_free,
+         debug.local_used_count_full_check,
+         debug.local_used_count_underflow);
   printf("span_commit_timing total_ms=%.3f lock_wait_ms=%.3f table_scan_ms=%.3f meta_ms=%.3f mprotect_ms=%.3f\n",
          (double)debug.span_commit_total_ns / 1e6,
          (double)debug.span_commit_lock_wait_ns / 1e6,

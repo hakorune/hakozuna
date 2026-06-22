@@ -19,19 +19,24 @@ static bool h8_slot_shadow_active(bool slot_authority) {
 
 static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_alloc);
+  H8_DEBUG_INC(local_used_count_load_alloc);
   size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
   if (H8_UNLIKELY(used + count > span->slot_count)) {
     abort();
   }
+  H8_DEBUG_INC(local_used_count_store_alloc);
   atomic_store_explicit(&span->used_count, used + count, memory_order_relaxed);
 }
 
 static bool h8_owner_used_sub(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_free);
+  H8_DEBUG_INC(local_used_count_load_free);
   size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
   if (H8_UNLIKELY(used < count)) {
+    H8_DEBUG_INC(local_used_count_underflow);
     return false;
   }
+  H8_DEBUG_INC(local_used_count_store_free);
   atomic_store_explicit(&span->used_count, used - count, memory_order_relaxed);
   return true;
 }
@@ -216,6 +221,7 @@ void* h8_malloc_inner(size_t size) {
   }
   if (active_hint_ok) {
     H8_DEBUG_INC(local_active_hit);
+    H8_DEBUG_INC(local_used_count_full_check);
     void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
     if (ptr) {
       return ptr;
@@ -241,6 +247,7 @@ void* h8_malloc_inner(size_t size) {
     return NULL;
   }
   ctx->active_spans[class_id] = span;
+  H8_DEBUG_INC(local_used_count_full_check);
   return h8_small_alloc_from_span(ctx, owner, span, class_id);
 }
 

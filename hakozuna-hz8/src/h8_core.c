@@ -450,6 +450,18 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.local_used_touch_alloc, memory_order_acquire);
   out->local_used_touch_free =
       atomic_load_explicit(&h8g.local_used_touch_free, memory_order_acquire);
+  out->local_used_count_load_alloc = atomic_load_explicit(
+      &h8g.local_used_count_load_alloc, memory_order_acquire);
+  out->local_used_count_store_alloc = atomic_load_explicit(
+      &h8g.local_used_count_store_alloc, memory_order_acquire);
+  out->local_used_count_load_free =
+      atomic_load_explicit(&h8g.local_used_count_load_free, memory_order_acquire);
+  out->local_used_count_store_free = atomic_load_explicit(
+      &h8g.local_used_count_store_free, memory_order_acquire);
+  out->local_used_count_full_check = atomic_load_explicit(
+      &h8g.local_used_count_full_check, memory_order_acquire);
+  out->local_used_count_underflow = atomic_load_explicit(
+      &h8g.local_used_count_underflow, memory_order_acquire);
   out->span_commit_total_ns =
       atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
   out->span_commit_lock_wait_ns =
