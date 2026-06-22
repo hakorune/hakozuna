@@ -172,10 +172,12 @@ Local leaf lane:
 latest:
   TlsActiveHintTrustShadow-L1 added mismatch attribution
   TlsActiveHintTrustElision-L1 trusts direct TLS active hits in release builds
+  local hot used_count attribution now split out
 
 evidence:
   debug local/interleaved short runs show class/owner/generation/state
   mismatch == 0 for active hint checks
+  used_count_detail now reports load/store/full-check/underflow counts
 
 next allocator candidate:
   class lookup width or used-count/local-hot scalar shape

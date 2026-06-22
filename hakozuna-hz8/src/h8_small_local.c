@@ -20,24 +20,28 @@ static bool h8_slot_shadow_active(bool slot_authority) {
 static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_alloc);
   H8_DEBUG_INC(local_used_count_load_alloc);
-  size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
+  size_t used =
+      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
   if (H8_UNLIKELY(used + count > span->slot_count)) {
     abort();
   }
   H8_DEBUG_INC(local_used_count_store_alloc);
-  atomic_store_explicit(&span->used_count, used + count, memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_used_count, used + count,
+                        memory_order_relaxed);
 }
 
 static bool h8_owner_used_sub(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_free);
   H8_DEBUG_INC(local_used_count_load_free);
-  size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
+  size_t used =
+      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
   if (H8_UNLIKELY(used < count)) {
     H8_DEBUG_INC(local_used_count_underflow);
     return false;
   }
   H8_DEBUG_INC(local_used_count_store_free);
-  atomic_store_explicit(&span->used_count, used - count, memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_used_count, used - count,
+                        memory_order_relaxed);
   return true;
 }
 
@@ -49,7 +53,7 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   (void)slot_authority;
 #endif
   H8_DEBUG_INC(local_free_head_touch_alloc);
-  uint32_t local_head = atomic_load_explicit(&span->local_free_head,
+  uint32_t local_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                              memory_order_relaxed);
   if (local_head != UINT32_MAX) {
     uint32_t slot = local_head;
@@ -63,7 +67,8 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     } else {
       next = span->next_free[slot];
     }
-    atomic_store_explicit(&span->local_free_head, next, memory_order_relaxed);
+    atomic_store_explicit(&span->local_hot.local_free_head_word, next,
+                          memory_order_relaxed);
     H8_DEBUG_INC(local_freelist_pop);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_INC(local_pending_check_alloc);
@@ -92,12 +97,14 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     return h8_slot_ptr(span, slot);
   }
 
-  uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_relaxed);
+  uint32_t bump = atomic_load_explicit(&span->local_hot.local_bump_index,
+                                       memory_order_relaxed);
   if (bump < span->slot_count) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     h8_slot_shadow_expect(span, bump, H8_SLOT_NEVER_USED >> H8_SLOT_TAG_SHIFT);
 #endif
-    atomic_store_explicit(&span->bump_index, bump + 1, memory_order_relaxed);
+    atomic_store_explicit(&span->local_hot.local_bump_index, bump + 1,
+                          memory_order_relaxed);
     H8_DEBUG_INC(local_bump_alloc);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_INC(local_pending_check_alloc);
@@ -163,7 +170,8 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     H8_DEBUG_INC(local_active_hint_null);
   } else if (!h8_active_hint_matches(hint, owner, class_id)) {
     H8_DEBUG_INC(local_active_hint_state_blocked);
-  } else if (atomic_load_explicit(&hint->used_count, memory_order_acquire) >=
+  } else if (atomic_load_explicit(&hint->local_hot.local_used_count,
+                                  memory_order_acquire) >=
              hint->slot_count) {
     H8_DEBUG_INC(local_active_hint_full);
     hint_full = true;
@@ -183,7 +191,8 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
       H8_DEBUG_INC(local_find_scan_span_state_blocked);
       continue;
     }
-    if (atomic_load_explicit(&span->used_count, memory_order_acquire) >=
+    if (atomic_load_explicit(&span->local_hot.local_used_count,
+                             memory_order_acquire) >=
         span->slot_count) {
       H8_DEBUG_INC(local_find_scan_span_full);
       continue;
@@ -289,7 +298,7 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
     }
   }
   H8_DEBUG_INC(local_free_head_touch_free);
-  uint32_t old_head = atomic_load_explicit(&span->local_free_head,
+  uint32_t old_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                            memory_order_relaxed);
   if (!slot_authority) {
     span->next_free[slot] = old_head;
@@ -297,7 +306,8 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   if (h8_slot_shadow_active(slot_authority)) {
     h8_slot_state_store_free_hot(span, slot, old_head);
   }
-  atomic_store_explicit(&span->local_free_head, (uint32_t)slot, memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_free_head_word, (uint32_t)slot,
+                        memory_order_relaxed);
   if (H8_UNLIKELY(!h8_owner_used_sub(span, 1))) {
     abort();
   }
