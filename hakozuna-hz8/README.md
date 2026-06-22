@@ -120,10 +120,29 @@ Guard-row throughput bring-up example (`guard_r0`, not `main_r0`):
 Release row examples:
 
 ```text
+make bench-release
+make bench-release-audit
+
 ./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0
 ./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 50
 ./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 90
 ./h8_bench_release --runs 10 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 90 --interleaved 1
+```
+
+Build lanes:
+
+```text
+bench-release:
+  performance lane
+  no per-op benchmark attribution
+
+bench-release-audit:
+  release allocator with benchmark attribution
+  use for fragmentation, class-map, and lower-bound evidence
+
+bench:
+  debug allocator counters plus benchmark attribution
+  do not speed-rank this lane
 ```
 
 ## Current Lane Semantics

@@ -105,7 +105,7 @@ The mask is the runtime work-set authority.  The truth remains:
 
 ```text
 pending bitmap
-live bitmap
+slot-state / live authority
 ```
 
 `pending_count` is now debug-shadow state only.  It is kept for quiescent
@@ -240,11 +240,16 @@ benchmark runs even when spans are logically retired.
 
 ## Release Benchmark
 
-`bench` remains a debug-counter build.  `bench-release` builds the same harness
-without `H8_ENABLE_DEBUG_STATS` so throughput numbers are not polluted by
-hot-path diagnostic atomics.
+`bench-release` is the performance lane.  It builds the harness without
+allocator debug counters and without per-op benchmark attribution.
 
-Do not speed-rank debug builds.
+`bench-release-audit` keeps the release allocator shape but enables benchmark
+attribution such as class-map and fragmentation accounting.
+
+`bench` remains the debug-counter build.  It enables allocator debug counters
+and benchmark attribution.
+
+Do not speed-rank audit or debug builds.
 
 ## Queue Contention Audit
 

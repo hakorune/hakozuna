@@ -285,7 +285,8 @@ remote_duplicate_claim
 remote_publish_lost
 remote_node_cycle
 remote_collect_duplicate
-remote_pending_count_mismatch
+remote_pending_bitmap_mismatch
+remote_pending_shadow_mismatch
 
 span_decommit_while_pending
 span_release_while_queued

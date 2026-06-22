@@ -35,6 +35,22 @@ min_run >= median * 0.60
 
 Do not speed-rank diagnostic builds.
 
+Build lanes:
+
+```text
+bench-release:
+  performance lane
+  no per-op benchmark attribution
+
+bench-release-audit:
+  release allocator with benchmark attribution
+  use for class-map, fragmentation, and lower-bound evidence
+
+bench:
+  debug allocator counters plus benchmark attribution
+  do not speed-rank
+```
+
 ## v0 Fusion-Small Scope
 
 v0 supports only:

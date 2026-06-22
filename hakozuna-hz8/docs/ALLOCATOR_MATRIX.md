@@ -64,17 +64,21 @@ These HZ8 numbers are from the local HZ8 harness, not from the public README
 allocator matrix runner.  They must not be inserted into the `main_*` rows
 above without re-running all allocators under the same lane.
 
-Latest representative release rows after slot-state release cutover, TLS active
-spans, and remote lookup reuse:
+Latest first stable release batch after slot-state release cutover, TLS active
+spans, remote lookup reuse, pending word-mask authority, perf-lane
+purification, and TLS leaf fast context lookup:
 
 | HZ8 lane | Shape | Median ops/s | post_rss | peak_rss | Interpretation |
 |---|---|---:|---:|---:|---|
-| `guard/local0` | `size=16..2048 remote_pct=0` | ~154.6M | ~14MiB | ~14MiB | Guard-shaped local row, not `main_r0` |
-| `small_interleaved_remote90` | `size=16..2048 remote_pct=90 interleaved=1` | ~30.8M | ~15MiB | ~66MiB | Current primary v0 steady-state remote lane |
-| `small_phase_remote90` | `size=16..2048 remote_pct=90 interleaved=0` | ~5.7M | ~26MiB | ~1.87GiB | Peak-live / first-touch / lifecycle stress |
+| `guard/local0` | `size=16..2048 remote_pct=0` | ~265.8M | ~4MiB | ~4MiB | Guard-shaped local row, not `main_r0`; first batch above v0 local gate |
+| `small_interleaved_remote90` | `size=16..2048 remote_pct=90 interleaved=1` | ~47.6M | ~15MiB | ~55MiB | Current primary v0 steady-state remote lane; first batch above v0 remote gate |
+| `small_phase_remote90` | `size=16..2048 remote_pct=90 interleaved=0` | ~6.70M | ~30MiB | ~1.87GiB | Peak-live / first-touch / lifecycle stress |
 
 `post_rss` is `VmRSS` sampled after worker join and owner-exit purge.
 `peak_rss` is process `VmHWM`; exact per-run peak needs a child-process runner.
+The HZ8 rows above are not a same-run cross-allocator comparison.  They are
+bring-up evidence from the HZ8 harness and should be re-run against the other
+allocators before claiming a matrix rank.
 
 ## One-line positioning
 

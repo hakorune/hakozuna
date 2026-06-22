@@ -432,9 +432,9 @@ old owner publish_refcount == 0
 span state == ORPHAN_READY
 old owner token matches
 qstate == IDLE
-remote_head == NULL
-remote-pending bitmap == 0
-pending_count == 0
+pending_word_mask == 0
+full remote-pending bitmap scan == 0
+pending_count debug shadow matches bitmap in debug builds
 span is on no owner pending queue
 span removed from old owner lists
 no local free-list mutation in progress
@@ -600,12 +600,14 @@ remote_collect_duplicate:
   pending bit must be 1 at collect
   collect clears pending exactly once
 
-remote_pending_count_mismatch:
+remote_pending_shadow_mismatch:
+  pending_count is a debug shadow only
   checked only at quiescent points such as owner exit/adoption
+  runtime authority is pending bitmap + pending_word_mask + qstate
 
 span_decommit_while_pending:
-  decommit CASes to RETIRING, then revalidates used_count, remote_head,
-  qstate, pending bitmap, and live bitmap
+  decommit CASes to RETIRING, then revalidates used_count, qstate,
+  pending_word_mask, pending bitmap, and slot/live authority
 ```
 
 ## Non-Negotiable Parts
