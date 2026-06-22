@@ -38,11 +38,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     atomic_store_explicit(&span->local_free_head, span->next_free[slot],
                           memory_order_relaxed);
     H8_DEBUG_INC(local_freelist_pop);
+#if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_INC(local_pending_check_alloc);
     if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
       H8_DEBUG_INC(local_alloc_pending_nonzero);
       abort();
     }
+#endif
     H8_DEBUG_INC(local_live_touch_alloc);
     h8_debug_local_live_word(slot);
     if (H8_UNLIKELY(!h8_owner_live_set(span, slot))) {
@@ -58,11 +60,13 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   if (bump < span->slot_count) {
     atomic_store_explicit(&span->bump_index, bump + 1, memory_order_relaxed);
     H8_DEBUG_INC(local_bump_alloc);
+#if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_INC(local_pending_check_alloc);
     if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, bump))) {
       H8_DEBUG_INC(local_alloc_pending_nonzero);
       abort();
     }
+#endif
     H8_DEBUG_INC(local_live_touch_alloc);
     h8_debug_local_live_word(bump);
     if (H8_UNLIKELY(!h8_owner_live_set(span, bump))) {
@@ -161,10 +165,6 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
     H8_DEBUG_INC(local_free_reject_state);
     return false;
   }
-  if (!h8_bitmap_test(span->live_bits, slot)) {
-    H8_DEBUG_INC(local_free_reject_live);
-    return false;
-  }
   H8_DEBUG_INC(local_pending_check_free);
   if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
     H8_DEBUG_INC(local_free_pending_nonzero);
@@ -173,6 +173,7 @@ static bool h8_local_free(H8OwnerRecord* owner, H8Span* span, size_t slot) {
   H8_DEBUG_INC(local_live_touch_free);
   h8_debug_local_live_word(slot);
   if (H8_UNLIKELY(!h8_owner_live_clear(span, slot))) {
+    H8_DEBUG_INC(local_free_reject_live);
     return false;
   }
   H8_DEBUG_INC(local_free_head_touch_free);

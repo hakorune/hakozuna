@@ -115,7 +115,6 @@ static H8ThreadCtx* h8_thread_ctx_new(void) {
 }
 
 H8ThreadCtx* h8_thread_ctx_get(void) {
-  h8_init();
   H8ThreadCtx* ctx = h8_tls_ctx;
   if (ctx) {
     return ctx;

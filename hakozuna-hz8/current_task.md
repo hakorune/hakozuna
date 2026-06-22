@@ -22,10 +22,12 @@ HZ8 optimization is being implemented in this order:
 18. `OwnerLocalScalarState-L1`
 19. `LocalPathAttribution-L1`
 20. `LocalHotLineAudit-L1`
+21. `InitOnceLeafElision-L1`
+22. `LocalFreelistProofElision-L1`
 
 Current focus:
 
-- `LocalHotLineAudit-L1`
+- `LocalFreelistProofElision-L1`
 
 Rules:
 
@@ -222,3 +224,17 @@ LocalHotLineAudit-L1:
 - measure live bitmap word distribution for local alloc/free.
 - measure local free-head, pending-check, and used-count touch counts.
 - do not change layout or behavior before the audit data is available.
+
+InitOnceLeafElision-L1:
+
+- keep `h8_init()` at public/API boundaries.
+- remove duplicate `pthread_once()` from internal thread-context leaf lookup.
+- keep slow owner creation and pthread-key destructor behavior unchanged.
+
+LocalFreelistProofElision-L1:
+
+- keep live bitmap as the remote-visible authority.
+- keep live set before malloc return and live clear before free return.
+- make freelist/bump allocation pending checks debug-only.
+- remove the separate local-free live test and use live-clear old value as the
+  same-incarnation double-free authority.
