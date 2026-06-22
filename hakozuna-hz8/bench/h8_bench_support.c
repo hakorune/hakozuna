@@ -165,7 +165,7 @@ void h8_usage(const char* argv0) {
   fprintf(stderr,
           "usage: %s [--runs N] [--threads N] [--iters N]\n"
           "          [--min-size N] [--max-size N] [--remote-pct N]\n"
-          "          [--interleaved 0|1]\n",
+          "          [--interleaved 0|1] [--live-window N]\n",
           argv0);
 }
 
@@ -192,6 +192,10 @@ int h8_parse_options(int argc, char** argv, H8BenchOptions* opt) {
       if (h8_parse_int(argv[++i], &opt->remote_pct) != 0) return -1;
     } else if (strcmp(a, "--interleaved") == 0 && i + 1 < argc) {
       if (h8_parse_int(argv[++i], &opt->interleaved) != 0) return -1;
+    } else if (strcmp(a, "--live-window") == 0 && i + 1 < argc) {
+      int tmp = 0;
+      if (h8_parse_int(argv[++i], &tmp) != 0) return -1;
+      opt->live_window = (size_t)tmp;
     } else {
       return -1;
     }

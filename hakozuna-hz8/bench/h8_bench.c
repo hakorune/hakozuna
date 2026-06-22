@@ -150,6 +150,7 @@ int main(int argc, char** argv) {
       .max_size = 2048,
       .remote_pct = 0,
       .interleaved = 0,
+      .live_window = 0,
   };
   if (h8_parse_options(argc, argv, &opt) != 0 ||
       opt.runs <= 0 || opt.threads <= 0 || opt.iters_per_thread == 0 ||
@@ -227,8 +228,12 @@ int main(int argc, char** argv) {
     }
 
     for (int i = 0; i < opt.threads; ++i) {
-      inboxes[i].cap = opt.interleaved ? opt.iters_per_thread + 1u
-                                       : opt.iters_per_thread;
+      if (opt.interleaved) {
+        size_t window = opt.live_window ? opt.live_window : opt.iters_per_thread;
+        inboxes[i].cap = window + 1u;
+      } else {
+        inboxes[i].cap = opt.iters_per_thread;
+      }
       inboxes[i].items = calloc(inboxes[i].cap, sizeof(void*));
       if (!inboxes[i].items) {
         fprintf(stderr, "inbox allocation failed\n");
@@ -366,9 +371,9 @@ int main(int argc, char** argv) {
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d class_map_id=%s\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d live_window=%zu class_map_id=%s\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved, H8_CLASS_MAP_ID);
+         opt.remote_pct, opt.interleaved, opt.live_window, H8_CLASS_MAP_ID);
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),

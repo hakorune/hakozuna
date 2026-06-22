@@ -8,7 +8,7 @@ Current focus:
 - `PendingCountRuntimeDecisionElision-L1` / DONE
 - `QuiescentPendingBitmapGate-L1` / MOSTLY DONE, verify before count removal
 - `RemotePublishMicrobench-L1` / DONE
-- `TailDrainPolicyAudit-L1` / NEXT
+- `TailDrainPolicyAudit-L1` / DONE
 
 Immediate goal:
 
@@ -201,6 +201,19 @@ Why this is first:
   already in the same high-throughput band as the phase-separated remote
   publish phase.  The remaining interleaved gap is more likely mixed
   alloc/free/drain scheduling and tail behavior than owner lease CAS retry.
+- `TailDrainPolicyAudit-L1` is complete:
+  added `--live-window N` to the benchmark.  `0` preserves the previous
+  effectively-unbounded interleaved inbox, while a positive value bounds the
+  SPSC queue capacity for live-window experiments.
+  Short release interleaved remote90 checks:
+  - `live_window=0`: `push_yields=0`, tail about `27ms` in a noisy batch.
+  - `live_window=4096`: peak RSS lower, but `push_yields=26801` and tail about
+    `76ms`.
+  - `live_window=1024`: peak RSS lower again, but `push_yields=108388` and
+    throughput remains noisy.
+  Interpretation: reducing the benchmark live window trades RSS for producer
+  stalls and does not expose a clear allocator win.  Keep this as a bench
+  classification knob, not an allocator policy.
 - The current benchmark rows are `guard_*`-equivalent because they use
   `16..2048`, not the `docs/HZ8_BENCH_GATE.md` default-candidate `main_*`
   rows (`16..32768`).
@@ -244,17 +257,13 @@ Acceptance:
 ## Next
 
 1. Verify `QuiescentPendingBitmapGate-L1` with owner-exit and adoption stress.
-2. `TailDrainPolicyAudit-L1`
-   - separate steady-state interleaved throughput from finish/tail drain
-   - quantify `finish_yields` and tail milliseconds under different live-window
-     sizes before changing allocator policy
-3. `PendingWordMaskAuthority-L1`
+2. `PendingWordMaskAuthority-L1`
    - release: no `pending_count` update/load in remote publish or collect
    - debug: keep `pending_count` as a shadow and quiescent consistency check
-4. If interleaved remains below `40M`, ask design review whether to attack:
+3. If interleaved remains below `40M`, ask design review whether to attack:
    - owner publish lease shape
    - slot-state validation duplication
    - tail drain/finish policy
    - or a dedicated remote publish microbench
-5. MediumRun and full class-map redesign stay HOLD until small v0 gates are
+4. MediumRun and full class-map redesign stay HOLD until small v0 gates are
    closer.

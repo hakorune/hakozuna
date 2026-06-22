@@ -19,6 +19,7 @@ typedef struct H8BenchOptions {
   size_t max_size;
   int remote_pct;
   int interleaved;
+  size_t live_window;
 } H8BenchOptions;
 
 typedef struct H8Inbox {
