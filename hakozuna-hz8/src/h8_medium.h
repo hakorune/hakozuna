@@ -49,6 +49,8 @@ typedef struct H8MediumRun {
   struct H8MediumRun* next_global;
 } H8MediumRun;
 
+typedef struct H8OwnerRecord H8OwnerRecord;
+
 bool h8_medium_size_supported(size_t size);
 uint32_t h8_medium_class_for_size(size_t size);
 const H8MediumClassSpec* h8_medium_class_spec(uint32_t class_id);
@@ -64,5 +66,6 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);
+void h8_medium_owner_detach_all(H8OwnerRecord* owner);
 
 #endif

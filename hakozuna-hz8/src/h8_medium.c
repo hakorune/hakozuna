@@ -343,3 +343,20 @@ H8RouteKind h8_medium_route_inner(void* ptr) {
   pthread_mutex_unlock(&run->lock);
   return route;
 }
+
+void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
+  if (!owner) {
+    return;
+  }
+  pthread_mutex_lock(&h8_medium_lock);
+  for (uint32_t c = 0; c < H8_MEDIUM_CLASS_COUNT; ++c) {
+    H8MediumRun* run = owner->medium_by_class[c];
+    owner->medium_by_class[c] = NULL;
+    while (run) {
+      H8MediumRun* next = run->next_owner;
+      run->next_owner = NULL;
+      run = next;
+    }
+  }
+  pthread_mutex_unlock(&h8_medium_lock);
+}

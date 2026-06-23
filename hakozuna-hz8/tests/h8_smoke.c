@@ -27,6 +27,16 @@ static void* orphan_source(void* arg) {
   return p;
 }
 
+static void* medium_source(void* arg) {
+  (void)arg;
+  void* p = h8_malloc(9000);
+  if (!p) {
+    return (void*)1;
+  }
+  memset(p, 0x4D, 9000);
+  return p;
+}
+
 static void* adoption_roundtrip(void* arg) {
   size_t size = *(size_t*)arg;
   void* p = h8_malloc(size);
@@ -142,6 +152,26 @@ int main(void) {
   if (h8_route(medium) == H8_ROUTE_VALID) {
     fprintf(stderr, "medium route still valid after free\n");
     return 32;
+  }
+  pthread_t medium_thread;
+  if (pthread_create(&medium_thread, NULL, medium_source, NULL) != 0) {
+    perror("pthread_create medium");
+    return 33;
+  }
+  void* medium_orphan = NULL;
+  if (pthread_join(medium_thread, &medium_orphan) != 0) {
+    perror("pthread_join medium");
+    return 34;
+  }
+  if (!medium_orphan || medium_orphan == (void*)1 ||
+      h8_route(medium_orphan) != H8_ROUTE_VALID) {
+    fprintf(stderr, "medium route invalid after owner exit\n");
+    return 35;
+  }
+  h8_free(medium_orphan);
+  if (h8_route(medium_orphan) == H8_ROUTE_VALID) {
+    fprintf(stderr, "medium route still valid after cross-owner free\n");
+    return 36;
   }
   void* p = h8_malloc(32);
   if (!p) {

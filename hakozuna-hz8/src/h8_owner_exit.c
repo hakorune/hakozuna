@@ -125,6 +125,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
     span = next;
   }
   h8_span_purge_retired_batch(retired);
+  h8_medium_owner_detach_all(owner);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(owner_exit_span_walk_ns,
                (size_t)(h8_owner_exit_now_ns() - walk_start));

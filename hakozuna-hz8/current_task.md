@@ -153,7 +153,6 @@ MediumRunOwnerLocalSync-L1:
     active miss / free / route still use global registry lookup
     run-local mutex protects free_mask, allocated_mask, and slot_state
   next:
-    connect medium run lifetime to owner exit
     split final remote publication from global registry fallback
     keep route/free fail-closed for medium-owned invalid pointers
   current limitation:
@@ -168,6 +167,19 @@ MediumRunOwnerLocalRegistry-L1:
     smoke passes
     safety stress passes
     medium local and interleaved short benches pass
+
+MediumRunOwnerExit-L1:
+  current status:
+    owner exit detaches owner->medium_by_class lists
+    medium runs stay in global registry to avoid platform fallback for stale medium pointers
+    final retire / orphan handoff policy is still HOLD
+  verification:
+    smoke covers medium allocation in exiting thread and free from another thread
+    medium local and interleaved short benches pass
+  data:
+    bench_results/20260623T215806Z_medium_owner_exit_detach.md
+  limitation:
+    retained medium metadata can grow until final lifecycle policy lands
 
 MediumRunRemote-L1:
   remote claim / collect contract
