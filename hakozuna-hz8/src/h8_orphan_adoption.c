@@ -58,7 +58,8 @@ static bool h8_span_quiescent_for_adoption(const H8Span* span) {
 }
 
 static bool h8_span_has_free_slot(const H8Span* span) {
-  return atomic_load_explicit(&span->used_count, memory_order_acquire) <
+  return atomic_load_explicit(&span->local_hot.local_used_count,
+                              memory_order_acquire) <
          span->slot_count;
 }
 
@@ -83,7 +84,8 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
     if (!h8_span_has_free_slot(span)) {
       continue;
     }
-    if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
+    if (atomic_load_explicit(&span->local_hot.local_used_count,
+                             memory_order_acquire) == 0) {
       continue;
     }
 
@@ -135,7 +137,8 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
         H8_DEBUG_INC(adoption_block_quiesce_count);
         continue;
       }
-      if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
+      if (atomic_load_explicit(&span->local_hot.local_used_count,
+                               memory_order_acquire) == 0) {
         continue;
       }
       H8_DEBUG_INC(adoption_scan_count);
@@ -177,7 +180,8 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
       h8_collect_owner_pending(orphan);
     }
 
-    if (atomic_load_explicit(&candidate->used_count, memory_order_acquire) == 0) {
+    if (atomic_load_explicit(&candidate->local_hot.local_used_count,
+                             memory_order_acquire) == 0) {
       H8_DEBUG_INC(adoption_empty_count);
       h8_span_mark_orphan_ready(candidate);
       atomic_store_explicit(&candidate->publish_closed, 0, memory_order_release);

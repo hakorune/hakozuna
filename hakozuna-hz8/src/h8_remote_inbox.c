@@ -46,11 +46,13 @@ static void h8_pending_count_sub(H8Span* span, size_t count) {
 #endif
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
-  size_t used = atomic_load_explicit(&span->used_count, memory_order_relaxed);
+  size_t used =
+      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
   if (used < count) {
     abort();
   }
-  atomic_store_explicit(&span->used_count, used - count, memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_used_count, used - count,
+                        memory_order_relaxed);
 }
 
 static uint64_t h8_word_valid_mask(H8Span* span, size_t word_index) {
@@ -157,7 +159,7 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
       abort();
     }
   }
-  uint32_t old_head = atomic_load_explicit(&span->local_free_head,
+  uint32_t old_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                            memory_order_relaxed);
   if (slot_authority && h8_slot_shadow_active(slot_authority)) {
     h8_slot_state_store_free_hot(span, slot, old_head);
@@ -177,7 +179,7 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
       h8_slot_state_store_free_hot(span, slot, old_head);
     }
   }
-  atomic_store_explicit(&span->local_free_head, (uint32_t)slot,
+  atomic_store_explicit(&span->local_hot.local_free_head_word, (uint32_t)slot,
                         memory_order_release);
   h8_used_count_sub(span, 1);
   H8_DEBUG_INC(remote_collect_count);
@@ -218,7 +220,8 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       abort();
     }
   }
-  uint32_t head = atomic_load_explicit(&span->local_free_head, memory_order_relaxed);
+  uint32_t head = atomic_load_explicit(&span->local_hot.local_free_head_word,
+                                       memory_order_relaxed);
   if (slot_authority) {
     uint64_t slots = claimed;
     while (slots) {
@@ -253,7 +256,8 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
       head = (uint32_t)slot;
     }
   }
-  atomic_store_explicit(&span->local_free_head, head, memory_order_release);
+  atomic_store_explicit(&span->local_hot.local_free_head_word, head,
+                        memory_order_release);
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_pending_count_sub(span, count);
 #endif

@@ -99,7 +99,8 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   while (span) {
     H8Span* next = span->next_owned;
     h8_slot_shadow_verify_span(span);
-    if (atomic_load_explicit(&span->used_count, memory_order_acquire) == 0) {
+    if (atomic_load_explicit(&span->local_hot.local_used_count,
+                             memory_order_acquire) == 0) {
       H8Span* logical = h8_span_retire_logical(span);
       if (logical) {
         logical->next_owned = retired;

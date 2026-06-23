@@ -79,6 +79,23 @@ small_phase_remote90:
   peak_rss ~= 1.87GiB
 ```
 
+Latest short release check after `P2ClassLookupBitWidth-L1` and
+`LocalHotAliasConsistency-L1`:
+
+```text
+guard/local0, RUNS=3:
+  median ~= 207.7M ops/s
+  steady ~= 275.1M ops/s
+  zero gates clean
+
+small_interleaved_remote90, RUNS=3:
+  median ~= 34.9M ops/s
+  steady ~= 39.4M ops/s
+  work ~= 40.6ms
+  tail ~= 22.1ms
+  zero gates clean
+```
+
 Interpretation:
 
 ```text
@@ -118,6 +135,7 @@ TlsLeafEntryFastPath-L1
 TlsActiveHintTrustShadow-L1
 TlsActiveHintTrustElision-L1
 P2ClassLookupBitWidth-L1
+LocalHotAliasConsistency-L1
 ```
 
 Benchmark / evidence:
@@ -175,15 +193,16 @@ latest:
   TlsActiveHintTrustElision-L1 trusts direct TLS active hits in release builds
   local hot used_count attribution now split out
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
+  LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
+  references from cold/remote code
 
 evidence:
   debug local/interleaved short runs show class/owner/generation/state
   mismatch == 0 for active hint checks
   used_count_detail now reports load/store/full-check/underflow counts
   short release checks stayed clean after p2-v0 class lookup specialization
-
-next allocator candidate:
-  used-count/local-hot scalar shape
+  direct legacy `span->used_count`, `span->bump_index`, and
+  `span->local_free_head` accesses are gone from source references
 ```
 
 Remote lane:
@@ -225,11 +244,12 @@ runtime profile / knob split
 ## Next Order
 
 1. Run the second fresh release batch for `guard/local0` and
-   `small_interleaved_remote90`.
+   `small_interleaved_remote90`; short RUNS=3 checks are not enough for a
+   promotion decision.
 2. Run a short debug/audit pass for owner exit, orphan handoff, duplicate
    remote free, and quiescent pending gates.
-3. If both batches hold, pick the next local leaf box from class lookup width
-   or used-count/local-hot scalar shape.
+3. If both batches hold, pick the next local leaf box from active-hit
+   validation shape, TLS entry shape, or a measured used-count scalar proof.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 

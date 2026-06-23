@@ -139,9 +139,12 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   atomic_store_explicit(&span->qstate, H8_Q_IDLE, memory_order_relaxed);
   atomic_store_explicit(&span->pending_count, 0, memory_order_relaxed);
   atomic_store_explicit(&span->pending_word_mask, 0, memory_order_relaxed);
-  atomic_store_explicit(&span->bump_index, 0, memory_order_relaxed);
-  atomic_store_explicit(&span->local_free_head, UINT32_MAX, memory_order_relaxed);
-  atomic_store_explicit(&span->used_count, 0, memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_bump_index, 0,
+                        memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_free_head_word, UINT32_MAX,
+                        memory_order_relaxed);
+  atomic_store_explicit(&span->local_hot.local_used_count, 0,
+                        memory_order_relaxed);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_commit_meta_ns, (size_t)(h8_debug_now_ns() - meta_start));
   uint64_t mprotect_start = h8_debug_now_ns();

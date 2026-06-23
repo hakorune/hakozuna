@@ -50,7 +50,8 @@ static void h8_slot_shadow_mark_seen(uint8_t* seen, size_t slot, size_t count) {
 
 static void h8_slot_shadow_verify_chain(H8Span* span, uint8_t* seen) {
   size_t guard = 0;
-  uint32_t slot = atomic_load_explicit(&span->local_free_head, memory_order_acquire);
+  uint32_t slot = atomic_load_explicit(&span->local_hot.local_free_head_word,
+                                       memory_order_acquire);
   while (slot != UINT32_MAX) {
     if (slot >= span->slot_count) {
       H8_DEBUG_INC(slot_shadow_bad_next);
@@ -83,7 +84,8 @@ void h8_slot_shadow_verify_span(H8Span* span) {
   size_t allocated = 0;
   size_t live_count = 0;
   size_t pending_count = 0;
-  uint32_t bump = atomic_load_explicit(&span->bump_index, memory_order_acquire);
+  uint32_t bump =
+      atomic_load_explicit(&span->local_hot.local_bump_index, memory_order_acquire);
   if (bump > span->slot_count) {
     H8_DEBUG_INC(slot_shadow_nonvirgin_above_bump);
   }
@@ -135,7 +137,8 @@ void h8_slot_shadow_verify_span(H8Span* span) {
       H8_DEBUG_INC(slot_shadow_nonvirgin_above_bump);
     }
   }
-  size_t used = atomic_load_explicit(&span->used_count, memory_order_acquire);
+  size_t used =
+      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_acquire);
   size_t pending_seen = atomic_load_explicit(&span->pending_count, memory_order_acquire);
   if (used != allocated || used != live_count || pending_seen != pending_count ||
       pending_seen > used) {
