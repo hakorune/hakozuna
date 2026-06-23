@@ -87,6 +87,15 @@ Upper1p5CacheShapeAudit-L1:
   upper1p5 regresses guard_local0 by about 27%
   decision: HOLD as default
   data: bench_results/20260623T190034Z_upper1p5_cache_shape.md
+
+Upper3072CacheShapeAudit-L1:
+  preserves p2-v0 for <=2048 and adds only a 3072 class
+  guard_local0 -0.46% in R5
+  interleaved remote90 -1.62% in R5
+  phase remote90 +9.04% in R5
+  phase peak RSS -8.87%
+  decision: CONDITIONAL GO, requires paired R10 x 2 before default cutover
+  data: bench_results/20260623T190416Z_upper3072_cache_shape.md
 ```
 
 Acceptance:
@@ -168,9 +177,9 @@ small-v0 hot-path tuning without asm evidence
 
 1. Keep `hz8-small-v0-rc1` fixed.
 2. Do not adopt full `upper1p5` as default.
-3. Test a narrower `3072-only` or equivalent candidate that preserves p2-v0
-   for `<=2048`.
-4. Start `MediumRun-v1` only after the size-policy boundary is explicit.
+3. Run paired R10 x 2 for `upper3072-v0` versus `p2-v0`.
+4. If the hot gates pass, prepare a design review for upper3072 default cutover.
+5. Start `MediumRun-v1` only after the size-policy boundary is explicit.
 
 ## Working Rules
 

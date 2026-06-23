@@ -46,10 +46,10 @@ typedef struct H8BenchThread {
   size_t interleaved_drain_empty;
   size_t interleaved_push_yields;
   size_t interleaved_finish_yields;
-  size_t remote_live_by_class[9];
-  uint64_t requested_bytes_by_class[9];
-  uint64_t rounded_bytes_by_class[9];
-  size_t alloc_count_by_class[9];
+  size_t remote_live_by_class[H8_CLASS_COUNT];
+  uint64_t requested_bytes_by_class[H8_CLASS_COUNT];
+  uint64_t rounded_bytes_by_class[H8_CLASS_COUNT];
+  size_t alloc_count_by_class[H8_CLASS_COUNT];
   uint64_t rounded_upper1536_bytes;
   uint64_t rounded_upper1p5_bytes;
   uint64_t remote_live_rounded_bytes;

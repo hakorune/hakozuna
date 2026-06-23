@@ -190,8 +190,8 @@ int main(int argc, char** argv) {
   uint64_t frag_rounded_total = 0;
   uint64_t frag_upper1536_total = 0;
   uint64_t frag_upper1p5_total = 0;
-  uint64_t frag_rounded_by_class[9] = {0};
-  size_t frag_allocs_by_class[9] = {0};
+  uint64_t frag_rounded_by_class[H8_CLASS_COUNT] = {0};
+  size_t frag_allocs_by_class[H8_CLASS_COUNT] = {0};
 #endif
   size_t interleaved_remote_enqueue_total = 0;
   size_t interleaved_local_free_total = 0;
@@ -336,7 +336,7 @@ int main(int argc, char** argv) {
     uint64_t run_live_upper1p5 = 0;
     if (!opt.interleaved) {
       for (int i = 0; i < opt.threads; ++i) {
-        for (uint32_t c = 0; c < 9u; ++c) {
+        for (uint32_t c = 0; c < H8_CLASS_COUNT; ++c) {
           size_t live = th[i].remote_live_by_class[c];
           size_t slots = h8_bench_slots_for_class(c);
           live_objects += live;
@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
       }
     }
     for (int i = 0; i < opt.threads; ++i) {
-      for (uint32_t c = 0; c < 9u; ++c) {
+      for (uint32_t c = 0; c < H8_CLASS_COUNT; ++c) {
         run_requested += th[i].requested_bytes_by_class[c];
         run_rounded += th[i].rounded_bytes_by_class[c];
         frag_rounded_by_class[c] += th[i].rounded_bytes_by_class[c];
@@ -505,16 +505,15 @@ int main(int argc, char** argv) {
          frag_requested_total ? (double)frag_upper1p5_total /
                                     (double)frag_requested_total
                               : 0.0);
-  printf("fragmentation_by_class allocs=[%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=[%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 ",%" PRIu64 "]\n",
-         frag_allocs_by_class[0], frag_allocs_by_class[1],
-         frag_allocs_by_class[2], frag_allocs_by_class[3],
-         frag_allocs_by_class[4], frag_allocs_by_class[5],
-         frag_allocs_by_class[6], frag_allocs_by_class[7],
-         frag_allocs_by_class[8], frag_rounded_by_class[0],
-         frag_rounded_by_class[1], frag_rounded_by_class[2],
-         frag_rounded_by_class[3], frag_rounded_by_class[4],
-         frag_rounded_by_class[5], frag_rounded_by_class[6],
-         frag_rounded_by_class[7], frag_rounded_by_class[8]);
+  printf("fragmentation_by_class class_count=%u allocs=[", H8_CLASS_COUNT);
+  for (uint32_t c = 0; c < H8_CLASS_COUNT; ++c) {
+    printf("%s%zu", c == 0 ? "" : ",", frag_allocs_by_class[c]);
+  }
+  printf("] rounded_bytes=[");
+  for (uint32_t c = 0; c < H8_CLASS_COUNT; ++c) {
+    printf("%s%" PRIu64, c == 0 ? "" : ",", frag_rounded_by_class[c]);
+  }
+  printf("]\n");
 #else
   printf("fragmentation attribution=disabled\n");
 #endif

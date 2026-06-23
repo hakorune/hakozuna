@@ -98,9 +98,32 @@ decision:
   upper1p5 remains HOLD as a default map
 ```
 
-Next size-policy candidate should keep p2-v0 for `<=2048` and test only an
-upper refinement such as `3072-only`, because the `1536` class is frequent in
-the guard local row and causes the large local regression.
+Second follow-up:
+
+```text
+data:
+  bench_results/20260623T190416Z_upper3072_cache_shape.md
+
+candidate:
+  upper3072-v0
+  16,32,64,128,256,512,1024,2048,3072,4096
+  p2-v0 behavior preserved for <=2048
+
+R5 result:
+  guard_local0 -0.46%
+  interleaved remote90 -1.62%
+  phase remote90 +9.04%
+  phase peak RSS -8.87%
+  phase minor faults -8.89%
+
+decision:
+  CONDITIONAL GO
+  run paired R10 x 2 before any default cutover
+```
+
+`upper3072-v0` is the current best candidate because it reduces the 16..4096
+phase peak without opening the frequent 1536-byte class in the 16..2048 guard
+local row.
 
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
