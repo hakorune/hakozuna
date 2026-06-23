@@ -56,19 +56,20 @@ docs/archive/current_task_20260623_pre_tls_alloc_inline.md
 
 ## Current Baseline
 
-Latest stable release batch:
+Latest stable release batch after slot-state authority/doc cleanup:
 
 ```text
 guard/local0 RUNS=10 x 2:
-  batch1 median ~= 254.6M ops/s, p25 ~= 241.2M, min ~= 229.9M
-  batch2 median ~= 326.4M ops/s, p25 ~= 319.2M, min ~= 213.2M
+  batch1 median ~= 354.9M ops/s, p25 ~= 311.0M, min ~= 297.6M
+  batch2 median ~= 419.0M ops/s, p25 ~= 384.8M, min ~= 343.9M
 
 small_interleaved_remote90 RUNS=10 x 2:
-  batch1 median ~= 55.5M ops/s, p25 ~= 54.5M, min ~= 48.8M
-  batch2 median ~= 55.6M ops/s, p25 ~= 44.5M, min ~= 42.5M
+  batch1 median ~= 57.1M ops/s, p25 ~= 46.6M, min ~= 44.4M
+  batch2 median ~= 57.3M ops/s, p25 ~= 56.2M, min ~= 46.1M
 
 result:
   local and interleaved remote90 both clear the v0 bring-up gate
+  data: bench_results/20260623T123415Z_stability_r10x2.md
 ```
 
 Latest focused checks:
@@ -156,6 +157,14 @@ DocsAuthorityCleanup-L1:
     release has no production hot-path global counter atomics
     debug live/count fields are shadows, not runtime authority
 
+StabilityBatch-R10x2:
+  current p2-v0 small baseline fixed after slot-state authority and docs
+  cleanup
+  local and interleaved remote90 both clear bring-up gates across two fresh
+  RUNS=10 batches
+  remote protocol remains frozen
+  data: bench_results/20260623T123415Z_stability_r10x2.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -229,6 +238,7 @@ RemoteSlotAuthorityMonomorphic-L1
 PendingPublishMaskCounterCleanup-L1
 ObservabilityDeadCounterCleanup-L1
 DocsAuthorityCleanup-L1
+StabilityBatch-R10x2
 ```
 
 Benchmark / evidence:
@@ -253,7 +263,7 @@ Stability lane:
 
 ```text
 goal:
-  keep the passed StabilityBatch-L1 as the current v0 performance baseline
+  keep the passed StabilityBatch-R10x2 as the current v0 performance baseline
 
 targets:
   guard/local0
@@ -372,7 +382,8 @@ LocalFreeHeadBumpScalar-L1
 13. Treat `ObservabilityDeadCounterCleanup-L1` as implemented for counters with
     no writers. Do not keep zero-valued fields as evidence.
 14. Treat `DocsAuthorityCleanup-L1` as implemented for the primary design docs.
-15. Next concrete work should stay in local leaf / code shape unless a second
+15. Treat `StabilityBatch-R10x2` as the current p2-v0 small baseline.
+16. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
