@@ -126,7 +126,6 @@ struct H8Span {
   struct {
     _Atomic uint32_t local_bump_index;
     _Atomic uint32_t local_free_head_word;
-    _Atomic size_t local_used_count;
 #if defined(H8_ENABLE_DEBUG_STATS)
     size_t local_used_mirror;
 #endif

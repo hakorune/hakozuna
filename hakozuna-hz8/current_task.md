@@ -396,6 +396,40 @@ next:
   UsedCountFieldRemoval-L1 is possible, but only as a separate layout box.
 ```
 
+Latest `UsedCountFieldRemoval-L1` proof:
+
+```text
+data:
+  bench_results/20260623T094941Z_used_count_field_removal.md
+
+change:
+  removed H8Span.local_hot.local_used_count from release/debug layout
+  removed h8_used_count_load_owner_relaxed/store_owner_relaxed helpers
+  debug uses local_used_mirror as the only count shadow
+  release cold readers continue to derive allocated count from slot_state
+
+release local/interleaved short runs:
+  used_count_detail load_alloc = 0
+  used_count_detail store_alloc = 0
+  used_count_detail load_free = 0
+  used_count_detail store_free = 0
+  derived_mismatch = 0
+  slot_shadow used_mismatch = 0
+
+debug local/interleaved short runs:
+  derived_mismatch = 0
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+line budget:
+  src/h8_internal.h = 795
+
+next:
+  used_count lane is closed unless new evidence appears.
+```
+
 Interpretation:
 
 ```text
@@ -540,7 +574,7 @@ evidence:
   can race with orphan collect under a different lock
   UsedCountColdDerivationShadow-L1 is clean in short proof runs
   UsedCountReleaseElision-L1 removes release used_count hot updates
-  remaining used_count work is field/layout removal, not authority cutover
+  UsedCountFieldRemoval-L1 removes the field and keeps debug mirror proof
 ```
 
 Remote lane:
@@ -589,9 +623,8 @@ hot plain used_count + cold atomic used_count hybrid
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
 3. Treat `UsedCountReleaseElision-L1` as implemented for the current code shape.
    Do not plain-scalar cut over.
-4. If continuing on used_count, use `UsedCountFieldRemoval-L1` as a layout-only
-   box: remove the release field only after confirming debug shadow reporting
-   remains intact.
+4. Treat `UsedCountFieldRemoval-L1` as implemented. Do not reopen used_count
+   unless fresh evidence shows lifecycle count derivation is the blocker.
 5. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 

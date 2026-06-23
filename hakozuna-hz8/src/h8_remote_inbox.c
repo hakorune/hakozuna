@@ -48,11 +48,6 @@ static void h8_pending_count_sub(H8Span* span, size_t count) {
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
 #if defined(H8_ENABLE_DEBUG_STATS)
-  size_t used = h8_used_count_load_owner_relaxed(span);
-  if (used < count) {
-    abort();
-  }
-  h8_used_count_store_owner_relaxed(span, used - count);
   if (!h8_used_count_mirror_sub(span, count)) {
     abort();
   }
