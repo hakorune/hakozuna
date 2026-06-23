@@ -239,7 +239,9 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
 4. MediumRunLocalOnly-L1
    same-owner malloc/free only
    no remote publication
-   status: next
+   status: scaffold unit implemented
+   smoke: create / alloc / free / double-free reject / interior reject
+   routing: not connected to h8_malloc yet
 
 5. MediumRunRemote-L1
    remote free publish/collect

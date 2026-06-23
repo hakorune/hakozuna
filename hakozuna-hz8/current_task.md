@@ -122,6 +122,10 @@ MediumRunMetadataScaffold-L1:
 MediumRunLocalOnly-L1:
   current owner only
   no remote free support yet
+  current status:
+    local run unit scaffold implemented
+    direct h8_malloc routing not enabled yet
+    smoke validates create / alloc / free / double-free reject / interior reject
 
 MediumRunRemote-L1:
   remote claim / collect contract

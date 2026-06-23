@@ -39,7 +39,11 @@ typedef struct H8MediumRun {
   _Atomic uint64_t pending_word_mask;
   _Atomic uint64_t* pending_bits;
   _Atomic uint32_t* slot_state;
+  uint64_t free_mask;
+  uint64_t allocated_mask;
   void* meta_alloc_base;
+  struct H8MediumRun* next_owner;
+  struct H8MediumRun* next_global;
 } H8MediumRun;
 
 bool h8_medium_size_supported(size_t size);
@@ -50,5 +54,9 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out);
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
+H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
+void h8_medium_run_destroy_scaffold(H8MediumRun* run);
+void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
+bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
 
 #endif
