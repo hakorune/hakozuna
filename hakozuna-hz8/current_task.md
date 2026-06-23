@@ -270,6 +270,30 @@ MediumRunEmptyRetentionBudget-L1:
     debug medium_stats shows retain=15863 and reactivate=15751
     steady madvise now matches owner-exit drain count in the probe
     resident peak stayed below the fixed budget
+
+MediumRunResidualCostAudit-L1:
+  current status:
+    implemented
+  counters:
+    medium_madvise_ns
+    medium_global_lock_wait_ns
+    medium_run_lock_wait_ns
+    medium_free_lookup_step_count
+    medium_route_lookup_step_count
+  purpose:
+    split residual medium cost after retention budget
+    decide whether direct arena identity, run lock shape, or run pool is next
+  data:
+    bench_results/20260623T231948Z_medium_residual_audit/README.md
+  result:
+    medium release r50 remains about 3.36M ops/s
+    debug free lookup walked 341002 global-list steps for 20000 frees
+    debug global lock wait was about 6.8ms
+    debug run lock wait was about 3.4ms
+    madvise time was only about 0.3ms after retention
+  interpretation:
+    residual bottleneck is medium pointer lookup / global registry locking
+    next likely box is direct medium arena identity before RunPool
 ```
 
 ### 2. SizePolicy-v1 Evidence

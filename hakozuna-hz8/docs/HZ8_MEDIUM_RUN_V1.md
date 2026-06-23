@@ -318,16 +318,36 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      r50 minor faults about 337
      debug probe retain=15863 reactivate=15751 exit_drain=112
 
-7. MediumRunRunPool-L1
+7. MediumRunResidualCostAudit-L1
+   status: implemented
+   residual counters:
+     medium_madvise_ns
+     medium_global_lock_wait_ns
+     medium_run_lock_wait_ns
+     medium_free_lookup_step_count
+     medium_route_lookup_step_count
+   decision target:
+     direct medium arena identity
+     run lock shape
+     run pool / chunked allocation
+   result:
+     bench_results/20260623T231948Z_medium_residual_audit/README.md
+     free lookup walked about 341k global-list steps for 20k frees
+     global lock wait about 6.8ms in debug probe
+     madvise time about 0.3ms after retention
+   interpretation:
+     direct medium identity is the likely next box
+
+8. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-8. MediumRunRemote-L1
+9. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-9. MediumRunLifecycle-L1
+10. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

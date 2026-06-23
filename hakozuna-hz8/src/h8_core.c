@@ -580,6 +580,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.medium_resident_empty_bytes, memory_order_acquire);
   out->medium_resident_empty_peak =
       atomic_load_explicit(&h8g.medium_resident_empty_peak, memory_order_acquire);
+  out->medium_madvise_ns =
+      atomic_load_explicit(&h8g.medium_madvise_ns, memory_order_acquire);
+  out->medium_global_lock_wait_ns =
+      atomic_load_explicit(&h8g.medium_global_lock_wait_ns, memory_order_acquire);
+  out->medium_run_lock_wait_ns =
+      atomic_load_explicit(&h8g.medium_run_lock_wait_ns, memory_order_acquire);
+  out->medium_free_lookup_step_count = atomic_load_explicit(
+      &h8g.medium_free_lookup_step_count, memory_order_acquire);
+  out->medium_route_lookup_step_count = atomic_load_explicit(
+      &h8g.medium_route_lookup_step_count, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

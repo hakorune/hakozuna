@@ -216,6 +216,11 @@ typedef struct H8DebugStats {
   size_t medium_madvise_fail_count;
   size_t medium_resident_empty_bytes;
   size_t medium_resident_empty_peak;
+  size_t medium_madvise_ns;
+  size_t medium_global_lock_wait_ns;
+  size_t medium_run_lock_wait_ns;
+  size_t medium_free_lookup_step_count;
+  size_t medium_route_lookup_step_count;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;
