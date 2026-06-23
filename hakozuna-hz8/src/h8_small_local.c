@@ -171,7 +171,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     H8_DEBUG_INC(local_active_hint_null);
   } else if (!h8_active_hint_matches(hint, owner, class_id)) {
     H8_DEBUG_INC(local_active_hint_state_blocked);
-  } else if (h8_used_count_load_cold_acquire(hint) >= hint->slot_count) {
+  } else if (h8_used_count_load_active_hint(hint) >= hint->slot_count) {
     H8_DEBUG_INC(local_active_hint_full);
     hint_full = true;
   } else {
@@ -190,7 +190,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
       H8_DEBUG_INC(local_find_scan_span_state_blocked);
       continue;
     }
-    if (h8_used_count_load_cold_acquire(span) >= span->slot_count) {
+    if (h8_used_count_load_owner_scan_locked(span) >= span->slot_count) {
       H8_DEBUG_INC(local_find_scan_span_full);
       continue;
     }

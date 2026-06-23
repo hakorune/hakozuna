@@ -310,6 +310,11 @@ typedef struct H8Global {
   atomic_size_t local_used_count_underflow;
   atomic_size_t local_used_mirror_mismatch;
   atomic_size_t local_used_mirror_underflow;
+  atomic_size_t local_used_cold_active_hint;
+  atomic_size_t local_used_cold_owner_scan_locked;
+  atomic_size_t local_used_cold_adoption_locked;
+  atomic_size_t local_used_cold_owner_exit;
+  atomic_size_t local_used_cold_verify_quiescent;
   atomic_size_t span_commit_total_ns;
   atomic_size_t span_commit_lock_wait_ns;
   atomic_size_t span_commit_table_scan_ns;

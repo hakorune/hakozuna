@@ -161,6 +161,11 @@ typedef struct H8DebugStats {
   size_t local_used_count_underflow;
   size_t local_used_mirror_mismatch;
   size_t local_used_mirror_underflow;
+  size_t local_used_cold_active_hint;
+  size_t local_used_cold_owner_scan_locked;
+  size_t local_used_cold_adoption_locked;
+  size_t local_used_cold_owner_exit;
+  size_t local_used_cold_verify_quiescent;
   size_t span_commit_total_ns;
   size_t span_commit_lock_wait_ns;
   size_t span_commit_table_scan_ns;

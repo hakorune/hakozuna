@@ -466,6 +466,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.local_used_mirror_mismatch, memory_order_acquire);
   out->local_used_mirror_underflow = atomic_load_explicit(
       &h8g.local_used_mirror_underflow, memory_order_acquire);
+  out->local_used_cold_active_hint = atomic_load_explicit(
+      &h8g.local_used_cold_active_hint, memory_order_acquire);
+  out->local_used_cold_owner_scan_locked = atomic_load_explicit(
+      &h8g.local_used_cold_owner_scan_locked, memory_order_acquire);
+  out->local_used_cold_adoption_locked = atomic_load_explicit(
+      &h8g.local_used_cold_adoption_locked, memory_order_acquire);
+  out->local_used_cold_owner_exit = atomic_load_explicit(
+      &h8g.local_used_cold_owner_exit, memory_order_acquire);
+  out->local_used_cold_verify_quiescent = atomic_load_explicit(
+      &h8g.local_used_cold_verify_quiescent, memory_order_acquire);
   out->span_commit_total_ns =
       atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
   out->span_commit_lock_wait_ns =

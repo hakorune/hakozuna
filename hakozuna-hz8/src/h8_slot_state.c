@@ -138,7 +138,7 @@ static void h8_slot_shadow_verify_span_impl(H8Span* span, bool exact_pending_cou
       H8_DEBUG_INC(slot_shadow_nonvirgin_above_bump);
     }
   }
-  size_t used = h8_used_count_load_cold_acquire(span);
+  size_t used = h8_used_count_load_verify_quiescent(span);
   h8_used_count_mirror_check(span, used);
   size_t pending_seen = atomic_load_explicit(&span->pending_count, memory_order_acquire);
   if (used != allocated || used != live_count || pending_seen > used ||

@@ -99,7 +99,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   H8Span* retired = NULL;
   while (span) {
     H8Span* next = span->next_owned;
-    size_t used = h8_used_count_load_cold_acquire(span);
+    size_t used = h8_used_count_load_owner_exit(span);
     if (used == 0) {
       h8_slot_shadow_verify_span_quiescent(span);
       H8Span* logical = h8_span_retire_logical(span);

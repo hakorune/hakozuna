@@ -21,6 +21,31 @@ static inline size_t h8_used_count_load_cold_acquire(const H8Span* span) {
                               memory_order_acquire);
 }
 
+static inline size_t h8_used_count_load_active_hint(const H8Span* span) {
+  H8_DEBUG_INC(local_used_cold_active_hint);
+  return h8_used_count_load_cold_acquire(span);
+}
+
+static inline size_t h8_used_count_load_owner_scan_locked(const H8Span* span) {
+  H8_DEBUG_INC(local_used_cold_owner_scan_locked);
+  return h8_used_count_load_cold_acquire(span);
+}
+
+static inline size_t h8_used_count_load_adoption_locked(const H8Span* span) {
+  H8_DEBUG_INC(local_used_cold_adoption_locked);
+  return h8_used_count_load_cold_acquire(span);
+}
+
+static inline size_t h8_used_count_load_owner_exit(const H8Span* span) {
+  H8_DEBUG_INC(local_used_cold_owner_exit);
+  return h8_used_count_load_cold_acquire(span);
+}
+
+static inline size_t h8_used_count_load_verify_quiescent(const H8Span* span) {
+  H8_DEBUG_INC(local_used_cold_verify_quiescent);
+  return h8_used_count_load_cold_acquire(span);
+}
+
 static inline void h8_used_count_init(H8Span* span) {
   h8_used_count_store_owner_relaxed(span, 0);
 #if defined(H8_ENABLE_DEBUG_STATS)
