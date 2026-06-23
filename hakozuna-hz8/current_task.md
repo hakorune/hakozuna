@@ -225,6 +225,15 @@ RemotePublishLockedInline-AB-L1:
   focused interleaved remote90 RUNS=5 stays stable above bring-up gate
   data: bench_results/20260623T132000Z_remote_publish_locked_inline.md
 
+MallocOwnerLoadDefer-L1:
+  release malloc active-hit success path no longer loads ctx->owner
+  debug builds still load owner for active hint validation
+  owner is materialized only on active miss, exhausted active span, or slow path
+  ownership and remote protocols unchanged
+  smoke / safety pass
+  focused local/interleaved checks stay above bring-up gates
+  data: bench_results/20260623T133000Z_malloc_owner_load_defer.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -463,10 +472,12 @@ LocalFreeHeadBumpScalar-L1
     allocator protocol.
 22. Treat `RemotePublishLockedInline-AB-L1` as implemented. It keeps all remote
     correctness authorities intact and only changes call shape.
-23. Next concrete work returns to `LocalLeafCodeShapeSweep-L1`: inspect
+23. Treat `MallocOwnerLoadDefer-L1` as implemented. It removes owner load from
+    release active-hit malloc success while keeping debug validation.
+24. Next concrete work returns to `LocalLeafCodeShapeSweep-L1`: inspect
     remaining malloc/free/remote leaf instruction shape before proposing another
     behavior change.
-24. Next concrete work should stay in local leaf / code shape unless a second
+25. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

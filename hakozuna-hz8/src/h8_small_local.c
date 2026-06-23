@@ -201,14 +201,17 @@ void* h8_malloc_inner(size_t size) {
     return NULL;
   }
   uint32_t class_id = h8_class_for_size(size);
+#if defined(H8_ENABLE_DEBUG_STATS)
   H8OwnerRecord* owner = h8_ctx_owner_assume(ctx);
+#else
+  H8OwnerRecord* owner = NULL;
+#endif
   H8Span* span = ctx->active_spans[class_id];
   bool active_hint_ok = false;
   if (span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     active_hint_ok = h8_active_hint_matches(span, owner, class_id);
 #else
-    (void)owner;
     active_hint_ok = true;
 #endif
   }
@@ -219,8 +222,16 @@ void* h8_malloc_inner(size_t size) {
     if (ptr) {
       return ptr;
     }
+#if !defined(H8_ENABLE_DEBUG_STATS)
+    owner = h8_ctx_owner_assume(ctx);
+#endif
     h8_pressure_owner_collect(owner);
   }
+#if !defined(H8_ENABLE_DEBUG_STATS)
+  if (!owner) {
+    owner = h8_ctx_owner_assume(ctx);
+  }
+#endif
   H8_DEBUG_INC(local_active_miss);
   span = h8_find_active_span(ctx, owner, class_id);
   if (!span) {
