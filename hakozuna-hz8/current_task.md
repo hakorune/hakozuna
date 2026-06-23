@@ -203,6 +203,18 @@ result:
   focused local/interleaved release checks stay above bring-up gates
 ```
 
+Latest `AllocInlineShape-L1` proof:
+
+```text
+data:
+  bench_results/20260623T102400Z_alloc_inline_shape.md
+
+result:
+  active-hit malloc no longer calls h8_small_alloc_from_span.constprop
+  smoke / safety / preload smoke pass
+  focused local/interleaved release checks stay above bring-up gates
+```
+
 Latest `V0SafetyStressBatch-L1` debug check:
 
 ```text
@@ -761,7 +773,9 @@ hot plain used_count + cold atomic used_count hybrid
    Linux x86_64 ELF startup-loaded allocator is supported; arbitrary late
    dlopen and dlclose/reload guarantees are not v0 contracts. Apply
    `initial-exec` + hidden only to `h8_tls_ctx`, not global `-ftls-model`.
-10. Next concrete work should stay in local leaf / code shape unless a second
+10. Treat `AllocInlineShape-L1` as implemented. It removes the active-hit
+   allocation helper call without changing ownership or remote protocol.
+11. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

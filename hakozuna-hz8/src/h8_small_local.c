@@ -46,9 +46,7 @@ static bool h8_owner_used_sub(H8Span* span, size_t count) {
   return true;
 }
 
-static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
-                                      H8Span* span, uint32_t class_id) {
-  uint32_t class_size = h8_class_size(class_id);
+static inline void* h8_small_alloc_from_span(H8Span* span) {
   bool slot_authority = h8_slot_state_authority_enabled();
 #if defined(H8_ENABLE_DEBUG_STATS)
   (void)slot_authority;
@@ -134,9 +132,6 @@ static void* h8_small_alloc_from_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     return h8_slot_ptr(span, bump);
   }
 
-  (void)class_size;
-  h8_pressure_owner_collect(owner);
-  (void)ctx;
   return NULL;
 }
 
@@ -239,10 +234,11 @@ void* h8_malloc_inner(size_t size) {
   if (active_hint_ok) {
     H8_DEBUG_INC(local_active_hit);
     H8_DEBUG_INC(local_used_count_full_check);
-    void* ptr = h8_small_alloc_from_span(ctx, owner, span, class_id);
+    void* ptr = h8_small_alloc_from_span(span);
     if (ptr) {
       return ptr;
     }
+    h8_pressure_owner_collect(owner);
   }
   H8_DEBUG_INC(local_active_miss);
   span = h8_find_active_span(ctx, owner, class_id);
@@ -265,7 +261,7 @@ void* h8_malloc_inner(size_t size) {
   }
   ctx->active_spans[class_id] = span;
   H8_DEBUG_INC(local_used_count_full_check);
-  return h8_small_alloc_from_span(ctx, owner, span, class_id);
+  return h8_small_alloc_from_span(span);
 }
 
 static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,

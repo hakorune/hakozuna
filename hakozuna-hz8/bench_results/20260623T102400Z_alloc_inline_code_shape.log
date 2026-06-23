@@ -1,0 +1,10 @@
+malloc_call_shape_after_inline
+336:	call	h8_thread_ctx_get_slow@PLT
+404:	call	h8_pressure_owner_collect@PLT
+415:	call	h8_find_active_span
+719:	call	h8_orphan_owner@PLT
+730:	call	h8_pressure_owner_collect@PLT
+737:	call	h8_find_active_span
+774:	call	h8_span_commit_for_class@PLT
+806:	call	h8_orphan_adopt_span@PLT
+826:	call	h8_thread_ctx_get_slow@PLT
