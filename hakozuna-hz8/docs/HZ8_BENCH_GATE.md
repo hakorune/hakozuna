@@ -51,6 +51,27 @@ bench:
   do not speed-rank
 ```
 
+Code-shape sweeps:
+
+```text
+LocalLeafCodeShapeSweep-L1:
+  observation box only
+  build bench-release
+  inspect h8_malloc_inner / h8_free_inner / h8_remote_free_publish
+  save objdump snippets and call/div/TLS summary
+  do not change allocator behavior in the same box
+```
+
+Required release leaf checks:
+
+```text
+no __tls_get_addr in malloc/free leaf
+no div/idiv in p2-v0 malloc/free/remote slot decode
+no h8_span_from_ptr_checked call from h8_free_inner
+no h8_small_alloc_from_span call on malloc active-hit path
+no h8_remote_free_publish_locked call in release remote publish path
+```
+
 ## v0 Fusion-Small Scope
 
 v0 supports only:

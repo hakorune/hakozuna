@@ -531,13 +531,21 @@ static inline bool h8_regular_adoption_enabled(void) {
 }
 
 static inline bool h8_remote_lease_elision_enabled(void) {
+#if defined(H8_ENABLE_UNSAFE_EVIDENCE_KNOBS)
   return atomic_load_explicit(&h8g.remote_lease_elision_enabled,
                               memory_order_acquire);
+#else
+  return false;
+#endif
 }
 
 static inline bool h8_remote_pending_publish_elision_enabled(void) {
+#if defined(H8_ENABLE_UNSAFE_EVIDENCE_KNOBS)
   return atomic_load_explicit(&h8g.remote_pending_publish_elision_enabled,
                               memory_order_acquire);
+#else
+  return false;
+#endif
 }
 
 static inline bool h8_slot_index_from_ptr_checked(const H8Span* span,

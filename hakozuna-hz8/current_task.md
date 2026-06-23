@@ -284,6 +284,48 @@ LocalHotCodeShapeAudit-L1:
   local_free_head and bump_index relaxed atomics compile to ordinary mov
   LocalFreeHeadBumpScalar-L1 is HOLD without new assembly evidence
   data: bench_results/20260623T100208Z_local_hot_code_shape_audit.md
+
+LocalLeafCodeShapeSweep-L1:
+  observation box complete
+  behavior changes:
+    none
+  inspect release code shape for:
+    h8_malloc_inner
+    h8_free_inner
+    h8_remote_free_publish
+  hard checks:
+    no __tls_get_addr in malloc/free leaf
+    no div/idiv in p2-v0 malloc/free/remote slot decode
+    no h8_span_from_ptr_checked call from h8_free_inner
+    no h8_small_alloc_from_span call on malloc active-hit path
+    no h8_remote_free_publish_locked call in release remote publish path
+  output:
+    objdump snippets
+    call/div/TLS summary
+    next concrete low-risk code-shape candidate or HOLD decision
+  latest result:
+    hard checks pass
+    no __tls_get_addr in malloc/free leaf
+    no div/idiv in target asm
+    no h8_span_from_ptr_checked call from h8_free_inner
+    no h8_small_alloc_from_span symbol/call
+    no h8_remote_free_publish_locked symbol/call
+    next low-risk candidate is EvidenceKnobReleaseShape-L1
+  data: bench_results/20260623T144424Z_local_leaf_code_shape_sweep.md
+
+EvidenceKnobReleaseShape-L1:
+  normal release/debug/preload/bench targets no longer read unsafe evidence
+  knobs on the remote hot path
+  unsafe evidence env parsing is compiled only with:
+    H8_ENABLE_UNSAFE_EVIDENCE_KNOBS
+  h8_remote_free_publish_known normal-release asm has no refs to:
+    remote_lease_elision_enabled
+    remote_pending_publish_elision_enabled
+  smoke / safety / preload smoke pass
+  explicit evidence macro build pass
+  focused interleaved remote90 RUNS=5 median ~= 56.05M ops/s
+  remote protocol authority unchanged in normal release
+  data: bench_results/20260623T144642Z_evidence_knob_release_shape.md
 ```
 
 Latest safety checks:
@@ -432,6 +474,7 @@ next:
   keep remote protocol frozen unless two fresh batches contradict this
   do not reopen owner lease or intrusive remote_head without new evidence
   pending finish shadow counters remain debug/audit only
+  unsafe evidence knobs are compiled out of normal release hot paths
 ```
 
 Class-map lane:
@@ -512,10 +555,16 @@ LocalFreeHeadBumpScalar-L1
     correctness authorities intact and only changes call shape.
 23. Treat `MallocOwnerLoadDefer-L1` as implemented. It removes owner load from
     release active-hit malloc success while keeping debug validation.
-24. Next concrete work returns to `LocalLeafCodeShapeSweep-L1`: inspect
-    remaining malloc/free/remote leaf instruction shape before proposing another
-    behavior change.
-25. Next concrete work should stay in local leaf / code shape unless a second
+24. Run `LocalLeafCodeShapeSweep-L1` before proposing another behavior change.
+    This is an observation box: update docs/logs first, inspect release
+    machine code, then choose the next low-risk code-shape candidate.
+25. Next concrete work is `EvidenceKnobReleaseShape-L1`: compile unsafe
+   evidence knobs out of normal release hot paths, while keeping explicit
+   evidence builds possible.
+26. Treat `EvidenceKnobReleaseShape-L1` as implemented. Unsafe evidence flags
+   require an explicit `H8_ENABLE_UNSAFE_EVIDENCE_KNOBS` build and do not
+   affect normal release hot paths.
+27. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

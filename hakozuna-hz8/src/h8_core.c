@@ -16,10 +16,6 @@ static const uint16_t kGenerationSeed = 1;
 
 static void h8_init_once(void);
 
-static bool h8_env_is_one(const char* value) {
-  return value && strcmp(value, "1") == 0;
-}
-
 static bool h8_parse_env_bool(const char* value) {
   if (!value || !value[0]) {
     return false;
@@ -33,10 +29,16 @@ static bool h8_parse_env_bool(const char* value) {
   return false;
 }
 
+#if defined(H8_ENABLE_UNSAFE_EVIDENCE_KNOBS)
+static bool h8_env_is_one(const char* value) {
+  return value && strcmp(value, "1") == 0;
+}
+
 static bool h8_parse_unsafe_evidence_env(const char* primary,
                                          const char* deprecated) {
   return h8_env_is_one(getenv(primary)) || h8_env_is_one(getenv(deprecated));
 }
+#endif
 
 void h8_init(void) {
   pthread_once(&h8g.once, h8_init_once);
@@ -61,6 +63,7 @@ static void h8_init_once(void) {
   atomic_store_explicit(&h8g.regular_adoption_enabled,
                         h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
                         memory_order_relaxed);
+#if defined(H8_ENABLE_UNSAFE_EVIDENCE_KNOBS)
   atomic_store_explicit(
       &h8g.remote_lease_elision_enabled,
       h8_parse_unsafe_evidence_env(
@@ -73,6 +76,12 @@ static void h8_init_once(void) {
           "H8_UNSAFE_EVIDENCE_DROP_REMOTE_PENDING_PUBLISH",
           "H8_ENABLE_REMOTE_PENDING_PUBLISH_ELISION"),
       memory_order_relaxed);
+#else
+  atomic_store_explicit(&h8g.remote_lease_elision_enabled, false,
+                        memory_order_relaxed);
+  atomic_store_explicit(&h8g.remote_pending_publish_elision_enabled, false,
+                        memory_order_relaxed);
+#endif
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
   int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;

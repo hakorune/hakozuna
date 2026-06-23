@@ -15,6 +15,15 @@ Any other value is treated as false.
 
 Unsafe evidence flags only accept exact `1`.
 
+These flags are compiled out of normal release, debug, preload, and benchmark
+targets.  They are only read by a build that explicitly defines:
+
+```text
+H8_ENABLE_UNSAFE_EVIDENCE_KNOBS
+```
+
+This keeps unsafe speed-ceiling probes out of the v0 release hot path.
+
 | Flag | Default | Status | Effect |
 | --- | --- | --- | --- |
 | `H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION` | off | benchmark evidence only | Skips the regular-owner lifecycle lease in remote publish. This removes owner handoff/reuse protection. |
