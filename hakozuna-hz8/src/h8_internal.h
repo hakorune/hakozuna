@@ -784,6 +784,7 @@ void h8_slot_shadow_set_allocated(H8Span* span, size_t slot);
 void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next);
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag);
 void h8_slot_shadow_verify_span(H8Span* span);
+void h8_slot_shadow_verify_span_quiescent(H8Span* span);
 uint32_t h8_slot_state_load_acquire(H8Span* span, size_t slot);
 
 #endif

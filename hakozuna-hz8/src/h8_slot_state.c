@@ -71,7 +71,7 @@ static void h8_slot_shadow_verify_chain(H8Span* span, uint8_t* seen) {
   }
 }
 
-void h8_slot_shadow_verify_span(H8Span* span) {
+static void h8_slot_shadow_verify_span_impl(H8Span* span, bool exact_pending_count) {
   if (!span || !span->slot_state) {
     return;
   }
@@ -140,11 +140,19 @@ void h8_slot_shadow_verify_span(H8Span* span) {
   size_t used =
       atomic_load_explicit(&span->local_hot.local_used_count, memory_order_acquire);
   size_t pending_seen = atomic_load_explicit(&span->pending_count, memory_order_acquire);
-  if (used != allocated || used != live_count || pending_seen != pending_count ||
-      pending_seen > used) {
+  if (used != allocated || used != live_count || pending_seen > used ||
+      (exact_pending_count && pending_seen != pending_count)) {
     H8_DEBUG_INC(slot_shadow_used_mismatch);
   }
   h8_sys_free(seen);
+}
+
+void h8_slot_shadow_verify_span(H8Span* span) {
+  h8_slot_shadow_verify_span_impl(span, false);
+}
+
+void h8_slot_shadow_verify_span_quiescent(H8Span* span) {
+  h8_slot_shadow_verify_span_impl(span, true);
 }
 #else
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag) {
@@ -154,6 +162,10 @@ void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag) {
 }
 
 void h8_slot_shadow_verify_span(H8Span* span) {
+  (void)span;
+}
+
+void h8_slot_shadow_verify_span_quiescent(H8Span* span) {
   (void)span;
 }
 #endif

@@ -98,9 +98,10 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   H8Span* retired = NULL;
   while (span) {
     H8Span* next = span->next_owned;
-    h8_slot_shadow_verify_span(span);
-    if (atomic_load_explicit(&span->local_hot.local_used_count,
-                             memory_order_acquire) == 0) {
+    size_t used = atomic_load_explicit(&span->local_hot.local_used_count,
+                                       memory_order_acquire);
+    if (used == 0) {
+      h8_slot_shadow_verify_span_quiescent(span);
       H8Span* logical = h8_span_retire_logical(span);
       if (logical) {
         logical->next_owned = retired;
@@ -108,6 +109,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
       }
     } else {
       h8_owner_quiesce_span(span);
+      h8_slot_shadow_verify_span_quiescent(span);
       H8OwnerWord expected = h8_span_owner_word_load(span);
       if (!h8_span_handoff(span, expected, h8_orphan_owner())) {
         H8_DEBUG_INC(invalid_count);

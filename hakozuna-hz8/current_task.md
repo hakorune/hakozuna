@@ -96,14 +96,41 @@ small_interleaved_remote90, RUNS=3:
   zero gates clean
 ```
 
+Latest `StabilityBatch-L1` release check:
+
+```text
+guard/local0, RUNS=10 x 2:
+  batch1 median ~= 254.6M ops/s
+  batch1 p25 ~= 241.2M ops/s
+  batch1 min ~= 229.9M ops/s
+
+  batch2 median ~= 326.4M ops/s
+  batch2 p25 ~= 319.2M ops/s
+  batch2 min ~= 213.2M ops/s
+
+small_interleaved_remote90, RUNS=10 x 2:
+  batch1 median ~= 55.5M ops/s
+  batch1 p25 ~= 54.5M ops/s
+  batch1 min ~= 48.8M ops/s
+  batch1 steady ~= 57.1M ops/s
+
+  batch2 median ~= 55.6M ops/s
+  batch2 p25 ~= 44.5M ops/s
+  batch2 min ~= 42.5M ops/s
+  batch2 steady ~= 57.4M ops/s
+
+result:
+  local and interleaved remote90 both clear the v0 bring-up gate
+```
+
 Interpretation:
 
 ```text
 local:
-  first batch is above the v0 200M bring-up gate
+  stability batches are above the v0 200M bring-up gate
 
 interleaved remote90:
-  first batch is above the v0 40M bring-up gate
+  stability batches are above the v0 40M bring-up gate
 
 phase remote90:
   lifecycle / peak-live / first-touch stress row
@@ -136,6 +163,7 @@ TlsActiveHintTrustShadow-L1
 TlsActiveHintTrustElision-L1
 P2ClassLookupBitWidth-L1
 LocalHotAliasConsistency-L1
+SlotShadowQuiescentSplit-L1
 ```
 
 Benchmark / evidence:
@@ -160,7 +188,11 @@ Stability lane:
 
 ```text
 goal:
-  confirm the local/interleaved gate with a second fresh batch
+  keep the passed StabilityBatch-L1 as the current v0 performance baseline
+
+targets:
+  guard/local0
+  small_interleaved_remote90
 
 requirements:
   RUNS=10
@@ -168,6 +200,10 @@ requirements:
   p25 >= median * 0.85
   min >= median * 0.60
   zero gates clean
+
+interpretation:
+  RUNS=3 is a smoke signal only
+  the current two fresh RUNS=10 batches pass the bring-up gate
 ```
 
 Safety lane:
@@ -183,6 +219,10 @@ hard gates:
   debug pending_count shadow matches bitmap when debug is enabled
   invalid owned fallback == 0
   duplicate claim == 0
+
+latest audit:
+  debug interleaved remote90 short run is clean after splitting live
+  slot-shadow verification from quiescent pending_count verification
 ```
 
 Local leaf lane:
@@ -212,8 +252,9 @@ status:
   primary interleaved remote gate is provisionally above 40M
 
 next action:
-  do not reopen owner lease or intrusive remote_head until the second stable
-  batch says remote protocol is still the blocker
+  measure steady_work and tail separately in StabilityBatch-L1
+  do not reopen owner lease or intrusive remote_head until two fresh batches
+  show remote protocol is still the blocker
 ```
 
 Class-map lane:
@@ -243,12 +284,9 @@ runtime profile / knob split
 
 ## Next Order
 
-1. Run the second fresh release batch for `guard/local0` and
-   `small_interleaved_remote90`; short RUNS=3 checks are not enough for a
-   promotion decision.
-2. Run a short debug/audit pass for owner exit, orphan handoff, duplicate
-   remote free, and quiescent pending gates.
-3. If both batches hold, pick the next local leaf box from active-hit
+1. Treat `StabilityBatch-L1` as passed for the current p2-v0 small lane.
+2. Commit the quiescent slot-shadow verifier split and stability docs.
+3. Pick the next local leaf box from active-hit
    validation shape, TLS entry shape, or a measured used-count scalar proof.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
