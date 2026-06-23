@@ -740,7 +740,11 @@ hot plain used_count + cold atomic used_count hybrid
 8. Treat `LocalHotCodeShapeAudit-L1` as implemented. Do not spend the next box
    on local_free_head / bump_index scalar conversion without new assembly
    evidence.
-9. Next concrete work should stay in local leaf / code shape unless a second
+9. Next design consultation point is `TlsModelCodeShape-L1`: generated
+   release assembly still calls `__tls_get_addr@PLT` in malloc/free leaf.
+   Decide whether an ELF `initial-exec` TLS model is acceptable for the
+   preload/shared-library contract before implementing it.
+10. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
