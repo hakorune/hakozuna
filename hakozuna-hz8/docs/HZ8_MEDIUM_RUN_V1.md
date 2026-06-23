@@ -107,11 +107,13 @@ mutation:
   run-local mutex protects free_mask, allocated_mask, and slot_state
 
 empty run:
-  payload MADV_DONTNEED
+  payload retained within a fixed empty-resident budget
+  budget overflow or owner-detached empty transition decommits immediately
   metadata retained in global registry
 
 owner exit:
   owner-local list detached
+  retained empty payload drained
   global registry retains runs to keep stale medium pointers fail-closed
 ```
 
@@ -238,8 +240,8 @@ post-run RSS:
   must recover
 ```
 
-Resident retention is HOLD for v1 unless data proves it is needed.  A retained
-pool can improve first-touch but directly conflicts with low-RSS claims.
+Resident retention is allowed only through the fixed empty-run budget.  Unbounded
+resident caching remains HOLD because it conflicts with low-RSS claims.
 
 ## Implementation Order
 
@@ -264,7 +266,7 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
    smoke: create / alloc / free / double-free reject / interior reject
    routing: h8_malloc / h8_free / h8_route connected for 4097..65536
    implementation: TLS active run hint, run-local lock, global registry mutex
-   RSS: empty run payload uses MADV_DONTNEED and remains reusable
+   RSS: original version decommitted every empty transition
    observation:
      pure medium t1 local median about 204k ops/s
      pure medium t2 local median about 277k ops/s
@@ -365,7 +367,7 @@ decommit does not run while pending
 ## Holds
 
 ```text
-resident medium cache
+unbounded resident medium cache
 medium regular adoption
 remote_head without pending claim authority
 runtime size-policy profiles

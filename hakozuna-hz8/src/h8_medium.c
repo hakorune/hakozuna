@@ -120,6 +120,15 @@ static void h8_medium_madvise_run(H8MediumRun* run) {
   }
 }
 
+static void h8_medium_decommit_empty_locked(H8MediumRun* run) {
+  if (!run || run->allocated_mask != 0) {
+    return;
+  }
+  h8_medium_madvise_run(run);
+  h8_medium_release_empty_payload(run);
+  run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
+}
+
 static void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
     return;
@@ -141,9 +150,7 @@ static void h8_medium_mark_empty_locked(H8MediumRun* run) {
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
     return;
   }
-  h8_medium_madvise_run(run);
-  h8_medium_release_empty_payload(run);
-  run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
+  h8_medium_decommit_empty_locked(run);
 }
 
 static H8MediumRun* h8_medium_find_run_locked(const void* ptr) {
@@ -459,9 +466,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       run->owner_attached = false;
       if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
         H8_DEBUG_INC(medium_owner_exit_drain_count);
-        h8_medium_madvise_run(run);
-        h8_medium_release_empty_payload(run);
-        run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
+        h8_medium_decommit_empty_locked(run);
       }
       pthread_mutex_unlock(&run->lock);
       run->next_owner = NULL;

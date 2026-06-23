@@ -130,7 +130,8 @@ MediumRunLocalOnly-L1:
     active malloc hit uses run-local lock only
     global mutex remains the registry authority for miss/free/route
     run-local mutex is the medium slot mutation authority
-    empty runs are MADV_DONTNEED-ed and retained for reuse
+    empty runs are retained resident within a fixed budget
+    owner exit drains retained empty payloads
     smoke validates create / alloc / free / double-free reject / interior reject
     h8_malloc / h8_free / h8_route cover medium pointers
   verification:
@@ -145,7 +146,7 @@ MediumRunLocalOnly-L1:
     bench_results/20260623T220629Z_medium_observation/README.md
   known limitation:
     free/route and active misses still use the global registry mutex
-    next box must introduce owner-local registry or medium remote protocol
+    remote protocol and direct medium identity are not final yet
 
 MediumRunOwnerLocalSync-L1:
   current status:
@@ -198,8 +199,8 @@ MediumRunObservation-L1:
     per-run mmap / MADV_DONTNEED / retained global registry shape dominates
     small-v0 numbers remain the frozen baseline; main_* is not claimable yet
   next:
-    add medium-specific counters before further policy decisions
-    then replace one-run-per-mmap scaffold with pooled/chunked medium run allocation
+    use medium-specific counters before further policy decisions
+    residual cost audit decides whether RunPool, arena identity, or remote protocol is next
 
 MediumRunRemote-L1:
   remote claim / collect contract
