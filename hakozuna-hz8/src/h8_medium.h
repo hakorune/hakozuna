@@ -1,6 +1,7 @@
 #ifndef H8_MEDIUM_H
 #define H8_MEDIUM_H
 
+#include "../include/h8.h"
 #include "h8_class_map.h"
 
 #include <stdatomic.h>
@@ -58,5 +59,8 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
+void* h8_medium_malloc_inner(size_t size);
+bool h8_medium_free_inner(void* ptr, bool* owned_out);
+H8RouteKind h8_medium_route_inner(void* ptr);
 
 #endif

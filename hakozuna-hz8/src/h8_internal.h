@@ -3,6 +3,7 @@
 
 #include "../include/h8.h"
 #include "h8_class_map.h"
+#include "h8_medium.h"
 
 #include <pthread.h>
 #include <stdatomic.h>

@@ -194,6 +194,10 @@ void* h8_malloc_inner(size_t size) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
+    if (h8_medium_size_supported(size)) {
+      h8_init();
+      return h8_medium_malloc_inner(size);
+    }
     return h8_sys_malloc(size);
   }
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
@@ -310,6 +314,14 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
+    bool medium_owned = false;
+    if (h8_medium_free_inner(ptr, &medium_owned)) {
+      return;
+    }
+    if (medium_owned) {
+      h8_fail_invalid_free();
+      return;
+    }
     H8_DEBUG_INC(miss_count);
     h8_sys_free(ptr);
     return;

@@ -127,6 +127,22 @@ int main(void) {
     return medium_rc;
   }
   h8_init();
+  void* medium = h8_malloc(5000);
+  if (!medium) {
+    fprintf(stderr, "medium alloc failed\n");
+    return 30;
+  }
+  memset(medium, 0x6D, 5000);
+  if (h8_route(medium) != H8_ROUTE_VALID ||
+      h8_route((char*)medium + 1) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "medium route mismatch\n");
+    return 31;
+  }
+  h8_free(medium);
+  if (h8_route(medium) == H8_ROUTE_VALID) {
+    fprintf(stderr, "medium route still valid after free\n");
+    return 32;
+  }
   void* p = h8_malloc(32);
   if (!p) {
     fprintf(stderr, "alloc failed\n");

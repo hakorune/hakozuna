@@ -120,12 +120,24 @@ MediumRunMetadataScaffold-L1:
       out-of-run pointer rejected
 
 MediumRunLocalOnly-L1:
-  current owner only
-  no remote free support yet
+  current owner/local mechanism first
+  remote free currently works through the global mutex scaffold
+  final medium remote protocol not implemented yet
   current status:
-    local run unit scaffold implemented
-    direct h8_malloc routing not enabled yet
+    initial routing implemented for 4097..65536
+    global mutex scaffold, not final owner-local fast path
+    empty runs are MADV_DONTNEED-ed and retained for reuse
     smoke validates create / alloc / free / double-free reject / interior reject
+    h8_malloc / h8_free / h8_route cover medium pointers
+  verification:
+    medium smoke passes
+    short medium local bench passes
+    short medium interleaved remote50 bench passes
+  data:
+    bench_results/20260623T212652Z_medium_localonly_scaffold.md
+  known limitation:
+    performance is intentionally poor in this scaffold
+    next box must remove global mutex from steady local path
 
 MediumRunRemote-L1:
   remote claim / collect contract
