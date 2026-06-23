@@ -189,6 +189,14 @@ LocalFreeHeadSentinelUnify-L1:
   focused local/interleaved checks stay above bring-up gates
   data: bench_results/20260623T125215Z_local_free_head_sentinel.md
 
+SlotStateInlineHeaderSplit-L1:
+  moved slot-state hot inline helpers from h8_internal.h to
+  h8_slot_state_inline.h
+  behavior unchanged; hot helpers are still included after H8Span definition
+  h8_internal.h reduced from 789 to 748 lines
+  smoke / safety pass
+  data: bench_results/20260623T130000Z_slot_state_inline_split.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -417,10 +425,12 @@ LocalFreeHeadBumpScalar-L1
 18. Treat `LocalFreeHeadSentinelUnify-L1` as implemented. It unifies the
     local free-list empty sentinel with tagged slot-state payload encoding and
     removes sentinel conversion instructions.
-19. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
+19. Treat `SlotStateInlineHeaderSplit-L1` as implemented. It restores line
+    budget in `h8_internal.h` without changing behavior.
+20. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
     malloc/free leaf instruction shape and only open a behavior box with
     assembly evidence.
-20. Next concrete work should stay in local leaf / code shape unless a second
+21. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
