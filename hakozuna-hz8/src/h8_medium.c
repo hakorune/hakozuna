@@ -78,6 +78,14 @@ static void h8_medium_register_locked(H8MediumRun* run) {
   h8_medium_runs = run;
 }
 
+static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
+  if (!ctx || !ctx->owner || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  run->next_owner = ctx->owner->medium_by_class[run->class_id];
+  ctx->owner->medium_by_class[run->class_id] = run;
+}
+
 static void h8_medium_unregister_locked(H8MediumRun* run) {
   H8MediumRun** cur = &h8_medium_runs;
   while (*cur) {
@@ -241,6 +249,19 @@ void* h8_medium_malloc_inner(size_t size) {
     }
     pthread_mutex_unlock(&active->lock);
   }
+  if (ctx && ctx->owner) {
+    for (H8MediumRun* run = ctx->owner->medium_by_class[class_id]; run;
+         run = run->next_owner) {
+      pthread_mutex_lock(&run->lock);
+      if (h8_medium_run_usable_locked(run, class_id)) {
+        void* ptr = h8_medium_run_alloc_local_scaffold(run);
+        ctx->active_medium_runs[class_id] = run;
+        pthread_mutex_unlock(&run->lock);
+        return ptr;
+      }
+      pthread_mutex_unlock(&run->lock);
+    }
+  }
   pthread_mutex_lock(&h8_medium_lock);
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
     pthread_mutex_lock(&run->lock);
@@ -263,6 +284,7 @@ void* h8_medium_malloc_inner(size_t size) {
   }
   pthread_mutex_lock(&h8_medium_lock);
   h8_medium_register_locked(run);
+  h8_medium_owner_add_run(ctx, run);
   pthread_mutex_lock(&run->lock);
   void* ptr = h8_medium_run_alloc_local_scaffold(run);
   if (ctx) {

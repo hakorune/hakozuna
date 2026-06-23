@@ -141,6 +141,7 @@ MediumRunLocalOnly-L1:
     bench_results/20260623T212652Z_medium_localonly_scaffold.md
     bench_results/20260623T213430Z_medium_active_hint_scaffold.md
     bench_results/20260623T213834Z_medium_runlocal_lock.md
+    bench_results/20260623T215451Z_medium_owner_local_registry.md
   known limitation:
     free/route and active misses still use the global registry mutex
     next box must introduce owner-local registry or medium remote protocol
@@ -148,11 +149,25 @@ MediumRunLocalOnly-L1:
 MediumRunOwnerLocalSync-L1:
   current status:
     active medium allocation uses run-local mutex only
+    active miss checks owner-local medium_by_class list before global registry
     active miss / free / route still use global registry lookup
     run-local mutex protects free_mask, allocated_mask, and slot_state
   next:
-    split owner-local run lists from global route registry
+    connect medium run lifetime to owner exit
+    split final remote publication from global registry fallback
     keep route/free fail-closed for medium-owned invalid pointers
+  current limitation:
+    medium runs are retained beyond owner exit in the scaffold
+
+MediumRunOwnerLocalRegistry-L1:
+  current status:
+    owner->medium_by_class[class] list added
+    new medium runs attach to current owner list and global route registry
+    malloc active miss searches owner list before global registry
+  verification:
+    smoke passes
+    safety stress passes
+    medium local and interleaved short benches pass
 
 MediumRunRemote-L1:
   remote claim / collect contract

@@ -160,6 +160,7 @@ struct H8OwnerRecord {
   bool permanent;
   H8OwnerPlacement placement;
   H8Span* owned_by_class[H8_CLASS_COUNT];
+  H8MediumRun* medium_by_class[H8_MEDIUM_CLASS_COUNT];
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* pending_carry;
