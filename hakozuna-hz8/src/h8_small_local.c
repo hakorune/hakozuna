@@ -201,7 +201,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
       H8_DEBUG_INC(local_find_scan_span_state_blocked);
       continue;
     }
-    if (h8_used_count_load_owner_scan_locked(span) >= span->slot_count) {
+    if (h8_span_local_exhausted(span)) {
       H8_DEBUG_INC(local_find_scan_span_full);
       continue;
     }

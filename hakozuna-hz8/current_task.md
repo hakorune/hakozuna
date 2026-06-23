@@ -289,6 +289,29 @@ result:
   remaining used_count readers are lock-protected or cold/quiescent paths
 ```
 
+Latest `OwnerScanFullnessShape-L1` proof:
+
+```text
+data:
+  bench_results/20260623T025102Z_owner_scan_fullness_shape.md
+
+change:
+  owner-list scan fullness no longer reads used_count
+  scan uses local_free_head + local_bump_index
+
+debug local/interleaved short runs:
+  used_count_cold active_hint = 0
+  used_count_cold owner_scan_locked = 0
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+result:
+  steady allocation-path fullness decisions no longer depend on used_count
+  remaining used_count readers are adoption / owner-exit / quiescent proof
+```
+
 Interpretation:
 
 ```text
@@ -413,6 +436,8 @@ latest:
   non-locked used_count reader on the allocation path
   ActiveHintFullnessShape-L1 removes that active-hint used_count reader by
   using owner-local allocation state instead
+  OwnerScanFullnessShape-L1 removes the owner-list scan used_count reader by
+  using the same owner-local allocation-state test
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
   LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
   references from cold/remote code
@@ -428,8 +453,8 @@ evidence:
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
   and used_count load/store remains the main counted local-hot metadata touch
-  scalar used_count cutover is still HOLD until the remaining lock/cold readers
-  are proven not to race with owner writes in release-relevant paths
+  scalar used_count cutover can now be considered as a narrow box, provided
+  adoption / owner-exit / quiescent readers keep a clear cold accessor contract
 ```
 
 Remote lane:
@@ -474,8 +499,8 @@ runtime profile / knob split
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, prove/enforce the remaining lock/cold reader
-   contract before any scalar authority cutover.
+3. If continuing on used_count, consider a narrow scalar cutover that preserves
+   adoption / owner-exit / quiescent cold accessor semantics.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 
