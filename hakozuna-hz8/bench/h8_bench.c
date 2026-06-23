@@ -52,6 +52,9 @@ static void* h8_bench_thread_interleaved(void* arg) {
         sched_yield();
       }
       th->interleaved_remote_enqueue++;
+#if defined(H8_BENCH_ATTRIBUTION)
+      h8_bench_note_remote_live(th, size);
+#endif
     } else {
       th->interleaved_local_free++;
       h8_free(ptr);
@@ -190,6 +193,12 @@ int main(int argc, char** argv) {
   uint64_t frag_rounded_total = 0;
   uint64_t frag_upper1536_total = 0;
   uint64_t frag_upper1p5_total = 0;
+  size_t medium_candidate_count = 0;
+  size_t medium_remote_live_count = 0;
+  uint64_t medium_requested_total = 0;
+  uint64_t medium_rounded_total = 0;
+  uint64_t medium_remote_requested_total = 0;
+  uint64_t medium_remote_rounded_total = 0;
   uint64_t frag_rounded_by_class[H8_CLASS_COUNT] = {0};
   size_t frag_allocs_by_class[H8_CLASS_COUNT] = {0};
 #endif
@@ -366,6 +375,12 @@ int main(int argc, char** argv) {
       }
       frag_upper1536_total += th[i].rounded_upper1536_bytes;
       frag_upper1p5_total += th[i].rounded_upper1p5_bytes;
+      medium_candidate_count += th[i].medium_candidate_count;
+      medium_remote_live_count += th[i].medium_remote_live_count;
+      medium_requested_total += th[i].medium_candidate_requested_bytes;
+      medium_rounded_total += th[i].medium_candidate_rounded_bytes;
+      medium_remote_requested_total += th[i].medium_remote_live_requested_bytes;
+      medium_remote_rounded_total += th[i].medium_remote_live_rounded_bytes;
     }
     frag_requested_total += run_requested;
     frag_rounded_total += run_rounded;
@@ -514,6 +529,10 @@ int main(int argc, char** argv) {
     printf("%s%" PRIu64, c == 0 ? "" : ",", frag_rounded_by_class[c]);
   }
   printf("]\n");
+  printf("medium_route_shadow candidate_count=%zu remote_live_count=%zu requested_bytes=%" PRIu64 " rounded_bytes=%" PRIu64 " remote_requested_bytes=%" PRIu64 " remote_rounded_bytes=%" PRIu64 "\n",
+         medium_candidate_count, medium_remote_live_count, medium_requested_total,
+         medium_rounded_total, medium_remote_requested_total,
+         medium_remote_rounded_total);
 #else
   printf("fragmentation attribution=disabled\n");
 #endif

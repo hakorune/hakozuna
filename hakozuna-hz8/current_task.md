@@ -62,66 +62,7 @@ main_* / cross128:
 
 ## Active Lanes
 
-### 1. SizePolicy-v1
-
-Goal:
-
-```text
-reduce peak live rounded bytes without regressing small-v0 hot gates
-```
-
-First box:
-
-```text
-SizePolicyV1Shadow-L1:
-  implemented for p2-v0 / upper1536 / upper1p5 shadow output
-  behavior unchanged
-  data: bench_results/20260623T184720Z_size_policy_v1_shadow.md
-```
-
-Latest A/B:
-
-```text
-Upper1p5CacheShapeAudit-L1:
-  upper1p5 reduces phase peak RSS by about 11%
-  upper1p5 regresses guard_local0 by about 27%
-  decision: HOLD as default
-  data: bench_results/20260623T190034Z_upper1p5_cache_shape.md
-
-Upper3072CacheShapeAudit-L1:
-  preserves p2-v0 for <=2048 and adds only a 3072 class
-  guard_local0 -0.46% in R5
-  interleaved remote90 -1.62% in R5
-  phase remote90 +9.04% in R5
-  phase peak RSS -8.87%
-  R10 x 2 follow-up:
-    local -3.74%
-    interleaved remote90 -3.71%
-    phase remote90 +7.89%
-    phase peak RSS -8.87%
-  decision: HOLD as default; useful SizePolicy-v1 evidence
-  data: bench_results/20260623T190416Z_upper3072_cache_shape.md
-  paired data: bench_results/20260623T192704Z_upper3072_paired_r10x2.md
-
-Upper3072P2PrefixMonomorph-L1:
-  p2 prefix geometry specialized for upper3072 evidence build
-  local +2.22% in R10 x 2
-  interleaved remote90 -3.56% in R10 x 2
-  phase peak RSS -8.88%
-  decision: HOLD as default; close small class-map default lane
-  data: bench_results/20260623T203530Z_upper3072_prefix_monomorph_r10x2.md
-```
-
-Acceptance:
-
-```text
-no allocator behavior change
-no hot-path branch in production
-report per-row predicted peak bytes and span lower bound
-keep p2-v0 as rc1 default
-```
-
-### 2. MediumRun-v1
+### 1. MediumRun-v1
 
 Goal:
 
@@ -129,16 +70,80 @@ Goal:
 add >4KiB coverage and make main_* / cross128 rows meaningful
 ```
 
-Start only after SizePolicy-v1 shadow clarifies the 4KiB boundary.
-
-Initial scope:
+Start condition:
 
 ```text
-medium identity
-medium ownership
-medium remote free contract
-medium retained/decommitted policy
-main_r0/main_r50/main_r90 benchmark rows
+small class-map default attempts are closed
+p2-v0 remains the small-v0 / rc1 default
+upper3072 remains evidence-only
+```
+
+First box:
+
+```text
+MediumRunBoundaryDesign-L1:
+  no allocator behavior change
+  define medium size range
+  define medium pointer identity
+  define ownership and remote free authority
+  define RSS/decommit policy
+  define benchmark rows to unlock
+  data: docs/HZ8_MEDIUM_RUN_V1.md
+```
+
+Initial implementation boxes after design:
+
+```text
+MediumRunRouteShadow-L1:
+  count how many requests would enter medium
+  still direct-fallback them
+  implemented in bench-release-audit
+  data: bench_results/20260623T204614Z_medium_route_shadow.md
+
+MediumRunMetadataScaffold-L1:
+  compile medium structs/helpers
+  no runtime routing
+
+MediumRunLocalOnly-L1:
+  current owner only
+  no remote free support yet
+
+MediumRunRemote-L1:
+  remote claim / collect contract
+  main_r50/main_r90 gates
+```
+
+### 2. SizePolicy-v1 Evidence
+
+Goal:
+
+```text
+carry measured small class-map evidence into MediumRun boundary design
+```
+
+Closed findings:
+
+```text
+upper1p5:
+  phase peak RSS improves about 11%
+  guard_local0 regresses about 27%
+  HOLD as default
+
+upper3072:
+  phase peak RSS improves about 9%
+  local can be recovered with p2-prefix specialization
+  interleaved remote90 still regresses about 3.6%
+  HOLD as default
+```
+
+Records:
+
+```text
+bench_results/20260623T184720Z_size_policy_v1_shadow.md
+bench_results/20260623T190034Z_upper1p5_cache_shape.md
+bench_results/20260623T190416Z_upper3072_cache_shape.md
+bench_results/20260623T192704Z_upper3072_paired_r10x2.md
+bench_results/20260623T203530Z_upper3072_prefix_monomorph_r10x2.md
 ```
 
 ### 3. RC1 Verification
@@ -190,11 +195,10 @@ small-v0 hot-path tuning without asm evidence
 ## Next Order
 
 1. Keep `hz8-small-v0-rc1` fixed.
-2. Do not adopt full `upper1p5` as default.
-3. Keep `upper3072-v0` as SizePolicy-v1 evidence, not a default cutover.
-4. Close small class-map default attempts for now.
-5. Prepare design review for SizePolicy-v1 / MediumRun-v1 boundary.
-6. Start `MediumRun-v1` after the boundary is explicit.
+2. Keep `p2-v0` as small default.
+3. Treat `upper1p5` and `upper3072` as evidence-only.
+4. Keep `MediumRunBoundaryDesign-L1` as the active design boundary.
+5. Begin `MediumRunMetadataScaffold-L1`.
 
 ## Working Rules
 

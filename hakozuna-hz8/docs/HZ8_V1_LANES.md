@@ -5,7 +5,77 @@ This document starts after `hz8-small-v0-rc1`.
 Small v0 is frozen as a stable baseline.  V1 work should not mutate small-v0
 behavior unless a hard safety issue is found.
 
-## Lane 1: SizePolicy-v1
+## Lane 1: MediumRun-v1
+
+Problem:
+
+```text
+v0 does not claim >4KiB throughput
+main_* and cross128 rows are not meaningful without medium coverage
+```
+
+Current decision:
+
+```text
+p2-v0 remains the small-v0 default
+small class-map default attempts are closed
+upper3072 data is carried as size-boundary evidence only
+```
+
+First box:
+
+```text
+MediumRunBoundaryDesign-L1
+docs/HZ8_MEDIUM_RUN_V1.md
+```
+
+Scope:
+
+```text
+behavior unchanged
+define medium range and boundary with small p2-v0
+define medium pointer identity and route lookup
+define medium ownership token
+define local allocation/free lifecycle
+define remote free claim authority
+define decommit / retained policy
+define benchmark rows and promotion gates
+```
+
+Initial implementation sequence:
+
+```text
+1. MediumRunBoundaryDesign-L1
+2. MediumRunRouteShadow-L1
+3. MediumRunMetadataScaffold-L1
+4. MediumRunLocalOnly-L1
+5. MediumRunRemote-L1
+6. main_* / cross128 gate matrix
+```
+
+Do not mix this lane with preload API expansion or small hot-leaf tuning.
+
+Current route shadow:
+
+```text
+data:
+  bench_results/20260623T204614Z_medium_route_shadow.md
+
+shape:
+  16..32768 interleaved remote90 audit R3
+
+medium candidates:
+  4,203,559 / 4,800,000 allocations
+
+medium remote-live:
+  3,783,343 objects
+
+interpretation:
+  main-like workload is dominated by >4KiB requests
+  MediumRun-v1 needs local and remote support before main_* claims
+```
+
+## Lane 2: SizePolicy-v1 Evidence
 
 Problem:
 
@@ -164,43 +234,28 @@ decision:
   upper3072 remains evidence-only
 ```
 
-Small class-map default attempts are closed for now.  Keep `p2-v0` as the
-small-v0 default and carry the upper3072 data into the MediumRun / size-boundary
-design.
+Final small class-map decision:
+
+```text
+p2-v0:
+  keep as small-v0 / rc1 default
+
+upper1p5:
+  evidence-only
+
+upper3072:
+  evidence-only
+
+small class-map default attempts:
+  closed for now
+```
+
+Carry the upper3072 data into the MediumRun / size-boundary design.  Do not
+reopen the small class-map default lane unless new workload evidence changes the
+objective function.
 
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
-
-## Lane 2: MediumRun-v1
-
-Problem:
-
-```text
-v0 does not claim >4KiB throughput
-main_* and cross128 rows are not meaningful without medium coverage
-```
-
-Start condition:
-
-```text
-SizePolicy-v1 has fixed the small/medium boundary design
-```
-
-Initial design points:
-
-```text
-medium range identity
-run ownership token
-remote free claim authority
-run collect protocol
-retained versus decommitted policy
-RSS pressure boundary
-main_r0/main_r50/main_r90 rows
-cross128_r90 row
-```
-
-MediumRun alone does not fix the current 16..4096 phase peak RSS.  That row is
-still small-scope and needs SizePolicy-v1.
 
 ## Lane 3: RC1 Regression Guard
 

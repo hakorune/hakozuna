@@ -10,6 +10,7 @@
 
 #define H8_BENCH_CANDIDATE_UPPER1536_COUNT 10u
 #define H8_BENCH_CANDIDATE_UPPER1P5_COUNT 11u
+#define H8_BENCH_MEDIUM_MAX_SIZE 65536u
 
 typedef struct H8BenchOptions {
   int runs;
@@ -55,6 +56,12 @@ typedef struct H8BenchThread {
   uint64_t remote_live_rounded_bytes;
   uint64_t remote_live_upper1536_bytes;
   uint64_t remote_live_upper1p5_bytes;
+  size_t medium_candidate_count;
+  size_t medium_remote_live_count;
+  uint64_t medium_candidate_requested_bytes;
+  uint64_t medium_candidate_rounded_bytes;
+  uint64_t medium_remote_live_requested_bytes;
+  uint64_t medium_remote_live_rounded_bytes;
   size_t remote_live_upper1536[H8_BENCH_CANDIDATE_UPPER1536_COUNT];
   size_t remote_live_upper1p5[H8_BENCH_CANDIDATE_UPPER1P5_COUNT];
   int error;

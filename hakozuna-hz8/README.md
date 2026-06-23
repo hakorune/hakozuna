@@ -22,6 +22,9 @@ docs/HZ8_OWNERSHIP_CONTRACT.md
 docs/HZ8_OWNER_LIFECYCLE.md
 docs/HZ8_BENCH_GATE.md
 docs/HZ8_NO_GO_LEDGER.md
+docs/HZ8_SMALL_V0_RC1.md
+docs/HZ8_V1_LANES.md
+docs/HZ8_MEDIUM_RUN_V1.md
 ```
 
 ## v0 Scope

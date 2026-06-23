@@ -65,6 +65,17 @@ static uint32_t h8_upper1p5_class_for_size(size_t size) {
                                      size);
 }
 
+static uint32_t h8_bench_medium_round_size(size_t size) {
+  if (size <= H8_MAX_SMALL_SIZE) {
+    return H8_MAX_SMALL_SIZE;
+  }
+  uint32_t rounded = 8192u;
+  while (rounded < size && rounded < H8_BENCH_MEDIUM_MAX_SIZE) {
+    rounded <<= 1u;
+  }
+  return rounded;
+}
+
 size_t h8_bench_upper1536_slots_for_class(uint32_t class_id) {
   return 65536u / h8_upper1536_size(class_id);
 }
@@ -74,6 +85,15 @@ size_t h8_bench_upper1p5_slots_for_class(uint32_t class_id) {
 }
 
 uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size) {
+  if (size > H8_MAX_SMALL_SIZE) {
+    if (size <= H8_BENCH_MEDIUM_MAX_SIZE) {
+      th->medium_candidate_count++;
+      th->medium_candidate_requested_bytes += (uint64_t)size;
+      th->medium_candidate_rounded_bytes +=
+          (uint64_t)h8_bench_medium_round_size(size);
+    }
+    return H8_CLASS_COUNT;
+  }
   uint32_t class_id = h8_class_for_size(size);
   th->alloc_count_by_class[class_id]++;
   th->requested_bytes_by_class[class_id] += (uint64_t)size;
@@ -86,6 +106,15 @@ uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size) {
 }
 
 void h8_bench_note_remote_live(H8BenchThread* th, size_t size) {
+  if (size > H8_MAX_SMALL_SIZE) {
+    if (size <= H8_BENCH_MEDIUM_MAX_SIZE) {
+      th->medium_remote_live_count++;
+      th->medium_remote_live_requested_bytes += (uint64_t)size;
+      th->medium_remote_live_rounded_bytes +=
+          (uint64_t)h8_bench_medium_round_size(size);
+    }
+    return;
+  }
   uint32_t p2_class = h8_class_for_size(size);
   uint32_t upper1536_class = h8_upper1536_class_for_size(size);
   uint32_t upper1p5_class = h8_upper1p5_class_for_size(size);
