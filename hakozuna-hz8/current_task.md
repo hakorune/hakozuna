@@ -100,6 +100,26 @@ ThreadCtxOwnerInvariant-L1:
   local/interleaved focused benches stay above bring-up gates
   data: bench_results/20260623T104000Z_thread_ctx_owner_invariant.md
 
+SlotAuthorityWorkerAudit-L1:
+  worker audit confirmed remote protocol should stay frozen
+  worker audit confirmed slot-state authority is compile-time on, while
+  local source still carried dead fallback branches and the deprecated
+  env/global state remained
+  next implementation target:
+    local leaf slot-state monomorphization first
+    dead env/global cleanup second
+    remote audit counter cleanup only as a separate audit box
+
+SlotAuthorityMonomorphic-L1:
+  local malloc/free leaf now assumes tagged slot-state authority directly
+  local release path no longer carries live-bitmap update fallback branches
+  deprecated slot-state authority global/env parsing removed
+  route classification now uses slot-state authority directly
+  remote protocol intentionally unchanged
+  smoke / safety / preload smoke pass
+  local/interleaved focused benches stay above bring-up gates
+  data: bench_results/20260623T104207Z_slot_authority_mono.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -167,6 +187,8 @@ TlsModelCodeShape-L1
 AllocInlineShape-L1
 FreeLookupInlineP2-L1
 ThreadCtxOwnerInvariant-L1
+SlotAuthorityWorkerAudit-L1
+SlotAuthorityMonomorphic-L1
 ```
 
 Benchmark / evidence:
@@ -226,11 +248,14 @@ Local leaf lane:
 latest:
   TLS fast path uses initial-exec for startup-loaded Linux x86_64 ELF only
   active-hit allocation helper is inlined into malloc leaf
+  thread context owner is assumed non-null after ctx fast path succeeds
   local_free_head / bump_index scalar conversion is HOLD
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  continue local leaf / code-shape evidence before changing protocol
+  RemoteSlotAuthorityMonomorphic-L1
+  optional audit cleanup for pending_publish_mask_arm_raced_nonempty
+  keep debug live bitmap as shadow only
 ```
 
 Remote lane:
@@ -240,10 +265,13 @@ status:
   primary interleaved remote median is above 40M
   latest R10 interleaved remote90 p25 stability is clean after per-run
   work/tail attribution
+  worker audit confirmed pending bitmap / pending_word_mask / qstate remain
+  the runtime authority, and pending_count is debug shadow only
 
 next:
   keep remote protocol frozen unless two fresh batches contradict this
   do not reopen owner lease or intrusive remote_head without new evidence
+  pending_publish_mask_arm_raced_nonempty is an audit cleanup candidate only
 ```
 
 Class-map lane:
@@ -294,7 +322,10 @@ LocalFreeHeadBumpScalar-L1
    `h8_span_from_ptr_checked` call without changing pointer identity semantics.
 8. Treat `ThreadCtxOwnerInvariant-L1` as implemented. It removes defensive
    `h8_orphan_owner` call edges after a thread context exists.
-9. Next concrete work should stay in local leaf / code shape unless a second
+9. Treat `SlotAuthorityWorkerAudit-L1` as complete.
+10. Treat `SlotAuthorityMonomorphic-L1` as implemented. It removes local
+    slot-state fallback branches and the deprecated authority env/global state.
+11. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

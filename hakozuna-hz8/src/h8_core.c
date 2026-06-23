@@ -62,10 +62,6 @@ static void h8_init_once(void) {
                         h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
                         memory_order_relaxed);
   atomic_store_explicit(
-      &h8g.slot_state_authority_enabled,
-      h8_parse_env_bool(getenv("H8_ENABLE_SLOT_STATE_AUTHORITY")),
-      memory_order_relaxed);
-  atomic_store_explicit(
       &h8g.remote_lease_elision_enabled,
       h8_parse_unsafe_evidence_env(
           "H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION",
@@ -194,15 +190,8 @@ H8RouteKind h8_route_inner(void* ptr) {
   if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
     return H8_ROUTE_INVALID;
   }
-  if (h8_slot_state_authority_enabled()) {
-    uint32_t state = h8_slot_state_load_hot(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
-        h8_bitmap_test(span->pending_bits, slot)) {
-      return H8_ROUTE_INVALID;
-    }
-    return H8_ROUTE_VALID;
-  }
-  if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot) ||
+  uint32_t state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
       h8_bitmap_test(span->pending_bits, slot)) {
     return H8_ROUTE_INVALID;
   }

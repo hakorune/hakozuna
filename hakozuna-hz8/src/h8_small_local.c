@@ -9,15 +9,6 @@ static void h8_fail_invalid_free(void) {
   H8_DEBUG_INC(invalid_count);
 }
 
-static bool h8_slot_shadow_active(bool slot_authority) {
-#if defined(H8_ENABLE_DEBUG_STATS)
-  (void)slot_authority;
-  return true;
-#else
-  return slot_authority;
-#endif
-}
-
 static inline H8OwnerRecord* h8_ctx_owner_assume(H8ThreadCtx* ctx) {
   H8OwnerRecord* owner = ctx->owner;
   if (H8_UNLIKELY(!owner)) {
@@ -59,10 +50,6 @@ static bool h8_owner_used_sub(H8Span* span, size_t count) {
 }
 
 static inline void* h8_small_alloc_from_span(H8Span* span) {
-  bool slot_authority = h8_slot_state_authority_enabled();
-#if defined(H8_ENABLE_DEBUG_STATS)
-  (void)slot_authority;
-#endif
   H8_DEBUG_INC(local_free_head_touch_alloc);
   uint32_t local_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                              memory_order_relaxed);
@@ -72,12 +59,8 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
     h8_slot_shadow_expect(span, slot, H8_SLOT_FREE >> H8_SLOT_TAG_SHIFT);
 #endif
     uint32_t next = UINT32_MAX;
-    if (slot_authority) {
-      uint32_t state = h8_slot_state_load_hot(span, slot);
-      next = h8_slot_state_decode_next(h8_slot_state_payload(state));
-    } else {
-      next = span->next_free[slot];
-    }
+    uint32_t state = h8_slot_state_load_hot(span, slot);
+    next = h8_slot_state_decode_next(h8_slot_state_payload(state));
     atomic_store_explicit(&span->local_hot.local_free_head_word, next,
                           memory_order_relaxed);
     H8_DEBUG_INC(local_freelist_pop);
@@ -91,18 +74,11 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
     H8_DEBUG_INC(local_live_touch_alloc);
     h8_debug_local_live_word(slot);
 #if defined(H8_ENABLE_DEBUG_STATS)
-    bool update_live = true;
-#else
-    bool update_live = !slot_authority;
+    if (H8_UNLIKELY(!h8_owner_live_set(span, slot))) {
+      abort();
+    }
 #endif
-    if (update_live) {
-      if (H8_UNLIKELY(!h8_owner_live_set(span, slot))) {
-        abort();
-      }
-    }
-    if (h8_slot_shadow_active(slot_authority)) {
-      h8_slot_state_store_allocated_hot(span, slot);
-    }
+    h8_slot_state_store_allocated_hot(span, slot);
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
     return h8_slot_ptr(span, slot);
@@ -127,18 +103,11 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
     H8_DEBUG_INC(local_live_touch_alloc);
     h8_debug_local_live_word(bump);
 #if defined(H8_ENABLE_DEBUG_STATS)
-    bool update_live = true;
-#else
-    bool update_live = !slot_authority;
+    if (H8_UNLIKELY(!h8_owner_live_set(span, bump))) {
+      abort();
+    }
 #endif
-    if (update_live) {
-      if (H8_UNLIKELY(!h8_owner_live_set(span, bump))) {
-        abort();
-      }
-    }
-    if (h8_slot_shadow_active(slot_authority)) {
-      h8_slot_state_store_allocated_hot(span, bump);
-    }
+    h8_slot_state_store_allocated_hot(span, bump);
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
     return h8_slot_ptr(span, bump);
@@ -287,13 +256,10 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
     H8_DEBUG_INC(local_free_reject_state);
     return false;
   }
-  bool slot_authority = h8_slot_state_authority_enabled();
-  if (slot_authority) {
-    uint32_t state = h8_slot_state_load_hot(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      H8_DEBUG_INC(local_free_reject_live);
-      return false;
-    }
+  uint32_t state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+    H8_DEBUG_INC(local_free_reject_live);
+    return false;
   }
   H8_DEBUG_INC(local_pending_check_free);
   if (H8_UNLIKELY(h8_bitmap_test(span->pending_bits, slot))) {
@@ -303,25 +269,15 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   H8_DEBUG_INC(local_live_touch_free);
   h8_debug_local_live_word(slot);
 #if defined(H8_ENABLE_DEBUG_STATS)
-  bool update_live = true;
-#else
-  bool update_live = !slot_authority;
-#endif
-  if (update_live) {
-    if (H8_UNLIKELY(!h8_owner_live_clear(span, slot))) {
-      H8_DEBUG_INC(local_free_reject_live);
-      return false;
-    }
+  if (H8_UNLIKELY(!h8_owner_live_clear(span, slot))) {
+    H8_DEBUG_INC(local_free_reject_live);
+    return false;
   }
+#endif
   H8_DEBUG_INC(local_free_head_touch_free);
   uint32_t old_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                            memory_order_relaxed);
-  if (!slot_authority) {
-    span->next_free[slot] = old_head;
-  }
-  if (h8_slot_shadow_active(slot_authority)) {
-    h8_slot_state_store_free_hot(span, slot, old_head);
-  }
+  h8_slot_state_store_free_hot(span, slot, old_head);
   atomic_store_explicit(&span->local_hot.local_free_head_word, (uint32_t)slot,
                         memory_order_relaxed);
   if (H8_UNLIKELY(!h8_owner_used_sub(span, 1))) {

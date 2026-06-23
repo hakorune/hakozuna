@@ -376,7 +376,6 @@ typedef struct H8Global {
   atomic_size_t adoption_empty_count;
   atomic_size_t adoption_target_closed_count;
   atomic_size_t adoption_success_count;
-  _Atomic bool slot_state_authority_enabled;
   _Atomic bool regular_adoption_enabled;
   _Atomic bool remote_lease_elision_enabled;
   _Atomic bool remote_pending_publish_elision_enabled;
