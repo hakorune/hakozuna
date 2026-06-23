@@ -173,6 +173,13 @@ ActiveHintStoreShape-L1:
   focused local/interleaved checks stay above bring-up gates
   data: bench_results/20260623T123736Z_active_hint_store.md
 
+ClassLookupShape-L1:
+  p2-v0 malloc class lookup already compiles to bit-width / bsr shape
+  p2-v0 free slot decode already compiles to shift/mask shape
+  no class-size table walk or integer divide remains in the default local leaf
+  replacement A/B is HOLD without new assembly evidence
+  data: bench_results/20260623T124650Z_class_lookup_shape.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -312,9 +319,9 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  ClassLookupShape-L1
-  inspect class lookup code shape and only A/B a replacement with assembly
-  evidence
+  LocalLeafCodeShapeSweep-L1
+  inspect remaining malloc/free leaf instruction shape before proposing another
+  behavior change
   keep debug live bitmap as shadow only
   remaining used_count bench labels are debug shadow lineage, not authority
 ```
@@ -396,9 +403,12 @@ LocalFreeHeadBumpScalar-L1
 15. Treat `StabilityBatch-R10x2` as the current p2-v0 small baseline.
 16. Treat `ActiveHintStoreShape-L1` as implemented. It changes only local
     active hint store shape and does not change ownership or remote protocol.
-17. Next concrete work is `ClassLookupShape-L1`, starting with code-shape
-    inspection before any replacement.
-18. Next concrete work should stay in local leaf / code shape unless a second
+17. Treat `ClassLookupShape-L1` as closed with no behavior change. The default
+    p2-v0 path already uses bit-width class lookup and shift/mask slot decode.
+18. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
+    malloc/free leaf instruction shape and only open a behavior box with
+    assembly evidence.
+19. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
