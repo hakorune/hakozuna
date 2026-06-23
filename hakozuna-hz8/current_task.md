@@ -217,6 +217,14 @@ MallocSlotStatePointerCache-L1:
   focused local/interleaved checks stay above bring-up gates
   data: bench_results/20260623T131200Z_malloc_slot_state_ptr_cache.md
 
+RemotePublishLockedInline-AB-L1:
+  inlined h8_remote_free_publish_locked into h8_remote_free_publish_known
+  remote protocol unchanged
+  locked body symbol/calls removed from release code shape
+  smoke / safety pass
+  focused interleaved remote90 RUNS=5 stays stable above bring-up gate
+  data: bench_results/20260623T132000Z_remote_publish_locked_inline.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -356,9 +364,9 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  RemotePublishLockedInline-AB-L1
-  A/B inline h8_remote_free_publish_locked into known path without changing
-  remote protocol
+  LocalLeafCodeShapeSweep-L1
+  inspect remaining malloc/free/remote leaf instruction shape before proposing
+  another behavior change
   keep debug live bitmap as shadow only
   remaining used_count bench labels are debug shadow lineage, not authority
 ```
@@ -453,9 +461,12 @@ LocalFreeHeadBumpScalar-L1
 21. Treat `MallocSlotStatePointerCache-L1` as implemented. It removes a
     duplicate slot_state pointer load from malloc freelist pop without changing
     allocator protocol.
-22. Next concrete work is `RemotePublishLockedInline-AB-L1`, keeping all
-    remote correctness authorities intact.
-23. Next concrete work should stay in local leaf / code shape unless a second
+22. Treat `RemotePublishLockedInline-AB-L1` as implemented. It keeps all remote
+    correctness authorities intact and only changes call shape.
+23. Next concrete work returns to `LocalLeafCodeShapeSweep-L1`: inspect
+    remaining malloc/free/remote leaf instruction shape before proposing another
+    behavior change.
+24. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

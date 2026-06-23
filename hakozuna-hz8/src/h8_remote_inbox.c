@@ -331,8 +331,8 @@ static H8Span* h8_remote_span_from_ptr_checked(void* ptr, size_t* slot_out) {
   return span;
 }
 
-static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner,
-                                                     size_t slot) {
+static inline __attribute__((always_inline)) H8PublishResult
+h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner, size_t slot) {
   size_t word_index = slot >> 6u;
   uint64_t slot_bit = UINT64_C(1) << (slot & 63u);
   uint64_t word_bit = UINT64_C(1) << word_index;
