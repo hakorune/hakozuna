@@ -82,6 +82,26 @@ upper1p5:
   needs paired A/B only after the small/medium boundary decision
 ```
 
+Follow-up A/B:
+
+```text
+data:
+  bench_results/20260623T190034Z_upper1p5_cache_shape.md
+
+result:
+  phase peak RSS -11.1%
+  phase throughput +8.1%
+  interleaved remote90 -2.2%
+  guard_local0 -27.2%
+
+decision:
+  upper1p5 remains HOLD as a default map
+```
+
+Next size-policy candidate should keep p2-v0 for `<=2048` and test only an
+upper refinement such as `3072-only`, because the `1536` class is frequent in
+the guard local row and causes the large local regression.
+
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
 

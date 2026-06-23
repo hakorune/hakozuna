@@ -79,6 +79,16 @@ SizePolicyV1Shadow-L1:
   data: bench_results/20260623T184720Z_size_policy_v1_shadow.md
 ```
 
+Latest A/B:
+
+```text
+Upper1p5CacheShapeAudit-L1:
+  upper1p5 reduces phase peak RSS by about 11%
+  upper1p5 regresses guard_local0 by about 27%
+  decision: HOLD as default
+  data: bench_results/20260623T190034Z_upper1p5_cache_shape.md
+```
+
 Acceptance:
 
 ```text
@@ -157,8 +167,9 @@ small-v0 hot-path tuning without asm evidence
 ## Next Order
 
 1. Keep `hz8-small-v0-rc1` fixed.
-2. Extend `SizePolicy-v1` from shadow evidence to a boundary decision.
-3. Decide whether `upper1p5` deserves a paired A/B against p2-v0.
+2. Do not adopt full `upper1p5` as default.
+3. Test a narrower `3072-only` or equivalent candidate that preserves p2-v0
+   for `<=2048`.
 4. Start `MediumRun-v1` only after the size-policy boundary is explicit.
 
 ## Working Rules
