@@ -1,0 +1,6 @@
+free_lookup_inline_call_shape
+518:	call	h8_remote_free_publish_known@PLT
+532:	call	sched_yield@PLT
+543:	call	h8_remote_free_publish@PLT
+558:	call	h8_thread_ctx_get_slow@PLT
+576:	call	h8_orphan_owner@PLT

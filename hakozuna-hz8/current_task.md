@@ -88,6 +88,12 @@ AllocInlineShape-L1:
   local/interleaved focused benches stay above bring-up gates
   data: bench_results/20260623T102400Z_alloc_inline_shape.md
 
+FreeLookupInlineP2-L1:
+  free hot path no longer calls h8_span_from_ptr_checked
+  smoke / safety / preload smoke pass
+  local/interleaved focused benches stay above bring-up gates
+  data: bench_results/20260623T103100Z_free_lookup_inline.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -153,6 +159,7 @@ InterleavedWorkVarianceAudit-L1
 LocalHotCodeShapeAudit-L1
 TlsModelCodeShape-L1
 AllocInlineShape-L1
+FreeLookupInlineP2-L1
 ```
 
 Benchmark / evidence:
@@ -276,7 +283,9 @@ LocalFreeHeadBumpScalar-L1
    contracts.
 6. Treat `AllocInlineShape-L1` as implemented. It removes the active-hit
    allocation helper call without changing ownership or remote protocol.
-7. Next concrete work should stay in local leaf / code shape unless a second
+7. Treat `FreeLookupInlineP2-L1` as implemented. It removes the free-leaf
+   `h8_span_from_ptr_checked` call without changing pointer identity semantics.
+8. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

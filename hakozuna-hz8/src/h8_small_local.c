@@ -337,9 +337,14 @@ void h8_free_inner(void* ptr) {
     h8_sys_free(ptr);
     return;
   }
+  H8Span* span = atomic_load_explicit(
+      &h8g.spans[h8_span_index_from_ptr(ptr)], memory_order_acquire);
+  if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
+    h8_fail_invalid_free();
+    return;
+  }
   size_t slot = 0;
-  H8Span* span = h8_span_from_ptr_checked(ptr, &slot);
-  if (!span) {
+  if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
     h8_fail_invalid_free();
     return;
   }
