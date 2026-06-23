@@ -75,6 +75,26 @@ result:
 Latest focused checks:
 
 ```text
+MatrixSnapshot-R10:
+  HEAD ab15455, bench-release, RUNS=10, T=16, size=16..2048
+  guard/local0:
+    median 406.43M ops/s, p25 379.82M, min 359.90M
+    steady median 469.56M
+    post_rss median 4.00MiB, peak_rss median 4.00MiB
+  small_interleaved_remote90:
+    median 58.74M ops/s, p25 57.35M, min 53.16M
+    steady median 60.71M
+    post_rss median 3.42MiB, peak_rss median 25.86MiB
+  small_phase_remote90:
+    median 6.69M ops/s, p25 6.54M, min 6.51M
+    steady median 9.23M
+    post_rss median 28.93MiB, peak_rss median 1917.07MiB
+  interpretation:
+    local0 and interleaved remote90 clear v0 bring-up gates in this R10 matrix
+    phase remote90 remains peak-live / first-touch / lifecycle stress
+    HZ8 rows are local-harness evidence, not same-run cross-allocator ranking
+  data: bench_results/20260623T141023Z_hz8_matrix_snapshot.md
+
 TlsModelCodeShape-L1:
   h8_tls_ctx uses initial-exec + hidden
   malloc/free leaf has no __tls_get_addr

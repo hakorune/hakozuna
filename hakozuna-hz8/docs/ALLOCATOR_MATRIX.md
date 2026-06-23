@@ -64,21 +64,30 @@ These HZ8 numbers are from the local HZ8 harness, not from the public README
 allocator matrix runner.  They must not be inserted into the `main_*` rows
 above without re-running all allocators under the same lane.
 
-Latest first stable release batch after slot-state release cutover, TLS active
-spans, remote lookup reuse, pending word-mask authority, perf-lane
-purification, and TLS leaf fast context lookup:
+Latest matrix snapshot after slot-state release cutover, TLS active spans,
+remote lookup reuse, pending word-mask authority, perf-lane purification, TLS
+leaf fast context lookup, and local leaf shape cleanup:
 
 | HZ8 lane | Shape | Median ops/s | post_rss | peak_rss | Interpretation |
 |---|---|---:|---:|---:|---|
-| `guard/local0` | `size=16..2048 remote_pct=0` | ~265.8M | ~4MiB | ~4MiB | Guard-shaped local row, not `main_r0`; first batch above v0 local gate |
-| `small_interleaved_remote90` | `size=16..2048 remote_pct=90 interleaved=1` | ~47.6M | ~15MiB | ~55MiB | Current primary v0 steady-state remote lane; first batch above v0 remote gate |
-| `small_phase_remote90` | `size=16..2048 remote_pct=90 interleaved=0` | ~6.70M | ~30MiB | ~1.87GiB | Peak-live / first-touch / lifecycle stress |
+| `guard/local0` | `size=16..2048 remote_pct=0` | 406.43M | 4.00MiB | 4.00MiB | Guard-shaped local row, not `main_r0`; clears v0 local gate in this R10 snapshot |
+| `small_interleaved_remote90` | `size=16..2048 remote_pct=90 interleaved=1` | 58.74M | 3.42MiB | 25.86MiB | Current primary v0 steady-state remote lane; clears v0 remote gate in this R10 snapshot |
+| `small_phase_remote90` | `size=16..2048 remote_pct=90 interleaved=0` | 6.69M | 28.93MiB | 1917.07MiB | Peak-live / first-touch / lifecycle stress |
 
 `post_rss` is `VmRSS` sampled after worker join and owner-exit purge.
 `peak_rss` is process `VmHWM`; exact per-run peak needs a child-process runner.
 The HZ8 rows above are not a same-run cross-allocator comparison.  They are
 bring-up evidence from the HZ8 harness and should be re-run against the other
 allocators before claiming a matrix rank.
+
+Latest HZ8 raw matrix data:
+
+```text
+bench_results/20260623T141023Z_hz8_matrix_snapshot.md
+bench_results/20260623T141023Z_matrix_local_r10.log
+bench_results/20260623T141023Z_matrix_interleaved_r10.log
+bench_results/20260623T141023Z_matrix_phase_r10.log
+```
 
 ## One-line positioning
 
