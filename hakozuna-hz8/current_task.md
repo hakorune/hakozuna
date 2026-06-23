@@ -607,7 +607,7 @@ Matrix lane:
 
 ```text
 SameRunAllocatorMatrix-L1:
-  next concrete task
+  implemented as harness / runner infrastructure
 
 purpose:
   position frozen HZ8 small-v0 against HZ3 / HZ4 / mimalloc / tcmalloc /
@@ -643,6 +643,30 @@ report:
   alloc phase
   remote phase
   peak RSS / expected rounded live bytes for phase row
+
+implementation:
+  bench/bench_matrix_malloc.c:
+    common plain malloc/free harness
+    supports local, interleaved remote90, and phase remote90 shapes
+    reports throughput, steady work rate, post/peak RSS, minor faults, and
+    phase timing
+  bench/run_hz8_same_run_matrix.sh:
+    builds HZ8 preload and the common harness
+    resolves hz8/hz3/hz4/mimalloc/tcmalloc/system via bench_common.sh
+    runs each sample in a fresh process
+    rotates allocator order by run
+    writes raw logs, samples.csv, and summary.md
+  bench/lib/bench_common.sh:
+    adds hz8 preload resolver
+
+smoke:
+  system,hz8 short matrix passed
+  output verified:
+    samples.csv
+    summary.md
+
+next:
+  run full RUNS=10 matrix when ready
 ```
 
 ## Hold List
@@ -721,15 +745,17 @@ LocalFreeHeadBumpScalar-L1
    affect normal release hot paths.
 26. Treat `V0FreezeSafetyBatch-L1` as passed on HEAD 2d5073a. Small v0 is
     soft-frozen for same-run allocator matrix work.
-27. Run `SameRunAllocatorMatrix-L1` next. Do not change allocator behavior
-    while building the common malloc/free matrix harness.
+27. Treat `SameRunAllocatorMatrix-L1` infrastructure as implemented. Do not
+    change allocator behavior while running the full matrix.
 28. Treat phase-separated 16..4096 remote90 as lifecycle / peak-live / RSS
     stress, not as the primary throughput gate.
 29. Record matrix metadata with `allocator_behavior_sha=2d5073a` and
     `freeze_record_sha=d3f3fe5`.
-30. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
+30. Run the full matrix with:
+    `bench/run_hz8_same_run_matrix.sh --runs 10`.
+31. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
     that the same-run matrix proves is still deficient.
-31. Plan v1 as `SizePolicy-v1` followed by `MediumRun-v1`; do not treat
+32. Plan v1 as `SizePolicy-v1` followed by `MediumRun-v1`; do not treat
     MediumRun alone as a fix for the current small phase peak RSS.
 
 ## Working Rules

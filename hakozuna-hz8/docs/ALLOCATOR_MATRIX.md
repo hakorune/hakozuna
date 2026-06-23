@@ -119,6 +119,22 @@ harness, allocator resolver, parser, and documentation should change.
 Use one common benchmark binary that calls plain `malloc` and `free` only, then
 switch allocators with startup `LD_PRELOAD`.
 
+Implementation:
+
+```text
+bench/bench_matrix_malloc.c:
+  plain malloc/free benchmark harness
+
+bench/run_hz8_same_run_matrix.sh:
+  builds HZ8 preload and the matrix harness
+  runs each allocator sample in a fresh process
+  rotates allocator order per run
+  writes README.log, samples.csv, summary.md, and raw per-case logs
+
+bench/lib/bench_common.sh:
+  resolves hz8 via HZ8_SO or hakozuna-hz8/libhakozuna_hz8_preload.so
+```
+
 ```text
 allocators:
   HZ8
@@ -149,6 +165,19 @@ peak RSS / expected rounded live bytes
 ```
 
 Do not rank the phase row by throughput alone.
+
+Default invocation:
+
+```bash
+bench/run_hz8_same_run_matrix.sh --runs 10
+```
+
+Short smoke:
+
+```bash
+ALLOCATORS=system,hz8 RUNS=1 THREADS=2 ITERS=1000 LIVE_WINDOW=128 \
+  bench/run_hz8_same_run_matrix.sh
+```
 
 ## One-line positioning
 

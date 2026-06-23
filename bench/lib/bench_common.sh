@@ -132,6 +132,12 @@ bench_find_hz6_library() {
     hz6-preload
 }
 
+bench_find_hz8_library() {
+  bench_find_first_existing \
+    "${HZ8_SO:-}" \
+    "${ROOT_DIR}/hakozuna-hz8/libhakozuna_hz8_preload.so"
+}
+
 bench_find_hz6_preload_output() {
   local env_var="$1"
   local out_dir="$2"
@@ -459,6 +465,9 @@ bench_find_allocator_library() {
     hz6)
       bench_find_hz6_library
       ;;
+    hz8)
+      bench_find_hz8_library
+      ;;
     hz6-toy-target|hz6_toy_target)
       bench_find_hz6_toy_target_library
       ;;
@@ -617,6 +626,9 @@ bench_print_allocator_hints() {
       ;;
     hz6)
       echo "hint: build the HZ6 preload lane with './hakozuna-hz6/linux/build_hz6_preload.sh' or set HZ6_PRELOAD_SO" >&2
+      ;;
+    hz8)
+      echo "hint: build HZ8 preload with 'make -C hakozuna-hz8 preload-smoke' or set HZ8_SO" >&2
       ;;
     hz6-toy-target|hz6_toy_target)
       echo "hint: build the HZ6 Toy target lane with './hakozuna-hz6/linux/build_hz6_preload_toy_target.sh' or set HZ6_TOY_TARGET_PRELOAD_SO" >&2
