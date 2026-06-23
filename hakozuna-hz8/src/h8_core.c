@@ -11,7 +11,7 @@ H8Global h8g = {
     .once = PTHREAD_ONCE_INIT,
 };
 
-_Thread_local H8ThreadCtx* h8_tls_ctx;
+_Thread_local H8ThreadCtx* h8_tls_ctx H8_TLS_FAST;
 static const uint16_t kGenerationSeed = 1;
 
 static void h8_init_once(void);

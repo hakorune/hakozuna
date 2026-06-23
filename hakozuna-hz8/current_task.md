@@ -185,6 +185,23 @@ decision:
   next local work should target another fixed cost, such as TLS/code shape
 ```
 
+Latest `TlsModelCodeShape-L1` proof:
+
+```text
+data:
+  bench_results/20260623T101300Z_tls_model_code_shape.md
+
+contract:
+  Linux x86_64 ELF startup-loaded allocator only
+  arbitrary late dlopen and dlclose/reload are not v0 contracts
+
+result:
+  h8_tls_ctx uses initial-exec + hidden
+  malloc/free leaf has no __tls_get_addr
+  preload DSO has R_X86_64_TPOFF64 and STATIC_TLS
+  smoke / safety / preload smoke pass
+  focused local/interleaved release checks stay above bring-up gates
+```
 
 Latest `V0SafetyStressBatch-L1` debug check:
 
@@ -740,10 +757,10 @@ hot plain used_count + cold atomic used_count hybrid
 8. Treat `LocalHotCodeShapeAudit-L1` as implemented. Do not spend the next box
    on local_free_head / bump_index scalar conversion without new assembly
    evidence.
-9. Next design consultation point is `TlsModelCodeShape-L1`: generated
-   release assembly still calls `__tls_get_addr@PLT` in malloc/free leaf.
-   Decide whether an ELF `initial-exec` TLS model is acceptable for the
-   preload/shared-library contract before implementing it.
+9. Treat `TlsModelCodeShape-L1` as implemented:
+   Linux x86_64 ELF startup-loaded allocator is supported; arbitrary late
+   dlopen and dlclose/reload guarantees are not v0 contracts. Apply
+   `initial-exec` + hidden only to `h8_tls_ctx`, not global `-ftls-model`.
 10. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 

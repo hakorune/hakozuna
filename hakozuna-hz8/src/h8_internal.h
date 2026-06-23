@@ -382,8 +382,13 @@ typedef struct H8Global {
   _Atomic bool remote_pending_publish_elision_enabled;
 } H8Global;
 
+#if defined(__linux__) && defined(__ELF__) && defined(__x86_64__)
+#define H8_TLS_FAST __attribute__((tls_model("initial-exec"), visibility("hidden")))
+#else
+#define H8_TLS_FAST
+#endif
 extern H8Global h8g;
-extern _Thread_local H8ThreadCtx* h8_tls_ctx;
+extern _Thread_local H8ThreadCtx* h8_tls_ctx H8_TLS_FAST;
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 #define H8_DEBUG_INC(field) \

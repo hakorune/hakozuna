@@ -1,0 +1,62 @@
+small_local_tls_refs
+607:	movq	h8_tls_ctx@gottpoff(%rip), %rax
+713:	movq	h8_tls_ctx@gottpoff(%rip), %rax
+1089:	movq	h8_tls_ctx@gottpoff(%rip), %rax
+10427:	.string	"h8_tls_ctx"
+10825:	.hidden	h8_tls_ctx
+
+bench_malloc_free_tls_refs
+4:    526a:	e8 11 0c 00 00       	call   5e80 <h8_malloc_inner>
+7:    5275:	74 10                	je     5287 <h8_calloc+0x37>
+11:    527f:	e8 ac c0 ff ff       	call   1330 <memset@plt>
+34:    5ea7:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+52:    5eed:	e8 ee fd ff ff       	call   5ce0 <h8_small_alloc_from_span.constprop.0>
+64:    5f11:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+67:    5f1a:	e8 d1 dd ff ff       	call   3cf0 <h8_thread_ctx_get_slow>
+77:    5f38:	e8 23 fe ff ff       	call   5d60 <h8_find_active_span>
+98:    5f73:	e8 28 f3 ff ff       	call   52a0 <h8_pressure_owner_collect>
+102:    5f80:	e8 db fd ff ff       	call   5d60 <h8_find_active_span>
+112:    5fa4:	e8 47 d4 ff ff       	call   33f0 <h8_span_commit_for_class>
+118:    5fc0:	e8 0b dd ff ff       	call   3cd0 <h8_orphan_owner>
+123:    5fd5:	e8 16 dd ff ff       	call   3cf0 <h8_thread_ctx_get_slow>
+136:    6009:	e8 62 e5 ff ff       	call   4570 <h8_orphan_adopt_span>
+152:    603c:	64 48 8b 04 25 28 00 00 00 	mov    %fs:0x28,%rax
+166:    6075:	64 48 2b 04 25 28 00 00 00 	sub    %fs:0x28,%rax
+180:    60ac:	e8 cf d7 ff ff       	call   3880 <h8_span_from_ptr_checked>
+185:    60c0:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+199:    60f1:	e8 aa f4 ff ff       	call   55a0 <h8_remote_free_publish_known>
+204:    6105:	64 48 2b 04 25 28 00 00 00 	sub    %fs:0x28,%rax
+214:    6125:	e8 16 b2 ff ff       	call   1340 <sched_yield@plt>
+216:    612d:	e8 4e f5 ff ff       	call   5680 <h8_remote_free_publish>
+221:    6140:	e8 ab db ff ff       	call   3cf0 <h8_thread_ctx_get_slow>
+227:    6158:	e8 73 db ff ff       	call   3cd0 <h8_orphan_owner>
+261:    61ed:	e8 fe b0 ff ff       	call   12f0 <__stack_chk_fail@plt>
+
+preload_malloc_free_tls_refs
+13:    5487:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+31:    54cd:	e8 ee fd ff ff       	call   52c0 <h8_small_alloc_from_span.constprop.0>
+43:    54f1:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+46:    54fa:	e8 31 d3 ff ff       	call   2830 <h8_thread_ctx_get_slow@plt>
+56:    5518:	e8 23 fe ff ff       	call   5340 <h8_find_active_span>
+77:    5553:	e8 98 d1 ff ff       	call   26f0 <h8_pressure_owner_collect@plt>
+81:    5560:	e8 db fd ff ff       	call   5340 <h8_find_active_span>
+91:    5584:	e8 e7 d1 ff ff       	call   2770 <h8_span_commit_for_class@plt>
+97:    55a0:	e8 9b cf ff ff       	call   2540 <h8_orphan_owner@plt>
+102:    55b5:	e8 76 d2 ff ff       	call   2830 <h8_thread_ctx_get_slow@plt>
+115:    55e9:	e8 82 d0 ff ff       	call   2670 <h8_orphan_adopt_span@plt>
+131:    561c:	64 48 8b 04 25 28 00 00 00 	mov    %fs:0x28,%rax
+145:    5655:	64 48 2b 04 25 28 00 00 00 	sub    %fs:0x28,%rax
+159:    568c:	e8 4f d0 ff ff       	call   26e0 <h8_span_from_ptr_checked@plt>
+164:    56a0:	64 48 8b 18          	mov    %fs:(%rax),%rbx
+178:    56d1:	e8 fa cf ff ff       	call   26d0 <h8_remote_free_publish_known@plt>
+183:    56e5:	64 48 2b 04 25 28 00 00 00 	sub    %fs:0x28,%rax
+193:    5705:	e8 16 cf ff ff       	call   2620 <sched_yield@plt>
+195:    570d:	e8 fe ce ff ff       	call   2610 <h8_remote_free_publish@plt>
+200:    5720:	e8 0b d1 ff ff       	call   2830 <h8_thread_ctx_get_slow@plt>
+206:    5738:	e8 03 ce ff ff       	call   2540 <h8_orphan_owner@plt>
+240:    57cd:	e8 ce cd ff ff       	call   25a0 <__stack_chk_fail@plt>
+
+preload_reloc_dynamic_symbol
+0000000000008fc0  0000000000000012 R_X86_64_TPOFF64                          0
+ 0x000000000000001e (FLAGS)              STATIC_TLS
+    40: 0000000000000000     8 TLS     LOCAL  DEFAULT   19 h8_tls_ctx
