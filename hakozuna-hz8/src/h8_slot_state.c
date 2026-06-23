@@ -68,7 +68,7 @@ static void h8_slot_shadow_verify_chain(H8Span* span, uint8_t* seen) {
   size_t guard = 0;
   uint32_t slot = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                        memory_order_acquire);
-  while (slot != UINT32_MAX) {
+  while (slot != H8_SLOT_NONE) {
     if (slot >= span->slot_count) {
       H8_DEBUG_INC(slot_shadow_bad_next);
       return;
@@ -136,7 +136,7 @@ static void h8_slot_shadow_verify_span_impl(H8Span* span, bool exact_pending_cou
         H8_DEBUG_INC(slot_shadow_invalid_mismatch);
       }
       uint32_t next = h8_slot_state_decode_next(h8_slot_state_payload(state));
-      if (next != UINT32_MAX && next >= span->slot_count) {
+      if (next != H8_SLOT_NONE && next >= span->slot_count) {
         H8_DEBUG_INC(slot_shadow_bad_next);
       }
     } else if (tag == (H8_SLOT_NEVER_USED >> H8_SLOT_TAG_SHIFT)) {

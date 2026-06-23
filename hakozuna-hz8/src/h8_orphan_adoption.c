@@ -61,7 +61,7 @@ static bool h8_span_quiescent_for_adoption(const H8Span* span) {
 static bool h8_span_has_free_slot(const H8Span* span) {
   uint32_t head = atomic_load_explicit(&((H8Span*)span)->local_hot.local_free_head_word,
                                        memory_order_acquire);
-  if (head != UINT32_MAX) {
+  if (head != H8_SLOT_NONE) {
     return true;
   }
   uint32_t bump = atomic_load_explicit(&((H8Span*)span)->local_hot.local_bump_index,

@@ -53,14 +53,13 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
   H8_DEBUG_INC(local_free_head_touch_alloc);
   uint32_t local_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                              memory_order_relaxed);
-  if (local_head != UINT32_MAX) {
+  if (local_head != H8_SLOT_NONE) {
     uint32_t slot = local_head;
 #if defined(H8_ENABLE_DEBUG_STATS)
     h8_slot_shadow_expect(span, slot, H8_SLOT_FREE >> H8_SLOT_TAG_SHIFT);
 #endif
-    uint32_t next = UINT32_MAX;
     uint32_t state = h8_slot_state_load_hot(span, slot);
-    next = h8_slot_state_decode_next(h8_slot_state_payload(state));
+    uint32_t next = h8_slot_state_decode_next(h8_slot_state_payload(state));
     atomic_store_explicit(&span->local_hot.local_free_head_word, next,
                           memory_order_relaxed);
     H8_DEBUG_INC(local_freelist_pop);
@@ -141,7 +140,7 @@ static bool h8_active_hint_matches(H8Span* span, H8OwnerRecord* owner,
 static bool h8_span_local_exhausted(H8Span* span) {
   uint32_t head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                        memory_order_relaxed);
-  if (head != UINT32_MAX) {
+  if (head != H8_SLOT_NONE) {
     return false;
   }
   uint32_t bump = atomic_load_explicit(&span->local_hot.local_bump_index,

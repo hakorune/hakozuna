@@ -133,7 +133,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   atomic_store_explicit(&span->pending_word_mask, 0, memory_order_relaxed);
   atomic_store_explicit(&span->local_hot.local_bump_index, 0,
                         memory_order_relaxed);
-  atomic_store_explicit(&span->local_hot.local_free_head_word, UINT32_MAX,
+  atomic_store_explicit(&span->local_hot.local_free_head_word, H8_SLOT_NONE,
                         memory_order_relaxed);
   h8_used_count_init(span);
 #if defined(H8_ENABLE_DEBUG_STATS)

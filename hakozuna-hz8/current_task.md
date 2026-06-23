@@ -180,6 +180,15 @@ ClassLookupShape-L1:
   replacement A/B is HOLD without new assembly evidence
   data: bench_results/20260623T124650Z_class_lookup_shape.md
 
+LocalFreeHeadSentinelUnify-L1:
+  local_free_head_word now uses H8_SLOT_NONE, matching FREE(next) payload
+  removed UINT32_MAX <-> H8_SLOT_NONE conversion from malloc freelist pop and
+  local/remote free publication
+  ownership, pending, and slot-state protocols unchanged
+  smoke / safety pass
+  focused local/interleaved checks stay above bring-up gates
+  data: bench_results/20260623T125215Z_local_free_head_sentinel.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -320,8 +329,8 @@ latest:
 
 next:
   LocalLeafCodeShapeSweep-L1
-  inspect remaining malloc/free leaf instruction shape before proposing another
-  behavior change
+  continue inspecting remaining malloc/free leaf instruction shape before
+  proposing another behavior change
   keep debug live bitmap as shadow only
   remaining used_count bench labels are debug shadow lineage, not authority
 ```
@@ -405,10 +414,13 @@ LocalFreeHeadBumpScalar-L1
     active hint store shape and does not change ownership or remote protocol.
 17. Treat `ClassLookupShape-L1` as closed with no behavior change. The default
     p2-v0 path already uses bit-width class lookup and shift/mask slot decode.
-18. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
+18. Treat `LocalFreeHeadSentinelUnify-L1` as implemented. It unifies the
+    local free-list empty sentinel with tagged slot-state payload encoding and
+    removes sentinel conversion instructions.
+19. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
     malloc/free leaf instruction shape and only open a behavior box with
     assembly evidence.
-19. Next concrete work should stay in local leaf / code shape unless a second
+20. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

@@ -442,11 +442,11 @@ static inline uint32_t h8_slot_state_payload(uint32_t state) {
 }
 
 static inline uint32_t h8_slot_state_next_payload(uint32_t next) {
-  return next == UINT32_MAX ? H8_SLOT_NONE : next;
+  return next;
 }
 
 static inline uint32_t h8_slot_state_decode_next(uint32_t payload) {
-  return payload == H8_SLOT_NONE ? UINT32_MAX : payload;
+  return payload;
 }
 
 static inline uint32_t h8_slot_state_free(uint32_t next) {
