@@ -165,6 +165,14 @@ StabilityBatch-R10x2:
   remote protocol remains frozen
   data: bench_results/20260623T123415Z_stability_r10x2.md
 
+ActiveHintStoreShape-L1:
+  local free now refreshes ctx->active_spans[class] with an unconditional store
+  instead of a branch around the store
+  ownership and remote protocol unchanged
+  smoke / safety pass
+  focused local/interleaved checks stay above bring-up gates
+  data: bench_results/20260623T123736Z_active_hint_store.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -239,6 +247,7 @@ PendingPublishMaskCounterCleanup-L1
 ObservabilityDeadCounterCleanup-L1
 DocsAuthorityCleanup-L1
 StabilityBatch-R10x2
+ActiveHintStoreShape-L1
 ```
 
 Benchmark / evidence:
@@ -303,7 +312,9 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  local leaf/code-shape evidence only
+  ClassLookupShape-L1
+  inspect class lookup code shape and only A/B a replacement with assembly
+  evidence
   keep debug live bitmap as shadow only
   remaining used_count bench labels are debug shadow lineage, not authority
 ```
@@ -383,7 +394,11 @@ LocalFreeHeadBumpScalar-L1
     no writers. Do not keep zero-valued fields as evidence.
 14. Treat `DocsAuthorityCleanup-L1` as implemented for the primary design docs.
 15. Treat `StabilityBatch-R10x2` as the current p2-v0 small baseline.
-16. Next concrete work should stay in local leaf / code shape unless a second
+16. Treat `ActiveHintStoreShape-L1` as implemented. It changes only local
+    active hint store shape and does not change ownership or remote protocol.
+17. Next concrete work is `ClassLookupShape-L1`, starting with code-shape
+    inspection before any replacement.
+18. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

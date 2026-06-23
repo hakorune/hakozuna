@@ -285,9 +285,7 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   }
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
-  if (ctx->active_spans[span->class_id] != span) {
-    ctx->active_spans[span->class_id] = span;
-  }
+  ctx->active_spans[span->class_id] = span;
   return true;
 }
 
