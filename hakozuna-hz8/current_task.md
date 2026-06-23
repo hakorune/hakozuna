@@ -153,6 +153,27 @@ LD_PRELOAD=libhakozuna_hz8_preload.so h8_preload_smoke:
   >4KiB platform allocation routes MISS and frees through platform allocator
 ```
 
+Latest `LocalFreeInitFastPath-L1` short check:
+
+```text
+change:
+  h8_free_inner skips h8_init/pthread_once after HZ8 is ready
+  pre-init non-HZ8 frees go straight to the platform allocator
+
+guard/local0, RUNS=5 rerun:
+  median ~= 322.2M ops/s
+  p25 ~= 295.7M ops/s
+  steady ~= 346.9M ops/s
+
+small_interleaved_remote90, RUNS=5:
+  median ~= 41.1M ops/s
+  steady ~= 44.2M ops/s
+
+result:
+  safety/preload smoke clean
+  local and interleaved remote remain above bring-up gate
+```
+
 Interpretation:
 
 ```text
@@ -196,6 +217,7 @@ LocalHotAliasConsistency-L1
 SlotShadowQuiescentSplit-L1
 V0SafetyStressBatch-L1
 PreloadBoundarySmoke-L1
+LocalFreeInitFastPath-L1
 ```
 
 Benchmark / evidence:
@@ -270,6 +292,8 @@ latest:
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
   LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
   references from cold/remote code
+  LocalFreeInitFastPath-L1 removes the unconditional h8_init call from the
+  steady free leaf
 
 evidence:
   debug local/interleaved short runs show class/owner/generation/state

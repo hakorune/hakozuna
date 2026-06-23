@@ -320,8 +320,12 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
 }
 
 void h8_free_inner(void* ptr) {
-  h8_init();
   if (!ptr) {
+    return;
+  }
+  if (H8_UNLIKELY(!atomic_load_explicit(&h8g.ready, memory_order_acquire))) {
+    H8_DEBUG_INC(miss_count);
+    h8_sys_free(ptr);
     return;
   }
   if (!h8_arena_contains(ptr)) {
