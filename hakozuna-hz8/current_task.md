@@ -689,8 +689,8 @@ latest result:
     phase peak remains expected barrier live-set footprint
 
 next:
-  record hz8-small-v0-rc1 or decide whether the tcmalloc local/interleaved gap
-  is worth reopening before rc1
+  hz8-small-v0-rc1 recorded in docs/HZ8_SMALL_V0_RC1.md, matrix_record_sha 09146b6
+  move new allocator behavior to SizePolicy-v1 / MediumRun-v1 lanes
 ```
 
 ## Hold List
@@ -777,8 +777,8 @@ LocalFreeHeadBumpScalar-L1
     `freeze_record_sha=d3f3fe5`.
 30. Treat the full `SameRunAllocatorMatrix-L1` as executed and saved under
     `bench_results/hz8_same_run_matrix_20260623T174503Z/`.
-31. After reviewing the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
-    that the same-run matrix proves is still deficient.
+31. Treat `hz8-small-v0-rc1` as recorded in
+    `docs/HZ8_SMALL_V0_RC1.md`.
 32. Plan v1 as `SizePolicy-v1` followed by `MediumRun-v1`; do not treat
     MediumRun alone as a fix for the current small phase peak RSS.
 

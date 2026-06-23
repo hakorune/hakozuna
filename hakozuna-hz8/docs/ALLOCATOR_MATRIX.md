@@ -188,6 +188,9 @@ data:
 
 samples:
   3 rows * 6 allocators * 10 fresh process samples
+
+record:
+  docs/HZ8_SMALL_V0_RC1.md
 ```
 
 | Row | tcmalloc | HZ8 | HZ3 | HZ4 | mimalloc | system |
@@ -219,6 +222,16 @@ steady interleaved remote:
 phase stress:
   HZ8 is mid-pack for throughput but has the strongest post-purge RSS
   phase peak remains the expected barrier live-set footprint
+```
+
+RC1 position:
+
+```text
+small-v0:
+  soft-frozen as hz8-small-v0-rc1
+
+next:
+  SizePolicy-v1, then MediumRun-v1
 ```
 
 ## One-line positioning
