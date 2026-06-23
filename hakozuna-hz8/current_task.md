@@ -94,8 +94,14 @@ Upper3072CacheShapeAudit-L1:
   interleaved remote90 -1.62% in R5
   phase remote90 +9.04% in R5
   phase peak RSS -8.87%
-  decision: CONDITIONAL GO, requires paired R10 x 2 before default cutover
+  R10 x 2 follow-up:
+    local -3.74%
+    interleaved remote90 -3.71%
+    phase remote90 +7.89%
+    phase peak RSS -8.87%
+  decision: HOLD as default; useful SizePolicy-v1 evidence
   data: bench_results/20260623T190416Z_upper3072_cache_shape.md
+  paired data: bench_results/20260623T192704Z_upper3072_paired_r10x2.md
 ```
 
 Acceptance:
@@ -177,8 +183,8 @@ small-v0 hot-path tuning without asm evidence
 
 1. Keep `hz8-small-v0-rc1` fixed.
 2. Do not adopt full `upper1p5` as default.
-3. Run paired R10 x 2 for `upper3072-v0` versus `p2-v0`.
-4. If the hot gates pass, prepare a design review for upper3072 default cutover.
+3. Keep `upper3072-v0` as SizePolicy-v1 evidence, not a default cutover.
+4. Prepare design review for SizePolicy-v1 / MediumRun-v1 boundary.
 5. Start `MediumRun-v1` only after the size-policy boundary is explicit.
 
 ## Working Rules

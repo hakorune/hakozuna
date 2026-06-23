@@ -117,13 +117,30 @@ R5 result:
   phase minor faults -8.89%
 
 decision:
-  CONDITIONAL GO
-  run paired R10 x 2 before any default cutover
+  CONDITIONAL GO before R10 x 2
 ```
 
 `upper3072-v0` is the current best candidate because it reduces the 16..4096
 phase peak without opening the frequent 1536-byte class in the 16..2048 guard
 local row.
+
+Paired R10 x 2 follow-up:
+
+```text
+data:
+  bench_results/20260623T192704Z_upper3072_paired_r10x2.md
+
+combined 20-run median:
+  local -3.74%
+  interleaved remote90 -3.71%
+  phase remote90 +7.89%
+  phase peak RSS -8.87%
+  phase minor faults -8.90%
+
+decision:
+  upper3072-v0 HOLD as default
+  keep as evidence for SizePolicy-v1
+```
 
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
