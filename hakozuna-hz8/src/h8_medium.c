@@ -140,6 +140,7 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
   if (!run) {
     return NULL;
   }
+  pthread_mutex_init(&run->lock, NULL);
   run->slot_state = h8_sys_calloc(spec->slot_count, sizeof(*run->slot_state));
   run->pending_bits = h8_sys_calloc(spec->bitmap_words, sizeof(*run->pending_bits));
   if (!run->slot_state || !run->pending_bits) {
@@ -183,6 +184,7 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   }
   h8_sys_free(run->pending_bits);
   h8_sys_free(run->slot_state);
+  pthread_mutex_destroy(&run->lock);
   h8_sys_free(run);
 }
 
@@ -229,23 +231,29 @@ void* h8_medium_malloc_inner(size_t size) {
   }
   uint32_t class_id = h8_medium_class_for_size(size);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
-  pthread_mutex_lock(&h8_medium_lock);
-  if (ctx && h8_medium_run_usable_locked(ctx->active_medium_runs[class_id],
-                                         class_id)) {
-    void* ptr = h8_medium_run_alloc_local_scaffold(
-        ctx->active_medium_runs[class_id]);
-    pthread_mutex_unlock(&h8_medium_lock);
-    return ptr;
+  H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
+  if (active) {
+    pthread_mutex_lock(&active->lock);
+    if (h8_medium_run_usable_locked(active, class_id)) {
+      void* ptr = h8_medium_run_alloc_local_scaffold(active);
+      pthread_mutex_unlock(&active->lock);
+      return ptr;
+    }
+    pthread_mutex_unlock(&active->lock);
   }
+  pthread_mutex_lock(&h8_medium_lock);
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
+    pthread_mutex_lock(&run->lock);
     if (h8_medium_run_usable_locked(run, class_id)) {
       void* ptr = h8_medium_run_alloc_local_scaffold(run);
       if (ctx) {
         ctx->active_medium_runs[class_id] = run;
       }
+      pthread_mutex_unlock(&run->lock);
       pthread_mutex_unlock(&h8_medium_lock);
       return ptr;
     }
+    pthread_mutex_unlock(&run->lock);
   }
   pthread_mutex_unlock(&h8_medium_lock);
 
@@ -255,10 +263,12 @@ void* h8_medium_malloc_inner(size_t size) {
   }
   pthread_mutex_lock(&h8_medium_lock);
   h8_medium_register_locked(run);
+  pthread_mutex_lock(&run->lock);
   void* ptr = h8_medium_run_alloc_local_scaffold(run);
   if (ctx) {
     ctx->active_medium_runs[class_id] = run;
   }
+  pthread_mutex_unlock(&run->lock);
   pthread_mutex_unlock(&h8_medium_lock);
   return ptr;
 }
@@ -276,6 +286,8 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = true;
   }
+  pthread_mutex_lock(&run->lock);
+  pthread_mutex_unlock(&h8_medium_lock);
   bool ok = h8_medium_run_free_local_scaffold(run, ptr);
   if (ok) {
     H8ThreadCtx* ctx = h8_tls_ctx;
@@ -283,7 +295,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       ctx->active_medium_runs[run->class_id] = run;
     }
   }
-  pthread_mutex_unlock(&h8_medium_lock);
+  pthread_mutex_unlock(&run->lock);
   return ok;
 }
 
@@ -294,9 +306,11 @@ H8RouteKind h8_medium_route_inner(void* ptr) {
     pthread_mutex_unlock(&h8_medium_lock);
     return H8_ROUTE_MISS;
   }
+  pthread_mutex_lock(&run->lock);
+  pthread_mutex_unlock(&h8_medium_lock);
   size_t slot = 0;
   if (!h8_medium_slot_index_from_ptr_checked(run, ptr, &slot)) {
-    pthread_mutex_unlock(&h8_medium_lock);
+    pthread_mutex_unlock(&run->lock);
     return H8_ROUTE_INVALID;
   }
   uint64_t bit = UINT64_C(1) << slot;
@@ -304,6 +318,6 @@ H8RouteKind h8_medium_route_inner(void* ptr) {
       ((run->allocated_mask & bit) != 0 && (run->free_mask & bit) == 0)
           ? H8_ROUTE_VALID
           : H8_ROUTE_INVALID;
-  pthread_mutex_unlock(&h8_medium_lock);
+  pthread_mutex_unlock(&run->lock);
   return route;
 }

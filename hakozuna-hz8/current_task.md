@@ -127,7 +127,9 @@ MediumRunLocalOnly-L1:
     initial routing implemented for 4097..65536
     global mutex scaffold, not final owner-local fast path
     TLS active_medium_runs[class] hint avoids the common global scan
-    mutex remains the synchronization authority
+    active malloc hit uses run-local lock only
+    global mutex remains the registry authority for miss/free/route
+    run-local mutex is the medium slot mutation authority
     empty runs are MADV_DONTNEED-ed and retained for reuse
     smoke validates create / alloc / free / double-free reject / interior reject
     h8_malloc / h8_free / h8_route cover medium pointers
@@ -138,9 +140,19 @@ MediumRunLocalOnly-L1:
   data:
     bench_results/20260623T212652Z_medium_localonly_scaffold.md
     bench_results/20260623T213430Z_medium_active_hint_scaffold.md
+    bench_results/20260623T213834Z_medium_runlocal_lock.md
   known limitation:
-    performance is still intentionally limited by the global mutex
-    next box must introduce owner-local synchronization or medium remote protocol
+    free/route and active misses still use the global registry mutex
+    next box must introduce owner-local registry or medium remote protocol
+
+MediumRunOwnerLocalSync-L1:
+  current status:
+    active medium allocation uses run-local mutex only
+    active miss / free / route still use global registry lookup
+    run-local mutex protects free_mask, allocated_mask, and slot_state
+  next:
+    split owner-local run lists from global route registry
+    keep route/free fail-closed for medium-owned invalid pointers
 
 MediumRunRemote-L1:
   remote claim / collect contract
