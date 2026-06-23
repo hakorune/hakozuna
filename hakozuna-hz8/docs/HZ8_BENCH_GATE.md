@@ -108,13 +108,13 @@ guard_remote50_phase:
 
 guard_remote90_phase:
   T=16
-  size=16..2048
+  size=16..2048 or 16..4096
   remote_pct=90
   interleaved=0
 
 guard_remote90_interleaved:
   T=16
-  size=16..2048
+  size=16..2048 or 16..4096
   remote_pct=90
   interleaved=1
 ```
@@ -149,6 +149,50 @@ RSS:
 ```
 
 These are bring-up gates, not final performance claims.
+
+For `V0FreezeSafetyBatch-L1`, use:
+
+```text
+guard_local0:
+  size=16..2048
+  RUNS=10 x fresh 2 batches
+
+small_interleaved_remote90:
+  size=16..4096
+  RUNS=10 x fresh 2 batches
+
+small_phase_remote90:
+  size=16..4096
+  RUNS=10
+  lifecycle/RSS stress, not primary throughput gate
+```
+
+Latest `V0FreezeSafetyBatch-L1` result:
+
+```text
+HEAD:
+  2d5073a
+
+guard_local0 16..2048 RUNS=10 x 2:
+  batch1 median 443.73M ops/s
+  batch2 median 440.38M ops/s
+
+small_interleaved_remote90 16..4096 RUNS=10 x 2:
+  batch1 median 55.25M ops/s
+  batch2 median 55.49M ops/s
+
+small_phase_remote90 16..4096 RUNS=10:
+  median 3.52M ops/s
+  peak_rss median 3803.02MiB
+  post_rss median 38.57MiB
+
+interpretation:
+  small v0 is soft-frozen for same-run allocator matrix work
+  phase row remains lifecycle / peak-live / RSS stress
+
+data:
+  bench_results/20260623T160850Z_v0_freeze_safety_summary.md
+```
 
 ## v0 Stress / Diagnostic Rows
 

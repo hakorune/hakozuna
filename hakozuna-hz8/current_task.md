@@ -72,6 +72,21 @@ result:
   data: bench_results/20260623T123415Z_stability_r10x2.md
 ```
 
+Soft-freeze decision:
+
+```text
+status:
+  small v0 is soft-frozen for same-run allocator matrix work
+
+reason:
+  local and 16..4096 interleaved remote are above bring-up gates
+  remote protocol is frozen unless fresh paired batches contradict this
+
+freeze result:
+  V0FreezeSafetyBatch-L1 passed on HEAD 2d5073a
+  phase-separated 16..4096 remains lifecycle / peak-live stress
+```
+
 Latest focused checks:
 
 ```text
@@ -350,6 +365,57 @@ RemeasureAfterEvidenceKnob-L1:
     local0 and interleaved remote90 remain above v0 bring-up gates
     phase remote90 remains peak-live / first-touch / lifecycle stress
   data: bench_results/20260623T145238Z_remeasure_summary.md
+
+V0FreezeSafetyBatch-L1:
+  HEAD 2d5073a, bench-release, RUNS=10
+  build:
+    clean smoke / safety-stress / preload-smoke / bench-release
+  functional:
+    h8_smoke pass
+    h8_safety_stress pass
+    preload smoke pass
+  performance:
+    guard/local0 16..2048 batch1:
+      median 443.73M ops/s, p25 408.03M, min 373.00M
+      steady median 507.81M
+      post_rss median 3.77MiB, peak_rss median 3.88MiB
+    guard/local0 16..2048 batch2:
+      median 440.38M ops/s, p25 426.26M, min 364.56M
+      steady median 509.00M
+      post_rss median 3.82MiB, peak_rss median 3.88MiB
+    small_interleaved_remote90 16..4096 batch1:
+      median 55.25M ops/s, p25 54.41M, min 52.09M
+      steady median 56.92M
+      post_rss median 3.34MiB, peak_rss median 22.29MiB
+    small_interleaved_remote90 16..4096 batch2:
+      median 55.49M ops/s, p25 54.88M, min 54.73M
+      steady median 57.12M
+      post_rss median 3.31MiB, peak_rss median 17.89MiB
+  stress:
+    small_phase_remote90 16..4096:
+      median 3.52M ops/s, p25 3.48M, min 3.48M
+      steady median 4.85M
+      post_rss median 38.57MiB, peak_rss median 3803.02MiB
+      minor_faults median 966176
+      phase median alloc 332.171ms / remote 10.550ms
+  hard gates:
+    timeout / abort = 0
+    release snapshot zero gates clean:
+      remote validate_fail = 0
+      duplicate_claim = 0
+      quiescent_pending bitmap_nonzero = 0
+      quiescent_pending repair = 0
+      local_zero_gates alloc/free/live = 0
+      slot_shadow mismatch counters = 0
+  interpretation:
+    V0FreezeSafetyBatch-L1 passes
+    small v0 can be soft-frozen for same-run allocator matrix work
+    phase-separated 16..4096 is peak-live / first-touch / lifecycle stress,
+    not the primary remote throughput gate
+  output:
+    bench_results/20260623T160850Z_v0_freeze_safety_summary.md
+  next:
+    SameRunAllocatorMatrix-L1
 ```
 
 Latest safety checks:
@@ -437,11 +503,12 @@ Stability lane:
 
 ```text
 goal:
-  keep the passed StabilityBatch-R10x2 as the current v0 performance baseline
+  keep the passed V0FreezeSafetyBatch-L1 as the current small-v0 freeze
+  baseline
 
 targets:
   guard/local0
-  small_interleaved_remote90
+  small_interleaved_remote90 16..4096
 
 requirements:
   RUNS=10
@@ -449,6 +516,10 @@ requirements:
   p25 >= median * 0.85
   min >= median * 0.60
   zero gates clean
+
+status:
+  passed on HEAD 2d5073a
+  allocator behavior should remain fixed during SameRunAllocatorMatrix-L1
 ```
 
 Safety lane:
@@ -488,7 +559,7 @@ Remote lane:
 
 ```text
 status:
-  primary interleaved remote median is above 40M
+  primary 16..4096 interleaved remote median is above 40M
   latest R10 interleaved remote90 p25 stability is clean after per-run
   work/tail attribution
   worker audit confirmed pending bitmap / pending_word_mask / qstate remain
@@ -579,17 +650,21 @@ LocalFreeHeadBumpScalar-L1
     correctness authorities intact and only changes call shape.
 23. Treat `MallocOwnerLoadDefer-L1` as implemented. It removes owner load from
     release active-hit malloc success while keeping debug validation.
-24. Run `LocalLeafCodeShapeSweep-L1` before proposing another behavior change.
+24. Treat `LocalLeafCodeShapeSweep-L1` as complete for the current freeze
+    candidate.
     This is an observation box: update docs/logs first, inspect release
     machine code, then choose the next low-risk code-shape candidate.
-25. Next concrete work is `EvidenceKnobReleaseShape-L1`: compile unsafe
-   evidence knobs out of normal release hot paths, while keeping explicit
-   evidence builds possible.
-26. Treat `EvidenceKnobReleaseShape-L1` as implemented. Unsafe evidence flags
+25. Treat `EvidenceKnobReleaseShape-L1` as implemented. Unsafe evidence flags
    require an explicit `H8_ENABLE_UNSAFE_EVIDENCE_KNOBS` build and do not
    affect normal release hot paths.
-27. Next concrete work should stay in local leaf / code shape unless a second
-   fresh interleaved batch shows remote protocol instability again.
+26. Treat `V0FreezeSafetyBatch-L1` as passed on HEAD 2d5073a. Small v0 is
+    soft-frozen for same-run allocator matrix work.
+27. Run `SameRunAllocatorMatrix-L1` next. Do not change allocator behavior
+    while building the common malloc/free matrix harness.
+28. Treat phase-separated 16..4096 remote90 as lifecycle / peak-live / RSS
+    stress, not as the primary throughput gate.
+29. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
+    that the same-run matrix proves is still deficient.
 
 ## Working Rules
 
