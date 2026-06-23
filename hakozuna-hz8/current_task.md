@@ -95,6 +95,24 @@ MatrixSnapshot-R10:
     HZ8 rows are local-harness evidence, not same-run cross-allocator ranking
   data: bench_results/20260623T141023Z_hz8_matrix_snapshot.md
 
+UsedCountClosedReverify-L1:
+  confirmed current HEAD already contains:
+    UsedCountColdDerivationShadow-L1
+    UsedCountReleaseElision-L1
+    UsedCountFieldRemoval-L1
+  smoke / safety / debug interleaved remote90 pass
+  debug interleaved remote90:
+    derived_mismatch = 0
+    slot_shadow mismatch counters = 0
+    quiescent_pending bitmap_nonzero = 0
+    quiescent_pending repair = 0
+    remote duplicate_claim / validate_fail / invalid = 0
+  interpretation:
+    used_count lane remains closed
+    release cold decisions derive allocated count from slot_state
+    remaining used_count counters are debug proof lineage only
+  data: bench_results/20260623T143713Z_used_count_reverify.md
+
 TlsModelCodeShape-L1:
   h8_tls_ctx uses initial-exec + hidden
   malloc/free leaf has no __tls_get_addr
