@@ -3,8 +3,9 @@
 Status:
 
 ```text
-metadata scaffold present
-no allocator behavior change yet
+runtime scaffold present
+4097..65536 routes through medium runs
+performance is not yet representative
 ```
 
 ## Purpose
@@ -92,6 +93,26 @@ slots/run:
   4
   2
   1
+```
+
+Current runtime scaffold:
+
+```text
+allocation:
+  TLS active run hint
+  owner-local medium_by_class list on miss
+  global registry fallback on miss
+
+mutation:
+  run-local mutex protects free_mask, allocated_mask, and slot_state
+
+empty run:
+  payload MADV_DONTNEED
+  metadata retained in global registry
+
+owner exit:
+  owner-local list detached
+  global registry retains runs to keep stale medium pointers fail-closed
 ```
 
 Smoke coverage:
@@ -244,12 +265,38 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
    routing: h8_malloc / h8_free / h8_route connected for 4097..65536
    implementation: TLS active run hint, run-local lock, global registry mutex
    RSS: empty run payload uses MADV_DONTNEED and remains reusable
+   observation:
+     pure medium t1 local median about 204k ops/s
+     pure medium t2 local median about 277k ops/s
+     pure medium t2 interleaved r50 median about 254k ops/s
+     main-like 16..32768 audit about 380k ops/s after medium routing
+   data:
+     bench_results/20260623T220629Z_medium_observation/README.md
 
-5. MediumRunRemote-L1
+5. MediumRunStats-L1
+   add medium-specific attribution before changing policy
+   required counters:
+     run_create
+     run_reuse_active
+     run_reuse_owner_list
+     run_reuse_global
+     run_madvise
+     global_scan
+     global_scan_steps
+     route_lookup
+     free_lookup
+     invalid_owned_medium
+
+6. MediumRunRunPool-L1
+   replace one-run-per-mmap scaffold with pooled or chunked run allocation
+   keep fail-closed medium pointer identity
+   keep post-RSS recovery measurement
+
+7. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-6. MediumRunLifecycle-L1
+8. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

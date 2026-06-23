@@ -142,6 +142,7 @@ MediumRunLocalOnly-L1:
     bench_results/20260623T213430Z_medium_active_hint_scaffold.md
     bench_results/20260623T213834Z_medium_runlocal_lock.md
     bench_results/20260623T215451Z_medium_owner_local_registry.md
+    bench_results/20260623T220629Z_medium_observation/README.md
   known limitation:
     free/route and active misses still use the global registry mutex
     next box must introduce owner-local registry or medium remote protocol
@@ -181,9 +182,44 @@ MediumRunOwnerExit-L1:
   limitation:
     retained medium metadata can grow until final lifecycle policy lands
 
+MediumRunObservation-L1:
+  current status:
+    smoke passes
+    safety stress passes
+    medium local and interleaved short benches pass
+  observation:
+    pure medium t1 local median is about 204k ops/s
+    pure medium t2 local median is about 277k ops/s
+    pure medium t2 interleaved r50 median is about 254k ops/s
+    main-like 16..32768 audit is about 380k ops/s once medium routing is enabled
+  interpretation:
+    medium correctness scaffold is usable for development
+    medium performance is not yet representative
+    per-run mmap / MADV_DONTNEED / retained global registry shape dominates
+    small-v0 numbers remain the frozen baseline; main_* is not claimable yet
+  next:
+    add medium-specific counters before further policy decisions
+    then replace one-run-per-mmap scaffold with pooled/chunked medium run allocation
+
 MediumRunRemote-L1:
   remote claim / collect contract
   main_r50/main_r90 gates
+
+MediumRunStats-L1:
+  needed counters:
+    run_create
+    run_reuse_active
+    run_reuse_owner_list
+    run_reuse_global
+    run_madvise
+    global_scan
+    global_scan_steps
+    route_lookup
+    free_lookup
+    invalid_owned_medium
+  purpose:
+    separate run construction, registry lookup, and decommit cost
+    avoid guessing before MediumRunRunPool-L1
 ```
 
 ### 2. SizePolicy-v1 Evidence
