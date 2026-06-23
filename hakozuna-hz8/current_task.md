@@ -102,6 +102,14 @@ Upper3072CacheShapeAudit-L1:
   decision: HOLD as default; useful SizePolicy-v1 evidence
   data: bench_results/20260623T190416Z_upper3072_cache_shape.md
   paired data: bench_results/20260623T192704Z_upper3072_paired_r10x2.md
+
+Upper3072P2PrefixMonomorph-L1:
+  p2 prefix geometry specialized for upper3072 evidence build
+  local +2.22% in R10 x 2
+  interleaved remote90 -3.56% in R10 x 2
+  phase peak RSS -8.88%
+  decision: HOLD as default; close small class-map default lane
+  data: bench_results/20260623T203530Z_upper3072_prefix_monomorph_r10x2.md
 ```
 
 Acceptance:
@@ -184,8 +192,9 @@ small-v0 hot-path tuning without asm evidence
 1. Keep `hz8-small-v0-rc1` fixed.
 2. Do not adopt full `upper1p5` as default.
 3. Keep `upper3072-v0` as SizePolicy-v1 evidence, not a default cutover.
-4. Prepare design review for SizePolicy-v1 / MediumRun-v1 boundary.
-5. Start `MediumRun-v1` only after the size-policy boundary is explicit.
+4. Close small class-map default attempts for now.
+5. Prepare design review for SizePolicy-v1 / MediumRun-v1 boundary.
+6. Start `MediumRun-v1` after the boundary is explicit.
 
 ## Working Rules
 

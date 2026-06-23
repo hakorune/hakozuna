@@ -17,6 +17,7 @@
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
 #define H8_CACHELINE_BYTES 64u
 
+#if !defined(H8_LIKELY)
 #if defined(__GNUC__) || defined(__clang__)
 #define H8_LIKELY(expr) __builtin_expect(!!(expr), 1)
 #define H8_UNLIKELY(expr) __builtin_expect(!!(expr), 0)
@@ -25,6 +26,15 @@
 #define H8_LIKELY(expr) (expr)
 #define H8_UNLIKELY(expr) (expr)
 #define H8_CACHELINE_ALIGNED
+#endif
+#endif
+
+#if !defined(H8_CACHELINE_ALIGNED)
+#if defined(__GNUC__) || defined(__clang__)
+#define H8_CACHELINE_ALIGNED __attribute__((aligned(H8_CACHELINE_BYTES)))
+#else
+#define H8_CACHELINE_ALIGNED
+#endif
 #endif
 
 typedef enum H8OwnerState {
@@ -548,41 +558,7 @@ static inline bool h8_remote_pending_publish_elision_enabled(void) {
 #endif
 }
 
-static inline bool h8_slot_index_from_ptr_checked(const H8Span* span,
-                                                  const void* ptr,
-                                                  size_t* slot_out) {
-  uintptr_t addr = (uintptr_t)ptr;
-  uintptr_t base = (uintptr_t)span->base;
-  uintptr_t offset = addr - base;
-  uint32_t shift = h8_class_shift(span->class_id);
-  uintptr_t mask = ((uintptr_t)1 << shift) - (uintptr_t)1;
-  if ((offset & mask) != 0) {
-    return false;
-  }
-  uintptr_t quantum = offset >> shift;
-  uint32_t factor = h8_class_factor(span->class_id);
-  size_t slot = (size_t)quantum;
-  if (factor == 3u) {
-    if ((quantum % 3u) != 0) {
-      return false;
-    }
-    slot = (size_t)(quantum / 3u);
-  }
-  if (slot >= span->slot_count) {
-    return false;
-  }
-  *slot_out = slot;
-  return true;
-}
-
-static inline void* h8_slot_ptr(const H8Span* span, size_t slot) {
-  uint32_t factor = h8_class_factor(span->class_id);
-  uint32_t shift = h8_class_shift(span->class_id);
-  if (factor == 1u) {
-    return span->base + (slot << shift);
-  }
-  return span->base + ((slot * factor) << shift);
-}
+#include "h8_slot_geometry_inline.h"
 
 static inline uint64_t h8_bit_mask(size_t slot) {
   return 1ull << (slot & 63u);

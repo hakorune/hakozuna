@@ -142,6 +142,32 @@ decision:
   keep as evidence for SizePolicy-v1
 ```
 
+Prefix monomorph follow-up:
+
+```text
+data:
+  bench_results/20260623T203530Z_upper3072_prefix_monomorph_r10x2.md
+
+change:
+  p2 prefix geometry specialized for <=2048 in the upper3072 build
+
+combined 20-run median:
+  local +2.22%
+  interleaved remote90 -3.56%
+  phase remote90 +7.69%
+  phase peak RSS -8.88%
+  phase minor faults -8.90%
+
+decision:
+  local regression was code-shape sensitive
+  interleaved hot gate still fails
+  upper3072 remains evidence-only
+```
+
+Small class-map default attempts are closed for now.  Keep `p2-v0` as the
+small-v0 default and carry the upper3072 data into the MediumRun / size-boundary
+design.
+
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
 
