@@ -312,6 +312,33 @@ result:
   remaining used_count readers are adoption / owner-exit / quiescent proof
 ```
 
+Latest design decision after GPT Pro review:
+
+```text
+UsedCountScalarAuthority-L1:
+  HOLD
+
+reason:
+  adoption pre-quiescent scans currently read used_count under
+  orphan->owned_lock, while orphan collect mutates used_count under
+  orphan->pending_lock. Plain storage would create a C data-race risk.
+
+hot plain + cold atomic hybrid:
+  NO-GO
+
+reason:
+  it recreates a two-authority synchronization problem.
+
+next:
+  UsedCountColdDerivationShadow-L1
+
+target after shadow:
+  UsedCountReleaseElision-L1
+  release stops maintaining used_count on alloc/free/collect
+  debug keeps an atomic shadow
+  cold/quiescent paths derive allocated count from slot_state
+```
+
 Interpretation:
 
 ```text
@@ -453,8 +480,9 @@ evidence:
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
   and used_count load/store remains the main counted local-hot metadata touch
-  scalar used_count cutover can now be considered as a narrow box, provided
-  adoption / owner-exit / quiescent readers keep a clear cold accessor contract
+  plain used_count authority remains HOLD because adoption pre-quiescent reads
+  can race with orphan collect under a different lock
+  next used_count target is cold derivation shadow, then release elision if clean
 ```
 
 Remote lane:
@@ -492,6 +520,8 @@ full class-map redesign
 resident empty span pool
 MediumRun
 runtime profile / knob split
+plain used_count authority cutover
+hot plain used_count + cold atomic used_count hybrid
 ```
 
 ## Next Order
@@ -499,9 +529,11 @@ runtime profile / knob split
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, consider a narrow scalar cutover that preserves
-   adoption / owner-exit / quiescent cold accessor semantics.
-4. If interleaved remote falls below gate again, add attribution around tail
+3. If continuing on used_count, implement `UsedCountColdDerivationShadow-L1`.
+   Do not plain-scalar cut over yet.
+4. If that is clean, implement `UsedCountReleaseElision-L1` so release hot path
+   stops maintaining used_count and debug keeps an atomic shadow.
+5. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 
 ## Working Rules
