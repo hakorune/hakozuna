@@ -271,6 +271,13 @@ int main(int argc, char** argv) {
     int error = 0;
     uint64_t alloc_ns_max = 0;
     uint64_t remote_ns_max = 0;
+    size_t run_remote_enqueue = 0;
+    size_t run_local_free = 0;
+    size_t run_drain_calls = 0;
+    size_t run_drain_objects = 0;
+    size_t run_drain_empty = 0;
+    size_t run_push_yields = 0;
+    size_t run_finish_yields = 0;
     for (int i = 0; i < opt.threads; ++i) {
       pthread_join(tids[i], NULL);
       if (th[i].error != 0) {
@@ -282,6 +289,13 @@ int main(int argc, char** argv) {
       if (th[i].remote_ns > remote_ns_max) {
         remote_ns_max = th[i].remote_ns;
       }
+      run_remote_enqueue += th[i].interleaved_remote_enqueue;
+      run_local_free += th[i].interleaved_local_free;
+      run_drain_calls += th[i].interleaved_drain_calls;
+      run_drain_objects += th[i].interleaved_drain_objects;
+      run_drain_empty += th[i].interleaved_drain_empty;
+      run_push_yields += th[i].interleaved_push_yields;
+      run_finish_yields += th[i].interleaved_finish_yields;
       interleaved_remote_enqueue_total += th[i].interleaved_remote_enqueue;
       interleaved_local_free_total += th[i].interleaved_local_free;
       interleaved_drain_calls_total += th[i].interleaved_drain_calls;
@@ -360,6 +374,12 @@ int main(int argc, char** argv) {
     if (!opt.interleaved) {
       printf("run_phase=%d alloc_ms=%.3f remote_ms=%.3f\n", run + 1,
              alloc_phase_ms[run], remote_phase_ms[run]);
+    } else {
+      printf("run_interleaved=%d work_ms=%.3f tail_ms=%.3f remote_enqueue=%zu local_free=%zu drain_calls=%zu drain_objects=%zu drain_empty=%zu push_yields=%zu finish_yields=%zu\n",
+             run + 1, alloc_phase_ms[run], remote_phase_ms[run],
+             run_remote_enqueue, run_local_free, run_drain_calls,
+             run_drain_objects, run_drain_empty, run_push_yields,
+             run_finish_yields);
     }
 
     for (int i = 0; i < opt.threads; ++i) {

@@ -123,6 +123,26 @@ result:
   local and interleaved remote90 both clear the v0 bring-up gate
 ```
 
+Latest `InterleavedTailVarianceAudit-L1` release check:
+
+```text
+small_interleaved_remote90, RUNS=10:
+  median ~= 56.8M ops/s
+  p25 ~= 48.7M ops/s
+  min ~= 44.9M ops/s
+  steady median ~= 59.5M ops/s
+  steady p25 ~= 51.2M ops/s
+
+  work median ~= 27.3ms
+  tail median ~= 13.9ms
+  push_yields = 0
+  finish_yields = 92508
+
+interpretation:
+  the weakest run correlates mostly with work phase expansion, not tail-drain
+  explosion; remote protocol redesign remains HOLD
+```
+
 Latest `V0SafetyStressBatch-L1` debug check:
 
 ```text
@@ -612,11 +632,18 @@ Remote lane:
 ```text
 status:
   primary interleaved remote median is above 40M
-  current RUNS=10 p25 stability is not yet clean after the post-claim fix
+  latest RUNS=10 interleaved remote90 p25 stability is clean after per-run
+  work/tail attribution
+
+latest:
+  InterleavedTailVarianceAudit-L1 records per-run work_ms, tail_ms, drain
+  shape, push_yields, and finish_yields
+  the low run is work-phase variance, not a tail-drain explosion
 
 next action:
-  implement / run InterleavedTailVarianceAudit-L1
-  use existing steady_work/tail/drain/yield data first
+  keep remote protocol frozen unless a second fresh batch contradicts this
+  if more evidence is needed, add work-phase attribution before changing
+  ownership or remote queue protocol
   do not reopen owner lease or intrusive remote_head until two fresh batches
   show remote protocol is still the blocker before changing ownership protocol
 ```
@@ -659,8 +686,11 @@ hot plain used_count + cold atomic used_count hybrid
    unless fresh evidence shows lifecycle count derivation is the blocker.
 5. Treat `PostClaimCollectorAcceptance-L1` as implemented. It fixed a
    producer/collector race exposed by release interleaved remote90.
-6. Next concrete box is `InterleavedTailVarianceAudit-L1`: explain p25 drops
-   using work/tail/drain/yield attribution before changing remote protocol.
+6. Treat `InterleavedTailVarianceAudit-L1` as implemented. The latest R10
+   shows p25 stability clean and attributes the weakest run mostly to work
+   phase expansion, not tail drain.
+7. Next concrete work should stay in attribution/local leaf unless a second
+   fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
 
