@@ -64,15 +64,16 @@ These HZ8 numbers are from the local HZ8 harness, not from the public README
 allocator matrix runner.  They must not be inserted into the `main_*` rows
 above without re-running all allocators under the same lane.
 
-Latest matrix snapshot after slot-state release cutover, TLS active spans,
+Latest soft-freeze snapshot after slot-state release cutover, TLS active spans,
 remote lookup reuse, pending word-mask authority, perf-lane purification, TLS
-leaf fast context lookup, and local leaf shape cleanup:
+leaf fast context lookup, local leaf shape cleanup, and evidence-knob release
+cleanup:
 
 | HZ8 lane | Shape | Median ops/s | post_rss | peak_rss | Interpretation |
 |---|---|---:|---:|---:|---|
-| `guard/local0` | `size=16..2048 remote_pct=0` | 406.43M | 4.00MiB | 4.00MiB | Guard-shaped local row, not `main_r0`; clears v0 local gate in this R10 snapshot |
-| `small_interleaved_remote90` | `size=16..2048 remote_pct=90 interleaved=1` | 58.74M | 3.42MiB | 25.86MiB | Current primary v0 steady-state remote lane; clears v0 remote gate in this R10 snapshot |
-| `small_phase_remote90` | `size=16..2048 remote_pct=90 interleaved=0` | 6.69M | 28.93MiB | 1917.07MiB | Peak-live / first-touch / lifecycle stress |
+| `guard/local0` | `size=16..2048 remote_pct=0` | 440.38M / 443.73M | 3.77-3.82MiB | 3.88MiB | Guard-shaped local row, not `main_r0`; clears v0 local gate across two R10 batches |
+| `small_interleaved_remote90` | `size=16..4096 remote_pct=90 interleaved=1` | 55.25M / 55.49M | 3.31-3.34MiB | 17.89-22.29MiB | Current primary v0 steady-state remote lane; clears the 16..4096 v0 remote gate across two R10 batches |
+| `small_phase_remote90` | `size=16..4096 remote_pct=90 interleaved=0` | 3.52M | 38.57MiB | 3803.02MiB | Peak-live / first-touch / lifecycle stress; not the primary throughput lane |
 
 `post_rss` is `VmRSS` sampled after worker join and owner-exit purge.
 `peak_rss` is process `VmHWM`; exact per-run peak needs a child-process runner.
@@ -80,14 +81,74 @@ The HZ8 rows above are not a same-run cross-allocator comparison.  They are
 bring-up evidence from the HZ8 harness and should be re-run against the other
 allocators before claiming a matrix rank.
 
+For the soft-freeze row, track both commits:
+
+```text
+allocator_behavior_sha = 2d5073a
+freeze_record_sha = d3f3fe5
+```
+
+The phase row's high peak RSS is not treated as a small-v0 freeze blocker.
+For the barrier workload, the expected rounded live payload is roughly:
+
+```text
+16 threads * 100k allocations * 90% live * p2-v0 average rounded size
+  ~= 3.7GiB
+```
+
+The observed peak RSS and minor fault count match that first-touched live-set
+shape, while post-purge RSS recovers.  This is a `SizePolicy-v1` issue, not a
+remote-publish failure.
+
 Latest HZ8 raw matrix data:
 
 ```text
-bench_results/20260623T141023Z_hz8_matrix_snapshot.md
-bench_results/20260623T141023Z_matrix_local_r10.log
-bench_results/20260623T141023Z_matrix_interleaved_r10.log
-bench_results/20260623T141023Z_matrix_phase_r10.log
+bench_results/20260623T160850Z_v0_freeze_safety_summary.md
+bench_results/20260623T160850Z_v0_freeze_local_b1_r10.log
+bench_results/20260623T160850Z_v0_freeze_local_b2_r10.log
+bench_results/20260623T160850Z_v0_freeze_interleaved4096_b1_r10.log
+bench_results/20260623T160850Z_v0_freeze_interleaved4096_b2_r10.log
+bench_results/20260623T160850Z_v0_freeze_phase4096_r10.log
 ```
+
+## Same-run Matrix Plan
+
+`SameRunAllocatorMatrix-L1` must keep HZ8 allocator behavior fixed.  Only the
+harness, allocator resolver, parser, and documentation should change.
+
+Use one common benchmark binary that calls plain `malloc` and `free` only, then
+switch allocators with startup `LD_PRELOAD`.
+
+```text
+allocators:
+  HZ8
+  HZ3
+  HZ4
+  mimalloc
+  tcmalloc
+  system
+
+primary rows:
+  guard_local0 16..2048
+  small_interleaved_remote90 16..4096
+
+stress row:
+  small_phase_remote90 16..4096
+```
+
+Report phase rows with:
+
+```text
+end-to-end throughput
+peak RSS
+post RSS
+minor faults
+alloc phase
+remote phase
+peak RSS / expected rounded live bytes
+```
+
+Do not rank the phase row by throughput alone.
 
 ## One-line positioning
 

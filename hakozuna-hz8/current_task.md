@@ -85,6 +85,19 @@ reason:
 freeze result:
   V0FreezeSafetyBatch-L1 passed on HEAD 2d5073a
   phase-separated 16..4096 remains lifecycle / peak-live stress
+
+design consult result:
+  phase_remote90 peak RSS is not a small-v0 freeze blocker
+  observed peak ~= 3.7GiB matches expected rounded live payload:
+    16 threads * 100k * 90% live objects
+    * p2-v0 average rounded size
+  observed minor faults also match the first-touched live payload
+  remote phase time is small relative to allocation / first-touch time
+  post RSS recovery shows reclamation is working
+
+tracking:
+  allocator_behavior_sha = 2d5073a
+  freeze_record_sha = d3f3fe5
 ```
 
 Latest focused checks:
@@ -581,6 +594,55 @@ p2-v0:
 upper1p5-v0:
   evidence-only
   revisit with MediumRun or if memory/RSS becomes the primary blocker
+
+v1 direction:
+  phase peak RSS is a SizePolicy-v1 issue, not a small-v0 blocker
+  MediumRun alone does not reduce the current 16..4096 phase peak because the
+  workload is still within small scope
+  revisit small upper-class refinement, 4KiB boundary policy, and MediumRun
+  geometry together
+```
+
+Matrix lane:
+
+```text
+SameRunAllocatorMatrix-L1:
+  next concrete task
+
+purpose:
+  position frozen HZ8 small-v0 against HZ3 / HZ4 / mimalloc / tcmalloc /
+  system under one malloc/free runner
+
+behavior rule:
+  do not modify allocator behavior during matrix setup
+
+allowed changes:
+  harness
+  runner
+  allocator resolver
+  result parser
+  documentation
+
+frozen behavior:
+  p2-v0 class map
+  tagged slot_state authority
+  pending bitmap / pending_word_mask / qstate protocol
+  owner lifecycle
+  purge policy
+
+required rows:
+  guard_local0 16..2048
+  small_interleaved_remote90 16..4096
+  small_phase_remote90 16..4096
+
+report:
+  end-to-end throughput
+  peak RSS
+  post RSS
+  minor faults
+  alloc phase
+  remote phase
+  peak RSS / expected rounded live bytes for phase row
 ```
 
 ## Hold List
@@ -663,8 +725,12 @@ LocalFreeHeadBumpScalar-L1
     while building the common malloc/free matrix harness.
 28. Treat phase-separated 16..4096 remote90 as lifecycle / peak-live / RSS
     stress, not as the primary throughput gate.
-29. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
+29. Record matrix metadata with `allocator_behavior_sha=2d5073a` and
+    `freeze_record_sha=d3f3fe5`.
+30. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
     that the same-run matrix proves is still deficient.
+31. Plan v1 as `SizePolicy-v1` followed by `MediumRun-v1`; do not treat
+    MediumRun alone as a fix for the current small phase peak RSS.
 
 ## Working Rules
 

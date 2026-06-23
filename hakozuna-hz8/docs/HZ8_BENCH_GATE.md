@@ -189,6 +189,8 @@ small_phase_remote90 16..4096 RUNS=10:
 interpretation:
   small v0 is soft-frozen for same-run allocator matrix work
   phase row remains lifecycle / peak-live / RSS stress
+  phase peak RSS is not a freeze blocker because it matches the barrier
+  workload's expected rounded live payload and post RSS recovers
 
 data:
   bench_results/20260623T160850Z_v0_freeze_safety_summary.md
@@ -228,6 +230,16 @@ They are valuable lifecycle/RSS stress rows, but they are not equivalent to
 README `main_r50/main_r90` until the same size range and runner are used.
 They also must not be judged against the interleaved/local RSS gate; report
 both `peak_rss` and `post_rss` and treat the row as a peak-live stress.
+
+For the current p2-v0 16..4096 phase remote90 shape, a peak around 3.7GiB is
+expected from the barrier live set:
+
+```text
+16 threads * 100k allocations * 90% live * average rounded p2-v0 size
+```
+
+This remains a v1 size-policy target, not a small-v0 freeze blocker, as long as
+post-purge RSS recovers and safety zero gates remain clean.
 
 ## Default Candidate Gates
 
