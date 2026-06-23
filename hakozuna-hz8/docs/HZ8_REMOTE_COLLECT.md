@@ -220,11 +220,10 @@ Required order:
 
 ```text
 1. snapshot committed pending bits
-2. clear live bits with one word RMW
+2. publish each claimed slot_state as FREE(next)
 3. clear pending bits with one word RMW
 4. splice the local free chain once
 5. subtract pending_count once in debug shadow
-6. subtract used_count once
 ```
 
 `pending_bits` must be cleared with `fetch_and(~claimed)`, not store-zero, so

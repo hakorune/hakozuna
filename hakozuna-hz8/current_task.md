@@ -147,6 +147,15 @@ ObservabilityDeadCounterCleanup-L1:
     these fields had declarations, snapshots, and bench output but no writers
     current span commit path uses owner chunk placement, not table scan timing
 
+DocsAuthorityCleanup-L1:
+  updated architecture, ownership, lifecycle, and remote collect docs from the
+  older remote_head / used_count / live-bitmap authority model to the current
+  slot_state + pending bitmap + pending_word_mask + qstate model
+  renamed bench release summary label from counters_prod to stats_snapshot
+  rationale:
+    release has no production hot-path global counter atomics
+    debug live/count fields are shadows, not runtime authority
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -219,6 +228,7 @@ SlotAuthorityMonomorphic-L1
 RemoteSlotAuthorityMonomorphic-L1
 PendingPublishMaskCounterCleanup-L1
 ObservabilityDeadCounterCleanup-L1
+DocsAuthorityCleanup-L1
 ```
 
 Benchmark / evidence:
@@ -285,7 +295,7 @@ latest:
 next:
   local leaf/code-shape evidence only
   keep debug live bitmap as shadow only
-  broader docs stale-reference cleanup remains a documentation-only follow-up
+  remaining used_count bench labels are debug shadow lineage, not authority
 ```
 
 Remote lane:
@@ -361,7 +371,8 @@ LocalFreeHeadBumpScalar-L1
     counters must be removed rather than carried as zero-valued evidence.
 13. Treat `ObservabilityDeadCounterCleanup-L1` as implemented for counters with
     no writers. Do not keep zero-valued fields as evidence.
-14. Next concrete work should stay in local leaf / code shape unless a second
+14. Treat `DocsAuthorityCleanup-L1` as implemented for the primary design docs.
+15. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

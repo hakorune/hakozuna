@@ -82,8 +82,8 @@ Required owner-death ordering:
 3. owner waits until publish_refcount reaches zero
 4. owner drains its pending-span queue completely
 5. owner quiesces each remaining non-empty span before handoff and marks it
-   ORPHAN_READY only after remote_head, qstate, and remote-pending bitmap are
-   stable for adoption
+   ORPHAN_READY only after qstate, pending_word_mask, and the full
+   remote-pending bitmap are stable for adoption
 6. adopter claims the whole span with a span_ownership_epoch bump
 7. new owner may collect only after the adopted owner token is visible
 ```
@@ -107,17 +107,15 @@ Required checks:
 3. span metadata is active
 4. slot offset is aligned to the class size
 5. owner token matches the current thread owner
-6. live bit is set
+6. slot_state is ALLOCATED
 7. remote-pending bit is not set for the same slot
 ```
 
 After validation, the owner may:
 
 ```text
-clear live bit
-write local free-list next link
+store slot_state = FREE(next)
 push local free-list
-decrement used_count
 ```
 
 The same-owner local path must not perform global route lookup, exact route
@@ -133,21 +131,19 @@ the span owner:
 1. pointer is inside the small arena
 2. segment and span are active
 3. slot offset is aligned
-4. live bit is set
+4. slot_state is ALLOCATED
 5. owner token identifies a live or slow-path-resolvable owner
 6. remote-pending bit is atomically claimed
-7. object payload is linked as an intrusive MPSC node
-8. node is pushed to span remote_head
-9. span is queued to the owner pending-span queue once
+7. slot_state is revalidated as ALLOCATED
+8. pending_word_mask is armed for the word when it transitions empty -> nonempty
+9. qstate signals the owner pending-span queue once per pending word episode
 ```
 
 Remote producer forbidden actions:
 
 ```text
-decrement used_count
-clear live bit
+mutate slot_state
 push local free-list
-drain remote_head
 retire/decommit span
 mutate source state
 mutate global route state
@@ -167,19 +163,14 @@ if (!atomic_test_and_set(remote_pending_bit(slot))) {
     return H8_INVALID_DUPLICATE_REMOTE_FREE;
 }
 
-node->next = atomic_load_explicit(&span->remote_head, memory_order_relaxed);
-do {
-    old = node->next;
-    node->next = old;
-} while (!atomic_compare_exchange_weak_explicit(
-    &span->remote_head,
-    &old,
-    (uintptr_t)node,
-    memory_order_release,
-    memory_order_relaxed));
+if (slot_state(slot) != ALLOCATED) {
+    atomic_clear(remote_pending_bit(slot));
+    return H8_INVALID;
+}
 
-if (h8_span_qstate_idle_to_queued(span)) {
-    h8_owner_pending_span_push(owner, span);
+if (old_pending_word == 0) {
+    atomic_fetch_or(&span->pending_word_mask, word_bit);
+    h8_span_signal_work(owner, span);
 }
 ```
 
@@ -188,32 +179,29 @@ Exact atomics may change during implementation, but the contract must preserve:
 ```text
 remote_duplicate_claim = 0
 remote_publish_lost = 0
-remote_node_cycle = 0
 remote_collect_duplicate = 0
 ```
 
 ## Owner Collect Ordering
 
-Owner collect is the only path that consumes remote nodes:
+Owner collect is the only path that consumes remote pending slots:
 
 ```c
-head = atomic_exchange_explicit(
-    &span->remote_head,
+mask = atomic_exchange_explicit(
+    &span->pending_word_mask,
     0,
-    memory_order_acquire);
+    memory_order_acq_rel);
 
-for each node in head:
-    slot = h8_slot_from_node(span, node);
-    verify live bit is set;
-    verify remote-pending bit is set;
-    clear remote-pending bit;
-    clear live bit;
-    push local free-list;
-    span->used_count--;
+for each word in mask:
+    claimed = pending_bits[word] & valid_slot_mask;
+    for each slot in claimed:
+        verify slot_state(slot) == ALLOCATED;
+        store slot_state(slot) = FREE(next);
+        clear remote-pending bit;
+        push local free-list;
 
-store qstate = IDLE
-recheck remote_head and remote-pending summary
-if either is nonzero, notify/requeue the span
+finish qstate with DRAINING/DRAINING_DIRTY handshake
+recheck pending_word_mask and requeue if nonzero
 ```
 
 The implementation must close the race where a producer publishes after the
@@ -227,8 +215,9 @@ Use a three-state queue state:
 IDLE -> QUEUED -> DRAINING -> IDLE
 ```
 
-After storing `IDLE`, the collector must recheck `remote_head` and the pending
-summary.  If either is nonzero, it must notify/requeue the span.
+At finish, the collector must hand off responsibility through qstate.  If
+producers or the collector rearmed `pending_word_mask` while DRAINING, the span
+must move through DRAINING_DIRTY back to QUEUED instead of being lost.
 
 The pending-span queue is intentionally one-notification-per-span, but its
 collection cadence is a performance-sensitive contract.  Benchmark the three
@@ -253,8 +242,8 @@ collection profiles.
 A span may retire or decommit only when all are true:
 
 ```text
-used_count == 0
-remote_head == NULL
+slot-state-derived allocated count == 0
+pending_word_mask == 0
 qstate == IDLE
 remote-pending bitmap empty
 span is not on an owner pending queue

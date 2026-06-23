@@ -125,22 +125,25 @@ typedef struct H8SpanMeta {
     uint16_t slot_count;
     uint16_t bump_index;
     uint32_t local_free_head;
-    uint32_t used_count;
 
-    _Atomic(uintptr_t) remote_head;
-    _Atomic(uint8_t) qstate; /* IDLE / QUEUED / DRAINING */
+    _Atomic(uint32_t)* slot_state;
+    _Atomic(uint64_t)* pending_bits;
+    _Atomic(uint64_t) pending_word_mask;
+    _Atomic(uint8_t) qstate; /* IDLE / QUEUED / DRAINING / DRAINING_DIRTY */
 
     /*
-     * live_bitmap is owner-written.
-     * remote_pending_bitmap is claimed by foreign producers and cleared by
-     * owner collection.
+     * slot_state is the allocation validity authority.
+     * pending_bits are the remote duplicate-claim authority.
+     * pending_word_mask is the runtime collection work-set authority.
+     * Debug builds may keep live/count shadows, but release does not use them
+     * as authority.
      */
 } H8SpanMeta;
 ```
 
-The free-list is the speed structure.  Bitmaps are the validation and ownership
-guard structures.  Same-owner local frees must not pay locked atomic RMW for
-normal bitmap updates.
+The tagged slot-state word is both the free-list link and the remote-visible
+allocation state.  Same-owner local frees must not pay locked atomic RMW for
+normal validity publication.
 
 ## Local Small Path
 
@@ -176,10 +179,10 @@ arena range check
 segment/span metadata lookup
 slot alignment check
 owner token check
-live bit check
-clear live bit
+slot_state == ALLOCATED
+remote-pending bit is not set
+store slot_state = FREE(next)
 push local free-list
-decrement used_count
 return
 ```
 
@@ -206,19 +209,16 @@ Foreign free:
 ptr -> segment/span/slot
 validate slot alignment and span state
 read owner token
+validate slot_state == ALLOCATED
 atomic claim remote-pending bit
-store next pointer into freed object payload
-push object onto span remote_head
-queue span to owner pending-span queue once
+revalidate slot_state == ALLOCATED
+if the pending word was empty, arm pending_word_mask
+signal qstate/owner pending queue once per pending word episode
 return
 ```
 
 Remote producers do not drain, retire, rehome, unregister routes, mutate source
-state, push frontcache, or decrement `used_count`.
-
-The intrusive list uses the freed object as its node, so the per-span remote
-queue has no fixed capacity and cannot report transfer-cache-full style
-backpressure.
+state, push frontcache, mutate slot_state, or clear pending bits.
 
 ## Owner Collect
 
@@ -261,18 +261,20 @@ slow path.
 Collection:
 
 ```text
-head = atomic_exchange(span->remote_head, NULL)
-for each object in head:
-    verify live bit
+mask = atomic_exchange(span->pending_word_mask, 0)
+for each pending word in mask:
+  claimed = pending_bits[word] & valid_slot_mask
+  for each slot in claimed:
+    verify slot_state == ALLOCATED
+    store slot_state = FREE(next)
     clear remote-pending bit
-    clear live bit
     push local free-list
-    decrement used_count
-return qstate to IDLE, then recheck for missed remote work
+return qstate to IDLE, or DRAINING_DIRTY -> QUEUED if work arrived
 ```
 
-Remote pending objects keep `used_count` nonzero until the owner collects them.
-This prevents empty-span retirement while remote frees are still uncollected.
+Cold lifecycle decisions derive allocated count from `slot_state` at quiescent
+points.  Remote pending objects remain protected by pending bits and qstate
+until the owner collects them.
 
 The pending-span notification state is:
 
@@ -284,7 +286,10 @@ QUEUED:
   span is on an owner pending queue
 
 DRAINING:
-  owner has popped the span and is collecting remote_head
+  owner has popped the span and is collecting pending words
+
+DRAINING_DIRTY:
+  producer or collector observed new work while DRAINING
 ```
 
 Publishers transition only `IDLE -> QUEUED`.  Collectors transition

@@ -493,7 +493,7 @@ int main(int argc, char** argv) {
 
   H8Stats stats = h8_stats();
   H8DebugStats debug = h8_debug_stats();
-  printf("counters_prod owner_exit=%zu pending_enqueue=%zu pending_dequeue=%zu orphan_handoff=%zu handoff_ok=%zu local=%zu remote=%zu\n",
+  printf("stats_snapshot owner_exit=%zu pending_enqueue=%zu pending_dequeue=%zu orphan_handoff=%zu handoff_ok=%zu local=%zu remote=%zu\n",
          stats.owner_exit_count,
          stats.pending_enqueue_count,
          stats.pending_dequeue_count,

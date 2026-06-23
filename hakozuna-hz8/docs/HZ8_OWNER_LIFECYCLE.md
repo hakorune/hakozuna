@@ -69,7 +69,7 @@ DYING_WRITERS:
   publish gate is closed, but old publishers still hold leases
 
 DYING_QUIESCENT:
-  publish_refcount == 0, so old-owner remote_head can no longer grow
+  publish_refcount == 0, so old-owner pending bitmap/mask can no longer grow
 ```
 
 ## Owner Generation
@@ -275,22 +275,25 @@ retry:
         return H8_PUBLISH_INVALID;
     }
 
-    h8_remote_head_push_release(span, ptr);
-    h8_span_notify(owner, span);
+    if (old_pending_word == 0) {
+        h8_pending_word_mask_arm_release(span, word);
+        h8_span_notify(owner, span);
+    }
     h8_owner_publish_exit(owner);
     return H8_PUBLISH_OK;
 }
 ```
 
-Remote producers still do not clear live bits, decrement `used_count`, push
-local free-lists, mutate source state, or decommit spans.
+Remote producers still do not mutate slot_state, clear pending bits, push local
+free-lists, mutate source state, or decommit spans.
 
 ## Pending-Span Queue State
 
-Use a three-state queue marker:
+Use a queue marker with an explicit dirty finish handoff:
 
 ```text
 IDLE -> QUEUED -> DRAINING -> IDLE
+                 \-> DRAINING_DIRTY -> QUEUED
 ```
 
 Notify:
@@ -312,7 +315,9 @@ static void h8_span_notify(H8OwnerRecord* owner, H8Span* span)
 }
 ```
 
-`QUEUED` or `DRAINING` means the publisher does not enqueue again.
+`QUEUED` means the span is already queued.  `DRAINING` means the collector owns
+the current mask snapshot; publishers mark `DRAINING_DIRTY` when new work
+arrives during collection.
 
 Collect:
 
@@ -329,36 +334,29 @@ static void h8_collect_span(H8OwnerRecord* owner, H8Span* span)
         h8_fail_closed();
     }
 
-    H8RemoteNode* list = (H8RemoteNode*)atomic_exchange_explicit(
-        &span->remote_head,
-        (uintptr_t)NULL,
+    uint64_t mask = atomic_exchange_explicit(
+        &span->pending_word_mask,
+        0,
         memory_order_acq_rel);
 
-    while (list) {
-        H8RemoteNode* node = list;
-        list = node->next;
-
-        size_t slot = h8_slot_index(span, node);
-        if (!h8_pending_bit_load_acquire(span, slot) ||
-            !h8_live_bit_load_acquire(span, slot)) {
+    while (mask) {
+        size_t word = h8_ctz64(mask);
+        uint64_t claimed = h8_pending_word_snapshot(span, word);
+        if (claimed == 0) {
+            mask &= mask - 1;
+            continue;
+        }
+        if (!h8_all_claimed_slots_allocated(span, word, claimed)) {
             h8_fail_closed();
         }
 
-        h8_live_bit_clear_release(span, slot);
-        h8_pending_bit_clear_release(span, slot);
-        h8_local_freelist_push_owner_only(span, slot);
-        --span->used_count;
+        h8_claimed_slots_publish_free(span, word, claimed);
+        h8_pending_word_clear_claimed(span, word, claimed);
+        h8_local_freelist_splice_owner_only(span, word, claimed);
+        mask &= mask - 1;
     }
 
-    atomic_store_explicit(
-        &span->qstate,
-        H8_Q_IDLE,
-        memory_order_release);
-
-    if (atomic_load_explicit(&span->remote_head, memory_order_acquire) != 0 ||
-        h8_pending_summary_load_acquire(span) != 0) {
-        h8_span_notify(owner, span);
-    }
+    h8_span_finish_drain_with_dirty_handshake(owner, span);
 }
 ```
 
@@ -392,8 +390,9 @@ void h8_owner_exit(H8OwnerRecord* owner)
 
     for (H8Span* span : owner->owned_spans) {
         while (atomic_load_explicit(
-                   &span->remote_head,
-                   memory_order_acquire) != 0) {
+                   &span->pending_word_mask,
+                   memory_order_acquire) != 0 ||
+               h8_pending_bitmap_any(span)) {
             h8_force_collect_span(owner, span);
         }
 
@@ -405,7 +404,7 @@ void h8_owner_exit(H8OwnerRecord* owner)
 
         h8_remove_from_owner_lists(owner, span);
 
-        if (span->used_count == 0) {
+        if (h8_span_allocated_count_quiescent(span) == 0) {
             h8_release_span(span);
             continue;
         }
@@ -441,8 +440,8 @@ no local free-list mutation in progress
 no allocation refill in progress
 no collect in progress
 backing memory is valid and not decommitting
-popcount(live bitmap) == used_count
-free-list + live + never-initialized slots match slot_count
+allocated slot_state count matches debug local_used_mirror in debug builds
+FREE + ALLOCATED + NEVER_USED slot_state count matches slot_count
 adopter state == ALIVE
 adopter publish gate == OPEN
 ```
@@ -564,18 +563,17 @@ permanent orphan owner only.
 | owner ALIVE/open -> DYING/closed | acq_rel |
 | publisher ref decrement | acq_rel |
 | owner refs==0 wait | acquire |
-| live bit read | acquire |
 | pending bit claim | acq_rel |
-| remote node head publish | release |
 | qstate IDLE -> QUEUED | acq_rel |
 | pending-span queue push | release |
 | pending-span queue pop | acquire |
 | qstate QUEUED -> DRAINING | acq_rel |
-| remote_head exchange | acq_rel |
-| live bit clear | release |
+| pending_word_mask exchange | acq_rel |
+| slot_state ALLOCATED -> FREE | release |
 | pending bit clear | release |
-| qstate -> IDLE | release |
-| finish head recheck | acquire |
+| qstate DRAINING -> IDLE | acq_rel |
+| qstate DRAINING_DIRTY -> QUEUED | acq_rel |
+| finish mask recheck | acquire |
 | ACTIVE -> ORPHAN_READY | acq_rel |
 | ORPHAN_READY -> ADOPTING | acq_rel |
 | ADOPTING -> ACTIVE | release |
@@ -606,8 +604,8 @@ remote_pending_shadow_mismatch:
   runtime authority is pending bitmap + pending_word_mask + qstate
 
 span_decommit_while_pending:
-  decommit CASes to RETIRING, then revalidates used_count, qstate,
-  pending_word_mask, pending bitmap, and slot/live authority
+  decommit CASes to RETIRING, then revalidates qstate, pending_word_mask,
+  pending bitmap, and slot-state authority
 ```
 
 ## Non-Negotiable Parts
@@ -619,7 +617,7 @@ publish lease / in-flight writer barrier
 span owner token revalidation after lease
 OWNER_TRANSITION separate from MISS/INVALID
 three-state qstate
-IDLE store followed by remote_head/pending recheck
+IDLE/DRAINING_DIRTY finish handshake with pending_word_mask recheck
 publisher zero before ORPHAN_READY
 ADOPTING publish ban
 ACTIVE publication after owner list connection
