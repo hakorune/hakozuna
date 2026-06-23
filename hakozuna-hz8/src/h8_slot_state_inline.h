@@ -38,8 +38,19 @@ static inline uint32_t h8_slot_state_load_hot(H8Span* span, size_t slot) {
   return atomic_load_explicit(&span->slot_state[slot], memory_order_acquire);
 }
 
+static inline uint32_t h8_slot_state_load_ptr_hot(_Atomic uint32_t* slot_state,
+                                                  size_t slot) {
+  return atomic_load_explicit(&slot_state[slot], memory_order_acquire);
+}
+
 static inline void h8_slot_state_store_allocated_hot(H8Span* span, size_t slot) {
   atomic_store_explicit(&span->slot_state[slot], H8_SLOT_ALLOCATED,
+                        memory_order_release);
+}
+
+static inline void h8_slot_state_store_allocated_ptr_hot(
+    _Atomic uint32_t* slot_state, size_t slot) {
+  atomic_store_explicit(&slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
 }
 

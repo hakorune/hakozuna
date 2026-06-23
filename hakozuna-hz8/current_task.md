@@ -197,6 +197,26 @@ SlotStateInlineHeaderSplit-L1:
   smoke / safety pass
   data: bench_results/20260623T130000Z_slot_state_inline_split.md
 
+WorkerLocalLeafSweep-L1:
+  malloc-side audit found a remaining duplicate span->slot_state pointer load
+  in freelist-pop allocation bodies
+  remote-side audit found h8_remote_free_publish_known still calls the locked
+  publish body on the success path
+  correctness-coupled removals remain NO-GO:
+    local pending validation
+    remote post-claim slot-state revalidation
+    owner lease / qstate notification
+  next low-risk box is malloc-side pointer cache before remote inline A/B
+
+MallocSlotStatePointerCache-L1:
+  cached span->slot_state inside malloc freelist-pop path
+  added pointer-taking hot helpers for load and ALLOCATED store
+  removed a duplicate span->slot_state pointer load from the freelist-pop body
+  ownership, slot-state, pending, and remote protocols unchanged
+  smoke / safety pass
+  focused local/interleaved checks stay above bring-up gates
+  data: bench_results/20260623T131200Z_malloc_slot_state_ptr_cache.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -336,9 +356,9 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  LocalLeafCodeShapeSweep-L1
-  continue inspecting remaining malloc/free leaf instruction shape before
-  proposing another behavior change
+  RemotePublishLockedInline-AB-L1
+  A/B inline h8_remote_free_publish_locked into known path without changing
+  remote protocol
   keep debug live bitmap as shadow only
   remaining used_count bench labels are debug shadow lineage, not authority
 ```
@@ -427,10 +447,15 @@ LocalFreeHeadBumpScalar-L1
     removes sentinel conversion instructions.
 19. Treat `SlotStateInlineHeaderSplit-L1` as implemented. It restores line
     budget in `h8_internal.h` without changing behavior.
-20. Next concrete work is `LocalLeafCodeShapeSweep-L1`: inspect remaining
-    malloc/free leaf instruction shape and only open a behavior box with
-    assembly evidence.
-21. Next concrete work should stay in local leaf / code shape unless a second
+20. Treat `WorkerLocalLeafSweep-L1` as complete. The next low-risk local box is
+    `MallocSlotStatePointerCache-L1`; remote publish locked-body inline remains
+    the next remote A/B candidate.
+21. Treat `MallocSlotStatePointerCache-L1` as implemented. It removes a
+    duplicate slot_state pointer load from malloc freelist pop without changing
+    allocator protocol.
+22. Next concrete work is `RemotePublishLockedInline-AB-L1`, keeping all
+    remote correctness authorities intact.
+23. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

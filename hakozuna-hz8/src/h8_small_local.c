@@ -55,10 +55,11 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
                                              memory_order_relaxed);
   if (local_head != H8_SLOT_NONE) {
     uint32_t slot = local_head;
+    _Atomic uint32_t* slot_state = span->slot_state;
 #if defined(H8_ENABLE_DEBUG_STATS)
     h8_slot_shadow_expect(span, slot, H8_SLOT_FREE >> H8_SLOT_TAG_SHIFT);
 #endif
-    uint32_t state = h8_slot_state_load_hot(span, slot);
+    uint32_t state = h8_slot_state_load_ptr_hot(slot_state, slot);
     uint32_t next = h8_slot_state_decode_next(h8_slot_state_payload(state));
     atomic_store_explicit(&span->local_hot.local_free_head_word, next,
                           memory_order_relaxed);
@@ -77,7 +78,7 @@ static inline void* h8_small_alloc_from_span(H8Span* span) {
       abort();
     }
 #endif
-    h8_slot_state_store_allocated_hot(span, slot);
+    h8_slot_state_store_allocated_ptr_hot(slot_state, slot);
     h8_owner_used_add(span, 1);
     H8_DEBUG_INC(local_alloc_count);
     return h8_slot_ptr(span, slot);
