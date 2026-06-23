@@ -165,6 +165,27 @@ interpretation:
   remote protocol redesign remains HOLD
 ```
 
+Latest `LocalHotCodeShapeAudit-L1` source proof:
+
+```text
+data:
+  bench_results/20260623T100208Z_local_hot_code_shape_audit.md
+
+check:
+  generated -O2 assembly for src/h8_small_local.c
+
+result:
+  local_free_head_word relaxed loads/stores compile to ordinary mov
+  local_bump_index relaxed loads/stores compile to ordinary mov
+  slot_state local publication compiles to ordinary mov
+  no locked RMW appears on the local alloc/free hot path for these fields
+
+decision:
+  LocalFreeHeadBumpScalar-L1 is not a priority performance box
+  next local work should target another fixed cost, such as TLS/code shape
+```
+
+
 Latest `V0SafetyStressBatch-L1` debug check:
 
 ```text
@@ -647,6 +668,8 @@ evidence:
   UsedCountColdDerivationShadow-L1 is clean in short proof runs
   UsedCountReleaseElision-L1 removes release used_count hot updates
   UsedCountFieldRemoval-L1 removes the field and keeps debug mirror proof
+  LocalHotCodeShapeAudit-L1 shows local_free_head and bump_index are already
+  ordinary mov instructions in release, so plain scalar conversion is HOLD
 ```
 
 Remote lane:
@@ -714,7 +737,10 @@ hot plain used_count + cold atomic used_count hybrid
    phase expansion, not tail drain.
 7. Treat `InterleavedWorkVarianceAudit-L1` as implemented. The latest R10
    shows stable p25 and no minor-fault explanation for work variance.
-8. Next concrete work should stay in local leaf / code shape unless a second
+8. Treat `LocalHotCodeShapeAudit-L1` as implemented. Do not spend the next box
+   on local_free_head / bump_index scalar conversion without new assembly
+   evidence.
+9. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules
