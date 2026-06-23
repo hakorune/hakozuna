@@ -63,7 +63,28 @@ static int check_medium_scaffold(void) {
         spec->slot_size != rounded || spec->run_size != H8_MEDIUM_RUN_BYTES ||
         spec->slot_count == 0 || spec->bitmap_words != 1u) {
       fprintf(stderr, "medium scaffold spec mismatch\n");
-      return 25;
+        return 25;
+    }
+    unsigned char payload[65536];
+    H8MediumRun run;
+    memset(&run, 0, sizeof(run));
+    run.base = payload;
+    run.class_id = (uint16_t)class_id;
+    run.slot_size = spec->slot_size;
+    run.slot_count = spec->slot_count;
+    run.run_size = spec->run_size;
+    size_t slot = 0;
+    void* aligned = h8_medium_slot_ptr(&run, 1u < run.slot_count ? 1u : 0u);
+    if (!aligned ||
+        !h8_medium_slot_index_from_ptr_checked(&run, aligned, &slot) ||
+        h8_medium_slot_ptr(&run, slot) != aligned ||
+        h8_medium_slot_index_from_ptr_checked(&run, (char*)aligned + 1, NULL) ||
+        h8_medium_slot_index_from_ptr_checked(&run,
+                                              payload + spec->slot_size *
+                                                            spec->slot_count,
+                                              NULL)) {
+      fprintf(stderr, "medium pointer identity mismatch\n");
+      return 27;
     }
   }
   if (h8_medium_class_spec(H8_MEDIUM_CLASS_COUNT) != NULL ||

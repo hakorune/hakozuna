@@ -114,6 +114,10 @@ MediumRunMetadataScaffold-L1:
     no malloc/free routing change
   verification:
     smoke validates range, class mapping, rounded size, and class specs
+    smoke validates medium slot pointer identity helpers
+      aligned slot pointer accepted
+      interior pointer rejected
+      out-of-run pointer rejected
 
 MediumRunLocalOnly-L1:
   current owner only

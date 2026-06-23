@@ -1,6 +1,7 @@
 #include "h8_medium.h"
 
 #include <stddef.h>
+#include <stdint.h>
 
 static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
     {8192u, H8_MEDIUM_RUN_BYTES, 8u, 1u},
@@ -45,4 +46,38 @@ uint32_t h8_medium_rounded_size(size_t size) {
     return 0u;
   }
   return k_h8_medium_classes[h8_medium_class_for_size(size)].slot_size;
+}
+
+bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
+                                           const void* ptr,
+                                           size_t* slot_out) {
+  if (!run || !run->base || !ptr || run->slot_size == 0u ||
+      run->slot_count == 0u) {
+    return false;
+  }
+  uintptr_t base = (uintptr_t)run->base;
+  uintptr_t addr = (uintptr_t)ptr;
+  if (addr < base) {
+    return false;
+  }
+  uintptr_t offset = addr - base;
+  size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
+  if (offset >= payload || (offset % run->slot_size) != 0u) {
+    return false;
+  }
+  size_t slot = (size_t)(offset / run->slot_size);
+  if (slot >= run->slot_count) {
+    return false;
+  }
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  return true;
+}
+
+void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot) {
+  if (!run || !run->base || slot >= run->slot_count) {
+    return NULL;
+  }
+  return run->base + slot * (size_t)run->slot_size;
 }

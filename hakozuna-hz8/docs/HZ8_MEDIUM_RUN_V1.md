@@ -108,6 +108,11 @@ class mapping:
   8193..16384 -> 16384
   16385..32768 -> 32768
   32769..65536 -> 65536
+
+pointer identity helper:
+  aligned slot pointer accepted
+  interior pointer rejected
+  out-of-run pointer rejected
 ```
 
 ## Pointer Identity

@@ -46,5 +46,9 @@ bool h8_medium_size_supported(size_t size);
 uint32_t h8_medium_class_for_size(size_t size);
 const H8MediumClassSpec* h8_medium_class_spec(uint32_t class_id);
 uint32_t h8_medium_rounded_size(size_t size);
+bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
+                                           const void* ptr,
+                                           size_t* slot_out);
+void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
 
 #endif
