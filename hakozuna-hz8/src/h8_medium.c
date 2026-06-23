@@ -90,6 +90,13 @@ static void h8_medium_unregister_locked(H8MediumRun* run) {
   }
 }
 
+static bool h8_medium_run_usable_locked(const H8MediumRun* run,
+                                        uint32_t class_id) {
+  return run && run->class_id == class_id && run->free_mask != 0 &&
+         atomic_load_explicit(&run->state, memory_order_acquire) ==
+             H8_MEDIUM_RUN_ACTIVE;
+}
+
 bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out) {
@@ -221,12 +228,21 @@ void* h8_medium_malloc_inner(size_t size) {
     return NULL;
   }
   uint32_t class_id = h8_medium_class_for_size(size);
+  H8ThreadCtx* ctx = h8_thread_ctx_fast();
   pthread_mutex_lock(&h8_medium_lock);
+  if (ctx && h8_medium_run_usable_locked(ctx->active_medium_runs[class_id],
+                                         class_id)) {
+    void* ptr = h8_medium_run_alloc_local_scaffold(
+        ctx->active_medium_runs[class_id]);
+    pthread_mutex_unlock(&h8_medium_lock);
+    return ptr;
+  }
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
-    if (run->class_id == class_id && run->free_mask != 0 &&
-        atomic_load_explicit(&run->state, memory_order_acquire) ==
-            H8_MEDIUM_RUN_ACTIVE) {
+    if (h8_medium_run_usable_locked(run, class_id)) {
       void* ptr = h8_medium_run_alloc_local_scaffold(run);
+      if (ctx) {
+        ctx->active_medium_runs[class_id] = run;
+      }
       pthread_mutex_unlock(&h8_medium_lock);
       return ptr;
     }
@@ -240,6 +256,9 @@ void* h8_medium_malloc_inner(size_t size) {
   pthread_mutex_lock(&h8_medium_lock);
   h8_medium_register_locked(run);
   void* ptr = h8_medium_run_alloc_local_scaffold(run);
+  if (ctx) {
+    ctx->active_medium_runs[class_id] = run;
+  }
   pthread_mutex_unlock(&h8_medium_lock);
   return ptr;
 }
@@ -258,6 +277,12 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
     *owned_out = true;
   }
   bool ok = h8_medium_run_free_local_scaffold(run, ptr);
+  if (ok) {
+    H8ThreadCtx* ctx = h8_tls_ctx;
+    if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
+      ctx->active_medium_runs[run->class_id] = run;
+    }
+  }
   pthread_mutex_unlock(&h8_medium_lock);
   return ok;
 }

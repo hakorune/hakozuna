@@ -242,7 +242,7 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
    status: initial routing scaffold implemented
    smoke: create / alloc / free / double-free reject / interior reject
    routing: h8_malloc / h8_free / h8_route connected for 4097..65536
-   implementation: global mutex scaffold, not final owner-local fast path
+   implementation: TLS active run hint plus global mutex scaffold
    RSS: empty run payload uses MADV_DONTNEED and remains reusable
 
 5. MediumRunRemote-L1

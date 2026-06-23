@@ -126,6 +126,8 @@ MediumRunLocalOnly-L1:
   current status:
     initial routing implemented for 4097..65536
     global mutex scaffold, not final owner-local fast path
+    TLS active_medium_runs[class] hint avoids the common global scan
+    mutex remains the synchronization authority
     empty runs are MADV_DONTNEED-ed and retained for reuse
     smoke validates create / alloc / free / double-free reject / interior reject
     h8_malloc / h8_free / h8_route cover medium pointers
@@ -135,9 +137,10 @@ MediumRunLocalOnly-L1:
     short medium interleaved remote50 bench passes
   data:
     bench_results/20260623T212652Z_medium_localonly_scaffold.md
+    bench_results/20260623T213430Z_medium_active_hint_scaffold.md
   known limitation:
-    performance is intentionally poor in this scaffold
-    next box must remove global mutex from steady local path
+    performance is still intentionally limited by the global mutex
+    next box must introduce owner-local synchronization or medium remote protocol
 
 MediumRunRemote-L1:
   remote claim / collect contract
