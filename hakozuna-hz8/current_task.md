@@ -94,6 +94,12 @@ FreeLookupInlineP2-L1:
   local/interleaved focused benches stay above bring-up gates
   data: bench_results/20260623T103100Z_free_lookup_inline.md
 
+ThreadCtxOwnerInvariant-L1:
+  malloc/free leaf no longer falls back to h8_orphan_owner after ctx exists
+  smoke / safety / preload smoke pass
+  local/interleaved focused benches stay above bring-up gates
+  data: bench_results/20260623T104000Z_thread_ctx_owner_invariant.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -160,6 +166,7 @@ LocalHotCodeShapeAudit-L1
 TlsModelCodeShape-L1
 AllocInlineShape-L1
 FreeLookupInlineP2-L1
+ThreadCtxOwnerInvariant-L1
 ```
 
 Benchmark / evidence:
@@ -285,7 +292,9 @@ LocalFreeHeadBumpScalar-L1
    allocation helper call without changing ownership or remote protocol.
 7. Treat `FreeLookupInlineP2-L1` as implemented. It removes the free-leaf
    `h8_span_from_ptr_checked` call without changing pointer identity semantics.
-8. Next concrete work should stay in local leaf / code shape unless a second
+8. Treat `ThreadCtxOwnerInvariant-L1` as implemented. It removes defensive
+   `h8_orphan_owner` call edges after a thread context exists.
+9. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

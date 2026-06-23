@@ -18,6 +18,18 @@ static bool h8_slot_shadow_active(bool slot_authority) {
 #endif
 }
 
+static inline H8OwnerRecord* h8_ctx_owner_assume(H8ThreadCtx* ctx) {
+  H8OwnerRecord* owner = ctx->owner;
+  if (H8_UNLIKELY(!owner)) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    abort();
+#else
+    __builtin_unreachable();
+#endif
+  }
+  return owner;
+}
+
 static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_alloc);
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -220,7 +232,7 @@ void* h8_malloc_inner(size_t size) {
     return NULL;
   }
   uint32_t class_id = h8_class_for_size(size);
-  H8OwnerRecord* owner = ctx->owner ? ctx->owner : h8_orphan_owner();
+  H8OwnerRecord* owner = h8_ctx_owner_assume(ctx);
   H8Span* span = ctx->active_spans[class_id];
   bool active_hint_ok = false;
   if (span) {
@@ -353,7 +365,7 @@ void h8_free_inner(void* ptr) {
     h8_fail_invalid_free();
     return;
   }
-  H8OwnerRecord* owner = ctx && ctx->owner ? ctx->owner : h8_orphan_owner();
+  H8OwnerRecord* owner = h8_ctx_owner_assume(ctx);
   if (h8_local_free(ctx, owner, span, slot)) {
     return;
   }
