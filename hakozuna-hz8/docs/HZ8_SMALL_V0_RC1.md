@@ -155,6 +155,12 @@ v1 status:
 
 ## Next Lanes
 
+Detailed lane plan:
+
+```text
+docs/HZ8_V1_LANES.md
+```
+
 ```text
 1. SizePolicy-v1:
    small upper-class refinement
