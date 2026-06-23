@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_used_count.h"
 
 #include <string.h>
 #include <sched.h>
@@ -20,28 +21,24 @@ static bool h8_slot_shadow_active(bool slot_authority) {
 static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_alloc);
   H8_DEBUG_INC(local_used_count_load_alloc);
-  size_t used =
-      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
+  size_t used = h8_used_count_load_owner_relaxed(span);
   if (H8_UNLIKELY(used + count > span->slot_count)) {
     abort();
   }
   H8_DEBUG_INC(local_used_count_store_alloc);
-  atomic_store_explicit(&span->local_hot.local_used_count, used + count,
-                        memory_order_relaxed);
+  h8_used_count_store_owner_relaxed(span, used + count);
 }
 
 static bool h8_owner_used_sub(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_free);
   H8_DEBUG_INC(local_used_count_load_free);
-  size_t used =
-      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
+  size_t used = h8_used_count_load_owner_relaxed(span);
   if (H8_UNLIKELY(used < count)) {
     H8_DEBUG_INC(local_used_count_underflow);
     return false;
   }
   H8_DEBUG_INC(local_used_count_store_free);
-  atomic_store_explicit(&span->local_hot.local_used_count, used - count,
-                        memory_order_relaxed);
+  h8_used_count_store_owner_relaxed(span, used - count);
   return true;
 }
 
@@ -170,9 +167,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     H8_DEBUG_INC(local_active_hint_null);
   } else if (!h8_active_hint_matches(hint, owner, class_id)) {
     H8_DEBUG_INC(local_active_hint_state_blocked);
-  } else if (atomic_load_explicit(&hint->local_hot.local_used_count,
-                                  memory_order_acquire) >=
-             hint->slot_count) {
+  } else if (h8_used_count_load_cold_acquire(hint) >= hint->slot_count) {
     H8_DEBUG_INC(local_active_hint_full);
     hint_full = true;
   } else {
@@ -191,9 +186,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
       H8_DEBUG_INC(local_find_scan_span_state_blocked);
       continue;
     }
-    if (atomic_load_explicit(&span->local_hot.local_used_count,
-                             memory_order_acquire) >=
-        span->slot_count) {
+    if (h8_used_count_load_cold_acquire(span) >= span->slot_count) {
       H8_DEBUG_INC(local_find_scan_span_full);
       continue;
     }

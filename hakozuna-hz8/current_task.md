@@ -197,6 +197,29 @@ debug attribution after fix:
   slot_shadow mismatch counters = 0
 ```
 
+Latest `UsedCountScalarProof-L1` source proof:
+
+```text
+data:
+  bench_results/20260623T021114Z_used_count_scalar_proof.md
+
+change:
+  all local_used_count access now goes through h8_used_count_* helpers
+
+result:
+  storage remains atomic
+  owner-hot writers use relaxed load/store helpers
+  cold / lifecycle readers use acquire helpers
+
+reason:
+  used_count is lifecycle / pressure accounting
+  owner exit, orphan adoption, active-span search, and slot shadow verification
+  still read it outside the direct malloc/free owner leaf
+
+next:
+  UsedCountHotMirrorShadow-L1 before any scalar authority cutover
+```
+
 Interpretation:
 
 ```text
@@ -313,6 +336,8 @@ latest:
   TlsActiveHintTrustShadow-L1 added mismatch attribution
   TlsActiveHintTrustElision-L1 trusts direct TLS active hits in release builds
   local hot used_count attribution now split out
+  UsedCountScalarProof-L1 routes all used_count access through explicit
+  owner-hot versus cold helpers, but intentionally keeps atomic storage
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
   LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
   references from cold/remote code
@@ -328,6 +353,8 @@ evidence:
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
   and used_count load/store remains the main counted local-hot metadata touch
+  scalar used_count cutover is not justified until a hot mirror / quiescent
+  reader proof is clean
 ```
 
 Remote lane:
@@ -372,8 +399,8 @@ runtime profile / knob split
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. Pick the next local leaf box from active-hit
-   validation shape, TLS entry shape, or a measured used-count scalar proof.
+3. If continuing on used_count, implement `UsedCountHotMirrorShadow-L1` before
+   any scalar authority cutover.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 

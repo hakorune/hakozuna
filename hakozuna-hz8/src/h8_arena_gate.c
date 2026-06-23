@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_used_count.h"
 
 #include <errno.h>
 #include <stdlib.h>
@@ -143,8 +144,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
                         memory_order_relaxed);
   atomic_store_explicit(&span->local_hot.local_free_head_word, UINT32_MAX,
                         memory_order_relaxed);
-  atomic_store_explicit(&span->local_hot.local_used_count, 0,
-                        memory_order_relaxed);
+  h8_used_count_init(span);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_commit_meta_ns, (size_t)(h8_debug_now_ns() - meta_start));
   uint64_t mprotect_start = h8_debug_now_ns();

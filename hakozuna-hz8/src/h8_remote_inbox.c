@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_used_count.h"
 
 #include <stdlib.h>
 
@@ -46,13 +47,11 @@ static void h8_pending_count_sub(H8Span* span, size_t count) {
 #endif
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
-  size_t used =
-      atomic_load_explicit(&span->local_hot.local_used_count, memory_order_relaxed);
+  size_t used = h8_used_count_load_owner_relaxed(span);
   if (used < count) {
     abort();
   }
-  atomic_store_explicit(&span->local_hot.local_used_count, used - count,
-                        memory_order_relaxed);
+  h8_used_count_store_owner_relaxed(span, used - count);
 }
 
 static uint64_t h8_word_valid_mask(H8Span* span, size_t word_index) {
