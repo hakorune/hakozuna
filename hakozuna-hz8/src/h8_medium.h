@@ -1,0 +1,50 @@
+#ifndef H8_MEDIUM_H
+#define H8_MEDIUM_H
+
+#include "h8_class_map.h"
+
+#include <stdatomic.h>
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#define H8_MEDIUM_MIN_SIZE (H8_MAX_SMALL_SIZE + 1u)
+#define H8_MEDIUM_MAX_SIZE 65536u
+#define H8_MEDIUM_RUN_BYTES 65536u
+#define H8_MEDIUM_PAGE_BYTES 4096u
+#define H8_MEDIUM_CLASS_COUNT 4u
+
+typedef enum H8MediumRunState {
+  H8_MEDIUM_RUN_UNUSED = 0,
+  H8_MEDIUM_RUN_ACTIVE = 1,
+  H8_MEDIUM_RUN_RETIRING = 2,
+  H8_MEDIUM_RUN_RETIRED = 3
+} H8MediumRunState;
+
+typedef struct H8MediumClassSpec {
+  uint32_t slot_size;
+  uint32_t run_size;
+  uint16_t slot_count;
+  uint16_t bitmap_words;
+} H8MediumClassSpec;
+
+typedef struct H8MediumRun {
+  uint8_t* base;
+  uint16_t class_id;
+  uint16_t slot_count;
+  uint32_t slot_size;
+  uint32_t run_size;
+  _Atomic uint64_t owner_word;
+  _Atomic uint8_t state;
+  _Atomic uint64_t pending_word_mask;
+  _Atomic uint64_t* pending_bits;
+  _Atomic uint32_t* slot_state;
+  void* meta_alloc_base;
+} H8MediumRun;
+
+bool h8_medium_size_supported(size_t size);
+uint32_t h8_medium_class_for_size(size_t size);
+const H8MediumClassSpec* h8_medium_class_spec(uint32_t class_id);
+uint32_t h8_medium_rounded_size(size_t size);
+
+#endif

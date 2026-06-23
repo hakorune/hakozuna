@@ -103,6 +103,14 @@ MediumRunRouteShadow-L1:
 MediumRunMetadataScaffold-L1:
   compile medium structs/helpers
   no runtime routing
+  implemented:
+    src/h8_medium.h
+    src/h8_medium.c
+  current scaffold:
+    4097..65536
+    8K / 16K / 32K / 64K coarse classes
+    64KiB run payload per initial class
+    no malloc/free routing change
 
 MediumRunLocalOnly-L1:
   current owner only
@@ -198,7 +206,7 @@ small-v0 hot-path tuning without asm evidence
 2. Keep `p2-v0` as small default.
 3. Treat `upper1p5` and `upper3072` as evidence-only.
 4. Keep `MediumRunBoundaryDesign-L1` as the active design boundary.
-5. Begin `MediumRunMetadataScaffold-L1`.
+5. Begin `MediumRunLocalOnly-L1` after scaffold verification.
 
 ## Working Rules
 

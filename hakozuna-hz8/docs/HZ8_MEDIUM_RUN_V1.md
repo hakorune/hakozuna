@@ -3,7 +3,7 @@
 Status:
 
 ```text
-design boundary draft
+metadata scaffold present
 no allocator behavior change yet
 ```
 
@@ -71,9 +71,28 @@ metadata:
   outside payload
 ```
 
-The exact size table is not frozen in this document.  First implementation may
-start with coarse power-of-two medium classes to prove ownership and remote
-free.  Refinement belongs to SizePolicy-v1 after the mechanism is safe.
+The final size table is not frozen in this document.  The current scaffold uses
+coarse power-of-two medium classes to prove ownership and remote free before
+SizePolicy-v1 refines the table.
+
+Current scaffold:
+
+```text
+class sizes:
+  8192
+  16384
+  32768
+  65536
+
+run payload:
+  65536 bytes
+
+slots/run:
+  8
+  4
+  2
+  1
+```
 
 ## Pointer Identity
 
@@ -193,10 +212,12 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
 3. MediumRunMetadataScaffold-L1
    compile structs, tables, and verification helpers
    no runtime routing
+   status: implemented
 
 4. MediumRunLocalOnly-L1
    same-owner malloc/free only
    no remote publication
+   status: next
 
 5. MediumRunRemote-L1
    remote free publish/collect
