@@ -18,11 +18,10 @@ static inline uint32_t h8_class_size(uint32_t class_id) {
 #if defined(H8_CLASS_MAP_UPPER1P5)
   static const uint32_t sizes[H8_CLASS_COUNT] = {
       16, 32, 64, 128, 256, 512, 1024, 1536, 2048, 3072, 4096};
-#else
-  static const uint32_t sizes[H8_CLASS_COUNT] = {
-      16, 32, 64, 128, 256, 512, 1024, 2048, 4096};
-#endif
   return sizes[class_id];
+#else
+  return 16u << class_id;
+#endif
 }
 
 static inline uint32_t h8_class_shift(uint32_t class_id) {
@@ -45,6 +44,24 @@ static inline uint32_t h8_class_factor(uint32_t class_id) {
 }
 
 static inline uint32_t h8_class_for_size(size_t size) {
+#if !defined(H8_CLASS_MAP_UPPER1P5)
+  if (size <= 16u) {
+    return 0;
+  }
+  size_t rounded = size - 1u;
+#if defined(__GNUC__) || defined(__clang__)
+  uint32_t bits = (uint32_t)(8u * sizeof(unsigned long long) -
+                             (uint32_t)__builtin_clzll((unsigned long long)rounded));
+#else
+  uint32_t bits = 0;
+  while (rounded != 0) {
+    ++bits;
+    rounded >>= 1u;
+  }
+#endif
+  uint32_t class_id = bits > 4u ? bits - 4u : 0u;
+  return class_id < H8_CLASS_COUNT ? class_id : H8_CLASS_COUNT - 1u;
+#else
   if (size <= 16u) return 0;
   if (size <= 32u) return 1;
   if (size <= 64u) return 2;
@@ -52,19 +69,19 @@ static inline uint32_t h8_class_for_size(size_t size) {
   if (size <= 256u) return 4;
   if (size <= 512u) return 5;
   if (size <= 1024u) return 6;
-#if defined(H8_CLASS_MAP_UPPER1P5)
   if (size <= 1536u) return 7;
   if (size <= 2048u) return 8;
   if (size <= 3072u) return 9;
   return 10;
-#else
-  if (size <= 2048u) return 7;
-  return 8;
 #endif
 }
 
 static inline size_t h8_class_slot_count(uint32_t class_id) {
+#if defined(H8_CLASS_MAP_UPPER1P5)
   return 65536u / h8_class_size(class_id);
+#else
+  return (size_t)4096u >> class_id;
+#endif
 }
 
 #endif

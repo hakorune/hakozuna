@@ -117,6 +117,7 @@ PerfLanePurification-L1
 TlsLeafEntryFastPath-L1
 TlsActiveHintTrustShadow-L1
 TlsActiveHintTrustElision-L1
+P2ClassLookupBitWidth-L1
 ```
 
 Benchmark / evidence:
@@ -173,14 +174,16 @@ latest:
   TlsActiveHintTrustShadow-L1 added mismatch attribution
   TlsActiveHintTrustElision-L1 trusts direct TLS active hits in release builds
   local hot used_count attribution now split out
+  P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
 
 evidence:
   debug local/interleaved short runs show class/owner/generation/state
   mismatch == 0 for active hint checks
   used_count_detail now reports load/store/full-check/underflow counts
+  short release checks stayed clean after p2-v0 class lookup specialization
 
 next allocator candidate:
-  class lookup width or used-count/local-hot scalar shape
+  used-count/local-hot scalar shape
 ```
 
 Remote lane:
