@@ -564,6 +564,22 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.medium_route_lookup_count, memory_order_acquire);
   out->medium_invalid_owned_count =
       atomic_load_explicit(&h8g.medium_invalid_owned_count, memory_order_acquire);
+  out->medium_empty_transition_count = atomic_load_explicit(
+      &h8g.medium_empty_transition_count, memory_order_acquire);
+  out->medium_empty_retain_count =
+      atomic_load_explicit(&h8g.medium_empty_retain_count, memory_order_acquire);
+  out->medium_empty_budget_reject_count = atomic_load_explicit(
+      &h8g.medium_empty_budget_reject_count, memory_order_acquire);
+  out->medium_empty_reactivate_count = atomic_load_explicit(
+      &h8g.medium_empty_reactivate_count, memory_order_acquire);
+  out->medium_owner_exit_drain_count = atomic_load_explicit(
+      &h8g.medium_owner_exit_drain_count, memory_order_acquire);
+  out->medium_madvise_fail_count =
+      atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
+  out->medium_resident_empty_bytes =
+      atomic_load_explicit(&h8g.medium_resident_empty_bytes, memory_order_acquire);
+  out->medium_resident_empty_peak =
+      atomic_load_explicit(&h8g.medium_resident_empty_peak, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

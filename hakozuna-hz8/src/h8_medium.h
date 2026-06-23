@@ -15,13 +15,18 @@
 #define H8_MEDIUM_RUN_BYTES 65536u
 #define H8_MEDIUM_PAGE_BYTES 4096u
 #define H8_MEDIUM_CLASS_COUNT 4u
-
 typedef enum H8MediumRunState {
   H8_MEDIUM_RUN_UNUSED = 0,
   H8_MEDIUM_RUN_ACTIVE = 1,
   H8_MEDIUM_RUN_RETIRING = 2,
   H8_MEDIUM_RUN_RETIRED = 3
 } H8MediumRunState;
+
+typedef enum H8MediumPayloadState {
+  H8_MEDIUM_PAYLOAD_LIVE = 0,
+  H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT = 1,
+  H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED = 2
+} H8MediumPayloadState;
 
 typedef struct H8MediumClassSpec {
   uint32_t slot_size;
@@ -44,6 +49,9 @@ typedef struct H8MediumRun {
   pthread_mutex_t lock;
   uint64_t free_mask;
   uint64_t allocated_mask;
+  uint8_t payload_state;
+  bool resident_charge;
+  bool owner_attached;
   void* meta_alloc_base;
   struct H8MediumRun* next_owner;
   struct H8MediumRun* next_global;

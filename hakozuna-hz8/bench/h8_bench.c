@@ -679,15 +679,14 @@ int main(int argc, char** argv) {
          debug.local_free_reject_owner,
          debug.local_free_reject_state,
          debug.local_free_reject_live);
-  printf("medium_stats malloc=%zu create=%zu active_reuse=%zu owner_reuse=%zu global_reuse=%zu madvise=%zu owner_scan=%zu owner_steps=%zu global_scan=%zu global_steps=%zu free_lookup=%zu route_lookup=%zu invalid_owned=%zu\n",
-         debug.medium_malloc_count, debug.medium_run_create_count,
-         debug.medium_run_reuse_active_count,
-         debug.medium_run_reuse_owner_list_count,
-         debug.medium_run_reuse_global_count, debug.medium_run_madvise_count,
-         debug.medium_owner_scan_count, debug.medium_owner_scan_step_count,
-         debug.medium_global_scan_count, debug.medium_global_scan_step_count,
-         debug.medium_free_lookup_count, debug.medium_route_lookup_count,
-         debug.medium_invalid_owned_count);
+  printf("medium_stats malloc=%zu create=%zu active_reuse=%zu owner_reuse=%zu global_reuse=%zu madvise=%zu owner_scan=%zu owner_steps=%zu global_scan=%zu global_steps=%zu free_lookup=%zu route_lookup=%zu invalid_owned=%zu empty=%zu retain=%zu budget_reject=%zu reactivate=%zu exit_drain=%zu madvise_fail=%zu resident_bytes=%zu resident_peak=%zu\n",
+         debug.medium_malloc_count, debug.medium_run_create_count, debug.medium_run_reuse_active_count,
+         debug.medium_run_reuse_owner_list_count, debug.medium_run_reuse_global_count, debug.medium_run_madvise_count,
+         debug.medium_owner_scan_count, debug.medium_owner_scan_step_count, debug.medium_global_scan_count,
+         debug.medium_global_scan_step_count, debug.medium_free_lookup_count, debug.medium_route_lookup_count,
+         debug.medium_invalid_owned_count, debug.medium_empty_transition_count, debug.medium_empty_retain_count,
+         debug.medium_empty_budget_reject_count, debug.medium_empty_reactivate_count, debug.medium_owner_exit_drain_count,
+         debug.medium_madvise_fail_count, debug.medium_resident_empty_bytes, debug.medium_resident_empty_peak);
   size_t lower_median =
       h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50);
   double actual_per_run =

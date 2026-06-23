@@ -367,6 +367,14 @@ typedef struct H8Global {
   atomic_size_t medium_free_lookup_count;
   atomic_size_t medium_route_lookup_count;
   atomic_size_t medium_invalid_owned_count;
+  atomic_size_t medium_empty_transition_count;
+  atomic_size_t medium_empty_retain_count;
+  atomic_size_t medium_empty_budget_reject_count;
+  atomic_size_t medium_empty_reactivate_count;
+  atomic_size_t medium_owner_exit_drain_count;
+  atomic_size_t medium_madvise_fail_count;
+  atomic_size_t medium_resident_empty_bytes;
+  atomic_size_t medium_resident_empty_peak;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;

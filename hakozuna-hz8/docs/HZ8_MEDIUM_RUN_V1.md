@@ -294,16 +294,38 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
      empty-run MADV_DONTNEED is very frequent
      global reuse is visible but not dominant in the short probe
 
-6. MediumRunRunPool-L1
+6. MediumRunEmptyRetentionBudget-L1
+   status: implemented
+   keep one-run-per-mmap and global registry scaffold
+   retain empty payload pages within a fixed global hard cap
+   hard cap:
+     H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES
+   owner exit:
+     drains retained empty payloads
+   owner-detached runs:
+     decommit immediately when they become empty
+   validation:
+     retained reactivation should be nonzero
+     steady madvise count should drop materially
+     resident_empty_peak must stay within budget
+     post-RSS must recover
+   result:
+     bench_results/20260623T224437Z_medium_empty_retention_fix/README.md
+     medium release r50 median about 3.43M ops/s
+     medium release local median about 7.98M ops/s
+     r50 minor faults about 337
+     debug probe retain=15863 reactivate=15751 exit_drain=112
+
+7. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-7. MediumRunRemote-L1
+8. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-8. MediumRunLifecycle-L1
+9. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

@@ -236,6 +236,39 @@ MediumRunStats-L1:
     active/owner reuse is already working
     empty-run MADV_DONTNEED fires very frequently
     global reuse is not dominant in this short row
+
+MediumRunEmptyRetentionBudget-L1:
+  current status:
+    implemented
+  policy:
+    keep one-run-per-mmap scaffold
+    retain empty medium payload pages within a fixed global hard cap
+    cap = H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES
+    owner exit drains retained empty payloads
+    owner-detached runs do not retain payload on later empty transition
+  counters:
+    empty_transition
+    empty_retain
+    empty_budget_reject
+    empty_reactivate
+    owner_exit_drain
+    resident_empty_bytes
+    resident_empty_peak
+    madvise_fail
+  expected:
+    medium r50 madvise count should drop from about 18k to near owner-exit drains
+    minor faults should drop materially
+    post-RSS should recover after owner exit
+    medium invalid-owned fallback remains 0
+  data:
+    bench_results/20260623T224437Z_medium_empty_retention_fix/README.md
+  result:
+    medium release r50 median improved to about 3.43M ops/s
+    medium release r50 minor faults dropped to about 337
+    medium release local median improved to about 7.98M ops/s
+    debug medium_stats shows retain=15863 and reactivate=15751
+    steady madvise now matches owner-exit drain count in the probe
+    resident peak stayed below the fixed budget
 ```
 
 ### 2. SizePolicy-v1 Evidence

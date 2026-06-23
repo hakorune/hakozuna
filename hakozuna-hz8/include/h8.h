@@ -208,6 +208,14 @@ typedef struct H8DebugStats {
   size_t medium_free_lookup_count;
   size_t medium_route_lookup_count;
   size_t medium_invalid_owned_count;
+  size_t medium_empty_transition_count;
+  size_t medium_empty_retain_count;
+  size_t medium_empty_budget_reject_count;
+  size_t medium_empty_reactivate_count;
+  size_t medium_owner_exit_drain_count;
+  size_t medium_madvise_fail_count;
+  size_t medium_resident_empty_bytes;
+  size_t medium_resident_empty_peak;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;

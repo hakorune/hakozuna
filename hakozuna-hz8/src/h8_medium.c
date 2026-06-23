@@ -8,6 +8,8 @@
 
 static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
 static H8MediumRun* h8_medium_runs;
+static const size_t k_h8_medium_empty_resident_budget =
+    (size_t)H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES;
 
 static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
     {8192u, H8_MEDIUM_RUN_BYTES, 8u, 1u},
@@ -64,6 +66,86 @@ static bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
   return addr >= base && addr < base + payload;
 }
 
+static void h8_medium_update_resident_peak(size_t value) {
+  size_t cur =
+      atomic_load_explicit(&h8g.medium_resident_empty_peak, memory_order_relaxed);
+  while (value > cur &&
+         !atomic_compare_exchange_weak_explicit(
+             &h8g.medium_resident_empty_peak, &cur, value,
+             memory_order_relaxed, memory_order_relaxed)) {
+  }
+}
+
+static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
+  if (!run || run->resident_charge) {
+    return true;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  size_t cur =
+      atomic_load_explicit(&h8g.medium_resident_empty_bytes, memory_order_relaxed);
+  for (;;) {
+    if (cur > k_h8_medium_empty_resident_budget ||
+        bytes > k_h8_medium_empty_resident_budget - cur) {
+      H8_DEBUG_INC(medium_empty_budget_reject_count);
+      return false;
+    }
+    size_t next = cur + bytes;
+    if (atomic_compare_exchange_weak_explicit(
+            &h8g.medium_resident_empty_bytes, &cur, next,
+            memory_order_acq_rel, memory_order_relaxed)) {
+      run->resident_charge = true;
+      h8_medium_update_resident_peak(next);
+      return true;
+    }
+  }
+}
+
+static void h8_medium_release_empty_payload(H8MediumRun* run) {
+  if (!run || !run->resident_charge) {
+    return;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  atomic_fetch_sub_explicit(&h8g.medium_resident_empty_bytes, bytes,
+                            memory_order_acq_rel);
+  run->resident_charge = false;
+}
+
+static void h8_medium_madvise_run(H8MediumRun* run) {
+  if (!run || !run->base || run->run_size == 0) {
+    return;
+  }
+  H8_DEBUG_INC(medium_run_madvise_count);
+  if (madvise(run->base, run->run_size, MADV_DONTNEED) != 0) {
+    H8_DEBUG_INC(medium_madvise_fail_count);
+  }
+}
+
+static void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
+  if (!run || run->allocated_mask != 0) {
+    return;
+  }
+  if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
+    H8_DEBUG_INC(medium_empty_reactivate_count);
+    h8_medium_release_empty_payload(run);
+  }
+  run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
+}
+
+static void h8_medium_mark_empty_locked(H8MediumRun* run) {
+  if (!run || run->allocated_mask != 0) {
+    return;
+  }
+  H8_DEBUG_INC(medium_empty_transition_count);
+  if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
+    H8_DEBUG_INC(medium_empty_retain_count);
+    run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
+    return;
+  }
+  h8_medium_madvise_run(run);
+  h8_medium_release_empty_payload(run);
+  run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
+}
+
 static H8MediumRun* h8_medium_find_run_locked(const void* ptr) {
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
     if (h8_medium_ptr_in_run(run, ptr)) {
@@ -82,6 +164,7 @@ static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   if (!ctx || !ctx->owner || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
     return;
   }
+  run->owner_attached = true;
   run->next_owner = ctx->owner->medium_by_class[run->class_id];
   ctx->owner->medium_by_class[run->class_id] = run;
 }
@@ -170,6 +253,7 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
                        ? UINT64_MAX
                        : ((UINT64_C(1) << run->slot_count) - 1u);
   run->allocated_mask = 0;
+  run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
   atomic_store_explicit(&run->state, H8_MEDIUM_RUN_ACTIVE,
                         memory_order_relaxed);
   atomic_store_explicit(&run->pending_word_mask, 0, memory_order_relaxed);
@@ -188,6 +272,7 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   h8_medium_unregister_locked(run);
   pthread_mutex_unlock(&h8_medium_lock);
   if (run->base) {
+    h8_medium_release_empty_payload(run);
     munmap(run->base, run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES);
   }
   h8_sys_free(run->pending_bits);
@@ -204,6 +289,7 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
   uint64_t bit = UINT64_C(1) << slot;
+  h8_medium_mark_live_on_alloc(run);
   run->free_mask &= ~bit;
   run->allocated_mask |= bit;
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
@@ -227,10 +313,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
                         memory_order_release);
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
-  if (run->allocated_mask == 0 && run->base && run->run_size != 0) {
-    H8_DEBUG_INC(medium_run_madvise_count);
-    madvise(run->base, run->run_size, MADV_DONTNEED);
-  }
+  h8_medium_mark_empty_locked(run);
   return true;
 }
 
@@ -275,6 +358,9 @@ void* h8_medium_malloc_inner(size_t size) {
     pthread_mutex_lock(&run->lock);
     if (h8_medium_run_usable_locked(run, class_id)) {
       H8_DEBUG_INC(medium_run_reuse_global_count);
+      if (ctx && ctx->owner && !run->owner_attached) {
+        h8_medium_owner_add_run(ctx, run);
+      }
       void* ptr = h8_medium_run_alloc_local_scaffold(run);
       if (ctx) {
         ctx->active_medium_runs[class_id] = run;
@@ -369,6 +455,15 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
     owner->medium_by_class[c] = NULL;
     while (run) {
       H8MediumRun* next = run->next_owner;
+      pthread_mutex_lock(&run->lock);
+      run->owner_attached = false;
+      if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
+        H8_DEBUG_INC(medium_owner_exit_drain_count);
+        h8_medium_madvise_run(run);
+        h8_medium_release_empty_payload(run);
+        run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
+      }
+      pthread_mutex_unlock(&run->lock);
       run->next_owner = NULL;
       run = next;
     }
