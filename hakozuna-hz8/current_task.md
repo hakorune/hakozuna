@@ -123,6 +123,24 @@ result:
   local and interleaved remote90 both clear the v0 bring-up gate
 ```
 
+Latest `V0SafetyStressBatch-L1` debug check:
+
+```text
+h8_safety_stress:
+  interior / misaligned pointer INVALID
+  invalid interior free does not consume the base object
+  owner-exit orphan handoff pointers remain VALID until freed
+  post-exit foreign frees make pointers INVALID
+  concurrent remote duplicate free does not crash
+
+observed:
+  owner_exit = 8
+  orphan_handoff = 68
+  remote_publish = 8192
+  duplicate_claim = 1
+  hard debug gates clean
+```
+
 Interpretation:
 
 ```text
@@ -164,6 +182,7 @@ TlsActiveHintTrustElision-L1
 P2ClassLookupBitWidth-L1
 LocalHotAliasConsistency-L1
 SlotShadowQuiescentSplit-L1
+V0SafetyStressBatch-L1
 ```
 
 Benchmark / evidence:
@@ -223,6 +242,8 @@ hard gates:
 latest audit:
   debug interleaved remote90 short run is clean after splitting live
   slot-shadow verification from quiescent pending_count verification
+  h8_safety_stress covers interior invalid, owner-exit foreign free, and
+  remote duplicate free through the public API
 ```
 
 Local leaf lane:
@@ -284,12 +305,13 @@ runtime profile / knob split
 
 ## Next Order
 
-1. Treat `StabilityBatch-L1` as passed for the current p2-v0 small lane.
-2. Commit the quiescent slot-shadow verifier split and stability docs.
-3. Pick the next local leaf box from active-hit
+1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
+   current p2-v0 small lane.
+2. Pick the next local leaf box from active-hit
    validation shape, TLS entry shape, or a measured used-count scalar proof.
-4. If interleaved remote falls below gate again, add attribution around tail
+3. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
+4. Run `PreloadBoundarySmoke-L1` before v0 freeze.
 
 ## Working Rules
 
