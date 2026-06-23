@@ -86,9 +86,17 @@ uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size) {
 }
 
 void h8_bench_note_remote_live(H8BenchThread* th, size_t size) {
-  th->remote_live_by_class[h8_class_for_size(size)]++;
-  th->remote_live_upper1536[h8_upper1536_class_for_size(size)]++;
-  th->remote_live_upper1p5[h8_upper1p5_class_for_size(size)]++;
+  uint32_t p2_class = h8_class_for_size(size);
+  uint32_t upper1536_class = h8_upper1536_class_for_size(size);
+  uint32_t upper1p5_class = h8_upper1p5_class_for_size(size);
+  th->remote_live_by_class[p2_class]++;
+  th->remote_live_upper1536[upper1536_class]++;
+  th->remote_live_upper1p5[upper1p5_class]++;
+  th->remote_live_rounded_bytes += (uint64_t)h8_class_size(p2_class);
+  th->remote_live_upper1536_bytes +=
+      (uint64_t)h8_upper1536_size(upper1536_class);
+  th->remote_live_upper1p5_bytes +=
+      (uint64_t)h8_upper1p5_size(upper1p5_class);
 }
 
 uint64_t h8_now_ns(void) {

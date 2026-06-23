@@ -56,6 +56,32 @@ future candidates:
   only after shadow evidence
 ```
 
+Current shadow result:
+
+```text
+data:
+  bench_results/20260623T184720Z_size_policy_v1_shadow.md
+
+remote-live rounded bytes, 16..4096 phase remote90 R3:
+  p2-v0      3,947,889,632
+  upper1536  3,855,197,152
+  upper1p5   3,485,462,496
+
+lower-bound spans:
+  p2-v0      60,314
+  upper1536  58,974
+  upper1p5   53,610
+```
+
+Interpretation:
+
+```text
+upper1p5:
+  strongest current candidate for phase peak reduction
+  still not the RC1 default
+  needs paired A/B only after the small/medium boundary decision
+```
+
 Do not add runtime profile knobs.  Development A/B may use build-time
 configuration only.
 

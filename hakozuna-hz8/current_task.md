@@ -74,9 +74,9 @@ First box:
 
 ```text
 SizePolicyV1Shadow-L1:
+  implemented for p2-v0 / upper1536 / upper1p5 shadow output
   behavior unchanged
-  compute candidate rounded bytes / lower-bound spans / expected peak RSS
-  compare p2-v0, upper1p5, and medium-boundary candidates
+  data: bench_results/20260623T184720Z_size_policy_v1_shadow.md
 ```
 
 Acceptance:
@@ -157,10 +157,9 @@ small-v0 hot-path tuning without asm evidence
 ## Next Order
 
 1. Keep `hz8-small-v0-rc1` fixed.
-2. Add `SizePolicyV1Shadow-L1` instrumentation / report only.
-3. Use `bench-release-audit` for candidate size-policy evidence.
-4. Decide whether an upper small-class candidate deserves a paired A/B.
-5. Start `MediumRun-v1` only after the size-policy boundary is explicit.
+2. Extend `SizePolicy-v1` from shadow evidence to a boundary decision.
+3. Decide whether `upper1p5` deserves a paired A/B against p2-v0.
+4. Start `MediumRun-v1` only after the size-policy boundary is explicit.
 
 ## Working Rules
 

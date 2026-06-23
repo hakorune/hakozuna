@@ -52,6 +52,9 @@ typedef struct H8BenchThread {
   size_t alloc_count_by_class[9];
   uint64_t rounded_upper1536_bytes;
   uint64_t rounded_upper1p5_bytes;
+  uint64_t remote_live_rounded_bytes;
+  uint64_t remote_live_upper1536_bytes;
+  uint64_t remote_live_upper1p5_bytes;
   size_t remote_live_upper1536[H8_BENCH_CANDIDATE_UPPER1536_COUNT];
   size_t remote_live_upper1p5[H8_BENCH_CANDIDATE_UPPER1P5_COUNT];
   int error;

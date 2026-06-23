@@ -180,6 +180,11 @@ int main(int argc, char** argv) {
       calloc((size_t)opt.runs, sizeof(*upper1536_span_lower_bound));
   size_t* upper1p5_span_lower_bound =
       calloc((size_t)opt.runs, sizeof(*upper1p5_span_lower_bound));
+  size_t* remote_live_rounded = calloc((size_t)opt.runs, sizeof(*remote_live_rounded));
+  size_t* remote_live_upper1536 =
+      calloc((size_t)opt.runs, sizeof(*remote_live_upper1536));
+  size_t* remote_live_upper1p5 =
+      calloc((size_t)opt.runs, sizeof(*remote_live_upper1p5));
 #if defined(H8_BENCH_ATTRIBUTION)
   uint64_t frag_requested_total = 0;
   uint64_t frag_rounded_total = 0;
@@ -197,7 +202,8 @@ int main(int argc, char** argv) {
   size_t interleaved_finish_yields_total = 0;
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
       !work_throughput || !minor_faults || !span_lower_bound || !remote_live_objects ||
-      !upper1536_span_lower_bound || !upper1p5_span_lower_bound) {
+      !upper1536_span_lower_bound || !upper1p5_span_lower_bound ||
+      !remote_live_rounded || !remote_live_upper1536 || !remote_live_upper1p5) {
     fprintf(stderr, "bench allocation failed\n");
     free(throughput);
     free(rss);
@@ -210,6 +216,9 @@ int main(int argc, char** argv) {
     free(remote_live_objects);
     free(upper1536_span_lower_bound);
     free(upper1p5_span_lower_bound);
+    free(remote_live_rounded);
+    free(remote_live_upper1536);
+    free(remote_live_upper1p5);
     return 1;
   }
 
@@ -322,6 +331,9 @@ int main(int argc, char** argv) {
 #if defined(H8_BENCH_ATTRIBUTION)
     uint64_t run_requested = 0;
     uint64_t run_rounded = 0;
+    uint64_t run_live_rounded = 0;
+    uint64_t run_live_upper1536 = 0;
+    uint64_t run_live_upper1p5 = 0;
     if (!opt.interleaved) {
       for (int i = 0; i < opt.threads; ++i) {
         for (uint32_t c = 0; c < 9u; ++c) {
@@ -340,6 +352,9 @@ int main(int argc, char** argv) {
           size_t slots = h8_bench_upper1p5_slots_for_class(c);
           upper1p5_lower += (live + slots - 1u) / slots;
         }
+        run_live_rounded += th[i].remote_live_rounded_bytes;
+        run_live_upper1536 += th[i].remote_live_upper1536_bytes;
+        run_live_upper1p5 += th[i].remote_live_upper1p5_bytes;
       }
     }
     for (int i = 0; i < opt.threads; ++i) {
@@ -354,6 +369,9 @@ int main(int argc, char** argv) {
     }
     frag_requested_total += run_requested;
     frag_rounded_total += run_rounded;
+    remote_live_rounded[run] = (size_t)run_live_rounded;
+    remote_live_upper1536[run] = (size_t)run_live_upper1536;
+    remote_live_upper1p5[run] = (size_t)run_live_upper1p5;
 #endif
     throughput[run] = ops / seconds;
     H8MemorySample mem = h8_read_memory_sample();
@@ -404,6 +422,12 @@ int main(int argc, char** argv) {
         sizeof(*upper1p5_span_lower_bound), h8_cmp_size_t);
   qsort(remote_live_objects, (size_t)opt.runs, sizeof(*remote_live_objects),
         h8_cmp_size_t);
+  qsort(remote_live_rounded, (size_t)opt.runs, sizeof(*remote_live_rounded),
+        h8_cmp_size_t);
+  qsort(remote_live_upper1536, (size_t)opt.runs, sizeof(*remote_live_upper1536),
+        h8_cmp_size_t);
+  qsort(remote_live_upper1p5, (size_t)opt.runs, sizeof(*remote_live_upper1p5),
+        h8_cmp_size_t);
   qsort(alloc_phase_ms, (size_t)opt.runs, sizeof(*alloc_phase_ms), h8_cmp_double);
   qsort(remote_phase_ms, (size_t)opt.runs, sizeof(*remote_phase_ms), h8_cmp_double);
   qsort(work_throughput, (size_t)opt.runs, sizeof(*work_throughput),
@@ -448,6 +472,10 @@ int main(int argc, char** argv) {
                                 0.50),
            h8_percentile_size_t(upper1p5_span_lower_bound, (size_t)opt.runs,
                                 0.50));
+    printf("size_policy_live_bytes p2_median=%zu upper1536_median=%zu upper1p5_median=%zu\n",
+           h8_percentile_size_t(remote_live_rounded, (size_t)opt.runs, 0.50),
+           h8_percentile_size_t(remote_live_upper1536, (size_t)opt.runs, 0.50),
+           h8_percentile_size_t(remote_live_upper1p5, (size_t)opt.runs, 0.50));
   } else {
     printf("interleaved_phase_ms work_median=%.3f tail_median=%.3f\n",
            h8_percentile(alloc_phase_ms, (size_t)opt.runs, 0.50),
@@ -738,5 +766,8 @@ int main(int argc, char** argv) {
   free(remote_live_objects);
   free(upper1536_span_lower_bound);
   free(upper1p5_span_lower_bound);
+  free(remote_live_rounded);
+  free(remote_live_upper1536);
+  free(remote_live_upper1p5);
   return 0;
 }
