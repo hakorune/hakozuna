@@ -52,6 +52,9 @@ static void h8_used_count_sub(H8Span* span, size_t count) {
     abort();
   }
   h8_used_count_store_owner_relaxed(span, used - count);
+  if (!h8_used_count_mirror_sub(span, count)) {
+    abort();
+  }
 }
 
 static uint64_t h8_word_valid_mask(H8Span* span, size_t word_index) {

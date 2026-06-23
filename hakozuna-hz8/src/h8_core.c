@@ -462,6 +462,10 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.local_used_count_full_check, memory_order_acquire);
   out->local_used_count_underflow = atomic_load_explicit(
       &h8g.local_used_count_underflow, memory_order_acquire);
+  out->local_used_mirror_mismatch = atomic_load_explicit(
+      &h8g.local_used_mirror_mismatch, memory_order_acquire);
+  out->local_used_mirror_underflow = atomic_load_explicit(
+      &h8g.local_used_mirror_underflow, memory_order_acquire);
   out->span_commit_total_ns =
       atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
   out->span_commit_lock_wait_ns =

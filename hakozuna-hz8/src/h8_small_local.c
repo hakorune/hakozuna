@@ -27,6 +27,7 @@ static void h8_owner_used_add(H8Span* span, size_t count) {
   }
   H8_DEBUG_INC(local_used_count_store_alloc);
   h8_used_count_store_owner_relaxed(span, used + count);
+  h8_used_count_mirror_add(span, count);
 }
 
 static bool h8_owner_used_sub(H8Span* span, size_t count) {
@@ -39,6 +40,9 @@ static bool h8_owner_used_sub(H8Span* span, size_t count) {
   }
   H8_DEBUG_INC(local_used_count_store_free);
   h8_used_count_store_owner_relaxed(span, used - count);
+  if (H8_UNLIKELY(!h8_used_count_mirror_sub(span, count))) {
+    abort();
+  }
   return true;
 }
 

@@ -123,18 +123,14 @@ struct H8Span {
       _Atomic uint32_t remote_span_epoch;
     } remote_hot;
   } H8_CACHELINE_ALIGNED;
-  union {
-    struct {
-      _Atomic uint32_t bump_index;
-      _Atomic uint32_t local_free_head;
-      _Atomic size_t used_count;
-    };
-    struct {
-      _Atomic uint32_t local_bump_index;
-      _Atomic uint32_t local_free_head_word;
-      _Atomic size_t local_used_count;
-    } local_hot;
-  } H8_CACHELINE_ALIGNED;
+  struct {
+    _Atomic uint32_t local_bump_index;
+    _Atomic uint32_t local_free_head_word;
+    _Atomic size_t local_used_count;
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t local_used_mirror;
+#endif
+  } local_hot H8_CACHELINE_ALIGNED;
   struct H8Span* next_owned;
   struct H8Span* next_owned_class;
   struct H8Span* next_pending;
@@ -312,6 +308,8 @@ typedef struct H8Global {
   atomic_size_t local_used_count_store_free;
   atomic_size_t local_used_count_full_check;
   atomic_size_t local_used_count_underflow;
+  atomic_size_t local_used_mirror_mismatch;
+  atomic_size_t local_used_mirror_underflow;
   atomic_size_t span_commit_total_ns;
   atomic_size_t span_commit_lock_wait_ns;
   atomic_size_t span_commit_table_scan_ns;

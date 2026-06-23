@@ -220,6 +220,27 @@ next:
   UsedCountHotMirrorShadow-L1 before any scalar authority cutover
 ```
 
+Latest `UsedCountHotMirrorShadow-L1` debug proof:
+
+```text
+data:
+  bench_results/20260623T023009Z_used_count_hot_mirror_shadow.md
+
+change:
+  debug-only local_used_mirror tracks atomic local_used_count owner updates
+  release build compiles mirror helpers to no-op
+
+debug local/interleaved short runs:
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+result:
+  owner-side accounting mirror is coherent in covered debug workloads
+  scalar authority cutover is still HOLD until cold reader quiescence is proven
+```
+
 Interpretation:
 
 ```text
@@ -338,6 +359,8 @@ latest:
   local hot used_count attribution now split out
   UsedCountScalarProof-L1 routes all used_count access through explicit
   owner-hot versus cold helpers, but intentionally keeps atomic storage
+  UsedCountHotMirrorShadow-L1 added a debug-only owner mirror and found no
+  mirror mismatch or underflow in local/interleaved short proof runs
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
   LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
   references from cold/remote code
@@ -353,8 +376,8 @@ evidence:
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
   and used_count load/store remains the main counted local-hot metadata touch
-  scalar used_count cutover is not justified until a hot mirror / quiescent
-  reader proof is clean
+  scalar used_count cutover is not justified until cold reader quiescence is
+  proven clean
 ```
 
 Remote lane:
@@ -399,8 +422,8 @@ runtime profile / knob split
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, implement `UsedCountHotMirrorShadow-L1` before
-   any scalar authority cutover.
+3. If continuing on used_count, prove cold reader quiescence before any scalar
+   authority cutover.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 
