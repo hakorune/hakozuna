@@ -132,6 +132,11 @@ bool h8_span_repair_pending_mask(H8OwnerRecord* owner, H8Span* span) {
   return true;
 }
 
+static bool h8_publish_claim_accepted_by_collector(H8Span* span) {
+  uint8_t qstate = atomic_load_explicit(&span->qstate, memory_order_acquire);
+  return qstate == H8_Q_DRAINING || qstate == H8_Q_DRAINING_DIRTY;
+}
+
 static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   size_t bit_index = (size_t)__builtin_ctzll(bit);
   size_t slot = (word_index << 6u) + bit_index;
@@ -422,7 +427,16 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   if (slot_authority) {
     uint32_t state = h8_slot_state_load_hot(span, slot);
     if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+      if (h8_publish_claim_accepted_by_collector(span)) {
+        H8_DEBUG_INC(remote_stage_publish_ok);
+        return H8_PUBLISH_OK;
+      }
+      uint64_t rollback = atomic_fetch_and_explicit(
+          pending_word, ~slot_bit, memory_order_acq_rel);
+      if ((rollback & slot_bit) == 0) {
+        H8_DEBUG_INC(remote_stage_publish_ok);
+        return H8_PUBLISH_OK;
+      }
 #if defined(H8_ENABLE_DEBUG_STATS)
       h8_pending_count_dec(span);
 #endif
@@ -430,7 +444,16 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
       return H8_PUBLISH_INVALID;
     }
   } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
-    atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+    if (h8_publish_claim_accepted_by_collector(span)) {
+      H8_DEBUG_INC(remote_stage_publish_ok);
+      return H8_PUBLISH_OK;
+    }
+    uint64_t rollback =
+        atomic_fetch_and_explicit(pending_word, ~slot_bit, memory_order_acq_rel);
+    if ((rollback & slot_bit) == 0) {
+      H8_DEBUG_INC(remote_stage_publish_ok);
+      return H8_PUBLISH_OK;
+    }
 #if defined(H8_ENABLE_DEBUG_STATS)
     h8_pending_count_dec(span);
 #endif

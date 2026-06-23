@@ -430,6 +430,36 @@ next:
   used_count lane is closed unless new evidence appears.
 ```
 
+Latest `PostClaimCollectorAcceptance-L1` fix:
+
+```text
+data:
+  bench_results/20260623T095547Z_post_claim_acceptance.md
+
+trigger:
+  release interleaved remote90 RUNS=10 aborted in h8_collect_bulk_word
+  collector saw a pending snapshot bit disappear before pending-word clear
+
+root cause:
+  producer post-claim state recheck can see FREE after the collector has
+  accepted the claimed bit
+  this must be treated as publish OK, not rollback INVALID
+
+change:
+  if post-claim recheck fails while qstate is DRAINING/DRAINING_DIRTY,
+  producer returns H8_PUBLISH_OK and does not rollback
+  rollback remains only for non-draining spans
+
+verification:
+  smoke / safety / preload / adoption smoke passed
+  debug interleaved remote90 validate_fail=0 duplicate_claim=0
+  release interleaved remote90 median=44.38M, zero gates clean
+
+stability note:
+  interleaved remote90 p25 is below median * 0.85 in the saved RUNS=10
+  next work is tail/work variance attribution, not remote protocol redesign
+```
+
 Interpretation:
 
 ```text
@@ -581,12 +611,14 @@ Remote lane:
 
 ```text
 status:
-  primary interleaved remote gate is provisionally above 40M
+  primary interleaved remote median is above 40M
+  current RUNS=10 p25 stability is not yet clean after the post-claim fix
 
 next action:
-  measure steady_work and tail separately in StabilityBatch-L1
+  implement / run InterleavedTailVarianceAudit-L1
+  use existing steady_work/tail/drain/yield data first
   do not reopen owner lease or intrusive remote_head until two fresh batches
-  show remote protocol is still the blocker
+  show remote protocol is still the blocker before changing ownership protocol
 ```
 
 Class-map lane:
@@ -625,8 +657,10 @@ hot plain used_count + cold atomic used_count hybrid
    Do not plain-scalar cut over.
 4. Treat `UsedCountFieldRemoval-L1` as implemented. Do not reopen used_count
    unless fresh evidence shows lifecycle count derivation is the blocker.
-5. If interleaved remote falls below gate again, add attribution around tail
-   drain / active-hit validation before changing the remote protocol.
+5. Treat `PostClaimCollectorAcceptance-L1` as implemented. It fixed a
+   producer/collector race exposed by release interleaved remote90.
+6. Next concrete box is `InterleavedTailVarianceAudit-L1`: explain p25 drops
+   using work/tail/drain/yield attribution before changing remote protocol.
 
 ## Working Rules
 
