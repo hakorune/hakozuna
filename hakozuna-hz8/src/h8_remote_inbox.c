@@ -47,6 +47,7 @@ static void h8_pending_count_sub(H8Span* span, size_t count) {
 #endif
 
 static void h8_used_count_sub(H8Span* span, size_t count) {
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t used = h8_used_count_load_owner_relaxed(span);
   if (used < count) {
     abort();
@@ -55,6 +56,10 @@ static void h8_used_count_sub(H8Span* span, size_t count) {
   if (!h8_used_count_mirror_sub(span, count)) {
     abort();
   }
+#else
+  (void)span;
+  (void)count;
+#endif
 }
 
 static uint64_t h8_word_valid_mask(H8Span* span, size_t word_index) {

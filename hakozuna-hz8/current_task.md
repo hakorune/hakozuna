@@ -365,6 +365,37 @@ next:
   UsedCountReleaseElision-L1
 ```
 
+Latest `UsedCountReleaseElision-L1` proof:
+
+```text
+data:
+  bench_results/20260623T094536Z_used_count_release_elision.md
+
+change:
+  release alloc/free/remote-collect no longer maintain used_count
+  debug keeps the atomic count as a shadow and mirror
+  release cold readers derive allocated count from slot_state
+  existing local_hot.local_used_count field remains present for now
+
+release local/interleaved short runs:
+  used_count_detail load_alloc = 0
+  used_count_detail store_alloc = 0
+  used_count_detail load_free = 0
+  used_count_detail store_free = 0
+  derived_mismatch = 0
+  slot_shadow used_mismatch = 0
+
+debug local/interleaved short runs:
+  derived_mismatch = 0
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+next:
+  UsedCountFieldRemoval-L1 is possible, but only as a separate layout box.
+```
+
 Interpretation:
 
 ```text
@@ -505,11 +536,11 @@ evidence:
   direct legacy `span->used_count`, `span->bump_index`, and
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
-  and used_count load/store remains the main counted local-hot metadata touch
   plain used_count authority remains HOLD because adoption pre-quiescent reads
   can race with orphan collect under a different lock
   UsedCountColdDerivationShadow-L1 is clean in short proof runs
-  next used_count target is release elision
+  UsedCountReleaseElision-L1 removes release used_count hot updates
+  remaining used_count work is field/layout removal, not authority cutover
 ```
 
 Remote lane:
@@ -556,10 +587,11 @@ hot plain used_count + cold atomic used_count hybrid
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, implement `UsedCountReleaseElision-L1`.
+3. Treat `UsedCountReleaseElision-L1` as implemented for the current code shape.
    Do not plain-scalar cut over.
-4. `UsedCountReleaseElision-L1` should make release hot path stop maintaining
-   used_count and keep debug atomic shadow/proof.
+4. If continuing on used_count, use `UsedCountFieldRemoval-L1` as a layout-only
+   box: remove the release field only after confirming debug shadow reporting
+   remains intact.
 5. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 

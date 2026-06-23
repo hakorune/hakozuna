@@ -20,6 +20,7 @@ static bool h8_slot_shadow_active(bool slot_authority) {
 
 static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_alloc);
+#if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(local_used_count_load_alloc);
   size_t used = h8_used_count_load_owner_relaxed(span);
   if (H8_UNLIKELY(used + count > span->slot_count)) {
@@ -28,10 +29,15 @@ static void h8_owner_used_add(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_count_store_alloc);
   h8_used_count_store_owner_relaxed(span, used + count);
   h8_used_count_mirror_add(span, count);
+#else
+  (void)span;
+  (void)count;
+#endif
 }
 
 static bool h8_owner_used_sub(H8Span* span, size_t count) {
   H8_DEBUG_INC(local_used_touch_free);
+#if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(local_used_count_load_free);
   size_t used = h8_used_count_load_owner_relaxed(span);
   if (H8_UNLIKELY(used < count)) {
@@ -43,6 +49,10 @@ static bool h8_owner_used_sub(H8Span* span, size_t count) {
   if (H8_UNLIKELY(!h8_used_count_mirror_sub(span, count))) {
     abort();
   }
+#else
+  (void)span;
+  (void)count;
+#endif
   return true;
 }
 
