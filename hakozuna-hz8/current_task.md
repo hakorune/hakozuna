@@ -326,6 +326,30 @@ EvidenceKnobReleaseShape-L1:
   focused interleaved remote90 RUNS=5 median ~= 56.05M ops/s
   remote protocol authority unchanged in normal release
   data: bench_results/20260623T144642Z_evidence_knob_release_shape.md
+
+RemeasureAfterEvidenceKnob-L1:
+  HEAD 9127838, bench-release, RUNS=10, T=16, size=16..2048
+  guard/local0:
+    median 409.27M ops/s, p25 380.63M, min 360.34M
+    steady median 465.98M
+    post_rss median 3.88MiB, peak_rss median 3.88MiB
+  small_interleaved_remote90:
+    median 57.01M ops/s, p25 56.59M, min 54.11M
+    steady median 59.12M
+    post_rss median 3.31MiB, peak_rss median 25.28MiB
+  small_phase_remote90:
+    median 6.68M ops/s, p25 6.62M, min 6.44M
+    steady median 9.20M
+    post_rss median 28.93MiB, peak_rss median 1917.37MiB
+  delta vs 20260623T141023Z matrix:
+    local0 +0.7%
+    interleaved remote90 -2.9%
+    phase remote90 -0.1%
+  interpretation:
+    evidence knob compile-out kept performance in the same band
+    local0 and interleaved remote90 remain above v0 bring-up gates
+    phase remote90 remains peak-live / first-touch / lifecycle stress
+  data: bench_results/20260623T145238Z_remeasure_summary.md
 ```
 
 Latest safety checks:
