@@ -106,11 +106,14 @@ MediumRunMetadataScaffold-L1:
   implemented:
     src/h8_medium.h
     src/h8_medium.c
+    tests/h8_smoke.c scaffold checks
   current scaffold:
     4097..65536
     8K / 16K / 32K / 64K coarse classes
     64KiB run payload per initial class
     no malloc/free routing change
+  verification:
+    smoke validates range, class mapping, rounded size, and class specs
 
 MediumRunLocalOnly-L1:
   current owner only

@@ -94,6 +94,22 @@ slots/run:
   1
 ```
 
+Smoke coverage:
+
+```text
+range classification:
+  4096 excluded
+  4097 included
+  65536 included
+  65537 excluded
+
+class mapping:
+  4097..8192 -> 8192
+  8193..16384 -> 16384
+  16385..32768 -> 32768
+  32769..65536 -> 65536
+```
+
 ## Pointer Identity
 
 Boundary classification:
@@ -213,6 +229,7 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
    compile structs, tables, and verification helpers
    no runtime routing
    status: implemented
+   smoke: range and coarse class table covered
 
 4. MediumRunLocalOnly-L1
    same-owner malloc/free only

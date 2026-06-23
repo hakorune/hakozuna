@@ -1,4 +1,5 @@
 #include "../include/h8.h"
+#include "../src/h8_medium.h"
 
 #include <pthread.h>
 #include <stdio.h>
@@ -37,6 +38,43 @@ static void* adoption_roundtrip(void* arg) {
   return NULL;
 }
 
+static int check_medium_scaffold(void) {
+  if (h8_medium_size_supported(4096) ||
+      !h8_medium_size_supported(4097) ||
+      !h8_medium_size_supported(65536) ||
+      h8_medium_size_supported(65537)) {
+    fprintf(stderr, "medium range classification mismatch\n");
+    return 24;
+  }
+  const uint32_t probes[][3] = {
+      {4097u, 0u, 8192u},
+      {8192u, 0u, 8192u},
+      {8193u, 1u, 16384u},
+      {16385u, 2u, 32768u},
+      {32769u, 3u, 65536u},
+  };
+  for (size_t i = 0; i < sizeof(probes) / sizeof(probes[0]); ++i) {
+    uint32_t size = probes[i][0];
+    uint32_t class_id = probes[i][1];
+    uint32_t rounded = probes[i][2];
+    const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
+    if (!spec || h8_medium_class_for_size(size) != class_id ||
+        h8_medium_rounded_size(size) != rounded ||
+        spec->slot_size != rounded || spec->run_size != H8_MEDIUM_RUN_BYTES ||
+        spec->slot_count == 0 || spec->bitmap_words != 1u) {
+      fprintf(stderr, "medium scaffold spec mismatch\n");
+      return 25;
+    }
+  }
+  if (h8_medium_class_spec(H8_MEDIUM_CLASS_COUNT) != NULL ||
+      h8_medium_rounded_size(4096) != 0u ||
+      h8_medium_rounded_size(65537) != 0u) {
+    fprintf(stderr, "medium scaffold boundary mismatch\n");
+    return 26;
+  }
+  return 0;
+}
+
 int main(void) {
   const char* mode = getenv("H8_SMOKE_REGULAR_ADOPTION");
   int enable_regular_adoption =
@@ -45,6 +83,10 @@ int main(void) {
                  strcmp(mode, "OFF") == 0));
   if (enable_regular_adoption) {
     setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
+  }
+  int medium_rc = check_medium_scaffold();
+  if (medium_rc != 0) {
+    return medium_rc;
   }
   h8_init();
   void* p = h8_malloc(32);
