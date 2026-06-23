@@ -143,6 +143,28 @@ interpretation:
   explosion; remote protocol redesign remains HOLD
 ```
 
+Latest `InterleavedWorkVarianceAudit-L1` release check:
+
+```text
+change:
+  per-run output now includes minor_faults and work_ops/s
+
+small_interleaved_remote90, RUNS=10:
+  median ~= 56.8M ops/s
+  p25 ~= 56.0M ops/s
+  min ~= 55.0M ops/s
+  steady median ~= 58.8M ops/s
+  steady p25 ~= 58.1M ops/s
+
+  minor faults median = 5393
+  minor faults range = 4842..5610
+
+interpretation:
+  p25 is stable in this batch
+  minor faults do not explain the remaining work-rate variance
+  remote protocol redesign remains HOLD
+```
+
 Latest `V0SafetyStressBatch-L1` debug check:
 
 ```text
@@ -639,11 +661,12 @@ latest:
   InterleavedTailVarianceAudit-L1 records per-run work_ms, tail_ms, drain
   shape, push_yields, and finish_yields
   the low run is work-phase variance, not a tail-drain explosion
+  InterleavedWorkVarianceAudit-L1 adds per-run minor_faults and work_ops/s
+  the latest batch is stable and does not point at page faults or tail drain
 
 next action:
   keep remote protocol frozen unless a second fresh batch contradicts this
-  if more evidence is needed, add work-phase attribution before changing
-  ownership or remote queue protocol
+  next performance work should be local leaf / code shape
   do not reopen owner lease or intrusive remote_head until two fresh batches
   show remote protocol is still the blocker before changing ownership protocol
 ```
@@ -689,7 +712,9 @@ hot plain used_count + cold atomic used_count hybrid
 6. Treat `InterleavedTailVarianceAudit-L1` as implemented. The latest R10
    shows p25 stability clean and attributes the weakest run mostly to work
    phase expansion, not tail drain.
-7. Next concrete work should stay in attribution/local leaf unless a second
+7. Treat `InterleavedWorkVarianceAudit-L1` as implemented. The latest R10
+   shows stable p25 and no minor-fault explanation for work variance.
+8. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

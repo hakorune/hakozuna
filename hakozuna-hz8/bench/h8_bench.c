@@ -369,14 +369,16 @@ int main(int argc, char** argv) {
     remote_phase_ms[run] = (double)remote_ns_max / 1e6;
     work_throughput[run] =
         alloc_ns_max ? ops / ((double)alloc_ns_max / 1e9) : 0.0;
-    printf("run=%d ops/s=%.3f post_rss=%zu peak_rss=%zu\n",
-           run + 1, throughput[run], rss[run], peak_rss[run]);
+    printf("run=%d ops/s=%.3f post_rss=%zu peak_rss=%zu minor_faults=%zu\n",
+           run + 1, throughput[run], rss[run], peak_rss[run],
+           minor_faults[run]);
     if (!opt.interleaved) {
       printf("run_phase=%d alloc_ms=%.3f remote_ms=%.3f\n", run + 1,
              alloc_phase_ms[run], remote_phase_ms[run]);
     } else {
-      printf("run_interleaved=%d work_ms=%.3f tail_ms=%.3f remote_enqueue=%zu local_free=%zu drain_calls=%zu drain_objects=%zu drain_empty=%zu push_yields=%zu finish_yields=%zu\n",
-             run + 1, alloc_phase_ms[run], remote_phase_ms[run],
+      printf("run_interleaved=%d work_ms=%.3f work_ops/s=%.3f tail_ms=%.3f remote_enqueue=%zu local_free=%zu drain_calls=%zu drain_objects=%zu drain_empty=%zu push_yields=%zu finish_yields=%zu\n",
+             run + 1, alloc_phase_ms[run], work_throughput[run],
+             remote_phase_ms[run],
              run_remote_enqueue, run_local_free, run_drain_calls,
              run_drain_objects, run_drain_empty, run_push_yields,
              run_finish_yields);
