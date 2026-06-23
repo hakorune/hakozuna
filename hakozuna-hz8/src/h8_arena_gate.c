@@ -37,7 +37,7 @@ static void* h8_aligned_zero_alloc(size_t align, size_t size, void** raw_out) {
   return (void*)aligned;
 }
 
-static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
+static H8Span* h8_alloc_span_meta(uint16_t slot_count) {
   size_t words = h8_word_count_for_slots(slot_count);
   size_t off = h8_round_up_size(sizeof(H8Span), sizeof(uint64_t));
   size_t live_off = off;
@@ -49,9 +49,7 @@ static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
   off += words * sizeof(_Atomic uint64_t);
   off = h8_round_up_size(off, sizeof(uint32_t));
   size_t slot_state_off = off;
-  if (use_slot_state) {
-    off += (size_t)slot_count * sizeof(_Atomic uint32_t);
-  }
+  off += (size_t)slot_count * sizeof(_Atomic uint32_t);
 
   void* raw = NULL;
   uint8_t* block =
@@ -67,9 +65,7 @@ static H8Span* h8_alloc_span_meta(uint16_t slot_count, bool use_slot_state) {
   (void)live_off;
 #endif
   span->pending_bits = (_Atomic uint64_t*)(void*)(block + pending_off);
-  if (use_slot_state) {
-    span->slot_state = (_Atomic uint32_t*)(void*)(block + slot_state_off);
-  }
+  span->slot_state = (_Atomic uint32_t*)(void*)(block + slot_state_off);
   span->meta_bundled = true;
   return span;
 }
@@ -118,12 +114,7 @@ H8Span* h8_span_commit_for_class(H8OwnerRecord* owner, uint32_t class_id) {
   uint64_t meta_start = h8_debug_now_ns();
 #endif
   uint16_t slot_count = (uint16_t)h8_slot_count_for_class(class_id);
-  bool use_slot_state = h8_slot_state_authority_enabled()
-#if defined(H8_ENABLE_DEBUG_STATS)
-                        || true
-#endif
-      ;
-  H8Span* span = h8_alloc_span_meta(slot_count, use_slot_state);
+  H8Span* span = h8_alloc_span_meta(slot_count);
   if (!span) {
     return NULL;
   }
@@ -206,7 +197,6 @@ static void h8_span_free_retired_meta(H8Span* span) {
   if (!span->meta_bundled) {
     h8_sys_free(span->live_bits);
     h8_sys_free(span->pending_bits);
-    h8_sys_free(span->next_free);
     h8_sys_free(span->slot_state);
   }
   h8_sys_free(span->meta_alloc_base ? span->meta_alloc_base : span);

@@ -120,6 +120,16 @@ SlotAuthorityMonomorphic-L1:
   local/interleaved focused benches stay above bring-up gates
   data: bench_results/20260623T104207Z_slot_authority_mono.md
 
+RemoteSlotAuthorityMonomorphic-L1:
+  remote collect/publish now assume tagged slot-state authority directly
+  span metadata allocation always allocates slot_state
+  unused next_free metadata field and obsolete authority helper removed
+  pending bitmap, pending_word_mask, qstate, and lease protocol unchanged
+  debug live bitmap remains shadow only
+  smoke / safety / preload smoke pass
+  local/interleaved focused benches stay above bring-up gates
+  data: bench_results/20260623T105848Z_remote_slot_authority_mono.md
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -189,6 +199,7 @@ FreeLookupInlineP2-L1
 ThreadCtxOwnerInvariant-L1
 SlotAuthorityWorkerAudit-L1
 SlotAuthorityMonomorphic-L1
+RemoteSlotAuthorityMonomorphic-L1
 ```
 
 Benchmark / evidence:
@@ -253,8 +264,8 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  RemoteSlotAuthorityMonomorphic-L1
   optional audit cleanup for pending_publish_mask_arm_raced_nonempty
+  local leaf/code-shape evidence only
   keep debug live bitmap as shadow only
 ```
 
@@ -325,7 +336,9 @@ LocalFreeHeadBumpScalar-L1
 9. Treat `SlotAuthorityWorkerAudit-L1` as complete.
 10. Treat `SlotAuthorityMonomorphic-L1` as implemented. It removes local
     slot-state fallback branches and the deprecated authority env/global state.
-11. Next concrete work should stay in local leaf / code shape unless a second
+11. Treat `RemoteSlotAuthorityMonomorphic-L1` as implemented. It removes remote
+    slot-state fallback branches without changing the remote protocol.
+12. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

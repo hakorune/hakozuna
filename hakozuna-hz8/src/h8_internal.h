@@ -80,7 +80,6 @@ struct H8Span {
       uint16_t slot_count;
       _Atomic uint64_t* live_bits;
       _Atomic uint64_t* pending_bits;
-      uint32_t* next_free;
       _Atomic uint32_t* slot_state;
       void* meta_alloc_base;
       bool meta_bundled;
@@ -91,7 +90,6 @@ struct H8Span {
       uint16_t immutable_slot_count;
       _Atomic uint64_t* immutable_live_bits;
       _Atomic uint64_t* immutable_pending_bits;
-      uint32_t* immutable_next_free;
       _Atomic uint32_t* immutable_slot_state;
       void* immutable_meta_alloc_base;
       bool immutable_meta_bundled;
@@ -575,10 +573,6 @@ static inline bool h8_owner_word_equal(H8OwnerWord a, H8OwnerWord b) {
 
 static inline bool h8_regular_adoption_enabled(void) {
   return atomic_load_explicit(&h8g.regular_adoption_enabled, memory_order_acquire);
-}
-
-static inline bool h8_slot_state_authority_enabled(void) {
-  return true;
 }
 
 static inline bool h8_remote_lease_elision_enabled(void) {

@@ -3,15 +3,6 @@
 
 #include <stdlib.h>
 
-static bool h8_slot_shadow_active(bool slot_authority) {
-#if defined(H8_ENABLE_DEBUG_STATS)
-  (void)slot_authority;
-  return true;
-#else
-  return slot_authority;
-#endif
-}
-
 static void h8_pending_queue_push(H8OwnerRecord* owner, H8Span* span) {
   H8_DEBUG_INC(pending_head_push_attempt_count);
   H8Span* head = atomic_load_explicit(&owner->pending_head, memory_order_relaxed);
@@ -142,35 +133,25 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
   size_t slot = (word_index << 6u) + bit_index;
   uint64_t clear_mask = ~bit;
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
-  bool slot_authority = h8_slot_state_authority_enabled();
 
   H8_DEBUG_INC(pending_collect_bit_count);
-  if (slot_authority) {
-    uint32_t state = h8_slot_state_load_hot(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      H8_DEBUG_INC(invalid_count);
-      abort();
-    }
+  uint32_t state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+    H8_DEBUG_INC(invalid_count);
+    abort();
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
-  bool update_live = true;
-#else
-  bool update_live = !slot_authority;
-#endif
-  if (update_live) {
-    _Atomic uint64_t* live_word = &span->live_bits[word_index];
-    uint64_t old_live =
-        atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
-    if ((old_live & bit) == 0) {
-      H8_DEBUG_INC(invalid_count);
-      abort();
-    }
+  _Atomic uint64_t* live_word = &span->live_bits[word_index];
+  uint64_t old_live =
+      atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
+  if ((old_live & bit) == 0) {
+    H8_DEBUG_INC(invalid_count);
+    abort();
   }
+#endif
   uint32_t old_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                            memory_order_relaxed);
-  if (slot_authority && h8_slot_shadow_active(slot_authority)) {
-    h8_slot_state_store_free_hot(span, slot, old_head);
-  }
+  h8_slot_state_store_free_hot(span, slot, old_head);
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
   if ((old_pending & bit) == 0) {
@@ -180,12 +161,6 @@ static void h8_collect_one_slot(H8Span* span, size_t word_index, uint64_t bit) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_pending_count_dec(span);
 #endif
-  if (!slot_authority) {
-    span->next_free[slot] = old_head;
-    if (h8_slot_shadow_active(slot_authority)) {
-      h8_slot_state_store_free_hot(span, slot, old_head);
-    }
-  }
   atomic_store_explicit(&span->local_hot.local_free_head_word, (uint32_t)slot,
                         memory_order_release);
   h8_used_count_sub(span, 1);
@@ -197,50 +172,38 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
                                  size_t count) {
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
   uint64_t clear_mask = ~claimed;
-  bool slot_authority = h8_slot_state_authority_enabled();
 
-  if (slot_authority) {
-    uint64_t slots = claimed;
-    while (slots) {
-      uint64_t bit = slots & (~slots + 1ull);
-      size_t bit_index = (size_t)__builtin_ctzll(slots);
-      size_t slot = (word_index << 6u) + bit_index;
-      slots ^= bit;
-      uint32_t state = h8_slot_state_load_hot(span, slot);
-      if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-        H8_DEBUG_INC(invalid_count);
-        abort();
-      }
-    }
-  }
-#if defined(H8_ENABLE_DEBUG_STATS)
-  bool update_live = true;
-#else
-  bool update_live = !slot_authority;
-#endif
-  if (update_live) {
-    _Atomic uint64_t* live_word = &span->live_bits[word_index];
-    uint64_t old_live =
-        atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
-    if ((old_live & claimed) != claimed) {
+  uint64_t slots = claimed;
+  while (slots) {
+    uint64_t bit = slots & (~slots + 1ull);
+    size_t bit_index = (size_t)__builtin_ctzll(slots);
+    size_t slot = (word_index << 6u) + bit_index;
+    slots ^= bit;
+    uint32_t state = h8_slot_state_load_hot(span, slot);
+    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
       H8_DEBUG_INC(invalid_count);
       abort();
     }
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  _Atomic uint64_t* live_word = &span->live_bits[word_index];
+  uint64_t old_live =
+      atomic_fetch_and_explicit(live_word, clear_mask, memory_order_acq_rel);
+  if ((old_live & claimed) != claimed) {
+    H8_DEBUG_INC(invalid_count);
+    abort();
+  }
+#endif
   uint32_t head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                        memory_order_relaxed);
-  if (slot_authority) {
-    uint64_t slots = claimed;
-    while (slots) {
-      uint64_t bit = slots & (~slots + 1ull);
-      size_t bit_index = (size_t)__builtin_ctzll(slots);
-      size_t slot = (word_index << 6u) + bit_index;
-      slots ^= bit;
-      if (h8_slot_shadow_active(slot_authority)) {
-        h8_slot_state_store_free_hot(span, slot, head);
-      }
-      head = (uint32_t)slot;
-    }
+  slots = claimed;
+  while (slots) {
+    uint64_t bit = slots & (~slots + 1ull);
+    size_t bit_index = (size_t)__builtin_ctzll(slots);
+    size_t slot = (word_index << 6u) + bit_index;
+    slots ^= bit;
+    h8_slot_state_store_free_hot(span, slot, head);
+    head = (uint32_t)slot;
   }
   uint64_t old_pending =
       atomic_fetch_and_explicit(pending_word, clear_mask, memory_order_acq_rel);
@@ -249,20 +212,6 @@ static void h8_collect_bulk_word(H8Span* span, size_t word_index, uint64_t claim
     abort();
   }
 
-  if (!slot_authority) {
-    uint64_t slots = claimed;
-    while (slots) {
-      uint64_t bit = slots & (~slots + 1ull);
-      size_t bit_index = (size_t)__builtin_ctzll(slots);
-      size_t slot = (word_index << 6u) + bit_index;
-      slots ^= bit;
-      span->next_free[slot] = head;
-      if (h8_slot_shadow_active(slot_authority)) {
-        h8_slot_state_store_free_hot(span, slot, head);
-      }
-      head = (uint32_t)slot;
-    }
-  }
   atomic_store_explicit(&span->local_hot.local_free_head_word, head,
                         memory_order_release);
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -388,15 +337,9 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   uint64_t slot_bit = UINT64_C(1) << (slot & 63u);
   uint64_t word_bit = UINT64_C(1) << word_index;
   _Atomic uint64_t* pending_word = &((_Atomic uint64_t*)span->pending_bits)[word_index];
-  bool slot_authority = h8_slot_state_authority_enabled();
   bool pending_elision = h8_remote_pending_publish_elision_enabled();
-  if (slot_authority) {
-    uint32_t state = h8_slot_state_load_hot(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      H8_DEBUG_INC(remote_stage_validate_fail);
-      return H8_PUBLISH_INVALID;
-    }
-  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  uint32_t state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
     H8_DEBUG_INC(remote_stage_validate_fail);
     return H8_PUBLISH_INVALID;
   }
@@ -424,26 +367,8 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
     H8_DEBUG_INC(remote_publish_pending_claim_duplicate_count);
     return H8_PUBLISH_DOUBLE_FREE;
   }
-  if (slot_authority) {
-    uint32_t state = h8_slot_state_load_hot(span, slot);
-    if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      if (h8_publish_claim_accepted_by_collector(span)) {
-        H8_DEBUG_INC(remote_stage_publish_ok);
-        return H8_PUBLISH_OK;
-      }
-      uint64_t rollback = atomic_fetch_and_explicit(
-          pending_word, ~slot_bit, memory_order_acq_rel);
-      if ((rollback & slot_bit) == 0) {
-        H8_DEBUG_INC(remote_stage_publish_ok);
-        return H8_PUBLISH_OK;
-      }
-#if defined(H8_ENABLE_DEBUG_STATS)
-      h8_pending_count_dec(span);
-#endif
-      H8_DEBUG_INC(remote_stage_validate_fail);
-      return H8_PUBLISH_INVALID;
-    }
-  } else if (!h8_bitmap_test((_Atomic uint64_t*)span->live_bits, slot)) {
+  state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
     if (h8_publish_claim_accepted_by_collector(span)) {
       H8_DEBUG_INC(remote_stage_publish_ok);
       return H8_PUBLISH_OK;
