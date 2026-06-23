@@ -228,6 +228,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
   if (run->allocated_mask == 0 && run->base && run->run_size != 0) {
+    H8_DEBUG_INC(medium_run_madvise_count);
     madvise(run->base, run->run_size, MADV_DONTNEED);
   }
   return true;
@@ -237,12 +238,14 @@ void* h8_medium_malloc_inner(size_t size) {
   if (!h8_medium_size_supported(size)) {
     return NULL;
   }
+  H8_DEBUG_INC(medium_malloc_count);
   uint32_t class_id = h8_medium_class_for_size(size);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
   if (active) {
     pthread_mutex_lock(&active->lock);
     if (h8_medium_run_usable_locked(active, class_id)) {
+      H8_DEBUG_INC(medium_run_reuse_active_count);
       void* ptr = h8_medium_run_alloc_local_scaffold(active);
       pthread_mutex_unlock(&active->lock);
       return ptr;
@@ -250,10 +253,13 @@ void* h8_medium_malloc_inner(size_t size) {
     pthread_mutex_unlock(&active->lock);
   }
   if (ctx && ctx->owner) {
+    H8_DEBUG_INC(medium_owner_scan_count);
     for (H8MediumRun* run = ctx->owner->medium_by_class[class_id]; run;
          run = run->next_owner) {
+      H8_DEBUG_INC(medium_owner_scan_step_count);
       pthread_mutex_lock(&run->lock);
       if (h8_medium_run_usable_locked(run, class_id)) {
+        H8_DEBUG_INC(medium_run_reuse_owner_list_count);
         void* ptr = h8_medium_run_alloc_local_scaffold(run);
         ctx->active_medium_runs[class_id] = run;
         pthread_mutex_unlock(&run->lock);
@@ -263,9 +269,12 @@ void* h8_medium_malloc_inner(size_t size) {
     }
   }
   pthread_mutex_lock(&h8_medium_lock);
+  H8_DEBUG_INC(medium_global_scan_count);
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
+    H8_DEBUG_INC(medium_global_scan_step_count);
     pthread_mutex_lock(&run->lock);
     if (h8_medium_run_usable_locked(run, class_id)) {
+      H8_DEBUG_INC(medium_run_reuse_global_count);
       void* ptr = h8_medium_run_alloc_local_scaffold(run);
       if (ctx) {
         ctx->active_medium_runs[class_id] = run;
@@ -282,6 +291,7 @@ void* h8_medium_malloc_inner(size_t size) {
   if (!run) {
     return NULL;
   }
+  H8_DEBUG_INC(medium_run_create_count);
   pthread_mutex_lock(&h8_medium_lock);
   h8_medium_register_locked(run);
   h8_medium_owner_add_run(ctx, run);
@@ -299,6 +309,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
   }
+  H8_DEBUG_INC(medium_free_lookup_count);
   pthread_mutex_lock(&h8_medium_lock);
   H8MediumRun* run = h8_medium_find_run_locked(ptr);
   if (!run) {
@@ -311,6 +322,9 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   pthread_mutex_lock(&run->lock);
   pthread_mutex_unlock(&h8_medium_lock);
   bool ok = h8_medium_run_free_local_scaffold(run, ptr);
+  if (!ok) {
+    H8_DEBUG_INC(medium_invalid_owned_count);
+  }
   if (ok) {
     H8ThreadCtx* ctx = h8_tls_ctx;
     if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
@@ -322,6 +336,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
 }
 
 H8RouteKind h8_medium_route_inner(void* ptr) {
+  H8_DEBUG_INC(medium_route_lookup_count);
   pthread_mutex_lock(&h8_medium_lock);
   H8MediumRun* run = h8_medium_find_run_locked(ptr);
   if (!run) {

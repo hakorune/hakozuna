@@ -538,6 +538,32 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.slot_shadow_used_mismatch, memory_order_acquire);
   out->slot_shadow_reserved_quiescent = atomic_load_explicit(
       &h8g.slot_shadow_reserved_quiescent, memory_order_acquire);
+  out->medium_malloc_count =
+      atomic_load_explicit(&h8g.medium_malloc_count, memory_order_acquire);
+  out->medium_run_create_count =
+      atomic_load_explicit(&h8g.medium_run_create_count, memory_order_acquire);
+  out->medium_run_reuse_active_count = atomic_load_explicit(
+      &h8g.medium_run_reuse_active_count, memory_order_acquire);
+  out->medium_run_reuse_owner_list_count = atomic_load_explicit(
+      &h8g.medium_run_reuse_owner_list_count, memory_order_acquire);
+  out->medium_run_reuse_global_count = atomic_load_explicit(
+      &h8g.medium_run_reuse_global_count, memory_order_acquire);
+  out->medium_run_madvise_count =
+      atomic_load_explicit(&h8g.medium_run_madvise_count, memory_order_acquire);
+  out->medium_owner_scan_count =
+      atomic_load_explicit(&h8g.medium_owner_scan_count, memory_order_acquire);
+  out->medium_owner_scan_step_count = atomic_load_explicit(
+      &h8g.medium_owner_scan_step_count, memory_order_acquire);
+  out->medium_global_scan_count =
+      atomic_load_explicit(&h8g.medium_global_scan_count, memory_order_acquire);
+  out->medium_global_scan_step_count = atomic_load_explicit(
+      &h8g.medium_global_scan_step_count, memory_order_acquire);
+  out->medium_free_lookup_count =
+      atomic_load_explicit(&h8g.medium_free_lookup_count, memory_order_acquire);
+  out->medium_route_lookup_count =
+      atomic_load_explicit(&h8g.medium_route_lookup_count, memory_order_acquire);
+  out->medium_invalid_owned_count =
+      atomic_load_explicit(&h8g.medium_invalid_owned_count, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

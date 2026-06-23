@@ -206,7 +206,10 @@ MediumRunRemote-L1:
   main_r50/main_r90 gates
 
 MediumRunStats-L1:
-  needed counters:
+  current status:
+    implemented in H8DebugStats / bench debug output
+    release builds keep these counters compiled out
+  counters:
     run_create
     run_reuse_active
     run_reuse_owner_list
@@ -220,6 +223,19 @@ MediumRunStats-L1:
   purpose:
     separate run construction, registry lookup, and decommit cost
     avoid guessing before MediumRunRunPool-L1
+  first probe:
+    data: bench_results/20260623T221339Z_medium_stats_probe.md
+    medium r50 debug bench:
+      malloc=20000
+      create=8
+      active_reuse=16442
+      owner_reuse=3257
+      global_reuse=293
+      madvise=18122
+  interpretation:
+    active/owner reuse is already working
+    empty-run MADV_DONTNEED fires very frequently
+    global reuse is not dominant in this short row
 ```
 
 ### 2. SizePolicy-v1 Evidence

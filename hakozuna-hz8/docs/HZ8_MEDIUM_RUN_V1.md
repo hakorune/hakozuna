@@ -275,7 +275,8 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
 
 5. MediumRunStats-L1
    add medium-specific attribution before changing policy
-   required counters:
+   status: implemented
+   counters:
      run_create
      run_reuse_active
      run_reuse_owner_list
@@ -286,6 +287,12 @@ pool can improve first-touch but directly conflicts with low-RSS claims.
      route_lookup
      free_lookup
      invalid_owned_medium
+   first probe:
+     bench_results/20260623T221339Z_medium_stats_probe.md
+   initial signal:
+     active and owner-list reuse dominate successful allocations
+     empty-run MADV_DONTNEED is very frequent
+     global reuse is visible but not dominant in the short probe
 
 6. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
