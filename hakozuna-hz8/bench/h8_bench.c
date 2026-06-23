@@ -501,7 +501,7 @@ int main(int argc, char** argv) {
          stats.handoff_success_count,
          stats.local_alloc_count,
          stats.remote_collect_count);
-  printf("counters_dbg publish_enter=%zu publish_exit=%zu lifecycle_enter=%zu lifecycle_exit=%zu span_publish_enter=%zu span_publish_exit=%zu remote_regular=%zu remote_orphan=%zu pending_notify=%zu pending_calls=%zu pending_carry_hit=%zu pending_requeue=%zu pending_word_set=%zu pending_word_shadow_hit=%zu pending_word_false_pos=%zu pending_word_false_neg=%zu pending_word_rearm=%zu pending_word_repair=%zu pending_words=%zu pending_words_nonzero=%zu pending_bits=%zu orphan_quiesce=%zu orphan_ready=%zu dry_scan=%zu dry_candidate=%zu dry_block_state=%zu dry_block_quiesce=%zu dry_empty=%zu dry_target_closed=%zu dry_would_adopt=%zu handoff_fail=%zu invalid=%zu miss=%zu owner_transition=%zu adopt_scan=%zu adopt_candidate=%zu adopt_block_state=%zu adopt_block_quiesce=%zu adopt_empty=%zu adopt_target_closed=%zu adopt_ok=%zu\n",
+  printf("counters_dbg publish_enter=%zu publish_exit=%zu lifecycle_enter=%zu lifecycle_exit=%zu span_publish_enter=%zu span_publish_exit=%zu remote_regular=%zu remote_orphan=%zu pending_notify=%zu pending_calls=%zu pending_carry_hit=%zu pending_requeue=%zu pending_word_set=%zu pending_word_shadow_hit=%zu pending_word_false_pos=%zu pending_word_false_neg=%zu pending_word_rearm=%zu pending_words=%zu pending_words_nonzero=%zu pending_bits=%zu orphan_quiesce=%zu orphan_ready=%zu dry_scan=%zu dry_candidate=%zu dry_block_state=%zu dry_block_quiesce=%zu dry_empty=%zu dry_target_closed=%zu dry_would_adopt=%zu handoff_fail=%zu invalid=%zu miss=%zu owner_transition=%zu adopt_scan=%zu adopt_candidate=%zu adopt_block_state=%zu adopt_block_quiesce=%zu adopt_empty=%zu adopt_target_closed=%zu adopt_ok=%zu\n",
          debug.owner_publish_enter_count,
          debug.owner_publish_exit_count,
          debug.owner_lifecycle_enter_count,
@@ -519,7 +519,6 @@ int main(int argc, char** argv) {
          debug.pending_word_summary_false_positive,
          debug.pending_word_summary_false_negative,
          debug.pending_word_summary_rearm,
-         debug.pending_word_summary_repair,
          debug.pending_collect_word_count,
          debug.pending_collect_word_nonzero_count,
          debug.pending_collect_bit_count,
@@ -594,12 +593,11 @@ int main(int argc, char** argv) {
          debug.pending_count_notify_without_mask,
          debug.pending_mask_requeue_without_count,
          debug.pending_count_requeue_without_mask);
-  printf("pending_finish_shadow count_mask0_bitmap0=%zu count_mask0_bitmap1=%zu mask1_bitmap0=%zu mask1_bitmap1=%zu publish_arm_raced_nonempty=%zu\n",
+  printf("pending_finish_shadow count_mask0_bitmap0=%zu count_mask0_bitmap1=%zu mask1_bitmap0=%zu mask1_bitmap1=%zu\n",
          debug.pending_finish_count_mask_zero_bitmap_zero,
          debug.pending_finish_count_mask_zero_bitmap_nonzero,
          debug.pending_finish_mask_nonzero_bitmap_zero,
-         debug.pending_finish_mask_nonzero_bitmap_nonzero,
-         debug.pending_publish_mask_arm_raced_nonempty);
+         debug.pending_finish_mask_nonzero_bitmap_nonzero);
   printf("qstate_dirty set=%zu self_set=%zu requeue=%zu\n",
          debug.qstate_dirty_set,
          debug.qstate_dirty_self_set,
@@ -689,10 +687,8 @@ int main(int argc, char** argv) {
          debug.local_used_cold_verify_quiescent,
          debug.local_used_derived_mismatch,
          debug.local_used_derived_quiescent_scan);
-  printf("span_commit_timing total_ms=%.3f lock_wait_ms=%.3f table_scan_ms=%.3f meta_ms=%.3f mprotect_ms=%.3f\n",
+  printf("span_commit_timing total_ms=%.3f meta_ms=%.3f mprotect_ms=%.3f\n",
          (double)debug.span_commit_total_ns / 1e6,
-         (double)debug.span_commit_lock_wait_ns / 1e6,
-         (double)debug.span_commit_table_scan_ns / 1e6,
          (double)debug.span_commit_meta_ns / 1e6,
          (double)debug.span_commit_mprotect_ns / 1e6);
   printf("lifecycle_timing owner_exit_total_ms=%.3f owner_exit_collect_ms=%.3f owner_exit_span_walk_ms=%.3f span_retire_count=%zu span_retire_total_ms=%.3f span_retire_lock_wait_ms=%.3f span_retire_madvise_ms=%.3f span_retire_meta_free_ms=%.3f\n",

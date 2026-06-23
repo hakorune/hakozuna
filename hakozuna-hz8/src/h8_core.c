@@ -335,8 +335,6 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_word_summary_false_negative, memory_order_acquire);
   out->pending_word_summary_rearm =
       atomic_load_explicit(&h8g.pending_word_summary_rearm, memory_order_acquire);
-  out->pending_word_summary_repair =
-      atomic_load_explicit(&h8g.pending_word_summary_repair, memory_order_acquire);
   out->pending_word_drain_count =
       atomic_load_explicit(&h8g.pending_word_drain_count, memory_order_acquire);
   out->pending_word_popcount_1 =
@@ -471,10 +469,6 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.local_used_derived_quiescent_scan, memory_order_acquire);
   out->span_commit_total_ns =
       atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
-  out->span_commit_lock_wait_ns =
-      atomic_load_explicit(&h8g.span_commit_lock_wait_ns, memory_order_acquire);
-  out->span_commit_table_scan_ns =
-      atomic_load_explicit(&h8g.span_commit_table_scan_ns, memory_order_acquire);
   out->span_commit_meta_ns =
       atomic_load_explicit(&h8g.span_commit_meta_ns, memory_order_acquire);
   out->span_commit_mprotect_ns =
@@ -553,8 +547,6 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_finish_mask_nonzero_bitmap_zero, memory_order_acquire);
   out->pending_finish_mask_nonzero_bitmap_nonzero = atomic_load_explicit(
       &h8g.pending_finish_mask_nonzero_bitmap_nonzero, memory_order_acquire);
-  out->pending_publish_mask_arm_raced_nonempty = atomic_load_explicit(
-      &h8g.pending_publish_mask_arm_raced_nonempty, memory_order_acquire);
   out->qstate_dirty_set =
       atomic_load_explicit(&h8g.qstate_dirty_set, memory_order_acquire);
   out->qstate_dirty_self_set =

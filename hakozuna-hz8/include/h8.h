@@ -87,7 +87,6 @@ typedef struct H8DebugStats {
   size_t pending_word_summary_false_positive;
   size_t pending_word_summary_false_negative;
   size_t pending_word_summary_rearm;
-  size_t pending_word_summary_repair;
   size_t pending_word_drain_count;
   size_t pending_word_popcount_1;
   size_t pending_word_popcount_2;
@@ -106,7 +105,6 @@ typedef struct H8DebugStats {
   size_t pending_finish_count_mask_zero_bitmap_nonzero;
   size_t pending_finish_mask_nonzero_bitmap_zero;
   size_t pending_finish_mask_nonzero_bitmap_nonzero;
-  size_t pending_publish_mask_arm_raced_nonempty;
   size_t qstate_dirty_set;
   size_t qstate_dirty_self_set;
   size_t qstate_dirty_requeue;
@@ -169,8 +167,6 @@ typedef struct H8DebugStats {
   size_t local_used_derived_mismatch;
   size_t local_used_derived_quiescent_scan;
   size_t span_commit_total_ns;
-  size_t span_commit_lock_wait_ns;
-  size_t span_commit_table_scan_ns;
   size_t span_commit_meta_ns;
   size_t span_commit_mprotect_ns;
   size_t owner_exit_total_ns;

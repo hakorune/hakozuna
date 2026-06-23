@@ -130,6 +130,23 @@ RemoteSlotAuthorityMonomorphic-L1:
   local/interleaved focused benches stay above bring-up gates
   data: bench_results/20260623T105848Z_remote_slot_authority_mono.md
 
+PendingPublishMaskCounterCleanup-L1:
+  removed dead pending_publish_mask_arm_raced_nonempty debug snapshot field
+  removed the corresponding bench output column
+  rationale:
+    no increment site existed
+    pending finish shadow counters already report the current mask/bitmap cases
+    dead observability must not influence protocol decisions
+
+ObservabilityDeadCounterCleanup-L1:
+  removed dead pending_word_summary_repair debug snapshot field
+  removed dead span_commit_lock_wait_ns and span_commit_table_scan_ns fields
+  updated remote collect docs to use quiescent_pending_repair as the repair
+  counter
+  rationale:
+    these fields had declarations, snapshots, and bench output but no writers
+    current span commit path uses owner chunk placement, not table scan timing
+
 InterleavedTailVarianceAudit-L1:
   low run correlated mostly with work phase, not tail drain
   data: bench_results/20260623T095547Z_interleaved_tail_variance_audit.md
@@ -200,6 +217,8 @@ ThreadCtxOwnerInvariant-L1
 SlotAuthorityWorkerAudit-L1
 SlotAuthorityMonomorphic-L1
 RemoteSlotAuthorityMonomorphic-L1
+PendingPublishMaskCounterCleanup-L1
+ObservabilityDeadCounterCleanup-L1
 ```
 
 Benchmark / evidence:
@@ -264,9 +283,9 @@ latest:
   used_count field is removed; release cold count derives from slot_state
 
 next:
-  optional audit cleanup for pending_publish_mask_arm_raced_nonempty
   local leaf/code-shape evidence only
   keep debug live bitmap as shadow only
+  broader docs stale-reference cleanup remains a documentation-only follow-up
 ```
 
 Remote lane:
@@ -282,7 +301,7 @@ status:
 next:
   keep remote protocol frozen unless two fresh batches contradict this
   do not reopen owner lease or intrusive remote_head without new evidence
-  pending_publish_mask_arm_raced_nonempty is an audit cleanup candidate only
+  pending finish shadow counters remain debug/audit only
 ```
 
 Class-map lane:
@@ -338,7 +357,11 @@ LocalFreeHeadBumpScalar-L1
     slot-state fallback branches and the deprecated authority env/global state.
 11. Treat `RemoteSlotAuthorityMonomorphic-L1` as implemented. It removes remote
     slot-state fallback branches without changing the remote protocol.
-12. Next concrete work should stay in local leaf / code shape unless a second
+12. Treat `PendingPublishMaskCounterCleanup-L1` as implemented. Dead audit
+    counters must be removed rather than carried as zero-valued evidence.
+13. Treat `ObservabilityDeadCounterCleanup-L1` as implemented for counters with
+    no writers. Do not keep zero-valued fields as evidence.
+14. Next concrete work should stay in local leaf / code shape unless a second
    fresh interleaved batch shows remote protocol instability again.
 
 ## Working Rules

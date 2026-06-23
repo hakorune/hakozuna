@@ -105,7 +105,8 @@ The mask is the runtime work-set authority.  The truth remains:
 
 ```text
 pending bitmap
-slot-state / live authority
+slot-state authority
+debug live shadow
 ```
 
 `pending_count` is now debug-shadow state only.  It is kept for quiescent
@@ -114,7 +115,7 @@ load it.
 
 The collector drains words from `pending_word_mask`.  If the mask is empty and
 the quiescent debug shadow disagrees, the debug repair path falls back to a
-full word scan and increments `pending_word_summary_repair`.
+full word scan and increments `quiescent_pending_repair`.
 
 Quiescent exit/adoption verification must still scan the full pending bitmap.
 
@@ -128,14 +129,13 @@ pending_word_summary_shadow_hit
 pending_word_summary_false_positive
 pending_word_summary_false_negative
 pending_word_summary_rearm
-pending_word_summary_repair
 ```
 
 Promotion blockers:
 
 ```text
 pending_word_summary_false_negative_quiescent = 0
-pending_word_summary_repair = 0
+quiescent_pending_repair = 0
 qstate_idle_with_pending = 0
 remote_publish_lost = 0
 remote_collect_duplicate = 0

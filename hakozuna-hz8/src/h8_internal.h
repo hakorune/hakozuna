@@ -233,7 +233,6 @@ typedef struct H8Global {
   atomic_size_t pending_word_summary_false_positive;
   atomic_size_t pending_word_summary_false_negative;
   atomic_size_t pending_word_summary_rearm;
-  atomic_size_t pending_word_summary_repair;
   atomic_size_t pending_word_drain_count;
   atomic_size_t pending_word_popcount_1;
   atomic_size_t pending_word_popcount_2;
@@ -252,7 +251,6 @@ typedef struct H8Global {
   atomic_size_t pending_finish_count_mask_zero_bitmap_nonzero;
   atomic_size_t pending_finish_mask_nonzero_bitmap_zero;
   atomic_size_t pending_finish_mask_nonzero_bitmap_nonzero;
-  atomic_size_t pending_publish_mask_arm_raced_nonempty;
   atomic_size_t qstate_dirty_set;
   atomic_size_t qstate_dirty_self_set;
   atomic_size_t qstate_dirty_requeue;
@@ -315,8 +313,6 @@ typedef struct H8Global {
   atomic_size_t local_used_derived_mismatch;
   atomic_size_t local_used_derived_quiescent_scan;
   atomic_size_t span_commit_total_ns;
-  atomic_size_t span_commit_lock_wait_ns;
-  atomic_size_t span_commit_table_scan_ns;
   atomic_size_t span_commit_meta_ns;
   atomic_size_t span_commit_mprotect_ns;
   atomic_size_t owner_exit_total_ns;
