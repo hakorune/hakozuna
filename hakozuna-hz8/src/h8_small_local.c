@@ -162,6 +162,17 @@ static bool h8_active_hint_matches(H8Span* span, H8OwnerRecord* owner,
   return true;
 }
 
+static bool h8_span_local_exhausted(H8Span* span) {
+  uint32_t head = atomic_load_explicit(&span->local_hot.local_free_head_word,
+                                       memory_order_relaxed);
+  if (head != UINT32_MAX) {
+    return false;
+  }
+  uint32_t bump = atomic_load_explicit(&span->local_hot.local_bump_index,
+                                       memory_order_relaxed);
+  return bump >= span->slot_count;
+}
+
 static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                    uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
@@ -171,7 +182,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     H8_DEBUG_INC(local_active_hint_null);
   } else if (!h8_active_hint_matches(hint, owner, class_id)) {
     H8_DEBUG_INC(local_active_hint_state_blocked);
-  } else if (h8_used_count_load_active_hint(hint) >= hint->slot_count) {
+  } else if (h8_span_local_exhausted(hint)) {
     H8_DEBUG_INC(local_active_hint_full);
     hint_full = true;
   } else {

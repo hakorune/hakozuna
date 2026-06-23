@@ -267,6 +267,28 @@ next:
   ActiveHintFullnessShape-L1
 ```
 
+Latest `ActiveHintFullnessShape-L1` proof:
+
+```text
+data:
+  bench_results/20260623T024322Z_active_hint_fullness_shape.md
+
+change:
+  active-hint fullness no longer reads used_count
+  fullness is inferred from local_free_head + local_bump_index
+
+debug local/interleaved short runs:
+  used_count_cold active_hint = 0
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+result:
+  the main non-locked used_count cold reader is removed
+  remaining used_count readers are lock-protected or cold/quiescent paths
+```
+
 Interpretation:
 
 ```text
@@ -389,6 +411,8 @@ latest:
   mirror mismatch or underflow in local/interleaved short proof runs
   UsedCountColdReaderProof-L1 shows active-hint fullness is the remaining
   non-locked used_count reader on the allocation path
+  ActiveHintFullnessShape-L1 removes that active-hint used_count reader by
+  using owner-local allocation state instead
   P2ClassLookupBitWidth-L1 uses bit-width lookup for the default p2-v0 map
   LocalHotAliasConsistency-L1 removed remaining direct legacy local-hot field
   references from cold/remote code
@@ -404,8 +428,8 @@ evidence:
   `span->local_free_head` accesses are gone from source references
   saved local leaf final sweep data shows active hint mismatches remain 0
   and used_count load/store remains the main counted local-hot metadata touch
-  scalar used_count cutover is HOLD until active-hint fullness no longer
-  depends on atomic used_count, or that read is separately proven safe
+  scalar used_count cutover is still HOLD until the remaining lock/cold readers
+  are proven not to race with owner writes in release-relevant paths
 ```
 
 Remote lane:
@@ -450,8 +474,8 @@ runtime profile / knob split
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, attack `ActiveHintFullnessShape-L1` before any
-   scalar authority cutover.
+3. If continuing on used_count, prove/enforce the remaining lock/cold reader
+   contract before any scalar authority cutover.
 4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 
