@@ -141,6 +141,18 @@ observed:
   hard debug gates clean
 ```
 
+Latest `PreloadBoundarySmoke-L1` check:
+
+```text
+LD_PRELOAD=libhakozuna_hz8_preload.so h8_preload_smoke:
+  normal malloc/free works through preload
+  calloc returns zeroed memory
+  HZ8 small pointer routes VALID
+  HZ8 interior pointer routes INVALID
+  freeing HZ8 interior pointer does not consume the base object
+  >4KiB platform allocation routes MISS and frees through platform allocator
+```
+
 Interpretation:
 
 ```text
@@ -183,6 +195,7 @@ P2ClassLookupBitWidth-L1
 LocalHotAliasConsistency-L1
 SlotShadowQuiescentSplit-L1
 V0SafetyStressBatch-L1
+PreloadBoundarySmoke-L1
 ```
 
 Benchmark / evidence:
@@ -244,6 +257,7 @@ latest audit:
   slot-shadow verification from quiescent pending_count verification
   h8_safety_stress covers interior invalid, owner-exit foreign free, and
   remote duplicate free through the public API
+  h8_preload_smoke covers the LD_PRELOAD MISS/VALID/INVALID boundary
 ```
 
 Local leaf lane:
@@ -307,11 +321,11 @@ runtime profile / knob split
 
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
-2. Pick the next local leaf box from active-hit
+2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
+3. Pick the next local leaf box from active-hit
    validation shape, TLS entry shape, or a measured used-count scalar proof.
-3. If interleaved remote falls below gate again, add attribution around tail
+4. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
-4. Run `PreloadBoundarySmoke-L1` before v0 freeze.
 
 ## Working Rules
 
