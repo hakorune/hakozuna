@@ -179,6 +179,48 @@ ALLOCATORS=system,hz8 RUNS=1 THREADS=2 ITERS=1000 LIVE_WINDOW=128 \
   bench/run_hz8_same_run_matrix.sh
 ```
 
+Latest same-run result:
+
+```text
+data:
+  bench_results/hz8_same_run_matrix_20260623T174503Z/summary.md
+  bench_results/hz8_same_run_matrix_20260623T174503Z/samples.csv
+
+samples:
+  3 rows * 6 allocators * 10 fresh process samples
+```
+
+| Row | tcmalloc | HZ8 | HZ3 | HZ4 | mimalloc | system |
+|---|---:|---:|---:|---:|---:|---:|
+| `guard_local0` | 463.04M | 372.07M | 259.56M | 86.63M | 22.98M | 240.48M |
+| `small_interleaved_remote90` | 60.27M | 54.90M | 22.81M | 36.13M | 11.33M | 6.08M |
+| `small_phase_remote90` | 3.03M | 3.45M | 3.76M | 3.68M | 2.76M | 0.93M |
+
+RSS highlights:
+
+| Row | Allocator | post RSS | peak RSS |
+|---|---|---:|---:|
+| `guard_local0` | HZ8 | 13.87MiB | 13.87MiB |
+| `guard_local0` | tcmalloc | 19.25MiB | 19.25MiB |
+| `small_interleaved_remote90` | HZ8 | 3.04MiB | 22.88MiB |
+| `small_interleaved_remote90` | tcmalloc | 33.81MiB | 33.81MiB |
+| `small_phase_remote90` | HZ8 | 17.46MiB | 3801.06MiB |
+| `small_phase_remote90` | tcmalloc | 3146.66MiB | 3147.81MiB |
+
+Interpretation:
+
+```text
+local:
+  HZ8 is second behind tcmalloc and ahead of HZ3/system/HZ4/mimalloc
+
+steady interleaved remote:
+  HZ8 is close to tcmalloc and ahead of HZ4/HZ3/mimalloc/system
+
+phase stress:
+  HZ8 is mid-pack for throughput but has the strongest post-purge RSS
+  phase peak remains the expected barrier live-set footprint
+```
+
 ## One-line positioning
 
 ```text

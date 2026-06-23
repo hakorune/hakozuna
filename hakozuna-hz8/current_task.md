@@ -665,8 +665,32 @@ smoke:
     samples.csv
     summary.md
 
+latest result:
+  data:
+    bench_results/hz8_same_run_matrix_20260623T174503Z/summary.md
+    bench_results/hz8_same_run_matrix_20260623T174503Z/samples.csv
+  samples:
+    180 = 3 rows * 6 allocators * 10 fresh process samples
+  guard_local0 median ops/s:
+    tcmalloc 463.04M, HZ8 372.07M, HZ3 259.56M, system 240.48M,
+    HZ4 86.63M, mimalloc 22.98M
+  small_interleaved_remote90 median ops/s:
+    tcmalloc 60.27M, HZ8 54.90M, HZ4 36.13M, HZ3 22.81M,
+    mimalloc 11.33M, system 6.08M
+  small_phase_remote90 median ops/s:
+    HZ3 3.76M, HZ4 3.68M, HZ8 3.45M, tcmalloc 3.03M,
+    mimalloc 2.76M, system 0.93M
+  phase RSS:
+    HZ8 post_rss 17.46MiB, peak_rss 3801.06MiB
+    other preloaded allocators keep post_rss near multi-GiB in this row
+  interpretation:
+    HZ8 is second to tcmalloc on local and steady interleaved remote
+    HZ8 has the best post-purge RSS in phase stress
+    phase peak remains expected barrier live-set footprint
+
 next:
-  run full RUNS=10 matrix when ready
+  record hz8-small-v0-rc1 or decide whether the tcmalloc local/interleaved gap
+  is worth reopening before rc1
 ```
 
 ## Hold List
@@ -751,9 +775,9 @@ LocalFreeHeadBumpScalar-L1
     stress, not as the primary throughput gate.
 29. Record matrix metadata with `allocator_behavior_sha=2d5073a` and
     `freeze_record_sha=d3f3fe5`.
-30. Run the full matrix with:
-    `bench/run_hz8_same_run_matrix.sh --runs 10`.
-31. After the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
+30. Treat the full `SameRunAllocatorMatrix-L1` as executed and saved under
+    `bench_results/hz8_same_run_matrix_20260623T174503Z/`.
+31. After reviewing the matrix, either record `hz8-small-v0-rc1` or reopen only the lane
     that the same-run matrix proves is still deficient.
 32. Plan v1 as `SizePolicy-v1` followed by `MediumRun-v1`; do not treat
     MediumRun alone as a fix for the current small phase peak RSS.
