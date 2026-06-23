@@ -360,16 +360,50 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      direct identity removes the registry scan bottleneck
      remaining scaffold cost should be audited before changing remote protocol
 
-9. MediumRunRunPool-L1
+9. MediumPostIdentityObservation-L1
+   status: recorded
+   result:
+     bench_results/20260623T233805Z_medium_post_identity_observation/README.md
+     debug r50 free_steps=0
+     debug r50 global_lock_ms about 0.05
+     debug r50 run_lock_ms about 2.85
+     release r50 median about 8.12M ops/s
+     release local median about 10.72M ops/s
+   interpretation:
+     registry scan is no longer the dominant medium bottleneck
+     next decision requires slot mutation timing rather than more lookup work
+
+10. MediumRunSlotProtocolAudit-L1
+   status: recorded
+   no behavior change
+   add debug-only counters:
+     medium_alloc_slot_ns
+     medium_free_slot_ns
+     medium_alloc_slot_count
+     medium_free_slot_count
+   purpose:
+     separate run lock wait from in-lock slot mutation work
+     decide whether run lock shape or chunk/run-pool construction is next
+   result:
+     bench_results/20260623T235455Z_medium_slot_protocol_audit/README.md
+     debug r50 run_lock_ms about 3.04
+     debug r50 alloc_slot_ms about 1.06
+     debug r50 free_slot_ms about 1.27
+     release r50 median about 8.20M ops/s
+   interpretation:
+     registry lookup is closed
+     remaining medium cost is split between lock wait and slot mutation
+
+11. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-10. MediumRunRemote-L1
+12. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-11. MediumRunLifecycle-L1
+13. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

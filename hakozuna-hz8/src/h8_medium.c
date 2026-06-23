@@ -466,6 +466,9 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
 }
 
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t start = h8_medium_now_ns();
+#endif
   if (!run || atomic_load_explicit(&run->state, memory_order_acquire) !=
                   H8_MEDIUM_RUN_ACTIVE ||
       run->free_mask == 0) {
@@ -478,10 +481,17 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
   run->allocated_mask |= bit;
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(medium_alloc_slot_count);
+  H8_DEBUG_ADD(medium_alloc_slot_ns, (size_t)(h8_medium_now_ns() - start));
+#endif
   return h8_medium_slot_ptr(run, slot);
 }
 
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t start = h8_medium_now_ns();
+#endif
   size_t slot = 0;
   if (!h8_medium_slot_index_from_ptr_checked(run, ptr, &slot)) {
     return false;
@@ -498,6 +508,10 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
   h8_medium_mark_empty_locked(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(medium_free_slot_count);
+  H8_DEBUG_ADD(medium_free_slot_ns, (size_t)(h8_medium_now_ns() - start));
+#endif
   return true;
 }
 

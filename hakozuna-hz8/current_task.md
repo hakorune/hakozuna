@@ -318,6 +318,50 @@ MediumArenaIdentity-L1:
   limitation:
     directory is a fixed scaffold table with global-registry fallback
     final MediumArena chunk identity can replace this without changing the public route contract
+
+MediumPostIdentityObservation-L1:
+  current status:
+    recorded
+  data:
+    bench_results/20260623T233805Z_medium_post_identity_observation/README.md
+  result:
+    smoke and safety stress pass
+    medium debug r50 free_steps=0
+    medium debug global_lock_ms=0.052
+    medium debug run_lock_ms=2.852
+    medium release r50 median improved to about 8.12M ops/s
+    medium release local median improved to about 10.72M ops/s
+    small quick guard local and interleaved r90 remain above gate
+  interpretation:
+    direct identity removed registry lookup as the dominant cost
+    next evidence target is run-local slot mutation and lock hold shape
+
+MediumRunSlotProtocolAudit-L1:
+  current status:
+    recorded
+  scope:
+    debug/audit counters only
+    no allocator behavior change
+  counters:
+    medium_alloc_slot_ns
+    medium_free_slot_ns
+    medium_alloc_slot_count
+    medium_free_slot_count
+  purpose:
+    split run-local lock wait from actual slot mutation work
+    decide whether to attack run lock shape or chunk/run-pool construction next
+  data:
+    bench_results/20260623T235455Z_medium_slot_protocol_audit/README.md
+  result:
+    debug r50 run_lock_ms=3.043
+    debug r50 alloc_slot_ms=1.058
+    debug r50 free_slot_ms=1.274
+    debug r50 free_steps=0
+    release r50 median is about 8.20M ops/s
+  interpretation:
+    registry lookup is closed
+    residual medium cost is split between run lock wait and in-lock slot mutation
+    next box should address run-lock / slot shape before remote protocol redesign
 ```
 
 ### 2. SizePolicy-v1 Evidence
