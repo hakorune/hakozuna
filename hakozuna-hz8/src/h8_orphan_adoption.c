@@ -59,7 +59,14 @@ static bool h8_span_quiescent_for_adoption(const H8Span* span) {
 }
 
 static bool h8_span_has_free_slot(const H8Span* span) {
-  return h8_used_count_load_adoption_locked(span) < span->slot_count;
+  uint32_t head = atomic_load_explicit(&((H8Span*)span)->local_hot.local_free_head_word,
+                                       memory_order_acquire);
+  if (head != UINT32_MAX) {
+    return true;
+  }
+  uint32_t bump = atomic_load_explicit(&((H8Span*)span)->local_hot.local_bump_index,
+                                       memory_order_acquire);
+  return bump < span->slot_count;
 }
 
 bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
@@ -81,9 +88,6 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   for (H8Span* span = orphan->orphan_by_class[class_id]; span;
        span = span->next_orphan_class) {
     if (!h8_span_has_free_slot(span)) {
-      continue;
-    }
-    if (h8_used_count_load_adoption_locked(span) == 0) {
       continue;
     }
 
@@ -135,9 +139,6 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
         H8_DEBUG_INC(adoption_block_quiesce_count);
         continue;
       }
-      if (h8_used_count_load_adoption_locked(span) == 0) {
-        continue;
-      }
       H8_DEBUG_INC(adoption_scan_count);
       H8OwnerWord candidate_word = h8_span_owner_word_load(span);
       candidate_state = (H8SpanState)candidate_word.state;
@@ -177,7 +178,14 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
       h8_collect_owner_pending(orphan);
     }
 
-    if (h8_used_count_load_adoption_locked(candidate) == 0) {
+    size_t used = h8_used_count_load_adoption_locked(candidate);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t derived = h8_slot_allocated_count_quiescent(candidate);
+    if (derived != used) {
+      H8_DEBUG_INC(local_used_derived_mismatch);
+    }
+#endif
+    if (used == 0) {
       H8_DEBUG_INC(adoption_empty_count);
       h8_span_mark_orphan_ready(candidate);
       atomic_store_explicit(&candidate->publish_closed, 0, memory_order_release);

@@ -659,12 +659,14 @@ int main(int argc, char** argv) {
          debug.local_used_count_underflow,
          debug.local_used_mirror_mismatch,
          debug.local_used_mirror_underflow);
-  printf("used_count_cold active_hint=%zu owner_scan_locked=%zu adoption_locked=%zu owner_exit=%zu verify_quiescent=%zu\n",
+  printf("used_count_cold active_hint=%zu owner_scan_locked=%zu adoption_locked=%zu owner_exit=%zu verify_quiescent=%zu derived_mismatch=%zu derived_scan=%zu\n",
          debug.local_used_cold_active_hint,
          debug.local_used_cold_owner_scan_locked,
          debug.local_used_cold_adoption_locked,
          debug.local_used_cold_owner_exit,
-         debug.local_used_cold_verify_quiescent);
+         debug.local_used_cold_verify_quiescent,
+         debug.local_used_derived_mismatch,
+         debug.local_used_derived_quiescent_scan);
   printf("span_commit_timing total_ms=%.3f lock_wait_ms=%.3f table_scan_ms=%.3f meta_ms=%.3f mprotect_ms=%.3f\n",
          (double)debug.span_commit_total_ns / 1e6,
          (double)debug.span_commit_lock_wait_ns / 1e6,

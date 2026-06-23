@@ -476,6 +476,10 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.local_used_cold_owner_exit, memory_order_acquire);
   out->local_used_cold_verify_quiescent = atomic_load_explicit(
       &h8g.local_used_cold_verify_quiescent, memory_order_acquire);
+  out->local_used_derived_mismatch = atomic_load_explicit(
+      &h8g.local_used_derived_mismatch, memory_order_acquire);
+  out->local_used_derived_quiescent_scan = atomic_load_explicit(
+      &h8g.local_used_derived_quiescent_scan, memory_order_acquire);
   out->span_commit_total_ns =
       atomic_load_explicit(&h8g.span_commit_total_ns, memory_order_acquire);
   out->span_commit_lock_wait_ns =

@@ -339,6 +339,32 @@ target after shadow:
   cold/quiescent paths derive allocated count from slot_state
 ```
 
+Latest `UsedCountColdDerivationShadow-L1` proof:
+
+```text
+data:
+  bench_results/20260623T030134Z_used_count_cold_derivation_shadow.md
+
+change:
+  added slot_state-derived allocated count at cold/quiescent proof points
+  adoption pre-quiescent scan no longer reads used_count
+  behavior authority remains current atomic used_count
+
+debug local/interleaved short runs:
+  derived_mismatch = 0
+  mirror_mismatch = 0
+  mirror_underflow = 0
+  slot_shadow used_mismatch = 0
+  quiescent pending clean
+
+release short smoke:
+  local0 median ~= 194.7M ops/s
+  interleaved remote90 median ~= 52.9M ops/s
+
+next:
+  UsedCountReleaseElision-L1
+```
+
 Interpretation:
 
 ```text
@@ -482,7 +508,8 @@ evidence:
   and used_count load/store remains the main counted local-hot metadata touch
   plain used_count authority remains HOLD because adoption pre-quiescent reads
   can race with orphan collect under a different lock
-  next used_count target is cold derivation shadow, then release elision if clean
+  UsedCountColdDerivationShadow-L1 is clean in short proof runs
+  next used_count target is release elision
 ```
 
 Remote lane:
@@ -529,10 +556,10 @@ hot plain used_count + cold atomic used_count hybrid
 1. Treat `StabilityBatch-L1` and `V0SafetyStressBatch-L1` as passed for the
    current p2-v0 small lane.
 2. Treat `PreloadBoundarySmoke-L1` as passed for the current preload boundary.
-3. If continuing on used_count, implement `UsedCountColdDerivationShadow-L1`.
-   Do not plain-scalar cut over yet.
-4. If that is clean, implement `UsedCountReleaseElision-L1` so release hot path
-   stops maintaining used_count and debug keeps an atomic shadow.
+3. If continuing on used_count, implement `UsedCountReleaseElision-L1`.
+   Do not plain-scalar cut over.
+4. `UsedCountReleaseElision-L1` should make release hot path stop maintaining
+   used_count and keep debug atomic shadow/proof.
 5. If interleaved remote falls below gate again, add attribution around tail
    drain / active-hit validation before changing the remote protocol.
 

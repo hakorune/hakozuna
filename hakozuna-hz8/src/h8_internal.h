@@ -315,6 +315,8 @@ typedef struct H8Global {
   atomic_size_t local_used_cold_adoption_locked;
   atomic_size_t local_used_cold_owner_exit;
   atomic_size_t local_used_cold_verify_quiescent;
+  atomic_size_t local_used_derived_mismatch;
+  atomic_size_t local_used_derived_quiescent_scan;
   atomic_size_t span_commit_total_ns;
   atomic_size_t span_commit_lock_wait_ns;
   atomic_size_t span_commit_table_scan_ns;
@@ -788,6 +790,7 @@ void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next);
 void h8_slot_shadow_expect(H8Span* span, size_t slot, uint32_t tag);
 void h8_slot_shadow_verify_span(H8Span* span);
 void h8_slot_shadow_verify_span_quiescent(H8Span* span);
+size_t h8_slot_allocated_count_quiescent(H8Span* span);
 uint32_t h8_slot_state_load_acquire(H8Span* span, size_t slot);
 
 #endif

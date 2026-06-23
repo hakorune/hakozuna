@@ -26,6 +26,21 @@ void h8_slot_shadow_set_free(H8Span* span, size_t slot, uint32_t next) {
                         memory_order_release);
 }
 
+size_t h8_slot_allocated_count_quiescent(H8Span* span) {
+  if (!span || !span->slot_state) {
+    return 0;
+  }
+  H8_DEBUG_INC(local_used_derived_quiescent_scan);
+  size_t allocated = 0;
+  for (size_t slot = 0; slot < span->slot_count; ++slot) {
+    uint32_t state = h8_slot_state_load_acquire(span, slot);
+    if (h8_slot_state_tag(state) == (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+      ++allocated;
+    }
+  }
+  return allocated;
+}
+
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint32_t h8_slot_shadow_load(H8Span* span, size_t slot) {
   return h8_slot_state_load_acquire(span, slot);
@@ -140,6 +155,10 @@ static void h8_slot_shadow_verify_span_impl(H8Span* span, bool exact_pending_cou
   }
   size_t used = h8_used_count_load_verify_quiescent(span);
   h8_used_count_mirror_check(span, used);
+  size_t derived = h8_slot_allocated_count_quiescent(span);
+  if (derived != allocated || derived != used) {
+    H8_DEBUG_INC(local_used_derived_mismatch);
+  }
   size_t pending_seen = atomic_load_explicit(&span->pending_count, memory_order_acquire);
   if (used != allocated || used != live_count || pending_seen > used ||
       (exact_pending_count && pending_seen != pending_count)) {

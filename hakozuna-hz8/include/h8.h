@@ -166,6 +166,8 @@ typedef struct H8DebugStats {
   size_t local_used_cold_adoption_locked;
   size_t local_used_cold_owner_exit;
   size_t local_used_cold_verify_quiescent;
+  size_t local_used_derived_mismatch;
+  size_t local_used_derived_quiescent_scan;
   size_t span_commit_total_ns;
   size_t span_commit_lock_wait_ns;
   size_t span_commit_table_scan_ns;

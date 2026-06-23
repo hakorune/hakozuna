@@ -100,6 +100,12 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   while (span) {
     H8Span* next = span->next_owned;
     size_t used = h8_used_count_load_owner_exit(span);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t derived = h8_slot_allocated_count_quiescent(span);
+    if (derived != used) {
+      H8_DEBUG_INC(local_used_derived_mismatch);
+    }
+#endif
     if (used == 0) {
       h8_slot_shadow_verify_span_quiescent(span);
       H8Span* logical = h8_span_retire_logical(span);
