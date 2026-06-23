@@ -174,6 +174,29 @@ result:
   local and interleaved remote remain above bring-up gate
 ```
 
+Latest `LocalLeafFinalSweep-L1` saved-data snapshot:
+
+```text
+logs:
+  bench_results/20260623T021114Z_local_leaf_final_sweep.md
+
+guard/local0, RUNS=10:
+  median ~= 337.7M ops/s
+  p25 ~= 332.0M ops/s
+  steady ~= 375.7M ops/s
+
+small_interleaved_remote90, RUNS=10:
+  median ~= 56.2M ops/s
+  p25 ~= 53.3M ops/s
+  steady ~= 57.8M ops/s
+
+debug attribution after fix:
+  active_hint mismatch counters = 0
+  remote validate_fail = 0
+  duplicate_claim = 0
+  slot_shadow mismatch counters = 0
+```
+
 Interpretation:
 
 ```text
@@ -218,6 +241,7 @@ SlotShadowQuiescentSplit-L1
 V0SafetyStressBatch-L1
 PreloadBoundarySmoke-L1
 LocalFreeInitFastPath-L1
+PostCommitSlotShadowExpectElision-L1
 ```
 
 Benchmark / evidence:
@@ -302,6 +326,8 @@ evidence:
   short release checks stayed clean after p2-v0 class lookup specialization
   direct legacy `span->used_count`, `span->bump_index`, and
   `span->local_free_head` accesses are gone from source references
+  saved local leaf final sweep data shows active hint mismatches remain 0
+  and used_count load/store remains the main counted local-hot metadata touch
 ```
 
 Remote lane:

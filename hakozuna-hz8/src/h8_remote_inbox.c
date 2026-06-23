@@ -437,9 +437,6 @@ static H8PublishResult h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord
   }
   /* The pending bit is the publish commit point; collectors may process it now. */
   H8_DEBUG_INC(remote_stage_pending_claim_ok);
-#if defined(H8_ENABLE_DEBUG_STATS)
-  h8_slot_shadow_expect(span, slot, H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT);
-#endif
   H8_DEBUG_INC(remote_publish_count);
   if (old_word == 0) {
     atomic_fetch_or_explicit(&span->pending_word_mask, word_bit,
