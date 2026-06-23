@@ -294,6 +294,30 @@ MediumRunResidualCostAudit-L1:
   interpretation:
     residual bottleneck is medium pointer lookup / global registry locking
     next likely box is direct medium arena identity before RunPool
+
+MediumArenaIdentity-L1:
+  current status:
+    implemented
+  mechanism:
+    medium payload mappings are now 64KiB-aligned
+    free/route first derive the run base from the pointer
+    direct base-to-run directory is the primary lookup path
+    global registry list remains as a fail-closed fallback
+    run-local mutex remains the slot mutation authority
+  data:
+    bench_results/20260623T233410Z_medium_arena_identity/README.md
+  result:
+    medium debug r50 free lookup steps dropped to 0 for 20000 frees
+    medium debug global lock wait dropped to about 0.07ms
+    medium release r50 median improved to about 7.07M ops/s
+    medium release local median improved to about 9.70M ops/s
+    small quick local and interleaved gates still pass
+  interpretation:
+    registry linear scan was the dominant residual medium cost after retention
+    remaining medium cost is mainly run-local lock / protocol shape, not mmap or registry scan
+  limitation:
+    directory is a fixed scaffold table with global-registry fallback
+    final MediumArena chunk identity can replace this without changing the public route contract
 ```
 
 ### 2. SizePolicy-v1 Evidence

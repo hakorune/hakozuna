@@ -338,16 +338,38 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
    interpretation:
      direct medium identity is the likely next box
 
-8. MediumRunRunPool-L1
+8. MediumArenaIdentity-L1
+   status: implemented
+   keep one-run-per-mmap and retention budget
+   make each medium payload mapping 64KiB-aligned
+   add direct run directory keyed by payload base
+   free/route:
+     derive base from pointer
+     use direct directory first
+     fall back to global registry scan
+   validation:
+     invalid-owned fallback remains 0
+     free lookup steps should collapse to near 0 on direct-hit rows
+     small-v0 guard/interleaved quick gates must not regress materially
+   result:
+     bench_results/20260623T233410Z_medium_arena_identity/README.md
+     debug r50 free_steps=0 for 20000 frees
+     release r50 median about 7.07M ops/s
+     release local median about 9.70M ops/s
+   interpretation:
+     direct identity removes the registry scan bottleneck
+     remaining scaffold cost should be audited before changing remote protocol
+
+9. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-9. MediumRunRemote-L1
+10. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-10. MediumRunLifecycle-L1
+11. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 
