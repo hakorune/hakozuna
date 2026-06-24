@@ -785,6 +785,58 @@ note:
   but median regression did not reproduce after two more R10 batches
 ```
 
+## Medium Active Owner Token Inline Audit
+
+Record:
+
+```text
+bench_results/20260624T212023Z_medium_owner_token_inline_ab/
+```
+
+Candidate:
+
+```text
+inline h8_medium_run_owned_by_ctx() logic inside h8_medium.c call sites
+```
+
+Assembly result:
+
+```text
+h8_medium_malloc_class_inner:
+  call to h8_medium_run_owned_by_ctx removed
+```
+
+Short A/B:
+
+```text
+medium_i0:
+  all median ratio 0.976
+  batch median ratio 0.991
+
+medium_r50:
+  all median ratio 0.961
+  batch median ratio 0.960
+
+main_i0:
+  all median ratio 1.054
+  batch median ratio 1.048
+
+small_i0:
+  all median ratio 0.950
+  batch median ratio 0.995
+```
+
+Decision:
+
+```text
+MediumActiveOwnerTokenInlineAudit-L1:
+  NO-GO
+
+reason:
+  asm target was achieved, but medium_r50 regressed materially and medium_i0
+  did not improve.  Do not reopen owner-token inline without a narrower shape.
+```
+
 Branch rules:
 
 ```text
