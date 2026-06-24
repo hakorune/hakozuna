@@ -522,13 +522,17 @@ static H8MediumRun* h8_medium_pending_pop_one(H8OwnerRecord* owner) {
   return run;
 }
 
-bool h8_medium_owner_has_pending(H8OwnerRecord* owner) {
+static inline bool h8_medium_owner_has_pending_fast(H8OwnerRecord* owner) {
   return owner &&
          (atomic_load_explicit(&owner->medium_pending_count,
                                memory_order_acquire) != 0 ||
           owner->medium_pending_carry != NULL ||
           atomic_load_explicit(&owner->medium_pending_head,
                                memory_order_acquire) != NULL);
+}
+
+bool h8_medium_owner_has_pending(H8OwnerRecord* owner) {
+  return h8_medium_owner_has_pending_fast(owner);
 }
 
 static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
@@ -542,7 +546,7 @@ static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
   uint64_t collect_start = h8_medium_remote_now_ns();
 #endif
   size_t processed = 0;
-  if (!h8_medium_owner_has_pending(owner)) {
+  if (!h8_medium_owner_has_pending_fast(owner)) {
     goto done;
   }
   while (processed < run_budget) {
@@ -591,7 +595,7 @@ static void h8_medium_collect_owner_pending_periodic_impl(H8ThreadCtx* ctx,
   }
   H8_DEBUG_INC(medium_collect_periodic_slow_enter);
   ctx->medium_collect_credit = H8_MEDIUM_COLLECT_PERIOD;
-  if (h8_medium_owner_has_pending(ctx->owner)) {
+  if (h8_medium_owner_has_pending_fast(ctx->owner)) {
     H8_DEBUG_INC(medium_collect_periodic_pending_hit);
     (void)h8_medium_collect_current_pending_budget(ctx,
                                                    H8_MEDIUM_COLLECT_BUDGET);

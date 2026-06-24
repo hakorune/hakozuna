@@ -837,6 +837,56 @@ reason:
   did not improve.  Do not reopen owner-token inline without a narrower shape.
 ```
 
+## Medium Pending Check Inline
+
+Record:
+
+```text
+bench_results/20260624T212239Z_medium_pending_check_inline_ab/
+```
+
+Candidate:
+
+```text
+make h8_medium_owner_has_pending_fast() static inline inside h8_medium_remote.c
+use it from periodic collect and budgeted collect
+keep h8_medium_owner_has_pending() as the exported wrapper
+```
+
+Assembly gate:
+
+```text
+h8_medium_collect_owner_pending_periodic:
+  no call to h8_medium_owner_has_pending
+```
+
+Short A/B:
+
+```text
+medium_i0:
+  all median ratio 1.008
+  batch median ratio 1.022
+
+medium_r50:
+  all median ratio 1.063
+  batch median ratio 1.063
+
+main_i0:
+  all median ratio 1.102
+  batch median ratio 1.121
+
+small_i0:
+  all median ratio 1.045
+  batch median ratio 1.003
+```
+
+Decision:
+
+```text
+MediumPendingCheckInline-L1:
+  GO as a narrow code-shape patch
+```
+
 Branch rules:
 
 ```text
