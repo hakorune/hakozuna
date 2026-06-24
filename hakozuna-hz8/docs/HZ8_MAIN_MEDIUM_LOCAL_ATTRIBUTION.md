@@ -979,6 +979,66 @@ reason:
   keeping small within the regression guard
 ```
 
+## Medium Active Empty Note Inline
+
+Record:
+
+```text
+bench_results/20260625_063527_medium_active_empty_note_inline_r10/
+```
+
+Candidate:
+
+```text
+add h8_medium_note_active_live_empty_fast()
+release:
+  set active_live_empty_charge inline
+debug:
+  delegate to h8_medium_note_active_live_empty to preserve stats counters
+
+use sites:
+  h8_medium_run_free_local_scaffold
+  medium owner collector active-empty-live path
+```
+
+Assembly gate:
+
+```text
+h8_medium_run_free_local_scaffold:
+  no call to h8_medium_note_active_live_empty
+```
+
+R10 x2 confirmation:
+
+```text
+medium_i0:
+  median ratio 1.032
+  p25 ratio 1.078
+
+medium_r50:
+  median ratio 1.002
+  p25 ratio 1.004
+
+main_i0:
+  median ratio 1.112
+  p25 ratio 1.182
+
+small_i0:
+  median ratio 0.991
+  p25 ratio 1.004
+```
+
+Decision:
+
+```text
+MediumActiveEmptyNoteInline-L1:
+  GO
+
+reason:
+  removes a tiny but very frequent active-empty marker call from release builds
+  without changing debug accounting
+```
+
 Branch rules:
 
 ```text

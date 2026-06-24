@@ -186,6 +186,16 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_note_active_live_empty(H8MediumRun* run);
 void h8_medium_clear_active_live_empty(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
+static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_note_active_live_empty(run);
+#else
+  if (!run || run->active_live_empty_charge) {
+    return;
+  }
+  run->active_live_empty_charge = true;
+#endif
+}
 static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_mark_live_on_alloc(run);

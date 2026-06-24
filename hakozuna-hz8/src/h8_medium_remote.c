@@ -469,7 +469,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
       h8_medium_collect_active_keep_shadow(owner, run, ctx, remaining);
   (void)would_keep_live;
   if (run->allocated_mask == 0 && remaining == 0 && would_keep_live) {
-    h8_medium_note_active_live_empty(run);
+    h8_medium_note_active_live_empty_fast(run);
   } else if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
   } else if (run->allocated_mask == 0 && remaining != 0) {

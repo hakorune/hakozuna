@@ -133,6 +133,11 @@ if optimizing medium/main local speed:
     h8_medium_run_free_local_scaffold
     R10 x2: medium_i0 +11.9%, medium_r50 +1.7%, main_i0 +4.5%,
     small_i0 -1.1% within regression guard
+  MediumActiveEmptyNoteInline-L1 is confirmed:
+    release builds inline h8_medium_note_active_live_empty for local free and
+    medium collector active-empty-live paths while debug keeps stats semantics
+    R10 x2: medium_i0 +3.2%, medium_r50 flat, main_i0 +11.2%,
+    small_i0 -0.9% within regression guard
   next step should inspect a different asm-visible call site; do not reopen
     owner-token inline without a narrower shape
 

@@ -85,7 +85,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
   if (keep_empty_live && run->allocated_mask == 0) {
-    h8_medium_note_active_live_empty(run);
+    h8_medium_note_active_live_empty_fast(run);
   } else {
     h8_medium_mark_empty_locked(run);
   }
