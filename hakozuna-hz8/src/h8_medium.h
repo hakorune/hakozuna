@@ -36,6 +36,8 @@ typedef struct H8MediumClassSpec {
   uint16_t bitmap_words;
 } H8MediumClassSpec;
 
+typedef struct H8ThreadCtx H8ThreadCtx;
+
 typedef struct H8MediumRun {
   uint8_t* base;
   uint16_t class_id;
@@ -45,6 +47,7 @@ typedef struct H8MediumRun {
   uint32_t run_size;
   _Atomic uint64_t owner_word;
   _Atomic uint8_t state;
+  _Atomic uint8_t qstate;
   _Atomic uint64_t pending_word_mask;
   _Atomic uint64_t* pending_bits;
   _Atomic uint32_t* slot_state;
@@ -57,6 +60,7 @@ typedef struct H8MediumRun {
   void* meta_alloc_base;
   struct H8MediumRun* next_owner;
   struct H8MediumRun* next_global;
+  struct H8MediumRun* next_pending;
 } H8MediumRun;
 
 typedef struct H8OwnerRecord H8OwnerRecord;
@@ -69,10 +73,15 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out);
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
+bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
+                                const H8ThreadCtx* ctx);
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
+void h8_medium_mark_empty_locked(H8MediumRun* run);
+H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
+void h8_medium_collect_owner_pending(H8OwnerRecord* owner);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);

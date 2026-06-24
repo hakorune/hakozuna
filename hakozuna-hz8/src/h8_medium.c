@@ -1,6 +1,7 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
 
+#include <sched.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -8,7 +9,6 @@
 #if defined(H8_ENABLE_DEBUG_STATS)
 #include <time.h>
 #endif
-
 static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
 static H8MediumRun* h8_medium_runs;
 static _Atomic uintptr_t h8_medium_directory_addr;
@@ -82,22 +82,6 @@ static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
                                         (uint16_t)owner->generation,
                                         H8_SPAN_OWNED_ACTIVE, 0);
   return h8_owner_word_pack(word);
-}
-
-static bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
-                                       const H8ThreadCtx* ctx) {
-  if (!run || !ctx || !ctx->owner) {
-    return false;
-  }
-  uint64_t expected = h8_medium_owner_word_for(ctx->owner);
-  uint64_t current =
-      atomic_load_explicit(&run->owner_word, memory_order_acquire);
-  return expected != 0 && current == expected;
-}
-
-static bool h8_medium_run_detached_locked(const H8MediumRun* run) {
-  return run && !run->owner_attached &&
-         atomic_load_explicit(&run->owner_word, memory_order_acquire) == 0;
 }
 
 static void h8_medium_debug_lock_elide_candidate(const H8MediumRun* run,
@@ -360,7 +344,7 @@ static void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
   run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
 }
 
-static void h8_medium_mark_empty_locked(H8MediumRun* run) {
+void h8_medium_mark_empty_locked(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
     return;
   }
@@ -495,6 +479,7 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
   run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
   atomic_store_explicit(&run->state, H8_MEDIUM_RUN_ACTIVE,
                         memory_order_relaxed);
+  atomic_store_explicit(&run->qstate, H8_Q_IDLE, memory_order_relaxed);
   atomic_store_explicit(&run->pending_word_mask, 0, memory_order_relaxed);
   for (uint16_t i = 0; i < run->slot_count; ++i) {
     atomic_store_explicit(&run->slot_state[i], H8_SLOT_FREE | H8_SLOT_NONE,
@@ -577,6 +562,9 @@ void* h8_medium_malloc_inner(size_t size) {
   H8_DEBUG_INC(medium_malloc_count);
   uint32_t class_id = h8_medium_class_for_size(size);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
+  if (ctx && ctx->owner) {
+    h8_medium_collect_owner_pending(ctx->owner);
+  }
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
   if (active) {
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
@@ -631,7 +619,8 @@ void* h8_medium_malloc_inner(size_t size) {
   for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
     H8_DEBUG_INC(medium_global_scan_step_count);
     h8_medium_lock_run(run);
-    if (!h8_medium_run_detached_locked(run)) {
+    if (run->owner_attached ||
+        atomic_load_explicit(&run->owner_word, memory_order_acquire) != 0) {
       H8_DEBUG_INC(medium_global_skip_foreign_attached);
       h8_medium_unlock_run(run);
       continue;
@@ -678,6 +667,21 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   H8_DEBUG_INC(medium_free_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);
   H8ThreadCtx* ctx = h8_tls_ctx;
+  if (run && !h8_medium_run_owned_by_ctx(run, ctx) &&
+      atomic_load_explicit(&run->owner_word, memory_order_acquire) != 0) {
+    H8_DEBUG_INC(medium_remote_free_owner_mismatch);
+    if (owned_out) { *owned_out = true; }
+    for (;;) {
+      H8PublishResult res = h8_medium_remote_publish(run, ptr);
+      if (res == H8_PUBLISH_OK) {
+        return true;
+      }
+      if (res != H8_PUBLISH_OWNER_TRANSITION) {
+        return false;
+      }
+      sched_yield();
+    }
+  }
   if (run) {
     h8_medium_debug_lock_elide_candidate(run, ctx, true);
     if (h8_medium_run_owned_by_ctx(run, ctx)) {
@@ -692,6 +696,22 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
     if (!run) {
       h8_medium_unlock_global();
       return false;
+    }
+    if (!h8_medium_run_owned_by_ctx(run, ctx) &&
+        atomic_load_explicit(&run->owner_word, memory_order_acquire) != 0) {
+      h8_medium_unlock_global();
+      H8_DEBUG_INC(medium_remote_free_owner_mismatch);
+      if (owned_out) { *owned_out = true; }
+      for (;;) {
+        H8PublishResult res = h8_medium_remote_publish(run, ptr);
+        if (res == H8_PUBLISH_OK) {
+          return true;
+        }
+        if (res != H8_PUBLISH_OWNER_TRANSITION) {
+          return false;
+        }
+        sched_yield();
+      }
     }
     if (h8_medium_run_owned_by_ctx(run, ctx)) {
       H8_DEBUG_INC(medium_local_free_owner_match);
@@ -739,8 +759,12 @@ H8RouteKind h8_medium_route_inner(void* ptr) {
     return H8_ROUTE_INVALID;
   }
   uint64_t bit = UINT64_C(1) << slot;
+  bool pending = (atomic_load_explicit(&run->pending_bits[0],
+                                       memory_order_acquire) &
+                  bit) != 0;
   H8RouteKind route =
-      ((run->allocated_mask & bit) != 0 && (run->free_mask & bit) == 0)
+      ((run->allocated_mask & bit) != 0 && (run->free_mask & bit) == 0 &&
+       !pending)
           ? H8_ROUTE_VALID
           : H8_ROUTE_INVALID;
   h8_medium_unlock_run(run);
@@ -751,6 +775,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
   if (!owner) {
     return;
   }
+  h8_medium_collect_owner_pending(owner);
   h8_medium_lock_global();
   for (uint32_t c = 0; c < H8_MEDIUM_CLASS_COUNT; ++c) {
     H8MediumRun* run = owner->medium_by_class[c];

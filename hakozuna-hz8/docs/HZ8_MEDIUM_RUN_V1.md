@@ -442,17 +442,31 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      owner affinity is now explicit enough for owner medium pending queues
 
 14. MediumRunRemoteOwnedPublish-L1
+   status: recorded
    remote free publish/owner collect for medium
    stop foreign threads from mutating run masks directly
    duplicate claim gates
    unlocks future owner-local run lock elision
+   result:
+     bench_results/20260624T010753Z_medium_remote_owned_publish/README.md
+     debug r50 publish_enter=9972 and remote_free_owner=9972
+     debug r50 free_slot=10028, so foreign frees no longer mutate slots directly
+     release r50 median about 5.18M ops/s
+   interpretation:
+     correctness boundary is closed for attached owner remote frees
+     performance cost is now owner lease plus pending publish plus owner collect
+     next step is MediumRunRemoteCostAudit-L1 before further protocol changes
 
-15. MediumRunRunPool-L1
+15. MediumRunRemoteCostAudit-L1
+   split medium remote cost into owner lease, pending claim, queue publish,
+   owner collect, qstate handoff, and run lock wait
+
+16. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-16. MediumRunLifecycle-L1
+17. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

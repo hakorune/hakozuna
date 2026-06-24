@@ -164,11 +164,13 @@ struct H8OwnerRecord {
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* pending_carry;
+  H8MediumRun* medium_pending_head;
   H8Span* owned_head;
   H8Span* orphan_head;
   H8Span* orphan_by_class[H8_CLASS_COUNT];
   size_t span_chunk_next;
   size_t span_chunk_end;
+  atomic_size_t medium_pending_count;
   pthread_mutex_t owned_lock;
   pthread_mutex_t pending_lock;
   struct H8OwnerRecord* free_next;

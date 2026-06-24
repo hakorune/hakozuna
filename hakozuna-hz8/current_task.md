@@ -433,6 +433,32 @@ MediumRunOwnerAffinity-L1:
     debug local remote_free_owner=0
   next:
     MediumRunRemoteOwnedPublish-L1
+
+MediumRunRemoteOwnedPublish-L1:
+  current status:
+    recorded
+  mechanism:
+    owner-attached foreign free uses owner lifecycle lease
+    pending bit is the remote claim authority
+    per-owner medium pending queue transfers slot mutation to owner collect
+    qstate uses IDLE / QUEUED / DRAINING / DRAINING_DIRTY handshake
+    detached run direct-lock fallback remains
+  data:
+    bench_results/20260624T010753Z_medium_remote_owned_publish/README.md
+  result:
+    debug r50 publish_enter=9972
+    debug r50 lifecycle_enter=9972
+    debug r50 remote_free_owner=9972
+    debug r50 free_slot=10028
+    debug r50 active_owner_mismatch=0
+    debug r50 owner_list_mismatch=0
+    debug r50 invalid_owned=0
+    debug local remote_free_owner=0
+    release r50 median about 5.18M ops/s
+  interpretation:
+    correctness boundary is closed for attached owner remote frees
+    performance regresses because remote free now pays lease plus owner collect
+    next box should audit and reduce medium remote publish/collect cost
 ```
 
 ### 2. SizePolicy-v1 Evidence
