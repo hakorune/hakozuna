@@ -20,6 +20,7 @@ typedef struct Options {
   size_t max_size;
   int remote_pct;
   int interleaved;
+  int touch;
   size_t live_window;
 } Options;
 
@@ -157,7 +158,7 @@ static void* thread_interleaved(void* arg) {
       th->error = 1;
       break;
     }
-    touch_payload(ptr, size);
+    if (opt->touch) touch_payload(ptr, size);
     if (opt->remote_pct > 0 &&
         (int)(rng_next(&th->rng) % 100u) < opt->remote_pct) {
       while (!inbox_push(next_inbox, ptr)) {
@@ -217,7 +218,7 @@ static void* thread_phase(void* arg) {
       th->error = 1;
       break;
     }
-    touch_payload(ptr, size);
+    if (opt->touch) touch_payload(ptr, size);
     if (opt->remote_pct > 0 &&
         (int)(rng_next(&th->rng) % 100u) < opt->remote_pct) {
       if (next_inbox->count >= next_inbox->cap) {
@@ -289,7 +290,7 @@ static void usage(const char* argv0) {
   fprintf(stderr,
           "usage: %s [--runs N] [--threads N] [--iters N]\n"
           "          [--min-size N] [--max-size N] [--remote-pct N]\n"
-          "          [--interleaved 0|1] [--live-window N]\n",
+          "          [--interleaved 0|1] [--touch 0|1] [--live-window N]\n",
           argv0);
 }
 
@@ -310,6 +311,8 @@ static int parse_options(int argc, char** argv, Options* opt) {
       if (parse_int(argv[++i], &opt->remote_pct) != 0) return -1;
     } else if (strcmp(a, "--interleaved") == 0 && i + 1 < argc) {
       if (parse_int(argv[++i], &opt->interleaved) != 0) return -1;
+    } else if (strcmp(a, "--touch") == 0 && i + 1 < argc) {
+      if (parse_int(argv[++i], &opt->touch) != 0) return -1;
     } else if (strcmp(a, "--live-window") == 0 && i + 1 < argc) {
       if (parse_size(argv[++i], &opt->live_window) != 0) return -1;
     } else {
@@ -413,11 +416,12 @@ static int run_once(const Options* opt, int run, double* throughput, size_t* rss
 }
 
 int main(int argc, char** argv) {
-  Options opt = {10, 16, 100000, 16, 2048, 0, 0, 0};
+  Options opt = {10, 16, 100000, 16, 2048, 0, 0, 1, 0};
   if (parse_options(argc, argv, &opt) != 0 || opt.runs <= 0 ||
       opt.threads <= 0 || opt.iters == 0 || opt.min_size == 0 ||
       opt.max_size < opt.min_size || opt.remote_pct < 0 ||
-      opt.remote_pct > 100 || opt.interleaved < 0 || opt.interleaved > 1) {
+      opt.remote_pct > 100 || opt.interleaved < 0 || opt.interleaved > 1 ||
+      opt.touch < 0 || opt.touch > 1) {
     usage(argv[0]);
     return 1;
   }
@@ -457,9 +461,9 @@ int main(int argc, char** argv) {
   qsort(faults, n, sizeof(*faults), cmp_size);
   qsort(remote_live, n, sizeof(*remote_live), cmp_size);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d live_window=%zu api=malloc_free\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d touch=%d live_window=%zu api=malloc_free\n",
          opt.runs, opt.threads, opt.iters, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved, opt.live_window);
+         opt.remote_pct, opt.interleaved, opt.touch, opt.live_window);
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          percentile_double(throughput, n, 0.50),
          percentile_double(throughput, n, 0.25),

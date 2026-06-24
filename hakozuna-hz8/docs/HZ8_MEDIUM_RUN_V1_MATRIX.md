@@ -115,3 +115,15 @@ if optimizing stability/RSS:
 if optimizing phase stress:
   phase rows need lifecycle/first-touch work, not remote protocol changes
 ```
+
+Follow-up attribution:
+
+```text
+docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
+```
+
+The follow-up separates `local0` worker shape from allocator behavior.  It
+shows that main/medium `interleaved=1` local rows carry a real empty-inbox drain
+tax, but fixed medium classes are still only around 108M..112M.  The next speed
+lane should focus on medium entry, active-hit validation, and direct-identity
+code shape rather than reopening the medium remote protocol.

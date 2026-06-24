@@ -111,13 +111,19 @@ Next MediumRun choice:
 ```text
 short term:
   MediumRun-v1 RC1 is recorded in docs/HZ8_MEDIUM_RUN_V1_RC1.md
-  keep current default stable while running same-run allocator matrix
+  same-run allocator matrix is recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
+  main/medium local attribution is recorded in
+  docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 
-if objective is main stability / first-touch:
-  chunk arena remains evidence-only until medium r50 no-regression is solved
+if objective is local speed:
+  medium entry / active-hit validation / direct-identity code shape is the next
+  evidence lane
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked
+
+if objective is main stability / first-touch:
+  chunk arena remains evidence-only until medium r50 no-regression is solved
 ```
 
 Current route shadow:
