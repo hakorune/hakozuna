@@ -374,16 +374,16 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MainFaultVarianceAttribution-L1
-   main_interleaved_remote90 instability reproduces with high minor faults
-   split medium one-run mmap / page-fault churn before changing size policy
+1. MediumChunkArenaPairedStability-L1
+   chunk candidate reduced main fault variance
+   run paired medium/main/small gates before any default promotion
 
 2. MediumR50SlotCollectLane-L1
    medium r50 residual points to slot/collect/lease, not queue push first
 
-3. MediumChunkArenaPairedStability-L1
-   chunk candidate reduced short-run faults
-   requires longer paired stability and small frozen gates before promotion
+3. MediumChunkArenaDefaultDecision-L1
+   only after paired stability passes
+   otherwise keep H8_MEDIUM_CHUNK_CARVE evidence-only
 ```
 
 ## MediumV1GateRunner-L1
