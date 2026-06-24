@@ -84,6 +84,7 @@ H8MemorySample h8_read_memory_sample(void);
 int h8_spsc_push(H8Inbox* inbox, void* ptr);
 void* h8_spsc_pop(H8Inbox* inbox);
 size_t h8_drain_inbox(H8Inbox* inbox);
+void* h8_bench_thread_main(void* arg);
 int h8_parse_options(int argc, char** argv, H8BenchOptions* opt);
 void h8_usage(const char* argv0);
 int h8_cmp_double(const void* a, const void* b);
