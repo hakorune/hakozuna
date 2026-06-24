@@ -7,6 +7,26 @@ hakozuna-hz6/out/
 bench_results/
 results/
 bench_burst_idle*
+
+# HZ8 local build outputs
+hakozuna-hz8/libhakozuna_hz8_preload.so
+hakozuna-hz8/h8_smoke
+hakozuna-hz8/h8_smoke_mediumupper48
+hakozuna-hz8/h8_safety_stress
+hakozuna-hz8/h8_preload_smoke
+hakozuna-hz8/h8_bench
+hakozuna-hz8/h8_bench_medium64k2
+hakozuna-hz8/h8_bench_mediumchunk
+hakozuna-hz8/h8_bench_mediumupper48
+hakozuna-hz8/h8_bench_release
+hakozuna-hz8/h8_bench_release_audit
+hakozuna-hz8/h8_bench_release_upper1p5
+hakozuna-hz8/h8_bench_release_upper3072
+hakozuna-hz8/h8_bench_release_medium64k2
+hakozuna-hz8/h8_bench_release_mediumchunk
+hakozuna-hz8/h8_bench_release_mediumupper48
+hakozuna-hz8/h8_remote_micro
+hakozuna-hz8/h8_remote_micro_release
 *.o
 *.d
 *.a
