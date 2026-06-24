@@ -5,7 +5,6 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 #if defined(H8_ENABLE_DEBUG_STATS)
 #include <time.h>
 #endif
@@ -114,30 +113,6 @@ uint32_t h8_medium_rounded_size(size_t size) {
   return k_h8_medium_classes[h8_medium_class_for_size(size)].slot_size;
 }
 
-static void* h8_medium_mmap_aligned_run(size_t run_size) {
-  size_t reserve = run_size * 2u;
-  uint8_t* raw = mmap(NULL, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS,
-                      -1, 0);
-  if (raw == MAP_FAILED) {
-    return MAP_FAILED;
-  }
-  uintptr_t aligned =
-      ((uintptr_t)raw + run_size - 1u) & ~(uintptr_t)(run_size - 1u);
-  size_t prefix = (size_t)((uint8_t*)aligned - raw);
-  size_t suffix = reserve - prefix - run_size;
-  if (prefix != 0) {
-    munmap(raw, prefix);
-  }
-  if (suffix != 0) {
-    munmap((uint8_t*)aligned + run_size, suffix);
-  }
-  if (mprotect((void*)aligned, run_size, PROT_READ | PROT_WRITE) != 0) {
-    munmap((void*)aligned, run_size);
-    return MAP_FAILED;
-  }
-  return (void*)aligned;
-}
-
 static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   if (!ctx || !ctx->owner || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
     return;
@@ -208,12 +183,14 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
     h8_medium_run_destroy_scaffold(run);
     return NULL;
   }
-  void* payload = h8_medium_mmap_aligned_run(spec->run_size);
-  if (payload == MAP_FAILED) {
+  bool chunk_backed = false;
+  void* payload = h8_medium_payload_alloc(spec->run_size, &chunk_backed);
+  if (!payload) {
     h8_medium_run_destroy_scaffold(run);
     return NULL;
   }
   run->base = payload;
+  run->payload_chunk_backed = chunk_backed;
   run->class_id = (uint16_t)class_id;
   run->slot_size = spec->slot_size;
   run->slot_shift = spec->slot_shift;
@@ -244,7 +221,10 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   h8_medium_unlock_global();
   if (run->base) {
     h8_medium_release_empty_payload(run);
-    munmap(run->base, run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES);
+    h8_medium_payload_free(run->base,
+                           run->run_size ? run->run_size
+                                         : H8_MEDIUM_RUN_BYTES,
+                           run->payload_chunk_backed);
   }
   h8_sys_free(run->pending_bits);
   h8_sys_free(run->slot_state);

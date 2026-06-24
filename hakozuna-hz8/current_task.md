@@ -533,11 +533,11 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumChunkArenaCarve-L1
-   remove per-run mmap after quantum-directory fallback is closed
+1. MediumUpper48KSizePolicyShadow-L1
+   quantify 48K class effect on rounded bytes and run mix
 
-2. MediumUpper48KSizePolicyShadow/AB-L1
-   later rounded-byte reduction lane
+2. MediumUpper48KSizePolicyAB-L1
+   only if shadow shows enough memory/run benefit
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
@@ -659,6 +659,25 @@ Decision:
 directory-capacity fallback is closed
 full ChunkArena carving is still open
 next box is MediumChunkArenaCarve-L1 or Upper48K size-policy shadow
+```
+
+## MediumChunkArenaCarve-L1
+
+Status: evidence-only; HOLD as default.
+
+```text
+bench_results/20260624T125508Z_medium_chunk_carve_candidate/README.md
+candidate build: H8_MEDIUM_CHUNK_CARVE
+release medium r50 ratio: 0.984
+chunk phase r90 short: free_steps=0 remote_ms=4.111
+```
+
+Decision:
+
+```text
+default remains per-run mmap
+directory fallback is already closed
+next lane is MediumUpper48KSizePolicyShadow-L1
 ```
 
 ## Safety Gates
