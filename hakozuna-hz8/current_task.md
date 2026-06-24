@@ -44,6 +44,10 @@ range:
 classes:
   8K / 16K / 32K / 64K
 
+geometry:
+  q64-run64k2 default
+  64K class uses 128KiB run / 2 slots
+
 identity:
   direct medium registry
   power-of-two slot decode
@@ -51,6 +55,7 @@ identity:
 
 residency:
   empty run resident retention is budgeted
+  active empty live retention avoids local per-op empty churn
   owner exit drains retained empty payload
 
 ownership:
@@ -78,25 +83,30 @@ lockless publish shadow: match=29962 mismatch=0
 
 ## Current Box
 
-### MediumUpper48KSizePolicyShadow-L1
+### MediumActiveEmptyLiveRetention-L1
 
-Status: recorded; superseded by paired gate evidence.
+Status: implemented; GO.
 
 ```text
-bench_results/20260624T_medium_upper48_shadow/README.md
-upper48 rounded bytes ratio: 0.9045
-run estimate unchanged: 5121
-interpretation: RSS / first-touch evidence, not queue-episode evidence
+bench_results/20260624T_medium_active_empty_live/README.md
+debug local0:
+  empty/retain/reactivate = 0 / 0 / 0
+  exit_drain = 320
+release local0:
+  median 106.49M
+  steady 113.80M
+release r50:
+  median 29.38M
+small remote90:
+  median 54.59M
 ```
 
-Next decision:
+Decision:
 
 ```text
-MediumUpper48KSizePolicyAB-L1:
-  HOLD until paired hot-path A/B is explicitly worth the 48K decode cost
-
-default:
-  keep current p2 medium class map
+same-owner free of current TLS active medium run keeps empty payload LIVE
+owner exit remains hard drain point
+RSS remains bounded by owner-exit decommit
 ```
 
 ### MediumRunOwnerLeaseCeiling-L1

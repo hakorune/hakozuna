@@ -120,7 +120,8 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out);
 void h8_medium_payload_free(void* ptr, size_t run_size, bool chunk_backed);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
-bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
+bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
+                                       bool keep_empty_live);
 void h8_medium_release_empty_payload(H8MediumRun* run);
 void h8_medium_decommit_empty_locked(H8MediumRun* run);
 void h8_medium_mark_live_on_alloc(H8MediumRun* run);

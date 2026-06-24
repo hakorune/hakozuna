@@ -270,7 +270,8 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
   return h8_medium_slot_ptr(run, slot);
 }
 
-bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
+bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
+                                       bool keep_empty_live) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
@@ -295,7 +296,9 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
                         memory_order_release);
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
-  h8_medium_mark_empty_locked(run);
+  if (!(keep_empty_live && run->allocated_mask == 0)) {
+    h8_medium_mark_empty_locked(run);
+  }
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(medium_free_slot_count);
   H8_DEBUG_ADD(medium_free_slot_ns, (size_t)(h8_medium_now_ns() - start));
@@ -458,7 +461,10 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       if (owned_out) {
         *owned_out = true;
       }
-      bool ok = h8_medium_run_free_local_scaffold(run, ptr);
+      bool keep_empty_live =
+          ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
+          ctx->active_medium_runs[run->class_id] == run;
+      bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
       if (!ok) {
         H8_DEBUG_INC(medium_invalid_owned_count);
       }
@@ -512,7 +518,11 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = true;
   }
-  bool ok = h8_medium_run_free_local_scaffold(run, ptr);
+  bool keep_empty_live =
+      ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
+      ctx->active_medium_runs[run->class_id] == run &&
+      h8_medium_run_owned_by_ctx(run, ctx);
+  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
   if (!ok) {
     H8_DEBUG_INC(medium_invalid_owned_count);
   }
@@ -584,7 +594,8 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       h8_medium_lock_run(run);
       run->owner_attached = false;
       atomic_store_explicit(&run->owner_word, 0, memory_order_release);
-      if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
+      if (run->allocated_mask == 0 &&
+          run->payload_state != H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
         H8_DEBUG_INC(medium_owner_exit_drain_count);
         h8_medium_decommit_empty_locked(run);
       }

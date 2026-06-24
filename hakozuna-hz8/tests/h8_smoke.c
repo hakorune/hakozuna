@@ -118,10 +118,10 @@ static int check_medium_scaffold(void) {
   void* first = h8_medium_run_alloc_local_scaffold(run);
   void* second = h8_medium_run_alloc_local_scaffold(run);
   if (!first || !second || first == second ||
-      !h8_medium_run_free_local_scaffold(run, first) ||
-      h8_medium_run_free_local_scaffold(run, first) ||
-      h8_medium_run_free_local_scaffold(run, (char*)second + 1) ||
-      !h8_medium_run_free_local_scaffold(run, second)) {
+      !h8_medium_run_free_local_scaffold(run, first, false) ||
+      h8_medium_run_free_local_scaffold(run, first, false) ||
+      h8_medium_run_free_local_scaffold(run, (char*)second + 1, false) ||
+      !h8_medium_run_free_local_scaffold(run, second, false)) {
     fprintf(stderr, "medium scaffold local alloc/free mismatch\n");
     h8_medium_run_destroy_scaffold(run);
     return 29;
