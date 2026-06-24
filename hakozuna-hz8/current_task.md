@@ -83,27 +83,29 @@ lockless publish shadow: match=29962 mismatch=0
 
 ## Current Box
 
-### MediumCollectorActiveEmptyLiveShadow-L1
+### MediumCollectorActiveEmptyLive-L1
 
-Status: implemented; GO for behavior box.
+Status: implemented; GO.
 
 ```text
-bench_results/20260625T_medium_collector_active_shadow/README.md
+bench_results/20260625T_medium_collector_active_live/README.md
 debug r50:
-  collect_active_would_keep = 168347
+  collect_active_would_keep = 177937
+  empty/retain/reactivate = 236460 / 236460 / 235274
   empty_live_not_active = 0
   owner_exit_active_live = 0
-  active_live_peak = 2818048
-debug local0:
-  active_live_peak = 5242880
+release:
+  medium r50 median 33.38M
+  medium local0 median 104.61M
+  main remote90 median 25.01M
 ```
 
 Decision:
 
 ```text
-ctx-aware collector shadow is clean
-old active run demotion boundary is closed
-next box: MediumCollectorActiveEmptyLive-L1
+ctx-aware collector keeps current active empty run LIVE
+owner exit remains hard drain point
+next box: MediumRunV1FreezeBatch-L1
 ```
 
 ### MediumRunOwnerLeaseCeiling-L1
@@ -435,36 +437,36 @@ Status: recorded.
 
 ```text
 latest:
-  bench_results/20260624T142739Z_medium_v1_gate/README.md
+  bench_results/20260624T152001Z_medium_v1_gate/README.md
 prior:
-  bench_results/20260624T142006Z_medium_v1_gate/README.md
+  bench_results/20260624T142739Z_medium_v1_gate/README.md
 ```
 
 Result:
 
 ```text
 medium_local0:
-  10.52M -> 109.60M ops/s
-  steady 114.59M
+  109.60M -> 102.54M ops/s
+  steady 107.89M
 
 medium_interleaved_remote50:
-  19.36M -> 32.08M ops/s
-  steady 34.44M
+  32.08M -> 33.13M ops/s
+  steady 35.82M
 
 medium_phase_remote90:
-  262K -> 257K ops/s
-  peak RSS 61.6MiB
+  257K -> 263K ops/s
+  peak RSS 61.9MiB
 
 main_interleaved_remote90:
-  24.1M -> 25.2M ops/s
-  p25 18.0M -> 24.2M ops/s
+  25.2M -> 25.8M ops/s
+  p25 24.2M -> 23.1M ops/s
 ```
 
 Interpretation:
 
 ```text
-active empty live retention removes local empty-residency churn
-medium local0 and r50 are materially stronger
+collector active empty live improves medium r50 slightly
+medium local0 remains far above pre-active-retention baseline
 phase row remains lifecycle / first-touch stress, not primary throughput gate
 ```
 

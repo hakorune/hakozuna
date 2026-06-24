@@ -468,7 +468,9 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
   bool would_keep_live =
       h8_medium_collect_active_keep_shadow(owner, run, ctx, remaining);
   (void)would_keep_live;
-  if (run->allocated_mask == 0 && remaining == 0) {
+  if (run->allocated_mask == 0 && remaining == 0 && would_keep_live) {
+    h8_medium_note_active_live_empty(run);
+  } else if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
   } else if (run->allocated_mask == 0 && remaining != 0) {
     H8_DEBUG_INC(medium_empty_with_pending);

@@ -28,6 +28,7 @@ static void h8_medium_update_resident_peak(size_t value) {
   }
 }
 
+#if defined(H8_ENABLE_DEBUG_STATS)
 static void h8_medium_update_active_live_peak(size_t value) {
   size_t cur = atomic_load_explicit(&h8g.medium_active_live_empty_peak,
                                     memory_order_relaxed);
@@ -37,24 +38,29 @@ static void h8_medium_update_active_live_peak(size_t value) {
              memory_order_relaxed, memory_order_relaxed)) {
   }
 }
+#endif
 
 void h8_medium_note_active_live_empty(H8MediumRun* run) {
   if (!run || run->active_live_empty_charge) {
     return;
   }
+  run->active_live_empty_charge = true;
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
   size_t next = atomic_fetch_add_explicit(
                     &h8g.medium_active_live_empty_bytes, bytes,
                     memory_order_acq_rel) +
                 bytes;
-  run->active_live_empty_charge = true;
   h8_medium_update_active_live_peak(next);
+#endif
 }
 
 void h8_medium_clear_active_live_empty(H8MediumRun* run) {
   if (!run || !run->active_live_empty_charge) {
     return;
   }
+  run->active_live_empty_charge = false;
+#if defined(H8_ENABLE_DEBUG_STATS)
   size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
   size_t cur = atomic_load_explicit(&h8g.medium_active_live_empty_bytes,
                                     memory_order_acquire);
@@ -63,7 +69,7 @@ void h8_medium_clear_active_live_empty(H8MediumRun* run) {
              &h8g.medium_active_live_empty_bytes, &cur, cur - bytes,
              memory_order_acq_rel, memory_order_acquire)) {
   }
-  run->active_live_empty_charge = false;
+#endif
 }
 
 static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
