@@ -843,6 +843,7 @@ Record:
 
 ```text
 bench_results/20260624T212239Z_medium_pending_check_inline_ab/
+bench_results/20260624T212754Z_medium_pending_check_inline_confirm/
 ```
 
 Candidate:
@@ -885,6 +886,41 @@ Decision:
 ```text
 MediumPendingCheckInline-L1:
   GO as a narrow code-shape patch
+```
+
+R10 confirmation:
+
+```text
+medium_i0:
+  all median ratio 0.999
+  batch median ratio 0.967
+
+medium_r50:
+  all median ratio 0.992
+  batch median ratio 0.986
+
+main_i0:
+  all median ratio 1.037
+  batch median ratio 1.046
+
+small_i0 initial R10 x2:
+  all median ratio 0.917
+  batch median ratio 0.968
+
+small_i0 combined R10 x4:
+  all median ratio 1.045
+  batch median ratio 1.023
+```
+
+Interpretation:
+
+```text
+default:
+  GO
+
+note:
+  initial small_i0 drop was unexpected for a medium-only code-shape patch and
+  did not reproduce after two additional R10 batches
 ```
 
 Branch rules:

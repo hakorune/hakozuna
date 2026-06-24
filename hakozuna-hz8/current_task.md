@@ -125,8 +125,10 @@ if optimizing medium/main local speed:
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is the current narrow code-shape patch:
-    removes periodic h8_medium_owner_has_pending call with no quick regression
-  next step should be R10 confirmation or a different asm-visible call site
+    removes periodic h8_medium_owner_has_pending call
+    R10 confirmed main_i0 improvement, medium rows flat/within quick gate,
+    and small_i0 regression did not reproduce after extra R10 batches
+  next step should be a different asm-visible call site
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked
