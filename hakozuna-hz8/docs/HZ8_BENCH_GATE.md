@@ -169,6 +169,15 @@ changes.
 Bench output also prints `medium_arena_id`.  Compare `per-run-mmap` and
 `chunk16m` rows separately; do not mix them under one MediumRun result line.
 
+For chunk promotion evidence, use:
+
+```bash
+make medium-chunk-paired-gate
+```
+
+The row must pass medium r50, main interleaved, and frozen small rows before the
+chunk arena can become a default candidate.
+
 ## v0 Performance Gates
 
 Initial v0 gates:

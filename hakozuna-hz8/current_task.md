@@ -374,16 +374,15 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MediumChunkArenaPairedStability-L1
-   chunk candidate reduced main fault variance
-   run paired medium/main/small gates before any default promotion
-
-2. MediumR50SlotCollectLane-L1
+1. MediumR50SlotCollectLane-L1
    medium r50 residual points to slot/collect/lease, not queue push first
 
-3. MediumChunkArenaDefaultDecision-L1
-   only after paired stability passes
-   otherwise keep H8_MEDIUM_CHUNK_CARVE evidence-only
+2. MediumChunkArenaDefaultDecision-L1
+   chunk improves main fault variance but regresses medium r50 in R5
+   keep H8_MEDIUM_CHUNK_CARVE evidence-only
+
+3. MediumRunProtocolOrArenaSplit-L1
+   separate medium r50 protocol work from main RSS/fault arena work
 ```
 
 ## MediumV1GateRunner-L1
@@ -492,6 +491,20 @@ main_interleaved_remote90 R5:
   baseline median 7.95M, p25 6.21M, minor_median 281136
   chunk median 23.59M, p25 17.66M, minor_median 7487
 interpretation: one-run mmap / page-fault churn explains much of main variance
+```
+
+## MediumChunkArenaPairedStability-L1
+
+Status: recorded; HOLD as default.
+
+```text
+bench_results/20260624T_medium_chunk_paired_gate_r5_medium_chunk_paired_gate/README.md
+runner: scripts/run_medium_chunk_paired_gate.sh
+medium r50 R5: baseline 2.27M, chunk 1.85M median
+main remote90 R5: baseline 6.60M, chunk 8.25M median
+small local R5: baseline 337.2M, chunk 341.3M median
+small remote90 R5: baseline 53.96M, chunk 53.80M median
+decision: chunk remains evidence-only; medium r50 regression blocks default
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
