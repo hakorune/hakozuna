@@ -482,6 +482,18 @@ main_interleaved_remote90 R10:
 interpretation: instability reproduced; page-fault variance is the next suspect
 ```
 
+## MainFaultVarianceAttribution-L1
+
+Status: recorded; chunk arena is the main fault candidate.
+
+```text
+bench_results/20260624T_main_fault_variance_chunk_ab/README.md
+main_interleaved_remote90 R5:
+  baseline median 7.95M, p25 6.21M, minor_median 281136
+  chunk median 23.59M, p25 17.66M, minor_median 7487
+interpretation: one-run mmap / page-fault churn explains much of main variance
+```
+
 ## MediumVariableRunGeometryScaffold-L1
 
 Status: recorded.

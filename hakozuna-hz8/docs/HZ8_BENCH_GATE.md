@@ -166,6 +166,9 @@ Chunk arena candidate builds print `medium_chunk`.  Use `reserved_bytes` and
 `used_bytes` to separate reduced mmap/fault pressure from allocator protocol
 changes.
 
+Bench output also prints `medium_arena_id`.  Compare `per-run-mmap` and
+`chunk16m` rows separately; do not mix them under one MediumRun result line.
+
 ## v0 Performance Gates
 
 Initial v0 gates:
