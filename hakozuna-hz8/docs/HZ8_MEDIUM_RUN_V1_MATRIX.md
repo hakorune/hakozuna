@@ -408,3 +408,56 @@ MediumR50FreshProcessFaultAttribution-L1:
   split cold process setup, minor faults, owner exit, and medium remote path
   do not reopen queue/lease protocol before this attribution
 ```
+
+## Medium r50 Fresh-Process Attribution
+
+HZ8-only fresh-process attribution was run at:
+
+```text
+data=bench_results/medium_fresh_process_attr_20260624T222537Z/
+```
+
+The attribution compares:
+
+```text
+direct:
+  h8_bench_release, one process per sample
+
+preload:
+  common malloc/free harness with LD_PRELOAD=libhakozuna_hz8_preload.so,
+  one process per sample
+```
+
+Results:
+
+| Row | Mode | median | p25 | min | peak RSS | minor faults |
+|---|---|---:|---:|---:|---:|---:|
+| `medium_interleaved_remote50` | direct | 28.44M | 28.07M | 12.11M | 40.9MiB | 10328 |
+| `medium_interleaved_remote50` | preload | 29.35M | 27.53M | 26.16M | 39.2MiB | 9880 |
+| `medium_local0` | direct | 143.17M | 127.99M | 113.15M | 2.6MiB | 498 |
+| `medium_local0` | preload | 147.28M | 145.23M | 116.60M | 2.5MiB | 469 |
+
+Interpretation:
+
+```text
+preload overhead:
+  not the primary explanation for the full-matrix medium r50 low median
+
+fresh-process HZ8-only:
+  medium r50 is around 28M..29M
+  lower than same-process h8_bench_release R10,
+  but substantially above the full mixed matrix HZ8 18.4M median
+
+full mixed matrix:
+  HZ8 medium r50 low runs correlate with high minor faults
+  the remaining issue is likely matrix-order / memory-pressure / cold-reclaim
+  sensitivity rather than steady-state remote protocol
+```
+
+Next follow-up:
+
+```text
+MediumR50MatrixPressureAttribution-L1:
+  reproduce HZ8 medium r50 after selected pressure rows or allocator runs
+  record minor faults and VmHWM before/after each sample
+```

@@ -145,9 +145,10 @@ if objective is local speed:
 
 if objective is medium r50 stability:
   HZ8-only same-process median is strong
-  fresh-process same-run matrix median is much lower
+  HZ8-only fresh-process direct/preload median is around 28M..29M
+  full mixed same-run matrix median is much lower at 18.40M
   p25/min can still show high-minor-fault outliers
-  treat this as MediumR50FreshProcessFaultAttribution-L1, not as evidence to
+  treat this as MediumR50MatrixPressureAttribution-L1, not as evidence to
   reopen the medium remote queue / lease protocol
 
 if objective is RSS / rounded bytes:

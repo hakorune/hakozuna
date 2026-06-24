@@ -236,8 +236,23 @@ next measurement lanes:
 
   MediumR50FaultOutlierAttribution-L1:
     rename/scope as MediumR50FreshProcessFaultAttribution-L1
-    reproduce matrix's fresh-process shape with HZ8-only attribution
-    split cold process setup, minor faults, owner exit, and medium remote path
+    complete
+    data=bench_results/medium_fresh_process_attr_20260624T222537Z/
+
+    result:
+      direct fresh-process medium_r50:
+        28.44M median
+
+      preload fresh-process medium_r50:
+        29.35M median
+
+      preload overhead:
+        not the primary cause of the full mixed matrix 18.40M median
+
+    next scope:
+      MediumR50MatrixPressureAttribution-L1
+      reproduce HZ8 medium_r50 after selected pressure rows or allocator runs
+      record minor faults / VmHWM before and after each sample
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane
