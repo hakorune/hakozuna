@@ -142,6 +142,7 @@ static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   if (!ctx || !ctx->owner || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
     return;
   }
+  h8_medium_detached_remove_locked(run);
   run->owner_attached = true;
   atomic_store_explicit(&run->owner_word,
                         h8_medium_owner_word_for(ctx->owner),
@@ -369,11 +370,11 @@ retry_owner_capacity:
   }
   h8_medium_lock_global();
   H8_DEBUG_INC(medium_global_scan_count);
-  for (H8MediumRun* run = h8_medium_global_head(); run;
-       run = run->next_global) {
+  for (H8MediumRun* run = h8_medium_detached_head_locked(class_id); run;
+       run = run->next_detached) {
     H8_DEBUG_INC(medium_global_scan_step_count);
     h8_medium_lock_run(run);
-    if (run->owner_attached ||
+    if (run->class_id != class_id || run->owner_attached ||
         atomic_load_explicit(&run->owner_word, memory_order_acquire) != 0) {
       H8_DEBUG_INC(medium_global_skip_foreign_attached);
       h8_medium_unlock_run(run);
@@ -585,6 +586,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       h8_medium_unlock_run(run);
       h8_medium_debug_writer_exit(run);
       run->next_owner = NULL;
+      h8_medium_detached_add_locked(run);
       run = next;
     }
   }

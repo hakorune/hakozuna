@@ -77,7 +77,9 @@ typedef struct H8MediumRun {
   void* meta_alloc_base;
   struct H8MediumRun* next_owner;
   struct H8MediumRun* next_global;
+  struct H8MediumRun* next_detached;
   struct H8MediumRun* next_pending;
+  bool detached_indexed;
 #if defined(H8_ENABLE_DEBUG_STATS)
   atomic_uint debug_writer_active;
   atomic_uint debug_writer_kind;
@@ -129,6 +131,9 @@ void h8_medium_collect_owner_pending(H8OwnerRecord* owner);
 void h8_medium_lock_global(void);
 void h8_medium_unlock_global(void);
 H8MediumRun* h8_medium_global_head(void);
+H8MediumRun* h8_medium_detached_head_locked(uint32_t class_id);
+void h8_medium_detached_add_locked(H8MediumRun* run);
+void h8_medium_detached_remove_locked(H8MediumRun* run);
 bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr);
 H8MediumRun* h8_medium_directory_find(const void* ptr);
 H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup);

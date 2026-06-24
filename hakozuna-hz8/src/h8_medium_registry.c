@@ -10,6 +10,7 @@
 
 static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
 static H8MediumRun* h8_medium_runs;
+static H8MediumRun* h8_medium_detached_by_class[H8_MEDIUM_CLASS_COUNT];
 static _Atomic uintptr_t h8_medium_directory_addr;
 static _Atomic uintptr_t h8_medium_min_addr;
 static _Atomic uintptr_t h8_medium_max_addr;
@@ -39,6 +40,41 @@ void h8_medium_unlock_global(void) {
 
 H8MediumRun* h8_medium_global_head(void) {
   return h8_medium_runs;
+}
+
+H8MediumRun* h8_medium_detached_head_locked(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return NULL;
+  }
+  return h8_medium_detached_by_class[class_id];
+}
+
+void h8_medium_detached_add_locked(H8MediumRun* run) {
+  if (!run || run->class_id >= H8_MEDIUM_CLASS_COUNT || run->detached_indexed) {
+    return;
+  }
+  run->next_detached = h8_medium_detached_by_class[run->class_id];
+  h8_medium_detached_by_class[run->class_id] = run;
+  run->detached_indexed = true;
+}
+
+void h8_medium_detached_remove_locked(H8MediumRun* run) {
+  if (!run || run->class_id >= H8_MEDIUM_CLASS_COUNT ||
+      !run->detached_indexed) {
+    return;
+  }
+  H8MediumRun** cur = &h8_medium_detached_by_class[run->class_id];
+  while (*cur) {
+    if (*cur == run) {
+      *cur = run->next_detached;
+      run->next_detached = NULL;
+      run->detached_indexed = false;
+      return;
+    }
+    cur = &(*cur)->next_detached;
+  }
+  run->next_detached = NULL;
+  run->detached_indexed = false;
 }
 
 static uintptr_t h8_medium_quantum_base(uintptr_t addr) {
@@ -179,6 +215,7 @@ void h8_medium_register_locked(H8MediumRun* run) {
 }
 
 void h8_medium_unregister_locked(H8MediumRun* run) {
+  h8_medium_detached_remove_locked(run);
   H8MediumRun** cur = &h8_medium_runs;
   while (*cur) {
     if (*cur == run) {

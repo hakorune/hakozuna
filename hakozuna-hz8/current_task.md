@@ -615,13 +615,10 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumDetachedRunClassIndex-L1
-   remove global foreign-attached scan on current q64-run64k default
+1. MediumChunkArenaQuantum-L1
+   remove medium directory-capacity fallback/free_steps
 
-2. MediumChunkArenaQuantum-L1
-   after run order is decided
-
-3. MediumUpper48KSizePolicyShadow/AB-L1
+2. MediumUpper48KSizePolicyShadow/AB-L1
    later rounded-byte reduction lane
 ```
 
@@ -704,6 +701,26 @@ Decision:
 ```text
 keep q64-run64k as default
 proceed to MediumDetachedRunClassIndex-L1 on current default geometry
+```
+
+## MediumDetachedRunClassIndex-L1
+
+Status: recorded.
+
+```text
+bench_results/20260624T124747Z_medium_detached_class_index/README.md
+debug medium r50: global_skip_foreign=0 free_steps=0
+short debug phase r90: global_skip_foreign=0 free_steps=175546277
+release medium r50 median: 7.531M ops/s
+small interleaved quick median: 53.156M ops/s
+```
+
+Decision:
+
+```text
+detached class index removes foreign-attached global scan
+remaining phase lookup cost is direct-directory overflow/fallback
+next box is MediumChunkArenaQuantum-L1
 ```
 
 ## Safety Gates
