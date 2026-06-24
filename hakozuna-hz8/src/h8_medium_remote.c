@@ -368,6 +368,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
   uint64_t collect = bits;
   uint64_t accepted = 0;
   size_t collected = 0;
+  size_t rejected = 0;
   while (collect) {
     uint64_t bit = collect & (~collect + 1u);
     size_t slot = (size_t)__builtin_ctzll(bit);
@@ -381,6 +382,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
       ++collected;
     } else {
       H8_DEBUG_INC(invalid_count);
+      ++rejected;
     }
     collect &= collect - 1u;
   }
@@ -396,6 +398,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
     h8_medium_mark_dirty_if_draining(run);
   }
   H8_DEBUG_ADD(medium_remote_collect_slot_count, collected);
+  H8_DEBUG_ADD(medium_remote_collect_reject_count, rejected);
   H8_DEBUG_ADD(medium_remote_collect_run_count, 1);
   h8_medium_debug_class_inc(run->class_id,
                             &h8g.medium_remote_collect_run_class_8k,

@@ -374,15 +374,16 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MediumR50SlotCollectLane-L1
-   medium r50 residual points to slot/collect/lease, not queue push first
+1. MediumRetainBudgetPressure-L1
+   medium r50 collect detail shows reject=0 and high madvise/fault pressure
+   tune resident budget policy before collect protocol surgery
 
-2. MediumChunkArenaDefaultDecision-L1
+2. MediumR50SlotBookkeeping-L1
+   slot/free bookkeeping remains material after budget pressure is understood
+
+3. MediumChunkArenaDefaultDecision-L1
    chunk improves main fault variance but regresses medium r50 in R5
    keep H8_MEDIUM_CHUNK_CARVE evidence-only
-
-3. MediumRunProtocolOrArenaSplit-L1
-   separate medium r50 protocol work from main RSS/fault arena work
 ```
 
 ## MediumV1GateRunner-L1
@@ -505,6 +506,22 @@ main remote90 R5: baseline 6.60M, chunk 8.25M median
 small local R5: baseline 337.2M, chunk 341.3M median
 small remote90 R5: baseline 53.96M, chunk 53.80M median
 decision: chunk remains evidence-only; medium r50 regression blocks default
+```
+
+## MediumR50SlotCollectLane-L1
+
+Status: observed; no collect reject waste found.
+
+```text
+bench_results/20260624T_medium_collect_detail/README.md
+debug medium r50 R3:
+  collect accepted=479945 rejected=0 reject_ratio=0
+  madvise_ms 669.194
+  collect_ms 578.547
+  slot_ms 616.896
+  minor_faults_per_op 0.237291
+interpretation: do not optimize rejected slot validation first
+next target is retention budget pressure / madvise-fault churn
 ```
 
 ## MediumVariableRunGeometryScaffold-L1

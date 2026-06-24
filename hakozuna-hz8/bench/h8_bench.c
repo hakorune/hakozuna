@@ -545,6 +545,16 @@ int main(int argc, char** argv) {
          debug.medium_madvise_fail_count, debug.medium_resident_empty_bytes, debug.medium_resident_empty_peak, (double)debug.medium_madvise_ns / 1e6,
          (double)debug.medium_global_lock_wait_ns / 1e6, (double)debug.medium_run_lock_wait_ns / 1e6, (double)debug.medium_alloc_slot_ns / 1e6, (double)debug.medium_free_slot_ns / 1e6,
          debug.medium_alloc_slot_count, debug.medium_free_slot_count, debug.medium_lock_elide_alloc_candidate, debug.medium_lock_elide_free_candidate, debug.medium_lock_elide_owner_mismatch, debug.medium_active_alloc_owner_mismatch, debug.medium_owner_list_owner_mismatch, debug.medium_global_skip_foreign_attached, debug.medium_local_free_owner_match, debug.medium_remote_free_owner_mismatch, debug.medium_free_lookup_step_count, debug.medium_route_lookup_step_count, debug.medium_route_authority_mismatch, debug.medium_remote_publish_count, (double)debug.medium_remote_owner_lease_ns / 1e6, (double)debug.medium_remote_owner_lease_enter_ns / 1e6, (double)debug.medium_remote_owner_lease_exit_ns / 1e6, (double)debug.medium_remote_run_lock_ns / 1e6, debug.medium_remote_pending_claim_count, (double)debug.medium_remote_pending_claim_ns / 1e6, debug.medium_remote_lockless_claim_count, debug.medium_remote_lockless_claim_collector_accept, debug.medium_remote_lockless_claim_rollback_invalid, debug.medium_remote_lockless_claim_rollback_accepted, debug.medium_attached_writer_overlap, debug.medium_attached_foreign_mask_writer, debug.medium_owner_token_changed_during_mutation, debug.medium_collect_wrong_owner, debug.medium_detached_direct_free_while_attached, debug.medium_remote_lockless_shadow_attempt, debug.medium_remote_lockless_shadow_would_accept, debug.medium_remote_lockless_shadow_would_reject, debug.medium_remote_lockless_shadow_match, debug.medium_remote_lockless_shadow_mismatch, debug.medium_remote_notify_count, debug.medium_remote_queue_push_count, (double)debug.medium_remote_queue_push_ns / 1e6, debug.medium_remote_collect_call_count, debug.medium_remote_collect_run_count, debug.medium_remote_collect_slot_count, (double)debug.medium_remote_collect_ns / 1e6, debug.medium_collect_finish_pending_rearm, debug.medium_empty_with_pending);
+  size_t medium_collect_seen =
+      debug.medium_remote_collect_slot_count +
+      debug.medium_remote_collect_reject_count;
+  printf("medium_collect_detail accepted=%zu rejected=%zu reject_ratio=%.6f\n",
+         debug.medium_remote_collect_slot_count,
+         debug.medium_remote_collect_reject_count,
+         medium_collect_seen
+             ? (double)debug.medium_remote_collect_reject_count /
+                   (double)medium_collect_seen
+             : 0.0);
   printf("medium_remote_class pub=[%zu,%zu,%zu,%zu] qpush=[%zu,%zu,%zu,%zu] collect_run=[%zu,%zu,%zu,%zu] collect_slot=[%zu,%zu,%zu,%zu]\n",
          debug.medium_remote_publish_class_8k,
          debug.medium_remote_publish_class_16k,

@@ -472,6 +472,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_collect_run_count, memory_order_acquire);
   out->medium_remote_collect_slot_count = atomic_load_explicit(
       &h8g.medium_remote_collect_slot_count, memory_order_acquire);
+  out->medium_remote_collect_reject_count = atomic_load_explicit(
+      &h8g.medium_remote_collect_reject_count, memory_order_acquire);
   out->medium_remote_collect_ns = atomic_load_explicit(
       &h8g.medium_remote_collect_ns, memory_order_acquire);
   out->medium_collect_finish_pending_rearm = atomic_load_explicit(
