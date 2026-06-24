@@ -600,6 +600,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_lock_elide_free_candidate, memory_order_acquire);
   out->medium_lock_elide_owner_mismatch = atomic_load_explicit(
       &h8g.medium_lock_elide_owner_mismatch, memory_order_acquire);
+  out->medium_active_alloc_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_active_alloc_owner_mismatch, memory_order_acquire);
+  out->medium_owner_list_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_owner_list_owner_mismatch, memory_order_acquire);
+  out->medium_global_skip_foreign_attached = atomic_load_explicit(
+      &h8g.medium_global_skip_foreign_attached, memory_order_acquire);
+  out->medium_local_free_owner_match = atomic_load_explicit(
+      &h8g.medium_local_free_owner_match, memory_order_acquire);
+  out->medium_remote_free_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_remote_free_owner_mismatch, memory_order_acquire);
   out->medium_free_lookup_step_count = atomic_load_explicit(
       &h8g.medium_free_lookup_step_count, memory_order_acquire);
   out->medium_route_lookup_step_count = atomic_load_explicit(

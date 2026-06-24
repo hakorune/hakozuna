@@ -226,6 +226,11 @@ typedef struct H8DebugStats {
   size_t medium_lock_elide_alloc_candidate;
   size_t medium_lock_elide_free_candidate;
   size_t medium_lock_elide_owner_mismatch;
+  size_t medium_active_alloc_owner_mismatch;
+  size_t medium_owner_list_owner_mismatch;
+  size_t medium_global_skip_foreign_attached;
+  size_t medium_local_free_owner_match;
+  size_t medium_remote_free_owner_mismatch;
   size_t medium_free_lookup_step_count;
   size_t medium_route_lookup_step_count;
   size_t pending_collect_word_count;

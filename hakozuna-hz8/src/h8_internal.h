@@ -385,6 +385,11 @@ typedef struct H8Global {
   atomic_size_t medium_lock_elide_alloc_candidate;
   atomic_size_t medium_lock_elide_free_candidate;
   atomic_size_t medium_lock_elide_owner_mismatch;
+  atomic_size_t medium_active_alloc_owner_mismatch;
+  atomic_size_t medium_owner_list_owner_mismatch;
+  atomic_size_t medium_global_skip_foreign_attached;
+  atomic_size_t medium_local_free_owner_match;
+  atomic_size_t medium_remote_free_owner_mismatch;
   atomic_size_t medium_free_lookup_step_count;
   atomic_size_t medium_route_lookup_step_count;
   atomic_size_t pending_collect_word_count;

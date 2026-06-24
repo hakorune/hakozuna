@@ -425,18 +425,34 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      opportunities are material
      actual lock elision is blocked by current remote-free-direct-mutation scaffold
 
-13. MediumRunRemote-L1
+13. MediumRunOwnerAffinity-L1
+   status: recorded
+   ensure medium run ownership is unambiguous before remote publish
+   TLS active run belongs to the current owner only
+   owner medium_by_class list contains only that owner token
+   global reuse skips attached foreign runs and may attach detached runs only
+   successful foreign free does not seed the current thread active hint
+   result:
+     bench_results/20260624T005226Z_medium_owner_affinity/README.md
+     debug r50 active_owner_mismatch=0
+     debug r50 owner_list_mismatch=0
+     debug local remote_free_owner=0
+   interpretation:
+     global skip counts are informational attached-foreign exclusions
+     owner affinity is now explicit enough for owner medium pending queues
+
+14. MediumRunRemoteOwnedPublish-L1
    remote free publish/owner collect for medium
    stop foreign threads from mutating run masks directly
    duplicate claim gates
    unlocks future owner-local run lock elision
 
-14. MediumRunRunPool-L1
+15. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-15. MediumRunLifecycle-L1
+16. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

@@ -401,7 +401,38 @@ MediumRunOwnerLocalLockElisionShadow-L1:
   interpretation:
     same-owner lock-elision opportunities are material
     actual lock elision is HOLD because current medium remote free still mutates run masks directly
-    next correctness boundary is MediumRunRemote-L1
+    next correctness boundary is MediumRunOwnerAffinity-L1
+
+MediumRunOwnerAffinity-L1:
+  current status:
+    recorded
+  scope:
+    TLS active run must match the current thread owner
+    owner medium_by_class list must contain only runs for that owner
+    global reuse may attach only detached quiescent runs
+    attached foreign runs are skipped, not allocated from
+    successful foreign free must not install a TLS active hint
+  counters:
+    medium_active_alloc_owner_mismatch must be 0 after stale hints are cleared
+    medium_owner_list_owner_mismatch must be 0
+    medium_global_skip_foreign_attached is informational
+    medium_local_free_owner_match identifies future lock-elision candidates
+    medium_remote_free_owner_mismatch identifies current remote frees
+  interpretation:
+    required before MediumRunRemote-L1 so collector ownership is unambiguous
+  data:
+    bench_results/20260624T005226Z_medium_owner_affinity/README.md
+  result:
+    debug r50 active_owner_mismatch=0
+    debug r50 owner_list_mismatch=0
+    debug r50 global_skip_foreign=316
+    debug r50 local_free_owner=10028
+    debug r50 remote_free_owner=9972
+    debug local active_owner_mismatch=0
+    debug local owner_list_mismatch=0
+    debug local remote_free_owner=0
+  next:
+    MediumRunRemoteOwnedPublish-L1
 ```
 
 ### 2. SizePolicy-v1 Evidence
