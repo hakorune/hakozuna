@@ -413,6 +413,55 @@ owner exit observes zero shadow refs
 next step can A/B this word as medium remote publish lease authority
 ```
 
+## MediumRunOwnerLeaseWord-L1
+
+Status: recorded, HOLD as default.
+
+Data:
+
+```text
+bench_results/20260624T110834Z_medium_owner_lease_word/README.md
+```
+
+Candidate:
+
+```text
+release medium remote publish used owner->medium_publish_ctl
+owner exit closed medium_publish_ctl and waited medium refs zero
+release exit path used fetch_sub
+debug still compared medium_publish_ctl decision with packed owner control
+```
+
+Result:
+
+```text
+debug medium r50:
+  decision_mismatch=0
+  ref_underflow=0
+  refs_at_exit=0
+  enter_after_close=0
+  reuse_with_refs=0
+
+release medium r50:
+  candidate median 7.429M ops/s
+  candidate steady median 7.751M ops/s
+
+prior shadow baseline:
+  median 7.479M ops/s
+  steady median 7.751M ops/s
+
+small interleaved remote90 quick:
+  median 50.124M ops/s
+```
+
+Decision:
+
+```text
+do not default
+safety proof passes, but performance is flat/slightly below baseline
+keep debug shadow only; packed owner control remains medium remote authority
+```
+
 ## Archived Medium Boxes
 
 Detailed records live in each `bench_results/.../README.md`.
@@ -449,6 +498,10 @@ MediumRunCollectWordCommitRearm-L1:
 MediumRunOwnerLeaseWordShadow-L1:
   bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
   proved dedicated medium owner lease word as shadow authority
+
+MediumRunOwnerLeaseWord-L1:
+  bench_results/20260624T110834Z_medium_owner_lease_word/README.md
+  A/B was safety-clean but did not improve release medium r50; HOLD
 ```
 
 ## Next Boxes
@@ -467,7 +520,7 @@ MediumRunOwnerLeaseWordShadow-L1
   -> recorded
 
 MediumRunOwnerLeaseWord-L1
-  -> next A/B candidate; medium remote publish only
+  -> recorded HOLD
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes
