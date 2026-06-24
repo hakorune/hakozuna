@@ -146,6 +146,10 @@ if optimizing medium/main local speed:
     helper semantics are unchanged
     R10 x2: medium_i0 +13.3%, main_i0 +2.5%, medium_r50 -0.7% initial
     and -0.4% confirm, small_i0 regression did not reproduce
+  MediumDirectoryPtrInRunInline-L1 is confirmed:
+    removes the h8_medium_ptr_in_run call inside h8_medium_directory_find and
+    h8_medium_find_run_locked while keeping the exported helper as a wrapper
+    R10 x2: medium_i0 +11.9%, medium_r50 +2.2%, main_i0 +1.9%
 
   guardrail:
     MediumActiveOwnerTokenInlineAudit-L1 remains NO-GO

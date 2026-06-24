@@ -1118,6 +1118,62 @@ reason:
   a large medium local win and only flat/no-material-regression remote signal
 ```
 
+## Medium Directory Ptr-In-Run Inline
+
+Record:
+
+```text
+bench_results/20260625_065114_medium_directory_ptr_inline_r10/
+```
+
+Candidate:
+
+```text
+make h8_medium_ptr_in_run_fast() static inline in h8_medium_registry.c
+keep h8_medium_ptr_in_run() as the exported wrapper
+use the inline helper from:
+  h8_medium_directory_find
+  h8_medium_find_run_locked
+```
+
+Assembly gate:
+
+```text
+h8_medium_directory_find:
+  no call to h8_medium_ptr_in_run
+```
+
+R10 x2:
+
+```text
+medium_i0:
+  median ratio 1.119
+  p25 ratio 1.092
+
+medium_r50:
+  median ratio 1.022
+  p25 ratio 1.072
+
+main_i0:
+  median ratio 1.019
+  p25 ratio 1.091
+
+small_i0:
+  median ratio 1.155
+  p25 ratio 1.163
+```
+
+Decision:
+
+```text
+MediumDirectoryPtrInRunInline-L1:
+  GO
+
+reason:
+  removes a directory lookup helper call from medium free/route lookup without
+  changing registry ownership or directory semantics
+```
+
 Branch rules:
 
 ```text

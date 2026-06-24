@@ -86,7 +86,8 @@ static uint64_t h8_medium_hash_quantum(uintptr_t quantum_base) {
          UINT64_C(11400714819323198485);
 }
 
-bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
+static inline bool h8_medium_ptr_in_run_fast(const H8MediumRun* run,
+                                             const void* ptr) {
   if (!run || !run->base || !ptr) {
     return false;
   }
@@ -94,6 +95,10 @@ bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
   uintptr_t addr = (uintptr_t)ptr;
   size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
   return addr >= base && addr < base + payload;
+}
+
+bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
+  return h8_medium_ptr_in_run_fast(run, ptr);
 }
 
 static void h8_medium_directory_note_range_locked(H8MediumRun* run) {
@@ -187,7 +192,7 @@ H8MediumRun* h8_medium_directory_find(const void* ptr) {
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
     H8MediumRun* run = atomic_load_explicit(&directory[(pos + n) & mask],
                                             memory_order_acquire);
-    if (run && h8_medium_ptr_in_run(run, ptr)) {
+    if (run && h8_medium_ptr_in_run_fast(run, ptr)) {
       return run;
     }
   }
@@ -201,7 +206,7 @@ H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup) {
     } else {
       H8_DEBUG_INC(medium_free_lookup_step_count);
     }
-    if (h8_medium_ptr_in_run(run, ptr)) {
+    if (h8_medium_ptr_in_run_fast(run, ptr)) {
       return run;
     }
   }
