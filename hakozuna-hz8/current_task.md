@@ -451,17 +451,16 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MediumR50ResidualAttribution-L1
-   target the 2.19M medium_interleaved_remote50 gate result
-   split queue / collect / lock / fault residuals before behavior changes
-
-2. MainInterleavedStabilityAudit-L1
-   target main_interleaved_remote90 p25 collapse
-   preserve current default geometry while diagnosing variance
-
-3. MediumChunkArenaQuantum-L1
+1. MediumChunkArenaQuantum-L1
    geometry lane next candidate after detached index / directory cap evidence
    do not reopen q64-run64k2 or upper48 as default without new gate evidence
+
+2. MainFaultVarianceAttribution-L1
+   main_interleaved_remote90 instability reproduces with high minor faults
+   split medium one-run mmap / page-fault churn before changing size policy
+
+3. MediumR50SlotCollectLane-L1
+   medium r50 residual points to slot/collect/lease, not queue push first
 ```
 
 ## MediumV1GateRunner-L1
@@ -543,6 +542,21 @@ debug R3: median 6.12M, attributed_ms 1133.828
 split: slot 508.582ms, collect 316.914ms, lease 137.376ms, lock 100.512ms
 release R3: median 5.77M, minor_faults_per_op 0.180497
 interpretation: target slot/collect/lease or fault variance before queue push
+```
+
+## MainInterleavedStabilityAudit-L1
+
+Status: recorded.
+
+```text
+bench_results/20260624T_main_interleaved_stability_audit/README.md
+main_interleaved_remote90 R10:
+  median 9.07M ops/s
+  p25 2.83M ops/s
+  minor_faults_median 713830
+  work_median 394.178ms
+  tail_median 48.266ms
+interpretation: instability reproduced; page-fault variance is the next suspect
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
