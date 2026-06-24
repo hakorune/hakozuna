@@ -363,6 +363,8 @@ typedef struct H8Global {
   atomic_size_t medium_route_authority_mismatch;
   atomic_size_t medium_remote_publish_count;
   atomic_size_t medium_remote_owner_lease_ns;
+  atomic_size_t medium_remote_owner_lease_enter_ns;
+  atomic_size_t medium_remote_owner_lease_exit_ns;
   atomic_size_t medium_remote_run_lock_ns;
   atomic_size_t medium_remote_pending_claim_count;
   atomic_size_t medium_remote_pending_claim_ns;

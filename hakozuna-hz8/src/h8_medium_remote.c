@@ -238,8 +238,11 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
       return H8_PUBLISH_OWNER_TRANSITION;
     }
     lease_entered = true;
-    H8_DEBUG_ADD(medium_remote_owner_lease_ns,
-                 (size_t)(h8_medium_remote_now_ns() - lease_start));
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t enter_ns = (size_t)(h8_medium_remote_now_ns() - lease_start);
+    H8_DEBUG_ADD(medium_remote_owner_lease_enter_ns, enter_ns);
+    H8_DEBUG_ADD(medium_remote_owner_lease_ns, enter_ns);
+#endif
   }
 
   H8PublishResult result = H8_PUBLISH_INVALID;
@@ -308,7 +311,15 @@ out:
     h8_medium_signal_work(owner, run);
   }
   if (lease_entered) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    uint64_t lease_exit_start = h8_medium_remote_now_ns();
+#endif
     h8_owner_publish_exit(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t exit_ns = (size_t)(h8_medium_remote_now_ns() - lease_exit_start);
+    H8_DEBUG_ADD(medium_remote_owner_lease_exit_ns, exit_ns);
+    H8_DEBUG_ADD(medium_remote_owner_lease_ns, exit_ns);
+#endif
   }
   return result;
 }

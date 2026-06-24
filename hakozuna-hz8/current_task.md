@@ -175,6 +175,32 @@ direct promotion is NO-GO because owner-exit/reuse protection is removed
 next design must reduce lease fixed cost without weakening owner lifetime safety
 ```
 
+### MediumRunOwnerLeaseSplitAudit-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Data:
+
+```text
+bench_results/20260624T095302Z_medium_owner_lease_split_audit/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  remote_lease_ms=11.120
+  remote_lease_enter_ms=4.571
+  remote_lease_exit_ms=6.549
+
+interpretation:
+  exit-side publish ref decrement is at least as important as enter admission
+```
+
 ### MediumRunCollectCadenceTuning-L1
 
 Status:
@@ -705,7 +731,7 @@ MediumRunOwnerLeaseCost-L1
   -> recorded as MediumRunOwnerLeaseCeiling-L1
 
 MediumRunLeaseSafeReduction-L1
-  -> next design candidate; must preserve owner exit / owner reuse safety
+  -> next design candidate; lease enter+exit must preserve owner exit / owner reuse safety
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

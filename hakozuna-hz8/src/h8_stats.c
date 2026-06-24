@@ -407,6 +407,10 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_publish_count, memory_order_acquire);
   out->medium_remote_owner_lease_ns = atomic_load_explicit(
       &h8g.medium_remote_owner_lease_ns, memory_order_acquire);
+  out->medium_remote_owner_lease_enter_ns = atomic_load_explicit(
+      &h8g.medium_remote_owner_lease_enter_ns, memory_order_acquire);
+  out->medium_remote_owner_lease_exit_ns = atomic_load_explicit(
+      &h8g.medium_remote_owner_lease_exit_ns, memory_order_acquire);
   out->medium_remote_run_lock_ns = atomic_load_explicit(
       &h8g.medium_remote_run_lock_ns, memory_order_acquire);
   out->medium_remote_pending_claim_count = atomic_load_explicit(
