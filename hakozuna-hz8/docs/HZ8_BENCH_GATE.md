@@ -179,6 +179,14 @@ MEDIUM_BUDGET_CFLAGS='-DH8_MEDIUM_RESIDENT_BUDGET_CLASSES=8u' make bench-release
 This is an evidence lane, not a runtime profile knob.  Default promotion still
 requires paired medium rows plus frozen small no-regression rows.
 
+Medium collect cadence sweeps are also compile-time evidence only:
+
+```bash
+MEDIUM_COLLECT_CFLAGS='-DH8_MEDIUM_COLLECT_PERIOD=64u -DH8_MEDIUM_COLLECT_BUDGET=16u' make bench-release
+```
+
+Do not combine cadence changes with protocol changes in the same promotion box.
+
 For chunk promotion evidence, use:
 
 ```bash

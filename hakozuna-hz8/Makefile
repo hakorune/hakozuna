@@ -10,6 +10,7 @@ INC := -I$(ROOT)/include -I$(ROOT)/src
 DEBUG_CFLAGS := $(CFLAGS) -DH8_ENABLE_DEBUG_STATS
 BENCH_ATTR_CFLAGS := -DH8_BENCH_ATTRIBUTION
 MEDIUM_BUDGET_CFLAGS ?=
+MEDIUM_COLLECT_CFLAGS ?=
 SRC := $(wildcard $(ROOT)/src/*.c)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 CORE_SRC := $(filter-out $(ROOT)/src/h8_preload_boundary.c,$(SRC))
@@ -81,7 +82,7 @@ $(ROOT)/h8_preload_smoke: $(PRELOAD_SMOKE_SRC)
 	$(CC) $(CFLAGS) -o $@ $(PRELOAD_SMOKE_SRC) $(LDFLAGS) -ldl
 
 $(ROOT)/h8_bench: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_medium64k2: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -DH8_MEDIUM_64K_TWO_SLOT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -93,7 +94,7 @@ $(ROOT)/h8_bench_mediumupper48: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_audit: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
