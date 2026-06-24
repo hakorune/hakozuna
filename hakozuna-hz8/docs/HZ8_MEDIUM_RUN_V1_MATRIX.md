@@ -137,3 +137,95 @@ shows that main/medium `interleaved=1` local rows carry a real empty-inbox drain
 tax, but fixed medium classes are still only around 108M..112M.  The next speed
 lane should inspect active alloc/free generated code and residual slot
 mutation rather than reopening the medium remote protocol.
+
+## Post-ASM HZ8 Snapshot
+
+After the RC1 matrix, the following HZ8-only code-shape boxes were promoted:
+
+```text
+MediumFreeSlotIndexInline-L1
+MediumActiveEmptyNoteInline-L1
+MediumActiveHitNarrowAsm-L1
+MediumDirectoryPtrInRunInline-L1
+```
+
+Behavior record:
+
+```text
+allocator_behavior_sha=38c7f92c
+data=bench_results/20260624T220755Z_post_asm_matrix_medium_v1_gate/
+```
+
+HZ8 post-ASM medians:
+
+```text
+guard_local0:
+  372.68M
+
+small_interleaved_remote90:
+  55.23M
+
+main_local0_i0:
+  201.95M
+
+main_interleaved_remote50:
+  40.14M
+
+main_interleaved_remote90:
+  26.88M
+
+medium_local0:
+  166.22M
+
+medium_interleaved_remote50:
+  36.01M in the full batch
+  confirm medians around 36M..37M
+
+medium_phase_remote90:
+  0.26M
+  peak 61.8MiB
+  post 3.0MiB
+```
+
+Relative to the RC1 same-run matrix HZ8 rows, the post-ASM allocator shape is
+materially faster in the HZ8-only harness:
+
+```text
+main_local0:
+  110.68M -> 201.95M
+
+main_interleaved_remote50:
+  32.88M -> 40.14M
+
+main_interleaved_remote90:
+  22.08M -> 26.88M
+
+medium_local0:
+  100.17M -> 166.22M
+
+medium_interleaved_remote50:
+  28.56M -> about 36M..37M median
+```
+
+The remaining caveat is stability, not median protocol throughput:
+
+```text
+medium_interleaved_remote50:
+  p25/min still have rare low outliers
+  confirm outliers correlate with very high minor-fault counts
+  examples:
+    422984 faults -> 5.36M
+    874713 faults -> 3.17M
+    341144 faults -> 6.25M
+```
+
+Next matrix action:
+
+```text
+PostAsmSameRunAllocatorMatrixRefresh-L1:
+  rerun the same malloc/free LD_PRELOAD matrix using behavior_sha=38c7f92c
+
+MediumR50FaultOutlierAttribution-L1:
+  if stability is prioritized first, isolate the high-minor-fault outliers
+  before reopening remote protocol design
+```

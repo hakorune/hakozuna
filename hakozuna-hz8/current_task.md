@@ -151,6 +151,50 @@ if optimizing medium/main local speed:
     h8_medium_find_run_locked while keeping the exported helper as a wrapper
     R10 x2: medium_i0 +11.9%, medium_r50 +2.2%, main_i0 +1.9%
 
+post-ASM full snapshot:
+  bench_results/20260624T220755Z_post_asm_matrix_medium_v1_gate/
+  behavior_sha=38c7f92c
+
+  guard_local0:
+    372.68M median
+
+  small_interleaved_remote90:
+    55.23M median
+
+  main_local0_i0:
+    201.95M median
+
+  main_interleaved_remote50:
+    40.14M median
+
+  main_interleaved_remote90:
+    26.88M median
+
+  medium_local0:
+    166.22M median
+
+  medium_interleaved_remote50:
+    36.01M median in the full batch
+    confirm batches reproduce median around 36M..37M
+    p25/min remain unstable when rare runs fault hundreds of thousands of
+    pages
+
+  medium_phase_remote90:
+    0.26M median
+    peak 61.8MiB, post 3.0MiB
+
+next measurement lanes:
+  PostAsmSameRunAllocatorMatrixRefresh-L1:
+    compare the post-ASM default against HZ3/HZ4/mimalloc/tcmalloc/system
+    before changing allocator behavior again
+
+  MediumR50FaultOutlierAttribution-L1:
+    if optimizing stability first, isolate the high-minor-fault outliers in
+    medium_interleaved_remote50
+
+  do not treat medium_r50 p25/min instability as a remote protocol median
+  failure; treat it as a separate first-touch/reclaim stability lane
+
   guardrail:
     MediumActiveOwnerTokenInlineAudit-L1 remains NO-GO
     do not reintroduce broad owner-token inline; only active-hit-only code

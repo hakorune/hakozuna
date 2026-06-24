@@ -129,14 +129,29 @@ if objective is local speed:
   medium collect cadence attribution is recorded
   medium active slot mutation attribution is recorded
   MediumActiveEmptyAllocFastPath-L1 simple pre-branch shape was NO-GO
-  next step is active alloc/free code-shape attribution before another
-  behavior candidate
+  post-RC1 code-shape boxes through MediumDirectoryPtrInRunInline-L1 are
+  promoted and recorded
+  latest HZ8-only snapshot:
+    guard_local0 372.68M
+    main_local0_i0 201.95M
+    medium_local0 166.22M
+    main_interleaved_remote50 40.14M
+    medium_interleaved_remote50 median about 36M..37M
+  next speed decision should use a refreshed same-run allocator matrix before
+  opening another allocator behavior box
+
+if objective is medium r50 stability:
+  medium_interleaved_remote50 median is strong
+  p25/min still show rare high-minor-fault outliers
+  treat this as MediumR50FaultOutlierAttribution-L1, not as evidence to reopen
+  the medium remote queue / lease protocol
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked
 
 if objective is main stability / first-touch:
-  chunk arena remains evidence-only until medium r50 no-regression is solved
+  chunk arena remains evidence-only until medium r50 no-regression and
+  fault-outlier attribution are solved
 ```
 
 Current route shadow:
