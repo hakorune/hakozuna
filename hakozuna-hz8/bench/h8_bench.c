@@ -588,6 +588,10 @@ int main(int argc, char** argv) {
          medium_slots_per_run_16k,
          medium_slots_per_run_32k,
          medium_slots_per_run_64k);
+  printf("medium_remote_queue push_attempt=%zu push_retry=%zu push_success=%zu\n",
+         debug.medium_remote_queue_push_attempt_count,
+         debug.medium_remote_queue_push_retry_count,
+         debug.medium_remote_queue_push_success_count);
   size_t lower_median =
       h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50);
   double actual_per_run =

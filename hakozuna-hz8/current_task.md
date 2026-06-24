@@ -101,6 +101,52 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunMpscRetryAudit-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+determine whether medium MPSC queue push cost is CAS contention or per-push fixed work
+```
+
+Data:
+
+```text
+bench_results/20260624T092503Z_medium_mpsc_retry_audit/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  push_attempt=77859
+  push_retry=174
+  push_success=77859
+  retry_ratio about 0.22%
+  remote_qpush_ms=4.740
+  remote_collect_ms=8.579
+  remote_lease_ms=7.141
+  remote_claim_ms=2.982
+
+release medium r50:
+  median 6.015M ops/s
+  steady median 6.282M ops/s
+```
+
+Interpretation:
+
+```text
+medium MPSC CAS contention is not dominant
+queue cost is mostly push count / fixed work rather than retry pressure
+do not pursue another queue CAS tweak next
+```
+
 ### MediumRunPendingQueueMPSC-L1
 
 Status:
@@ -510,13 +556,13 @@ remaining medium cost is now queue push / owner collect / local-run locking
 
 ```text
 MediumRunPostMPSCResidualReaudit-L1
-  -> remeasure medium r50 after MPSC and identify next dominant bucket
+  -> recorded as MediumRunMpscRetryAudit-L1
 
 MediumRunCollectWorkCadence-L1
   -> if collect work/cadence remains dominant
 
 MediumRunOwnerLeaseCost-L1
-  -> HOLD unless lease remains dominant after collect work is reduced
+  -> HOLD until collect work/cadence is understood, but now a visible residual bucket
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

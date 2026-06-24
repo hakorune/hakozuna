@@ -446,6 +446,12 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_notify_count, memory_order_acquire);
   out->medium_remote_queue_push_count = atomic_load_explicit(
       &h8g.medium_remote_queue_push_count, memory_order_acquire);
+  out->medium_remote_queue_push_attempt_count = atomic_load_explicit(
+      &h8g.medium_remote_queue_push_attempt_count, memory_order_acquire);
+  out->medium_remote_queue_push_retry_count = atomic_load_explicit(
+      &h8g.medium_remote_queue_push_retry_count, memory_order_acquire);
+  out->medium_remote_queue_push_success_count = atomic_load_explicit(
+      &h8g.medium_remote_queue_push_success_count, memory_order_acquire);
   out->medium_remote_queue_push_ns = atomic_load_explicit(
       &h8g.medium_remote_queue_push_ns, memory_order_acquire);
   out->medium_remote_collect_call_count = atomic_load_explicit(

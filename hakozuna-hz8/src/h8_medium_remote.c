@@ -138,6 +138,7 @@ void h8_medium_debug_writer_exit(H8MediumRun* run) {
 static void h8_medium_pending_queue_push(H8OwnerRecord* owner,
                                          H8MediumRun* run) {
   H8_DEBUG_INC(medium_remote_queue_push_count);
+  H8_DEBUG_INC(medium_remote_queue_push_attempt_count);
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t push_start = h8_medium_remote_now_ns();
 #endif
@@ -151,7 +152,9 @@ static void h8_medium_pending_queue_push(H8OwnerRecord* owner,
                                               memory_order_relaxed)) {
       break;
     }
+    H8_DEBUG_INC(medium_remote_queue_push_retry_count);
   }
+  H8_DEBUG_INC(medium_remote_queue_push_success_count);
   atomic_fetch_add_explicit(&owner->medium_pending_count, 1,
                             memory_order_relaxed);
 #if defined(H8_ENABLE_DEBUG_STATS)

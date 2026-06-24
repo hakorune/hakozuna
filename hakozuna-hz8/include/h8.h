@@ -255,6 +255,9 @@ typedef struct H8DebugStats {
   size_t medium_remote_lockless_shadow_mismatch;
   size_t medium_remote_notify_count;
   size_t medium_remote_queue_push_count;
+  size_t medium_remote_queue_push_attempt_count;
+  size_t medium_remote_queue_push_retry_count;
+  size_t medium_remote_queue_push_success_count;
   size_t medium_remote_queue_push_ns;
   size_t medium_remote_collect_call_count;
   size_t medium_remote_collect_run_count;
