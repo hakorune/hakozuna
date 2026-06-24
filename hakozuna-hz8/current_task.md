@@ -374,16 +374,16 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MediumChunkArenaQuantum-L1
-   geometry lane next candidate after detached index / directory cap evidence
-   do not reopen q64-run64k2 or upper48 as default without new gate evidence
-
-2. MainFaultVarianceAttribution-L1
+1. MainFaultVarianceAttribution-L1
    main_interleaved_remote90 instability reproduces with high minor faults
    split medium one-run mmap / page-fault churn before changing size policy
 
-3. MediumR50SlotCollectLane-L1
+2. MediumR50SlotCollectLane-L1
    medium r50 residual points to slot/collect/lease, not queue push first
+
+3. MediumChunkArenaPairedStability-L1
+   chunk candidate reduced short-run faults
+   requires longer paired stability and small frozen gates before promotion
 ```
 
 ## MediumV1GateRunner-L1
