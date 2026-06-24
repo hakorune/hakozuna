@@ -55,6 +55,54 @@ Initial implementation sequence:
 
 Do not mix this lane with preload API expansion or small hot-leaf tuning.
 
+Current MediumRun status:
+
+```text
+implemented:
+  4097..65536 routing
+  owner-attached medium remote publish
+  owner collect cadence
+  MPSC medium pending queue
+  active owner lock elision
+  64KiB quantum directory
+  detached-run class index
+  directory capacity expanded to avoid phase fallback
+
+default geometry:
+  8K / 16K / 32K / 64K
+  64KiB run for each class
+```
+
+Current evidence candidates:
+
+```text
+64K two-slot:
+  medium r50 positive
+  small frozen paired gates failed
+  HOLD as default
+
+chunk carve:
+  per-run mmap removal candidate
+  release medium r50 ratio about 0.984
+  HOLD as default
+
+upper48 medium shadow:
+  rounded bytes about 9.5% lower
+  run estimate unchanged
+  RSS / first-touch evidence only
+```
+
+Next MediumRun choice:
+
+```text
+if objective is RSS / first-touch:
+  run MediumUpper48KSizePolicyAB-L1 as evidence target
+
+if objective is run-count / queue episode:
+  do not use 48K as the next box
+  revisit 64K geometry / chunk arena only with small frozen gates
+```
+
 Current route shadow:
 
 ```text

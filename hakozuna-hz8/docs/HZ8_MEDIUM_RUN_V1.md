@@ -95,6 +95,43 @@ slots/run:
   1
 ```
 
+Current recorded default:
+
+```text
+class map:
+  8K / 16K / 32K / 64K
+
+run geometry:
+  64KiB run for all medium classes
+
+identity:
+  64KiB quantum directory
+  directory capacity: 65536 quanta
+  per-run mmap remains the default
+```
+
+Recorded candidate outcomes:
+
+```text
+64K two-slot candidate:
+  128KiB run / 2 slots for 64K class
+  medium r50 improved materially
+  small frozen paired gates failed
+  HOLD as default
+
+chunk carve candidate:
+  build-time H8_MEDIUM_CHUNK_CARVE
+  removes per-run mmap in candidate build
+  release medium r50 ratio about 0.984
+  HOLD as default
+
+48K size-policy shadow:
+  candidate map 8K / 16K / 32K / 48K / 64K
+  rounded medium bytes improved about 9.5%
+  run count did not improve with current 64KiB geometry
+  RSS / first-touch evidence only
+```
+
 Current runtime scaffold:
 
 ```text
@@ -516,6 +553,38 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
 
 18. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
+```
+
+## Current Next-Lane Decision
+
+Do not promote the 48K class from shadow directly.
+
+```text
+reason:
+  it reduces rounded bytes
+  it does not reduce current run count or queue episodes
+  it introduces non-p2 medium decode and a fifth medium class
+```
+
+Do not promote chunk carving directly.
+
+```text
+reason:
+  directory fallback is already closed
+  per-run mmap removal was not a release r50 win in the candidate build
+```
+
+Near-term work should either:
+
+```text
+1. pursue explicit RSS / first-touch improvement
+   then run MediumUpper48KSizePolicyAB-L1 as an evidence target
+
+or
+
+2. pursue run-count / queue-episode reduction
+   then keep p2 medium class map and revisit 64K geometry or chunk arena
+   only with small frozen paired gates as promotion blockers
 ```
 
 ## Gates

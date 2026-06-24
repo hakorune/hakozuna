@@ -545,11 +545,17 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumUpper48KSizePolicyAB-L1
-   HOLD unless paired hot-path A/B is requested
+1. MediumRunNextGeometryDecision-L1
+   choose objective before the next behavior box:
+     RSS / first-touch
+     or run-count / queue episode
 
-2. MediumRunNextGeometryDecision-L1
-   choose between RSS-first size policy work and run-count / queue episode work
+2. MediumUpper48KSizePolicyAB-L1
+   evidence target only if RSS / first-touch is the objective
+
+3. Medium run-count lane
+   keep p2 class map if queue episode reduction is the objective
+   revisit 64K geometry / chunk arena only with small frozen gates
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
