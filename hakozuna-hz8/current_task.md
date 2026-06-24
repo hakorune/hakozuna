@@ -101,6 +101,73 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunActiveOwnerLockElision-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+remove run->lock from proven active owner medium alloc/free paths
+```
+
+Scope:
+
+```text
+TLS active owner-match medium allocation is lockless
+direct same-owner medium free is lockless
+owner-list scan remains locked
+global detached reuse / attach / detach remain locked
+detached direct free remains locked
+owner collect remains locked
+debug writer guard is compiled out of release
+```
+
+Data:
+
+```text
+bench_results/20260624T091612Z_medium_active_owner_lock_elision_release_clean/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  writer_overlap=0
+  writer_foreign=0
+  writer_token_change=0
+  collect_wrong_owner=0
+  detached_while_attached=0
+  remote_run_lock_ms=0.000
+  remote_lockless_accept=0
+  remote_lockless_rb_invalid=0
+
+release medium local:
+  median 21.895M ops/s
+  steady median 22.993M ops/s
+
+release medium r50:
+  median 5.397M ops/s
+  steady median 5.563M ops/s
+
+release small interleaved remote90 quick:
+  median 50.690M ops/s
+  steady median 55.438M ops/s
+```
+
+Interpretation:
+
+```text
+active owner medium local lock elision is safe in current probes
+medium local improved materially
+medium r50 still needs remote queue / collect residual attribution
+small v0 quick gate remains clean
+```
+
 ### MediumRunOwnerLocalSingleWriterShadow-L2
 
 Status:
@@ -343,14 +410,14 @@ remaining medium cost is now queue push / owner collect / local-run locking
 ## Next Boxes
 
 ```text
-MediumRunOwnerLocalLockElisionShadow-L2
-  -> after remote producer no longer mutates masks directly
-
-MediumRunOwnerLocalLockElision-L1
-  -> owner-local active alloc/free can drop run mutex for matching owner token
+MediumRunResidualCostReaudit-L1
+  -> measure queue push, collect run/slot density, and remaining run lock cost after active lock elision
 
 MediumRunPendingQueueMPSC-L1
-  -> only if queue push remains dominant after lockless publish
+  -> if remote_qpush remains material after residual reaudit
+
+MediumRunRoute/PublishLocklessExpansion-L1
+  -> only if residual data shows run lock or route authority still dominates
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

@@ -313,15 +313,13 @@ retry_owner_capacity:
     }
   }
   if (active) {
-    h8_medium_debug_lock_elide_candidate(active, ctx, false);
-    h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
-                                 H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
-    h8_medium_lock_run(active);
     if (h8_medium_run_owned_by_ctx(active, ctx) &&
         h8_medium_run_usable_locked(active, class_id)) {
+      h8_medium_debug_lock_elide_candidate(active, ctx, false);
+      h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
+                                   H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
       H8_DEBUG_INC(medium_run_reuse_active_count);
       void* ptr = h8_medium_run_alloc_local_scaffold(active);
-      h8_medium_unlock_run(active);
       h8_medium_debug_writer_exit(active);
       h8_medium_collect_owner_pending_periodic(ctx);
       return ptr;
@@ -330,8 +328,6 @@ retry_owner_capacity:
       H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
       ctx->active_medium_runs[class_id] = NULL;
     }
-    h8_medium_unlock_run(active);
-    h8_medium_debug_writer_exit(active);
   }
   if (ctx && ctx->owner) {
     H8_DEBUG_INC(medium_owner_scan_count);
@@ -445,15 +441,28 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   }
   if (run) {
     h8_medium_debug_lock_elide_candidate(run, ctx, true);
-    if (h8_medium_run_owned_by_ctx(run, ctx)) {
+    bool same_owner = h8_medium_run_owned_by_ctx(run, ctx);
+    if (same_owner) {
       H8_DEBUG_INC(medium_local_free_owner_match);
+      h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
+                                   H8_MEDIUM_WRITER_OWNER_LOCAL_FREE);
+      if (owned_out) {
+        *owned_out = true;
+      }
+      bool ok = h8_medium_run_free_local_scaffold(run, ptr);
+      if (!ok) {
+        H8_DEBUG_INC(medium_invalid_owned_count);
+      }
+      if (ok && ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
+        ctx->active_medium_runs[run->class_id] = run;
+      }
+      h8_medium_debug_writer_exit(run);
+      return ok;
     } else {
       H8_DEBUG_INC(medium_remote_free_owner_mismatch);
     }
-    H8MediumWriterKind kind = h8_medium_run_owned_by_ctx(run, ctx)
-                                  ? H8_MEDIUM_WRITER_OWNER_LOCAL_FREE
-                                  : H8_MEDIUM_WRITER_DETACHED_DIRECT_FREE;
-    h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL, kind);
+    h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
+                                 H8_MEDIUM_WRITER_DETACHED_DIRECT_FREE);
     h8_medium_lock_run(run);
   } else {
     h8_medium_lock_global();
@@ -483,10 +492,11 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
     } else {
       H8_DEBUG_INC(medium_remote_free_owner_mismatch);
     }
-    H8MediumWriterKind kind = h8_medium_run_owned_by_ctx(run, ctx)
-                                  ? H8_MEDIUM_WRITER_OWNER_LOCAL_FREE
-                                  : H8_MEDIUM_WRITER_DETACHED_DIRECT_FREE;
-    h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL, kind);
+    h8_medium_debug_writer_enter(
+        run, ctx ? ctx->owner : NULL,
+        h8_medium_run_owned_by_ctx(run, ctx)
+            ? H8_MEDIUM_WRITER_OWNER_LOCAL_FREE
+            : H8_MEDIUM_WRITER_DETACHED_DIRECT_FREE);
     h8_medium_lock_run(run);
     h8_medium_unlock_global();
   }

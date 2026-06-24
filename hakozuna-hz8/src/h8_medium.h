@@ -89,9 +89,14 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx);
+#if defined(H8_ENABLE_DEBUG_STATS)
 void h8_medium_debug_writer_enter(H8MediumRun* run, H8OwnerRecord* owner,
                                   H8MediumWriterKind kind);
 void h8_medium_debug_writer_exit(H8MediumRun* run);
+#else
+#define h8_medium_debug_writer_enter(run, owner, kind) ((void)0)
+#define h8_medium_debug_writer_exit(run) ((void)0)
+#endif
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);

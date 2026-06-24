@@ -76,9 +76,9 @@ bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
   return expected != 0 && current == expected;
 }
 
+#if defined(H8_ENABLE_DEBUG_STATS)
 void h8_medium_debug_writer_enter(H8MediumRun* run, H8OwnerRecord* owner,
                                   H8MediumWriterKind kind) {
-#if defined(H8_ENABLE_DEBUG_STATS)
   if (!run) {
     return;
   }
@@ -110,15 +110,9 @@ void h8_medium_debug_writer_enter(H8MediumRun* run, H8OwnerRecord* owner,
     atomic_store_explicit(&run->debug_writer_token, current,
                           memory_order_release);
   }
-#else
-  (void)run;
-  (void)owner;
-  (void)kind;
-#endif
 }
 
 void h8_medium_debug_writer_exit(H8MediumRun* run) {
-#if defined(H8_ENABLE_DEBUG_STATS)
   if (!run) {
     return;
   }
@@ -138,10 +132,8 @@ void h8_medium_debug_writer_exit(H8MediumRun* run) {
     atomic_store_explicit(&run->debug_writer_kind, 0, memory_order_release);
     atomic_store_explicit(&run->debug_writer_token, 0, memory_order_release);
   }
-#else
-  (void)run;
-#endif
 }
+#endif
 
 static void h8_medium_pending_queue_push(H8OwnerRecord* owner,
                                          H8MediumRun* run) {
