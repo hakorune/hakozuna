@@ -327,6 +327,14 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.slot_shadow_reserved_quiescent, memory_order_acquire);
   out->medium_malloc_count =
       atomic_load_explicit(&h8g.medium_malloc_count, memory_order_acquire);
+  out->medium_malloc_class_8k =
+      atomic_load_explicit(&h8g.medium_malloc_class_8k, memory_order_acquire);
+  out->medium_malloc_class_16k =
+      atomic_load_explicit(&h8g.medium_malloc_class_16k, memory_order_acquire);
+  out->medium_malloc_class_32k =
+      atomic_load_explicit(&h8g.medium_malloc_class_32k, memory_order_acquire);
+  out->medium_malloc_class_64k =
+      atomic_load_explicit(&h8g.medium_malloc_class_64k, memory_order_acquire);
   out->medium_run_create_count =
       atomic_load_explicit(&h8g.medium_run_create_count, memory_order_acquire);
   out->medium_run_reuse_active_count = atomic_load_explicit(
@@ -335,6 +343,52 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_run_reuse_owner_list_count, memory_order_acquire);
   out->medium_run_reuse_global_count = atomic_load_explicit(
       &h8g.medium_run_reuse_global_count, memory_order_acquire);
+  out->medium_active_miss_null =
+      atomic_load_explicit(&h8g.medium_active_miss_null, memory_order_acquire);
+  out->medium_active_miss_owner =
+      atomic_load_explicit(&h8g.medium_active_miss_owner, memory_order_acquire);
+  out->medium_active_miss_unusable = atomic_load_explicit(
+      &h8g.medium_active_miss_unusable, memory_order_acquire);
+  out->medium_run_reuse_active_class_8k = atomic_load_explicit(
+      &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
+  out->medium_run_reuse_active_class_16k = atomic_load_explicit(
+      &h8g.medium_run_reuse_active_class_16k, memory_order_acquire);
+  out->medium_run_reuse_active_class_32k = atomic_load_explicit(
+      &h8g.medium_run_reuse_active_class_32k, memory_order_acquire);
+  out->medium_run_reuse_active_class_64k = atomic_load_explicit(
+      &h8g.medium_run_reuse_active_class_64k, memory_order_acquire);
+  out->medium_run_reuse_owner_class_8k = atomic_load_explicit(
+      &h8g.medium_run_reuse_owner_class_8k, memory_order_acquire);
+  out->medium_run_reuse_owner_class_16k = atomic_load_explicit(
+      &h8g.medium_run_reuse_owner_class_16k, memory_order_acquire);
+  out->medium_run_reuse_owner_class_32k = atomic_load_explicit(
+      &h8g.medium_run_reuse_owner_class_32k, memory_order_acquire);
+  out->medium_run_reuse_owner_class_64k = atomic_load_explicit(
+      &h8g.medium_run_reuse_owner_class_64k, memory_order_acquire);
+  out->medium_run_reuse_global_class_8k = atomic_load_explicit(
+      &h8g.medium_run_reuse_global_class_8k, memory_order_acquire);
+  out->medium_run_reuse_global_class_16k = atomic_load_explicit(
+      &h8g.medium_run_reuse_global_class_16k, memory_order_acquire);
+  out->medium_run_reuse_global_class_32k = atomic_load_explicit(
+      &h8g.medium_run_reuse_global_class_32k, memory_order_acquire);
+  out->medium_run_reuse_global_class_64k = atomic_load_explicit(
+      &h8g.medium_run_reuse_global_class_64k, memory_order_acquire);
+  out->medium_run_create_class_8k = atomic_load_explicit(
+      &h8g.medium_run_create_class_8k, memory_order_acquire);
+  out->medium_run_create_class_16k = atomic_load_explicit(
+      &h8g.medium_run_create_class_16k, memory_order_acquire);
+  out->medium_run_create_class_32k = atomic_load_explicit(
+      &h8g.medium_run_create_class_32k, memory_order_acquire);
+  out->medium_run_create_class_64k = atomic_load_explicit(
+      &h8g.medium_run_create_class_64k, memory_order_acquire);
+  out->medium_local_free_class_8k = atomic_load_explicit(
+      &h8g.medium_local_free_class_8k, memory_order_acquire);
+  out->medium_local_free_class_16k = atomic_load_explicit(
+      &h8g.medium_local_free_class_16k, memory_order_acquire);
+  out->medium_local_free_class_32k = atomic_load_explicit(
+      &h8g.medium_local_free_class_32k, memory_order_acquire);
+  out->medium_local_free_class_64k = atomic_load_explicit(
+      &h8g.medium_local_free_class_64k, memory_order_acquire);
   out->medium_run_madvise_count =
       atomic_load_explicit(&h8g.medium_run_madvise_count, memory_order_acquire);
   out->medium_chunk_create_count =

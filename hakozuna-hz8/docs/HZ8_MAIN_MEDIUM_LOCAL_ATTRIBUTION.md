@@ -143,6 +143,52 @@ The stronger signal is that fixed-class medium is faster than mixed medium.
 The next suspect is medium entry/identity/class switching shape rather than
 remote protocol, 64K geometry, or first-touch alone.
 
+## Counter Follow-Up
+
+`MediumLocalLeafAttributionCounters-L1` added debug-only class-path counters.
+R1 debug/audit runs showed:
+
+```text
+mixed medium 4097..65536, T=16, I=100k:
+  malloc=[106549,213667,426569,853215]
+  active=[106533,213651,426553,853199]
+  owner=[0,0,0,0]
+  global=[0,0,0,0]
+  create=[16,16,16,16]
+  active_miss_null=64
+  active_miss_owner=0
+  active_miss_unusable=0
+
+fixed 16K, T=16, I=100k:
+  malloc=[0,1600000,0,0]
+  active=[0,1599984,0,0]
+  owner=[0,0,0,0]
+  global=[0,0,0,0]
+  create=[0,16,0,0]
+  active_miss_null=16
+  active_miss_owner=0
+  active_miss_unusable=0
+```
+
+Interpretation:
+
+```text
+active reuse:
+  effectively 100%
+
+owner-list/global reuse:
+  not involved in steady local rows
+
+run create:
+  only startup, one run per class per thread
+
+remaining suspect:
+  active-hit code shape
+  size-to-class selection
+  slot identity / state validation
+  same-owner free direct-directory path
+```
+
 ## Next Direction
 
 Do not reopen the MediumRun-v1 RC1 remote protocol from this data.
@@ -150,11 +196,11 @@ Do not reopen the MediumRun-v1 RC1 remote protocol from this data.
 Candidate next boxes:
 
 ```text
-MediumMallocInitFastPath-L1:
-  remove steady medium malloc pthread_once/init check if still present
-
 MediumActiveHitValidationCollapse-L1:
   collapse active-run owner/state/free checks on the hot hit path
+
+MediumMallocInitFastPath-L1:
+  remove steady medium malloc pthread_once/init check if still present
 
 MediumFreeDirectIdentityShape-L1:
   simplify direct-directory, owner-token, and slot-validation call shape

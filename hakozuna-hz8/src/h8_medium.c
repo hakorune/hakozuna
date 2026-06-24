@@ -41,6 +41,38 @@ static uint64_t h8_medium_now_ns(void) {
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
 }
+
+static void h8_medium_debug_class_inc(uint32_t class_id,
+                                      atomic_size_t* class_8k,
+                                      atomic_size_t* class_16k,
+                                      atomic_size_t* class_32k,
+                                      atomic_size_t* class_64k) {
+  atomic_size_t* target = NULL;
+  if (class_id == 0u) {
+    target = class_8k;
+  } else if (class_id == 1u) {
+    target = class_16k;
+  } else if (class_id == 2u) {
+    target = class_32k;
+  } else if (class_id + 1u == H8_MEDIUM_CLASS_COUNT) {
+    target = class_64k;
+  }
+  if (target) {
+    atomic_fetch_add_explicit(target, 1u, memory_order_relaxed);
+  }
+}
+#else
+static void h8_medium_debug_class_inc(uint32_t class_id,
+                                      atomic_size_t* class_8k,
+                                      atomic_size_t* class_16k,
+                                      atomic_size_t* class_32k,
+                                      atomic_size_t* class_64k) {
+  (void)class_id;
+  (void)class_8k;
+  (void)class_16k;
+  (void)class_32k;
+  (void)class_64k;
+}
 #endif
 
 static void h8_medium_lock_run(H8MediumRun* run) {
@@ -339,13 +371,20 @@ void* h8_medium_malloc_inner(size_t size) {
   }
   H8_DEBUG_INC(medium_malloc_count);
   uint32_t class_id = h8_medium_class_for_size(size);
+  h8_medium_debug_class_inc(class_id, &h8g.medium_malloc_class_8k,
+                            &h8g.medium_malloc_class_16k,
+                            &h8g.medium_malloc_class_32k,
+                            &h8g.medium_malloc_class_64k);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
   bool did_capacity_collect = false;
 retry_owner_capacity:
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
-  if (active) {
+  if (!active) {
+    H8_DEBUG_INC(medium_active_miss_null);
+  } else {
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
       H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
+      H8_DEBUG_INC(medium_active_miss_owner);
       h8_medium_set_active_run(ctx, class_id, NULL);
       active = NULL;
     }
@@ -357,13 +396,20 @@ retry_owner_capacity:
       h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
       H8_DEBUG_INC(medium_run_reuse_active_count);
+      h8_medium_debug_class_inc(class_id,
+                                &h8g.medium_run_reuse_active_class_8k,
+                                &h8g.medium_run_reuse_active_class_16k,
+                                &h8g.medium_run_reuse_active_class_32k,
+                                &h8g.medium_run_reuse_active_class_64k);
       void* ptr = h8_medium_run_alloc_local_scaffold(active);
       h8_medium_debug_writer_exit(active);
       h8_medium_collect_owner_pending_periodic(ctx);
       return ptr;
     }
+    H8_DEBUG_INC(medium_active_miss_unusable);
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
       H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
+      H8_DEBUG_INC(medium_active_miss_owner);
       h8_medium_set_active_run(ctx, class_id, NULL);
     }
   }
@@ -383,6 +429,11 @@ retry_owner_capacity:
           h8_medium_run_usable_locked(run, class_id)) {
         h8_medium_debug_lock_elide_candidate(run, ctx, false);
         H8_DEBUG_INC(medium_run_reuse_owner_list_count);
+        h8_medium_debug_class_inc(class_id,
+                                  &h8g.medium_run_reuse_owner_class_8k,
+                                  &h8g.medium_run_reuse_owner_class_16k,
+                                  &h8g.medium_run_reuse_owner_class_32k,
+                                  &h8g.medium_run_reuse_owner_class_64k);
         void* ptr = h8_medium_run_alloc_local_scaffold(run);
         h8_medium_set_active_run(ctx, class_id, run);
         h8_medium_unlock_run(run);
@@ -417,6 +468,11 @@ retry_owner_capacity:
     }
     if (h8_medium_run_usable_locked(run, class_id)) {
       H8_DEBUG_INC(medium_run_reuse_global_count);
+      h8_medium_debug_class_inc(class_id,
+                                &h8g.medium_run_reuse_global_class_8k,
+                                &h8g.medium_run_reuse_global_class_16k,
+                                &h8g.medium_run_reuse_global_class_32k,
+                                &h8g.medium_run_reuse_global_class_64k);
       if (ctx && ctx->owner) {
         h8_medium_owner_add_run(ctx, run);
       }
@@ -440,6 +496,10 @@ retry_owner_capacity:
     return NULL;
   }
   H8_DEBUG_INC(medium_run_create_count);
+  h8_medium_debug_class_inc(class_id, &h8g.medium_run_create_class_8k,
+                            &h8g.medium_run_create_class_16k,
+                            &h8g.medium_run_create_class_32k,
+                            &h8g.medium_run_create_class_64k);
   h8_medium_lock_global();
   h8_medium_register_locked(run);
   h8_medium_owner_add_run(ctx, run);
@@ -494,6 +554,13 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
       if (!ok) {
         H8_DEBUG_INC(medium_invalid_owned_count);
+      }
+      if (ok) {
+        h8_medium_debug_class_inc(run->class_id,
+                                  &h8g.medium_local_free_class_8k,
+                                  &h8g.medium_local_free_class_16k,
+                                  &h8g.medium_local_free_class_32k,
+                                  &h8g.medium_local_free_class_64k);
       }
       if (ok && ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
         h8_medium_set_active_run(ctx, run->class_id, run);
@@ -556,6 +623,11 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (ok) {
     if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
         h8_medium_run_owned_by_ctx(run, ctx)) {
+      h8_medium_debug_class_inc(run->class_id,
+                                &h8g.medium_local_free_class_8k,
+                                &h8g.medium_local_free_class_16k,
+                                &h8g.medium_local_free_class_32k,
+                                &h8g.medium_local_free_class_64k);
       h8_medium_set_active_run(ctx, run->class_id, run);
     }
   }
