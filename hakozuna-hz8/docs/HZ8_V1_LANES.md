@@ -68,6 +68,8 @@ implemented:
   detached-run class index
   directory capacity expanded to avoid phase fallback
   ctx-aware collector active-empty-live retention
+  medium active-hit allocation check collapse
+  medium same-owner free direct-identity shape
 
 default geometry:
   8K / 16K / 32K / 64K
@@ -111,13 +113,14 @@ Next MediumRun choice:
 ```text
 short term:
   MediumRun-v1 RC1 is recorded in docs/HZ8_MEDIUM_RUN_V1_RC1.md
+  post-RC1 local code-shape additions are promoted as default
   same-run allocator matrix is recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
   main/medium local attribution is recorded in
   docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 
 if objective is local speed:
-  medium entry / active-hit validation / direct-identity code shape is the next
-  evidence lane
+  active-hit validation and direct-identity free are complete
+  next evidence target is medium malloc entry / class-switch shape
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

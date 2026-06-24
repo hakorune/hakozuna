@@ -1,6 +1,6 @@
 # HZ8 Main/Medium Local Attribution
 
-Status: **recorded**.
+Status: **recorded / two local code-shape boxes promoted**.
 
 Behavior was unchanged.  This run only changed the common malloc/free matrix
 harness so that local rows can be measured with and without the interleaved
@@ -189,21 +189,25 @@ remaining suspect:
   same-owner free direct-directory path
 ```
 
-## Next Direction
+## Direction
 
 Do not reopen the MediumRun-v1 RC1 remote protocol from this data.
 
-Candidate next boxes:
+Promoted boxes:
 
 ```text
 MediumActiveHitValidationCollapse-L1:
-  collapse active-run owner/state/free checks on the hot hit path
-
-MediumMallocInitFastPath-L1:
-  remove steady medium malloc pthread_once/init check if still present
+  default
 
 MediumFreeDirectIdentityShape-L1:
-  simplify direct-directory, owner-token, and slot-validation call shape
+  default
+```
+
+Remaining candidate:
+
+```text
+MediumMallocInitFastPath-L1:
+  remove steady medium malloc pthread_once/init check if still present
 ```
 
 ## Active-Hit Collapse A/B
@@ -297,16 +301,13 @@ MediumFreeDirectIdentityShape-L1:
   GO
 ```
 
-Evidence needed before behavior changes:
+Evidence still useful before further behavior changes:
 
 ```text
-active reuse by class
 active replacement rate
-owner-list reuse rate
-detached/global reuse rate
 periodic collect check/call rate
-run create rate
-directory direct/fallback rate
+medium malloc entry code shape
+size-to-class selection cost
 ```
 
 Branch rules:

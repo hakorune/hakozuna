@@ -22,6 +22,34 @@ medium:
   arena: per-run mmap
 ```
 
+## Post-RC1 Default Additions
+
+The following behavior-preserving local code-shape boxes were promoted after
+the RC1 protocol/geometry record:
+
+```text
+MediumActiveHitValidationCollapse-L1:
+  default
+  active-run allocation uses one checked helper instead of a usable-check plus
+  alloc-helper state/free recheck
+
+MediumFreeDirectIdentityShape-L1:
+  default
+  same-owner medium free reuses one owner-word load / owner-match decision on
+  the direct path
+```
+
+Evidence:
+
+```text
+docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
+bench_results/hz8_active_hit_ab_20260624T174838Z/
+bench_results/hz8_free_identity_ab_20260624T175453Z/
+```
+
+These boxes do not change the MediumRun ownership, remote, residency, geometry,
+or small-v0 contracts.
+
 ## Medium Contracts
 
 ```text
@@ -142,8 +170,12 @@ phase remote90:
 ## Next Lane
 
 ```text
-if freezing MediumRun-v1:
-  same-run allocator matrix is recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
+current default:
+  MediumRun-v1 RC1 protocol / geometry
+  plus post-RC1 local code-shape additions above
+
+same-run allocator matrix:
+  recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
 
 if improving main stability:
   reopen chunk arena only with a medium-r50 no-regression plan

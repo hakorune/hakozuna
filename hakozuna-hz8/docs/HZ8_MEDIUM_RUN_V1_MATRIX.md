@@ -106,7 +106,9 @@ do not reopen:
   medium owner lease micro-tuning without new attribution
 
 if optimizing speed:
-  local/medium-local code shape is the gap
+  active-hit allocation and same-owner free direct identity are already promoted
+  as post-RC1 default additions
+  remaining local/medium-local gap is medium malloc entry / class-switch shape
 
 if optimizing stability/RSS:
   chunk arena remains the likely v1.1 lane, but it must avoid medium r50
@@ -125,5 +127,5 @@ docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 The follow-up separates `local0` worker shape from allocator behavior.  It
 shows that main/medium `interleaved=1` local rows carry a real empty-inbox drain
 tax, but fixed medium classes are still only around 108M..112M.  The next speed
-lane should focus on medium entry, active-hit validation, and direct-identity
-code shape rather than reopening the medium remote protocol.
+lane should focus on medium malloc entry and class-switch shape rather than
+reopening the medium remote protocol.
