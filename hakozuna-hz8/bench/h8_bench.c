@@ -555,6 +555,11 @@ int main(int argc, char** argv) {
              ? (double)debug.medium_remote_collect_reject_count /
                    (double)medium_collect_seen
              : 0.0);
+  printf("medium_collect_breakdown state_ms=%.3f pending_clear_ms=%.3f mask_ms=%.3f empty_ms=%.3f\n",
+         (double)debug.medium_collect_state_ns / 1e6,
+         (double)debug.medium_collect_pending_clear_ns / 1e6,
+         (double)debug.medium_collect_mask_ns / 1e6,
+         (double)debug.medium_collect_empty_ns / 1e6);
   printf("medium_remote_class pub=[%zu,%zu,%zu,%zu] qpush=[%zu,%zu,%zu,%zu] collect_run=[%zu,%zu,%zu,%zu] collect_slot=[%zu,%zu,%zu,%zu]\n",
          debug.medium_remote_publish_class_8k,
          debug.medium_remote_publish_class_16k,

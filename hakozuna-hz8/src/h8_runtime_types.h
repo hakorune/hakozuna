@@ -399,6 +399,10 @@ typedef struct H8Global {
   atomic_size_t medium_remote_collect_slot_count;
   atomic_size_t medium_remote_collect_reject_count;
   atomic_size_t medium_remote_collect_ns;
+  atomic_size_t medium_collect_state_ns;
+  atomic_size_t medium_collect_pending_clear_ns;
+  atomic_size_t medium_collect_mask_ns;
+  atomic_size_t medium_collect_empty_ns;
   atomic_size_t medium_collect_finish_pending_rearm;
   atomic_size_t medium_empty_with_pending;
   atomic_size_t medium_lease_enter_decision_mismatch;

@@ -369,6 +369,9 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
   uint64_t accepted = 0;
   size_t collected = 0;
   size_t rejected = 0;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t section_start = h8_medium_remote_now_ns();
+#endif
   while (collect) {
     uint64_t bit = collect & (~collect + 1u);
     size_t slot = (size_t)__builtin_ctzll(bit);
@@ -386,11 +389,27 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
     }
     collect &= collect - 1u;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_collect_state_ns,
+               (size_t)(h8_medium_remote_now_ns() - section_start));
+#endif
   if (bits) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    section_start = h8_medium_remote_now_ns();
+#endif
     run->allocated_mask &= ~accepted;
+    run->free_mask |= accepted;
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_collect_mask_ns,
+                 (size_t)(h8_medium_remote_now_ns() - section_start));
+    section_start = h8_medium_remote_now_ns();
+#endif
     atomic_fetch_and_explicit(&run->pending_bits[0], ~bits,
                               memory_order_acq_rel);
-    run->free_mask |= accepted;
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_collect_pending_clear_ns,
+                 (size_t)(h8_medium_remote_now_ns() - section_start));
+#endif
   }
   uint64_t remaining =
       atomic_load_explicit(&run->pending_bits[0], memory_order_acquire) & valid;
@@ -411,11 +430,18 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
                             &h8g.medium_remote_collect_slot_class_32k,
                             &h8g.medium_remote_collect_slot_class_64k,
                             collected);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  section_start = h8_medium_remote_now_ns();
+#endif
   if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
   } else if (run->allocated_mask == 0 && remaining != 0) {
     H8_DEBUG_INC(medium_empty_with_pending);
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_collect_empty_ns,
+               (size_t)(h8_medium_remote_now_ns() - section_start));
+#endif
   pthread_mutex_unlock(&run->lock);
   h8_medium_debug_writer_exit(run);
 
