@@ -369,6 +369,24 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_empty_reactivate_count, memory_order_acquire);
   out->medium_owner_exit_drain_count = atomic_load_explicit(
       &h8g.medium_owner_exit_drain_count, memory_order_acquire);
+  out->medium_collect_active_would_keep = atomic_load_explicit(
+      &h8g.medium_collect_active_would_keep, memory_order_acquire);
+  out->medium_collect_ctx_missing = atomic_load_explicit(
+      &h8g.medium_collect_ctx_missing, memory_order_acquire);
+  out->medium_collect_ctx_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_collect_ctx_owner_mismatch, memory_order_acquire);
+  out->medium_collect_active_hint_mismatch = atomic_load_explicit(
+      &h8g.medium_collect_active_hint_mismatch, memory_order_acquire);
+  out->medium_collect_active_not_owned = atomic_load_explicit(
+      &h8g.medium_collect_active_not_owned, memory_order_acquire);
+  out->medium_empty_live_not_current_active = atomic_load_explicit(
+      &h8g.medium_empty_live_not_current_active, memory_order_acquire);
+  out->medium_active_live_empty_bytes = atomic_load_explicit(
+      &h8g.medium_active_live_empty_bytes, memory_order_acquire);
+  out->medium_active_live_empty_peak = atomic_load_explicit(
+      &h8g.medium_active_live_empty_peak, memory_order_acquire);
+  out->medium_owner_exit_active_live_remaining = atomic_load_explicit(
+      &h8g.medium_owner_exit_active_live_remaining, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

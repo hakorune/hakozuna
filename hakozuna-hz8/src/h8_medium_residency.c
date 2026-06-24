@@ -28,6 +28,44 @@ static void h8_medium_update_resident_peak(size_t value) {
   }
 }
 
+static void h8_medium_update_active_live_peak(size_t value) {
+  size_t cur = atomic_load_explicit(&h8g.medium_active_live_empty_peak,
+                                    memory_order_relaxed);
+  while (value > cur &&
+         !atomic_compare_exchange_weak_explicit(
+             &h8g.medium_active_live_empty_peak, &cur, value,
+             memory_order_relaxed, memory_order_relaxed)) {
+  }
+}
+
+void h8_medium_note_active_live_empty(H8MediumRun* run) {
+  if (!run || run->active_live_empty_charge) {
+    return;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  size_t next = atomic_fetch_add_explicit(
+                    &h8g.medium_active_live_empty_bytes, bytes,
+                    memory_order_acq_rel) +
+                bytes;
+  run->active_live_empty_charge = true;
+  h8_medium_update_active_live_peak(next);
+}
+
+void h8_medium_clear_active_live_empty(H8MediumRun* run) {
+  if (!run || !run->active_live_empty_charge) {
+    return;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  size_t cur = atomic_load_explicit(&h8g.medium_active_live_empty_bytes,
+                                    memory_order_acquire);
+  while (cur >= bytes &&
+         !atomic_compare_exchange_weak_explicit(
+             &h8g.medium_active_live_empty_bytes, &cur, cur - bytes,
+             memory_order_acq_rel, memory_order_acquire)) {
+  }
+  run->active_live_empty_charge = false;
+}
+
 static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
   if (!run || run->resident_charge) {
     return true;
@@ -83,6 +121,9 @@ void h8_medium_decommit_empty_locked(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
     return;
   }
+  if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
+    h8_medium_clear_active_live_empty(run);
+  }
   h8_medium_madvise_run(run);
   h8_medium_release_empty_payload(run);
   run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
@@ -91,6 +132,9 @@ void h8_medium_decommit_empty_locked(H8MediumRun* run) {
 void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
     return;
+  }
+  if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
+    h8_medium_clear_active_live_empty(run);
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
     H8_DEBUG_INC(medium_empty_reactivate_count);
@@ -104,6 +148,7 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
     return;
   }
   H8_DEBUG_INC(medium_empty_transition_count);
+  h8_medium_clear_active_live_empty(run);
   if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
     H8_DEBUG_INC(medium_empty_retain_count);
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;

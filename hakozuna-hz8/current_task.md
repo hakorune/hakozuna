@@ -83,30 +83,27 @@ lockless publish shadow: match=29962 mismatch=0
 
 ## Current Box
 
-### MediumActiveEmptyLiveRetention-L1
+### MediumCollectorActiveEmptyLiveShadow-L1
 
-Status: implemented; GO.
+Status: implemented; GO for behavior box.
 
 ```text
-bench_results/20260624T_medium_active_empty_live/README.md
+bench_results/20260625T_medium_collector_active_shadow/README.md
+debug r50:
+  collect_active_would_keep = 168347
+  empty_live_not_active = 0
+  owner_exit_active_live = 0
+  active_live_peak = 2818048
 debug local0:
-  empty/retain/reactivate = 0 / 0 / 0
-  exit_drain = 320
-release local0:
-  median 106.49M
-  steady 113.80M
-release r50:
-  median 29.38M
-small remote90:
-  median 54.59M
+  active_live_peak = 5242880
 ```
 
 Decision:
 
 ```text
-same-owner free of current TLS active medium run keeps empty payload LIVE
-owner exit remains hard drain point
-RSS remains bounded by owner-exit decommit
+ctx-aware collector shadow is clean
+old active run demotion boundary is closed
+next box: MediumCollectorActiveEmptyLive-L1
 ```
 
 ### MediumRunOwnerLeaseCeiling-L1

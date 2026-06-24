@@ -217,6 +217,15 @@ typedef struct H8DebugStats {
   size_t medium_empty_budget_reject_count;
   size_t medium_empty_reactivate_count;
   size_t medium_owner_exit_drain_count;
+  size_t medium_collect_active_would_keep;
+  size_t medium_collect_ctx_missing;
+  size_t medium_collect_ctx_owner_mismatch;
+  size_t medium_collect_active_hint_mismatch;
+  size_t medium_collect_active_not_owned;
+  size_t medium_empty_live_not_current_active;
+  size_t medium_active_live_empty_bytes;
+  size_t medium_active_live_empty_peak;
+  size_t medium_owner_exit_active_live_remaining;
   size_t medium_madvise_fail_count;
   size_t medium_resident_empty_bytes;
   size_t medium_resident_empty_peak;

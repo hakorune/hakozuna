@@ -348,7 +348,39 @@ out:
   return result;
 }
 
-static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
+static bool h8_medium_collect_active_keep_shadow(H8OwnerRecord* owner,
+                                                 H8MediumRun* run,
+                                                 H8ThreadCtx* ctx,
+                                                 uint64_t remaining) {
+  if (!run || run->allocated_mask != 0 || remaining != 0) {
+    return false;
+  }
+  if (!ctx) {
+    H8_DEBUG_INC(medium_collect_ctx_missing);
+    return false;
+  }
+  if (ctx != h8_tls_ctx || ctx->owner != owner) {
+    H8_DEBUG_INC(medium_collect_ctx_owner_mismatch);
+    return false;
+  }
+  if (run->class_id >= H8_MEDIUM_CLASS_COUNT ||
+      ctx->active_medium_runs[run->class_id] != run) {
+    if (run->active_live_empty_charge) {
+      H8_DEBUG_INC(medium_empty_live_not_current_active);
+    }
+    H8_DEBUG_INC(medium_collect_active_hint_mismatch);
+    return false;
+  }
+  if (!h8_medium_run_owned_by_ctx(run, ctx)) {
+    H8_DEBUG_INC(medium_collect_active_not_owned);
+    return false;
+  }
+  H8_DEBUG_INC(medium_collect_active_would_keep);
+  return true;
+}
+
+static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
+                                  H8ThreadCtx* ctx) {
   uint8_t expected = H8_Q_QUEUED;
   if (!atomic_compare_exchange_strong_explicit(&run->qstate, &expected,
                                                H8_Q_DRAINING,
@@ -433,6 +465,9 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   section_start = h8_medium_remote_now_ns();
 #endif
+  bool would_keep_live =
+      h8_medium_collect_active_keep_shadow(owner, run, ctx, remaining);
+  (void)would_keep_live;
   if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
   } else if (run->allocated_mask == 0 && remaining != 0) {
@@ -494,8 +529,9 @@ bool h8_medium_owner_has_pending(H8OwnerRecord* owner) {
                                memory_order_acquire) != NULL);
 }
 
-size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
-                                              size_t run_budget) {
+static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
+                                                   H8ThreadCtx* ctx,
+                                                   size_t run_budget) {
   if (!owner) {
     return 0;
   }
@@ -515,7 +551,7 @@ size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
     atomic_fetch_sub_explicit(&owner->medium_pending_count, 1,
                               memory_order_acq_rel);
     ++processed;
-    if (h8_medium_collect_run(owner, run)) {
+    if (h8_medium_collect_run(owner, run, ctx)) {
       h8_medium_pending_queue_push(owner, run);
     }
   }
@@ -523,6 +559,17 @@ done:
   H8_DEBUG_ADD(medium_remote_collect_ns,
                (size_t)(h8_medium_remote_now_ns() - collect_start));
   return processed;
+}
+
+size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
+                                                size_t run_budget) {
+  return h8_medium_collect_pending_budget_ctx(ctx ? ctx->owner : NULL, ctx,
+                                             run_budget);
+}
+
+size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
+                                              size_t run_budget) {
+  return h8_medium_collect_pending_budget_ctx(owner, NULL, run_budget);
 }
 
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx) {
@@ -535,8 +582,8 @@ void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx) {
   }
   ctx->medium_collect_credit = H8_MEDIUM_COLLECT_PERIOD;
   if (h8_medium_owner_has_pending(ctx->owner)) {
-    (void)h8_medium_collect_owner_pending_budget(
-        ctx->owner, H8_MEDIUM_COLLECT_BUDGET);
+    (void)h8_medium_collect_current_pending_budget(ctx,
+                                                   H8_MEDIUM_COLLECT_BUDGET);
   }
 }
 

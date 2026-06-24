@@ -345,6 +345,15 @@ typedef struct H8Global {
   atomic_size_t medium_empty_budget_reject_count;
   atomic_size_t medium_empty_reactivate_count;
   atomic_size_t medium_owner_exit_drain_count;
+  atomic_size_t medium_collect_active_would_keep;
+  atomic_size_t medium_collect_ctx_missing;
+  atomic_size_t medium_collect_ctx_owner_mismatch;
+  atomic_size_t medium_collect_active_hint_mismatch;
+  atomic_size_t medium_collect_active_not_owned;
+  atomic_size_t medium_empty_live_not_current_active;
+  atomic_size_t medium_active_live_empty_bytes;
+  atomic_size_t medium_active_live_empty_peak;
+  atomic_size_t medium_owner_exit_active_live_remaining;
   atomic_size_t medium_madvise_fail_count;
   atomic_size_t medium_resident_empty_bytes;
   atomic_size_t medium_resident_empty_peak;

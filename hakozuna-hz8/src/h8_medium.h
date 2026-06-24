@@ -80,6 +80,7 @@ typedef struct H8MediumRun {
   uint64_t allocated_mask;
   uint8_t payload_state;
   bool resident_charge;
+  bool active_live_empty_charge;
   bool owner_attached;
   bool payload_chunk_backed;
   void* meta_alloc_base;
@@ -125,6 +126,8 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
 void h8_medium_release_empty_payload(H8MediumRun* run);
 void h8_medium_decommit_empty_locked(H8MediumRun* run);
 void h8_medium_mark_live_on_alloc(H8MediumRun* run);
+void h8_medium_note_active_live_empty(H8MediumRun* run);
+void h8_medium_clear_active_live_empty(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
 void h8_medium_owner_lease_shadow_open(H8OwnerRecord* owner,
                                        uint16_t generation);
@@ -135,6 +138,8 @@ void h8_medium_owner_lease_shadow_exit(H8OwnerRecord* owner);
 void h8_medium_owner_lease_shadow_check_exit(H8OwnerRecord* owner);
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
 bool h8_medium_owner_has_pending(H8OwnerRecord* owner);
+size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
+                                                size_t run_budget);
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget);
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);
