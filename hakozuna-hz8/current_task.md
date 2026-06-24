@@ -380,13 +380,12 @@ Detailed records live in each `bench_results/.../README.md`.
    -> quantum directory cap -> chunk evidence -> upper48 evidence
    current default remains q64-run64k / per-run mmap
 
-2. MediumV1DefaultMatrixRefresh-L1
-   rerun medium-v1 gate on current default after class-index and directory-cap work
-   record whether remaining weakness is protocol, geometry, or mmap/fault variance
+2. MediumR50ProtocolResidualRefresh-L1
+   fresh chunk A/B improves main variance but regresses medium r50 hard
+   rerun debug medium r50 attribution on current default
 
 3. MediumProtocolOrArenaSplit-L1
-   choose next behavior box only after refreshed default matrix
-   candidates: protocol residual, chunk arena, or size policy v1
+   if chunk still fails medium r50, return to protocol/slot residual
 ```
 
 ## MediumV1GateRunner-L1
@@ -420,54 +419,56 @@ main_interleaved_remote90:
   16..32768 remote_pct=90 interleaved=1 live_window=4096
 ```
 
-## MediumV1GateR10-L1
+## MediumV1DefaultMatrixRefresh-L1
 
 Status: recorded.
 
 ```text
-bench_results/20260624T_medium_v1_gate_r10_medium_v1_gate/README.md
+latest:
+  bench_results/20260624T134505Z_medium_v1_gate/README.md
+prior:
+  bench_results/20260624T_medium_v1_gate_r10_medium_v1_gate/README.md
 ```
 
 Result:
 
 ```text
 medium_local0:
-  median 13.04M ops/s
+  13.04M -> 11.24M ops/s
 
 medium_interleaved_remote50:
-  median 2.19M ops/s
-  peak RSS 30.5MiB
+  2.19M -> 2.19M ops/s
+  minor faults median 1.33M
 
 medium_phase_remote90:
-  median 140K ops/s
+  140K -> 143K ops/s
   peak RSS 65.1MiB
 
 main_interleaved_remote90:
-  median 21.8M ops/s
-  p25 4.1M ops/s
-  peak RSS 46.8MiB
+  21.8M -> 17.8M ops/s
+  p25 4.1M -> 2.88M ops/s
+  minor faults median 458735
 ```
 
 Interpretation:
 
 ```text
-MediumRun-v1 default is functional but not performance-ready
-main row has severe stability variance
-next implementation should target medium r50 / main instability
+default is functional but still not performance-ready
+main row still has severe stability / page-fault variance
+medium r50 remains weak; next evidence box is fresh chunk A/B on current default
 ```
 
 ## MediumR50ResidualAttribution-L1
 
-Status: implemented / short observed.
+Status: refreshed on current default.
 
 ```text
-bench_results/20260624T_medium_r50_residual_attribution/README.md
-change: bench output only, added medium_residual_budget derived line
-allocator behavior unchanged
-debug R3: median 6.12M, attributed_ms 1133.828
-split: slot 508.582ms, collect 316.914ms, lease 137.376ms, lock 100.512ms
-release R3: median 5.77M, minor_faults_per_op 0.180497
-interpretation: target slot/collect/lease or fault variance before queue push
+bench_results/20260624T_medium_r50_protocol_residual_refresh/README.md
+debug R3: median 6.65M, steady 6.90M
+split: slot 460.179ms, collect 228.818ms, lease 148.318ms, qpush 40.499ms
+minor_faults_per_op 0.006078, budget_reject=0, madvise_ms=4.088
+class density: [1.376,1.727,1.611,1.000]
+interpretation: residual is protocol/slot density, not mmap/fault churn
 ```
 
 ## MainInterleavedStabilityAudit-L1
@@ -499,16 +500,19 @@ interpretation: one-run mmap / page-fault churn explains much of main variance
 
 ## MediumChunkArenaPairedStability-L1
 
-Status: recorded; HOLD as default.
+Status: recorded twice; HOLD as default.
 
 ```text
-bench_results/20260624T_medium_chunk_paired_gate_r5_medium_chunk_paired_gate/README.md
+latest:
+  bench_results/20260624T134630Z_medium_chunk_paired_gate/README.md
+prior:
+  bench_results/20260624T_medium_chunk_paired_gate_r5_medium_chunk_paired_gate/README.md
 runner: scripts/run_medium_chunk_paired_gate.sh
-medium r50 R5: baseline 2.27M, chunk 1.85M median
-main remote90 R5: baseline 6.60M, chunk 8.25M median
-small local R5: baseline 337.2M, chunk 341.3M median
-small remote90 R5: baseline 53.96M, chunk 53.80M median
-decision: chunk remains evidence-only; medium r50 regression blocks default
+latest medium r50 R5: baseline 2.69M, chunk 1.50M, ratio 0.558
+latest main remote90 R5: baseline 10.66M, chunk 24.42M, ratio 2.292
+latest small local R5: ratio 1.067
+latest small remote90 R5: ratio 1.015
+decision: chunk fixes main fault variance but blocks medium r50 default
 ```
 
 ## MediumR50SlotCollectLane-L1
