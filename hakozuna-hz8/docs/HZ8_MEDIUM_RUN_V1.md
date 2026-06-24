@@ -188,11 +188,25 @@ N=1:
 
 N=2:
   warm2_avoid_reject == budget_reject in every outlier
-  warm2_hit is about 2x warm1_hit, but this does not change the
-  observed budget-reject failure classification
+  warm2_hit is about 2x warm1_hit
+
+Depth 1 behavior trial:
+  data=bench_results/medium_warm_behavior_20260624T231837Z/
+  reverted as NO-GO
+
+  outliers:
+    5 / 30
+    max minor_faults 754,494
+    max budget_reject 91,436
+
+  diagnosis:
+    protecting only the current MRU run moves churn to the evicted previous
+    warm run when overflow budget is full
 
 next behavior:
-  MediumOwnerClassWarmSet-L1 depth 1
+  do not promote depth 1
+  next attempt must be depth 2 or a protected owner/class warm-set policy
+  that does not simply decommit the evicted previous warm run
 ```
 
 Recorded candidate outcomes:

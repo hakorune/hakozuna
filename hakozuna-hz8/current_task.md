@@ -365,20 +365,38 @@ next measurement lanes:
             warm2_hit median 161,853.5
 
           interpretation:
-            depth 1 is enough for the observed budget-reject outliers
-            depth 2 captures substantially more reuse hits, but the current
-            hard failure mode is already covered by depth 1
+            shadow suggested depth 1 could cover observed budget rejects
+            depth 2 captures substantially more reuse hits
 
-        branch:
-          N=1 avoids >=90% of budget rejects:
-            implement MediumOwnerClassWarmSet-L1 depth 1
+        behavior trial:
+          MediumOwnerClassWarmSet-L1 depth 1 was implemented locally and
+          reverted as NO-GO
 
-          N=2 avoids >=90% and N=1 does not:
-            implement MediumOwnerClassWarmSet-L1 depth 2
+          data=bench_results/medium_warm_behavior_20260624T231837Z/
 
-          N=2 remains low:
-            warm set is insufficient; reopen owner-class quota or chunk/purge
-            architecture instead of increasing the global budget again
+          result:
+            outliers 5 / 30
+            max minor_faults 754,494
+            max budget_reject 91,436
+            max madvise 91,975
+
+          diagnosis:
+            protecting only the current MRU run moves churn to the evicted
+            previous warm run
+            when overflow budget is full, the victim decommits and soon
+            refaults
+
+          conclusion:
+            do not promote depth 1
+            next behavior attempt must be depth 2 or a true protected
+            owner/class warm set with overflow policy redesigned
+
+        next branch:
+          MediumOwnerClassWarmSet-L1 depth 2:
+            candidate, but only if eviction policy avoids the depth1 cascade
+
+          Chunk/purge architecture:
+            reopen if depth2 still moves churn to evicted victims
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane
