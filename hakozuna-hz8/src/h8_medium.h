@@ -79,6 +79,9 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
+void h8_medium_release_empty_payload(H8MediumRun* run);
+void h8_medium_decommit_empty_locked(H8MediumRun* run);
+void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
