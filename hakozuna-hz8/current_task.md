@@ -615,9 +615,9 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumRun64KTwoSlotPairedGate-L1
-   paired R10 x2 for q64-run64k2 candidate
-   include medium r50 and frozen small rows
+1. MediumRun64KTwoSlotOrderRotatedGate-L1
+   rerun small frozen rows with deterministic order rotation
+   default stays q64-run64k until this is clean
 
 2. MediumDetachedRunClassIndex-L1
    after geometry promotion decision
@@ -642,7 +642,7 @@ run_size is class-dependent scaffold state
 
 ## MediumRun64KTwoSlotAB-L1
 
-Status: candidate implemented; full promotion pending paired R10 x2.
+Status: candidate implemented; medium gate passed; default promotion pending clean small rerun.
 
 ```text
 bench_results/20260624T123643Z_medium_64k_two_slot_ab/README.md
@@ -653,6 +653,44 @@ debug collect_slots_per_run: 1.203 -> 1.739
 short phase create: 6368 -> 3979
 short phase global_skip_foreign: 20269338 -> 7912248
 zero gates clean in short probes
+```
+
+## MediumRun64KTwoSlotPairedGate-L1
+
+Status: recorded; HOLD as default.
+
+```text
+bench_results/20260624T123932Z_medium_64k2_paired_gate/README.md
+```
+
+Result:
+
+```text
+medium r50 R10 x2:
+  batch1 ratio 1.175
+  batch2 ratio 1.172
+  PASS
+
+small local0 R10 x2:
+  batch1 ratio 0.938
+  batch2 ratio 1.037
+  inconclusive
+
+small interleaved remote90 R10 x2:
+  batch1 ratio 0.979
+  batch2 ratio 0.744
+  FAIL as paired gate
+
+reverse-order sanity:
+  small interleaved ratio 0.986
+```
+
+Decision:
+
+```text
+q64-run64k2 remains evidence candidate
+do not default yet
+rerun small frozen rows with order rotation before promotion
 ```
 
 ## Safety Gates
