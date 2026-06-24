@@ -413,6 +413,15 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_pending_claim_count, memory_order_acquire);
   out->medium_remote_pending_claim_ns = atomic_load_explicit(
       &h8g.medium_remote_pending_claim_ns, memory_order_acquire);
+  out->medium_remote_lockless_claim_count = atomic_load_explicit(
+      &h8g.medium_remote_lockless_claim_count, memory_order_acquire);
+  out->medium_remote_lockless_claim_collector_accept = atomic_load_explicit(
+      &h8g.medium_remote_lockless_claim_collector_accept, memory_order_acquire);
+  out->medium_remote_lockless_claim_rollback_invalid = atomic_load_explicit(
+      &h8g.medium_remote_lockless_claim_rollback_invalid, memory_order_acquire);
+  out->medium_remote_lockless_claim_rollback_accepted = atomic_load_explicit(
+      &h8g.medium_remote_lockless_claim_rollback_accepted,
+      memory_order_acquire);
   out->medium_remote_lockless_shadow_attempt = atomic_load_explicit(
       &h8g.medium_remote_lockless_shadow_attempt, memory_order_acquire);
   out->medium_remote_lockless_shadow_would_accept = atomic_load_explicit(

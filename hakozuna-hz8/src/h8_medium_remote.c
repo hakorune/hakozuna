@@ -134,49 +134,6 @@ static bool h8_medium_claim_accepted_by_collector(H8MediumRun* run) {
   return qstate == H8_Q_DRAINING || qstate == H8_Q_DRAINING_DIRTY;
 }
 
-#if defined(H8_ENABLE_DEBUG_STATS)
-static H8PublishResult h8_medium_remote_publish_lockless_shadow(
-    H8MediumRun* run, void* ptr, uint64_t owner_raw) {
-  H8_DEBUG_INC(medium_remote_lockless_shadow_attempt);
-  if (atomic_load_explicit(&run->owner_word, memory_order_acquire) != owner_raw ||
-      atomic_load_explicit(&run->state, memory_order_acquire) !=
-          H8_MEDIUM_RUN_ACTIVE) {
-    H8_DEBUG_INC(medium_remote_lockless_shadow_would_reject);
-    return H8_PUBLISH_OWNER_TRANSITION;
-  }
-  size_t slot = 0;
-  if (!h8_medium_slot_index_from_ptr_checked(run, ptr, &slot)) {
-    H8_DEBUG_INC(medium_remote_lockless_shadow_would_reject);
-    return H8_PUBLISH_INVALID;
-  }
-  uint64_t bit = UINT64_C(1) << slot;
-  uint32_t state =
-      atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
-  bool pending = (atomic_load_explicit(&run->pending_bits[0],
-                                       memory_order_acquire) &
-                  bit) != 0;
-  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-    H8_DEBUG_INC(medium_remote_lockless_shadow_would_reject);
-    return H8_PUBLISH_INVALID;
-  }
-  if (pending) {
-    H8_DEBUG_INC(medium_remote_lockless_shadow_would_reject);
-    return H8_PUBLISH_DOUBLE_FREE;
-  }
-  H8_DEBUG_INC(medium_remote_lockless_shadow_would_accept);
-  return H8_PUBLISH_OK;
-}
-
-static void h8_medium_remote_shadow_compare(H8PublishResult shadow,
-                                            H8PublishResult actual) {
-  if (shadow == actual) {
-    H8_DEBUG_INC(medium_remote_lockless_shadow_match);
-    return;
-  }
-  H8_DEBUG_INC(medium_remote_lockless_shadow_mismatch);
-}
-#endif
-
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   if (!run || !ptr) {
     return H8_PUBLISH_MISS;
@@ -201,19 +158,9 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   }
   H8_DEBUG_ADD(medium_remote_owner_lease_ns,
                (size_t)(h8_medium_remote_now_ns() - lease_start));
-#if defined(H8_ENABLE_DEBUG_STATS)
-  H8PublishResult shadow =
-      h8_medium_remote_publish_lockless_shadow(run, ptr, owner_raw);
-#endif
 
   H8PublishResult result = H8_PUBLISH_INVALID;
   bool notify = false;
-#if defined(H8_ENABLE_DEBUG_STATS)
-  uint64_t lock_start = h8_medium_remote_now_ns();
-#endif
-  pthread_mutex_lock(&run->lock);
-  H8_DEBUG_ADD(medium_remote_run_lock_ns,
-               (size_t)(h8_medium_remote_now_ns() - lock_start));
   if (atomic_load_explicit(&run->owner_word, memory_order_acquire) != owner_raw ||
       atomic_load_explicit(&run->state, memory_order_acquire) !=
           H8_MEDIUM_RUN_ACTIVE) {
@@ -234,6 +181,7 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
     goto out;
   }
 
+  H8_DEBUG_INC(medium_remote_lockless_claim_count);
   H8_DEBUG_INC(medium_remote_pending_claim_count);
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t claim_start = h8_medium_remote_now_ns();
@@ -251,12 +199,19 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   state = atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
   if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
     if (h8_medium_claim_accepted_by_collector(run)) {
+      H8_DEBUG_INC(medium_remote_lockless_claim_collector_accept);
       result = H8_PUBLISH_OK;
       goto out;
     }
     uint64_t rollback = atomic_fetch_and_explicit(
         &run->pending_bits[0], ~bit, memory_order_acq_rel);
-    result = (rollback & bit) ? H8_PUBLISH_INVALID : H8_PUBLISH_OK;
+    if (rollback & bit) {
+      H8_DEBUG_INC(medium_remote_lockless_claim_rollback_invalid);
+      result = H8_PUBLISH_INVALID;
+    } else {
+      H8_DEBUG_INC(medium_remote_lockless_claim_rollback_accepted);
+      result = H8_PUBLISH_OK;
+    }
     goto out;
   }
 
@@ -264,14 +219,10 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   result = H8_PUBLISH_OK;
 
 out:
-  pthread_mutex_unlock(&run->lock);
   if (notify) {
     H8_DEBUG_INC(medium_remote_notify_count);
     h8_medium_signal_work(owner, run);
   }
-#if defined(H8_ENABLE_DEBUG_STATS)
-  h8_medium_remote_shadow_compare(shadow, result);
-#endif
   h8_owner_publish_exit(owner);
   return result;
 }

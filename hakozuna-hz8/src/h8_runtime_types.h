@@ -366,6 +366,10 @@ typedef struct H8Global {
   atomic_size_t medium_remote_run_lock_ns;
   atomic_size_t medium_remote_pending_claim_count;
   atomic_size_t medium_remote_pending_claim_ns;
+  atomic_size_t medium_remote_lockless_claim_count;
+  atomic_size_t medium_remote_lockless_claim_collector_accept;
+  atomic_size_t medium_remote_lockless_claim_rollback_invalid;
+  atomic_size_t medium_remote_lockless_claim_rollback_accepted;
   atomic_size_t medium_remote_lockless_shadow_attempt;
   atomic_size_t medium_remote_lockless_shadow_would_accept;
   atomic_size_t medium_remote_lockless_shadow_would_reject;
