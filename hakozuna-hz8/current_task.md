@@ -101,52 +101,64 @@ lockless publish shadow:
 
 ## Current Box
 
-### MediumRunCollectWordCommitRearm-L1
+### MediumUpper48KSizePolicyShadow-L1
 
 Status:
 
 ```text
-RECORDED
+IMPLEMENTED / SHORT OBSERVED
 ```
 
 Scope:
 
 ```text
-medium collector commits one pending-word snapshot as a unit
-slot_state FREE publication happens before pending clear
-pending_bits is cleared once per snapshot
-collector rechecks remaining pending and self-arms DRAINING_DIRTY
-collector finish rechecks pending and requeues if needed
+bench attribution only
+allocator behavior unchanged
+candidate class map: 8K / 16K / 32K / 48K / 64K
+medium attribution printing moved out of bench/h8_bench.c
 ```
 
 Data:
 
 ```text
-bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
+bench_results/20260624T_medium_upper48_shadow/README.md
 ```
 
 Result:
 
 ```text
-debug medium r50:
-  qstate_dirty set=17 self_set=114 requeue=131
-  collect_finish_pending_rearm=189
-  empty_with_pending=0
+p2 remote rounded bytes:
+  335486976
 
-release medium r50:
-  median 7.583M ops/s
-  steady median 7.867M ops/s
+upper48 remote rounded bytes:
+  303456256
 
-small interleaved remote90 quick rerun:
-  median 48.794M ops/s
+relative rounded bytes:
+  0.9045
+
+current run estimate:
+  5121
+
+upper48 run estimate:
+  5121
 ```
 
 Interpretation:
 
 ```text
-collector finish responsibility is now explicit
-medium pending clear is run-snapshot shaped instead of slot-shaped
-next lane is medium owner lease word shadow
+48K candidate reduces rounded medium bytes by about 9.5%
+48K candidate does not reduce run count with current 64KiB run geometry
+this is RSS / first-touch evidence, not queue-episode evidence
+```
+
+Next decision:
+
+```text
+MediumUpper48KSizePolicyAB-L1:
+  HOLD until paired hot-path A/B is explicitly worth the 48K decode cost
+
+default:
+  keep current p2 medium class map
 ```
 
 ### MediumRunOwnerLeaseCeiling-L1
@@ -533,11 +545,11 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumUpper48KSizePolicyShadow-L1
-   quantify 48K class effect on rounded bytes and run mix
+1. MediumUpper48KSizePolicyAB-L1
+   HOLD unless paired hot-path A/B is requested
 
-2. MediumUpper48KSizePolicyAB-L1
-   only if shadow shows enough memory/run benefit
+2. MediumRunNextGeometryDecision-L1
+   choose between RSS-first size policy work and run-count / queue episode work
 ```
 
 ## MediumVariableRunGeometryScaffold-L1

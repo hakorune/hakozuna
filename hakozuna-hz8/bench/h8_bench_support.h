@@ -12,6 +12,7 @@
 #define H8_BENCH_CANDIDATE_UPPER1P5_COUNT 11u
 #define H8_BENCH_MEDIUM_MAX_SIZE 65536u
 #define H8_BENCH_MEDIUM_CLASS_COUNT 4u
+#define H8_BENCH_MEDIUM_UPPER48_COUNT 5u
 
 typedef struct H8BenchOptions {
   int runs;
@@ -61,10 +62,14 @@ typedef struct H8BenchThread {
   size_t medium_remote_live_count;
   uint64_t medium_candidate_requested_bytes;
   uint64_t medium_candidate_rounded_bytes;
+  uint64_t medium_candidate_upper48_bytes;
   uint64_t medium_remote_live_requested_bytes;
   uint64_t medium_remote_live_rounded_bytes;
+  uint64_t medium_remote_live_upper48_bytes;
   size_t medium_candidate_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
   size_t medium_remote_live_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
+  size_t medium_candidate_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
+  size_t medium_remote_live_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
   size_t remote_live_upper1536[H8_BENCH_CANDIDATE_UPPER1536_COUNT];
   size_t remote_live_upper1p5[H8_BENCH_CANDIDATE_UPPER1P5_COUNT];
   int error;
@@ -75,6 +80,21 @@ typedef struct H8MemorySample {
   size_t hwm_bytes;
 } H8MemorySample;
 
+typedef struct H8BenchMediumTotals {
+  size_t candidate_count;
+  size_t remote_live_count;
+  uint64_t requested_bytes;
+  uint64_t rounded_bytes;
+  uint64_t upper48_rounded_bytes;
+  uint64_t remote_requested_bytes;
+  uint64_t remote_rounded_bytes;
+  uint64_t remote_upper48_rounded_bytes;
+  size_t candidate_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
+  size_t remote_live_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
+  size_t candidate_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
+  size_t remote_live_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
+} H8BenchMediumTotals;
+
 uint32_t h8_rng_next(uint32_t* state);
 size_t h8_rand_range(uint32_t* state, size_t lo, size_t hi);
 uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size);
@@ -82,6 +102,9 @@ void h8_bench_note_remote_live(H8BenchThread* th, size_t size);
 size_t h8_bench_slots_for_class(uint32_t class_id);
 size_t h8_bench_upper1536_slots_for_class(uint32_t class_id);
 size_t h8_bench_upper1p5_slots_for_class(uint32_t class_id);
+void h8_bench_medium_totals_add(H8BenchMediumTotals* totals,
+                                const H8BenchThread* threads, int count);
+void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals);
 uint64_t h8_now_ns(void);
 H8MemorySample h8_read_memory_sample(void);
 int h8_spsc_push(H8Inbox* inbox, void* ptr);
