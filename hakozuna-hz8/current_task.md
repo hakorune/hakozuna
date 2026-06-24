@@ -66,89 +66,27 @@ remote:
   detached direct-lock fallback remains
 ```
 
-Key recorded evidence:
+Key recorded evidence is archived in `bench_results/.../README.md`.
 
 ```text
-owner affinity:
-  bench_results/20260624T005226Z_medium_owner_affinity/README.md
-  active_owner_mismatch=0
-  owner_list_mismatch=0
-
-remote owned publish:
-  bench_results/20260624T010753Z_medium_remote_owned_publish/README.md
-  attached remote frees publish through owner queue
-
-collect cadence:
-  bench_results/20260624T014320Z_medium_collect_cadence/README.md
-  remote_collect_call 20002 -> 2511
-  release r50 about 5.18M -> 5.42M
-
-cadence reaudit:
-  bench_results/20260624T022910Z_medium_remote_cadence_reaudit/README.md
-  remote_qpush_ms=1.521
-  class slots/run=[1.162,1.326,1.441,1.000]
-
-route authority:
-  bench_results/20260624T024303Z_medium_route_slot_authority/README.md
-  route_authority_mismatch=0
-
-lockless publish shadow:
-  bench_results/20260624T024545Z_medium_remote_lockless_shadow/README.md
-  shadow_attempt=29962
-  shadow_match=29962
-  shadow_mismatch=0
+owner affinity: active/list mismatch = 0
+remote owned publish: attached remote frees use owner queue
+collect cadence: eager call issue reduced
+route authority: slot_state + pending authority clean
+lockless publish shadow: match=29962 mismatch=0
 ```
 
 ## Current Box
 
 ### MediumUpper48KSizePolicyShadow-L1
 
-Status:
-
-```text
-IMPLEMENTED / SHORT OBSERVED
-```
-
-Scope:
-
-```text
-bench attribution only
-allocator behavior unchanged
-candidate class map: 8K / 16K / 32K / 48K / 64K
-medium attribution printing moved out of bench/h8_bench.c
-```
-
-Data:
+Status: recorded; superseded by paired gate evidence.
 
 ```text
 bench_results/20260624T_medium_upper48_shadow/README.md
-```
-
-Result:
-
-```text
-p2 remote rounded bytes:
-  335486976
-
-upper48 remote rounded bytes:
-  303456256
-
-relative rounded bytes:
-  0.9045
-
-current run estimate:
-  5121
-
-upper48 run estimate:
-  5121
-```
-
-Interpretation:
-
-```text
-48K candidate reduces rounded medium bytes by about 9.5%
-48K candidate does not reduce run count with current 64KiB run geometry
-this is RSS / first-touch evidence, not queue-episode evidence
+upper48 rounded bytes ratio: 0.9045
+run estimate unchanged: 5121
+interpretation: RSS / first-touch evidence, not queue-episode evidence
 ```
 
 Next decision:
@@ -554,6 +492,42 @@ medium_phase_remote90:
 
 main_interleaved_remote90:
   16..32768 remote_pct=90 interleaved=1 live_window=4096
+```
+
+## MediumV1GateR10-L1
+
+Status: recorded.
+
+```text
+bench_results/20260624T_medium_v1_gate_r10_medium_v1_gate/README.md
+```
+
+Result:
+
+```text
+medium_local0:
+  median 13.04M ops/s
+
+medium_interleaved_remote50:
+  median 2.19M ops/s
+  peak RSS 30.5MiB
+
+medium_phase_remote90:
+  median 140K ops/s
+  peak RSS 65.1MiB
+
+main_interleaved_remote90:
+  median 21.8M ops/s
+  p25 4.1M ops/s
+  peak RSS 46.8MiB
+```
+
+Interpretation:
+
+```text
+MediumRun-v1 default is functional but not performance-ready
+main row has severe stability variance
+next implementation should target medium r50 / main instability
 ```
 
 ## MediumVariableRunGeometryScaffold-L1

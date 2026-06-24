@@ -7,6 +7,8 @@ OUT="$ROOT/bench_results/${STAMP}_medium_v1_gate"
 RUNS="${RUNS:-10}"
 THREADS="${THREADS:-16}"
 ITERS="${ITERS:-100000}"
+PHASE_THREADS="${PHASE_THREADS:-2}"
+PHASE_ITERS="${PHASE_ITERS:-4000}"
 
 mkdir -p "$OUT"
 
@@ -22,13 +24,23 @@ run_row() {
     "$@" > "$OUT/${name}.txt"
 }
 
+run_phase_row() {
+  local name="$1"
+  shift
+  "$ROOT/h8_bench_release" \
+    --runs "$RUNS" \
+    --threads "$PHASE_THREADS" \
+    --iters "$PHASE_ITERS" \
+    "$@" > "$OUT/${name}.txt"
+}
+
 run_row medium_local0 \
   --min-size 4097 --max-size 65536 --remote-pct 0 --interleaved 1
 
 run_row medium_interleaved_remote50 \
   --min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1
 
-run_row medium_phase_remote90 \
+run_phase_row medium_phase_remote90 \
   --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0
 
 run_row main_interleaved_remote90 \
@@ -42,6 +54,8 @@ run_row main_interleaved_remote90 \
   echo "runs: $RUNS"
   echo "threads: $THREADS"
   echo "iters: $ITERS"
+  echo "phase_threads: $PHASE_THREADS"
+  echo "phase_iters: $PHASE_ITERS"
   echo "bench: h8_bench_release"
   echo '```'
   echo
