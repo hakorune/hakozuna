@@ -259,6 +259,18 @@ typedef struct H8DebugStats {
   size_t medium_active_live_empty_bytes;
   size_t medium_active_live_empty_peak;
   size_t medium_owner_exit_active_live_remaining;
+  size_t medium_warm1_would_install;
+  size_t medium_warm1_would_replace;
+  size_t medium_warm1_reuse_hit;
+  size_t medium_warm1_would_avoid_budget_reject;
+  size_t medium_warm2_would_install;
+  size_t medium_warm2_would_replace;
+  size_t medium_warm2_reuse_hit;
+  size_t medium_warm2_would_avoid_budget_reject;
+  size_t medium_warm_reuse_distance_0;
+  size_t medium_warm_reuse_distance_1;
+  size_t medium_warm_reuse_distance_2;
+  size_t medium_warm_reuse_distance_3p;
   size_t medium_madvise_fail_count;
   size_t medium_resident_empty_bytes;
   size_t medium_resident_empty_peak;

@@ -120,6 +120,81 @@ residency:
   owner exit is the hard drain point for retained and active-live payload
 ```
 
+Current residency weakness:
+
+```text
+problem:
+  global empty-resident budget is first-come first-served
+  it does not know which owner/class/run is likely to be reused soon
+
+observed failure mode:
+  cold empty runs can occupy the budget
+  recently used non-active empty run gets budget reject
+  the run is MADV_DONTNEED'ed
+  the same owner soon reuses it and refaults pages
+
+evidence:
+  bench_results/medium_r50_fault_source_20260624T223112Z/
+  worst run:
+    budget_reject ~= 102k
+    madvise ~= 103k
+    madvise_ms ~= 1.88s
+```
+
+Warm-set shadow:
+
+```text
+MediumOwnerClassWarmSetShadow-L1:
+  behavior unchanged
+  debug-only virtual warm sets per owner/class
+  N=1 and N=2 MRU models are maintained simultaneously
+
+reported as:
+  medium_warm_shadow
+
+fields:
+  warm1_install / warm1_replace / warm1_hit / warm1_avoid_reject
+  warm2_install / warm2_replace / warm2_hit / warm2_avoid_reject
+  reuse_distance=[active,warm_mru,warm_second,miss]
+
+promotion decision:
+  if N=1 avoids >=90% of budget rejects:
+    implement one warm run per owner/class
+
+  if N=2 avoids >=90% and N=1 does not:
+    implement two warm runs per owner/class
+
+  if N=2 remains low:
+    do not increase the global budget again;
+    reopen owner-class quota or chunk/purge architecture
+```
+
+Shadow result:
+
+```text
+data:
+  bench_results/medium_warm_shadow_20260624T225728Z/
+
+debug/audit medium r50:
+  30 fresh-process direct runs
+
+outliers:
+  3 / 30 high-fault runs
+  max minor_faults 130,712
+  max budget_reject 13,393
+
+N=1:
+  warm1_avoid_reject == budget_reject in every outlier
+
+N=2:
+  warm2_avoid_reject == budget_reject in every outlier
+  warm2_hit is about 2x warm1_hit, but this does not change the
+  observed budget-reject failure classification
+
+next behavior:
+  MediumOwnerClassWarmSet-L1 depth 1
+```
+
 Recorded candidate outcomes:
 
 ```text

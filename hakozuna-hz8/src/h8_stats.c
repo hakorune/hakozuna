@@ -417,6 +417,30 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_active_live_empty_peak, memory_order_acquire);
   out->medium_owner_exit_active_live_remaining = atomic_load_explicit(
       &h8g.medium_owner_exit_active_live_remaining, memory_order_acquire);
+  out->medium_warm1_would_install = atomic_load_explicit(
+      &h8g.medium_warm1_would_install, memory_order_acquire);
+  out->medium_warm1_would_replace = atomic_load_explicit(
+      &h8g.medium_warm1_would_replace, memory_order_acquire);
+  out->medium_warm1_reuse_hit =
+      atomic_load_explicit(&h8g.medium_warm1_reuse_hit, memory_order_acquire);
+  out->medium_warm1_would_avoid_budget_reject = atomic_load_explicit(
+      &h8g.medium_warm1_would_avoid_budget_reject, memory_order_acquire);
+  out->medium_warm2_would_install = atomic_load_explicit(
+      &h8g.medium_warm2_would_install, memory_order_acquire);
+  out->medium_warm2_would_replace = atomic_load_explicit(
+      &h8g.medium_warm2_would_replace, memory_order_acquire);
+  out->medium_warm2_reuse_hit =
+      atomic_load_explicit(&h8g.medium_warm2_reuse_hit, memory_order_acquire);
+  out->medium_warm2_would_avoid_budget_reject = atomic_load_explicit(
+      &h8g.medium_warm2_would_avoid_budget_reject, memory_order_acquire);
+  out->medium_warm_reuse_distance_0 = atomic_load_explicit(
+      &h8g.medium_warm_reuse_distance_0, memory_order_acquire);
+  out->medium_warm_reuse_distance_1 = atomic_load_explicit(
+      &h8g.medium_warm_reuse_distance_1, memory_order_acquire);
+  out->medium_warm_reuse_distance_2 = atomic_load_explicit(
+      &h8g.medium_warm_reuse_distance_2, memory_order_acquire);
+  out->medium_warm_reuse_distance_3p = atomic_load_explicit(
+      &h8g.medium_warm_reuse_distance_3p, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

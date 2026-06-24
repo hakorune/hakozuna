@@ -38,6 +38,108 @@ static void h8_medium_update_active_live_peak(size_t value) {
              memory_order_relaxed, memory_order_relaxed)) {
   }
 }
+
+static H8OwnerRecord* h8_medium_shadow_owner(H8MediumRun* run) {
+  if (!run || !run->owner_attached) {
+    return NULL;
+  }
+  uint64_t raw = atomic_load_explicit(&run->owner_word, memory_order_acquire);
+  if (raw == 0) {
+    return NULL;
+  }
+  H8OwnerWord word = h8_owner_word_unpack(raw);
+  if (word.slot >= H8_OWNER_MAX) {
+    return NULL;
+  }
+  H8OwnerRecord* owner = h8_owner_by_slot(word.slot);
+  if (!owner || owner->slot != word.slot || owner->generation != word.generation) {
+    return NULL;
+  }
+  return owner;
+}
+
+static bool h8_medium_warm2_contains(H8OwnerRecord* owner, uint32_t class_id,
+                                     H8MediumRun* run) {
+  return owner->medium_warm_shadow2[class_id][0] == run ||
+         owner->medium_warm_shadow2[class_id][1] == run;
+}
+
+static void h8_medium_warm_shadow_install(H8MediumRun* run) {
+  H8OwnerRecord* owner = h8_medium_shadow_owner(run);
+  if (!owner || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint32_t c = run->class_id;
+  if (owner->medium_warm_shadow1[c] != run) {
+    if (owner->medium_warm_shadow1[c]) {
+      H8_DEBUG_INC(medium_warm1_would_replace);
+    } else {
+      H8_DEBUG_INC(medium_warm1_would_install);
+    }
+    owner->medium_warm_shadow1[c] = run;
+  }
+
+  if (owner->medium_warm_shadow2[c][0] == run) {
+    return;
+  }
+  if (owner->medium_warm_shadow2[c][1] == run) {
+    owner->medium_warm_shadow2[c][1] = owner->medium_warm_shadow2[c][0];
+    owner->medium_warm_shadow2[c][0] = run;
+    return;
+  }
+  if (owner->medium_warm_shadow2[c][1]) {
+    H8_DEBUG_INC(medium_warm2_would_replace);
+  } else {
+    H8_DEBUG_INC(medium_warm2_would_install);
+  }
+  owner->medium_warm_shadow2[c][1] = owner->medium_warm_shadow2[c][0];
+  owner->medium_warm_shadow2[c][0] = run;
+}
+
+static void h8_medium_warm_shadow_note_budget_reject(H8MediumRun* run) {
+  H8OwnerRecord* owner = h8_medium_shadow_owner(run);
+  if (!owner || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint32_t c = run->class_id;
+  if (owner->medium_warm_shadow1[c] == run) {
+    H8_DEBUG_INC(medium_warm1_would_avoid_budget_reject);
+  }
+  if (h8_medium_warm2_contains(owner, c, run)) {
+    H8_DEBUG_INC(medium_warm2_would_avoid_budget_reject);
+  }
+}
+
+static void h8_medium_warm_shadow_note_alloc(H8MediumRun* run) {
+  H8OwnerRecord* owner = h8_medium_shadow_owner(run);
+  if (!owner || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    if (run && run->active_live_empty_charge) {
+      H8_DEBUG_INC(medium_warm_reuse_distance_0);
+    }
+    return;
+  }
+  uint32_t c = run->class_id;
+  bool hit1 = owner->medium_warm_shadow1[c] == run;
+  if (hit1) {
+    H8_DEBUG_INC(medium_warm1_reuse_hit);
+    owner->medium_warm_shadow1[c] = NULL;
+  }
+
+  if (run->active_live_empty_charge) {
+    H8_DEBUG_INC(medium_warm_reuse_distance_0);
+  } else if (owner->medium_warm_shadow2[c][0] == run) {
+    H8_DEBUG_INC(medium_warm2_reuse_hit);
+    H8_DEBUG_INC(medium_warm_reuse_distance_1);
+    owner->medium_warm_shadow2[c][0] = owner->medium_warm_shadow2[c][1];
+    owner->medium_warm_shadow2[c][1] = NULL;
+  } else if (owner->medium_warm_shadow2[c][1] == run) {
+    H8_DEBUG_INC(medium_warm2_reuse_hit);
+    H8_DEBUG_INC(medium_warm_reuse_distance_2);
+    owner->medium_warm_shadow2[c][1] = NULL;
+  } else {
+    H8_DEBUG_INC(medium_warm_reuse_distance_3p);
+  }
+}
 #endif
 
 void h8_medium_note_active_live_empty(H8MediumRun* run) {
@@ -82,6 +184,9 @@ static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
   for (;;) {
     if (cur > k_h8_medium_empty_resident_budget ||
         bytes > k_h8_medium_empty_resident_budget - cur) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+      h8_medium_warm_shadow_note_budget_reject(run);
+#endif
       H8_DEBUG_INC(medium_empty_budget_reject_count);
       return false;
     }
@@ -140,6 +245,9 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
     H8_DEBUG_INC(medium_alloc_mark_live_nonempty);
     return;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_warm_shadow_note_alloc(run);
+#endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     if (run->active_live_empty_charge) {
       H8_DEBUG_INC(medium_alloc_mark_live_active_empty);
@@ -165,6 +273,9 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
   }
   H8_DEBUG_INC(medium_empty_transition_count);
   h8_medium_clear_active_live_empty(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_warm_shadow_install(run);
+#endif
   if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
     H8_DEBUG_INC(medium_empty_retain_count);
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;

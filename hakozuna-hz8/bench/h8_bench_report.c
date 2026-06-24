@@ -228,6 +228,20 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_active_miss_null, debug.medium_active_miss_owner,
          debug.medium_active_miss_unusable);
 
+  printf("medium_warm_shadow warm1_install=%zu warm1_replace=%zu warm1_hit=%zu warm1_avoid_reject=%zu warm2_install=%zu warm2_replace=%zu warm2_hit=%zu warm2_avoid_reject=%zu reuse_distance=[%zu,%zu,%zu,%zu]\n",
+         debug.medium_warm1_would_install,
+         debug.medium_warm1_would_replace,
+         debug.medium_warm1_reuse_hit,
+         debug.medium_warm1_would_avoid_budget_reject,
+         debug.medium_warm2_would_install,
+         debug.medium_warm2_would_replace,
+         debug.medium_warm2_reuse_hit,
+         debug.medium_warm2_would_avoid_budget_reject,
+         debug.medium_warm_reuse_distance_0,
+         debug.medium_warm_reuse_distance_1,
+         debug.medium_warm_reuse_distance_2,
+         debug.medium_warm_reuse_distance_3p);
+
   size_t medium_collect_seen =
       debug.medium_remote_collect_slot_count +
       debug.medium_remote_collect_reject_count;

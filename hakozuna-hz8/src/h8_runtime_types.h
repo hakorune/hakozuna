@@ -126,6 +126,10 @@ struct H8OwnerRecord {
   H8OwnerPlacement placement;
   H8Span* owned_by_class[H8_CLASS_COUNT];
   H8MediumRun* medium_by_class[H8_MEDIUM_CLASS_COUNT];
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8MediumRun* medium_warm_shadow1[H8_MEDIUM_CLASS_COUNT];
+  H8MediumRun* medium_warm_shadow2[H8_MEDIUM_CLASS_COUNT][2];
+#endif
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* pending_carry;
@@ -387,6 +391,18 @@ typedef struct H8Global {
   atomic_size_t medium_active_live_empty_bytes;
   atomic_size_t medium_active_live_empty_peak;
   atomic_size_t medium_owner_exit_active_live_remaining;
+  atomic_size_t medium_warm1_would_install;
+  atomic_size_t medium_warm1_would_replace;
+  atomic_size_t medium_warm1_reuse_hit;
+  atomic_size_t medium_warm1_would_avoid_budget_reject;
+  atomic_size_t medium_warm2_would_install;
+  atomic_size_t medium_warm2_would_replace;
+  atomic_size_t medium_warm2_reuse_hit;
+  atomic_size_t medium_warm2_would_avoid_budget_reject;
+  atomic_size_t medium_warm_reuse_distance_0;
+  atomic_size_t medium_warm_reuse_distance_1;
+  atomic_size_t medium_warm_reuse_distance_2;
+  atomic_size_t medium_warm_reuse_distance_3p;
   atomic_size_t medium_madvise_fail_count;
   atomic_size_t medium_resident_empty_bytes;
   atomic_size_t medium_resident_empty_peak;

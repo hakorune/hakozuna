@@ -306,10 +306,79 @@ next measurement lanes:
           no material median improvement
 
       next scope:
-        MediumR50RetentionPolicy-L1
-        run debug/audit fresh-process medium_r50
-        design a targeted retention policy for remote-collected medium r50
-        empty churn, not a simple global budget increase
+        MediumOwnerClassWarmSetShadow-L1
+        implemented
+
+        shape:
+          release behavior unchanged
+          debug-only virtual owner/class warm sets:
+            N=1 MRU
+            N=2 MRU
+          current active empty-live remains distance 0
+          warm MRU/second are distance 1/2
+          all other empty-run reuse is distance 3+
+
+        new output:
+          medium_warm_shadow
+            warm1_install
+            warm1_replace
+            warm1_hit
+            warm1_avoid_reject
+            warm2_install
+            warm2_replace
+            warm2_hit
+            warm2_avoid_reject
+            reuse_distance=[active,warm_mru,warm_second,miss]
+
+        smoke:
+          2 threads x 20k medium r50 debug
+          warm1_hit=2072
+          warm2_hit=4248
+          reuse_distance=[14435,2797,1451,1940]
+          budget_reject=0 in this short non-outlier smoke
+
+        next measurement:
+          rerun fresh-process debug/audit medium_r50 R30
+          inspect high-fault outlier runs:
+            warm1_avoid_reject / budget_reject
+            warm2_avoid_reject / budget_reject
+            reuse_distance distribution
+
+        R30 result:
+          data=bench_results/medium_warm_shadow_20260624T225728Z/
+
+          median:
+            throughput 7.41M debug/audit
+            minor_faults 8,411
+            budget_reject 0
+            madvise 564.5
+
+          outliers:
+            3 / 30
+            max minor_faults 130,712
+            max budget_reject 13,393
+
+          warm shadow:
+            warm1_avoid_reject == budget_reject in every outlier
+            warm2_avoid_reject == budget_reject in every outlier
+            warm1_hit median 82,379.5
+            warm2_hit median 161,853.5
+
+          interpretation:
+            depth 1 is enough for the observed budget-reject outliers
+            depth 2 captures substantially more reuse hits, but the current
+            hard failure mode is already covered by depth 1
+
+        branch:
+          N=1 avoids >=90% of budget rejects:
+            implement MediumOwnerClassWarmSet-L1 depth 1
+
+          N=2 avoids >=90% and N=1 does not:
+            implement MediumOwnerClassWarmSet-L1 depth 2
+
+          N=2 remains low:
+            warm set is insufficient; reopen owner-class quota or chunk/purge
+            architecture instead of increasing the global budget again
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane
