@@ -90,13 +90,19 @@ upper48 medium shadow:
   rounded bytes about 9.5% lower
   run estimate unchanged
   RSS / first-touch evidence only
+
+upper48 medium A/B target:
+  build macro H8_MEDIUM_UPPER48_CLASS
+  smoke-clean
+  short release runs are positive/inconclusive
+  HOLD as default until paired R10 x2
 ```
 
 Next MediumRun choice:
 
 ```text
 if objective is RSS / first-touch:
-  run MediumUpper48KSizePolicyAB-L1 as evidence target
+  run MediumUpper48KSizePolicyAB-L1 paired R10 x2
 
 if objective is run-count / queue episode:
   do not use 48K as the next box

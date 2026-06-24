@@ -551,7 +551,8 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
      or run-count / queue episode
 
 2. MediumUpper48KSizePolicyAB-L1
-   evidence target only if RSS / first-touch is the objective
+   evidence target implemented
+   default HOLD until paired R10 x2
 
 3. Medium run-count lane
    keep p2 class map if queue episode reduction is the objective
@@ -696,6 +697,44 @@ Decision:
 default remains per-run mmap
 directory fallback is already closed
 next lane is MediumUpper48KSizePolicyShadow-L1
+```
+
+## MediumUpper48KSizePolicyAB-L1
+
+Status: evidence-only candidate implemented; HOLD as default.
+
+```text
+bench_results/20260624T_medium_upper48_ab/README.md
+candidate build macro: H8_MEDIUM_UPPER48_CLASS
+candidate geometry id: q64-upper48
+resident budget remains fixed to four-class default cap
+```
+
+```text
+short release r50:
+default median:
+  6.784M ops/s
+
+upper48 median:
+  7.108M ops/s
+```
+
+```text
+short release phase r90:
+default peak RSS:
+  64.9MiB
+
+upper48 peak RSS:
+  64.3MiB
+```
+
+Decision:
+
+```text
+functional and smoke-clean
+do not default from short runs
+paired R10 x2 is required before any promotion decision
+current default remains 8K / 16K / 32K / 64K
 ```
 
 ## Safety Gates

@@ -130,6 +130,13 @@ chunk carve candidate:
   rounded medium bytes improved about 9.5%
   run count did not improve with current 64KiB geometry
   RSS / first-touch evidence only
+
+48K size-policy A/B target:
+  build macro H8_MEDIUM_UPPER48_CLASS
+  medium_geometry_id q64-upper48
+  smoke-clean in short validation
+  short release r50 did not expose an immediate hot blocker
+  HOLD as default until paired R10 x2
 ```
 
 Current runtime scaffold:
@@ -557,13 +564,14 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
 
 ## Current Next-Lane Decision
 
-Do not promote the 48K class from shadow directly.
+Do not promote the 48K class from short evidence directly.
 
 ```text
 reason:
   it reduces rounded bytes
   it does not reduce current run count or queue episodes
   it introduces non-p2 medium decode and a fifth medium class
+  short R3/R2 runs are not promotion evidence
 ```
 
 Do not promote chunk carving directly.
@@ -578,7 +586,7 @@ Near-term work should either:
 
 ```text
 1. pursue explicit RSS / first-touch improvement
-   then run MediumUpper48KSizePolicyAB-L1 as an evidence target
+   then run MediumUpper48KSizePolicyAB-L1 paired R10 x2
 
 or
 

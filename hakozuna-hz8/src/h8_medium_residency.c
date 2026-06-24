@@ -7,7 +7,8 @@
 #endif
 
 static const size_t k_h8_medium_empty_resident_budget =
-    (size_t)H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES;
+    (size_t)H8_OWNER_MAX * H8_MEDIUM_RESIDENT_BUDGET_CLASSES *
+    H8_MEDIUM_RUN_BYTES;
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_medium_residency_now_ns(void) {

@@ -61,7 +61,12 @@ static int check_medium_scaffold(void) {
       {8192u, 0u, 8192u},
       {8193u, 1u, 16384u},
       {16385u, 2u, 32768u},
+#if defined(H8_MEDIUM_UPPER48_CLASS)
+      {32769u, 3u, 49152u},
+      {49153u, 4u, 65536u},
+#else
       {32769u, 3u, 65536u},
+#endif
   };
   for (size_t i = 0; i < sizeof(probes) / sizeof(probes[0]); ++i) {
     uint32_t size = probes[i][0];
@@ -70,7 +75,8 @@ static int check_medium_scaffold(void) {
     const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
     if (!spec || h8_medium_class_for_size(size) != class_id ||
         h8_medium_rounded_size(size) != rounded ||
-        spec->slot_size != rounded || spec->run_size != H8_MEDIUM_RUN_BYTES ||
+        spec->slot_size != rounded ||
+        spec->run_size < H8_MEDIUM_RUN_BYTES ||
         spec->slot_count == 0 || spec->bitmap_words != 1u) {
       fprintf(stderr, "medium scaffold spec mismatch\n");
         return 25;

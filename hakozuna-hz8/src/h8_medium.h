@@ -22,7 +22,12 @@
 #define H8_MEDIUM_64K_SLOT_COUNT 1u
 #endif
 #define H8_MEDIUM_PAGE_BYTES 4096u
+#define H8_MEDIUM_RESIDENT_BUDGET_CLASSES 4u
+#if defined(H8_MEDIUM_UPPER48_CLASS)
+#define H8_MEDIUM_CLASS_COUNT 5u
+#else
 #define H8_MEDIUM_CLASS_COUNT 4u
+#endif
 typedef enum H8MediumRunState {
   H8_MEDIUM_RUN_UNUSED = 0,
   H8_MEDIUM_RUN_ACTIVE = 1,
