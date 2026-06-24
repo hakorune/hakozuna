@@ -409,12 +409,65 @@ MediumClassEntryFastPath-L1:
   GO
 ```
 
+## Medium Active Owner-Check Collapse A/B
+
+Record:
+
+```text
+bench_results/hz8_medium_active_ownercheck_ab_20260624T184605Z/
+```
+
+Baseline:
+
+```text
+666fc1ee Resolve HZ8 medium allocation class entry
+```
+
+Candidate:
+
+```text
+active-run allocation computes h8_medium_run_owned_by_ctx(active, ctx) once
+and reuses that result during the same allocation attempt.
+```
+
+Median ratios:
+
+```text
+main_i0:
+  1.0009
+
+medium_i0:
+  1.0675
+
+medium_i1:
+  0.9917
+
+medium_r50:
+  1.0005
+
+fixed8_i0:
+  1.0108
+
+fixed16_i0:
+  1.1810
+
+fixed32_i0:
+  1.0734
+```
+
+Decision:
+
+```text
+MediumActiveOwnerCheckCollapse-L1:
+  GO
+```
+
 Evidence still useful before further behavior changes:
 
 ```text
 active replacement rate
 periodic collect check/call rate
-post-entry active/owner hot shape
+deeper active slot mutation shape
 ```
 
 Branch rules:

@@ -75,6 +75,10 @@ MediumClassEntryFastPath-L1:
   default
   h8_malloc_inner computes medium class once and calls the class-resolved
   medium allocation entry
+
+MediumActiveOwnerCheckCollapse-L1:
+  default
+  active-run allocation reuses one owner-token validation within the attempt
 ```
 
 Evidence:
@@ -85,13 +89,14 @@ bench_results/hz8_active_hit_ab_20260624T174838Z/
 bench_results/hz8_free_identity_ab_20260624T175453Z/
 bench_results/hz8_medium_initfast_ab_20260624T182824Z/
 bench_results/hz8_medium_classentry_ab_20260624T183430Z/
+bench_results/hz8_medium_active_ownercheck_ab_20260624T184605Z/
 ```
 
 ## Latest Direction
 
 ```text
 if optimizing medium/main local speed:
-  next evidence target is post-entry medium owner/active hot shape
+  next evidence target is periodic collect check or deeper active slot mutation
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked

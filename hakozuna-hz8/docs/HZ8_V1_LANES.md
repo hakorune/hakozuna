@@ -72,6 +72,7 @@ implemented:
   medium same-owner free direct-identity shape
   medium malloc init fast path
   medium class-resolved allocation entry
+  medium active owner-check collapse
 
 default geometry:
   8K / 16K / 32K / 64K
@@ -124,7 +125,8 @@ if objective is local speed:
   active-hit validation and direct-identity free are complete
   medium malloc init fast path is complete
   medium class-resolved allocation entry is complete
-  next evidence target is post-entry medium owner/active hot shape
+  medium active owner-check collapse is complete
+  next evidence target is periodic collect check or deeper active slot mutation
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

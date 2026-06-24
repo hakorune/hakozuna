@@ -413,10 +413,12 @@ void* h8_medium_malloc_class_inner(uint32_t class_id) {
   bool did_capacity_collect = false;
 retry_owner_capacity:
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
+  bool active_owned = false;
   if (!active) {
     H8_DEBUG_INC(medium_active_miss_null);
   } else {
-    if (!h8_medium_run_owned_by_ctx(active, ctx)) {
+    active_owned = h8_medium_run_owned_by_ctx(active, ctx);
+    if (!active_owned) {
       H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
       H8_DEBUG_INC(medium_active_miss_owner);
       h8_medium_set_active_run(ctx, class_id, NULL);
@@ -424,8 +426,8 @@ retry_owner_capacity:
     }
   }
   if (active) {
-    if (h8_medium_run_owned_by_ctx(active, ctx)) {
-      h8_medium_debug_lock_elide_candidate(active, ctx, false);
+    if (active_owned) {
+      h8_medium_debug_lock_elide_candidate_known(true, false);
       h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
       void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
@@ -442,11 +444,6 @@ retry_owner_capacity:
       }
     }
     H8_DEBUG_INC(medium_active_miss_unusable);
-    if (!h8_medium_run_owned_by_ctx(active, ctx)) {
-      H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
-      H8_DEBUG_INC(medium_active_miss_owner);
-      h8_medium_set_active_run(ctx, class_id, NULL);
-    }
   }
   if (ctx && ctx->owner) {
     H8_DEBUG_INC(medium_owner_scan_count);
