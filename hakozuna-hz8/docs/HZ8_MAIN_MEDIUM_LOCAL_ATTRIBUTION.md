@@ -517,6 +517,138 @@ active replacement rate
 deeper active slot mutation shape
 ```
 
+## Medium Active Slot Mutation Attribution
+
+Record:
+
+```text
+bench_results/hz8_medium_active_slot_attr_20260624T190231Z/
+```
+
+Behavior:
+
+```text
+unchanged
+```
+
+Debug R1 result:
+
+```text
+medium_i0:
+  alloc_live_nonempty      0
+  alloc_live_active_empty  1599936
+  alloc_live_resident      0
+  alloc_live_decommitted   64
+  alloc_state_fail         0
+  alloc_free_zero          0
+
+medium_i1:
+  alloc_live_nonempty      0
+  alloc_live_active_empty  1599936
+  alloc_live_resident      0
+  alloc_live_decommitted   64
+  alloc_state_fail         0
+  alloc_free_zero          0
+
+medium_r50:
+  alloc_live_nonempty      793504
+  alloc_live_active_empty  523070
+  alloc_live_resident      282999
+  alloc_live_decommitted   427
+  alloc_state_fail         0
+  alloc_free_zero          293424
+
+main_i0:
+  alloc_live_nonempty      0
+  alloc_live_active_empty  1401091
+  alloc_live_resident      0
+  alloc_live_decommitted   48
+  alloc_state_fail         0
+  alloc_free_zero          0
+```
+
+Interpretation:
+
+```text
+local active-hit rows:
+  active-empty-live allocation is the dominant allocation mutation shape
+  state/free-mask failures are absent
+
+remote-mixed row:
+  active-empty-live remains material
+  resident reactivation is also material
+  alloc_free_zero mostly reflects active miss before owner-list reuse
+```
+
+Next:
+
+```text
+MediumActiveEmptyAllocFastPath-L1:
+  tested as a narrow candidate
+
+scope:
+  current TLS active run only
+  owner token already matched
+  allocated_mask == 0
+  payload_state == LIVE
+  active_live_empty_charge != 0
+  pending_bits == 0
+
+goal:
+  bypass generic h8_medium_mark_live_on_alloc work on the dominant local path
+
+do not:
+  remove broad collect cadence
+  remove owner-list/r50 resident reactivation behavior
+  remove active state/free checks solely from this attribution
+```
+
+## Medium Active Empty Fast Path A/B
+
+Record:
+
+```text
+bench_results/hz8_medium_active_empty_fast_ab_20260624T190519Z/
+```
+
+Candidate:
+
+```text
+active-hit allocation tried to handle active-empty LIVE runs before the
+generic h8_medium_mark_live_on_alloc() path
+```
+
+R3 debug/audit median ratios:
+
+```text
+medium_i0:
+  0.922
+
+medium_r50:
+  0.992
+
+main_i0:
+  0.927
+
+fixed16:
+  0.904
+```
+
+Decision:
+
+```text
+MediumActiveEmptyAllocFastPath-L1:
+  NO-GO in this simple pre-branch shape
+
+interpretation:
+  active-empty-live is the dominant shape, but adding another pre-branch around
+  h8_medium_mark_live_on_alloc() regressed local active-hit rows
+
+next:
+  inspect generated code / residual active slot mutation before another
+  behavior change
+```
+
 Branch rules:
 
 ```text

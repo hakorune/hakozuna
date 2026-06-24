@@ -127,8 +127,10 @@ if objective is local speed:
   medium class-resolved allocation entry is complete
   medium active owner-check collapse is complete
   medium collect cadence attribution is recorded
-  next behavior candidate must preserve r50 pending-hit cadence or move to
-  deeper active slot mutation attribution
+  medium active slot mutation attribution is recorded
+  MediumActiveEmptyAllocFastPath-L1 simple pre-branch shape was NO-GO
+  next step is active alloc/free code-shape attribution before another
+  behavior candidate
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

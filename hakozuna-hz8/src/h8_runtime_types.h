@@ -397,6 +397,13 @@ typedef struct H8Global {
   atomic_size_t medium_free_slot_ns;
   atomic_size_t medium_alloc_slot_count;
   atomic_size_t medium_free_slot_count;
+  atomic_size_t medium_alloc_mark_live_nonempty;
+  atomic_size_t medium_alloc_mark_live_live;
+  atomic_size_t medium_alloc_mark_live_active_empty;
+  atomic_size_t medium_alloc_mark_live_resident;
+  atomic_size_t medium_alloc_mark_live_decommitted;
+  atomic_size_t medium_alloc_state_check_fail;
+  atomic_size_t medium_alloc_free_mask_zero;
   atomic_size_t medium_local_free_pending_nonzero;
   atomic_size_t medium_lock_elide_alloc_candidate;
   atomic_size_t medium_lock_elide_free_candidate;

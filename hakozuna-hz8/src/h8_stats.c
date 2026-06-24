@@ -473,6 +473,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.medium_alloc_slot_count, memory_order_acquire);
   out->medium_free_slot_count =
       atomic_load_explicit(&h8g.medium_free_slot_count, memory_order_acquire);
+  out->medium_alloc_mark_live_nonempty = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_nonempty, memory_order_acquire);
+  out->medium_alloc_mark_live_live = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_live, memory_order_acquire);
+  out->medium_alloc_mark_live_active_empty = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_active_empty, memory_order_acquire);
+  out->medium_alloc_mark_live_resident = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_resident, memory_order_acquire);
+  out->medium_alloc_mark_live_decommitted = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_decommitted, memory_order_acquire);
+  out->medium_alloc_state_check_fail = atomic_load_explicit(
+      &h8g.medium_alloc_state_check_fail, memory_order_acquire);
+  out->medium_alloc_free_mask_zero = atomic_load_explicit(
+      &h8g.medium_alloc_free_mask_zero, memory_order_acquire);
   out->medium_local_free_pending_nonzero = atomic_load_explicit(
       &h8g.medium_local_free_pending_nonzero, memory_order_acquire);
   out->medium_lock_elide_alloc_candidate = atomic_load_explicit(

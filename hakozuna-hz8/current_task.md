@@ -91,6 +91,8 @@ bench_results/hz8_medium_initfast_ab_20260624T182824Z/
 bench_results/hz8_medium_classentry_ab_20260624T183430Z/
 bench_results/hz8_medium_active_ownercheck_ab_20260624T184605Z/
 bench_results/hz8_medium_collect_cadence_attr_20260624T185501Z/
+bench_results/hz8_medium_active_slot_attr_20260624T190231Z/
+bench_results/hz8_medium_active_empty_fast_ab_20260624T190519Z/
 ```
 
 ## Latest Direction
@@ -99,7 +101,11 @@ bench_results/hz8_medium_collect_cadence_attr_20260624T185501Z/
 if optimizing medium/main local speed:
   MediumCollectCadenceAttribution-L1 is recorded
   local0 rows show periodic slow checks are all pending misses
-  next behavior candidate needs a remote-safe cadence rule
+  MediumActiveSlotMutationShape-L1 is recorded
+  local0 rows are dominated by active-empty-live allocation reactivation
+  MediumActiveEmptyAllocFastPath-L1 was tested and reverted as NO-GO in the
+  simple pre-branch shape
+  next step should be code-shape/asm attribution before another behavior box
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked
@@ -112,6 +118,7 @@ do not reopen without new evidence:
   medium owner queue protocol
   medium owner lease micro-tuning
   sticky armed-set queue design
+  broad collect cadence changes
 ```
 
 ## Gates To Preserve

@@ -321,7 +321,16 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
-  if (!run || atomic_load_explicit(&run->state, memory_order_acquire) != H8_MEDIUM_RUN_ACTIVE || run->free_mask == 0) {
+  if (!run) {
+    return NULL;
+  }
+  if (atomic_load_explicit(&run->state, memory_order_acquire) !=
+      H8_MEDIUM_RUN_ACTIVE) {
+    H8_DEBUG_INC(medium_alloc_state_check_fail);
+    return NULL;
+  }
+  if (run->free_mask == 0) {
+    H8_DEBUG_INC(medium_alloc_free_mask_zero);
     return NULL;
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
@@ -343,9 +352,16 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
-  if (!run || run->class_id != class_id || run->free_mask == 0 ||
-      atomic_load_explicit(&run->state, memory_order_acquire) !=
-          H8_MEDIUM_RUN_ACTIVE) {
+  if (!run || run->class_id != class_id) {
+    return NULL;
+  }
+  if (run->free_mask == 0) {
+    H8_DEBUG_INC(medium_alloc_free_mask_zero);
+    return NULL;
+  }
+  if (atomic_load_explicit(&run->state, memory_order_acquire) !=
+      H8_MEDIUM_RUN_ACTIVE) {
+    H8_DEBUG_INC(medium_alloc_state_check_fail);
     return NULL;
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);

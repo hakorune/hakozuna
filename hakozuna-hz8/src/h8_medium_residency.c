@@ -137,14 +137,24 @@ void h8_medium_decommit_empty_locked(H8MediumRun* run) {
 
 void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
+    H8_DEBUG_INC(medium_alloc_mark_live_nonempty);
     return;
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
+    if (run->active_live_empty_charge) {
+      H8_DEBUG_INC(medium_alloc_mark_live_active_empty);
+    } else {
+      H8_DEBUG_INC(medium_alloc_mark_live_live);
+    }
     h8_medium_clear_active_live_empty(run);
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
+    H8_DEBUG_INC(medium_alloc_mark_live_resident);
     H8_DEBUG_INC(medium_empty_reactivate_count);
     h8_medium_release_empty_payload(run);
+  }
+  if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
+    H8_DEBUG_INC(medium_alloc_mark_live_decommitted);
   }
   run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
 }

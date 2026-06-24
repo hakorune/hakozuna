@@ -112,8 +112,11 @@ if optimizing speed:
   medium class-resolved allocation entry is also promoted
   medium active owner-check collapse is also promoted
   medium collect cadence attribution is recorded
-  remaining local/medium-local gap is either remote-safe collect cadence or
-  deeper active slot mutation
+  medium active slot mutation attribution is recorded
+  the simple active-empty-live pre-branch fast path was tested and reverted
+  as NO-GO
+  remaining local/medium-local gap needs code-shape attribution before another
+  behavior box
 
 if optimizing stability/RSS:
   chunk arena remains the likely v1.1 lane, but it must avoid medium r50
@@ -132,5 +135,5 @@ docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 The follow-up separates `local0` worker shape from allocator behavior.  It
 shows that main/medium `interleaved=1` local rows carry a real empty-inbox drain
 tax, but fixed medium classes are still only around 108M..112M.  The next speed
-lane should focus on a remote-safe collect cadence rule or deeper active slot
+lane should inspect active alloc/free generated code and residual slot
 mutation rather than reopening the medium remote protocol.
