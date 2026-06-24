@@ -462,11 +462,58 @@ MediumActiveOwnerCheckCollapse-L1:
   GO
 ```
 
+## Medium Collect Cadence Attribution
+
+Record:
+
+```text
+bench_results/hz8_medium_collect_cadence_attr_20260624T185501Z/
+```
+
+Behavior:
+
+```text
+unchanged
+```
+
+Debug R1 result:
+
+```text
+medium_i0:
+  periodic_fast=1549936
+  periodic_slow=50000
+  periodic_hit=0
+  periodic_miss=50000
+  periodic_active=1599936
+  periodic_owner=0
+
+medium_r50:
+  periodic_fast=1549530
+  periodic_slow=49993
+  periodic_hit=45817
+  periodic_miss=4176
+  periodic_active=1322549
+  periodic_owner=276974
+```
+
+Interpretation:
+
+```text
+local0 rows pay 50k periodic slow checks per 1.6M ops, all empty.
+r50 rows need the cadence because most slow checks find pending work.
+```
+
+Next:
+
+```text
+do not blindly inline or remove periodic collect
+design a remote-safe cadence rule or move to active slot mutation attribution
+```
+
 Evidence still useful before further behavior changes:
 
 ```text
 active replacement rate
-periodic collect check/call rate
 deeper active slot mutation shape
 ```
 

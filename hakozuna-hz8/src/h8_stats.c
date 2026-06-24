@@ -349,6 +349,18 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.medium_active_miss_owner, memory_order_acquire);
   out->medium_active_miss_unusable = atomic_load_explicit(
       &h8g.medium_active_miss_unusable, memory_order_acquire);
+  out->medium_collect_periodic_fast_skip = atomic_load_explicit(
+      &h8g.medium_collect_periodic_fast_skip, memory_order_acquire);
+  out->medium_collect_periodic_slow_enter = atomic_load_explicit(
+      &h8g.medium_collect_periodic_slow_enter, memory_order_acquire);
+  out->medium_collect_periodic_pending_hit = atomic_load_explicit(
+      &h8g.medium_collect_periodic_pending_hit, memory_order_acquire);
+  out->medium_collect_periodic_pending_miss = atomic_load_explicit(
+      &h8g.medium_collect_periodic_pending_miss, memory_order_acquire);
+  out->medium_collect_periodic_from_active = atomic_load_explicit(
+      &h8g.medium_collect_periodic_from_active, memory_order_acquire);
+  out->medium_collect_periodic_from_owner_list = atomic_load_explicit(
+      &h8g.medium_collect_periodic_from_owner_list, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

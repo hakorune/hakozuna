@@ -470,7 +470,7 @@ retry_owner_capacity:
         h8_medium_set_active_run(ctx, class_id, run);
         h8_medium_unlock_run(run);
         h8_medium_debug_writer_exit(run);
-        h8_medium_collect_owner_pending_periodic(ctx);
+        h8_medium_collect_owner_pending_periodic_owner_list(ctx);
         return ptr;
       }
       if (!h8_medium_run_owned_by_ctx(run, ctx)) {

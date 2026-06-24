@@ -574,19 +574,38 @@ size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
   return h8_medium_collect_pending_budget_ctx(owner, NULL, run_budget);
 }
 
-void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx) {
+static void h8_medium_collect_owner_pending_periodic_impl(H8ThreadCtx* ctx,
+                                                          bool owner_list) {
   if (!ctx || !ctx->owner) {
     return;
   }
+  if (owner_list) {
+    H8_DEBUG_INC(medium_collect_periodic_from_owner_list);
+  } else {
+    H8_DEBUG_INC(medium_collect_periodic_from_active);
+  }
   if (ctx->medium_collect_credit > 1u) {
     --ctx->medium_collect_credit;
+    H8_DEBUG_INC(medium_collect_periodic_fast_skip);
     return;
   }
+  H8_DEBUG_INC(medium_collect_periodic_slow_enter);
   ctx->medium_collect_credit = H8_MEDIUM_COLLECT_PERIOD;
   if (h8_medium_owner_has_pending(ctx->owner)) {
+    H8_DEBUG_INC(medium_collect_periodic_pending_hit);
     (void)h8_medium_collect_current_pending_budget(ctx,
                                                    H8_MEDIUM_COLLECT_BUDGET);
+  } else {
+    H8_DEBUG_INC(medium_collect_periodic_pending_miss);
   }
+}
+
+void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx) {
+  h8_medium_collect_owner_pending_periodic_impl(ctx, false);
+}
+
+void h8_medium_collect_owner_pending_periodic_owner_list(H8ThreadCtx* ctx) {
+  h8_medium_collect_owner_pending_periodic_impl(ctx, true);
 }
 
 void h8_medium_collect_owner_pending(H8OwnerRecord* owner) {

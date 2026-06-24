@@ -126,7 +126,9 @@ if objective is local speed:
   medium malloc init fast path is complete
   medium class-resolved allocation entry is complete
   medium active owner-check collapse is complete
-  next evidence target is periodic collect check or deeper active slot mutation
+  medium collect cadence attribution is recorded
+  next behavior candidate must preserve r50 pending-hit cadence or move to
+  deeper active slot mutation attribution
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

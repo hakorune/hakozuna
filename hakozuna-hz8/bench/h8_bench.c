@@ -645,13 +645,16 @@ int main(int argc, char** argv) {
       medium_collect_run > 0.0
           ? (double)debug.medium_remote_collect_slot_count / medium_collect_run
           : 0.0;
-  printf("medium_residual lease_ns_per_pub=%.1f claim_ns_per_pub=%.1f qpush_ns_per_push=%.1f collect_ns_per_run=%.1f collect_runs_per_call=%.3f collect_slots_per_run=%.3f\n",
-         medium_lease_ns_per_pub,
-         medium_claim_ns_per_pub,
-         medium_qpush_ns_per_push,
-         medium_collect_ns_per_run,
-         medium_collect_runs_per_call,
-         medium_collect_slots_per_run);
+  printf("medium_residual lease_ns_per_pub=%.1f claim_ns_per_pub=%.1f qpush_ns_per_push=%.1f collect_ns_per_run=%.1f collect_runs_per_call=%.3f collect_slots_per_run=%.3f periodic_fast=%zu periodic_slow=%zu periodic_hit=%zu periodic_miss=%zu periodic_active=%zu periodic_owner=%zu\n",
+         medium_lease_ns_per_pub, medium_claim_ns_per_pub,
+         medium_qpush_ns_per_push, medium_collect_ns_per_run,
+         medium_collect_runs_per_call, medium_collect_slots_per_run,
+         debug.medium_collect_periodic_fast_skip,
+         debug.medium_collect_periodic_slow_enter,
+         debug.medium_collect_periodic_pending_hit,
+         debug.medium_collect_periodic_pending_miss,
+         debug.medium_collect_periodic_from_active,
+         debug.medium_collect_periodic_from_owner_list);
   double medium_attributed_ms =
       (double)(debug.medium_remote_owner_lease_ns +
                debug.medium_remote_pending_claim_ns +
@@ -672,8 +675,7 @@ int main(int argc, char** argv) {
       (double)(debug.medium_alloc_slot_ns + debug.medium_free_slot_ns) / 1e6;
   size_t minor_median =
       h8_percentile_size_t(minor_faults, (size_t)opt.runs, 0.50);
-  double bench_ops =
-      (double)opt.threads * (double)opt.iters_per_thread;
+  double bench_ops = (double)opt.threads * (double)opt.iters_per_thread;
   double minor_per_op = bench_ops > 0.0 ? (double)minor_median / bench_ops : 0.0;
   printf("medium_residual_budget attributed_ms=%.3f lock_ms=%.3f slot_ms=%.3f qpush_ms=%.3f collect_ms=%.3f lease_ms=%.3f claim_ms=%.3f madvise_ms=%.3f minor_faults_median=%zu minor_faults_per_op=%.6f\n",
          medium_attributed_ms,

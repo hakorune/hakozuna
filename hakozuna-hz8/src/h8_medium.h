@@ -167,6 +167,7 @@ size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget);
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);
+void h8_medium_collect_owner_pending_periodic_owner_list(H8ThreadCtx* ctx);
 void h8_medium_collect_owner_pending(H8OwnerRecord* owner);
 void h8_medium_lock_global(void);
 void h8_medium_unlock_global(void);

@@ -207,6 +207,12 @@ typedef struct H8DebugStats {
   size_t medium_active_miss_null;
   size_t medium_active_miss_owner;
   size_t medium_active_miss_unusable;
+  size_t medium_collect_periodic_fast_skip;
+  size_t medium_collect_periodic_slow_enter;
+  size_t medium_collect_periodic_pending_hit;
+  size_t medium_collect_periodic_pending_miss;
+  size_t medium_collect_periodic_from_active;
+  size_t medium_collect_periodic_from_owner_list;
   size_t medium_run_reuse_active_class_8k;
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;

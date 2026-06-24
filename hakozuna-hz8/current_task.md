@@ -90,13 +90,16 @@ bench_results/hz8_free_identity_ab_20260624T175453Z/
 bench_results/hz8_medium_initfast_ab_20260624T182824Z/
 bench_results/hz8_medium_classentry_ab_20260624T183430Z/
 bench_results/hz8_medium_active_ownercheck_ab_20260624T184605Z/
+bench_results/hz8_medium_collect_cadence_attr_20260624T185501Z/
 ```
 
 ## Latest Direction
 
 ```text
 if optimizing medium/main local speed:
-  next evidence target is periodic collect check or deeper active slot mutation
+  MediumCollectCadenceAttribution-L1 is recorded
+  local0 rows show periodic slow checks are all pending misses
+  next behavior candidate needs a remote-safe cadence rule
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked
