@@ -107,8 +107,7 @@ cat > "${OUTDIR}/README.log" <<EOF
 [MATRIX] iters=${ITERS}
 [MATRIX] phase_threads=${PHASE_THREADS}
 [MATRIX] phase_iters=${PHASE_ITERS}
-[MATRIX] allocator_behavior_sha=f916c803
-[MATRIX] freeze_record_sha=f916c803
+[MATRIX] allocator_behavior_sha=$(git -C "${ROOT_DIR}" rev-parse --short HEAD 2>/dev/null || echo unknown)
 EOF
 
 for alloc in "${allocator_list[@]}"; do

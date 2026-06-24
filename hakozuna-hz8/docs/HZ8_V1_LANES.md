@@ -137,14 +137,18 @@ if objective is local speed:
     medium_local0 166.22M
     main_interleaved_remote50 40.14M
     medium_interleaved_remote50 median about 36M..37M
-  next speed decision should use a refreshed same-run allocator matrix before
-  opening another allocator behavior box
+  refreshed same-run allocator matrix is recorded:
+    docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
+    bench_results/hz8_post_asm_same_run_matrix_20260624T222026Z/
+  next speed decision should use the fresh-process matrix result, not only
+  same-process HZ8-only R10 runs
 
 if objective is medium r50 stability:
-  medium_interleaved_remote50 median is strong
-  p25/min still show rare high-minor-fault outliers
-  treat this as MediumR50FaultOutlierAttribution-L1, not as evidence to reopen
-  the medium remote queue / lease protocol
+  HZ8-only same-process median is strong
+  fresh-process same-run matrix median is much lower
+  p25/min can still show high-minor-fault outliers
+  treat this as MediumR50FreshProcessFaultAttribution-L1, not as evidence to
+  reopen the medium remote queue / lease protocol
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

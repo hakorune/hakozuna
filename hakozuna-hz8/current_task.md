@@ -206,12 +206,38 @@ post-ASM recheck:
 
 next measurement lanes:
   PostAsmSameRunAllocatorMatrixRefresh-L1:
-    compare the post-ASM default against HZ3/HZ4/mimalloc/tcmalloc/system
-    before changing allocator behavior again
+    complete
+    data=bench_results/hz8_post_asm_same_run_matrix_20260624T222026Z/
+    behavior_sha=59d1943e
+
+    key results:
+      guard_local0:
+        HZ8 343.93M, rank 2 behind tcmalloc
+
+      small_interleaved_remote90:
+        HZ8 55.08M, rank 2 behind tcmalloc
+
+      main_interleaved_remote50:
+        HZ8 35.17M, rank 2 behind tcmalloc
+
+      main_interleaved_remote90:
+        HZ8 22.34M, rank 2 behind tcmalloc
+
+      medium_interleaved_remote50:
+        HZ8 18.40M, rank 2 behind HZ3
+
+      medium_local0:
+        HZ8 157.83M, rank 4 behind tcmalloc/HZ3/system
+
+    interpretation:
+      HZ8 is strong in small and main steady remote with low peak RSS
+      medium r50 is second in the fresh-process matrix, but much lower than
+      same-process HZ8-only runs
 
   MediumR50FaultOutlierAttribution-L1:
-    if optimizing stability first, isolate the high-minor-fault outliers in
-    medium_interleaved_remote50
+    rename/scope as MediumR50FreshProcessFaultAttribution-L1
+    reproduce matrix's fresh-process shape with HZ8-only attribution
+    split cold process setup, minor faults, owner exit, and medium remote path
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane

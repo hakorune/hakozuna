@@ -327,3 +327,84 @@ ranking claims:
 next stability lane:
   MediumR50FaultOutlierAttribution-L1 remains open
 ```
+
+## Post-ASM Same-Run Matrix Refresh
+
+The full malloc/free `LD_PRELOAD` matrix was rerun after the post-ASM code-shape
+work.
+
+```text
+behavior_sha=59d1943e
+data=bench_results/hz8_post_asm_same_run_matrix_20260624T222026Z/
+runs=10 fresh process samples per row/allocator
+allocator order:
+  rotated by run
+```
+
+Median throughput:
+
+| Row | 1st | 2nd | 3rd | HZ8 rank |
+|---|---:|---:|---:|---:|
+| `guard_local0` | tcmalloc 453.29M | HZ8 343.93M | HZ3 252.01M | 2 |
+| `small_interleaved_remote90` | tcmalloc 60.16M | HZ8 55.08M | HZ4 35.27M | 2 |
+| `small_phase_remote90` | HZ3 3.61M | HZ4 3.57M | HZ8 3.34M | 3 |
+| `main_local0` | tcmalloc 560.34M | HZ3 230.35M | system 197.22M | 4 |
+| `main_interleaved_remote50` | tcmalloc 46.25M | HZ8 35.17M | HZ3 33.91M | 2 |
+| `main_interleaved_remote90` | tcmalloc 25.08M | HZ8 22.34M | HZ4 21.15M | 2 |
+| `medium_local0` | tcmalloc 608.65M | HZ3 258.28M | system 188.54M | 4 |
+| `medium_interleaved_remote50` | HZ3 37.82M | HZ8 18.40M | tcmalloc 15.79M | 2 |
+| `medium_phase_remote90` | tcmalloc 0.50M | system 0.45M | HZ3 0.44M | 5 |
+
+RSS highlights:
+
+```text
+main_interleaved_remote50 peak RSS:
+  HZ8      29.9MiB
+  HZ3     117.7MiB
+  HZ4     271.8MiB
+  tcmalloc 64.6MiB
+
+main_interleaved_remote90 peak RSS:
+  HZ8      36.6MiB
+  HZ3     217.7MiB
+  HZ4     288.0MiB
+  tcmalloc 86.0MiB
+
+medium_interleaved_remote50 peak RSS:
+  HZ8      49.8MiB
+  HZ3      92.6MiB
+  HZ4     295.5MiB
+  tcmalloc 130.2MiB
+```
+
+Fresh-process interpretation:
+
+```text
+small:
+  still strong
+  HZ8 remains close to tcmalloc on steady remote and second in local
+
+main:
+  HZ8 remains remote-competitive with low peak RSS
+  main local is improved versus RC1 but still below tcmalloc/HZ3/system
+
+medium:
+  medium local still trails tcmalloc/HZ3/system
+  medium r50 median is second, but much lower than the HZ8-only same-process
+  bench result
+
+important measurement distinction:
+  h8_bench_release --runs 10 reuses one process across runs
+  same-run matrix uses one fresh process per sample
+  therefore medium r50's remaining weakness is fresh-process/cold-start
+  stability, not only steady-state remote protocol
+```
+
+Follow-up lane:
+
+```text
+MediumR50FreshProcessFaultAttribution-L1:
+  reproduce the matrix shape using HZ8-only/fresh-process rows
+  split cold process setup, minor faults, owner exit, and medium remote path
+  do not reopen queue/lease protocol before this attribution
+```
