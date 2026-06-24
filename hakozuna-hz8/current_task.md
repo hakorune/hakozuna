@@ -473,15 +473,15 @@ phase row remains lifecycle / first-touch stress, not primary throughput gate
 
 ## MediumR50ResidualAttribution-L1
 
-Status: refreshed on budget8 default.
+Status: refreshed after active empty live retention.
 
 ```text
-bench_results/20260624T_medium_budget8_residual_refresh/README.md
-debug R5: median 6.71M, steady 6.99M
-split: slot 506.843ms, collect 521.949ms, lease 254.360ms, qpush 68.660ms
-minor_faults_per_op 0.007278, budget_reject=10, madvise_ms=11.209
-class density: [1.511,1.879,1.650,1.000]
-interpretation: residual is protocol + 64K one-slot geometry, not fault churn
+bench_results/20260624T_medium_active_empty_live/medium_r50_debug.txt
+debug R5: median 8.55M, steady 9.04M
+split: slot 286.381ms, collect 336.923ms, lease 280.577ms, qpush 50.818ms
+minor_faults_per_op 0.010381, budget_reject=0, madvise_ms=13.807
+class density: [1.493,1.894,1.645,1.759]
+interpretation: local churn is closed; residual is collect + lease + slot mechanics
 ```
 
 ## MainInterleavedStabilityAudit-L1
