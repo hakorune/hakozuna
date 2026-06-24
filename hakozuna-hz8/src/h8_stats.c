@@ -470,6 +470,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_finish_pending_rearm, memory_order_acquire);
   out->medium_empty_with_pending = atomic_load_explicit(
       &h8g.medium_empty_with_pending, memory_order_acquire);
+  out->medium_lease_enter_decision_mismatch = atomic_load_explicit(
+      &h8g.medium_lease_enter_decision_mismatch, memory_order_acquire);
+  out->medium_lease_ref_underflow = atomic_load_explicit(
+      &h8g.medium_lease_ref_underflow, memory_order_acquire);
+  out->medium_lease_ref_nonzero_at_owner_exit = atomic_load_explicit(
+      &h8g.medium_lease_ref_nonzero_at_owner_exit, memory_order_acquire);
+  out->medium_lease_enter_after_close = atomic_load_explicit(
+      &h8g.medium_lease_enter_after_close, memory_order_acquire);
+  out->medium_owner_reuse_with_medium_refs = atomic_load_explicit(
+      &h8g.medium_owner_reuse_with_medium_refs, memory_order_acquire);
   out->medium_remote_publish_class_8k = atomic_load_explicit(
       &h8g.medium_remote_publish_class_8k, memory_order_acquire);
   out->medium_remote_publish_class_16k = atomic_load_explicit(

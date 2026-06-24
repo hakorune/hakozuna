@@ -119,6 +119,7 @@ _Static_assert(offsetof(H8Span, local_hot) % H8_CACHELINE_BYTES == 0,
 
 struct H8OwnerRecord {
   _Atomic uint64_t control;
+  _Atomic uint32_t medium_publish_ctl;
   uint32_t slot;
   uint32_t generation;
   bool permanent;
@@ -394,6 +395,11 @@ typedef struct H8Global {
   atomic_size_t medium_remote_collect_ns;
   atomic_size_t medium_collect_finish_pending_rearm;
   atomic_size_t medium_empty_with_pending;
+  atomic_size_t medium_lease_enter_decision_mismatch;
+  atomic_size_t medium_lease_ref_underflow;
+  atomic_size_t medium_lease_ref_nonzero_at_owner_exit;
+  atomic_size_t medium_lease_enter_after_close;
+  atomic_size_t medium_owner_reuse_with_medium_refs;
   atomic_size_t medium_remote_publish_class_8k;
   atomic_size_t medium_remote_publish_class_16k;
   atomic_size_t medium_remote_publish_class_32k;

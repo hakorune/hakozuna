@@ -563,6 +563,12 @@ int main(int argc, char** argv) {
          debug.medium_remote_collect_slot_class_16k,
          debug.medium_remote_collect_slot_class_32k,
          debug.medium_remote_collect_slot_class_64k);
+  printf("medium_lease_shadow decision_mismatch=%zu ref_underflow=%zu refs_at_exit=%zu enter_after_close=%zu reuse_with_refs=%zu\n",
+         debug.medium_lease_enter_decision_mismatch,
+         debug.medium_lease_ref_underflow,
+         debug.medium_lease_ref_nonzero_at_owner_exit,
+         debug.medium_lease_enter_after_close,
+         debug.medium_owner_reuse_with_medium_refs);
   double medium_slots_per_run_8k =
       debug.medium_remote_collect_run_class_8k
           ? (double)debug.medium_remote_collect_slot_class_8k /

@@ -78,7 +78,13 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   uint64_t total_start = h8_owner_exit_now_ns();
 #endif
   h8_owner_close_gate(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_owner_lease_shadow_close(owner);
+#endif
   h8_owner_wait_publishers_zero(owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_owner_lease_shadow_check_exit(owner);
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t collect_start = h8_owner_exit_now_ns();
 #endif

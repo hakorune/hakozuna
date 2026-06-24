@@ -243,10 +243,23 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   } else {
 #if defined(H8_ENABLE_DEBUG_STATS)
     uint64_t lease_start = h8_medium_remote_now_ns();
-#endif
+    bool shadow_entered =
+        h8_medium_owner_lease_shadow_enter(owner, ow.generation);
+    bool actual_entered = h8_owner_publish_enter(owner, ow.generation);
+    if (shadow_entered != actual_entered) {
+      H8_DEBUG_INC(medium_lease_enter_decision_mismatch);
+    }
+    if (!actual_entered) {
+      if (shadow_entered) {
+        h8_medium_owner_lease_shadow_exit(owner);
+      }
+      return H8_PUBLISH_OWNER_TRANSITION;
+    }
+#else
     if (!h8_owner_publish_enter(owner, ow.generation)) {
       return H8_PUBLISH_OWNER_TRANSITION;
     }
+#endif
     lease_entered = true;
 #if defined(H8_ENABLE_DEBUG_STATS)
     size_t enter_ns = (size_t)(h8_medium_remote_now_ns() - lease_start);
@@ -323,6 +336,7 @@ out:
   if (lease_entered) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     uint64_t lease_exit_start = h8_medium_remote_now_ns();
+    h8_medium_owner_lease_shadow_exit(owner);
 #endif
     h8_owner_publish_exit(owner);
 #if defined(H8_ENABLE_DEBUG_STATS)

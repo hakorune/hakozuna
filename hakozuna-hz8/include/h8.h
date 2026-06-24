@@ -267,6 +267,11 @@ typedef struct H8DebugStats {
   size_t medium_remote_collect_ns;
   size_t medium_collect_finish_pending_rearm;
   size_t medium_empty_with_pending;
+  size_t medium_lease_enter_decision_mismatch;
+  size_t medium_lease_ref_underflow;
+  size_t medium_lease_ref_nonzero_at_owner_exit;
+  size_t medium_lease_enter_after_close;
+  size_t medium_owner_reuse_with_medium_refs;
   size_t medium_remote_publish_class_8k;
   size_t medium_remote_publish_class_16k;
   size_t medium_remote_publish_class_32k;

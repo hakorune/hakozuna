@@ -315,6 +315,104 @@ period=32,budget=8 improves medium r50 by allowing slot coalescing
 remaining visible residual bucket is owner lifecycle lease and collect slot mutation
 ```
 
+## MediumRunCollectWordCommitRearm-L1
+
+Status: recorded.
+
+Data:
+
+```text
+bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
+```
+
+Result:
+
+```text
+collector now commits one pending snapshot as a word:
+  slot_state FREE publication
+  allocated_mask batch clear
+  pending word batch clear
+  free_mask batch set
+  remaining pending rearm/self-DIRTY
+
+debug medium r50:
+  collect_finish_pending_rearm=189
+  qstate dirty set/self/requeue = 17/114/131
+  empty_with_pending=0
+
+release medium r50:
+  median 7.583M ops/s
+  steady median 7.867M ops/s
+
+small interleaved remote90 quick:
+  median 48.794M ops/s
+```
+
+Interpretation:
+
+```text
+collector finish race is closed by remaining-word rearm
+collect mutation is now closer to run-word granularity
+next safe lease step is shadowing a dedicated medium owner admission word
+```
+
+## MediumRunOwnerLeaseWordShadow-L1
+
+Status: recorded.
+
+Scope:
+
+```text
+debug-only owner-scoped medium_publish_ctl
+existing owner control word remains authority
+shadow enter decision compared against existing h8_owner_publish_enter
+shadow refs closed and checked at owner exit
+release hot path has no shadow call
+```
+
+Hard zero gates:
+
+```text
+medium_lease_enter_decision_mismatch = 0
+medium_lease_ref_underflow = 0
+medium_lease_ref_nonzero_at_owner_exit = 0
+medium_lease_enter_after_close = 0
+medium_owner_reuse_with_medium_refs = 0
+```
+
+Data:
+
+```text
+bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  decision_mismatch=0
+  ref_underflow=0
+  refs_at_exit=0
+  enter_after_close=0
+  reuse_with_refs=0
+
+release medium r50:
+  median 7.479M ops/s
+  steady median 7.751M ops/s
+
+small interleaved remote90 quick:
+  median 50.412M ops/s
+  steady median 55.011M ops/s
+```
+
+Interpretation:
+
+```text
+medium-specific owner admission word matches existing owner control decisions
+owner exit observes zero shadow refs
+next step can A/B this word as medium remote publish lease authority
+```
+
 ## Archived Medium Boxes
 
 Detailed records live in each `bench_results/.../README.md`.
@@ -343,6 +441,14 @@ MediumRunPendingQueueMPSC-L1:
 MediumRunMpscRetryAudit-L1:
   bench_results/20260624T092503Z_medium_mpsc_retry_audit/README.md
   found MPSC retry ratio about 0.22%; retry pressure is not dominant
+
+MediumRunCollectWordCommitRearm-L1:
+  bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
+  closed remaining-pending finish race and batched collect word commit
+
+MediumRunOwnerLeaseWordShadow-L1:
+  bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
+  proved dedicated medium owner lease word as shadow authority
 ```
 
 ## Next Boxes
@@ -357,11 +463,11 @@ MediumRunCollectWorkCadence-L1
 MediumRunOwnerLeaseCost-L1
   -> recorded as MediumRunOwnerLeaseCeiling-L1
 
-MediumRunLeaseSafeReduction-L1
-  -> next design candidate; lease enter+exit must preserve owner exit / owner reuse safety
-
 MediumRunOwnerLeaseWordShadow-L1
-  -> next implementation candidate
+  -> recorded
+
+MediumRunOwnerLeaseWord-L1
+  -> next A/B candidate; medium remote publish only
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

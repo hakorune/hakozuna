@@ -105,6 +105,13 @@ void h8_medium_release_empty_payload(H8MediumRun* run);
 void h8_medium_decommit_empty_locked(H8MediumRun* run);
 void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
+void h8_medium_owner_lease_shadow_open(H8OwnerRecord* owner,
+                                       uint16_t generation);
+void h8_medium_owner_lease_shadow_close(H8OwnerRecord* owner);
+bool h8_medium_owner_lease_shadow_enter(H8OwnerRecord* owner,
+                                        uint16_t generation);
+void h8_medium_owner_lease_shadow_exit(H8OwnerRecord* owner);
+void h8_medium_owner_lease_shadow_check_exit(H8OwnerRecord* owner);
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
 bool h8_medium_owner_has_pending(H8OwnerRecord* owner);
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,

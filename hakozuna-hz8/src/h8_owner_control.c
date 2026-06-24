@@ -35,6 +35,9 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {
     owner->orphan_by_class[i] = NULL;
   }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_owner_lease_shadow_open(owner, generation);
+#endif
   atomic_store_explicit(&owner->control,
                         h8_ctl_pack((H8CtlWord){.generation = generation,
                                                 .state = H8_OWNER_ALIVE,
