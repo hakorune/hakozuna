@@ -220,16 +220,27 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
       atomic_load_explicit(&run->owner_word, memory_order_acquire);
   H8OwnerWord ow = h8_owner_word_unpack(owner_raw);
   H8OwnerRecord* owner = h8_owner_by_slot(ow.slot);
-#if defined(H8_ENABLE_DEBUG_STATS)
-  uint64_t lease_start = h8_medium_remote_now_ns();
-#endif
-  if (!owner || owner->permanent ||
-      ow.state != H8_SPAN_OWNED_ACTIVE ||
-      !h8_owner_publish_enter(owner, ow.generation)) {
+  if (!owner || owner->permanent || ow.state != H8_SPAN_OWNED_ACTIVE) {
     return H8_PUBLISH_OWNER_TRANSITION;
   }
-  H8_DEBUG_ADD(medium_remote_owner_lease_ns,
-               (size_t)(h8_medium_remote_now_ns() - lease_start));
+  bool lease_entered = false;
+  if (h8_remote_lease_elision_enabled()) {
+    /*
+     * Unsafe evidence mode: skipping the owner lifecycle lease removes the
+     * owner-exit/reuse protection and must not be used for correctness claims.
+     */
+    H8_DEBUG_INC(remote_stage_regular_lease_elided);
+  } else {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    uint64_t lease_start = h8_medium_remote_now_ns();
+#endif
+    if (!h8_owner_publish_enter(owner, ow.generation)) {
+      return H8_PUBLISH_OWNER_TRANSITION;
+    }
+    lease_entered = true;
+    H8_DEBUG_ADD(medium_remote_owner_lease_ns,
+                 (size_t)(h8_medium_remote_now_ns() - lease_start));
+  }
 
   H8PublishResult result = H8_PUBLISH_INVALID;
   bool notify = false;
@@ -296,7 +307,9 @@ out:
     H8_DEBUG_INC(medium_remote_notify_count);
     h8_medium_signal_work(owner, run);
   }
-  h8_owner_publish_exit(owner);
+  if (lease_entered) {
+    h8_owner_publish_exit(owner);
+  }
   return result;
 }
 

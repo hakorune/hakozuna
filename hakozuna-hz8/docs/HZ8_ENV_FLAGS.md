@@ -26,7 +26,7 @@ This keeps unsafe speed-ceiling probes out of the v0 release hot path.
 
 | Flag | Default | Status | Effect |
 | --- | --- | --- | --- |
-| `H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION` | off | benchmark evidence only | Skips the regular-owner lifecycle lease in remote publish. This removes owner handoff/reuse protection. |
+| `H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION` | off | benchmark evidence only | Skips the regular-owner lifecycle lease in small and medium remote publish. This removes owner handoff/reuse protection. |
 | `H8_UNSAFE_EVIDENCE_DROP_REMOTE_PENDING_PUBLISH` | off | benchmark evidence only | Validates a remote free then returns `OK` without publishing pending metadata. This intentionally leaks remote frees and must only be used as a single-run speed ceiling probe. |
 
 Deprecated aliases are still accepted with exact `1` for compatibility:

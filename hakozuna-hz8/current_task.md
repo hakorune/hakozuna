@@ -101,6 +101,80 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunOwnerLeaseCeiling-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+measure the medium remote speed ceiling if the regular-owner lifecycle lease is
+removed from the producer path
+```
+
+Scope:
+
+```text
+normal release behavior unchanged
+unsafe evidence build only:
+  H8_ENABLE_UNSAFE_EVIDENCE_KNOBS
+  H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION=1
+
+medium remote publish now honors the existing unsafe lease-elision flag
+```
+
+Non-goal:
+
+```text
+do not promote lease elision
+do not weaken owner exit / owner reuse safety contract
+do not use unsafe results for correctness claims
+```
+
+Data:
+
+```text
+bench_results/20260624T094726Z_medium_owner_lease_ceiling/README.md
+```
+
+Result:
+
+```text
+normal release medium r50:
+  median 6.775M ops/s
+  steady median 7.071M ops/s
+
+unsafe evidence build, env off:
+  median 6.531M ops/s
+  steady median 6.812M ops/s
+
+unsafe evidence build, lease elided:
+  median 8.195M ops/s
+  steady median 8.598M ops/s
+
+debug unsafe lease-elided:
+  regular_lease_elided=89870
+  medium remote_lease_ms=0.000
+  medium remote_qpush_ms=4.470
+  medium remote_collect_ms=6.799
+
+small interleaved remote90 quick:
+  median 49.256M ops/s
+```
+
+Interpretation:
+
+```text
+owner lifecycle lease is a real medium r50 ceiling bucket
+unsafe elision is about +21% over normal release in this row
+direct promotion is NO-GO because owner-exit/reuse protection is removed
+next design must reduce lease fixed cost without weakening owner lifetime safety
+```
+
 ### MediumRunCollectCadenceTuning-L1
 
 Status:
@@ -628,7 +702,10 @@ MediumRunCollectWorkCadence-L1
   -> recorded as MediumRunCollectCadenceTuning-L1
 
 MediumRunOwnerLeaseCost-L1
-  -> next serious candidate; lease is now a visible residual bucket
+  -> recorded as MediumRunOwnerLeaseCeiling-L1
+
+MediumRunLeaseSafeReduction-L1
+  -> next design candidate; must preserve owner exit / owner reuse safety
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes
