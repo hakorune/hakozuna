@@ -687,6 +687,7 @@ Record:
 
 ```text
 bench_results/20260624T201507Z_medium_marklive_inline_ab/
+bench_results/20260624T211610Z_medium_marklive_inline_confirm/
 ```
 
 Behavior:
@@ -749,6 +750,39 @@ Decision:
 ```text
 MediumMarkLiveInline-L1:
   GO as a code-shape patch
+```
+
+R10 confirmation:
+
+```text
+medium_i0:
+  all median ratio 1.108
+  batch median ratio 1.109
+
+main_i0:
+  all median ratio 1.033
+  batch median ratio 1.013
+
+small_i0:
+  all median ratio 0.981
+  batch median ratio 0.985
+
+medium_r50:
+  initial R10 x2 all median ratio 0.982
+  initial R10 x2 batch median ratio 0.973
+  combined R10 x4 all median ratio 1.001
+  combined R10 x4 batch median ratio 1.001
+```
+
+Interpretation:
+
+```text
+default:
+  GO
+
+note:
+  medium_r50 candidate p25 remained lower in the first paired run,
+  but median regression did not reproduce after two more R10 batches
 ```
 
 Branch rules:

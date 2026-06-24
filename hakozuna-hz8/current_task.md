@@ -119,9 +119,10 @@ if optimizing medium/main local speed:
   local0 rows are dominated by active-empty-live allocation reactivation
   MediumActiveEmptyAllocFastPath-L1 was tested and reverted as NO-GO in the
   simple pre-branch shape
-  MediumMarkLiveInline-L1 is the current code-shape candidate; short A/B showed
-  medium_i0 improvement and flat medium_r50
-  next step should be R10 confirmation or the next asm-visible call site
+  MediumMarkLiveInline-L1 is confirmed:
+    medium_i0 +10.8%, main_i0 +3.3%, medium_r50 flat after R10 x4,
+    small_i0 -1.9% within quick gate
+  next step should be the next asm-visible call site
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked
