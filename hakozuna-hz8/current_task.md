@@ -251,8 +251,26 @@ next measurement lanes:
 
     next scope:
       MediumR50MatrixPressureAttribution-L1
+      complete
+      data=bench_results/medium_matrix_pressure_attr_20260624T222747Z/
+
+      result:
+        none:
+          29.29M median, 16.71M p25, 5.57M min
+
+        after_medium_local_mix:
+          28.50M median, 28.20M p25, 28.10M min
+
+      interpretation:
+        preceding medium-local allocator mix did not reproduce the full matrix
+        low median
+        the no-pressure samples produced the high-minor-fault outliers
+
+    next scope:
+      MediumR50FaultModeCapture-L1
       reproduce HZ8 medium_r50 after selected pressure rows or allocator runs
-      record minor faults / VmHWM before and after each sample
+      collect more HZ8-only fresh-process samples and classify the
+      high-minor-fault mode frequency
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane

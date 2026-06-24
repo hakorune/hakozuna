@@ -461,3 +461,56 @@ MediumR50MatrixPressureAttribution-L1:
   reproduce HZ8 medium r50 after selected pressure rows or allocator runs
   record minor faults and VmHWM before/after each sample
 ```
+
+## Medium r50 Matrix Pressure Attribution
+
+Selected pressure attribution was run at:
+
+```text
+data=bench_results/medium_matrix_pressure_attr_20260624T222747Z/
+runs=5
+target:
+  HZ8 preload medium_interleaved_remote50
+```
+
+Compared modes:
+
+```text
+none:
+  run target directly
+
+after_medium_local_mix:
+  first run one medium_local0 sample for each matrix allocator,
+  then run HZ8 medium_interleaved_remote50
+```
+
+Results:
+
+| Mode | median | p25 | min | peak RSS | minor faults |
+|---|---:|---:|---:|---:|---:|
+| `none` | 29.29M | 16.71M | 5.57M | 40.9MiB | 10301 |
+| `after_medium_local_mix` | 28.50M | 28.20M | 28.10M | 41.6MiB | 10478 |
+
+Interpretation:
+
+```text
+simple preceding allocator pressure:
+  not reproduced as the cause
+
+observed:
+  the no-pressure samples produced the bad high-minor-fault outliers
+  after_medium_local_mix was stable in this R5
+
+current best explanation:
+  medium r50 has a stochastic fresh-process minor-fault/reclaim outlier mode
+  that can dominate p25/min and mixed-matrix medians
+```
+
+Next follow-up:
+
+```text
+MediumR50FaultModeCapture-L1:
+  collect more HZ8-only fresh-process medium_r50 samples
+  save per-run minor faults, peak RSS, work/tail, and wall time
+  classify the fault-mode frequency before changing allocator behavior
+```

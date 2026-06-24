@@ -148,8 +148,12 @@ if objective is medium r50 stability:
   HZ8-only fresh-process direct/preload median is around 28M..29M
   full mixed same-run matrix median is much lower at 18.40M
   p25/min can still show high-minor-fault outliers
-  treat this as MediumR50MatrixPressureAttribution-L1, not as evidence to
-  reopen the medium remote queue / lease protocol
+  MediumR50MatrixPressureAttribution-L1 did not reproduce a simple
+  preceding-allocator-pressure cause
+  next step is MediumR50FaultModeCapture-L1:
+    collect more HZ8-only fresh-process samples and classify the outlier
+    frequency
+  do not reopen the medium remote queue / lease protocol before this evidence
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked
