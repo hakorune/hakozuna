@@ -491,6 +491,49 @@ MediumRunRemoteCostAudit-L1:
     MediumRunRemoteNotifyCoalescing-L1
     MediumRunOwnerCollectCadence-L1
     keep owner lease and chunk arena HOLD until handoff/cadence is measured
+
+MediumRunOwnerCollectCadence-L1:
+  current status:
+    recorded
+  goal:
+    stop draining medium owner pending work at every medium malloc entry
+    let existing qstate coalescing work by keeping runs queued longer
+  mechanism:
+    remove unconditional malloc-entry collect
+    active allocation success performs fixed-period budgeted maintenance
+    capacity miss performs full drain before global detached reuse or create
+    owner exit remains full drain
+    owner medium pending carry preserves unprocessed queued runs
+  initial constants:
+    active-success poll interval = 8 medium malloc calls
+    periodic collect budget = 4 runs
+  expected:
+    remote_collect_call drops materially
+    empty collect calls drop sharply
+    collect slots per nonempty collect call increases
+    run create does not grow materially because capacity miss still full-drains
+  safety:
+    pending_count covers head + carry
+    qstate dirty handshake remains unchanged
+    owner exit requires head/carry/count empty after full drain
+  data:
+    bench_results/20260624T014320Z_medium_collect_cadence/README.md
+  result:
+    debug r50 remote_collect_call 20002 -> 2511
+    debug r50 remote_collect_ms 2.390 -> 1.120
+    debug r50 remote_notify 9657 -> 8671
+    debug r50 remote_qpush 9657 -> 8671
+    debug r50 remote_collect_slot remains 9972
+    release r50 median about 5.18M -> about 5.42M ops/s
+    smoke and safety pass
+    small quick gates remain above threshold
+  interpretation:
+    eager empty collect checks were real and are now substantially reduced
+    release improvement is positive but modest
+    one-slot and two-slot medium runs still limit queue coalescing
+  next:
+    MediumRunRemoteCadenceReaudit-L1
+    then MediumRunRouteSlotAuthority-L1 before owner-local lock elision
 ```
 
 ### 2. SizePolicy-v1 Evidence

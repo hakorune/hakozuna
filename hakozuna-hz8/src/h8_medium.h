@@ -81,6 +81,9 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
+size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
+                                              size_t run_budget);
+void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);
 void h8_medium_collect_owner_pending(H8OwnerRecord* owner);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);

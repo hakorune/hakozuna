@@ -482,12 +482,39 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      MediumRunOwnerCollectCadence-L1
      keep owner lease reduction and chunk arena HOLD until this is resolved
 
-16. MediumRunRunPool-L1
+16. MediumRunOwnerCollectCadence-L1
+   status: recorded
+   remove unconditional medium malloc-entry full drain
+   active allocation success performs fixed-period budget maintenance
+   capacity miss performs a full drain before detached global reuse or create
+   owner exit remains a full drain point
+   owner medium pending carry preserves unprocessed queued runs
+   initial policy:
+     active-success poll interval = 8 medium malloc calls
+     periodic collect budget = 4 runs
+   acceptance:
+     remote_collect_call drops materially
+     empty collect calls drop sharply
+     collect slots per nonempty collect call increases
+     run create does not grow materially
+     small-v0 gates do not regress
+   result:
+     bench_results/20260624T014320Z_medium_collect_cadence/README.md
+     debug r50 remote_collect_call 20002 -> 2511
+     debug r50 remote_collect_ms 2.390 -> 1.120
+     debug r50 remote_notify 9657 -> 8671
+     release r50 median about 5.18M -> about 5.42M ops/s
+   interpretation:
+     owner collect cadence is no longer the primary eager-call problem
+     queue handoff remains frequent because medium has many 1-slot/2-slot runs
+     next step is residual cadence attribution, then route authority cleanup
+
+17. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-17. MediumRunLifecycle-L1
+18. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

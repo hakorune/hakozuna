@@ -11,6 +11,11 @@ static uint64_t h8_medium_remote_now_ns(void) {
 }
 #endif
 
+enum {
+  H8_MEDIUM_COLLECT_PERIOD = 8u,
+  H8_MEDIUM_COLLECT_BUDGET = 4u,
+};
+
 static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
   if (!owner || owner->slot >= H8_OWNER_MAX) {
     return 0;
@@ -231,39 +236,70 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
   return false;
 }
 
-void h8_medium_collect_owner_pending(H8OwnerRecord* owner) {
+static H8MediumRun* h8_medium_pending_pop_one(H8OwnerRecord* owner) {
+  pthread_mutex_lock(&owner->pending_lock);
+  if (!owner->medium_pending_carry && owner->medium_pending_head) {
+    owner->medium_pending_carry = owner->medium_pending_head;
+    owner->medium_pending_head = NULL;
+  }
+  H8MediumRun* run = owner->medium_pending_carry;
+  if (run) {
+    owner->medium_pending_carry = run->next_pending;
+    run->next_pending = NULL;
+  }
+  pthread_mutex_unlock(&owner->pending_lock);
+  return run;
+}
+
+size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
+                                              size_t run_budget) {
   if (!owner) {
-    return;
+    return 0;
   }
   H8_DEBUG_INC(medium_remote_collect_call_count);
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t collect_start = h8_medium_remote_now_ns();
 #endif
+  size_t processed = 0;
   if (atomic_load_explicit(&owner->medium_pending_count,
                            memory_order_acquire) == 0) {
     goto done;
   }
-  for (;;) {
-    pthread_mutex_lock(&owner->pending_lock);
-    H8MediumRun* list = owner->medium_pending_head;
-    owner->medium_pending_head = NULL;
-    pthread_mutex_unlock(&owner->pending_lock);
-    if (!list) {
-      goto done;
+  while (processed < run_budget) {
+    H8MediumRun* run = h8_medium_pending_pop_one(owner);
+    if (!run) {
+      break;
     }
-    while (list) {
-      H8MediumRun* run = list;
-      list = run->next_pending;
-      run->next_pending = NULL;
-      atomic_fetch_sub_explicit(&owner->medium_pending_count, 1,
-                                memory_order_acq_rel);
-      H8_DEBUG_INC(medium_remote_collect_run_count);
-      if (h8_medium_collect_run(owner, run)) {
-        h8_medium_pending_queue_push(owner, run);
-      }
+    atomic_fetch_sub_explicit(&owner->medium_pending_count, 1,
+                              memory_order_acq_rel);
+    H8_DEBUG_INC(medium_remote_collect_run_count);
+    ++processed;
+    if (h8_medium_collect_run(owner, run)) {
+      h8_medium_pending_queue_push(owner, run);
     }
   }
 done:
   H8_DEBUG_ADD(medium_remote_collect_ns,
                (size_t)(h8_medium_remote_now_ns() - collect_start));
+  return processed;
+}
+
+void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx) {
+  if (!ctx || !ctx->owner) {
+    return;
+  }
+  if (ctx->medium_collect_credit > 1u) {
+    --ctx->medium_collect_credit;
+    return;
+  }
+  ctx->medium_collect_credit = H8_MEDIUM_COLLECT_PERIOD;
+  if (atomic_load_explicit(&ctx->owner->medium_pending_count,
+                           memory_order_acquire) != 0) {
+    (void)h8_medium_collect_owner_pending_budget(
+        ctx->owner, H8_MEDIUM_COLLECT_BUDGET);
+  }
+}
+
+void h8_medium_collect_owner_pending(H8OwnerRecord* owner) {
+  (void)h8_medium_collect_owner_pending_budget(owner, SIZE_MAX);
 }

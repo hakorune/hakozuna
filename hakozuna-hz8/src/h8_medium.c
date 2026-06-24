@@ -413,8 +413,7 @@ static bool h8_medium_run_usable_locked(const H8MediumRun* run,
 bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out) {
-  if (!run || !run->base || !ptr || run->slot_size == 0u ||
-      run->slot_count == 0u) {
+  if (!run || !run->base || !ptr || run->slot_size == 0u || run->slot_count == 0u) {
     return false;
   }
   uintptr_t base = (uintptr_t)run->base;
@@ -509,9 +508,7 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
-  if (!run || atomic_load_explicit(&run->state, memory_order_acquire) !=
-                  H8_MEDIUM_RUN_ACTIVE ||
-      run->free_mask == 0) {
+  if (!run || atomic_load_explicit(&run->state, memory_order_acquire) != H8_MEDIUM_RUN_ACTIVE || run->free_mask == 0) {
     return NULL;
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
@@ -538,9 +535,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
   }
   uint64_t bit = UINT64_C(1) << slot;
   if ((run->allocated_mask & bit) == 0 || (run->free_mask & bit) != 0 ||
-      atomic_load_explicit(&run->pending_bits[slot >> 6u],
-                           memory_order_acquire) &
-          (UINT64_C(1) << (slot & 63u))) {
+      atomic_load_explicit(&run->pending_bits[slot >> 6u], memory_order_acquire) & (UINT64_C(1) << (slot & 63u))) {
     return false;
   }
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_FREE | H8_SLOT_NONE,
@@ -562,9 +557,8 @@ void* h8_medium_malloc_inner(size_t size) {
   H8_DEBUG_INC(medium_malloc_count);
   uint32_t class_id = h8_medium_class_for_size(size);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
-  if (ctx && ctx->owner) {
-    h8_medium_collect_owner_pending(ctx->owner);
-  }
+  bool did_capacity_collect = false;
+retry_owner_capacity:
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
   if (active) {
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
@@ -581,6 +575,7 @@ void* h8_medium_malloc_inner(size_t size) {
       H8_DEBUG_INC(medium_run_reuse_active_count);
       void* ptr = h8_medium_run_alloc_local_scaffold(active);
       h8_medium_unlock_run(active);
+      h8_medium_collect_owner_pending_periodic(ctx);
       return ptr;
     }
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
@@ -606,6 +601,7 @@ void* h8_medium_malloc_inner(size_t size) {
         void* ptr = h8_medium_run_alloc_local_scaffold(run);
         ctx->active_medium_runs[class_id] = run;
         h8_medium_unlock_run(run);
+        h8_medium_collect_owner_pending_periodic(ctx);
         return ptr;
       }
       if (!h8_medium_run_owned_by_ctx(run, ctx)) {
@@ -613,6 +609,11 @@ void* h8_medium_malloc_inner(size_t size) {
       }
       h8_medium_unlock_run(run);
     }
+  }
+  if (ctx && ctx->owner && !did_capacity_collect && atomic_load_explicit(&ctx->owner->medium_pending_count, memory_order_acquire) != 0) {
+    did_capacity_collect = true;
+    h8_medium_collect_owner_pending(ctx->owner);
+    goto retry_owner_capacity;
   }
   h8_medium_lock_global();
   H8_DEBUG_INC(medium_global_scan_count);

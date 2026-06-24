@@ -165,6 +165,7 @@ struct H8OwnerRecord {
   _Atomic size_t pending_span_count;
   H8Span* pending_carry;
   H8MediumRun* medium_pending_head;
+  H8MediumRun* medium_pending_carry;
   H8Span* owned_head;
   H8Span* orphan_head;
   H8Span* orphan_by_class[H8_CLASS_COUNT];
@@ -180,6 +181,7 @@ struct H8ThreadCtx {
   H8OwnerRecord* owner;
   H8Span* active_spans[H8_CLASS_COUNT];
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
+  uint8_t medium_collect_credit;
 };
 
 typedef struct H8Global {
