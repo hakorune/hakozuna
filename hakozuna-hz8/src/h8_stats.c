@@ -401,6 +401,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_free_lookup_step_count, memory_order_acquire);
   out->medium_route_lookup_step_count = atomic_load_explicit(
       &h8g.medium_route_lookup_step_count, memory_order_acquire);
+  out->medium_route_authority_mismatch = atomic_load_explicit(
+      &h8g.medium_route_authority_mismatch, memory_order_acquire);
   out->medium_remote_publish_count = atomic_load_explicit(
       &h8g.medium_remote_publish_count, memory_order_acquire);
   out->medium_remote_owner_lease_ns = atomic_load_explicit(

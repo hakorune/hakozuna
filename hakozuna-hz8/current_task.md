@@ -605,9 +605,59 @@ route/lock authority cleanup remains the next correctness-preserving path
 Next:
 
 ```text
-MediumRunRouteSlotAuthority-L1
+MediumRunRouteSlotAuthority-L1 [IN PROGRESS]
 then MediumRunRemotePublishLocklessShadow-L1
 then MediumRunOwnerLocalLockElision-L1
+```
+
+#### MediumRunRouteSlotAuthority-L1
+
+Goal:
+
+```text
+make medium route VALID authority match the target lock-elision contract
+```
+
+Scope:
+
+```text
+route VALID:
+  slot_state == ALLOCATED
+  pending bit == 0
+
+allocated_mask/free_mask:
+  remain under run lock
+  accounting / allocation availability only
+
+no lock elision yet
+no remote publish mutation change
+```
+
+Debug:
+
+```text
+medium_route_authority_mismatch counts old mask decision vs new slot-state decision
+expected zero in smoke/stress and normal bench
+```
+
+Data:
+
+```text
+bench_results/20260624T024303Z_medium_route_slot_authority/README.md
+```
+
+Result:
+
+```text
+smoke pass
+safety pass
+debug r50 route_authority_mismatch=0
+```
+
+Next after clean:
+
+```text
+MediumRunRemotePublishLocklessShadow-L1
 ```
 ```
 

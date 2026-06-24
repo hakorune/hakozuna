@@ -509,11 +509,20 @@ H8RouteKind h8_medium_route_inner(void* ptr) {
   bool pending = (atomic_load_explicit(&run->pending_bits[0],
                                        memory_order_acquire) &
                   bit) != 0;
-  H8RouteKind route =
-      ((run->allocated_mask & bit) != 0 && (run->free_mask & bit) == 0 &&
-       !pending)
-          ? H8_ROUTE_VALID
-          : H8_ROUTE_INVALID;
+  uint32_t state =
+      atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
+  bool slot_authority_valid =
+      h8_slot_state_tag(state) == (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) &&
+      !pending;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  bool mask_authority_valid =
+      (run->allocated_mask & bit) != 0 && (run->free_mask & bit) == 0 &&
+      !pending;
+  if (slot_authority_valid != mask_authority_valid) {
+    H8_DEBUG_INC(medium_route_authority_mismatch);
+  }
+#endif
+  H8RouteKind route = slot_authority_valid ? H8_ROUTE_VALID : H8_ROUTE_INVALID;
   h8_medium_unlock_run(run);
   return route;
 }

@@ -233,6 +233,7 @@ typedef struct H8DebugStats {
   size_t medium_remote_free_owner_mismatch;
   size_t medium_free_lookup_step_count;
   size_t medium_route_lookup_step_count;
+  size_t medium_route_authority_mismatch;
   size_t medium_remote_publish_count;
   size_t medium_remote_owner_lease_ns;
   size_t medium_remote_run_lock_ns;

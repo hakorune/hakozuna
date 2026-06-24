@@ -360,6 +360,7 @@ typedef struct H8Global {
   atomic_size_t medium_remote_free_owner_mismatch;
   atomic_size_t medium_free_lookup_step_count;
   atomic_size_t medium_route_lookup_step_count;
+  atomic_size_t medium_route_authority_mismatch;
   atomic_size_t medium_remote_publish_count;
   atomic_size_t medium_remote_owner_lease_ns;
   atomic_size_t medium_remote_run_lock_ns;
