@@ -101,6 +101,67 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunOwnerLocalSingleWriterShadow-L2
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+prove whether active owner medium alloc/free can drop run->lock
+```
+
+Scope:
+
+```text
+debug-only writer guard
+guard enters before the current run mutex
+actual allocator behavior unchanged
+release build has no debug writer fields/counters
+```
+
+Data:
+
+```text
+bench_results/20260624T091112Z_medium_single_writer_shadow/README.md
+```
+
+Result:
+
+```text
+debug medium local:
+  writer_overlap=0
+  writer_foreign=0
+  writer_token_change=0
+  collect_wrong_owner=0
+  detached_while_attached=0
+  lock_elide_alloc=179976
+  lock_elide_free=180000
+
+debug medium r50:
+  writer_overlap=0
+  writer_foreign=0
+  writer_token_change=0
+  collect_wrong_owner=0
+  detached_while_attached=0
+  lock_elide_alloc=230632
+  lock_elide_free=90130
+  remote_pub=89870
+  remote_run_lock_ms=0.000
+```
+
+Interpretation:
+
+```text
+active owner medium alloc/free lock-elision opportunity is material
+no attached writer overlap was observed in local or r50 probes
+next behavior box can be MediumRunActiveOwnerLockElision-L1
+```
+
 ### MediumRunPostClaimRollbackClosure-L1
 
 Status:

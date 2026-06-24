@@ -422,6 +422,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
   out->medium_remote_lockless_claim_rollback_accepted = atomic_load_explicit(
       &h8g.medium_remote_lockless_claim_rollback_accepted,
       memory_order_acquire);
+  out->medium_attached_writer_overlap = atomic_load_explicit(
+      &h8g.medium_attached_writer_overlap, memory_order_acquire);
+  out->medium_attached_foreign_mask_writer = atomic_load_explicit(
+      &h8g.medium_attached_foreign_mask_writer, memory_order_acquire);
+  out->medium_owner_token_changed_during_mutation = atomic_load_explicit(
+      &h8g.medium_owner_token_changed_during_mutation, memory_order_acquire);
+  out->medium_collect_wrong_owner = atomic_load_explicit(
+      &h8g.medium_collect_wrong_owner, memory_order_acquire);
+  out->medium_detached_direct_free_while_attached = atomic_load_explicit(
+      &h8g.medium_detached_direct_free_while_attached, memory_order_acquire);
   out->medium_remote_lockless_shadow_attempt = atomic_load_explicit(
       &h8g.medium_remote_lockless_shadow_attempt, memory_order_acquire);
   out->medium_remote_lockless_shadow_would_accept = atomic_load_explicit(

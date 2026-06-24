@@ -28,6 +28,15 @@ typedef enum H8MediumPayloadState {
   H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED = 2
 } H8MediumPayloadState;
 
+typedef enum H8MediumWriterKind {
+  H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC = 1,
+  H8_MEDIUM_WRITER_OWNER_LOCAL_FREE = 2,
+  H8_MEDIUM_WRITER_OWNER_COLLECT = 3,
+  H8_MEDIUM_WRITER_DETACHED_DIRECT_FREE = 4,
+  H8_MEDIUM_WRITER_GLOBAL_ATTACH = 5,
+  H8_MEDIUM_WRITER_OWNER_DETACH = 6
+} H8MediumWriterKind;
+
 typedef struct H8MediumClassSpec {
   uint32_t slot_size;
   uint32_t run_size;
@@ -61,6 +70,11 @@ typedef struct H8MediumRun {
   struct H8MediumRun* next_owner;
   struct H8MediumRun* next_global;
   struct H8MediumRun* next_pending;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  atomic_uint debug_writer_active;
+  atomic_uint debug_writer_kind;
+  atomic_uint_fast64_t debug_writer_token;
+#endif
 } H8MediumRun;
 
 typedef struct H8OwnerRecord H8OwnerRecord;
@@ -75,6 +89,9 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx);
+void h8_medium_debug_writer_enter(H8MediumRun* run, H8OwnerRecord* owner,
+                                  H8MediumWriterKind kind);
+void h8_medium_debug_writer_exit(H8MediumRun* run);
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);

@@ -370,6 +370,11 @@ typedef struct H8Global {
   atomic_size_t medium_remote_lockless_claim_collector_accept;
   atomic_size_t medium_remote_lockless_claim_rollback_invalid;
   atomic_size_t medium_remote_lockless_claim_rollback_accepted;
+  atomic_size_t medium_attached_writer_overlap;
+  atomic_size_t medium_attached_foreign_mask_writer;
+  atomic_size_t medium_owner_token_changed_during_mutation;
+  atomic_size_t medium_collect_wrong_owner;
+  atomic_size_t medium_detached_direct_free_while_attached;
   atomic_size_t medium_remote_lockless_shadow_attempt;
   atomic_size_t medium_remote_lockless_shadow_would_accept;
   atomic_size_t medium_remote_lockless_shadow_would_reject;

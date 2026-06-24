@@ -243,6 +243,11 @@ typedef struct H8DebugStats {
   size_t medium_remote_lockless_claim_collector_accept;
   size_t medium_remote_lockless_claim_rollback_invalid;
   size_t medium_remote_lockless_claim_rollback_accepted;
+  size_t medium_attached_writer_overlap;
+  size_t medium_attached_foreign_mask_writer;
+  size_t medium_owner_token_changed_during_mutation;
+  size_t medium_collect_wrong_owner;
+  size_t medium_detached_direct_free_while_attached;
   size_t medium_remote_lockless_shadow_attempt;
   size_t medium_remote_lockless_shadow_would_accept;
   size_t medium_remote_lockless_shadow_would_reject;
