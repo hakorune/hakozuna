@@ -388,18 +388,72 @@ next measurement lanes:
 
           conclusion:
             do not promote depth 1
-            next behavior attempt must be depth 2 or a true protected
-            owner/class warm set with overflow policy redesigned
+            do not implement raw depth 2 directly
+            the shadow was admission-side only and did not simulate the
+            future reuse/refault cost of the evicted victim
 
         next branch:
-          MediumOwnerClassWarmSet-L1 depth 2:
-            candidate, but only if eviction policy avoids the depth1 cascade
+          MediumRetentionCausalStackShadow-L2:
+            next
+
+            release behavior unchanged
+
+            goal:
+              measure victim-side reuse distance and decommit/refault causality
+              before any protected warm-set behavior change
+
+            model:
+              per owner/class empty epoch
+              recent distinct empty-run stack, K ~= 8
+              ghosts for decommitted victims:
+                decommit reason
+                decommit epoch
+                stack distance at decommit
+              reuse histograms:
+                victim reuse distance 1/2/3/4/5+
+                empty epochs until reuse 0..1 / 2..3 / 4..7 / 8+
+                reason budget-reject / hypothetical warm-evict /
+                  ordinary cold decommit / owner exit
+
+            counterfactuals:
+              current N=0 policy
+              protected N=1..4
+              protected 2Q
+              exact byte cap and victim selection
+
+            acceptance for the shadow:
+              N=0 model must reproduce actual budget_reject, madvise, and
+              resident peak closely enough to trust N>0 predictions
+
+          MediumOwnerClassProtected2Q-L1:
+            behavior candidate after the causal shadow
+
+            tiers:
+              ACTIVE_LIVE:
+                current TLS active run, existing empty-LIVE behavior
+              PROTECTED:
+                owner/class run with reuse evidence
+              PROBATION:
+                first-empty or weak-reuse empty run within remaining budget
+              DECOMMITTED:
+                no resident payload charge
+
+            admission:
+              newly empty run enters PROBATION, not PROTECTED
+              a run promoted to PROTECTED only after reuse evidence
+              PROTECTED eviction demotes to PROBATION instead of immediately
+              decommitting the victim
 
           Chunk/purge architecture:
-            reopen if depth2 still moves churn to evicted victims
+            reopen only if fixed-depth/2Q retention cannot explain or reduce
+            the long-tail refaults
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane
+
+  RC stance:
+    MediumRun-v1 protocol/geometry RC remains unblocked
+    treat retention outliers as a v1.1 retention-stability lane
 
   guardrail:
     MediumActiveOwnerTokenInlineAudit-L1 remains NO-GO

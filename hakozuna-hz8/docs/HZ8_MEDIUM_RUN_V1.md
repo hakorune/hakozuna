@@ -158,15 +158,9 @@ fields:
   reuse_distance=[active,warm_mru,warm_second,miss]
 
 promotion decision:
-  if N=1 avoids >=90% of budget rejects:
-    implement one warm run per owner/class
-
-  if N=2 avoids >=90% and N=1 does not:
-    implement two warm runs per owner/class
-
-  if N=2 remains low:
-    do not increase the global budget again;
-    reopen owner-class quota or chunk/purge architecture
+  this shadow is admission-side only
+  it does not simulate the future cost of the run evicted from the warm set
+  do not use it alone to select depth
 ```
 
 Shadow result:
@@ -205,8 +199,73 @@ Depth 1 behavior trial:
 
 next behavior:
   do not promote depth 1
-  next attempt must be depth 2 or a protected owner/class warm-set policy
-  that does not simply decommit the evicted previous warm run
+  do not implement raw depth 2 directly
+  first run a causal shadow that accounts for victim-side future reuse
+```
+
+Next retention-stability box:
+
+```text
+MediumRetentionCausalStackShadow-L2:
+  release behavior unchanged
+
+  per owner/class:
+    empty_epoch, recent distinct empty-run stack K ~= 8
+    ghost records: decommit reason, epoch, and stack distance
+
+  on reuse:
+    victim reuse distance 1 / 2 / 3 / 4 / 5+
+    empty epochs until reuse 0..1 / 2..3 / 4..7 / 8+
+    reason: budget reject / hypothetical warm eviction / cold decommit /
+      owner exit
+
+  counterfactual models:
+    N=0 current policy, N=1..4 protected depth, protected 2Q
+    exact byte cap and explicit victim selection
+
+  self-check:
+    N=0 must reproduce actual budget_reject, madvise, and resident peak
+    closely enough before N>0 predictions are trusted
+```
+
+Likely behavior candidate after the causal shadow:
+
+```text
+MediumOwnerClassProtected2Q-L1:
+  ACTIVE_LIVE: current TLS active run, empty LIVE allowed as today
+  PROTECTED: owner/class run with reuse evidence
+  PROBATION: first-empty or weak-reuse empty run using remaining capacity
+  DECOMMITTED: no resident payload charge and no retention membership
+
+admission:
+  first empty enters PROBATION
+  second-touch/reuse evidence promotes a run toward PROTECTED
+
+eviction:
+  evicting PROTECTED demotes it to PROBATION
+  only a cold PROBATION victim is decommitted
+
+RSS cap:
+  keep the current effective empty-retention bound:
+    active empty LIVE ~= 20MiB
+    global empty budget ~= 64MiB
+    total ~= 84MiB
+
+  one depth-2 split candidate:
+    active ~= 20MiB
+    protected ~= 40MiB
+    probation/overflow ~= 24MiB
+```
+
+MediumRun-v1 RC stance:
+
+```text
+protocol / geometry / identity / lifecycle:
+  RC can proceed
+
+retention outliers:
+  v1.1 retention-stability lane
+  not a remote correctness or median performance blocker
 ```
 
 Recorded candidate outcomes:
