@@ -307,10 +307,10 @@ int main(int argc, char** argv) {
          H8_CLASS_MAP_ID);
 #if defined(H8_MEDIUM_UPPER48_CLASS)
   printf("medium_geometry_id=q64-upper48\n");
-#elif defined(H8_MEDIUM_64K_TWO_SLOT)
-  printf("medium_geometry_id=q64-run64k2\n");
-#else
+#elif defined(H8_MEDIUM_64K_ONE_SLOT)
   printf("medium_geometry_id=q64-run64k\n");
+#else
+  printf("medium_geometry_id=q64-run64k2\n");
 #endif
 #if defined(H8_MEDIUM_CHUNK_CARVE)
   printf("medium_arena_id=chunk16m\n");

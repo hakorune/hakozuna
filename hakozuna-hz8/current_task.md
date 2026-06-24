@@ -388,7 +388,7 @@ Detailed records live in each `bench_results/.../README.md`.
    active-capacity hint is NO-GO; preserve 64K temporal reuse window
    p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
    local-free pending elision proof is clean but not default-worthy
-   budget16+64K2 is strongest candidate; next box is formal paired gate
+   budget16+64K2 is promoted as MediumRun default; next box is full v1 gate
 ```
 
 ## MediumV1GateRunner-L1
@@ -428,37 +428,37 @@ Status: recorded.
 
 ```text
 latest:
-  bench_results/20260624T140605Z_medium_v1_gate/README.md
+  bench_results/20260624T142006Z_medium_v1_gate/README.md
 prior:
-  bench_results/20260624T134505Z_medium_v1_gate/README.md
+  bench_results/20260624T140605Z_medium_v1_gate/README.md
 ```
 
 Result:
 
 ```text
 medium_local0:
-  11.24M -> 11.28M ops/s
+  11.28M -> 10.52M ops/s
 
 medium_interleaved_remote50:
-  2.19M -> 13.97M ops/s
-  minor faults median 1.33M -> 8.6K
+  13.97M -> 19.36M ops/s
+  minor faults median 8.6K -> 6.7K
 
 medium_phase_remote90:
-  143K -> 141K ops/s
+  141K -> 262K ops/s
   peak RSS 65.1MiB
 
 main_interleaved_remote90:
-  17.8M -> 23.0M ops/s
-  p25 2.88M -> 21.5M ops/s
-  minor faults median 458735 -> 7.4K
+  23.0M -> 24.1M ops/s
+  p25 21.5M -> 18.0M ops/s
+  minor faults median 7.4K -> 7.4K
 ```
 
 Interpretation:
 
 ```text
-budget8 removes most medium/main fault churn and stabilizes main remote90
-medium r50 is now promising but has one low-p25 outlier; next evidence box is
-medium r50 variance / residual attribution on budget8 default
+budget16 + q64-run64k2 materially improves medium remote/phase rows
+medium local0 regresses modestly; next evidence box is local-vs-remote tradeoff
+and residual attribution on the new default
 ```
 
 ## MediumR50ResidualAttribution-L1
@@ -605,6 +605,7 @@ Status: superseded by budget16 probe.
 ```text
 bench_results/20260624T_medium_64k2_budget16_probe/README.md
 bench_results/20260624T_medium_64k2_budget16_runner_smoke_medium_64k2_budget_paired_gate/README.md
+bench_results/20260624T_medium_64k2_default_verify_README.md
 budget16 + q64-run64k2:
   medium r50 ratio 1.347 / 1.360
   small local0 ratio 1.036
@@ -614,8 +615,7 @@ budget16 + q64-run64k2:
 Decision:
 
 ```text
-budget8 alone under-retains 128KiB runs; run formal paired gate for
-combined budget16 + q64-run64k2 before promotion
+budget16 + q64-run64k2 is now default; run full MediumRun v1 gate next
 ```
 
 ## MediumDetachedRunClassIndex-L1
