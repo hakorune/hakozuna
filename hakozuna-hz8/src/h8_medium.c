@@ -14,7 +14,7 @@ static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
     {8192u, H8_MEDIUM_RUN_BYTES, 13u, 8u, 1u},
     {16384u, H8_MEDIUM_RUN_BYTES, 14u, 4u, 1u},
     {32768u, H8_MEDIUM_RUN_BYTES, 15u, 2u, 1u},
-    {65536u, H8_MEDIUM_RUN_BYTES, 16u, 1u, 1u},
+    {65536u, H8_MEDIUM_64K_RUN_BYTES, 16u, H8_MEDIUM_64K_SLOT_COUNT, 1u},
 };
 
 _Static_assert(H8_MEDIUM_MIN_SIZE == 4097u,
@@ -23,6 +23,8 @@ _Static_assert(H8_MEDIUM_MAX_SIZE == 65536u,
                "medium v1 scaffold currently ends at 64KiB");
 _Static_assert(H8_MEDIUM_CLASS_COUNT == 4u,
                "medium v1 scaffold expects four coarse classes");
+_Static_assert((H8_MEDIUM_64K_RUN_BYTES % H8_MEDIUM_QUANTUM_BYTES) == 0u,
+               "medium run size must be quantum-aligned");
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_medium_now_ns(void) {

@@ -321,6 +321,11 @@ int main(int argc, char** argv) {
          0,
 #endif
          H8_CLASS_MAP_ID);
+#if defined(H8_MEDIUM_64K_TWO_SLOT)
+  printf("medium_geometry_id=q64-run64k2\n");
+#else
+  printf("medium_geometry_id=q64-run64k\n");
+#endif
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
