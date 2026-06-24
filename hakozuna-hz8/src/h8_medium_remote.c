@@ -206,6 +206,16 @@ static bool h8_medium_claim_accepted_by_collector(H8MediumRun* run) {
   return qstate == H8_Q_DRAINING || qstate == H8_Q_DRAINING_DIRTY;
 }
 
+static void h8_medium_mark_dirty_if_draining(H8MediumRun* run) {
+  uint8_t expected = H8_Q_DRAINING;
+  if (atomic_compare_exchange_strong_explicit(&run->qstate, &expected,
+                                              H8_Q_DRAINING_DIRTY,
+                                              memory_order_acq_rel,
+                                              memory_order_acquire)) {
+    H8_DEBUG_INC(qstate_dirty_self_set);
+  }
+}
+
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
   if (!run || !ptr) {
     return H8_PUBLISH_MISS;
@@ -342,6 +352,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
                        : ((UINT64_C(1) << run->slot_count) - 1u);
   bits &= valid;
   uint64_t collect = bits;
+  uint64_t accepted = 0;
   size_t collected = 0;
   while (collect) {
     uint64_t bit = collect & (~collect + 1u);
@@ -352,17 +363,23 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
       atomic_store_explicit(&run->slot_state[slot],
                             H8_SLOT_FREE | H8_SLOT_NONE,
                             memory_order_release);
-      run->allocated_mask &= ~bit;
-      atomic_fetch_and_explicit(&run->pending_bits[0], ~bit,
-                                memory_order_acq_rel);
-      run->free_mask |= bit;
+      accepted |= bit;
       ++collected;
     } else {
       H8_DEBUG_INC(invalid_count);
-      atomic_fetch_and_explicit(&run->pending_bits[0], ~bit,
-                                memory_order_acq_rel);
     }
     collect &= collect - 1u;
+  }
+  if (bits) {
+    run->allocated_mask &= ~accepted;
+    atomic_fetch_and_explicit(&run->pending_bits[0], ~bits,
+                              memory_order_acq_rel);
+    run->free_mask |= accepted;
+  }
+  uint64_t remaining =
+      atomic_load_explicit(&run->pending_bits[0], memory_order_acquire) & valid;
+  if (remaining) {
+    h8_medium_mark_dirty_if_draining(run);
   }
   H8_DEBUG_ADD(medium_remote_collect_slot_count, collected);
   H8_DEBUG_ADD(medium_remote_collect_run_count, 1);
@@ -377,8 +394,10 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
                             &h8g.medium_remote_collect_slot_class_32k,
                             &h8g.medium_remote_collect_slot_class_64k,
                             collected);
-  if (run->allocated_mask == 0) {
+  if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
+  } else if (run->allocated_mask == 0 && remaining != 0) {
+    H8_DEBUG_INC(medium_empty_with_pending);
   }
   pthread_mutex_unlock(&run->lock);
   h8_medium_debug_writer_exit(run);
@@ -387,7 +406,12 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
   if (atomic_compare_exchange_strong_explicit(&run->qstate, &expected_finish,
                                               H8_Q_IDLE, memory_order_acq_rel,
                                               memory_order_acquire)) {
-    (void)owner;
+    uint64_t pending =
+        atomic_load_explicit(&run->pending_bits[0], memory_order_acquire);
+    if ((pending & valid) != 0) {
+      H8_DEBUG_INC(medium_collect_finish_pending_rearm);
+      h8_medium_signal_work(owner, run);
+    }
     return false;
   }
   if (expected_finish == H8_Q_DRAINING_DIRTY) {

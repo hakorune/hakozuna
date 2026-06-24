@@ -101,6 +101,54 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunCollectWordCommitRearm-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Scope:
+
+```text
+medium collector commits one pending-word snapshot as a unit
+slot_state FREE publication happens before pending clear
+pending_bits is cleared once per snapshot
+collector rechecks remaining pending and self-arms DRAINING_DIRTY
+collector finish rechecks pending and requeues if needed
+```
+
+Data:
+
+```text
+bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  qstate_dirty set=17 self_set=114 requeue=131
+  collect_finish_pending_rearm=189
+  empty_with_pending=0
+
+release medium r50:
+  median 7.583M ops/s
+  steady median 7.867M ops/s
+
+small interleaved remote90 quick rerun:
+  median 48.794M ops/s
+```
+
+Interpretation:
+
+```text
+collector finish responsibility is now explicit
+medium pending clear is run-snapshot shaped instead of slot-shaped
+next lane is medium owner lease word shadow
+```
+
 ### MediumRunOwnerLeaseCeiling-L1
 
 Status:
@@ -311,6 +359,9 @@ MediumRunOwnerLeaseCost-L1
 
 MediumRunLeaseSafeReduction-L1
   -> next design candidate; lease enter+exit must preserve owner exit / owner reuse safety
+
+MediumRunOwnerLeaseWordShadow-L1
+  -> next implementation candidate
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

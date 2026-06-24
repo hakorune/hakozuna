@@ -466,6 +466,10 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_collect_slot_count, memory_order_acquire);
   out->medium_remote_collect_ns = atomic_load_explicit(
       &h8g.medium_remote_collect_ns, memory_order_acquire);
+  out->medium_collect_finish_pending_rearm = atomic_load_explicit(
+      &h8g.medium_collect_finish_pending_rearm, memory_order_acquire);
+  out->medium_empty_with_pending = atomic_load_explicit(
+      &h8g.medium_empty_with_pending, memory_order_acquire);
   out->medium_remote_publish_class_8k = atomic_load_explicit(
       &h8g.medium_remote_publish_class_8k, memory_order_acquire);
   out->medium_remote_publish_class_16k = atomic_load_explicit(

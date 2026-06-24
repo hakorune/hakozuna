@@ -265,6 +265,8 @@ typedef struct H8DebugStats {
   size_t medium_remote_collect_run_count;
   size_t medium_remote_collect_slot_count;
   size_t medium_remote_collect_ns;
+  size_t medium_collect_finish_pending_rearm;
+  size_t medium_empty_with_pending;
   size_t medium_remote_publish_class_8k;
   size_t medium_remote_publish_class_16k;
   size_t medium_remote_publish_class_32k;
