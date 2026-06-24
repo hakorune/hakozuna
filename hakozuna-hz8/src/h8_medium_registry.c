@@ -6,7 +6,7 @@
 #include <time.h>
 #endif
 
-#define H8_MEDIUM_DIRECTORY_CAP 4096u
+#define H8_MEDIUM_DIRECTORY_CAP 65536u
 
 static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
 static H8MediumRun* h8_medium_runs;

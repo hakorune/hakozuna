@@ -151,102 +151,20 @@ next lane is medium owner lease word shadow
 
 ### MediumRunOwnerLeaseCeiling-L1
 
-Status:
-
-```text
-RECORDED
-```
-
-Goal:
-
-```text
-measure the medium remote speed ceiling if the regular-owner lifecycle lease is
-removed from the producer path
-```
-
-Scope:
-
-```text
-normal release behavior unchanged
-unsafe evidence build only:
-  H8_ENABLE_UNSAFE_EVIDENCE_KNOBS
-  H8_UNSAFE_EVIDENCE_REMOTE_LEASE_ELISION=1
-
-medium remote publish now honors the existing unsafe lease-elision flag
-```
-
-Non-goal:
-
-```text
-do not promote lease elision
-do not weaken owner exit / owner reuse safety contract
-do not use unsafe results for correctness claims
-```
-
-Data:
+Status: recorded.
 
 ```text
 bench_results/20260624T094726Z_medium_owner_lease_ceiling/README.md
-```
-
-Result:
-
-```text
-normal release medium r50:
-  median 6.775M ops/s
-  steady median 7.071M ops/s
-
-unsafe evidence build, env off:
-  median 6.531M ops/s
-  steady median 6.812M ops/s
-
-unsafe evidence build, lease elided:
-  median 8.195M ops/s
-  steady median 8.598M ops/s
-
-debug unsafe lease-elided:
-  regular_lease_elided=89870
-  medium remote_lease_ms=0.000
-  medium remote_qpush_ms=4.470
-  medium remote_collect_ms=6.799
-
-small interleaved remote90 quick:
-  median 49.256M ops/s
-```
-
-Interpretation:
-
-```text
-owner lifecycle lease is a real medium r50 ceiling bucket
-unsafe elision is about +21% over normal release in this row
-direct promotion is NO-GO because owner-exit/reuse protection is removed
-next design must reduce lease fixed cost without weakening owner lifetime safety
+lease elision was +21% evidence only; direct promotion is NO-GO
 ```
 
 ### MediumRunOwnerLeaseSplitAudit-L1
 
-Status:
-
-```text
-RECORDED
-```
-
-Data:
+Status: recorded.
 
 ```text
 bench_results/20260624T095302Z_medium_owner_lease_split_audit/README.md
-```
-
-Result:
-
-```text
-debug medium r50:
-  remote_lease_ms=11.120
-  remote_lease_enter_ms=4.571
-  remote_lease_exit_ms=6.549
-
-interpretation:
-  exit-side publish ref decrement is at least as important as enter admission
+debug remote_lease_ms=11.120 enter=4.571 exit=6.549
 ```
 
 ### MediumRunCollectCadenceTuning-L1
@@ -615,8 +533,8 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumChunkArenaQuantum-L1
-   remove medium directory-capacity fallback/free_steps
+1. MediumChunkArenaCarve-L1
+   remove per-run mmap after quantum-directory fallback is closed
 
 2. MediumUpper48KSizePolicyShadow/AB-L1
    later rounded-byte reduction lane
@@ -721,6 +639,26 @@ Decision:
 detached class index removes foreign-attached global scan
 remaining phase lookup cost is direct-directory overflow/fallback
 next box is MediumChunkArenaQuantum-L1
+```
+
+## MediumQuantumDirectoryCap-L1
+
+Status: recorded.
+
+```text
+bench_results/20260624T125025Z_medium_quantum_directory_cap/README.md
+directory cap 4096 -> 65536
+short phase r90: global_skip_foreign=0 free_steps=0
+release medium r50 median: 7.590M ops/s
+small interleaved quick median: 53.244M ops/s
+```
+
+Decision:
+
+```text
+directory-capacity fallback is closed
+full ChunkArena carving is still open
+next box is MediumChunkArenaCarve-L1 or Upper48K size-policy shadow
 ```
 
 ## Safety Gates
