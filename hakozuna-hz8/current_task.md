@@ -374,16 +374,19 @@ Detailed records live in each `bench_results/.../README.md`.
 ## Next Boxes
 
 ```text
-1. MediumRetainBudgetPressure-L1
-   medium r50 collect detail shows reject=0 and high madvise/fault pressure
-   tune resident budget policy before collect protocol surgery
+1. MediumGeometryLaneCloseout-L1
+   consultation order was correct, but the lane is already implemented:
+   scaffold -> 64K two-slot A/B -> detached class index
+   -> quantum directory cap -> chunk evidence -> upper48 evidence
+   current default remains q64-run64k / per-run mmap
 
-2. MediumR50SlotBookkeeping-L1
-   slot/free bookkeeping remains material after budget pressure is understood
+2. MediumV1DefaultMatrixRefresh-L1
+   rerun medium-v1 gate on current default after class-index and directory-cap work
+   record whether remaining weakness is protocol, geometry, or mmap/fault variance
 
-3. MediumChunkArenaDefaultDecision-L1
-   chunk improves main fault variance but regresses medium r50 in R5
-   keep H8_MEDIUM_CHUNK_CARVE evidence-only
+3. MediumProtocolOrArenaSplit-L1
+   choose next behavior box only after refreshed default matrix
+   candidates: protocol residual, chunk arena, or size policy v1
 ```
 
 ## MediumV1GateRunner-L1

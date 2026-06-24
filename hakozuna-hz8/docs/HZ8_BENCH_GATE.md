@@ -169,6 +169,16 @@ changes.
 Bench output also prints `medium_arena_id`.  Compare `per-run-mmap` and
 `chunk16m` rows separately; do not mix them under one MediumRun result line.
 
+Medium resident-budget sweeps may override the compile-time class budget only
+for benchmark builds:
+
+```bash
+MEDIUM_BUDGET_CFLAGS='-DH8_MEDIUM_RESIDENT_BUDGET_CLASSES=8u' make bench-release
+```
+
+This is an evidence lane, not a runtime profile knob.  Default promotion still
+requires paired medium rows plus frozen small no-regression rows.
+
 For chunk promotion evidence, use:
 
 ```bash
