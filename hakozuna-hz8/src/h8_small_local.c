@@ -195,7 +195,6 @@ void* h8_malloc_inner(size_t size) {
   }
   if (size > H8_MAX_SMALL_SIZE) {
     if (h8_medium_size_supported(size)) {
-      h8_init();
       return h8_medium_malloc_inner(size);
     }
     return h8_sys_malloc(size);

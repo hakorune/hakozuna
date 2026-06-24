@@ -301,12 +301,66 @@ MediumFreeDirectIdentityShape-L1:
   GO
 ```
 
+## Medium Malloc Init Fast Path A/B
+
+Record:
+
+```text
+bench_results/hz8_medium_initfast_ab_20260624T182824Z/
+```
+
+Baseline:
+
+```text
+ff3e8def Document HZ8 medium local defaults
+```
+
+Candidate:
+
+```text
+h8_malloc_inner no longer calls h8_init() before h8_medium_malloc_inner().
+Medium malloc initialization remains covered by h8_thread_ctx_fast() slow path.
+```
+
+Median ratios:
+
+```text
+main_i0:
+  1.0734
+
+medium_i0:
+  1.0560
+
+medium_i1:
+  0.9998
+
+fixed16_i0:
+  1.1794
+```
+
+Notes:
+
+```text
+fixed16_i0 had one candidate outlier in the first pair; additional pairs moved
+the median positive.
+
+medium_i1 remains effectively flat, which is acceptable because this box
+targets medium malloc entry overhead rather than the interleaved worker tax.
+```
+
+Decision:
+
+```text
+MediumMallocInitFastPath-L1:
+  GO
+```
+
 Evidence still useful before further behavior changes:
 
 ```text
 active replacement rate
 periodic collect check/call rate
-medium malloc entry code shape
+medium class-switch code shape
 size-to-class selection cost
 ```
 

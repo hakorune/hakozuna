@@ -70,6 +70,7 @@ implemented:
   ctx-aware collector active-empty-live retention
   medium active-hit allocation check collapse
   medium same-owner free direct-identity shape
+  medium malloc init fast path
 
 default geometry:
   8K / 16K / 32K / 64K
@@ -120,7 +121,8 @@ short term:
 
 if objective is local speed:
   active-hit validation and direct-identity free are complete
-  next evidence target is medium malloc entry / class-switch shape
+  medium malloc init fast path is complete
+  next evidence target is medium class-switch / allocation entry code shape
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked

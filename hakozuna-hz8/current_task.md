@@ -1,799 +1,141 @@
 # Current Task
 
-## Freeze Baseline
+This file is the short HZ8 orientation ledger. Keep detailed chronology in
+`bench_results/` and stable design records under `docs/`.
 
-HZ8 small v0 is recorded as `hz8-small-v0-rc1`.
+## Frozen Baselines
 
 ```text
-rc1 record:
+small-v0:
+  hz8-small-v0-rc1
   docs/HZ8_SMALL_V0_RC1.md
 
-matrix record:
-  bench_results/hz8_same_run_matrix_20260623T174503Z/
-
-archived detailed task log:
-  docs/archive/current_task_20260624_small_v0_rc1.md
+medium-v1 protocol/geometry:
+  docs/HZ8_MEDIUM_RUN_V1_RC1.md
 ```
 
-Small v0 behavior is frozen unless a hard safety issue is found.
+Small-v0 behavior is frozen unless a hard safety issue appears.
 
 ```text
-frozen:
+frozen small:
   p2-v0 class map
   tagged slot_state authority
   pending bitmap / pending_word_mask / qstate protocol
   owner lifecycle
-  purge policy
   startup-loaded Linux x86_64 ELF TLS contract
 ```
 
-## Active Lane: MediumRun-v1
-
-Goal:
+## Current Default Shape
 
 ```text
-add >4KiB coverage and make main_* / cross128 rows meaningful
-```
-
-Current shape:
-
-```text
-range:
+medium range:
   4097..65536
 
-classes:
+medium classes:
   8K / 16K / 32K / 64K
 
-geometry:
-  q64-run64k2 default
+medium geometry:
+  q64-run64k2
   64K class uses 128KiB run / 2 slots
 
-identity:
-  direct medium registry
+medium identity:
+  direct registry
+  64KiB quantum directory
   power-of-two slot decode
-  interior pointers rejected
+  interior pointers INVALID
 
-residency:
-  empty run resident retention is budgeted
-  active empty live retention avoids local per-op empty churn
-  owner exit drains retained empty payload
+medium residency:
+  budgeted empty-resident retention
+  TLS active empty-live retention
+  ctx-aware collector active-empty-live retention
+  owner exit is the hard drain point
 
-ownership:
-  owner-attached runs publish owner tokens
-  TLS active run must match current owner
-  global allocation skips foreign-attached runs
-
-remote:
-  owner-attached foreign free uses owner lifecycle lease
+medium remote:
+  owner-attached remote free publishes to owner queue
   pending bit is remote claim authority
-  per-owner medium pending queue transfers slot mutation to owner collect
   qstate uses IDLE / QUEUED / DRAINING / DRAINING_DIRTY
   detached direct-lock fallback remains
 ```
 
-Key recorded evidence is archived in `bench_results/.../README.md`.
+## Promoted Post-RC1 Local Shape
 
 ```text
-owner affinity: active/list mismatch = 0
-remote owned publish: attached remote frees use owner queue
-collect cadence: eager call issue reduced
-route authority: slot_state + pending authority clean
-lockless publish shadow: match=29962 mismatch=0
+MediumActiveHitValidationCollapse-L1:
+  default
+
+MediumFreeDirectIdentityShape-L1:
+  default
+
+MediumMallocInitFastPath-L1:
+  default
+  h8_malloc_inner no longer calls h8_init before medium malloc;
+  h8_thread_ctx_fast slow path remains initialization authority
 ```
 
-## Current Box
-
-### MediumCollectorActiveEmptyLive-L1
-
-Status: implemented; GO.
+Evidence:
 
 ```text
-bench_results/20260625T_medium_collector_active_live/README.md
-debug r50:
-  collect_active_would_keep = 177937
-  empty/retain/reactivate = 236460 / 236460 / 235274
-  empty_live_not_active = 0
-  owner_exit_active_live = 0
-release:
-  medium r50 median 33.38M
-  medium local0 median 104.61M
-  main remote90 median 25.01M
+docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
+bench_results/hz8_active_hit_ab_20260624T174838Z/
+bench_results/hz8_free_identity_ab_20260624T175453Z/
+bench_results/hz8_medium_initfast_ab_20260624T182824Z/
 ```
 
-Decision:
+## Latest Direction
 
 ```text
-ctx-aware collector keeps current active empty run LIVE
-owner exit remains hard drain point
-next record: docs/HZ8_MEDIUM_RUN_V1_RC1.md
+if optimizing medium/main local speed:
+  next evidence target is medium class-switch / allocation entry code shape
+
+if optimizing RSS / rounded bytes:
+  upper48 remains evidence-only until frozen small gates are reworked
+
+if optimizing main stability / first-touch:
+  chunk arena remains evidence-only until medium r50 no-regression is solved
+
+do not reopen without new evidence:
+  small-v0 behavior
+  medium owner queue protocol
+  medium owner lease micro-tuning
+  sticky armed-set queue design
 ```
 
-### MediumRunOwnerLeaseCeiling-L1
-
-Status: recorded.
+## Gates To Preserve
 
 ```text
-bench_results/20260624T094726Z_medium_owner_lease_ceiling/README.md
-lease elision was +21% evidence only; direct promotion is NO-GO
+small frozen:
+  INVALID platform fallback = 0
+  duplicate claim accepted twice = 0
+  quiescent pending bitmap = 0
+  timeout / abort = 0
+
+medium:
+  invalid owned platform fallback = 0
+  remote publish lost = 0
+  claim accepted twice = 0
+  collect duplicate = 0
+  idle with pending = 0
+  empty with pending = 0
+  decommit while pending = 0
+  owner/list mismatch = 0
+  route authority mismatch = 0
 ```
 
-### MediumRunOwnerLeaseSplitAudit-L1
-
-Status: recorded.
+## Read First
 
 ```text
-bench_results/20260624T095302Z_medium_owner_lease_split_audit/README.md
-debug remote_lease_ms=11.120 enter=4.571 exit=6.549
-```
-
-### MediumRunCollectCadenceTuning-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T093113Z_medium_collect_cadence_tuning/README.md
-default: period=32,budget=8
-release medium r50: 6.869M median, 7.191M steady
-debug p32/b8: collect_call=9302 collect_run=71583 collect_slot=89696
-class density: [1.572,2.005,1.707,1.000]
-collect cadence was too eager
-remaining visible residual bucket is owner lifecycle lease and collect slot mutation
-```
-
-## MediumRunCollectWordCommitRearm-L1
-
-Status: recorded.
-
-Data:
-
-```text
-bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
-```
-
-Result:
-
-```text
-collector now commits one pending snapshot as a word:
-  slot_state FREE publication
-  allocated_mask batch clear
-  pending word batch clear
-  free_mask batch set
-  remaining pending rearm/self-DIRTY
-
-debug medium r50:
-  collect_finish_pending_rearm=189
-  qstate dirty set/self/requeue = 17/114/131
-  empty_with_pending=0
-
-release medium r50:
-  median 7.583M ops/s
-  steady median 7.867M ops/s
-
-small interleaved remote90 quick:
-  median 48.794M ops/s
-```
-
-Interpretation:
-
-```text
-collector finish race is closed by remaining-word rearm
-collect mutation is now closer to run-word granularity
-next safe lease step is shadowing a dedicated medium owner admission word
-```
-
-## MediumRunOwnerLeaseWordShadow-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
-debug-only owner-scoped medium_publish_ctl shadow
-zero gates: decision/ref/close/reuse mismatches = 0
-debug medium r50:
-  decision_mismatch=0
-  ref_underflow=0
-  refs_at_exit=0
-  enter_after_close=0
-  reuse_with_refs=0
-
-release medium r50:
-  median 7.479M ops/s
-  steady median 7.751M ops/s
-
-small interleaved remote90 quick:
-  median 50.412M ops/s
-  steady median 55.011M ops/s
-```
-
-Interpretation:
-
-```text
-medium-specific owner admission word matches existing owner control decisions
-owner exit observes zero shadow refs
-next step can A/B this word as medium remote publish lease authority
-```
-
-## MediumRunOwnerLeaseWord-L1
-
-Status: recorded, HOLD as default.
-
-Data:
-
-```text
-bench_results/20260624T110834Z_medium_owner_lease_word/README.md
-```
-
-Candidate:
-
-```text
-release medium remote publish used owner->medium_publish_ctl
-owner exit closed medium_publish_ctl and waited medium refs zero
-release exit path used fetch_sub
-debug still compared medium_publish_ctl decision with packed owner control
-```
-
-Result:
-
-```text
-debug medium r50:
-  decision_mismatch=0
-  ref_underflow=0
-  refs_at_exit=0
-  enter_after_close=0
-  reuse_with_refs=0
-
-release medium r50:
-  candidate median 7.429M ops/s
-  candidate steady median 7.751M ops/s
-
-prior shadow baseline:
-  median 7.479M ops/s
-  steady median 7.751M ops/s
-
-small interleaved remote90 quick:
-  median 50.124M ops/s
-```
-
-Decision:
-
-```text
-do not default
-safety proof passes, but performance is flat/slightly below baseline
-keep debug shadow only; packed owner control remains medium remote authority
-```
-
-## MediumRunResidualCostReaudit-L1
-
-Status: recorded.
-
-Data:
-
-```text
-bench_results/20260624T112027Z_medium_residual_reaudit/README.md
-```
-
-Change:
-
-```text
-bench output only
-added derived medium_residual line from existing counters
-allocator behavior unchanged
-```
-
-Result:
-
-```text
-debug medium r50:
-  lease_ns_per_pub=155.4
-  claim_ns_per_pub=31.0
-  qpush_ns_per_push=64.1
-  collect_ns_per_run=91.6
-  collect_runs_per_call=6.846
-  collect_slots_per_run=1.219
-
-class density:
-  8K  slots/run=1.416
-  16K slots/run=1.784
-  32K slots/run=1.613
-  64K slots/run=1.000
-
-release medium r50:
-  median 7.621M ops/s
-  steady median 7.906M ops/s
-```
-
-Interpretation:
-
-```text
-lease is still the largest measured debug bucket, but lease-word A/B was flat
-queue push fixed cost is visible, but retry pressure is low
-collect cadence is already batching calls; remaining density is limited by 64K one-slot runs
-```
-
-## MediumRunSizePolicy/ChunkArenaEvidence-L1
-
-Status: recorded.
-
-Data:
-
-```text
-bench_results/20260624T113104Z_medium_size_policy_evidence/README.md
-```
-
-Change:
-
-```text
-bench output only
-added medium class distribution counters
-added simple current-run vs hypothetical two-slot-64K run-mix estimate
-allocator behavior unchanged
-```
-
-Result:
-
-```text
-debug medium r50:
-  throughput median 3.188M ops/s
-  steady median 3.230M ops/s
-  one_slot_alloc_ratio=0.531900
-  one_slot_remote_ratio=0.531512
-  current_runs=63529
-  two_slot_64k_runs=39646
-  two_slot_64k_ratio=0.624061
-
-release medium r50:
-  throughput median 7.345M ops/s
-  steady median 7.589M ops/s
-
-short debug phase r90:
-  one_slot_alloc_ratio=0.537600
-  one_slot_remote_ratio=0.540055
-  current_runs=12818
-  two_slot_64k_runs=7968
-  two_slot_64k_ratio=0.621626
-```
-
-Interpretation:
-
-```text
-about 53-54% of medium objects are 64K one-slot class
-one queue episode per remote free is structurally common for that class
-lease-word A/B and queue retry audit do not point to another narrow queue/lease win
-medium size policy / run geometry is now the stronger evidence lane
-```
-
-## Archived Medium Boxes
-
-Detailed records live in each `bench_results/.../README.md`.
-
-```text
-025523 remote lockless claim: producer run mutex removed
-085004 post-claim rollback closure: stranded-pending window closed
-091112 single-writer shadow: active owner opportunity proven
-091612 active owner lock elision: active alloc/free run lock elided
-092050 pending queue MPSC: producer pending_lock push replaced
-092503 MPSC retry audit: retry pressure about 0.22%
-100942 collect word commit/rearm: finish race closed
-110022 lease word shadow: dedicated medium lease shadow clean
-110834 lease word A/B: safety-clean, performance flat, HOLD
-112027 residual reaudit: no narrow queue/lease follow-up
-113104 size-policy evidence: 64K one-slot class about 53-54%
-```
-
-## Next Boxes
-
-```text
-1. MediumGeometryLaneCloseout-L1
-   consultation order was correct, but the lane is already implemented:
-   scaffold -> 64K two-slot A/B -> detached class index
-   -> quantum directory cap -> chunk evidence -> upper48 evidence
-   current default remains q64-run64k / per-run mmap
-
-2. MediumR50ProtocolResidualRefresh-L1
-   fresh chunk A/B improves main variance but regresses medium r50 hard
-   rerun debug medium r50 attribution on current default
-
-3. MediumProtocolOrArenaSplit-L1
-   active-capacity hint is NO-GO; preserve 64K temporal reuse window
-   p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
-   local-free pending elision proof is clean but not default-worthy
-   budget16+64K2 is promoted as MediumRun default; next box is full v1 gate
-```
-
-## MediumV1GateRunner-L1
-
-Status: implemented.
-
-```text
-script:
-  scripts/run_medium_v1_gate.sh
-
-make target:
-  make medium-v1-gate
-
-output:
-  bench_results/*_medium_v1_gate/
-```
-
-Rows:
-
-```text
-medium_local0:
-  4097..65536 remote_pct=0 interleaved=1
-
-medium_interleaved_remote50:
-  4097..65536 remote_pct=50 interleaved=1
-
-medium_phase_remote90:
-  4097..65536 remote_pct=90 interleaved=0
-
-main_interleaved_remote90:
-  16..32768 remote_pct=90 interleaved=1 live_window=4096
-```
-
-## MediumV1DefaultMatrixRefresh-L1
-
-Status: recorded.
-
-```text
-latest:
-  bench_results/20260624T152001Z_medium_v1_gate/README.md
-prior:
-  bench_results/20260624T142739Z_medium_v1_gate/README.md
-```
-
-Result:
-
-```text
-medium_local0:
-  109.60M -> 102.54M ops/s
-  steady 107.89M
-
-medium_interleaved_remote50:
-  32.08M -> 33.13M ops/s
-  steady 35.82M
-
-medium_phase_remote90:
-  257K -> 263K ops/s
-  peak RSS 61.9MiB
-
-main_interleaved_remote90:
-  25.2M -> 25.8M ops/s
-  p25 24.2M -> 23.1M ops/s
-```
-
-Interpretation:
-
-```text
-collector active empty live improves medium r50 slightly
-medium local0 remains far above pre-active-retention baseline
-phase row remains lifecycle / first-touch stress, not primary throughput gate
-```
-
-## MediumR50ResidualAttribution-L1
-
-Status: refreshed after active empty live retention.
-
-```text
-bench_results/20260624T_medium_active_empty_live/medium_r50_debug.txt
-debug R5: median 8.55M, steady 9.04M
-split: slot 286.381ms, collect 336.923ms, lease 280.577ms, qpush 50.818ms
-minor_faults_per_op 0.010381, budget_reject=0, madvise_ms=13.807
-class density: [1.493,1.894,1.645,1.759]
-interpretation: local churn is closed; residual is collect + lease + slot mechanics
-```
-
-## MainInterleavedStabilityAudit-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T_main_interleaved_stability_audit/README.md
-main_interleaved_remote90 R10:
-  median 9.07M ops/s
-  p25 2.83M ops/s
-  minor_faults_median 713830
-  work_median 394.178ms
-  tail_median 48.266ms
-interpretation: instability reproduced; page-fault variance is the next suspect
-```
-
-## MainFaultVarianceAttribution-L1
-
-Status: recorded; chunk arena is the main fault candidate.
-
-```text
-bench_results/20260624T_main_fault_variance_chunk_ab/README.md
-main_interleaved_remote90 R5:
-  baseline median 7.95M, p25 6.21M, minor_median 281136
-  chunk median 23.59M, p25 17.66M, minor_median 7487
-interpretation: one-run mmap / page-fault churn explains much of main variance
-```
-
-## MediumChunkArenaPairedStability-L1
-
-Status: recorded twice; HOLD as default.
-
-```text
-latest:
-  bench_results/20260624T_budget8_medium_chunk_paired_medium_chunk_paired_gate/README.md
-prior:
-  bench_results/20260624T134630Z_medium_chunk_paired_gate/README.md
-runner: scripts/run_medium_chunk_paired_gate.sh
-latest medium r50 R5: baseline 13.76M, chunk 5.62M, ratio 0.408
-latest main remote90 R5: baseline 21.52M, chunk 24.06M, ratio 1.118
-latest small local R5: ratio 0.945
-latest small remote90 R5: ratio 0.987
-decision: chunk is main-stability evidence only; blocks medium r50 default
-```
-
-## MediumR50SlotCollectLane-L1
-
-Status: observed; no collect reject waste found.
-
-```text
-bench_results/20260624T_medium_collect_detail/README.md
-debug medium r50 R3:
-  collect accepted=479945 rejected=0 reject_ratio=0
-  madvise_ms 669.194
-  collect_ms 578.547
-  slot_ms 616.896
-  minor_faults_per_op 0.237291
-interpretation: do not optimize rejected slot validation first
-next target is retention budget pressure / madvise-fault churn
-```
-
-## MediumVariableRunGeometryScaffold-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T123311Z_medium_variable_run_geometry_scaffold/README.md
-behavior unchanged
-directory now maps 64KiB quantum -> containing run
-run_size is class-dependent scaffold state
-```
-
-## MediumRun64KTwoSlotAB-L1
-
-Status: candidate implemented; medium gate passed; default promotion pending clean small rerun.
-
-```text
-bench_results/20260624T123643Z_medium_64k_two_slot_ab/README.md
-64K class candidate: 128KiB run / 2 slots
-release medium r50 short ratio: 1.192
-debug qpush: 33259 -> 23000
-debug collect_slots_per_run: 1.203 -> 1.739
-short phase create: 6368 -> 3979
-short phase global_skip_foreign: 20269338 -> 7912248
-zero gates clean in short probes
-```
-
-## MediumRun64KTwoSlotPairedGate-L1
-
-Status: recorded; HOLD as default.
-
-```text
-bench_results/20260624T123932Z_medium_64k2_paired_gate/README.md
-```
-
-Result:
-
-```text
-medium r50 R10 x2:
-  batch1 ratio 1.175
-  batch2 ratio 1.172
-  PASS
-
-small local0 R10 x2:
-  batch1 ratio 0.938
-  batch2 ratio 1.037
-  inconclusive
-
-small interleaved remote90 R10 x2:
-  batch1 ratio 0.979
-  batch2 ratio 0.744
-  FAIL as paired gate
-
-reverse-order sanity:
-  small interleaved ratio 0.986
-```
-
-Decision:
-
-```text
-q64-run64k2 remains evidence candidate
-do not default yet
-order-rotated small rerun is required before promotion
-```
-
-## MediumRun64KTwoSlotOrderRotatedGate-L1
-
-Status: superseded by budget16 probe.
-
-```text
-bench_results/20260624T_medium_64k2_budget16_probe/README.md
-bench_results/20260624T_medium_64k2_budget16_runner_smoke_medium_64k2_budget_paired_gate/README.md
-bench_results/20260624T_medium_64k2_default_verify_README.md
-budget16 + q64-run64k2:
-  medium r50 ratio 1.347 / 1.360
-  small local0 ratio 1.036
-  small remote90 ratio 1.004 / 0.988
-```
-
-Decision:
-
-```text
-budget16 + q64-run64k2 is now default; run full MediumRun v1 gate next
-```
-
-## MediumDetachedRunClassIndex-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T124747Z_medium_detached_class_index/README.md
-debug medium r50: global_skip_foreign=0 free_steps=0
-short debug phase r90: global_skip_foreign=0 free_steps=175546277
-release medium r50 median: 7.531M ops/s
-small interleaved quick median: 53.156M ops/s
-```
-
-Decision:
-
-```text
-detached class index removes foreign-attached global scan
-remaining phase lookup cost is direct-directory overflow/fallback
-next box is MediumChunkArenaQuantum-L1
-```
-
-## MediumQuantumDirectoryCap-L1
-
-Status: recorded.
-
-```text
-bench_results/20260624T125025Z_medium_quantum_directory_cap/README.md
-directory cap 4096 -> 65536
-short phase r90: global_skip_foreign=0 free_steps=0
-release medium r50 median: 7.590M ops/s
-small interleaved quick median: 53.244M ops/s
-```
-
-Decision:
-
-```text
-directory-capacity fallback is closed
-full ChunkArena carving is still open
-next box is MediumChunkArenaCarve-L1 or Upper48K size-policy shadow
-```
-
-## MediumChunkArenaCarve-L1
-
-Status: evidence-only; HOLD as default.
-
-```text
-bench_results/20260624T125508Z_medium_chunk_carve_candidate/README.md
-candidate build: H8_MEDIUM_CHUNK_CARVE
-release medium r50 ratio: 0.984
-chunk phase r90 short: free_steps=0 remote_ms=4.111
-```
-
-Decision:
-
-```text
-default remains per-run mmap
-directory fallback is already closed
-next lane is MediumUpper48KSizePolicyShadow-L1
-```
-
-## MediumChunkArenaQuantum-L1
-
-Status: attributed; candidate remains evidence-only.
-
-```text
-bench_results/20260624T_medium_chunk_quantum_attribution/README.md
-change: added debug medium_chunk create/alloc/reserved/used counters
-candidate macro: H8_MEDIUM_CHUNK_CARVE
-debug R3: chunk create=1 alloc=244 reserved=16MiB used=15.99MiB
-release r50 R3: baseline 7.41M, chunk 9.09M median
-minor_faults_per_op: baseline 0.166416, chunk 0.099406
-interpretation: chunk arena reduces short-run fault pressure
-promotion requires small frozen gates and longer paired stability
-```
-
-## MediumUpper48KSizePolicyPairedGate-L1
-
-Status: recorded; HOLD as default.
-
-```text
-bench_results/20260624T_budget8_medium_sizepolicy_paired_medium_sizepolicy_paired_gate/README.md
-candidate build macro: H8_MEDIUM_UPPER48_CLASS
-candidate geometry id: q64-upper48
-resident budget is budget8 default cap
-```
-
-```text
-medium r50 paired:
-  ratio 1.054
-
-small local0 R5:
-  ratio 1.039
-
-small interleaved remote90 R5:
-  ratio 0.866
-
-phase r90 R5:
-  throughput ratio 1.342
-  peak RSS ratio 1.000
-```
-
-Decision:
-
-```text
-functional and smoke-clean
-medium r50 signal is positive
-phase peak RSS improvement is small in this sample
-small interleaved frozen quick gate fails
-current default remains 8K / 16K / 32K / 64K
-```
-
-## Safety Gates
-
-Medium runtime hard gates:
-
-```text
-medium_invalid_owned_platform_fallback = 0
-medium_remote_publish_lost = 0
-medium_remote_claim_accepted_twice = 0
-medium_collect_duplicate = 0
-medium_postclaim_unaccounted = 0
-medium_empty_with_pending = 0
-medium_decommit_while_pending = 0
-medium_owner_dead_queue_push = 0
-medium_owner_detach_nonquiescent = 0
-medium_owner_exit_pending_nonzero = 0
-medium_active_alloc_owner_mismatch = 0
-medium_owner_list_owner_mismatch = 0
-```
-
-Quiescent run gates:
-
-```text
-pending_bits == 0
-qstate == IDLE
-run is not pending-queued
-free_mask & allocated_mask == 0
-free_mask | allocated_mask == valid_slot_mask
-popcount(allocated_mask) == ALLOCATED slot_state count
-popcount(free_mask) == FREE slot_state count
-resident charge accounting matches payload_state
-```
-
-Small frozen gates stay active:
-
-```text
-INVALID platform fallback = 0
-duplicate claim = 0
-quiescent pending bitmap = 0
-qstate/mask quiescent = clean
-timeout / abort = 0
-```
-
-## Documentation
-
-```text
-architecture:
-  docs/HZ8_ARCHITECTURE.md
-  docs/HZ8_MEDIUM_RUN_V1.md
+lane guide:
   docs/HZ8_V1_LANES.md
 
-contracts:
-  docs/HZ8_OWNERSHIP_CONTRACT.md
-  docs/HZ8_OWNER_LIFECYCLE.md
-  docs/HZ8_REMOTE_COLLECT.md
-  docs/HZ8_NO_GO_LEDGER.md
+medium protocol/geometry RC:
+  docs/HZ8_MEDIUM_RUN_V1_RC1.md
 
-bench gates:
+same-run matrix:
+  docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
+
+main/medium attribution:
+  docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
+
+benchmark gates:
   docs/HZ8_BENCH_GATE.md
-  docs/HZ8_SMALL_V0_RC1.md
 ```

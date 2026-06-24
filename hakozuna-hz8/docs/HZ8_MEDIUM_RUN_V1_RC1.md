@@ -37,6 +37,11 @@ MediumFreeDirectIdentityShape-L1:
   default
   same-owner medium free reuses one owner-word load / owner-match decision on
   the direct path
+
+MediumMallocInitFastPath-L1:
+  default
+  medium malloc no longer performs an explicit h8_init() in h8_malloc_inner;
+  h8_thread_ctx_fast() slow path remains the initialization authority
 ```
 
 Evidence:
@@ -45,6 +50,7 @@ Evidence:
 docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 bench_results/hz8_active_hit_ab_20260624T174838Z/
 bench_results/hz8_free_identity_ab_20260624T175453Z/
+bench_results/hz8_medium_initfast_ab_20260624T182824Z/
 ```
 
 These boxes do not change the MediumRun ownership, remote, residency, geometry,
