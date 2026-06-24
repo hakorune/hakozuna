@@ -150,9 +150,12 @@ if objective is medium r50 stability:
   p25/min can still show high-minor-fault outliers
   MediumR50MatrixPressureAttribution-L1 did not reproduce a simple
   preceding-allocator-pressure cause
-  next step is MediumR50FaultModeCapture-L1:
-    collect more HZ8-only fresh-process samples and classify the outlier
-    frequency
+  MediumR50FaultModeCapture-L1 shows outliers in medium r50 only:
+    direct 5/30
+    preload 4/30
+    medium_local0 0/30
+  next step is MediumR50FaultSourceAttribution-L1:
+    compare debug/audit counters for normal vs outlier fresh-process r50 runs
   do not reopen the medium remote queue / lease protocol before this evidence
 
 if objective is RSS / rounded bytes:

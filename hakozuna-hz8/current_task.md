@@ -268,9 +268,26 @@ next measurement lanes:
 
     next scope:
       MediumR50FaultModeCapture-L1
-      reproduce HZ8 medium_r50 after selected pressure rows or allocator runs
-      collect more HZ8-only fresh-process samples and classify the
-      high-minor-fault mode frequency
+      complete
+      data=bench_results/medium_fresh_process_attr_20260624T222908Z/
+
+      result:
+        direct medium_r50:
+          28.25M median, 26.72M p25, 4.74M min
+          high-fault outliers 5/30
+
+        preload medium_r50:
+          29.01M median, 28.01M p25, 5.97M min
+          high-fault outliers 4/30
+
+        medium_local0:
+          no high-fault outliers in direct or preload mode
+
+      next scope:
+        MediumR50FaultSourceAttribution-L1
+        run debug/audit fresh-process medium_r50
+        compare normal vs outlier runs for medium empty/retain/reactivate,
+        madvise, owner exit, remote publish, and collect counters
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane

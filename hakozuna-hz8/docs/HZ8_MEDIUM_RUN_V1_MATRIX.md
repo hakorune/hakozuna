@@ -514,3 +514,46 @@ MediumR50FaultModeCapture-L1:
   save per-run minor faults, peak RSS, work/tail, and wall time
   classify the fault-mode frequency before changing allocator behavior
 ```
+
+## Medium r50 Fault Mode Capture
+
+R30 fresh-process capture:
+
+```text
+data=bench_results/medium_fresh_process_attr_20260624T222908Z/
+```
+
+Summary:
+
+| Row | Mode | median | p25 | min | fault median | fault max | outliers |
+|---|---|---:|---:|---:|---:|---:|---:|
+| `medium_interleaved_remote50` | direct | 28.25M | 26.72M | 4.74M | 10316 | 560405 | 5/30 |
+| `medium_interleaved_remote50` | preload | 29.01M | 28.01M | 5.97M | 10319 | 387005 | 4/30 |
+| `medium_local0` | direct | 141.72M | 137.25M | 106.78M | 492 | 516 | 0/30 |
+| `medium_local0` | preload | 145.78M | 133.56M | 100.75M | 463 | 499 | 0/30 |
+
+Interpretation:
+
+```text
+fault mode:
+  specific to medium_interleaved_remote50
+  appears in both direct and preload modes
+  correlates with minor faults in the 75k..560k range
+
+not fault mode:
+  medium_local0
+  preload boundary by itself
+  simple preceding allocator pressure
+
+current blocker:
+  medium r50 fresh-process p25/min stability
+```
+
+Next design lane:
+
+```text
+MediumR50FaultSourceAttribution-L1:
+  run debug/audit build for fresh-process medium_r50
+  capture medium empty/retain/reactivate, madvise, owner exit, remote publish,
+  and collect counters for outlier vs normal runs
+```
