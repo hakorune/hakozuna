@@ -31,6 +31,12 @@ Rows:
   guard_local0                 16..2048, remote=0
   small_interleaved_remote90   16..4096, remote=90, interleaved=1
   small_phase_remote90         16..4096, remote=90, interleaved=0
+  main_local0                  16..32768, remote=0, interleaved=1
+  main_interleaved_remote50    16..32768, remote=50, interleaved=1
+  main_interleaved_remote90    16..32768, remote=90, interleaved=1
+  medium_local0                4097..65536, remote=0, interleaved=1
+  medium_interleaved_remote50  4097..65536, remote=50, interleaved=1
+  medium_phase_remote90        4097..65536, remote=90, interleaved=0
 EOF
 }
 
@@ -91,8 +97,8 @@ cat > "${OUTDIR}/README.log" <<EOF
 [MATRIX] runs=${RUNS}
 [MATRIX] threads=${THREADS}
 [MATRIX] iters=${ITERS}
-[MATRIX] allocator_behavior_sha=2d5073a
-[MATRIX] freeze_record_sha=d3f3fe5
+[MATRIX] allocator_behavior_sha=f916c803
+[MATRIX] freeze_record_sha=f916c803
 EOF
 
 for alloc in "${allocator_list[@]}"; do
@@ -206,6 +212,18 @@ run_row "small_interleaved_remote90" \
   "${common} --min-size 16 --max-size 4096 --remote-pct 90 --interleaved 1 --live-window ${LIVE_WINDOW}"
 run_row "small_phase_remote90" \
   "${common} --min-size 16 --max-size 4096 --remote-pct 90 --interleaved 0"
+run_row "main_local0" \
+  "${common} --min-size 16 --max-size 32768 --remote-pct 0 --interleaved 1 --live-window ${LIVE_WINDOW}"
+run_row "main_interleaved_remote50" \
+  "${common} --min-size 16 --max-size 32768 --remote-pct 50 --interleaved 1 --live-window ${LIVE_WINDOW}"
+run_row "main_interleaved_remote90" \
+  "${common} --min-size 16 --max-size 32768 --remote-pct 90 --interleaved 1 --live-window ${LIVE_WINDOW}"
+run_row "medium_local0" \
+  "${common} --min-size 4097 --max-size 65536 --remote-pct 0 --interleaved 1 --live-window ${LIVE_WINDOW}"
+run_row "medium_interleaved_remote50" \
+  "${common} --min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1 --live-window ${LIVE_WINDOW}"
+run_row "medium_phase_remote90" \
+  "${common} --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0"
 
 python3 - "${csv}" "${OUTDIR}/summary.md" <<'PY'
 import csv
