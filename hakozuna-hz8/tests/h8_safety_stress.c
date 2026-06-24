@@ -28,12 +28,16 @@ static int debug_hard_gates_clean(const char* label) {
       d.slot_shadow_never_used_below_bump != 0 ||
       d.slot_shadow_nonvirgin_above_bump != 0 ||
       d.slot_shadow_used_mismatch != 0 ||
-      d.slot_shadow_reserved_quiescent != 0) {
+      d.slot_shadow_reserved_quiescent != 0 ||
+      d.medium_invalid_owned_count != 0 ||
+      d.medium_active_alloc_owner_mismatch != 0 ||
+      d.medium_owner_list_owner_mismatch != 0 ||
+      d.medium_route_authority_mismatch != 0) {
     fprintf(stderr, "%s: hard gate failed\n", label);
     fprintf(stderr,
             "validate=%zu qpending=%zu qrepair=%zu local_pending=%zu/%zu "
             "live=%zu/%zu slot_mismatch=%zu/%zu/%zu free=%zu/%zu/%zu/%zu "
-            "bump=%zu/%zu used=%zu reserved=%zu\n",
+            "bump=%zu/%zu used=%zu reserved=%zu medium=%zu/%zu/%zu/%zu\n",
             d.remote_stage_validate_fail,
             d.quiescent_pending_bitmap_nonzero,
             d.quiescent_pending_repair,
@@ -51,7 +55,11 @@ static int debug_hard_gates_clean(const char* label) {
             d.slot_shadow_never_used_below_bump,
             d.slot_shadow_nonvirgin_above_bump,
             d.slot_shadow_used_mismatch,
-            d.slot_shadow_reserved_quiescent);
+            d.slot_shadow_reserved_quiescent,
+            d.medium_invalid_owned_count,
+            d.medium_active_alloc_owner_mismatch,
+            d.medium_owner_list_owner_mismatch,
+            d.medium_route_authority_mismatch);
     return 0;
   }
   return 1;

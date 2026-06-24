@@ -198,20 +198,21 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
 
   state = atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
   if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-    if (h8_medium_claim_accepted_by_collector(run)) {
+    bool draining = h8_medium_claim_accepted_by_collector(run);
+    uint64_t rollback = atomic_fetch_and_explicit(
+        &run->pending_bits[0], ~bit, memory_order_acq_rel);
+    if ((rollback & bit) == 0) {
+      H8_DEBUG_INC(medium_remote_lockless_claim_rollback_accepted);
+      result = H8_PUBLISH_OK;
+      goto out;
+    }
+    if (draining) {
       H8_DEBUG_INC(medium_remote_lockless_claim_collector_accept);
       result = H8_PUBLISH_OK;
       goto out;
     }
-    uint64_t rollback = atomic_fetch_and_explicit(
-        &run->pending_bits[0], ~bit, memory_order_acq_rel);
-    if (rollback & bit) {
-      H8_DEBUG_INC(medium_remote_lockless_claim_rollback_invalid);
-      result = H8_PUBLISH_INVALID;
-    } else {
-      H8_DEBUG_INC(medium_remote_lockless_claim_rollback_accepted);
-      result = H8_PUBLISH_OK;
-    }
+    H8_DEBUG_INC(medium_remote_lockless_claim_rollback_invalid);
+    result = H8_PUBLISH_INVALID;
     goto out;
   }
 

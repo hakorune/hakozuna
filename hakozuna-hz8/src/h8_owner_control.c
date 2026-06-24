@@ -19,9 +19,15 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {
     owner->owned_by_class[i] = NULL;
   }
+  for (size_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    owner->medium_by_class[i] = NULL;
+  }
   atomic_store_explicit(&owner->pending_head, NULL, memory_order_relaxed);
   atomic_store_explicit(&owner->pending_span_count, 0, memory_order_relaxed);
   owner->pending_carry = NULL;
+  owner->medium_pending_head = NULL;
+  owner->medium_pending_carry = NULL;
+  atomic_store_explicit(&owner->medium_pending_count, 0, memory_order_relaxed);
   owner->owned_head = NULL;
   owner->orphan_head = NULL;
   owner->span_chunk_next = 0;

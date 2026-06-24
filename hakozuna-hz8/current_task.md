@@ -101,6 +101,82 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunPostClaimRollbackClosure-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+close the lockless medium post-claim stranded-pending window
+```
+
+Scope:
+
+```text
+postcheck failure always attempts pending rollback
+DRAINING / DRAINING_DIRTY no longer leaves producer bit published
+collector snapshot acceptance is still allowed after rollback closes the bit
+owner mark-alive explicitly resets medium owner lists and pending queue fields
+no performance-path redesign
+```
+
+Acceptance:
+
+```text
+smoke pass
+safety stress pass
+medium r50 debug:
+  remote_lockless_rb_invalid may be nonzero
+  remote_lockless_rb_accept may be nonzero
+  invalid_owned remains 0
+  owner/list mismatch remains 0
+small quick gates no material regression
+all source files remain below 800 lines
+```
+
+Data:
+
+```text
+bench_results/20260624T085004Z_medium_postclaim_rollback_closure/README.md
+```
+
+Result:
+
+```text
+debug r50:
+  remote_pub=89870
+  remote_run_lock_ms=0.000
+  remote_lockless_claim=89870
+  remote_lockless_accept=0
+  remote_lockless_rb_invalid=0
+  remote_lockless_rb_accept=73
+  invalid_owned=0
+  active_owner_mismatch=0
+  owner_list_mismatch=0
+  route_authority_mismatch=0
+
+release r50:
+  initial R5 median about 4.737M ops/s
+  rerun R7 median about 5.237M ops/s
+
+small interleaved remote90 quick:
+  median about 49.613M ops/s
+```
+
+Interpretation:
+
+```text
+post-claim failure now closes the pending bit before returning
+collector snapshot acceptance remains possible without stranded pending bits
+owner generation start explicitly clears medium queue/list state
+next performance box is MediumRunOwnerLocalSingleWriterShadow-L2
+```
+
 ### MediumRunRemotePublishLocklessClaim-L1
 
 Status:
