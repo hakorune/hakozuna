@@ -531,6 +531,20 @@ main row has severe stability variance
 next implementation should target medium r50 / main instability
 ```
 
+## MediumR50ResidualAttribution-L1
+
+Status: implemented / short observed.
+
+```text
+bench_results/20260624T_medium_r50_residual_attribution/README.md
+change: bench output only, added medium_residual_budget derived line
+allocator behavior unchanged
+debug R3: median 6.12M, attributed_ms 1133.828
+split: slot 508.582ms, collect 316.914ms, lease 137.376ms, lock 100.512ms
+release R3: median 5.77M, minor_faults_per_op 0.180497
+interpretation: target slot/collect/lease or fault variance before queue push
+```
+
 ## MediumVariableRunGeometryScaffold-L1
 
 Status: recorded.

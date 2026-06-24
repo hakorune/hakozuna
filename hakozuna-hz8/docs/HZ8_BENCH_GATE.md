@@ -154,6 +154,11 @@ main_interleaved_remote90:
   live_window=4096
 ```
 
+Debug/audit builds also print `medium_residual_budget`.  Treat it as
+attribution evidence, not exclusive wall-time accounting: nested lock, collect,
+and slot timers can overlap.  Use it to choose the next MediumRun box before
+changing allocator behavior.
+
 ## v0 Performance Gates
 
 Initial v0 gates:

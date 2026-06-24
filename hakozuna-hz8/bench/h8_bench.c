@@ -625,6 +625,40 @@ int main(int argc, char** argv) {
          medium_collect_ns_per_run,
          medium_collect_runs_per_call,
          medium_collect_slots_per_run);
+  double medium_attributed_ms =
+      (double)(debug.medium_remote_owner_lease_ns +
+               debug.medium_remote_pending_claim_ns +
+               debug.medium_remote_queue_push_ns +
+               debug.medium_remote_collect_ns +
+               debug.medium_global_lock_wait_ns +
+               debug.medium_run_lock_wait_ns +
+               debug.medium_alloc_slot_ns +
+               debug.medium_free_slot_ns +
+               debug.medium_madvise_ns) /
+      1e6;
+  double medium_lock_ms =
+      (double)(debug.medium_global_lock_wait_ns +
+               debug.medium_run_lock_wait_ns +
+               debug.medium_remote_run_lock_ns) /
+      1e6;
+  double medium_slot_ms =
+      (double)(debug.medium_alloc_slot_ns + debug.medium_free_slot_ns) / 1e6;
+  size_t minor_median =
+      h8_percentile_size_t(minor_faults, (size_t)opt.runs, 0.50);
+  double bench_ops =
+      (double)opt.threads * (double)opt.iters_per_thread;
+  double minor_per_op = bench_ops > 0.0 ? (double)minor_median / bench_ops : 0.0;
+  printf("medium_residual_budget attributed_ms=%.3f lock_ms=%.3f slot_ms=%.3f qpush_ms=%.3f collect_ms=%.3f lease_ms=%.3f claim_ms=%.3f madvise_ms=%.3f minor_faults_median=%zu minor_faults_per_op=%.6f\n",
+         medium_attributed_ms,
+         medium_lock_ms,
+         medium_slot_ms,
+         (double)debug.medium_remote_queue_push_ns / 1e6,
+         (double)debug.medium_remote_collect_ns / 1e6,
+         (double)debug.medium_remote_owner_lease_ns / 1e6,
+         (double)debug.medium_remote_pending_claim_ns / 1e6,
+         (double)debug.medium_madvise_ns / 1e6,
+         minor_median,
+         minor_per_op);
   size_t lower_median =
       h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50);
   double actual_per_run =
