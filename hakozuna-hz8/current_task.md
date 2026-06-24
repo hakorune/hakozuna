@@ -438,37 +438,37 @@ Status: recorded.
 
 ```text
 latest:
-  bench_results/20260624T142006Z_medium_v1_gate/README.md
+  bench_results/20260624T142739Z_medium_v1_gate/README.md
 prior:
-  bench_results/20260624T140605Z_medium_v1_gate/README.md
+  bench_results/20260624T142006Z_medium_v1_gate/README.md
 ```
 
 Result:
 
 ```text
 medium_local0:
-  11.28M -> 10.52M ops/s
+  10.52M -> 109.60M ops/s
+  steady 114.59M
 
 medium_interleaved_remote50:
-  13.97M -> 19.36M ops/s
-  minor faults median 8.6K -> 6.7K
+  19.36M -> 32.08M ops/s
+  steady 34.44M
 
 medium_phase_remote90:
-  141K -> 262K ops/s
-  peak RSS 65.1MiB
+  262K -> 257K ops/s
+  peak RSS 61.6MiB
 
 main_interleaved_remote90:
-  23.0M -> 24.1M ops/s
-  p25 21.5M -> 18.0M ops/s
-  minor faults median 7.4K -> 7.4K
+  24.1M -> 25.2M ops/s
+  p25 18.0M -> 24.2M ops/s
 ```
 
 Interpretation:
 
 ```text
-budget16 + q64-run64k2 materially improves medium remote/phase rows
-medium local0 regresses modestly; next evidence box is local-vs-remote tradeoff
-and residual attribution on the new default
+active empty live retention removes local empty-residency churn
+medium local0 and r50 are materially stronger
+phase row remains lifecycle / first-touch stress, not primary throughput gate
 ```
 
 ## MediumR50ResidualAttribution-L1
