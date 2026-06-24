@@ -615,29 +615,122 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-MediumRunPostMPSCResidualReaudit-L1
-  -> recorded as MediumRunMpscRetryAudit-L1
+1. MediumVariableRunGeometryScaffold-L1
+   behavior unchanged
+   split run payload size from 64KiB directory quantum
 
-MediumRunCollectWorkCadence-L1
-  -> recorded as MediumRunCollectCadenceTuning-L1
+2. MediumRun64KTwoSlotAB-L1
+   build-time candidate
+   64K class uses 128KiB run payload and 2 slots/run
 
-MediumRunOwnerLeaseCost-L1
-  -> recorded as MediumRunOwnerLeaseCeiling-L1
+3. MediumDetachedRunClassIndex-L1
+   after geometry decision
 
-MediumRunOwnerLeaseWordShadow-L1
-  -> recorded
+4. MediumChunkArenaQuantum-L1
+   after run order is decided
 
-MediumRunOwnerLeaseWord-L1
-  -> recorded HOLD
+5. MediumUpper48KSizePolicyShadow/AB-L1
+   later rounded-byte reduction lane
+```
 
-MediumRunSizePolicy/ChunkArenaEvidence-L1
-  -> recorded
+## MediumVariableRunGeometryScaffold-L1
 
-MediumRun64KGeometry/SizePolicy-v1
-  -> likely next evidence lane if medium v1 continues
+Status: next.
 
-MediumRunChunkArena-L1
-  -> possible follow-up if phase rows remain dominated by global registry scans
+Scope:
+
+```text
+no behavior change
+introduce H8_MEDIUM_QUANTUM_BYTES = 64KiB
+keep all current classes at 64KiB run payload initially
+represent run_size as class-dependent geometry
+register/unregister every 64KiB quantum covered by a run
+lookup by quantum first, then validate ptr within run payload range
+residency/decommit/munmap use run->run_size
+```
+
+Non-goals:
+
+```text
+no class map change
+no slot size change
+no 64K two-slot behavior yet
+no runtime profile knob
+no chunk arena
+```
+
+Acceptance:
+
+```text
+smoke and safety stress clean
+medium debug r50 zero gates clean
+medium release r50 no material regression
+small frozen quick rows no material regression
+line count under 800
+```
+
+## MediumRun64KTwoSlotAB-L1
+
+Status: after scaffold.
+
+Candidate:
+
+```text
+default:
+  64K class = 64KiB run / 1 slot
+
+candidate:
+  64K class = 128KiB run / 2 slots
+
+unchanged:
+  p2 class lookup
+  slot size
+  shift/mask slot decode
+  pending bitmap one word
+  slot_state authority
+```
+
+Safety gates:
+
+```text
+slot0 pointer VALID
+slot1 pointer VALID
+slot1 interior INVALID
+run end INVALID or correctly separated from next run
+both quantum directory entries resolve to the same run
+unregister removes both quantum entries
+duplicate remote free accepted once
+owner exit pending drain clean
+resident charge returns to zero at owner exit
+medium and small zero gates clean
+```
+
+Promotion:
+
+```text
+paired RUNS=10 x 2
+medium r50 median >= baseline * 1.08
+remote_qpush >= 15% reduction
+remote_collect_run >= 15% reduction
+overall collect_slots_per_run >= 1.40
+64K class collect_slots_per_run >= 1.45
+phase run create/count >= 25% reduction
+post RSS regression <= 5%
+peak RSS regression <= 5%
+small frozen rows regression <= 2%
+```
+
+Decision rule:
+
+```text
+>= 8% medium r50 gain:
+  adopt candidate and continue to detached class index
+
+3-8% gain:
+  keep as v1 evidence; decide after chunk arena comparison
+
+< 3% gain or safety complexity:
+  keep current geometry and proceed to detached class index / chunk arena
 ```
 
 ## Safety Gates
