@@ -380,6 +380,28 @@ MediumRunP2SlotDecode-L1:
   interpretation:
     power-of-two slot geometry cleanup is safe and slightly positive
     remaining cost is still lock/protocol shape, not slot division
+
+MediumRunOwnerLocalLockElisionShadow-L1:
+  current status:
+    recorded
+  mechanism:
+    publish medium run owner token on owner attach
+    clear token on owner detach
+    count same-owner active alloc/free candidates
+    no allocator behavior change
+  data:
+    bench_results/20260624T001822Z_medium_lock_elision_shadow/README.md
+  result:
+    debug r50 lock_elide_alloc=10943
+    debug r50 lock_elide_free=9958
+    debug r50 lock_elide_mismatch=19092
+    debug local lock_elide_alloc=16598
+    debug local lock_elide_free=16604
+    debug local lock_elide_mismatch=6790
+  interpretation:
+    same-owner lock-elision opportunities are material
+    actual lock elision is HOLD because current medium remote free still mutates run masks directly
+    next correctness boundary is MediumRunRemote-L1
 ```
 
 ### 2. SizePolicy-v1 Evidence

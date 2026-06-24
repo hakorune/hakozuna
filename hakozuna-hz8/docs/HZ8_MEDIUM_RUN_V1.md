@@ -410,16 +410,33 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      safe cleanup with modest positive signal
      remaining bottleneck is still run lock / protocol shape
 
-12. MediumRunRunPool-L1
+12. MediumRunOwnerLocalLockElisionShadow-L1
+   status: recorded
+   no behavior change
+   publish owner token on run attach and clear it on detach
+   count same-owner alloc/free candidates before run lock
+   result:
+     bench_results/20260624T001822Z_medium_lock_elision_shadow/README.md
+     debug r50 lock_elide_alloc=10943
+     debug r50 lock_elide_free=9958
+     debug local lock_elide_alloc=16598
+     debug local lock_elide_free=16604
+   interpretation:
+     opportunities are material
+     actual lock elision is blocked by current remote-free-direct-mutation scaffold
+
+13. MediumRunRemote-L1
+   remote free publish/owner collect for medium
+   stop foreign threads from mutating run masks directly
+   duplicate claim gates
+   unlocks future owner-local run lock elision
+
+14. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-13. MediumRunRemote-L1
-   remote free publish/collect
-   duplicate claim gates
-
-14. MediumRunLifecycle-L1
+15. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

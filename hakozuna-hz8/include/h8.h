@@ -223,6 +223,9 @@ typedef struct H8DebugStats {
   size_t medium_free_slot_ns;
   size_t medium_alloc_slot_count;
   size_t medium_free_slot_count;
+  size_t medium_lock_elide_alloc_candidate;
+  size_t medium_lock_elide_free_candidate;
+  size_t medium_lock_elide_owner_mismatch;
   size_t medium_free_lookup_step_count;
   size_t medium_route_lookup_step_count;
   size_t pending_collect_word_count;

@@ -594,6 +594,12 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       atomic_load_explicit(&h8g.medium_alloc_slot_count, memory_order_acquire);
   out->medium_free_slot_count =
       atomic_load_explicit(&h8g.medium_free_slot_count, memory_order_acquire);
+  out->medium_lock_elide_alloc_candidate = atomic_load_explicit(
+      &h8g.medium_lock_elide_alloc_candidate, memory_order_acquire);
+  out->medium_lock_elide_free_candidate = atomic_load_explicit(
+      &h8g.medium_lock_elide_free_candidate, memory_order_acquire);
+  out->medium_lock_elide_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_lock_elide_owner_mismatch, memory_order_acquire);
   out->medium_free_lookup_step_count = atomic_load_explicit(
       &h8g.medium_free_lookup_step_count, memory_order_acquire);
   out->medium_route_lookup_step_count = atomic_load_explicit(
