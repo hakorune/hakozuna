@@ -95,6 +95,21 @@ typedef struct H8BenchMediumTotals {
   size_t remote_live_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
 } H8BenchMediumTotals;
 
+typedef struct H8BenchReportInput {
+  const H8BenchOptions* opt;
+  size_t* minor_faults;
+  size_t* span_lower_bound;
+#if defined(H8_BENCH_ATTRIBUTION)
+  uint64_t frag_requested_total;
+  uint64_t frag_rounded_total;
+  uint64_t frag_upper1536_total;
+  uint64_t frag_upper1p5_total;
+  const uint64_t* frag_rounded_by_class;
+  const size_t* frag_allocs_by_class;
+  const H8BenchMediumTotals* medium_totals;
+#endif
+} H8BenchReportInput;
+
 uint32_t h8_rng_next(uint32_t* state);
 size_t h8_rand_range(uint32_t* state, size_t lo, size_t hi);
 uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size);
@@ -105,6 +120,7 @@ size_t h8_bench_upper1p5_slots_for_class(uint32_t class_id);
 void h8_bench_medium_totals_add(H8BenchMediumTotals* totals,
                                 const H8BenchThread* threads, int count);
 void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals);
+void h8_bench_print_final_report(const H8BenchReportInput* input);
 uint64_t h8_now_ns(void);
 H8MemorySample h8_read_memory_sample(void);
 int h8_spsc_push(H8Inbox* inbox, void* ptr);
