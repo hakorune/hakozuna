@@ -233,6 +233,17 @@ typedef struct H8DebugStats {
   size_t medium_remote_free_owner_mismatch;
   size_t medium_free_lookup_step_count;
   size_t medium_route_lookup_step_count;
+  size_t medium_remote_publish_count;
+  size_t medium_remote_owner_lease_ns;
+  size_t medium_remote_run_lock_ns;
+  size_t medium_remote_pending_claim_count;
+  size_t medium_remote_pending_claim_ns;
+  size_t medium_remote_notify_count;
+  size_t medium_remote_queue_push_count;
+  size_t medium_remote_collect_call_count;
+  size_t medium_remote_collect_run_count;
+  size_t medium_remote_collect_slot_count;
+  size_t medium_remote_collect_ns;
   size_t pending_collect_word_count;
   size_t pending_collect_word_nonzero_count;
   size_t pending_collect_bit_count;

@@ -458,8 +458,29 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      next step is MediumRunRemoteCostAudit-L1 before further protocol changes
 
 15. MediumRunRemoteCostAudit-L1
+   status: recorded
    split medium remote cost into owner lease, pending claim, queue publish,
    owner collect, qstate handoff, and run lock wait
+   result:
+     bench_results/20260624T011936Z_medium_remote_cost_audit/README.md
+     debug r50 remote_pub=9972
+     debug r50 remote_lease_ms=0.684
+     debug r50 remote_run_lock_ms=0.574
+     debug r50 remote_claim_ms=0.348
+     debug r50 remote_notify=9657
+     debug r50 remote_qpush=9657
+     debug r50 remote_collect_run=9657
+     debug r50 remote_collect_slot=9972
+     debug r50 remote_collect_ms=2.390
+   interpretation:
+     owner-attached remote correctness remains clean
+     owner collect is the largest measured debug bucket
+     notify / queue-push is almost one per remote free
+     current owner collect cadence is intentionally eager but too expensive
+   next:
+     MediumRunRemoteNotifyCoalescing-L1
+     MediumRunOwnerCollectCadence-L1
+     keep owner lease reduction and chunk arena HOLD until this is resolved
 
 16. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation

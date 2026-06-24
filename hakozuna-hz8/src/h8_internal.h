@@ -394,6 +394,17 @@ typedef struct H8Global {
   atomic_size_t medium_remote_free_owner_mismatch;
   atomic_size_t medium_free_lookup_step_count;
   atomic_size_t medium_route_lookup_step_count;
+  atomic_size_t medium_remote_publish_count;
+  atomic_size_t medium_remote_owner_lease_ns;
+  atomic_size_t medium_remote_run_lock_ns;
+  atomic_size_t medium_remote_pending_claim_count;
+  atomic_size_t medium_remote_pending_claim_ns;
+  atomic_size_t medium_remote_notify_count;
+  atomic_size_t medium_remote_queue_push_count;
+  atomic_size_t medium_remote_collect_call_count;
+  atomic_size_t medium_remote_collect_run_count;
+  atomic_size_t medium_remote_collect_slot_count;
+  atomic_size_t medium_remote_collect_ns;
   atomic_size_t pending_collect_word_count;
   atomic_size_t pending_collect_word_nonzero_count;
   atomic_size_t pending_collect_bit_count;

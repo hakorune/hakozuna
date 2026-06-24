@@ -614,6 +614,28 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_free_lookup_step_count, memory_order_acquire);
   out->medium_route_lookup_step_count = atomic_load_explicit(
       &h8g.medium_route_lookup_step_count, memory_order_acquire);
+  out->medium_remote_publish_count = atomic_load_explicit(
+      &h8g.medium_remote_publish_count, memory_order_acquire);
+  out->medium_remote_owner_lease_ns = atomic_load_explicit(
+      &h8g.medium_remote_owner_lease_ns, memory_order_acquire);
+  out->medium_remote_run_lock_ns = atomic_load_explicit(
+      &h8g.medium_remote_run_lock_ns, memory_order_acquire);
+  out->medium_remote_pending_claim_count = atomic_load_explicit(
+      &h8g.medium_remote_pending_claim_count, memory_order_acquire);
+  out->medium_remote_pending_claim_ns = atomic_load_explicit(
+      &h8g.medium_remote_pending_claim_ns, memory_order_acquire);
+  out->medium_remote_notify_count = atomic_load_explicit(
+      &h8g.medium_remote_notify_count, memory_order_acquire);
+  out->medium_remote_queue_push_count = atomic_load_explicit(
+      &h8g.medium_remote_queue_push_count, memory_order_acquire);
+  out->medium_remote_collect_call_count = atomic_load_explicit(
+      &h8g.medium_remote_collect_call_count, memory_order_acquire);
+  out->medium_remote_collect_run_count = atomic_load_explicit(
+      &h8g.medium_remote_collect_run_count, memory_order_acquire);
+  out->medium_remote_collect_slot_count = atomic_load_explicit(
+      &h8g.medium_remote_collect_slot_count, memory_order_acquire);
+  out->medium_remote_collect_ns = atomic_load_explicit(
+      &h8g.medium_remote_collect_ns, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

@@ -459,6 +459,38 @@ MediumRunRemoteOwnedPublish-L1:
     correctness boundary is closed for attached owner remote frees
     performance regresses because remote free now pays lease plus owner collect
     next box should audit and reduce medium remote publish/collect cost
+
+MediumRunRemoteCostAudit-L1:
+  current status:
+    recorded
+  scope:
+    debug-only attribution for medium remote publish and owner collect
+    split owner lease, run lock, pending claim, notify, queue push, collect slots
+    no behavior change
+  data:
+    bench_results/20260624T011936Z_medium_remote_cost_audit/README.md
+  result:
+    debug r50 remote_pub=9972
+    debug r50 remote_lease_ms=0.684
+    debug r50 remote_run_lock_ms=0.574
+    debug r50 remote_claim_ms=0.348
+    debug r50 remote_notify=9657
+    debug r50 remote_qpush=9657
+    debug r50 remote_collect_run=9657
+    debug r50 remote_collect_slot=9972
+    debug r50 remote_collect_ms=2.390
+    debug r50 active_owner_mismatch=0
+    debug r50 owner_list_mismatch=0
+    debug r50 invalid_owned=0
+  interpretation:
+    owner lease and pending claim are visible but not the largest measured cost
+    owner collect is the largest measured debug bucket
+    notify and queue push are almost one per remote free
+    current collect cadence is eager: one collect check per medium malloc attempt
+  next:
+    MediumRunRemoteNotifyCoalescing-L1
+    MediumRunOwnerCollectCadence-L1
+    keep owner lease and chunk arena HOLD until handoff/cadence is measured
 ```
 
 ### 2. SizePolicy-v1 Evidence
