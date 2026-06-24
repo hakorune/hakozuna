@@ -659,6 +659,72 @@ Next after clean:
 ```text
 MediumRunRemotePublishLocklessShadow-L1
 ```
+
+#### MediumRunRemotePublishLocklessShadow-L1
+
+Goal:
+
+```text
+measure whether medium remote publish can eventually drop the run mutex
+```
+
+Scope:
+
+```text
+debug-only shadow
+release build has no shadow reads
+owner lease remains required
+run lock remains authority for actual mutation
+shadow reads owner token / run state / slot_state / pending before run lock
+compare shadow result against locked publish result
+```
+
+Counters:
+
+```text
+medium_remote_lockless_shadow_attempt
+medium_remote_lockless_shadow_would_accept
+medium_remote_lockless_shadow_would_reject
+medium_remote_lockless_shadow_match
+medium_remote_lockless_shadow_mismatch
+```
+
+Acceptance:
+
+```text
+debug build passes
+release build has no shadow path
+smoke / safety pass
+medium r50 records mismatch rate
+```
+
+Data:
+
+```text
+bench_results/20260624T024545Z_medium_remote_lockless_shadow/README.md
+```
+
+Result:
+
+```text
+release binary has no lockless shadow symbol
+smoke pass
+safety pass
+debug r50 remote_shadow_attempt=29962
+debug r50 remote_shadow_accept=29962
+debug r50 remote_shadow_reject=0
+debug r50 remote_shadow_match=29962
+debug r50 remote_shadow_mismatch=0
+```
+
+Interpretation:
+
+```text
+for this steady r50 probe, owner lease + atomic owner/slot/pending reads
+predict the locked publish result exactly
+next step can investigate removing producer run mutex around validation/claim
+without changing collector/local mutation yet
+```
 ```
 
 ### 2. SizePolicy-v1 Evidence

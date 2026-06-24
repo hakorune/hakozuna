@@ -239,6 +239,11 @@ typedef struct H8DebugStats {
   size_t medium_remote_run_lock_ns;
   size_t medium_remote_pending_claim_count;
   size_t medium_remote_pending_claim_ns;
+  size_t medium_remote_lockless_shadow_attempt;
+  size_t medium_remote_lockless_shadow_would_accept;
+  size_t medium_remote_lockless_shadow_would_reject;
+  size_t medium_remote_lockless_shadow_match;
+  size_t medium_remote_lockless_shadow_mismatch;
   size_t medium_remote_notify_count;
   size_t medium_remote_queue_push_count;
   size_t medium_remote_queue_push_ns;
