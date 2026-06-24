@@ -311,7 +311,7 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   H8_DEBUG_INC(medium_alloc_slot_count);
   H8_DEBUG_ADD(medium_alloc_slot_ns, (size_t)(h8_medium_now_ns() - start));
 #endif
-  return h8_medium_slot_ptr(run, slot);
+  return h8_medium_slot_ptr_fast(run, slot);
 }
 
 void* h8_medium_malloc_class_inner(uint32_t class_id) {

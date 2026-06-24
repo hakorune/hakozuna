@@ -93,6 +93,7 @@ bench_results/hz8_medium_active_ownercheck_ab_20260624T184605Z/
 bench_results/hz8_medium_collect_cadence_attr_20260624T185501Z/
 bench_results/hz8_medium_active_slot_attr_20260624T190231Z/
 bench_results/hz8_medium_active_empty_fast_ab_20260624T190519Z/
+bench_results/20260624T200933Z_medium_codeshape/
 ```
 
 ## Latest Direction
@@ -104,6 +105,8 @@ source hygiene:
     src/h8_medium_slots.c
   public stats snapshot is split into src/h8_stats_public.c
   current large files remain below the 800-line working limit
+  MediumSlotPtrInlineRestore-L1 restored header-inline slot pointer generation
+    after the medium slot primitive split
 ```
 
 ```text

@@ -130,6 +130,13 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out);
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
+static inline void* h8_medium_slot_ptr_fast(const H8MediumRun* run,
+                                            size_t slot) {
+  if (!run || !run->base || slot >= run->slot_count) {
+    return NULL;
+  }
+  return run->base + (slot << run->slot_shift);
+}
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx);
 #if defined(H8_ENABLE_DEBUG_STATS)

@@ -649,6 +649,38 @@ next:
   behavior change
 ```
 
+## Medium Slot Pointer Inline Restore
+
+Record:
+
+```text
+bench_results/20260624T200933Z_medium_codeshape/
+```
+
+The source split that moved medium slot primitives into `h8_medium_slots.c`
+temporarily left an external `h8_medium_slot_ptr()` call on the release
+active-hit allocation path.  That was a refactor-induced code-shape risk, not
+allocator policy.
+
+Fix:
+
+```text
+MediumSlotPtrInlineRestore-L1:
+  add h8_medium_slot_ptr_fast() as a header inline helper
+  use it from active-hit and local slot allocation paths
+  keep h8_medium_slot_ptr() as the exported wrapper
+```
+
+Post-fix release assembly:
+
+```text
+active-hit malloc path:
+  no call to h8_medium_slot_ptr
+
+remaining material call:
+  h8_medium_mark_live_on_alloc
+```
+
 Branch rules:
 
 ```text

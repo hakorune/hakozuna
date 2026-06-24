@@ -46,10 +46,7 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
 }
 
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot) {
-  if (!run || !run->base || slot >= run->slot_count) {
-    return NULL;
-  }
-  return run->base + (slot << run->slot_shift);
+  return h8_medium_slot_ptr_fast(run, slot);
 }
 
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
@@ -80,7 +77,7 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
   H8_DEBUG_ADD(medium_alloc_slot_ns,
                (size_t)(h8_medium_slots_now_ns() - start));
 #endif
-  return h8_medium_slot_ptr(run, slot);
+  return h8_medium_slot_ptr_fast(run, slot);
 }
 
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
