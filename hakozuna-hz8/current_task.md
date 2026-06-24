@@ -105,7 +105,7 @@ Decision:
 ```text
 ctx-aware collector keeps current active empty run LIVE
 owner exit remains hard drain point
-next box: MediumRunV1FreezeBatch-L1
+next record: docs/HZ8_MEDIUM_RUN_V1_RC1.md
 ```
 
 ### MediumRunOwnerLeaseCeiling-L1

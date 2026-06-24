@@ -67,10 +67,17 @@ implemented:
   64KiB quantum directory
   detached-run class index
   directory capacity expanded to avoid phase fallback
+  ctx-aware collector active-empty-live retention
 
 default geometry:
   8K / 16K / 32K / 64K
-  64KiB run for each class
+  q64-run64k2
+  64K class uses 128KiB run / 2 slots
+
+default residency:
+  budgeted empty-resident retention
+  active empty live retention for TLS active run
+  owner exit drains retained and active-live payload
 ```
 
 Current evidence candidates:
@@ -78,8 +85,8 @@ Current evidence candidates:
 ```text
 64K two-slot:
   medium r50 positive
-  small frozen paired gates failed
-  HOLD as default
+  promoted after budget16/order-rotated frozen small evidence
+  current default geometry
 
 chunk carve:
   per-run mmap removal candidate
@@ -102,12 +109,15 @@ upper48 medium A/B target:
 Next MediumRun choice:
 
 ```text
-if objective is RSS / first-touch:
-  keep upper48 as evidence-only unless small frozen gates are reworked
+short term:
+  MediumRun-v1 RC1 is recorded in docs/HZ8_MEDIUM_RUN_V1_RC1.md
+  keep current default stable while running same-run allocator matrix
 
-if objective is run-count / queue episode:
-  do not use 48K as the next box
-  revisit 64K geometry / chunk arena only with small frozen gates
+if objective is main stability / first-touch:
+  chunk arena remains evidence-only until medium r50 no-regression is solved
+
+if objective is RSS / rounded bytes:
+  upper48 remains evidence-only unless frozen small gates are reworked
 ```
 
 Current route shadow:

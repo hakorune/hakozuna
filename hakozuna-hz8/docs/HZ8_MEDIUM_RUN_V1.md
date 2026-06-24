@@ -76,7 +76,7 @@ The final size table is not frozen in this document.  The current scaffold uses
 coarse power-of-two medium classes to prove ownership and remote free before
 SizePolicy-v1 refines the table.
 
-Current scaffold:
+Original scaffold:
 
 ```text
 class sizes:
@@ -102,12 +102,22 @@ class map:
   8K / 16K / 32K / 64K
 
 run geometry:
-  64KiB run for all medium classes
+  q64-run64k2
+  8K  class:  64KiB run / 8 slots
+  16K class:  64KiB run / 4 slots
+  32K class:  64KiB run / 2 slots
+  64K class: 128KiB run / 2 slots
 
 identity:
   64KiB quantum directory
   directory capacity: 65536 quanta
   per-run mmap remains the default
+
+residency:
+  empty run resident retention uses a fixed budget
+  TLS active empty runs may stay LIVE without budget charge
+  owner-thread collect may keep the current active empty run LIVE
+  owner exit is the hard drain point for retained and active-live payload
 ```
 
 Recorded candidate outcomes:
@@ -116,8 +126,8 @@ Recorded candidate outcomes:
 64K two-slot candidate:
   128KiB run / 2 slots for 64K class
   medium r50 improved materially
-  small frozen paired gates failed
-  HOLD as default
+  promoted with budget16 after order-rotated frozen small reruns
+  current default geometry
 
 chunk carve candidate:
   build-time H8_MEDIUM_CHUNK_CARVE
