@@ -101,6 +101,72 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunCollectCadenceTuning-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+tune owner medium pending collect cadence after MPSC queue push
+```
+
+Scope:
+
+```text
+collect period/budget made compile-time overrideable
+default changed from period=8,budget=4 to period=32,budget=8
+```
+
+Data:
+
+```text
+bench_results/20260624T093113Z_medium_collect_cadence_tuning/README.md
+```
+
+Result:
+
+```text
+release medium r50:
+  period=8,budget=4:
+    median 5.947M ops/s
+    steady median 6.190M ops/s
+
+  period=32,budget=8:
+    median 6.714M ops/s
+    steady median 7.002M ops/s
+
+  default p32/b8 confirmation:
+    median 6.869M ops/s
+    steady median 7.191M ops/s
+
+debug medium r50 p32/b8:
+  remote_collect_call=9302
+  remote_collect_run=71583
+  remote_collect_slot=89696
+  remote_collect_ms=6.670
+  remote_qpush=71583
+  remote_qpush_ms=4.609
+  remote_lease_ms=7.408
+  slots_per_run=[1.572,2.005,1.707,1.000]
+
+small interleaved remote90 quick:
+  median 49.283M ops/s
+```
+
+Interpretation:
+
+```text
+collect cadence was too eager
+period=32,budget=8 improves medium r50 by allowing slot coalescing
+64K class remains structurally one slot/run
+remaining visible residual bucket is owner lifecycle lease and collect slot mutation
+```
+
 ### MediumRunMpscRetryAudit-L1
 
 Status:
@@ -559,10 +625,10 @@ MediumRunPostMPSCResidualReaudit-L1
   -> recorded as MediumRunMpscRetryAudit-L1
 
 MediumRunCollectWorkCadence-L1
-  -> if collect work/cadence remains dominant
+  -> recorded as MediumRunCollectCadenceTuning-L1
 
 MediumRunOwnerLeaseCost-L1
-  -> HOLD until collect work/cadence is understood, but now a visible residual bucket
+  -> next serious candidate; lease is now a visible residual bucket
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

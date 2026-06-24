@@ -11,10 +11,13 @@ static uint64_t h8_medium_remote_now_ns(void) {
 }
 #endif
 
-enum {
-  H8_MEDIUM_COLLECT_PERIOD = 8u,
-  H8_MEDIUM_COLLECT_BUDGET = 4u,
-};
+#if !defined(H8_MEDIUM_COLLECT_PERIOD)
+#define H8_MEDIUM_COLLECT_PERIOD 32u
+#endif
+
+#if !defined(H8_MEDIUM_COLLECT_BUDGET)
+#define H8_MEDIUM_COLLECT_BUDGET 8u
+#endif
 
 static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
   if (!owner || owner->slot >= H8_OWNER_MAX) {
