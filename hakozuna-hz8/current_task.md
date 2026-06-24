@@ -462,6 +462,54 @@ safety proof passes, but performance is flat/slightly below baseline
 keep debug shadow only; packed owner control remains medium remote authority
 ```
 
+## MediumRunResidualCostReaudit-L1
+
+Status: recorded.
+
+Data:
+
+```text
+bench_results/20260624T112027Z_medium_residual_reaudit/README.md
+```
+
+Change:
+
+```text
+bench output only
+added derived medium_residual line from existing counters
+allocator behavior unchanged
+```
+
+Result:
+
+```text
+debug medium r50:
+  lease_ns_per_pub=155.4
+  claim_ns_per_pub=31.0
+  qpush_ns_per_push=64.1
+  collect_ns_per_run=91.6
+  collect_runs_per_call=6.846
+  collect_slots_per_run=1.219
+
+class density:
+  8K  slots/run=1.416
+  16K slots/run=1.784
+  32K slots/run=1.613
+  64K slots/run=1.000
+
+release medium r50:
+  median 7.621M ops/s
+  steady median 7.906M ops/s
+```
+
+Interpretation:
+
+```text
+lease is still the largest measured debug bucket, but lease-word A/B was flat
+queue push fixed cost is visible, but retry pressure is low
+collect cadence is already batching calls; remaining density is limited by 64K one-slot runs
+```
+
 ## Archived Medium Boxes
 
 Detailed records live in each `bench_results/.../README.md`.
@@ -502,6 +550,10 @@ MediumRunOwnerLeaseWordShadow-L1:
 MediumRunOwnerLeaseWord-L1:
   bench_results/20260624T110834Z_medium_owner_lease_word/README.md
   A/B was safety-clean but did not improve release medium r50; HOLD
+
+MediumRunResidualCostReaudit-L1:
+  bench_results/20260624T112027Z_medium_residual_reaudit/README.md
+  added derived residual line; found no small safe queue/lease follow-up
 ```
 
 ## Next Boxes
@@ -523,7 +575,10 @@ MediumRunOwnerLeaseWord-L1
   -> recorded HOLD
 
 MediumRunChunkArena-L1
-  -> HOLD until remote/local protocol stabilizes
+  -> possible next evidence lane if medium v1 continues
+
+MediumRunSizePolicy/ChunkArenaEvidence-L1
+  -> candidate; 64K one-slot density limits current remote batching
 ```
 
 ## Safety Gates

@@ -598,6 +598,39 @@ int main(int argc, char** argv) {
          debug.medium_remote_queue_push_attempt_count,
          debug.medium_remote_queue_push_retry_count,
          debug.medium_remote_queue_push_success_count);
+  double medium_remote_pub = (double)debug.medium_remote_publish_count;
+  double medium_collect_run = (double)debug.medium_remote_collect_run_count;
+  double medium_collect_call = (double)debug.medium_remote_collect_call_count;
+  double medium_lease_ns_per_pub =
+      medium_remote_pub > 0.0
+          ? (double)debug.medium_remote_owner_lease_ns / medium_remote_pub
+          : 0.0;
+  double medium_claim_ns_per_pub =
+      medium_remote_pub > 0.0
+          ? (double)debug.medium_remote_pending_claim_ns / medium_remote_pub
+          : 0.0;
+  double medium_qpush_ns_per_push =
+      debug.medium_remote_queue_push_count
+          ? (double)debug.medium_remote_queue_push_ns /
+                (double)debug.medium_remote_queue_push_count
+          : 0.0;
+  double medium_collect_ns_per_run =
+      medium_collect_run > 0.0
+          ? (double)debug.medium_remote_collect_ns / medium_collect_run
+          : 0.0;
+  double medium_collect_runs_per_call =
+      medium_collect_call > 0.0 ? medium_collect_run / medium_collect_call : 0.0;
+  double medium_collect_slots_per_run =
+      medium_collect_run > 0.0
+          ? (double)debug.medium_remote_collect_slot_count / medium_collect_run
+          : 0.0;
+  printf("medium_residual lease_ns_per_pub=%.1f claim_ns_per_pub=%.1f qpush_ns_per_push=%.1f collect_ns_per_run=%.1f collect_runs_per_call=%.3f collect_slots_per_run=%.3f\n",
+         medium_lease_ns_per_pub,
+         medium_claim_ns_per_pub,
+         medium_qpush_ns_per_push,
+         medium_collect_ns_per_run,
+         medium_collect_runs_per_call,
+         medium_collect_slots_per_run);
   size_t lower_median =
       h8_percentile_size_t(span_lower_bound, (size_t)opt.runs, 0.50);
   double actual_per_run =
