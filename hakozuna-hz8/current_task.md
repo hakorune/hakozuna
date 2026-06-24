@@ -615,17 +615,13 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumRun64KTwoSlotOrderRotatedGate-L1
-   rerun small frozen rows with deterministic order rotation
-   default stays q64-run64k until this is clean
+1. MediumDetachedRunClassIndex-L1
+   remove global foreign-attached scan on current q64-run64k default
 
-2. MediumDetachedRunClassIndex-L1
-   after geometry promotion decision
-
-3. MediumChunkArenaQuantum-L1
+2. MediumChunkArenaQuantum-L1
    after run order is decided
 
-4. MediumUpper48KSizePolicyShadow/AB-L1
+3. MediumUpper48KSizePolicyShadow/AB-L1
    later rounded-byte reduction lane
 ```
 
@@ -690,7 +686,24 @@ Decision:
 ```text
 q64-run64k2 remains evidence candidate
 do not default yet
-rerun small frozen rows with order rotation before promotion
+order-rotated small rerun is required before promotion
+```
+
+## MediumRun64KTwoSlotOrderRotatedGate-L1
+
+Status: recorded; q64-run64k2 HOLD as default.
+
+```text
+bench_results/20260624T124502Z_medium_64k2_order_rotated_gate/README.md
+small_local0 ratios: 1.070 / 0.873
+small_interleaved_remote90 ratios: 0.884 / 0.951
+```
+
+Decision:
+
+```text
+keep q64-run64k as default
+proceed to MediumDetachedRunClassIndex-L1 on current default geometry
 ```
 
 ## Safety Gates
