@@ -507,15 +507,15 @@ Status: recorded twice; HOLD as default.
 
 ```text
 latest:
-  bench_results/20260624T134630Z_medium_chunk_paired_gate/README.md
+  bench_results/20260624T_budget8_medium_chunk_paired_medium_chunk_paired_gate/README.md
 prior:
-  bench_results/20260624T_medium_chunk_paired_gate_r5_medium_chunk_paired_gate/README.md
+  bench_results/20260624T134630Z_medium_chunk_paired_gate/README.md
 runner: scripts/run_medium_chunk_paired_gate.sh
-latest medium r50 R5: baseline 2.69M, chunk 1.50M, ratio 0.558
-latest main remote90 R5: baseline 10.66M, chunk 24.42M, ratio 2.292
-latest small local R5: ratio 1.067
-latest small remote90 R5: ratio 1.015
-decision: chunk fixes main fault variance but blocks medium r50 default
+latest medium r50 R5: baseline 13.76M, chunk 5.62M, ratio 0.408
+latest main remote90 R5: baseline 21.52M, chunk 24.06M, ratio 1.118
+latest small local R5: ratio 0.945
+latest small remote90 R5: ratio 0.987
+decision: chunk is main-stability evidence only; blocks medium r50 default
 ```
 
 ## MediumR50SlotCollectLane-L1
