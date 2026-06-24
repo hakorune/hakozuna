@@ -388,7 +388,7 @@ Detailed records live in each `bench_results/.../README.md`.
    active-capacity hint is NO-GO; preserve 64K temporal reuse window
    p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
    local-free pending elision proof is clean but not default-worthy
-   budget8 promoted as MediumRun default candidate; frozen small R10 remains clean
+   budget8 promoted; 64K2 recheck still HOLD, next evidence is arena/fault lane
 ```
 
 ## MediumV1GateRunner-L1
@@ -428,50 +428,50 @@ Status: recorded.
 
 ```text
 latest:
-  bench_results/20260624T134505Z_medium_v1_gate/README.md
+  bench_results/20260624T140605Z_medium_v1_gate/README.md
 prior:
-  bench_results/20260624T_medium_v1_gate_r10_medium_v1_gate/README.md
+  bench_results/20260624T134505Z_medium_v1_gate/README.md
 ```
 
 Result:
 
 ```text
 medium_local0:
-  13.04M -> 11.24M ops/s
+  11.24M -> 11.28M ops/s
 
 medium_interleaved_remote50:
-  2.19M -> 2.19M ops/s
-  minor faults median 1.33M
+  2.19M -> 13.97M ops/s
+  minor faults median 1.33M -> 8.6K
 
 medium_phase_remote90:
-  140K -> 143K ops/s
+  143K -> 141K ops/s
   peak RSS 65.1MiB
 
 main_interleaved_remote90:
-  21.8M -> 17.8M ops/s
-  p25 4.1M -> 2.88M ops/s
-  minor faults median 458735
+  17.8M -> 23.0M ops/s
+  p25 2.88M -> 21.5M ops/s
+  minor faults median 458735 -> 7.4K
 ```
 
 Interpretation:
 
 ```text
-default is functional but still not performance-ready
-main row still has severe stability / page-fault variance
-medium r50 remains weak; next evidence box is fresh chunk A/B on current default
+budget8 removes most medium/main fault churn and stabilizes main remote90
+medium r50 is now promising but has one low-p25 outlier; next evidence box is
+medium r50 variance / residual attribution on budget8 default
 ```
 
 ## MediumR50ResidualAttribution-L1
 
-Status: refreshed on current default.
+Status: refreshed on budget8 default.
 
 ```text
-bench_results/20260624T_medium_r50_protocol_residual_refresh/README.md
-debug R3: median 6.65M, steady 6.90M
-split: slot 460.179ms, collect 228.818ms, lease 148.318ms, qpush 40.499ms
-minor_faults_per_op 0.006078, budget_reject=0, madvise_ms=4.088
-class density: [1.376,1.727,1.611,1.000]
-interpretation: residual is protocol/slot density, not mmap/fault churn
+bench_results/20260624T_medium_budget8_residual_refresh/README.md
+debug R5: median 6.71M, steady 6.99M
+split: slot 506.843ms, collect 521.949ms, lease 254.360ms, qpush 68.660ms
+minor_faults_per_op 0.007278, budget_reject=10, madvise_ms=11.209
+class density: [1.511,1.879,1.650,1.000]
+interpretation: residual is protocol + 64K one-slot geometry, not fault churn
 ```
 
 ## MainInterleavedStabilityAudit-L1
