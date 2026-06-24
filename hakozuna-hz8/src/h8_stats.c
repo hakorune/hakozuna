@@ -415,6 +415,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_notify_count, memory_order_acquire);
   out->medium_remote_queue_push_count = atomic_load_explicit(
       &h8g.medium_remote_queue_push_count, memory_order_acquire);
+  out->medium_remote_queue_push_ns = atomic_load_explicit(
+      &h8g.medium_remote_queue_push_ns, memory_order_acquire);
   out->medium_remote_collect_call_count = atomic_load_explicit(
       &h8g.medium_remote_collect_call_count, memory_order_acquire);
   out->medium_remote_collect_run_count = atomic_load_explicit(
@@ -423,6 +425,38 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_remote_collect_slot_count, memory_order_acquire);
   out->medium_remote_collect_ns = atomic_load_explicit(
       &h8g.medium_remote_collect_ns, memory_order_acquire);
+  out->medium_remote_publish_class_8k = atomic_load_explicit(
+      &h8g.medium_remote_publish_class_8k, memory_order_acquire);
+  out->medium_remote_publish_class_16k = atomic_load_explicit(
+      &h8g.medium_remote_publish_class_16k, memory_order_acquire);
+  out->medium_remote_publish_class_32k = atomic_load_explicit(
+      &h8g.medium_remote_publish_class_32k, memory_order_acquire);
+  out->medium_remote_publish_class_64k = atomic_load_explicit(
+      &h8g.medium_remote_publish_class_64k, memory_order_acquire);
+  out->medium_remote_qpush_class_8k = atomic_load_explicit(
+      &h8g.medium_remote_qpush_class_8k, memory_order_acquire);
+  out->medium_remote_qpush_class_16k = atomic_load_explicit(
+      &h8g.medium_remote_qpush_class_16k, memory_order_acquire);
+  out->medium_remote_qpush_class_32k = atomic_load_explicit(
+      &h8g.medium_remote_qpush_class_32k, memory_order_acquire);
+  out->medium_remote_qpush_class_64k = atomic_load_explicit(
+      &h8g.medium_remote_qpush_class_64k, memory_order_acquire);
+  out->medium_remote_collect_run_class_8k = atomic_load_explicit(
+      &h8g.medium_remote_collect_run_class_8k, memory_order_acquire);
+  out->medium_remote_collect_run_class_16k = atomic_load_explicit(
+      &h8g.medium_remote_collect_run_class_16k, memory_order_acquire);
+  out->medium_remote_collect_run_class_32k = atomic_load_explicit(
+      &h8g.medium_remote_collect_run_class_32k, memory_order_acquire);
+  out->medium_remote_collect_run_class_64k = atomic_load_explicit(
+      &h8g.medium_remote_collect_run_class_64k, memory_order_acquire);
+  out->medium_remote_collect_slot_class_8k = atomic_load_explicit(
+      &h8g.medium_remote_collect_slot_class_8k, memory_order_acquire);
+  out->medium_remote_collect_slot_class_16k = atomic_load_explicit(
+      &h8g.medium_remote_collect_slot_class_16k, memory_order_acquire);
+  out->medium_remote_collect_slot_class_32k = atomic_load_explicit(
+      &h8g.medium_remote_collect_slot_class_32k, memory_order_acquire);
+  out->medium_remote_collect_slot_class_64k = atomic_load_explicit(
+      &h8g.medium_remote_collect_slot_class_64k, memory_order_acquire);
   out->pending_collect_word_count =
       atomic_load_explicit(&h8g.pending_collect_word_count, memory_order_acquire);
   out->pending_collect_word_nonzero_count = atomic_load_explicit(

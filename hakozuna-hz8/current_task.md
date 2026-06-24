@@ -532,8 +532,83 @@ MediumRunOwnerCollectCadence-L1:
     release improvement is positive but modest
     one-slot and two-slot medium runs still limit queue coalescing
   next:
-    MediumRunRemoteCadenceReaudit-L1
+    MediumRunRemoteCadenceReaudit-L1 [IN PROGRESS]
     then MediumRunRouteSlotAuthority-L1 before owner-local lock elision
+
+#### MediumRunRemoteCadenceReaudit-L1
+
+Goal:
+
+```text
+separate remaining medium remote cost after collect cadence
+```
+
+Scope:
+
+```text
+debug/audit counters only
+no allocator behavior change
+measure queue push time
+measure class-by-class publish / qpush / collect run / collect slot
+derive slots per collected run by class
+```
+
+Questions:
+
+```text
+is queue push cost material after cadence change?
+are 64KiB 1-slot runs dominating qpush/pub?
+do 8K/16K/32K runs coalesce enough to justify queue protocol work?
+is next box route authority / lock elision, or pending queue MPSC?
+```
+
+Acceptance:
+
+```text
+debug build passes
+smoke / safety pass
+bench output contains medium_remote_class line
+no release behavior change
+```
+
+Data:
+
+```text
+bench_results/20260624T022910Z_medium_remote_cadence_reaudit/README.md
+```
+
+Result:
+
+```text
+debug r50 remote_pub=29962
+debug r50 remote_qpush=26276
+debug r50 remote_qpush_ms=1.521
+debug r50 remote_collect_call=7666
+debug r50 remote_collect_run=26276
+debug r50 remote_collect_slot=29962
+debug r50 remote_collect_ms=3.345
+
+class pub=[2009,3969,7940,16044]
+class qpush=[1729,2993,5510,16044]
+class slots_per_run=[1.162,1.326,1.441,1.000]
+```
+
+Interpretation:
+
+```text
+64KiB class is the dominant one-slot queue episode source
+8K/16K/32K coalesce modestly but not enough to remove queue pressure
+queue push time is material and comparable to pending claim time
+route/lock authority cleanup remains the next correctness-preserving path
+```
+
+Next:
+
+```text
+MediumRunRouteSlotAuthority-L1
+then MediumRunRemotePublishLocklessShadow-L1
+then MediumRunOwnerLocalLockElision-L1
+```
 ```
 
 ### 2. SizePolicy-v1 Evidence

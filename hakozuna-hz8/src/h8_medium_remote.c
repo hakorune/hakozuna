@@ -26,6 +26,45 @@ static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
   return h8_owner_word_pack(word);
 }
 
+static void h8_medium_debug_class_add(uint16_t class_id,
+                                      atomic_size_t* class_8k,
+                                      atomic_size_t* class_16k,
+                                      atomic_size_t* class_32k,
+                                      atomic_size_t* class_64k,
+                                      size_t value) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  atomic_size_t* target = NULL;
+  if (class_id == 0) {
+    target = class_8k;
+  } else if (class_id == 1) {
+    target = class_16k;
+  } else if (class_id == 2) {
+    target = class_32k;
+  } else if (class_id == 3) {
+    target = class_64k;
+  }
+  if (target) {
+    atomic_fetch_add_explicit(target, value, memory_order_relaxed);
+  }
+#else
+  (void)class_id;
+  (void)class_8k;
+  (void)class_16k;
+  (void)class_32k;
+  (void)class_64k;
+  (void)value;
+#endif
+}
+
+static void h8_medium_debug_class_inc(uint16_t class_id,
+                                      atomic_size_t* class_8k,
+                                      atomic_size_t* class_16k,
+                                      atomic_size_t* class_32k,
+                                      atomic_size_t* class_64k) {
+  h8_medium_debug_class_add(class_id, class_8k, class_16k, class_32k,
+                            class_64k, 1);
+}
+
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx) {
   if (!run || !ctx || !ctx->owner) {
@@ -40,12 +79,23 @@ bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
 static void h8_medium_pending_queue_push(H8OwnerRecord* owner,
                                          H8MediumRun* run) {
   H8_DEBUG_INC(medium_remote_queue_push_count);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t push_start = h8_medium_remote_now_ns();
+#endif
   pthread_mutex_lock(&owner->pending_lock);
   run->next_pending = owner->medium_pending_head;
   owner->medium_pending_head = run;
   atomic_fetch_add_explicit(&owner->medium_pending_count, 1,
                             memory_order_release);
   pthread_mutex_unlock(&owner->pending_lock);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_remote_queue_push_ns,
+               (size_t)(h8_medium_remote_now_ns() - push_start));
+#endif
+  h8_medium_debug_class_inc(run->class_id, &h8g.medium_remote_qpush_class_8k,
+                            &h8g.medium_remote_qpush_class_16k,
+                            &h8g.medium_remote_qpush_class_32k,
+                            &h8g.medium_remote_qpush_class_64k);
 }
 
 static void h8_medium_signal_work(H8OwnerRecord* owner, H8MediumRun* run) {
@@ -89,6 +139,11 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
     return H8_PUBLISH_MISS;
   }
   H8_DEBUG_INC(medium_remote_publish_count);
+  h8_medium_debug_class_inc(run->class_id,
+                            &h8g.medium_remote_publish_class_8k,
+                            &h8g.medium_remote_publish_class_16k,
+                            &h8g.medium_remote_publish_class_32k,
+                            &h8g.medium_remote_publish_class_64k);
   uint64_t owner_raw =
       atomic_load_explicit(&run->owner_word, memory_order_acquire);
   H8OwnerWord ow = h8_owner_word_unpack(owner_raw);
@@ -211,6 +266,18 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run) {
     collect &= collect - 1u;
   }
   H8_DEBUG_ADD(medium_remote_collect_slot_count, collected);
+  H8_DEBUG_ADD(medium_remote_collect_run_count, 1);
+  h8_medium_debug_class_inc(run->class_id,
+                            &h8g.medium_remote_collect_run_class_8k,
+                            &h8g.medium_remote_collect_run_class_16k,
+                            &h8g.medium_remote_collect_run_class_32k,
+                            &h8g.medium_remote_collect_run_class_64k);
+  h8_medium_debug_class_add(run->class_id,
+                            &h8g.medium_remote_collect_slot_class_8k,
+                            &h8g.medium_remote_collect_slot_class_16k,
+                            &h8g.medium_remote_collect_slot_class_32k,
+                            &h8g.medium_remote_collect_slot_class_64k,
+                            collected);
   if (run->allocated_mask == 0) {
     h8_medium_mark_empty_locked(run);
   }
@@ -272,7 +339,6 @@ size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
     }
     atomic_fetch_sub_explicit(&owner->medium_pending_count, 1,
                               memory_order_acq_rel);
-    H8_DEBUG_INC(medium_remote_collect_run_count);
     ++processed;
     if (h8_medium_collect_run(owner, run)) {
       h8_medium_pending_queue_push(owner, run);
