@@ -94,15 +94,16 @@ upper48 medium shadow:
 upper48 medium A/B target:
   build macro H8_MEDIUM_UPPER48_CLASS
   smoke-clean
-  short release runs are positive/inconclusive
-  HOLD as default until paired R10 x2
+  medium r50 paired signal is positive
+  small interleaved quick gate failed
+  HOLD as default
 ```
 
 Next MediumRun choice:
 
 ```text
 if objective is RSS / first-touch:
-  run MediumUpper48KSizePolicyAB-L1 paired R10 x2
+  keep upper48 as evidence-only unless small frozen gates are reworked
 
 if objective is run-count / queue episode:
   do not use 48K as the next box

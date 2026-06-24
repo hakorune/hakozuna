@@ -1,0 +1,47 @@
+run=1 ops/s=56056201.013 post_rss=3096576 peak_rss=13500416 minor_faults=3115
+run_interleaved=1 work_ms=7.658 work_ops/s=62682734.863 tail_ms=3.432 remote_enqueue=432417 local_free=47583 drain_calls=483030 drain_objects=432417 drain_empty=472540 push_yields=0 finish_yields=2511
+run=2 ops/s=57650905.750 post_rss=3272704 peak_rss=13844480 minor_faults=2799
+run_interleaved=2 work_ms=7.684 work_ops/s=62469976.994 tail_ms=2.698 remote_enqueue=431930 local_free=48070 drain_calls=481823 drain_objects=431930 drain_empty=472176 push_yields=0 finish_yields=1290
+run=3 ops/s=61961139.780 post_rss=3276800 peak_rss=14020608 minor_faults=2887
+run_interleaved=3 work_ms=7.174 work_ops/s=66907254.001 tail_ms=2.469 remote_enqueue=432003 local_free=47997 drain_calls=482257 drain_objects=432003 drain_empty=474384 push_yields=0 finish_yields=1942
+run=4 ops/s=57226503.215 post_rss=3289088 peak_rss=15597568 minor_faults=3280
+run_interleaved=4 work_ms=7.672 work_ops/s=62562081.461 tail_ms=3.703 remote_enqueue=432254 local_free=47746 drain_calls=483489 drain_objects=432254 drain_empty=476307 push_yields=0 finish_yields=2856
+run=5 ops/s=53675544.751 post_rss=3293184 peak_rss=15597568 minor_faults=2893
+run_interleaved=5 work_ms=8.181 work_ops/s=58675345.402 tail_ms=3.520 remote_enqueue=432050 local_free=47950 drain_calls=482554 drain_objects=432050 drain_empty=474894 push_yields=0 finish_yields=1964
+summary runs=5 threads=16 iters=30000 size=16..4096 remote_pct=90 interleaved=1 live_window=4096 bench_attribution=0 class_map_id=p2-v0
+medium_geometry_id=q64-run64k
+throughput median=57226503.215 p25=56056201.013 p75=57650905.750 min=53675544.751 max=61961139.780
+post_rss median=3276800 min=3096576 max=3293184
+peak_rss median=14020608 min=13500416 max=15597568 source=VmHWM_process
+page_faults minor_median=2893 minor_min=2799 minor_max=3280
+steady_work throughput_median=62562081.461 p25=62469976.994 p75=62682734.863
+interleaved_phase_ms work_median=7.672 tail_median=3.432
+interleaved_work remote_enqueue=2160654 local_free=239346 drain_calls=2413153 drain_objects=2160654 drain_empty=2370301 push_yields=0 finish_yields=10563
+fragmentation attribution=disabled
+stats_snapshot owner_exit=0 pending_enqueue=0 pending_dequeue=0 orphan_handoff=0 handoff_ok=0 local=0 remote=0
+counters_dbg publish_enter=0 publish_exit=0 lifecycle_enter=0 lifecycle_exit=0 span_publish_enter=0 span_publish_exit=0 remote_regular=0 remote_orphan=0 pending_notify=0 pending_calls=0 pending_carry_hit=0 pending_requeue=0 pending_word_set=0 pending_word_shadow_hit=0 pending_word_false_pos=0 pending_word_false_neg=0 pending_word_rearm=0 pending_words=0 pending_words_nonzero=0 pending_bits=0 orphan_quiesce=0 orphan_ready=0 dry_scan=0 dry_candidate=0 dry_block_state=0 dry_block_quiesce=0 dry_empty=0 dry_target_closed=0 dry_would_adopt=0 handoff_fail=0 invalid=0 miss=0 owner_transition=0 adopt_scan=0 adopt_candidate=0 adopt_block_state=0 adopt_block_quiesce=0 adopt_empty=0 adopt_target_closed=0 adopt_ok=0
+remote_stage enter=0 span_miss=0 owner_missing=0 regular_lease_ok=0 regular_lease_fail=0 regular_lease_elided=0 orphan_lease_ok=0 orphan_lease_fail=0 pending_claim_ok=0 validate_fail=0 notify_first=0 publish_ok=0 pending_publish_elided=0
+remote_lookup enter=0 arena_miss=0 span_miss=0 retired=0 slot_oob=0 ok=0 owner_word=0
+pending_word_density drain=0 pop1=0 pop2=0 pop3_4=0 pop5_8=0 pop9_16=0 pop17p=0 slots=0 rearmed=0 new_publish=0 slots_per_nonzero_word=0.000 singleton_ratio=0.000 multi_ratio=0.000
+pending_count_shadow mask_notify_without_count=0 count_notify_without_mask=0 mask_requeue_without_count=0 count_requeue_without_mask=0
+pending_finish_shadow count_mask0_bitmap0=0 count_mask0_bitmap1=0 mask1_bitmap0=0 mask1_bitmap1=0
+qstate_dirty set=0 self_set=0 requeue=0
+quiescent_pending bitmap_nonzero=0 repair=0
+queue_contention qstate_attempt=0 qstate_success=0 qstate_skip=0 pending_push_attempt=0 pending_push_retry=0 pending_push_success=0 owner_enter_retry=0 owner_exit_retry=0 duplicate_claim=0
+local_zero_gates alloc_pending=0 free_pending=0 live_set_already=0 live_clear_free=0
+local_path active_hit=0 active_miss=0 freelist=0 bump=0 slow_collect=0 span_commit=0 find_scan=0 scan_span=0 free_hit=0 reject_owner=0 reject_state=0 reject_live=0
+medium_stats malloc=0 create=0 active_reuse=0 owner_reuse=0 global_reuse=0 madvise=0 owner_scan=0 owner_steps=0 global_scan=0 global_steps=0 free_lookup=0 route_lookup=0 invalid_owned=0 empty=0 retain=0 budget_reject=0 reactivate=0 exit_drain=0 madvise_fail=0 resident_bytes=0 resident_peak=0 madvise_ms=0.000 global_lock_ms=0.000 run_lock_ms=0.000 alloc_slot_ms=0.000 free_slot_ms=0.000 alloc_slot=0 free_slot=0 lock_elide_alloc=0 lock_elide_free=0 lock_elide_mismatch=0 active_owner_mismatch=0 owner_list_mismatch=0 global_skip_foreign=0 local_free_owner=0 remote_free_owner=0 free_steps=0 route_steps=0 route_authority_mismatch=0 remote_pub=0 remote_lease_ms=0.000 remote_lease_enter_ms=0.000 remote_lease_exit_ms=0.000 remote_run_lock_ms=0.000 remote_claim=0 remote_claim_ms=0.000 remote_lockless_claim=0 remote_lockless_accept=0 remote_lockless_rb_invalid=0 remote_lockless_rb_accept=0 writer_overlap=0 writer_foreign=0 writer_token_change=0 collect_wrong_owner=0 detached_while_attached=0 remote_shadow_attempt=0 remote_shadow_accept=0 remote_shadow_reject=0 remote_shadow_match=0 remote_shadow_mismatch=0 remote_notify=0 remote_qpush=0 remote_qpush_ms=0.000 remote_collect_call=0 remote_collect_run=0 remote_collect_slot=0 remote_collect_ms=0.000 collect_finish_pending_rearm=0 empty_with_pending=0
+medium_remote_class pub=[0,0,0,0] qpush=[0,0,0,0] collect_run=[0,0,0,0] collect_slot=[0,0,0,0]
+medium_lease_shadow decision_mismatch=0 ref_underflow=0 refs_at_exit=0 enter_after_close=0 reuse_with_refs=0
+medium_remote_class_density slots_per_run=[0.000,0.000,0.000,0.000]
+medium_remote_queue push_attempt=0 push_retry=0 push_success=0
+medium_residual lease_ns_per_pub=0.0 claim_ns_per_pub=0.0 qpush_ns_per_push=0.0 collect_ns_per_run=0.0 collect_runs_per_call=0.000 collect_slots_per_run=0.000
+span_commit_lower_bound actual_total=0 actual_per_run=0.0 lower_bound_median=0 excess_ratio=0.000
+local_scan_detail hint_null=0 hint_full=0 hint_state_blocked=0 hint_trusted=0 hint_class_mismatch=0 hint_owner_mismatch=0 hint_generation_mismatch=0 hint_state_mismatch=0 scan_usable=0 scan_full=0 scan_state_blocked=0 skip_no_pending=0
+local_hot live_alloc=0 live_free=0 word0=0 word1=0 word2_7=0 word8_31=0 word32_63=0 free_head_alloc=0 free_head_free=0 pending_alloc=0 pending_free=0 used_alloc=0 used_free=0
+used_count_detail load_alloc=0 store_alloc=0 load_free=0 store_free=0 full_check=0 underflow=0 mirror_mismatch=0 mirror_underflow=0
+used_count_cold active_hint=0 owner_scan_locked=0 adoption_locked=0 owner_exit=0 verify_quiescent=0 derived_mismatch=0 derived_scan=0
+span_commit_timing total_ms=0.000 meta_ms=0.000 mprotect_ms=0.000
+lifecycle_timing owner_exit_total_ms=0.000 owner_exit_collect_ms=0.000 owner_exit_span_walk_ms=0.000 span_retire_count=0 span_retire_total_ms=0.000 span_retire_lock_wait_ms=0.000 span_retire_madvise_ms=0.000 span_retire_meta_free_ms=0.000
+span_purge runs=0 spans=0 avg_spans_per_run=0.000 max_run=0 singleton_runs=0 madvise_calls=0 madvise_bytes=0 madvise_ms=0.000
+slot_shadow valid_mismatch=0 invalid_mismatch=0 pending_nonallocated=0 free_unreachable=0 free_duplicate=0 free_cycle=0 bad_next=0 never_used_below_bump=0 nonvirgin_above_bump=0 used_mismatch=0 reserved_quiescent=0

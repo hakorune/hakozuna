@@ -135,8 +135,9 @@ chunk carve candidate:
   build macro H8_MEDIUM_UPPER48_CLASS
   medium_geometry_id q64-upper48
   smoke-clean in short validation
-  short release r50 did not expose an immediate hot blocker
-  HOLD as default until paired R10 x2
+  paired medium r50 was positive
+  small interleaved quick gate failed
+  HOLD as default
 ```
 
 Current runtime scaffold:
@@ -564,14 +565,14 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
 
 ## Current Next-Lane Decision
 
-Do not promote the 48K class from short evidence directly.
+Do not promote the 48K class from current evidence.
 
 ```text
 reason:
   it reduces rounded bytes
   it does not reduce current run count or queue episodes
   it introduces non-p2 medium decode and a fifth medium class
-  short R3/R2 runs are not promotion evidence
+  small interleaved frozen quick gate regressed
 ```
 
 Do not promote chunk carving directly.
@@ -586,7 +587,7 @@ Near-term work should either:
 
 ```text
 1. pursue explicit RSS / first-touch improvement
-   then run MediumUpper48KSizePolicyAB-L1 paired R10 x2
+   then use upper48 only as an evidence target
 
 or
 
