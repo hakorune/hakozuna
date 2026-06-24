@@ -98,6 +98,15 @@ bench_results/hz8_medium_active_empty_fast_ab_20260624T190519Z/
 ## Latest Direction
 
 ```text
+source hygiene:
+  bench report output is split into bench/h8_bench_report.c
+  medium slot identity/local slot mutation primitives are split into
+    src/h8_medium_slots.c
+  public stats snapshot is split into src/h8_stats_public.c
+  current large files remain below the 800-line working limit
+```
+
+```text
 if optimizing medium/main local speed:
   MediumCollectCadenceAttribution-L1 is recorded
   local0 rows show periodic slow checks are all pending misses
