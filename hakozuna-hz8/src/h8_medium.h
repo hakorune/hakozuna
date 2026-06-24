@@ -85,6 +85,14 @@ size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget);
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);
 void h8_medium_collect_owner_pending(H8OwnerRecord* owner);
+void h8_medium_lock_global(void);
+void h8_medium_unlock_global(void);
+H8MediumRun* h8_medium_global_head(void);
+bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr);
+H8MediumRun* h8_medium_directory_find(const void* ptr);
+H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup);
+void h8_medium_register_locked(H8MediumRun* run);
+void h8_medium_unregister_locked(H8MediumRun* run);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);

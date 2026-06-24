@@ -9,12 +9,6 @@
 #if defined(H8_ENABLE_DEBUG_STATS)
 #include <time.h>
 #endif
-static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
-static H8MediumRun* h8_medium_runs;
-static _Atomic uintptr_t h8_medium_directory_addr;
-static _Atomic uintptr_t h8_medium_min_addr;
-static _Atomic uintptr_t h8_medium_max_addr;
-#define H8_MEDIUM_DIRECTORY_CAP 4096u
 static const size_t k_h8_medium_empty_resident_budget =
     (size_t)H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES;
 
@@ -40,21 +34,6 @@ static uint64_t h8_medium_now_ns(void) {
 }
 #endif
 
-static void h8_medium_lock_global(void) {
-#if defined(H8_ENABLE_DEBUG_STATS)
-  uint64_t start = h8_medium_now_ns();
-#endif
-  pthread_mutex_lock(&h8_medium_lock);
-#if defined(H8_ENABLE_DEBUG_STATS)
-  H8_DEBUG_ADD(medium_global_lock_wait_ns,
-               (size_t)(h8_medium_now_ns() - start));
-#endif
-}
-
-static void h8_medium_unlock_global(void) {
-  pthread_mutex_unlock(&h8_medium_lock);
-}
-
 static void h8_medium_lock_run(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
@@ -68,10 +47,6 @@ static void h8_medium_lock_run(H8MediumRun* run) {
 
 static void h8_medium_unlock_run(H8MediumRun* run) {
   pthread_mutex_unlock(&run->lock);
-}
-
-static uint64_t h8_medium_hash_base(uintptr_t base) {
-  return (uint64_t)(base >> 16) * UINT64_C(11400714819323198485);
 }
 
 static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
@@ -108,21 +83,6 @@ static void h8_medium_debug_lock_elide_candidate(const H8MediumRun* run,
 #endif
 }
 
-static void h8_medium_directory_note_range_locked(H8MediumRun* run) {
-  uintptr_t base = (uintptr_t)run->base;
-  uintptr_t end = base + run->run_size;
-  uintptr_t min =
-      atomic_load_explicit(&h8_medium_min_addr, memory_order_relaxed);
-  if (min == 0 || base < min) {
-    atomic_store_explicit(&h8_medium_min_addr, base, memory_order_release);
-  }
-  uintptr_t max =
-      atomic_load_explicit(&h8_medium_max_addr, memory_order_relaxed);
-  if (end > max) {
-    atomic_store_explicit(&h8_medium_max_addr, end, memory_order_release);
-  }
-}
-
 bool h8_medium_size_supported(size_t size) {
   return size >= H8_MEDIUM_MIN_SIZE && size <= H8_MEDIUM_MAX_SIZE;
 }
@@ -154,16 +114,6 @@ uint32_t h8_medium_rounded_size(size_t size) {
   return k_h8_medium_classes[h8_medium_class_for_size(size)].slot_size;
 }
 
-static bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
-  if (!run || !run->base || !ptr) {
-    return false;
-  }
-  uintptr_t base = (uintptr_t)run->base;
-  uintptr_t addr = (uintptr_t)ptr;
-  size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
-  return addr >= base && addr < base + payload;
-}
-
 static void* h8_medium_mmap_aligned_run(size_t run_size) {
   size_t reserve = run_size * 2u;
   uint8_t* raw = mmap(NULL, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS,
@@ -186,82 +136,6 @@ static void* h8_medium_mmap_aligned_run(size_t run_size) {
     return MAP_FAILED;
   }
   return (void*)aligned;
-}
-
-static bool h8_medium_directory_ensure_locked(void) {
-  if (atomic_load_explicit(&h8_medium_directory_addr, memory_order_acquire) != 0) {
-    return true;
-  }
-  _Atomic(H8MediumRun*)* directory =
-      h8_sys_calloc(H8_MEDIUM_DIRECTORY_CAP, sizeof(*directory));
-  if (!directory) {
-    return false;
-  }
-  atomic_store_explicit(&h8_medium_directory_addr, (uintptr_t)directory,
-                        memory_order_release);
-  return true;
-}
-
-static void h8_medium_directory_insert_locked(H8MediumRun* run) {
-  if (!run || !run->base || !h8_medium_directory_ensure_locked()) {
-    return;
-  }
-  h8_medium_directory_note_range_locked(run);
-  _Atomic(H8MediumRun*)* directory = (_Atomic(H8MediumRun*)*)atomic_load_explicit(
-      &h8_medium_directory_addr, memory_order_acquire);
-  size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base((uintptr_t)run->base) & mask;
-  for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
-    _Atomic(H8MediumRun*)* slot = &directory[(pos + n) & mask];
-    H8MediumRun* cur = atomic_load_explicit(slot, memory_order_acquire);
-    if (!cur || cur == run) {
-      atomic_store_explicit(slot, run, memory_order_release);
-      return;
-    }
-  }
-}
-
-static void h8_medium_directory_remove_locked(H8MediumRun* run) {
-  _Atomic(H8MediumRun*)* directory = (_Atomic(H8MediumRun*)*)atomic_load_explicit(
-      &h8_medium_directory_addr, memory_order_acquire);
-  if (!run || !run->base || !directory) {
-    return;
-  }
-  size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base((uintptr_t)run->base) & mask;
-  for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
-    _Atomic(H8MediumRun*)* slot = &directory[(pos + n) & mask];
-    H8MediumRun* cur = atomic_load_explicit(slot, memory_order_acquire);
-    if (cur == run) {
-      atomic_store_explicit(slot, NULL, memory_order_release);
-      return;
-    }
-  }
-}
-
-static H8MediumRun* h8_medium_directory_find(const void* ptr) {
-  _Atomic(H8MediumRun*)* directory = (_Atomic(H8MediumRun*)*)atomic_load_explicit(
-      &h8_medium_directory_addr, memory_order_acquire);
-  if (!directory || !ptr) {
-    return NULL;
-  }
-  uintptr_t addr = (uintptr_t)ptr;
-  uintptr_t min = atomic_load_explicit(&h8_medium_min_addr, memory_order_acquire);
-  uintptr_t max = atomic_load_explicit(&h8_medium_max_addr, memory_order_acquire);
-  if (min != 0 && (addr < min || addr >= max)) {
-    return NULL;
-  }
-  uintptr_t base = addr & ~(uintptr_t)(H8_MEDIUM_RUN_BYTES - 1u);
-  size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base(base) & mask;
-  for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
-    H8MediumRun* run = atomic_load_explicit(&directory[(pos + n) & mask],
-                                            memory_order_acquire);
-    if (run && (uintptr_t)run->base == base && h8_medium_ptr_in_run(run, ptr)) {
-      return run;
-    }
-  }
-  return NULL;
 }
 
 static void h8_medium_update_resident_peak(size_t value) {
@@ -357,27 +231,6 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
   h8_medium_decommit_empty_locked(run);
 }
 
-static H8MediumRun* h8_medium_find_run_locked(const void* ptr,
-                                              bool route_lookup) {
-  for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
-    if (route_lookup) {
-      H8_DEBUG_INC(medium_route_lookup_step_count);
-    } else {
-      H8_DEBUG_INC(medium_free_lookup_step_count);
-    }
-    if (h8_medium_ptr_in_run(run, ptr)) {
-      return run;
-    }
-  }
-  return NULL;
-}
-
-static void h8_medium_register_locked(H8MediumRun* run) {
-  run->next_global = h8_medium_runs;
-  h8_medium_runs = run;
-  h8_medium_directory_insert_locked(run);
-}
-
 static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   if (!ctx || !ctx->owner || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
     return;
@@ -388,19 +241,6 @@ static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
                         memory_order_release);
   run->next_owner = ctx->owner->medium_by_class[run->class_id];
   ctx->owner->medium_by_class[run->class_id] = run;
-}
-
-static void h8_medium_unregister_locked(H8MediumRun* run) {
-  H8MediumRun** cur = &h8_medium_runs;
-  while (*cur) {
-    if (*cur == run) {
-      *cur = run->next_global;
-      run->next_global = NULL;
-      h8_medium_directory_remove_locked(run);
-      return;
-    }
-    cur = &(*cur)->next_global;
-  }
 }
 
 static bool h8_medium_run_usable_locked(const H8MediumRun* run,
@@ -617,7 +457,8 @@ retry_owner_capacity:
   }
   h8_medium_lock_global();
   H8_DEBUG_INC(medium_global_scan_count);
-  for (H8MediumRun* run = h8_medium_runs; run; run = run->next_global) {
+  for (H8MediumRun* run = h8_medium_global_head(); run;
+       run = run->next_global) {
     H8_DEBUG_INC(medium_global_scan_step_count);
     h8_medium_lock_run(run);
     if (run->owner_attached ||
