@@ -285,9 +285,31 @@ next measurement lanes:
 
       next scope:
         MediumR50FaultSourceAttribution-L1
+        complete
+        data=bench_results/medium_r50_fault_source_20260624T223112Z/
+
+        result:
+          normal run:
+            madvise 574, budget_reject 0, madvise_ms 5.051
+
+          worst run:
+            madvise 102657, budget_reject 101950, madvise_ms 1876.954
+
+          conclusion:
+            empty-resident budget rejection causes repeated
+            MADV_DONTNEED/refault churn
+
+        budget32 sweep:
+          data=bench_results/medium_fresh_process_attr_20260624T223148Z/
+          direct outliers 5/30 -> 3/30
+          preload outliers 4/30 -> 4/30
+          no material median improvement
+
+      next scope:
+        MediumR50RetentionPolicy-L1
         run debug/audit fresh-process medium_r50
-        compare normal vs outlier runs for medium empty/retain/reactivate,
-        madvise, owner exit, remote publish, and collect counters
+        design a targeted retention policy for remote-collected medium r50
+        empty churn, not a simple global budget increase
 
   do not treat medium_r50 p25/min instability as a remote protocol median
   failure; treat it as a separate first-touch/reclaim stability lane

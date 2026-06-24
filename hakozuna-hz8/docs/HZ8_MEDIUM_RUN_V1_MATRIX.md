@@ -557,3 +557,93 @@ MediumR50FaultSourceAttribution-L1:
   capture medium empty/retain/reactivate, madvise, owner exit, remote publish,
   and collect counters for outlier vs normal runs
 ```
+
+## Medium r50 Fault Source Attribution
+
+Debug/audit fresh-process capture was run at:
+
+```text
+data=bench_results/medium_r50_fault_source_20260624T223112Z/
+runs=20
+```
+
+Key comparison:
+
+```text
+normal run:
+  throughput:
+    7.83M
+  minor_faults:
+    8337
+  madvise:
+    574 calls
+  budget_reject:
+    0
+  madvise_ms:
+    5.051
+  collect_ms:
+    327.529
+  collect_empty_ms:
+    89.184
+
+worst run:
+  throughput:
+    2.97M
+  minor_faults:
+    747047
+  madvise:
+    102657 calls
+  budget_reject:
+    101950
+  madvise_ms:
+    1876.954
+  collect_ms:
+    2199.480
+  collect_empty_ms:
+    1950.513
+```
+
+Conclusion:
+
+```text
+root cause:
+  empty-resident budget rejection triggers repeated MADV_DONTNEED / refault
+  churn during medium r50 fresh-process runs
+
+not root cause:
+  remote claim protocol
+  owner lease
+  queue push
+  preload boundary
+```
+
+Budget sweep:
+
+```text
+data=bench_results/medium_fresh_process_attr_20260624T223148Z/
+candidate:
+  H8_MEDIUM_RESIDENT_BUDGET_CLASSES=32u
+
+result:
+  direct r50 outliers:
+    5/30 -> 3/30
+  preload r50 outliers:
+    4/30 -> 4/30
+  median:
+    no material improvement
+
+decision:
+  simple global budget increase is not sufficient
+```
+
+Next design lane:
+
+```text
+MediumR50RetentionPolicy-L1:
+  target the churn pattern directly
+  likely options:
+    owner/class active empty-live allowance for remote-collected runs
+    per-class minimum resident reservation
+    avoid immediate decommit for recently active medium r50 runs
+  preserve owner-exit hard drain and post-RSS recovery
+```

@@ -154,8 +154,19 @@ if objective is medium r50 stability:
     direct 5/30
     preload 4/30
     medium_local0 0/30
-  next step is MediumR50FaultSourceAttribution-L1:
-    compare debug/audit counters for normal vs outlier fresh-process r50 runs
+  MediumR50FaultSourceAttribution-L1 identifies the immediate cost:
+    outlier run:
+      budget_reject about 102k
+      madvise about 103k
+      madvise_ms about 1877ms
+    normal run:
+      budget_reject 0
+      madvise 574
+      madvise_ms about 5ms
+  budget32 sweep does not materially solve the outliers
+  next step is MediumR50RetentionPolicy-L1:
+    target the remote-collected empty churn directly while preserving owner-exit
+    hard drain and post-RSS recovery
   do not reopen the medium remote queue / lease protocol before this evidence
 
 if objective is RSS / rounded bytes:
