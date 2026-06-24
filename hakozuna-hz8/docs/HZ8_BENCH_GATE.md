@@ -122,6 +122,38 @@ guard_remote90_interleaved:
 Do not label these rows as `main_*`.  Default-candidate `main_*` rows are
 `16..32768` rows and require MediumRun/default-candidate coverage.
 
+MediumRun-v1 gate runner:
+
+```bash
+make medium-v1-gate
+```
+
+The runner records current default MediumRun rows under
+`bench_results/*_medium_v1_gate/`:
+
+```text
+medium_local0:
+  size=4097..65536
+  remote_pct=0
+  interleaved=1
+
+medium_interleaved_remote50:
+  size=4097..65536
+  remote_pct=50
+  interleaved=1
+
+medium_phase_remote90:
+  size=4097..65536
+  remote_pct=90
+  interleaved=0
+
+main_interleaved_remote90:
+  size=16..32768
+  remote_pct=90
+  interleaved=1
+  live_window=4096
+```
+
 ## v0 Performance Gates
 
 Initial v0 gates:

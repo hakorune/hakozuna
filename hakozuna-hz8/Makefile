@@ -1,4 +1,4 @@
-.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumupper48 remote-micro remote-micro-release
+.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumupper48 medium-v1-gate remote-micro remote-micro-release
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -53,6 +53,9 @@ bench-release-medium64k2: $(ROOT)/h8_bench_release_medium64k2
 bench-release-mediumchunk: $(ROOT)/h8_bench_release_mediumchunk
 
 bench-release-mediumupper48: $(ROOT)/h8_bench_release_mediumupper48
+
+medium-v1-gate: $(ROOT)/h8_bench_release
+	$(ROOT)/scripts/run_medium_v1_gate.sh
 
 remote-micro: $(ROOT)/h8_remote_micro
 

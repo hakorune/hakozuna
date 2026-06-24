@@ -497,66 +497,63 @@ medium size policy / run geometry is now the stronger evidence lane
 Detailed records live in each `bench_results/.../README.md`.
 
 ```text
-MediumRunRemotePublishLocklessClaim-L1:
-  bench_results/20260624T025523Z_medium_remote_lockless_claim/README.md
-  removed producer-side run mutex for attached remote publish
-
-MediumRunPostClaimRollbackClosure-L1:
-  bench_results/20260624T085004Z_medium_postclaim_rollback_closure/README.md
-  closed post-claim stranded-pending window
-
-MediumRunOwnerLocalSingleWriterShadow-L2:
-  bench_results/20260624T091112Z_medium_single_writer_shadow/README.md
-  proved active owner alloc/free single-writer opportunity
-
-MediumRunActiveOwnerLockElision-L1:
-  bench_results/20260624T091612Z_medium_active_owner_lock_elision_release_clean/README.md
-  elided active owner medium alloc/free run lock
-
-MediumRunPendingQueueMPSC-L1:
-  bench_results/20260624T092050Z_medium_pending_queue_mpsc/README.md
-  replaced producer pending_lock queue push with MPSC stack
-
-MediumRunMpscRetryAudit-L1:
-  bench_results/20260624T092503Z_medium_mpsc_retry_audit/README.md
-  found MPSC retry ratio about 0.22%; retry pressure is not dominant
-
-MediumRunCollectWordCommitRearm-L1:
-  bench_results/20260624T100942Z_medium_collect_word_commit_rearm/README.md
-  closed remaining-pending finish race and batched collect word commit
-
-MediumRunOwnerLeaseWordShadow-L1:
-  bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
-  proved dedicated medium owner lease word as shadow authority
-
-MediumRunOwnerLeaseWord-L1:
-  bench_results/20260624T110834Z_medium_owner_lease_word/README.md
-  A/B was safety-clean but did not improve release medium r50; HOLD
-
-MediumRunResidualCostReaudit-L1:
-  bench_results/20260624T112027Z_medium_residual_reaudit/README.md
-  added derived residual line; found no small safe queue/lease follow-up
-
-MediumRunSizePolicy/ChunkArenaEvidence-L1:
-  bench_results/20260624T113104Z_medium_size_policy_evidence/README.md
-  found 64K one-slot class is about 53-54% of medium objects
+025523 remote lockless claim: producer run mutex removed
+085004 post-claim rollback closure: stranded-pending window closed
+091112 single-writer shadow: active owner opportunity proven
+091612 active owner lock elision: active alloc/free run lock elided
+092050 pending queue MPSC: producer pending_lock push replaced
+092503 MPSC retry audit: retry pressure about 0.22%
+100942 collect word commit/rearm: finish race closed
+110022 lease word shadow: dedicated medium lease shadow clean
+110834 lease word A/B: safety-clean, performance flat, HOLD
+112027 residual reaudit: no narrow queue/lease follow-up
+113104 size-policy evidence: 64K one-slot class about 53-54%
 ```
 
 ## Next Boxes
 
 ```text
 1. MediumRunNextGeometryDecision-L1
-   choose objective before the next behavior box:
-     RSS / first-touch
-     or run-count / queue episode
+   current decision: keep default p2 medium geometry
+   candidate geometry changes remain evidence-only
 
 2. MediumUpper48KSizePolicyAB-L1
    paired gate recorded
    HOLD as default: small interleaved quick failed
 
-3. Medium run-count lane
-   keep p2 class map if queue episode reduction is the objective
-   revisit 64K geometry / chunk arena only with small frozen gates
+3. MediumV1GateRunner-L1
+   standardize current default medium/main rows before further behavior work
+```
+
+## MediumV1GateRunner-L1
+
+Status: implemented.
+
+```text
+script:
+  scripts/run_medium_v1_gate.sh
+
+make target:
+  make medium-v1-gate
+
+output:
+  bench_results/*_medium_v1_gate/
+```
+
+Rows:
+
+```text
+medium_local0:
+  4097..65536 remote_pct=0 interleaved=1
+
+medium_interleaved_remote50:
+  4097..65536 remote_pct=50 interleaved=1
+
+medium_phase_remote90:
+  4097..65536 remote_pct=90 interleaved=0
+
+main_interleaved_remote90:
+  16..32768 remote_pct=90 interleaved=1 live_window=4096
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
