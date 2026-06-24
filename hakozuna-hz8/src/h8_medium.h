@@ -160,6 +160,21 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_note_active_live_empty(H8MediumRun* run);
 void h8_medium_clear_active_live_empty(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
+static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_mark_live_on_alloc(run);
+#else
+  if (!run || run->allocated_mask != 0) {
+    return;
+  }
+  if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
+    run->active_live_empty_charge = false;
+  } else if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
+    h8_medium_release_empty_payload(run);
+  }
+  run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
+#endif
+}
 void h8_medium_owner_lease_shadow_open(H8OwnerRecord* owner,
                                        uint16_t generation);
 void h8_medium_owner_lease_shadow_close(H8OwnerRecord* owner);

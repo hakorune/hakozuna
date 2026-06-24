@@ -107,6 +107,8 @@ source hygiene:
   current large files remain below the 800-line working limit
   MediumSlotPtrInlineRestore-L1 restored header-inline slot pointer generation
     after the medium slot primitive split
+  MediumMarkLiveInline-L1 removes the remaining release allocation call to
+    h8_medium_mark_live_on_alloc while preserving debug counter semantics
 ```
 
 ```text
@@ -117,7 +119,9 @@ if optimizing medium/main local speed:
   local0 rows are dominated by active-empty-live allocation reactivation
   MediumActiveEmptyAllocFastPath-L1 was tested and reverted as NO-GO in the
   simple pre-branch shape
-  next step should be code-shape/asm attribution before another behavior box
+  MediumMarkLiveInline-L1 is the current code-shape candidate; short A/B showed
+  medium_i0 improvement and flat medium_r50
+  next step should be R10 confirmation or the next asm-visible call site
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked

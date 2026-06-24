@@ -302,7 +302,7 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
   uint64_t bit = UINT64_C(1) << slot;
-  h8_medium_mark_live_on_alloc(run);
+  h8_medium_mark_live_on_alloc_fast(run);
   run->free_mask &= ~bit;
   run->allocated_mask |= bit;
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,

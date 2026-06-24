@@ -681,6 +681,76 @@ remaining material call:
   h8_medium_mark_live_on_alloc
 ```
 
+## Medium Mark-Live Inline
+
+Record:
+
+```text
+bench_results/20260624T201507Z_medium_marklive_inline_ab/
+```
+
+Behavior:
+
+```text
+release:
+  h8_medium_mark_live_on_alloc_fast() is inlined into medium allocation sites
+
+debug:
+  the fast helper delegates to h8_medium_mark_live_on_alloc()
+  debug counter semantics are unchanged
+```
+
+The inline release helper preserves the full behavior of the original helper.
+It does not narrow the path to active-empty only.
+
+```text
+allocated_mask != 0:
+  return
+
+LIVE:
+  clear active_live_empty_charge
+
+EMPTY_RESIDENT:
+  release resident charge
+
+EMPTY_DECOMMITTED:
+  mark LIVE
+```
+
+Assembly gate:
+
+```text
+h8_medium_malloc_class_inner:
+  no call to h8_medium_mark_live_on_alloc
+  no call to h8_medium_slot_ptr
+
+h8_medium_run_alloc_local_scaffold:
+  no call to h8_medium_mark_live_on_alloc
+  no call to h8_medium_slot_ptr
+```
+
+Short A/B:
+
+```text
+baseline:
+  33670e7d
+
+medium_i0:
+  all-run median ratio 1.078
+  batch-median ratio 1.124
+
+medium_r50:
+  all-run median ratio 1.015
+  batch-median ratio 0.974
+```
+
+Decision:
+
+```text
+MediumMarkLiveInline-L1:
+  GO as a code-shape patch
+```
+
 Branch rules:
 
 ```text
