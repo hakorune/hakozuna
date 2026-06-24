@@ -81,6 +81,7 @@ static int check_medium_scaffold(void) {
     run.base = payload;
     run.class_id = (uint16_t)class_id;
     run.slot_size = spec->slot_size;
+    run.slot_shift = spec->slot_shift;
     run.slot_count = spec->slot_count;
     run.run_size = spec->run_size;
     size_t slot = 0;

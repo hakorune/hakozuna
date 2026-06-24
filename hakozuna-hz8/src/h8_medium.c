@@ -19,10 +19,10 @@ static const size_t k_h8_medium_empty_resident_budget =
     (size_t)H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES;
 
 static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
-    {8192u, H8_MEDIUM_RUN_BYTES, 8u, 1u},
-    {16384u, H8_MEDIUM_RUN_BYTES, 4u, 1u},
-    {32768u, H8_MEDIUM_RUN_BYTES, 2u, 1u},
-    {65536u, H8_MEDIUM_RUN_BYTES, 1u, 1u},
+    {8192u, H8_MEDIUM_RUN_BYTES, 13u, 8u, 1u},
+    {16384u, H8_MEDIUM_RUN_BYTES, 14u, 4u, 1u},
+    {32768u, H8_MEDIUM_RUN_BYTES, 15u, 2u, 1u},
+    {65536u, H8_MEDIUM_RUN_BYTES, 16u, 1u, 1u},
 };
 
 _Static_assert(H8_MEDIUM_MIN_SIZE == 4097u,
@@ -387,10 +387,11 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
   }
   uintptr_t offset = addr - base;
   size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
-  if (offset >= payload || (offset % run->slot_size) != 0u) {
+  uintptr_t slot_mask = ((uintptr_t)1u << run->slot_shift) - 1u;
+  if (offset >= payload || (offset & slot_mask) != 0u) {
     return false;
   }
-  size_t slot = (size_t)(offset / run->slot_size);
+  size_t slot = (size_t)(offset >> run->slot_shift);
   if (slot >= run->slot_count) {
     return false;
   }
@@ -404,7 +405,7 @@ void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot) {
   if (!run || !run->base || slot >= run->slot_count) {
     return NULL;
   }
-  return run->base + slot * (size_t)run->slot_size;
+  return run->base + (slot << run->slot_shift);
 }
 
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
@@ -431,6 +432,7 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
   run->base = payload;
   run->class_id = (uint16_t)class_id;
   run->slot_size = spec->slot_size;
+  run->slot_shift = spec->slot_shift;
   run->slot_count = spec->slot_count;
   run->run_size = spec->run_size;
   run->free_mask = (run->slot_count == 64u)

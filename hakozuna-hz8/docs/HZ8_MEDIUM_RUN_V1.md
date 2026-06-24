@@ -394,16 +394,32 @@ resident caching remains HOLD because it conflicts with low-RSS claims.
      registry lookup is closed
      remaining medium cost is split between lock wait and slot mutation
 
-11. MediumRunRunPool-L1
+11. MediumRunP2SlotDecode-L1
+   status: implemented
+   use medium class slot_shift for pointer identity
+   replace variable slot modulo/division with mask/shift
+   replace slot pointer multiplication with shift
+   validation:
+     medium smoke and safety stress pass
+     release code shape has no div/idiv in slot decode
+   result:
+     bench_results/20260624T000855Z_medium_p2_slot_decode/README.md
+     release r50 median about 8.43M ops/s
+     release local median about 11.96M ops/s
+   interpretation:
+     safe cleanup with modest positive signal
+     remaining bottleneck is still run lock / protocol shape
+
+12. MediumRunRunPool-L1
    replace one-run-per-mmap scaffold with pooled or chunked run allocation
    keep fail-closed medium pointer identity
    keep post-RSS recovery measurement
 
-12. MediumRunRemote-L1
+13. MediumRunRemote-L1
    remote free publish/collect
    duplicate claim gates
 
-13. MediumRunLifecycle-L1
+14. MediumRunLifecycle-L1
    owner exit, purge, post-RSS recovery
 ```
 

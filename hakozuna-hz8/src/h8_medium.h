@@ -31,6 +31,7 @@ typedef enum H8MediumPayloadState {
 typedef struct H8MediumClassSpec {
   uint32_t slot_size;
   uint32_t run_size;
+  uint16_t slot_shift;
   uint16_t slot_count;
   uint16_t bitmap_words;
 } H8MediumClassSpec;
@@ -40,6 +41,7 @@ typedef struct H8MediumRun {
   uint16_t class_id;
   uint16_t slot_count;
   uint32_t slot_size;
+  uint16_t slot_shift;
   uint32_t run_size;
   _Atomic uint64_t owner_word;
   _Atomic uint8_t state;

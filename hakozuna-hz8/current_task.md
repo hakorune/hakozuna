@@ -362,6 +362,24 @@ MediumRunSlotProtocolAudit-L1:
     registry lookup is closed
     residual medium cost is split between run lock wait and in-lock slot mutation
     next box should address run-lock / slot shape before remote protocol redesign
+
+MediumRunP2SlotDecode-L1:
+  current status:
+    implemented
+  mechanism:
+    add slot_shift to medium class specs and runs
+    replace medium slot pointer multiplication with shift
+    replace medium pointer slot modulo/division with mask/shift
+  data:
+    bench_results/20260624T000855Z_medium_p2_slot_decode/README.md
+  result:
+    smoke and safety stress pass
+    inspected release code has no div/idiv in h8_medium_slot_index_from_ptr_checked
+    release r50 median is about 8.43M ops/s
+    release local median is about 11.96M ops/s
+  interpretation:
+    power-of-two slot geometry cleanup is safe and slightly positive
+    remaining cost is still lock/protocol shape, not slot division
 ```
 
 ### 2. SizePolicy-v1 Evidence
