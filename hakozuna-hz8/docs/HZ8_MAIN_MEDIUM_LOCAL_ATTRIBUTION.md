@@ -1039,6 +1039,85 @@ reason:
   without changing debug accounting
 ```
 
+## Medium Active Hit Narrow ASM
+
+Record:
+
+```text
+bench_results/20260625_064730_medium_active_hit_narrow_asm_r10/
+bench_results/20260625_064752_medium_active_hit_narrow_asm_small_confirm/
+bench_results/20260625_064809_medium_active_hit_narrow_asm_r50_confirm/
+```
+
+Candidate:
+
+```text
+active-hit path only:
+  compute current owner token once in h8_medium_malloc_class_inner
+  compare active->owner_word directly
+  avoid h8_medium_run_owned_by_ctx call before active-run allocation
+
+unchanged:
+  owner-list path
+  global detached path
+  remote path
+  owner lease / queue
+  h8_medium_run_owned_by_ctx helper semantics
+```
+
+Assembly gate:
+
+```text
+h8_medium_malloc_class_inner active-hit entry:
+  no call to h8_medium_run_owned_by_ctx before active-run success path
+
+owner-list paths:
+  still use h8_medium_run_owned_by_ctx
+```
+
+Initial R10 x2:
+
+```text
+medium_i0:
+  median ratio 1.133
+  p25 ratio 1.050
+
+medium_r50:
+  median ratio 0.993
+  p25 ratio 1.066
+
+main_i0:
+  median ratio 1.025
+  p25 ratio 1.065
+
+small_i0:
+  median ratio 0.934
+  p25 ratio 0.929
+```
+
+Confirmation:
+
+```text
+small_i0 extra R10 x2:
+  median ratio 1.063
+  p25 ratio 1.052
+
+medium_r50 extra R10 x2:
+  median ratio 0.996
+  p25 ratio 1.034
+```
+
+Decision:
+
+```text
+MediumActiveHitNarrowAsm-L1:
+  GO
+
+reason:
+  broad owner-token inline remains NO-GO, but active-hit-only comparison gives
+  a large medium local win and only flat/no-material-regression remote signal
+```
+
 Branch rules:
 
 ```text

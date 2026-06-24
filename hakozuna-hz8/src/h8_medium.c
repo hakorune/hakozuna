@@ -327,11 +327,16 @@ void* h8_medium_malloc_class_inner(uint32_t class_id) {
   bool did_capacity_collect = false;
 retry_owner_capacity:
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
+  uint64_t expected_owner_word =
+      (ctx && ctx->owner) ? h8_medium_owner_word_for(ctx->owner) : 0;
   bool active_owned = false;
   if (!active) {
     H8_DEBUG_INC(medium_active_miss_null);
   } else {
-    active_owned = h8_medium_run_owned_by_ctx(active, ctx);
+    active_owned =
+        expected_owner_word != 0 &&
+        atomic_load_explicit(&active->owner_word, memory_order_acquire) ==
+            expected_owner_word;
     if (!active_owned) {
       H8_DEBUG_INC(medium_active_alloc_owner_mismatch);
       H8_DEBUG_INC(medium_active_miss_owner);

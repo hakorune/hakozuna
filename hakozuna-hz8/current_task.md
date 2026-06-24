@@ -138,8 +138,19 @@ if optimizing medium/main local speed:
     medium collector active-empty-live paths while debug keeps stats semantics
     R10 x2: medium_i0 +3.2%, medium_r50 flat, main_i0 +11.2%,
     small_i0 -0.9% within regression guard
-  next step should inspect a different asm-visible call site; do not reopen
-    owner-token inline without a narrower shape
+  MediumActiveHitNarrowAsm-L1 is confirmed:
+    removes the active-hit h8_medium_run_owned_by_ctx call from
+    h8_medium_malloc_class_inner by comparing the active run owner_word
+    against the current owner token inside that one path only
+    owner-list, global detached, remote, lease, queue, and broad owner-token
+    helper semantics are unchanged
+    R10 x2: medium_i0 +13.3%, main_i0 +2.5%, medium_r50 -0.7% initial
+    and -0.4% confirm, small_i0 regression did not reproduce
+
+  guardrail:
+    MediumActiveOwnerTokenInlineAudit-L1 remains NO-GO
+    do not reintroduce broad owner-token inline; only active-hit-only code
+    shape may be tested, and must be reverted if medium_r50 regresses
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked
