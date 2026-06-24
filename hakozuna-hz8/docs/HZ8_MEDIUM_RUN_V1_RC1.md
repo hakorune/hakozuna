@@ -51,6 +51,9 @@ gate:
 
 record:
   bench_results/20260624T152001Z_medium_v1_gate/README.md
+
+confirmation:
+  bench_results/20260624T153937Z_medium_v1_gate/README.md
 ```
 
 Measured medians:
@@ -75,6 +78,26 @@ main_interleaved_remote90:
   25.84M ops/s
   steady 27.03M
   peak RSS 42.08MiB
+```
+
+Confirmation medians:
+
+```text
+medium_local0:
+  89.52M ops/s
+  steady 95.36M
+
+medium_interleaved_remote50:
+  33.65M ops/s
+  steady 36.02M
+
+medium_phase_remote90:
+  257.9K ops/s
+  steady 364.3K
+
+main_interleaved_remote90:
+  25.80M ops/s
+  steady 26.93M
 ```
 
 ## Strengths
