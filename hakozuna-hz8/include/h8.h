@@ -201,6 +201,10 @@ typedef struct H8DebugStats {
   size_t medium_run_reuse_owner_list_count;
   size_t medium_run_reuse_global_count;
   size_t medium_run_madvise_count;
+  size_t medium_chunk_create_count;
+  size_t medium_chunk_alloc_count;
+  size_t medium_chunk_reserved_bytes;
+  size_t medium_chunk_used_bytes;
   size_t medium_owner_scan_count;
   size_t medium_owner_scan_step_count;
   size_t medium_global_scan_count;

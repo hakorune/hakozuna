@@ -592,6 +592,11 @@ int main(int argc, char** argv) {
          debug.medium_remote_queue_push_attempt_count,
          debug.medium_remote_queue_push_retry_count,
          debug.medium_remote_queue_push_success_count);
+  printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
+         debug.medium_chunk_create_count,
+         debug.medium_chunk_alloc_count,
+         debug.medium_chunk_reserved_bytes,
+         debug.medium_chunk_used_bytes);
   double medium_remote_pub = (double)debug.medium_remote_publish_count;
   double medium_collect_run = (double)debug.medium_remote_collect_run_count;
   double medium_collect_call = (double)debug.medium_remote_collect_call_count;

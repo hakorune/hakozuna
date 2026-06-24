@@ -329,6 +329,10 @@ typedef struct H8Global {
   atomic_size_t medium_run_reuse_owner_list_count;
   atomic_size_t medium_run_reuse_global_count;
   atomic_size_t medium_run_madvise_count;
+  atomic_size_t medium_chunk_create_count;
+  atomic_size_t medium_chunk_alloc_count;
+  atomic_size_t medium_chunk_reserved_bytes;
+  atomic_size_t medium_chunk_used_bytes;
   atomic_size_t medium_owner_scan_count;
   atomic_size_t medium_owner_scan_step_count;
   atomic_size_t medium_global_scan_count;

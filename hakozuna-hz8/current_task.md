@@ -119,67 +119,15 @@ debug remote_lease_ms=11.120 enter=4.571 exit=6.549
 
 ### MediumRunCollectCadenceTuning-L1
 
-Status:
-
-```text
-RECORDED
-```
-
-Goal:
-
-```text
-tune owner medium pending collect cadence after MPSC queue push
-```
-
-Scope:
-
-```text
-collect period/budget made compile-time overrideable
-default changed from period=8,budget=4 to period=32,budget=8
-```
-
-Data:
+Status: recorded.
 
 ```text
 bench_results/20260624T093113Z_medium_collect_cadence_tuning/README.md
-```
-
-Result:
-
-```text
-release medium r50:
-  period=8,budget=4:
-    median 5.947M ops/s
-    steady median 6.190M ops/s
-
-  period=32,budget=8:
-    median 6.714M ops/s
-    steady median 7.002M ops/s
-
-  default p32/b8 confirmation:
-    median 6.869M ops/s
-    steady median 7.191M ops/s
-
-debug medium r50 p32/b8:
-  remote_collect_call=9302
-  remote_collect_run=71583
-  remote_collect_slot=89696
-  remote_collect_ms=6.670
-  remote_qpush=71583
-  remote_qpush_ms=4.609
-  remote_lease_ms=7.408
-  slots_per_run=[1.572,2.005,1.707,1.000]
-
-small interleaved remote90 quick:
-  median 49.283M ops/s
-```
-
-Interpretation:
-
-```text
+default: period=32,budget=8
+release medium r50: 6.869M median, 7.191M steady
+debug p32/b8: collect_call=9302 collect_run=71583 collect_slot=89696
+class density: [1.572,2.005,1.707,1.000]
 collect cadence was too eager
-period=32,budget=8 improves medium r50 by allowing slot coalescing
-64K class remains structurally one slot/run
 remaining visible residual bucket is owner lifecycle lease and collect slot mutation
 ```
 
@@ -228,35 +176,10 @@ next safe lease step is shadowing a dedicated medium owner admission word
 
 Status: recorded.
 
-Scope:
-
-```text
-debug-only owner-scoped medium_publish_ctl
-existing owner control word remains authority
-shadow enter decision compared against existing h8_owner_publish_enter
-shadow refs closed and checked at owner exit
-release hot path has no shadow call
-```
-
-Hard zero gates:
-
-```text
-medium_lease_enter_decision_mismatch = 0
-medium_lease_ref_underflow = 0
-medium_lease_ref_nonzero_at_owner_exit = 0
-medium_lease_enter_after_close = 0
-medium_owner_reuse_with_medium_refs = 0
-```
-
-Data:
-
 ```text
 bench_results/20260624T110022Z_medium_owner_lease_word_shadow/README.md
-```
-
-Result:
-
-```text
+debug-only owner-scoped medium_publish_ctl shadow
+zero gates: decision/ref/close/reuse mismatches = 0
 debug medium r50:
   decision_mismatch=0
   ref_underflow=0
@@ -697,6 +620,21 @@ Decision:
 default remains per-run mmap
 directory fallback is already closed
 next lane is MediumUpper48KSizePolicyShadow-L1
+```
+
+## MediumChunkArenaQuantum-L1
+
+Status: attributed; candidate remains evidence-only.
+
+```text
+bench_results/20260624T_medium_chunk_quantum_attribution/README.md
+change: added debug medium_chunk create/alloc/reserved/used counters
+candidate macro: H8_MEDIUM_CHUNK_CARVE
+debug R3: chunk create=1 alloc=244 reserved=16MiB used=15.99MiB
+release r50 R3: baseline 7.41M, chunk 9.09M median
+minor_faults_per_op: baseline 0.166416, chunk 0.099406
+interpretation: chunk arena reduces short-run fault pressure
+promotion requires small frozen gates and longer paired stability
 ```
 
 ## MediumUpper48KSizePolicyPairedGate-L1

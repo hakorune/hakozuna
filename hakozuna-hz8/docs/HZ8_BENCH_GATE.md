@@ -162,6 +162,10 @@ changing allocator behavior.
 For `main_interleaved_remote90`, record p25 and minor faults together.  A low
 p25 with high `minor_median` is a stability issue, not a remote protocol proof.
 
+Chunk arena candidate builds print `medium_chunk`.  Use `reserved_bytes` and
+`used_bytes` to separate reduced mmap/fault pressure from allocator protocol
+changes.
+
 ## v0 Performance Gates
 
 Initial v0 gates:

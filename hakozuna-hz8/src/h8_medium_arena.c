@@ -55,6 +55,8 @@ static H8MediumChunk* h8_medium_chunk_create(void) {
     return NULL;
   }
   chunk->base = payload;
+  H8_DEBUG_INC(medium_chunk_create_count);
+  H8_DEBUG_ADD(medium_chunk_reserved_bytes, H8_MEDIUM_CHUNK_BYTES);
   return chunk;
 }
 #endif
@@ -77,6 +79,8 @@ void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
       if (chunk_backed_out) {
         *chunk_backed_out = true;
       }
+      H8_DEBUG_INC(medium_chunk_alloc_count);
+      H8_DEBUG_ADD(medium_chunk_used_bytes, run_size);
       return chunk->base + used;
     }
   }
@@ -92,6 +96,8 @@ void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
   if (chunk_backed_out) {
     *chunk_backed_out = true;
   }
+  H8_DEBUG_INC(medium_chunk_alloc_count);
+  H8_DEBUG_ADD(medium_chunk_used_bytes, run_size);
   return chunk->base;
 #else
   if (run_size == 0) {

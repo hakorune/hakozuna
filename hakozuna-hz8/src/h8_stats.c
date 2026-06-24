@@ -337,6 +337,14 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_run_reuse_global_count, memory_order_acquire);
   out->medium_run_madvise_count =
       atomic_load_explicit(&h8g.medium_run_madvise_count, memory_order_acquire);
+  out->medium_chunk_create_count =
+      atomic_load_explicit(&h8g.medium_chunk_create_count, memory_order_acquire);
+  out->medium_chunk_alloc_count =
+      atomic_load_explicit(&h8g.medium_chunk_alloc_count, memory_order_acquire);
+  out->medium_chunk_reserved_bytes = atomic_load_explicit(
+      &h8g.medium_chunk_reserved_bytes, memory_order_acquire);
+  out->medium_chunk_used_bytes =
+      atomic_load_explicit(&h8g.medium_chunk_used_bytes, memory_order_acquire);
   out->medium_owner_scan_count =
       atomic_load_explicit(&h8g.medium_owner_scan_count, memory_order_acquire);
   out->medium_owner_scan_step_count = atomic_load_explicit(
