@@ -253,6 +253,50 @@ MediumActiveHitValidationCollapse-L1:
   GO
 ```
 
+## Free Direct Identity A/B
+
+Record:
+
+```text
+bench_results/hz8_free_identity_ab_20260624T175453Z/
+```
+
+Baseline:
+
+```text
+0b9b30fd Collapse HZ8 medium active allocation checks
+```
+
+Candidate:
+
+```text
+same-owner medium free reuses one owner-word load / owner-match decision
+instead of repeated h8_medium_run_owned_by_ctx calls on the direct path
+```
+
+Median ratios:
+
+```text
+main_i0:
+  1.0111
+
+medium_i0:
+  1.0537
+
+medium_i1:
+  1.0538
+
+fixed16:
+  1.0269
+```
+
+Decision:
+
+```text
+MediumFreeDirectIdentityShape-L1:
+  GO
+```
+
 Evidence needed before behavior changes:
 
 ```text
