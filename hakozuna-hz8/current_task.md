@@ -387,6 +387,7 @@ Detailed records live in each `bench_results/.../README.md`.
 3. MediumProtocolOrArenaSplit-L1
    active-capacity hint is NO-GO; preserve 64K temporal reuse window
    p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
+   local-free pending elision proof is clean but not default-worthy
 ```
 
 ## MediumV1GateRunner-L1

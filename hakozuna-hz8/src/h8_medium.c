@@ -279,10 +279,18 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr) {
     return false;
   }
   uint64_t bit = UINT64_C(1) << slot;
-  if ((run->allocated_mask & bit) == 0 || (run->free_mask & bit) != 0 ||
-      atomic_load_explicit(&run->pending_bits[slot >> 6u], memory_order_acquire) & (UINT64_C(1) << (slot & 63u))) {
+  if ((run->allocated_mask & bit) == 0 || (run->free_mask & bit) != 0) {
     return false;
   }
+#if !defined(H8_MEDIUM_LOCAL_FREE_PENDING_ELIDE) || \
+    defined(H8_ENABLE_DEBUG_STATS)
+  if ((atomic_load_explicit(&run->pending_bits[slot >> 6u],
+                            memory_order_acquire) &
+       (UINT64_C(1) << (slot & 63u))) != 0) {
+    H8_DEBUG_INC(medium_local_free_pending_nonzero);
+    return false;
+  }
+#endif
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_FREE | H8_SLOT_NONE,
                         memory_order_release);
   run->allocated_mask &= ~bit;

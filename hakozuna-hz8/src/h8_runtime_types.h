@@ -355,6 +355,7 @@ typedef struct H8Global {
   atomic_size_t medium_free_slot_ns;
   atomic_size_t medium_alloc_slot_count;
   atomic_size_t medium_free_slot_count;
+  atomic_size_t medium_local_free_pending_nonzero;
   atomic_size_t medium_lock_elide_alloc_candidate;
   atomic_size_t medium_lock_elide_free_candidate;
   atomic_size_t medium_lock_elide_owner_mismatch;
