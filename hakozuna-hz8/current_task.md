@@ -183,6 +183,27 @@ post-ASM full snapshot:
     0.26M median
     peak 61.8MiB, post 3.0MiB
 
+post-ASM recheck:
+  bench_results/20260624T221657Z_post_asm_recheck_medium_v1_gate/
+  behavior_sha=a56e1f0b
+
+  stable:
+    guard_local0 420.80M median
+    small_interleaved_remote90 53.58M median
+    main_interleaved_remote50 39.81M median
+    medium_phase_remote90 0.26M median
+
+  variable:
+    main_interleaved_remote90:
+      21.45M recheck, 23.67M confirm
+
+    medium_local0:
+      143.52M recheck, 156.50M confirm
+
+    medium_interleaved_remote50:
+      33.77M recheck, 35.24M confirm
+      one recheck batch still had a low p25 from high-minor-fault outliers
+
 next measurement lanes:
   PostAsmSameRunAllocatorMatrixRefresh-L1:
     compare the post-ASM default against HZ3/HZ4/mimalloc/tcmalloc/system

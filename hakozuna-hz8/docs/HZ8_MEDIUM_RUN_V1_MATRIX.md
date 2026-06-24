@@ -283,3 +283,47 @@ phase:
   improved versus RC1 HZ8, but still a stress row rather than a primary
   throughput ranking row
 ```
+
+## Post-ASM Recheck
+
+The post-ASM snapshot was rerun once more at:
+
+```text
+behavior_sha=a56e1f0b
+data=bench_results/20260624T221657Z_post_asm_recheck_medium_v1_gate/
+```
+
+Recheck medians:
+
+| Row | Previous post-ASM | Recheck | Confirm |
+|---|---:|---:|---:|
+| `guard_local0` | 372.68M | 420.80M | - |
+| `small_interleaved_remote90` | 55.23M | 53.58M | - |
+| `main_local0_i0` | 201.95M | 188.06M | - |
+| `main_interleaved_remote50` | 40.14M | 39.81M | - |
+| `main_interleaved_remote90` | 26.88M | 21.45M | 23.67M |
+| `medium_local0` | 166.22M | 143.52M | 156.50M |
+| `medium_interleaved_remote50` | 36.01M | 33.77M | 35.24M |
+| `medium_phase_remote90` | 0.26M | 0.26M | - |
+
+Recheck interpretation:
+
+```text
+stable conclusions:
+  small rows remain strong
+  main r50 remains around 40M
+  medium r50 median remains in the mid-30M range
+  phase row RSS recovery remains clean
+
+variance:
+  main r90 is lower in this recheck than the first post-ASM snapshot
+  medium local ranges materially across batches
+  medium r50 can still produce low-p25 batches, but the confirm batch was
+  normal
+
+ranking claims:
+  use a fresh same-run allocator matrix, not only these HZ8-only reruns
+
+next stability lane:
+  MediumR50FaultOutlierAttribution-L1 remains open
+```
