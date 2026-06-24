@@ -1,0 +1,15 @@
+[CASE] row=main_interleaved_remote50
+[CASE] run=10
+[CASE] alloc=tcmalloc
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libtcmalloc-minimal4/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 32768 --remote-pct 50 --interleaved 1 --live-window 4096
+
+run=1 ops/s=46167496.196 post_rss=53870592 peak_rss=53870592 minor_faults=11480
+run_interleaved=1 work_ms=33.853 work_ops/s=47263227.257 tail_ms=1.136 remote_enqueue=801492 local_free=798508 drain_calls=1603085 drain_objects=801492 drain_empty=1505295 push_yields=0 finish_yields=2641
+summary runs=1 threads=16 iters=100000 size=16..32768 remote_pct=50 interleaved=1 live_window=4096 api=malloc_free
+throughput median=46167496.196 p25=46167496.196 p75=46167496.196 min=46167496.196 max=46167496.196
+post_rss median=53870592 min=53870592 max=53870592
+peak_rss median=53870592 min=53870592 max=53870592 source=VmHWM_process
+page_faults minor_median=11480 minor_min=11480 minor_max=11480
+steady_work throughput_median=47263227.257 p25=47263227.257 p75=47263227.257
+interleaved_phase_ms work_median=33.853 tail_median=1.136

@@ -1,0 +1,16 @@
+[CASE] row=small_phase_remote90
+[CASE] run=5
+[CASE] alloc=hz4
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-mt/libhakozuna_hz4.so
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 4096 --remote-pct 90 --interleaved 0
+
+run=1 ops/s=3683132.344 post_rss=3205230592 peak_rss=3205365760 minor_faults=779243
+run_phase=1 alloc_ms=413.267 remote_ms=20.099 remote_live=1440700 rounded_live_bytes=3947889632
+summary runs=1 threads=16 iters=100000 size=16..4096 remote_pct=90 interleaved=0 live_window=0 api=malloc_free
+throughput median=3683132.344 p25=3683132.344 p75=3683132.344 min=3683132.344 max=3683132.344
+post_rss median=3205230592 min=3205230592 max=3205230592
+peak_rss median=3205365760 min=3205365760 max=3205365760 source=VmHWM_process
+page_faults minor_median=779243 minor_min=779243 minor_max=779243
+steady_work throughput_median=3871591.983 p25=3871591.983 p75=3871591.983
+phase_ms alloc_median=413.267 remote_median=20.099
+phase_live remote_live_median=1440700 rounded_live_bytes_note=per-run-logs

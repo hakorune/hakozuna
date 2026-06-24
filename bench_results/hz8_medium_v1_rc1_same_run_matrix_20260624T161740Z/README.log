@@ -1,0 +1,17 @@
+[MATRIX] ts=20260624T161741Z
+[MATRIX] root=/mnt/workdisk/public_share/hakozuna_repo
+[MATRIX] bench_bin=/mnt/workdisk/public_share/hakozuna_repo/bench/out/bench_matrix_malloc
+[MATRIX] allocators=hz8,hz3,hz4,mimalloc,tcmalloc,system
+[MATRIX] runs=10
+[MATRIX] threads=16
+[MATRIX] iters=100000
+[MATRIX] phase_threads=2
+[MATRIX] phase_iters=4000
+[MATRIX] allocator_behavior_sha=f916c803
+[MATRIX] freeze_record_sha=f916c803
+[MATRIX] hz8=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz8/libhakozuna_hz8_preload.so
+[MATRIX] hz3=/mnt/workdisk/public_share/hakozuna_repo/libhakozuna_hz3_scale.so
+[MATRIX] hz4=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-mt/libhakozuna_hz4.so
+[MATRIX] mimalloc=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2.0
+[MATRIX] tcmalloc=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libtcmalloc-minimal4/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9
+[MATRIX] system=system

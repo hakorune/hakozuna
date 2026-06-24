@@ -1,0 +1,17 @@
+[CASE] row=medium_phase_remote90
+[CASE] run=4
+[CASE] alloc=hz3
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/libhakozuna_hz3_scale.so
+[CASE] args=--runs 1 --threads 2 --iters 4000 --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0
+
+[HZ3_S65_MEDIUM_RECLAIM] auto_mode=purge_only (no medium-safe predicate yet; use MODE=1 only for repro)
+run=1 ops/s=464483.420 post_rss=65011712 peak_rss=65011712 minor_faults=15228
+run_phase=1 alloc_ms=16.726 remote_ms=0.178 remote_live=7188 rounded_live_bytes=29442048
+summary runs=1 threads=2 iters=4000 size=4097..65536 remote_pct=90 interleaved=0 live_window=0 api=malloc_free
+throughput median=464483.420 p25=464483.420 p75=464483.420 min=464483.420 max=464483.420
+post_rss median=65011712 min=65011712 max=65011712
+peak_rss median=65011712 min=65011712 max=65011712 source=VmHWM_process
+page_faults minor_median=15228 minor_min=15228 minor_max=15228
+steady_work throughput_median=478305.040 p25=478305.040 p75=478305.040
+phase_ms alloc_median=16.726 remote_median=0.178
+phase_live remote_live_median=7188 rounded_live_bytes_note=per-run-logs

@@ -1,0 +1,16 @@
+[CASE] row=medium_phase_remote90
+[CASE] run=1
+[CASE] alloc=tcmalloc
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libtcmalloc-minimal4/usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4.5.9
+[CASE] args=--runs 1 --threads 2 --iters 4000 --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0
+
+run=1 ops/s=490496.718 post_rss=67108864 peak_rss=67108864 minor_faults=14719
+run_phase=1 alloc_ms=15.503 remote_ms=0.668 remote_live=7188 rounded_live_bytes=29442048
+summary runs=1 threads=2 iters=4000 size=4097..65536 remote_pct=90 interleaved=0 live_window=0 api=malloc_free
+throughput median=490496.718 p25=490496.718 p75=490496.718 min=490496.718 max=490496.718
+post_rss median=67108864 min=67108864 max=67108864
+peak_rss median=67108864 min=67108864 max=67108864 source=VmHWM_process
+page_faults minor_median=14719 minor_min=14719 minor_max=14719
+steady_work throughput_median=516015.442 p25=516015.442 p75=516015.442
+phase_ms alloc_median=15.503 remote_median=0.668
+phase_live remote_live_median=7188 rounded_live_bytes_note=per-run-logs

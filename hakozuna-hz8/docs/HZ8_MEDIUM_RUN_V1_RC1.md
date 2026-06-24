@@ -143,7 +143,7 @@ phase remote90:
 
 ```text
 if freezing MediumRun-v1:
-  run same-run allocator matrix with current default
+  same-run allocator matrix is recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
 
 if improving main stability:
   reopen chunk arena only with a medium-r50 no-regression plan

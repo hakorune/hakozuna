@@ -1,0 +1,15 @@
+[CASE] row=main_interleaved_remote90
+[CASE] run=10
+[CASE] alloc=system
+[CASE] lib=system
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 32768 --remote-pct 90 --interleaved 1 --live-window 4096
+
+run=1 ops/s=2867454.315 post_rss=4538368 peak_rss=1084157952 minor_faults=287992
+run_interleaved=1 work_ms=505.650 work_ops/s=3164245.970 tail_ms=242.862 remote_enqueue=1440700 local_free=159300 drain_calls=1977040 drain_objects=1440700 drain_empty=1976948 push_yields=320412 finish_yields=56583
+summary runs=1 threads=16 iters=100000 size=16..32768 remote_pct=90 interleaved=1 live_window=4096 api=malloc_free
+throughput median=2867454.315 p25=2867454.315 p75=2867454.315 min=2867454.315 max=2867454.315
+post_rss median=4538368 min=4538368 max=4538368
+peak_rss median=1084157952 min=1084157952 max=1084157952 source=VmHWM_process
+page_faults minor_median=287992 minor_min=287992 minor_max=287992
+steady_work throughput_median=3164245.970 p25=3164245.970 p75=3164245.970
+interleaved_phase_ms work_median=505.650 tail_median=242.862

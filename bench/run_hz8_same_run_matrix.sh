@@ -8,6 +8,8 @@ ALLOCATORS="${ALLOCATORS:-hz8,hz3,hz4,mimalloc,tcmalloc,system}"
 RUNS="${RUNS:-10}"
 THREADS="${THREADS:-16}"
 ITERS="${ITERS:-100000}"
+PHASE_THREADS="${PHASE_THREADS:-2}"
+PHASE_ITERS="${PHASE_ITERS:-4000}"
 LIVE_WINDOW="${LIVE_WINDOW:-4096}"
 OUTDIR="${OUTDIR:-${ROOT_DIR}/bench_results/hz8_same_run_matrix_$(date -u +%Y%m%dT%H%M%SZ)}"
 BUILD="${BUILD:-1}"
@@ -23,6 +25,8 @@ Options:
   --runs N            fresh process samples per row/allocator
   --threads N         worker threads
   --iters N           iterations per thread
+  --phase-threads N   medium phase stress threads
+  --phase-iters N     medium phase stress iterations per thread
   --outdir DIR        output directory
   --skip-build        do not build HZ8 preload or matrix harness
   --help              show this message
@@ -50,6 +54,10 @@ while [[ $# -gt 0 ]]; do
       THREADS="$2"; shift 2 ;;
     --iters)
       ITERS="$2"; shift 2 ;;
+    --phase-threads)
+      PHASE_THREADS="$2"; shift 2 ;;
+    --phase-iters)
+      PHASE_ITERS="$2"; shift 2 ;;
     --outdir)
       OUTDIR="$2"; shift 2 ;;
     --skip-build)
@@ -97,6 +105,8 @@ cat > "${OUTDIR}/README.log" <<EOF
 [MATRIX] runs=${RUNS}
 [MATRIX] threads=${THREADS}
 [MATRIX] iters=${ITERS}
+[MATRIX] phase_threads=${PHASE_THREADS}
+[MATRIX] phase_iters=${PHASE_ITERS}
 [MATRIX] allocator_behavior_sha=f916c803
 [MATRIX] freeze_record_sha=f916c803
 EOF
@@ -206,6 +216,7 @@ run_row() {
 }
 
 common="--runs 1 --threads ${THREADS} --iters ${ITERS}"
+medium_phase_common="--runs 1 --threads ${PHASE_THREADS} --iters ${PHASE_ITERS}"
 run_row "guard_local0" \
   "${common} --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 0"
 run_row "small_interleaved_remote90" \
@@ -223,7 +234,7 @@ run_row "medium_local0" \
 run_row "medium_interleaved_remote50" \
   "${common} --min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1 --live-window ${LIVE_WINDOW}"
 run_row "medium_phase_remote90" \
-  "${common} --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0"
+  "${medium_phase_common} --min-size 4097 --max-size 65536 --remote-pct 90 --interleaved 0"
 
 python3 - "${csv}" "${OUTDIR}/summary.md" <<'PY'
 import csv

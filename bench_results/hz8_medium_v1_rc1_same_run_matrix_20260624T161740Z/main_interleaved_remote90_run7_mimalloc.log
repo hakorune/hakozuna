@@ -1,0 +1,15 @@
+[CASE] row=main_interleaved_remote90
+[CASE] run=7
+[CASE] alloc=mimalloc
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2.0
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 32768 --remote-pct 90 --interleaved 1 --live-window 4096
+
+run=1 ops/s=3061119.207 post_rss=55574528 peak_rss=55574528 minor_faults=13186
+run_interleaved=1 work_ms=521.918 work_ops/s=3065615.413 tail_ms=65.448 remote_enqueue=1440700 local_free=159300 drain_calls=1750540 drain_objects=1440700 drain_empty=1008828 push_yields=0 finish_yields=111025
+summary runs=1 threads=16 iters=100000 size=16..32768 remote_pct=90 interleaved=1 live_window=4096 api=malloc_free
+throughput median=3061119.207 p25=3061119.207 p75=3061119.207 min=3061119.207 max=3061119.207
+post_rss median=55574528 min=55574528 max=55574528
+peak_rss median=55574528 min=55574528 max=55574528 source=VmHWM_process
+page_faults minor_median=13186 minor_min=13186 minor_max=13186
+steady_work throughput_median=3065615.413 p25=3065615.413 p75=3065615.413
+interleaved_phase_ms work_median=521.918 tail_median=65.448

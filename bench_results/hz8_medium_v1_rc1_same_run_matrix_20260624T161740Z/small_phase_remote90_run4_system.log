@@ -1,0 +1,16 @@
+[CASE] row=small_phase_remote90
+[CASE] run=4
+[CASE] alloc=system
+[CASE] lib=system
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 4096 --remote-pct 90 --interleaved 0
+
+run=1 ops/s=962255.788 post_rss=15335424 peak_rss=2996699136 minor_faults=731541
+run_phase=1 alloc_ms=1503.180 remote_ms=16.982 remote_live=1440700 rounded_live_bytes=3947889632
+summary runs=1 threads=16 iters=100000 size=16..4096 remote_pct=90 interleaved=0 live_window=0 api=malloc_free
+throughput median=962255.788 p25=962255.788 p75=962255.788 min=962255.788 max=962255.788
+post_rss median=15335424 min=15335424 max=15335424
+peak_rss median=2996699136 min=2996699136 max=2996699136 source=VmHWM_process
+page_faults minor_median=731541 minor_min=731541 minor_max=731541
+steady_work throughput_median=1064409.986 p25=1064409.986 p75=1064409.986
+phase_ms alloc_median=1503.180 remote_median=16.982
+phase_live remote_live_median=1440700 rounded_live_bytes_note=per-run-logs

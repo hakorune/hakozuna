@@ -1,0 +1,16 @@
+[CASE] row=guard_local0
+[CASE] run=2
+[CASE] alloc=mimalloc
+[CASE] lib=/mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2.0
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 0
+
+run=1 ops/s=23191022.686 post_rss=19005440 peak_rss=19005440 minor_faults=1115
+run_phase=1 alloc_ms=68.108 remote_ms=0.000 remote_live=0 rounded_live_bytes=0
+summary runs=1 threads=16 iters=100000 size=16..2048 remote_pct=0 interleaved=0 live_window=0 api=malloc_free
+throughput median=23191022.686 p25=23191022.686 p75=23191022.686 min=23191022.686 max=23191022.686
+post_rss median=19005440 min=19005440 max=19005440
+peak_rss median=19005440 min=19005440 max=19005440 source=VmHWM_process
+page_faults minor_median=1115 minor_min=1115 minor_max=1115
+steady_work throughput_median=23492000.064 p25=23492000.064 p75=23492000.064
+phase_ms alloc_median=68.108 remote_median=0.000
+phase_live remote_live_median=0 rounded_live_bytes_note=per-run-logs

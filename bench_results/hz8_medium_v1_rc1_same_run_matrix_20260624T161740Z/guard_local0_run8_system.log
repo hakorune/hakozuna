@@ -1,0 +1,16 @@
+[CASE] row=guard_local0
+[CASE] run=8
+[CASE] alloc=system
+[CASE] lib=system
+[CASE] args=--runs 1 --threads 16 --iters 100000 --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 0
+
+run=1 ops/s=235826843.551 post_rss=1703936 peak_rss=1703936 minor_faults=219
+run_phase=1 alloc_ms=6.121 remote_ms=0.000 remote_live=0 rounded_live_bytes=0
+summary runs=1 threads=16 iters=100000 size=16..2048 remote_pct=0 interleaved=0 live_window=0 api=malloc_free
+throughput median=235826843.551 p25=235826843.551 p75=235826843.551 min=235826843.551 max=235826843.551
+post_rss median=1703936 min=1703936 max=1703936
+peak_rss median=1703936 min=1703936 max=1703936 source=VmHWM_process
+page_faults minor_median=219 minor_min=219 minor_max=219
+steady_work throughput_median=261376493.562 p25=261376493.562 p75=261376493.562
+phase_ms alloc_median=6.121 remote_median=0.000
+phase_live remote_live_median=0 rounded_live_bytes_note=per-run-logs
