@@ -388,7 +388,7 @@ Detailed records live in each `bench_results/.../README.md`.
    active-capacity hint is NO-GO; preserve 64K temporal reuse window
    p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
    local-free pending elision proof is clean but not default-worthy
-   budget8 promoted; chunk still HOLD, next lane is 64K one-slot size policy
+   budget16+64K2 is strongest candidate; next box is formal paired gate
 ```
 
 ## MediumV1GateRunner-L1
@@ -600,19 +600,22 @@ order-rotated small rerun is required before promotion
 
 ## MediumRun64KTwoSlotOrderRotatedGate-L1
 
-Status: recorded; q64-run64k2 HOLD as default.
+Status: superseded by budget16 probe.
 
 ```text
-bench_results/20260624T124502Z_medium_64k2_order_rotated_gate/README.md
-small_local0 ratios: 1.070 / 0.873
-small_interleaved_remote90 ratios: 0.884 / 0.951
+bench_results/20260624T_medium_64k2_budget16_probe/README.md
+bench_results/20260624T_medium_64k2_budget16_runner_smoke_medium_64k2_budget_paired_gate/README.md
+budget16 + q64-run64k2:
+  medium r50 ratio 1.347 / 1.360
+  small local0 ratio 1.036
+  small remote90 ratio 1.004 / 0.988
 ```
 
 Decision:
 
 ```text
-keep q64-run64k as default
-proceed to MediumDetachedRunClassIndex-L1 on current default geometry
+budget8 alone under-retains 128KiB runs; run formal paired gate for
+combined budget16 + q64-run64k2 before promotion
 ```
 
 ## MediumDetachedRunClassIndex-L1

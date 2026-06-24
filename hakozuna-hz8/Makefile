@@ -1,4 +1,4 @@
-.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumupper48 medium-v1-gate medium-chunk-paired-gate medium-sizepolicy-paired-gate remote-micro remote-micro-release
+.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumupper48 medium-v1-gate medium-chunk-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -65,6 +65,9 @@ medium-chunk-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_medi
 medium-sizepolicy-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_mediumupper48
 	$(ROOT)/scripts/run_medium_sizepolicy_paired_gate.sh
 
+medium-64k2-budget-paired-gate:
+	$(ROOT)/scripts/run_medium_64k2_budget_paired_gate.sh
+
 remote-micro: $(ROOT)/h8_remote_micro
 
 remote-micro-release: $(ROOT)/h8_remote_micro_release
@@ -88,13 +91,13 @@ $(ROOT)/h8_bench: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_W
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_medium64k2: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -DH8_MEDIUM_64K_TWO_SLOT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_64K_TWO_SLOT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_mediumchunk: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -DH8_MEDIUM_CHUNK_CARVE -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_CHUNK_CARVE -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_mediumupper48: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -109,13 +112,13 @@ $(ROOT)/h8_bench_release_upper3072: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPP
 	$(CC) $(CFLAGS) $(INC) -DH8_CLASS_MAP_UPPER3072 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_medium64k2: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -DH8_MEDIUM_64K_TWO_SLOT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_64K_TWO_SLOT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_mediumchunk: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -DH8_MEDIUM_CHUNK_CARVE -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_CHUNK_CARVE -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_mediumupper48: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_remote_micro: $(SRC) $(REMOTE_MICRO_SRC) $(BENCH_SUPPORT_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SRC) $(REMOTE_MICRO_SRC) $(BENCH_SUPPORT_SRC) $(LDFLAGS) $(LDLIBS)
