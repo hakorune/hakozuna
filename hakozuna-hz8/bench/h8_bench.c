@@ -57,6 +57,8 @@ int main(int argc, char** argv) {
   uint64_t medium_rounded_total = 0;
   uint64_t medium_remote_requested_total = 0;
   uint64_t medium_remote_rounded_total = 0;
+  size_t medium_candidate_by_class[H8_BENCH_MEDIUM_CLASS_COUNT] = {0};
+  size_t medium_remote_live_by_class[H8_BENCH_MEDIUM_CLASS_COUNT] = {0};
   uint64_t frag_rounded_by_class[H8_CLASS_COUNT] = {0};
   size_t frag_allocs_by_class[H8_CLASS_COUNT] = {0};
 #endif
@@ -239,6 +241,10 @@ int main(int argc, char** argv) {
       medium_rounded_total += th[i].medium_candidate_rounded_bytes;
       medium_remote_requested_total += th[i].medium_remote_live_requested_bytes;
       medium_remote_rounded_total += th[i].medium_remote_live_rounded_bytes;
+      for (uint32_t c = 0; c < H8_BENCH_MEDIUM_CLASS_COUNT; ++c) {
+        medium_candidate_by_class[c] += th[i].medium_candidate_by_class[c];
+        medium_remote_live_by_class[c] += th[i].medium_remote_live_by_class[c];
+      }
     }
     frag_requested_total += run_requested;
     frag_rounded_total += run_rounded;
@@ -391,6 +397,35 @@ int main(int argc, char** argv) {
          medium_candidate_count, medium_remote_live_count, medium_requested_total,
          medium_rounded_total, medium_remote_requested_total,
          medium_remote_rounded_total);
+  size_t medium_mix_runs = 0;
+  size_t medium_mix_runs_64k_x2 = 0;
+  static const size_t medium_slots[H8_BENCH_MEDIUM_CLASS_COUNT] = {8, 4, 2, 1};
+  static const size_t medium_slots_64k_x2[H8_BENCH_MEDIUM_CLASS_COUNT] = {8, 4, 2, 2};
+  for (uint32_t c = 0; c < H8_BENCH_MEDIUM_CLASS_COUNT; ++c) {
+    medium_mix_runs += (medium_remote_live_by_class[c] + medium_slots[c] - 1u) /
+                       medium_slots[c];
+    medium_mix_runs_64k_x2 +=
+        (medium_remote_live_by_class[c] + medium_slots_64k_x2[c] - 1u) /
+        medium_slots_64k_x2[c];
+  }
+  printf("medium_class_dist alloc=[%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu] one_slot_alloc_ratio=%.6f one_slot_remote_ratio=%.6f\n",
+         medium_candidate_by_class[0], medium_candidate_by_class[1],
+         medium_candidate_by_class[2], medium_candidate_by_class[3],
+         medium_remote_live_by_class[0], medium_remote_live_by_class[1],
+         medium_remote_live_by_class[2], medium_remote_live_by_class[3],
+         medium_candidate_count
+             ? (double)medium_candidate_by_class[3] /
+                   (double)medium_candidate_count
+             : 0.0,
+         medium_remote_live_count
+             ? (double)medium_remote_live_by_class[3] /
+                   (double)medium_remote_live_count
+             : 0.0);
+  printf("medium_run_mix_est current_runs=%zu two_slot_64k_runs=%zu two_slot_64k_ratio=%.6f\n",
+         medium_mix_runs, medium_mix_runs_64k_x2,
+         medium_mix_runs ? (double)medium_mix_runs_64k_x2 /
+                               (double)medium_mix_runs
+                         : 0.0);
 #else
   printf("fragmentation attribution=disabled\n");
 #endif

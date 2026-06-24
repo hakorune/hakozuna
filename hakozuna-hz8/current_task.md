@@ -510,6 +510,58 @@ queue push fixed cost is visible, but retry pressure is low
 collect cadence is already batching calls; remaining density is limited by 64K one-slot runs
 ```
 
+## MediumRunSizePolicy/ChunkArenaEvidence-L1
+
+Status: recorded.
+
+Data:
+
+```text
+bench_results/20260624T113104Z_medium_size_policy_evidence/README.md
+```
+
+Change:
+
+```text
+bench output only
+added medium class distribution counters
+added simple current-run vs hypothetical two-slot-64K run-mix estimate
+allocator behavior unchanged
+```
+
+Result:
+
+```text
+debug medium r50:
+  throughput median 3.188M ops/s
+  steady median 3.230M ops/s
+  one_slot_alloc_ratio=0.531900
+  one_slot_remote_ratio=0.531512
+  current_runs=63529
+  two_slot_64k_runs=39646
+  two_slot_64k_ratio=0.624061
+
+release medium r50:
+  throughput median 7.345M ops/s
+  steady median 7.589M ops/s
+
+short debug phase r90:
+  one_slot_alloc_ratio=0.537600
+  one_slot_remote_ratio=0.540055
+  current_runs=12818
+  two_slot_64k_runs=7968
+  two_slot_64k_ratio=0.621626
+```
+
+Interpretation:
+
+```text
+about 53-54% of medium objects are 64K one-slot class
+one queue episode per remote free is structurally common for that class
+lease-word A/B and queue retry audit do not point to another narrow queue/lease win
+medium size policy / run geometry is now the stronger evidence lane
+```
+
 ## Archived Medium Boxes
 
 Detailed records live in each `bench_results/.../README.md`.
@@ -554,6 +606,10 @@ MediumRunOwnerLeaseWord-L1:
 MediumRunResidualCostReaudit-L1:
   bench_results/20260624T112027Z_medium_residual_reaudit/README.md
   added derived residual line; found no small safe queue/lease follow-up
+
+MediumRunSizePolicy/ChunkArenaEvidence-L1:
+  bench_results/20260624T113104Z_medium_size_policy_evidence/README.md
+  found 64K one-slot class is about 53-54% of medium objects
 ```
 
 ## Next Boxes
@@ -574,11 +630,14 @@ MediumRunOwnerLeaseWordShadow-L1
 MediumRunOwnerLeaseWord-L1
   -> recorded HOLD
 
-MediumRunChunkArena-L1
-  -> possible next evidence lane if medium v1 continues
-
 MediumRunSizePolicy/ChunkArenaEvidence-L1
-  -> candidate; 64K one-slot density limits current remote batching
+  -> recorded
+
+MediumRun64KGeometry/SizePolicy-v1
+  -> likely next evidence lane if medium v1 continues
+
+MediumRunChunkArena-L1
+  -> possible follow-up if phase rows remain dominated by global registry scans
 ```
 
 ## Safety Gates
