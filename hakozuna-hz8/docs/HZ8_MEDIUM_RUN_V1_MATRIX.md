@@ -109,8 +109,8 @@ if optimizing speed:
   active-hit allocation and same-owner free direct identity are already promoted
   as post-RC1 default additions
   medium malloc init fast path is also promoted
-  remaining local/medium-local gap is medium class-switch / allocation entry
-  code shape
+  medium class-resolved allocation entry is also promoted
+  remaining local/medium-local gap is post-entry medium owner/active hot shape
 
 if optimizing stability/RSS:
   chunk arena remains the likely v1.1 lane, but it must avoid medium r50
@@ -129,5 +129,5 @@ docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 The follow-up separates `local0` worker shape from allocator behavior.  It
 shows that main/medium `interleaved=1` local rows carry a real empty-inbox drain
 tax, but fixed medium classes are still only around 108M..112M.  The next speed
-lane should focus on medium class-switch / allocation entry shape rather than
+lane should focus on post-entry medium owner/active hot shape rather than
 reopening the medium remote protocol.

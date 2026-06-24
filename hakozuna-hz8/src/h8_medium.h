@@ -98,6 +98,30 @@ typedef struct H8MediumRun {
 
 typedef struct H8OwnerRecord H8OwnerRecord;
 
+static inline bool h8_medium_size_supported_fast(size_t size) {
+  return size >= H8_MEDIUM_MIN_SIZE && size <= H8_MEDIUM_MAX_SIZE;
+}
+
+static inline uint32_t h8_medium_class_for_size_fast(size_t size) {
+  if (size <= 8192u) {
+    return 0u;
+  }
+  if (size <= 16384u) {
+    return 1u;
+  }
+  if (size <= 32768u) {
+    return 2u;
+  }
+#if defined(H8_MEDIUM_UPPER48_CLASS)
+  if (size <= 49152u) {
+    return 3u;
+  }
+  return 4u;
+#else
+  return 3u;
+#endif
+}
+
 bool h8_medium_size_supported(size_t size);
 uint32_t h8_medium_class_for_size(size_t size);
 const H8MediumClassSpec* h8_medium_class_spec(uint32_t class_id);
@@ -155,6 +179,7 @@ H8MediumRun* h8_medium_directory_find(const void* ptr);
 H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup);
 void h8_medium_register_locked(H8MediumRun* run);
 void h8_medium_unregister_locked(H8MediumRun* run);
+void* h8_medium_malloc_class_inner(uint32_t class_id);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);

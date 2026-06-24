@@ -355,13 +355,66 @@ MediumMallocInitFastPath-L1:
   GO
 ```
 
+## Medium Class Entry Fast Path A/B
+
+Record:
+
+```text
+bench_results/hz8_medium_classentry_ab_20260624T183430Z/
+```
+
+Baseline:
+
+```text
+f19ebb5f Fast-path HZ8 medium malloc entry
+```
+
+Candidate:
+
+```text
+h8_malloc_inner computes the medium class once after the medium range check and
+calls h8_medium_malloc_class_inner(class_id).  h8_medium_malloc_inner(size)
+remains as a checked wrapper for non-fast internal callers.
+```
+
+Median ratios:
+
+```text
+main_i0:
+  1.1181
+
+medium_i0:
+  1.0826
+
+medium_i1:
+  0.9938
+
+medium_r50:
+  1.0025
+
+fixed8_i0:
+  1.0758
+
+fixed16_i0:
+  1.5763
+
+fixed32_i0:
+  1.6267
+```
+
+Decision:
+
+```text
+MediumClassEntryFastPath-L1:
+  GO
+```
+
 Evidence still useful before further behavior changes:
 
 ```text
 active replacement rate
 periodic collect check/call rate
-medium class-switch code shape
-size-to-class selection cost
+post-entry active/owner hot shape
 ```
 
 Branch rules:

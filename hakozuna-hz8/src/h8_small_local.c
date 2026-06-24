@@ -194,8 +194,9 @@ void* h8_malloc_inner(size_t size) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
-    if (h8_medium_size_supported(size)) {
-      return h8_medium_malloc_inner(size);
+    if (size <= H8_MEDIUM_MAX_SIZE) {
+      uint32_t medium_class_id = h8_medium_class_for_size_fast(size);
+      return h8_medium_malloc_class_inner(medium_class_id);
     }
     return h8_sys_malloc(size);
   }

@@ -152,27 +152,11 @@ static void h8_medium_debug_lock_elide_candidate_known(bool same_owner,
 }
 
 bool h8_medium_size_supported(size_t size) {
-  return size >= H8_MEDIUM_MIN_SIZE && size <= H8_MEDIUM_MAX_SIZE;
+  return h8_medium_size_supported_fast(size);
 }
 
 uint32_t h8_medium_class_for_size(size_t size) {
-  if (size <= 8192u) {
-    return 0u;
-  }
-  if (size <= 16384u) {
-    return 1u;
-  }
-  if (size <= 32768u) {
-    return 2u;
-  }
-#if defined(H8_MEDIUM_UPPER48_CLASS)
-  if (size <= 49152u) {
-    return 3u;
-  }
-  return 4u;
-#else
-  return 3u;
-#endif
+  return h8_medium_class_for_size_fast(size);
 }
 
 const H8MediumClassSpec* h8_medium_class_spec(uint32_t class_id) {
@@ -416,12 +400,11 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   return true;
 }
 
-void* h8_medium_malloc_inner(size_t size) {
-  if (!h8_medium_size_supported(size)) {
+void* h8_medium_malloc_class_inner(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
     return NULL;
   }
   H8_DEBUG_INC(medium_malloc_count);
-  uint32_t class_id = h8_medium_class_for_size(size);
   h8_medium_debug_class_inc(class_id, &h8g.medium_malloc_class_8k,
                             &h8g.medium_malloc_class_16k,
                             &h8g.medium_malloc_class_32k,
@@ -566,6 +549,13 @@ retry_owner_capacity:
   h8_medium_debug_writer_exit(run);
   h8_medium_unlock_global();
   return ptr;
+}
+
+void* h8_medium_malloc_inner(size_t size) {
+  if (!h8_medium_size_supported_fast(size)) {
+    return NULL;
+  }
+  return h8_medium_malloc_class_inner(h8_medium_class_for_size_fast(size));
 }
 
 bool h8_medium_free_inner(void* ptr, bool* owned_out) {

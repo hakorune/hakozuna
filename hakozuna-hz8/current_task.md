@@ -70,6 +70,11 @@ MediumMallocInitFastPath-L1:
   default
   h8_malloc_inner no longer calls h8_init before medium malloc;
   h8_thread_ctx_fast slow path remains initialization authority
+
+MediumClassEntryFastPath-L1:
+  default
+  h8_malloc_inner computes medium class once and calls the class-resolved
+  medium allocation entry
 ```
 
 Evidence:
@@ -79,13 +84,14 @@ docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 bench_results/hz8_active_hit_ab_20260624T174838Z/
 bench_results/hz8_free_identity_ab_20260624T175453Z/
 bench_results/hz8_medium_initfast_ab_20260624T182824Z/
+bench_results/hz8_medium_classentry_ab_20260624T183430Z/
 ```
 
 ## Latest Direction
 
 ```text
 if optimizing medium/main local speed:
-  next evidence target is medium class-switch / allocation entry code shape
+  next evidence target is post-entry medium owner/active hot shape
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked

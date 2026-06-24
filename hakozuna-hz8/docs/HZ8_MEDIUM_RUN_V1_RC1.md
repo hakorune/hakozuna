@@ -42,6 +42,11 @@ MediumMallocInitFastPath-L1:
   default
   medium malloc no longer performs an explicit h8_init() in h8_malloc_inner;
   h8_thread_ctx_fast() slow path remains the initialization authority
+
+MediumClassEntryFastPath-L1:
+  default
+  h8_malloc_inner computes the medium class once and dispatches to the
+  class-resolved medium allocation entry
 ```
 
 Evidence:
@@ -51,6 +56,7 @@ docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
 bench_results/hz8_active_hit_ab_20260624T174838Z/
 bench_results/hz8_free_identity_ab_20260624T175453Z/
 bench_results/hz8_medium_initfast_ab_20260624T182824Z/
+bench_results/hz8_medium_classentry_ab_20260624T183430Z/
 ```
 
 These boxes do not change the MediumRun ownership, remote, residency, geometry,
