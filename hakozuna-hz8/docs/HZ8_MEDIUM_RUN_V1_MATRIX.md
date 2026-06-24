@@ -229,3 +229,57 @@ MediumR50FaultOutlierAttribution-L1:
   if stability is prioritized first, isolate the high-minor-fault outliers
   before reopening remote protocol design
 ```
+
+## Historical Comparison
+
+The following table compares the post-ASM HZ8-only medians against the previous
+same-run matrix records.  Treat this as a directional comparison until
+`PostAsmSameRunAllocatorMatrixRefresh-L1` reruns all allocators in one mixed
+matrix.
+
+```text
+small rows:
+  baseline source:
+    docs/ALLOCATOR_MATRIX.md
+
+main/medium rows:
+  baseline source:
+    this document's RC1 same-run matrix
+
+post-ASM HZ8 source:
+  bench_results/20260624T220755Z_post_asm_matrix_medium_v1_gate/
+```
+
+| Row | HZ8 previous | HZ8 post-ASM | HZ8 delta | Historical leader | Post-ASM HZ8 vs leader |
+|---|---:|---:|---:|---|---:|
+| `guard_local0` | 372.07M | 372.68M | +0.2% | tcmalloc 463.04M | 80.5% |
+| `small_interleaved_remote90` | 54.90M | 55.23M | +0.6% | tcmalloc 60.27M | 91.6% |
+| `main_local0` | 110.68M | 201.95M | +82.5% | tcmalloc 528.63M | 38.2% |
+| `main_interleaved_remote50` | 32.88M | 40.14M | +22.1% | tcmalloc 47.23M | 85.0% |
+| `main_interleaved_remote90` | 22.08M | 26.88M | +21.7% | tcmalloc 25.47M | 105.5% |
+| `medium_local0` | 100.17M | 166.22M | +65.9% | tcmalloc 494.29M | 33.6% |
+| `medium_interleaved_remote50` | 28.56M | 36.01M | +26.1% | HZ3 39.44M | 91.3% |
+| `medium_phase_remote90` | 0.15M | 0.26M | +73.3% | tcmalloc 0.51M | 51.0% |
+
+Interpretation:
+
+```text
+small:
+  essentially unchanged and still strong
+  guard local remains second to tcmalloc
+  small remote90 remains near tcmalloc and ahead of HZ4/HZ3
+
+main:
+  post-ASM HZ8 reaches remote leader territory in r50/r90
+  local main improves materially but still trails HZ3/tcmalloc
+
+medium:
+  local medium improves materially but still trails HZ3/tcmalloc/system
+  remote50 median is close to HZ3 and ahead of tcmalloc/HZ4 in historical
+  comparison
+  r50 p25/min instability remains a separate fault-outlier lane
+
+phase:
+  improved versus RC1 HZ8, but still a stress row rather than a primary
+  throughput ranking row
+```
