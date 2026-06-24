@@ -101,6 +101,105 @@ lockless publish shadow:
 
 ## Current Box
 
+### MediumRunPendingQueueMPSC-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+remove owner->pending_lock from medium remote queue producer push
+```
+
+Scope:
+
+```text
+medium pending head is an atomic MPSC stack
+producer queue push is lockless
+owner collector keeps owner-only carry
+medium_pending_count is heuristic; head/carry are checked too
+small pending queue unchanged
+```
+
+Data:
+
+```text
+bench_results/20260624T092050Z_medium_pending_queue_mpsc/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  remote_qpush_ms 5.235 -> 4.336
+  remote_collect_ms 9.833 -> 8.356
+  invalid_owned=0
+  active_owner_mismatch=0
+  owner_list_mismatch=0
+  route_authority_mismatch=0
+
+release medium r50:
+  median 5.308M -> 6.031M ops/s
+  steady median 5.479M -> 6.244M ops/s
+
+release small interleaved remote90 quick rerun:
+  median 49.906M ops/s
+  steady median 55.078M ops/s
+```
+
+Interpretation:
+
+```text
+medium MPSC queue push is a valid improvement
+remaining medium r50 cost is now owner lifecycle lease, collect work/cadence, and slot mutation
+```
+
+### MediumRunResidualCostReaudit-L1
+
+Status:
+
+```text
+RECORDED
+```
+
+Goal:
+
+```text
+measure residual medium r50 buckets after active owner lock elision
+```
+
+Data:
+
+```text
+bench_results/20260624T091842Z_medium_residual_reaudit/README.md
+```
+
+Result:
+
+```text
+debug medium r50:
+  remote_qpush_ms=5.235
+  remote_collect_ms=9.833
+  remote_lease_ms=7.192
+  remote_claim_ms=3.012
+  slots_per_run=[1.181,1.377,1.468,1.000]
+
+release medium r50:
+  median 5.308M ops/s
+  steady median 5.479M ops/s
+```
+
+Interpretation:
+
+```text
+queue push remained material after active owner lock elision
+this justified MediumRunPendingQueueMPSC-L1
+```
+
 ### MediumRunActiveOwnerLockElision-L1
 
 Status:
@@ -410,14 +509,14 @@ remaining medium cost is now queue push / owner collect / local-run locking
 ## Next Boxes
 
 ```text
-MediumRunResidualCostReaudit-L1
-  -> measure queue push, collect run/slot density, and remaining run lock cost after active lock elision
+MediumRunPostMPSCResidualReaudit-L1
+  -> remeasure medium r50 after MPSC and identify next dominant bucket
 
-MediumRunPendingQueueMPSC-L1
-  -> if remote_qpush remains material after residual reaudit
+MediumRunCollectWorkCadence-L1
+  -> if collect work/cadence remains dominant
 
-MediumRunRoute/PublishLocklessExpansion-L1
-  -> only if residual data shows run lock or route authority still dominates
+MediumRunOwnerLeaseCost-L1
+  -> HOLD unless lease remains dominant after collect work is reduced
 
 MediumRunChunkArena-L1
   -> HOLD until remote/local protocol stabilizes

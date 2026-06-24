@@ -359,7 +359,8 @@ retry_owner_capacity:
       h8_medium_debug_writer_exit(run);
     }
   }
-  if (ctx && ctx->owner && !did_capacity_collect && atomic_load_explicit(&ctx->owner->medium_pending_count, memory_order_acquire) != 0) {
+  if (ctx && ctx->owner && !did_capacity_collect &&
+      h8_medium_owner_has_pending(ctx->owner)) {
     did_capacity_collect = true;
     h8_medium_collect_owner_pending(ctx->owner);
     goto retry_owner_capacity;

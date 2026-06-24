@@ -106,6 +106,7 @@ void h8_medium_decommit_empty_locked(H8MediumRun* run);
 void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
+bool h8_medium_owner_has_pending(H8OwnerRecord* owner);
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget);
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);

@@ -128,7 +128,7 @@ struct H8OwnerRecord {
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
   H8Span* pending_carry;
-  H8MediumRun* medium_pending_head;
+  _Atomic(H8MediumRun*) medium_pending_head;
   H8MediumRun* medium_pending_carry;
   H8Span* owned_head;
   H8Span* orphan_head;
