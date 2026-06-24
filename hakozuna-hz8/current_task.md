@@ -385,7 +385,8 @@ Detailed records live in each `bench_results/.../README.md`.
    rerun debug medium r50 attribution on current default
 
 3. MediumProtocolOrArenaSplit-L1
-   if chunk still fails medium r50, return to protocol/slot residual
+   active-capacity hint is NO-GO; preserve 64K temporal reuse window
+   next candidate must target slot/collect/lease without increasing decommit churn
 ```
 
 ## MediumV1GateRunner-L1
