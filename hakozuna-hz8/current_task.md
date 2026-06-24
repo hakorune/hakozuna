@@ -388,7 +388,7 @@ Detailed records live in each `bench_results/.../README.md`.
    active-capacity hint is NO-GO; preserve 64K temporal reuse window
    p64/b16 cadence widening is NO-GO; target slot/collect/lease mechanics
    local-free pending elision proof is clean but not default-worthy
-   budget8 promoted; 64K2 recheck still HOLD, next evidence is arena/fault lane
+   budget8 promoted; chunk still HOLD, next lane is 64K one-slot size policy
 ```
 
 ## MediumV1GateRunner-L1
@@ -694,26 +694,25 @@ promotion requires small frozen gates and longer paired stability
 Status: recorded; HOLD as default.
 
 ```text
-bench_results/20260624T_medium_upper48_paired_gate/README.md
+bench_results/20260624T_budget8_medium_sizepolicy_paired_medium_sizepolicy_paired_gate/README.md
 candidate build macro: H8_MEDIUM_UPPER48_CLASS
 candidate geometry id: q64-upper48
-resident budget remains fixed to four-class default cap
+resident budget is budget8 default cap
 ```
 
 ```text
 medium r50 paired:
-  batch1 ratio 1.069
-  batch2 ratio 1.020
+  ratio 1.054
 
 small local0 R5:
-  ratio 1.076
+  ratio 1.039
 
 small interleaved remote90 R5:
-  ratio 0.889
+  ratio 0.866
 
 phase r90 R5:
-  throughput ratio 1.329
-  peak RSS ratio 0.993
+  throughput ratio 1.342
+  peak RSS ratio 1.000
 ```
 
 Decision:
