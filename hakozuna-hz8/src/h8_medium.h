@@ -130,6 +130,32 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out);
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot);
+static inline bool h8_medium_slot_index_from_ptr_checked_fast(
+    const H8MediumRun* run, const void* ptr, size_t* slot_out) {
+  if (!run || !run->base || !ptr || run->slot_size == 0u ||
+      run->slot_count == 0u) {
+    return false;
+  }
+  uintptr_t base = (uintptr_t)run->base;
+  uintptr_t addr = (uintptr_t)ptr;
+  if (addr < base) {
+    return false;
+  }
+  uintptr_t offset = addr - base;
+  size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
+  uintptr_t slot_mask = ((uintptr_t)1u << run->slot_shift) - 1u;
+  if (offset >= payload || (offset & slot_mask) != 0u) {
+    return false;
+  }
+  size_t slot = (size_t)(offset >> run->slot_shift);
+  if (slot >= run->slot_count) {
+    return false;
+  }
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  return true;
+}
 static inline void* h8_medium_slot_ptr_fast(const H8MediumRun* run,
                                             size_t slot) {
   if (!run || !run->base || slot >= run->slot_count) {

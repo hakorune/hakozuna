@@ -923,6 +923,62 @@ note:
   did not reproduce after two additional R10 batches
 ```
 
+## Medium Free Slot Index Inline
+
+Record:
+
+```text
+bench_results/20260625_063141_medium_free_slot_index_inline_ab/
+bench_results/20260625_063222_medium_free_slot_index_inline_r10/
+```
+
+Candidate:
+
+```text
+add h8_medium_slot_index_from_ptr_checked_fast() as a header inline helper
+keep h8_medium_slot_index_from_ptr_checked() as the exported wrapper
+use the inline helper from h8_medium_run_free_local_scaffold()
+do not change route or remote publish call shape in this box
+```
+
+Assembly gate:
+
+```text
+h8_medium_run_free_local_scaffold:
+  no call to h8_medium_slot_index_from_ptr_checked
+```
+
+R10 x2 confirmation:
+
+```text
+medium_i0:
+  median ratio 1.119
+  p25 ratio 1.120
+
+medium_r50:
+  median ratio 1.017
+  p25 ratio 1.662
+
+main_i0:
+  median ratio 1.045
+  p25 ratio 1.071
+
+small_i0:
+  median ratio 0.989
+  p25 ratio 0.997
+```
+
+Decision:
+
+```text
+MediumFreeSlotIndexInline-L1:
+  GO
+
+reason:
+  removes an actual free-path helper call and improves medium/main rows while
+  keeping small within the regression guard
+```
+
 Branch rules:
 
 ```text

@@ -20,29 +20,7 @@ static uint64_t h8_medium_slots_now_ns(void) {
 bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
                                            const void* ptr,
                                            size_t* slot_out) {
-  if (!run || !run->base || !ptr || run->slot_size == 0u ||
-      run->slot_count == 0u) {
-    return false;
-  }
-  uintptr_t base = (uintptr_t)run->base;
-  uintptr_t addr = (uintptr_t)ptr;
-  if (addr < base) {
-    return false;
-  }
-  uintptr_t offset = addr - base;
-  size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
-  uintptr_t slot_mask = ((uintptr_t)1u << run->slot_shift) - 1u;
-  if (offset >= payload || (offset & slot_mask) != 0u) {
-    return false;
-  }
-  size_t slot = (size_t)(offset >> run->slot_shift);
-  if (slot >= run->slot_count) {
-    return false;
-  }
-  if (slot_out) {
-    *slot_out = slot;
-  }
-  return true;
+  return h8_medium_slot_index_from_ptr_checked_fast(run, ptr, slot_out);
 }
 
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot) {
@@ -86,7 +64,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   uint64_t start = h8_medium_slots_now_ns();
 #endif
   size_t slot = 0;
-  if (!h8_medium_slot_index_from_ptr_checked(run, ptr, &slot)) {
+  if (!h8_medium_slot_index_from_ptr_checked_fast(run, ptr, &slot)) {
     return false;
   }
   uint64_t bit = UINT64_C(1) << slot;
