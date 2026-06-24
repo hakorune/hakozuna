@@ -41,8 +41,13 @@ H8MediumRun* h8_medium_global_head(void) {
   return h8_medium_runs;
 }
 
-static uint64_t h8_medium_hash_base(uintptr_t base) {
-  return (uint64_t)(base >> 16) * UINT64_C(11400714819323198485);
+static uintptr_t h8_medium_quantum_base(uintptr_t addr) {
+  return addr & ~(uintptr_t)(H8_MEDIUM_QUANTUM_BYTES - 1u);
+}
+
+static uint64_t h8_medium_hash_quantum(uintptr_t quantum_base) {
+  return (uint64_t)(quantum_base / H8_MEDIUM_QUANTUM_BYTES) *
+         UINT64_C(11400714819323198485);
 }
 
 bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr) {
@@ -84,39 +89,46 @@ static bool h8_medium_directory_ensure_locked(void) {
   return true;
 }
 
-static void h8_medium_directory_insert_locked(H8MediumRun* run) {
-  if (!run || !run->base || !h8_medium_directory_ensure_locked()) {
-    return;
-  }
-  h8_medium_directory_note_range_locked(run);
+static void h8_medium_directory_insert_quantum_locked(H8MediumRun* run,
+                                                      uintptr_t quantum_base) {
   _Atomic(H8MediumRun*)* directory = (_Atomic(H8MediumRun*)*)atomic_load_explicit(
       &h8_medium_directory_addr, memory_order_acquire);
   size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base((uintptr_t)run->base) & mask;
+  size_t pos = (size_t)h8_medium_hash_quantum(quantum_base) & mask;
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
     _Atomic(H8MediumRun*)* slot = &directory[(pos + n) & mask];
     H8MediumRun* cur = atomic_load_explicit(slot, memory_order_acquire);
-    if (!cur || cur == run) {
+    if (!cur) {
       atomic_store_explicit(slot, run, memory_order_release);
       return;
     }
   }
 }
 
+static void h8_medium_directory_insert_locked(H8MediumRun* run) {
+  if (!run || !run->base || !h8_medium_directory_ensure_locked()) {
+    return;
+  }
+  h8_medium_directory_note_range_locked(run);
+  uintptr_t base = (uintptr_t)run->base;
+  uintptr_t end = base + run->run_size;
+  for (uintptr_t quantum = base; quantum < end;
+       quantum += H8_MEDIUM_QUANTUM_BYTES) {
+    h8_medium_directory_insert_quantum_locked(run, quantum);
+  }
+}
+
 static void h8_medium_directory_remove_locked(H8MediumRun* run) {
   _Atomic(H8MediumRun*)* directory = (_Atomic(H8MediumRun*)*)atomic_load_explicit(
       &h8_medium_directory_addr, memory_order_acquire);
-  if (!run || !run->base || !directory) {
+  if (!run || !directory) {
     return;
   }
-  size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base((uintptr_t)run->base) & mask;
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
-    _Atomic(H8MediumRun*)* slot = &directory[(pos + n) & mask];
+    _Atomic(H8MediumRun*)* slot = &directory[n];
     H8MediumRun* cur = atomic_load_explicit(slot, memory_order_acquire);
     if (cur == run) {
       atomic_store_explicit(slot, NULL, memory_order_release);
-      return;
     }
   }
 }
@@ -133,13 +145,13 @@ H8MediumRun* h8_medium_directory_find(const void* ptr) {
   if (min != 0 && (addr < min || addr >= max)) {
     return NULL;
   }
-  uintptr_t base = addr & ~(uintptr_t)(H8_MEDIUM_RUN_BYTES - 1u);
+  uintptr_t quantum = h8_medium_quantum_base(addr);
   size_t mask = H8_MEDIUM_DIRECTORY_CAP - 1u;
-  size_t pos = (size_t)h8_medium_hash_base(base) & mask;
+  size_t pos = (size_t)h8_medium_hash_quantum(quantum) & mask;
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
     H8MediumRun* run = atomic_load_explicit(&directory[(pos + n) & mask],
                                             memory_order_acquire);
-    if (run && (uintptr_t)run->base == base && h8_medium_ptr_in_run(run, ptr)) {
+    if (run && h8_medium_ptr_in_run(run, ptr)) {
       return run;
     }
   }

@@ -615,27 +615,23 @@ MediumRunSizePolicy/ChunkArenaEvidence-L1:
 ## Next Boxes
 
 ```text
-1. MediumVariableRunGeometryScaffold-L1
-   behavior unchanged
-   split run payload size from 64KiB directory quantum
-
-2. MediumRun64KTwoSlotAB-L1
+1. MediumRun64KTwoSlotAB-L1
    build-time candidate
    64K class uses 128KiB run payload and 2 slots/run
 
-3. MediumDetachedRunClassIndex-L1
+2. MediumDetachedRunClassIndex-L1
    after geometry decision
 
-4. MediumChunkArenaQuantum-L1
+3. MediumChunkArenaQuantum-L1
    after run order is decided
 
-5. MediumUpper48KSizePolicyShadow/AB-L1
+4. MediumUpper48KSizePolicyShadow/AB-L1
    later rounded-byte reduction lane
 ```
 
 ## MediumVariableRunGeometryScaffold-L1
 
-Status: next.
+Status: recorded.
 
 Scope:
 
