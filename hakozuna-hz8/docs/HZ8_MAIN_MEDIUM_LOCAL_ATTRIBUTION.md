@@ -206,6 +206,53 @@ MediumFreeDirectIdentityShape-L1:
   simplify direct-directory, owner-token, and slot-validation call shape
 ```
 
+## Active-Hit Collapse A/B
+
+Record:
+
+```text
+bench_results/hz8_active_hit_ab_20260624T174838Z/
+```
+
+Baseline:
+
+```text
+1d51c9fe Add HZ8 medium local attribution counters
+```
+
+Candidate:
+
+```text
+active-hit allocation uses one checked helper instead of
+usable-check + alloc-helper state/free recheck
+```
+
+Median ratios:
+
+```text
+main_i0:
+  1.0127
+
+medium_i0:
+  1.0471
+
+medium_i1:
+  1.0261
+
+fixed8:
+  1.0032
+
+fixed16:
+  1.0630
+```
+
+Decision:
+
+```text
+MediumActiveHitValidationCollapse-L1:
+  GO
+```
+
 Evidence needed before behavior changes:
 
 ```text

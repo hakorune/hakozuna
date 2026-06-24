@@ -327,6 +327,30 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
   return h8_medium_slot_ptr(run, slot);
 }
 
+static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
+                                            uint32_t class_id) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t start = h8_medium_now_ns();
+#endif
+  if (!run || run->class_id != class_id || run->free_mask == 0 ||
+      atomic_load_explicit(&run->state, memory_order_acquire) !=
+          H8_MEDIUM_RUN_ACTIVE) {
+    return NULL;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
+  uint64_t bit = UINT64_C(1) << slot;
+  h8_medium_mark_live_on_alloc(run);
+  run->free_mask &= ~bit;
+  run->allocated_mask |= bit;
+  atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
+                        memory_order_release);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(medium_alloc_slot_count);
+  H8_DEBUG_ADD(medium_alloc_slot_ns, (size_t)(h8_medium_now_ns() - start));
+#endif
+  return h8_medium_slot_ptr(run, slot);
+}
+
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                                        bool keep_empty_live) {
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -390,21 +414,22 @@ retry_owner_capacity:
     }
   }
   if (active) {
-    if (h8_medium_run_owned_by_ctx(active, ctx) &&
-        h8_medium_run_usable_locked(active, class_id)) {
+    if (h8_medium_run_owned_by_ctx(active, ctx)) {
       h8_medium_debug_lock_elide_candidate(active, ctx, false);
       h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
-      H8_DEBUG_INC(medium_run_reuse_active_count);
-      h8_medium_debug_class_inc(class_id,
-                                &h8g.medium_run_reuse_active_class_8k,
-                                &h8g.medium_run_reuse_active_class_16k,
-                                &h8g.medium_run_reuse_active_class_32k,
-                                &h8g.medium_run_reuse_active_class_64k);
-      void* ptr = h8_medium_run_alloc_local_scaffold(active);
+      void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
       h8_medium_debug_writer_exit(active);
-      h8_medium_collect_owner_pending_periodic(ctx);
-      return ptr;
+      if (ptr) {
+        H8_DEBUG_INC(medium_run_reuse_active_count);
+        h8_medium_debug_class_inc(class_id,
+                                  &h8g.medium_run_reuse_active_class_8k,
+                                  &h8g.medium_run_reuse_active_class_16k,
+                                  &h8g.medium_run_reuse_active_class_32k,
+                                  &h8g.medium_run_reuse_active_class_64k);
+        h8_medium_collect_owner_pending_periodic(ctx);
+        return ptr;
+      }
     }
     H8_DEBUG_INC(medium_active_miss_unusable);
     if (!h8_medium_run_owned_by_ctx(active, ctx)) {
