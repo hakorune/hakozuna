@@ -412,6 +412,19 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_refill_candidate_hit,
          debug.medium_refill_candidate_owner_mismatch,
          debug.medium_refill_candidate_unusable);
+  printf("medium_available_shadow add=%zu remove=%zu head_attempt=%zu head_hit=%zu head_unusable=%zu owner_hit_without_available=%zu duplicate=%zu owner_mismatch=%zu class_mismatch=%zu indexed_full=%zu indexed_detached=%zu indexed_nonactive=%zu exit_nonempty=%zu\n",
+         debug.medium_available_add, debug.medium_available_remove,
+         debug.medium_available_head_attempt,
+         debug.medium_available_head_hit,
+         debug.medium_available_head_unusable,
+         debug.medium_available_owner_list_hit_without_available,
+         debug.medium_available_duplicate_membership,
+         debug.medium_available_owner_mismatch,
+         debug.medium_available_class_mismatch,
+         debug.medium_available_indexed_full,
+         debug.medium_available_indexed_detached,
+         debug.medium_available_indexed_nonactive,
+         debug.medium_available_exit_nonempty);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

@@ -260,6 +260,52 @@ MediumOwnerClassRefillCandidate-L1:
     active miss -> owner-list hit is real, but a single owner/class candidate
     hint does not produce stable medium/main gains
 
+MediumOwnerAvailableRunIndex-L1:
+  status:
+    implemented as build-time evidence target
+    HOLD as default
+  targets:
+    bench-mediumavailable
+    bench-release-mediumavailable
+    H8_MEDIUM_ENABLE_AVAILABLE_INDEX
+  contract:
+    medium_by_class remains lifecycle inventory
+    medium_available_shadow tracks non-active attached runs with free_mask != 0
+    malloc checks available head after active miss and before owner-list scan
+    remote protocol, qstate, pending authority, and lazy128 residency are
+    unchanged
+  shadow quick:
+    default debug medium r50 T=16 30k-iters:
+      head_attempt 90,443
+      head_hit 90,443
+      owner_hit_without_available 0
+    behavior candidate debug medium r50 T=16 30k-iters:
+      owner_scan 2,993
+      owner_steps 16,408
+      head_attempt 90,342
+      head_hit 90,342
+      owner_hit_without_available 0
+      mismatch gates 0
+  paired R10:
+    data=bench_results/20260626T075921_available_index_active_excluded2_ab/
+    medium_r50 ratio:
+      median 1.010
+      p25 0.991
+    main_r90 ratio:
+      median 1.051
+      p25 1.125
+    medium_local0 ratio:
+      median 0.983
+      p25 0.977
+    small_remote90 ratio:
+      median 1.005
+      p25 1.181
+  decision:
+    do not promote by default
+    keep as evidence target
+    available index removes most owner-list scans, but medium_r50 does not
+    clear the +5% behavior promotion gate
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

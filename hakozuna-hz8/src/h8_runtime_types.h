@@ -126,6 +126,9 @@ struct H8OwnerRecord {
   H8OwnerPlacement placement;
   H8Span* owned_by_class[H8_CLASS_COUNT];
   H8MediumRun* medium_by_class[H8_MEDIUM_CLASS_COUNT];
+#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX)
+  H8MediumRun* medium_available_shadow[H8_MEDIUM_CLASS_COUNT];
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS) || \
     defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
   H8MediumRun* medium_refill_candidate[H8_MEDIUM_CLASS_COUNT];
@@ -362,6 +365,19 @@ typedef struct H8Global {
   atomic_size_t medium_refill_candidate_hit;
   atomic_size_t medium_refill_candidate_owner_mismatch;
   atomic_size_t medium_refill_candidate_unusable;
+  atomic_size_t medium_available_add;
+  atomic_size_t medium_available_remove;
+  atomic_size_t medium_available_head_attempt;
+  atomic_size_t medium_available_head_hit;
+  atomic_size_t medium_available_head_unusable;
+  atomic_size_t medium_available_owner_list_hit_without_available;
+  atomic_size_t medium_available_duplicate_membership;
+  atomic_size_t medium_available_owner_mismatch;
+  atomic_size_t medium_available_class_mismatch;
+  atomic_size_t medium_available_indexed_full;
+  atomic_size_t medium_available_indexed_detached;
+  atomic_size_t medium_available_indexed_nonactive;
+  atomic_size_t medium_available_exit_nonempty;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

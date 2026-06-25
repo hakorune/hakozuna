@@ -339,6 +339,34 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_refill_candidate_owner_mismatch, memory_order_acquire);
   out->medium_refill_candidate_unusable = atomic_load_explicit(
       &h8g.medium_refill_candidate_unusable, memory_order_acquire);
+  out->medium_available_add =
+      atomic_load_explicit(&h8g.medium_available_add, memory_order_acquire);
+  out->medium_available_remove =
+      atomic_load_explicit(&h8g.medium_available_remove, memory_order_acquire);
+  out->medium_available_head_attempt = atomic_load_explicit(
+      &h8g.medium_available_head_attempt, memory_order_acquire);
+  out->medium_available_head_hit = atomic_load_explicit(
+      &h8g.medium_available_head_hit, memory_order_acquire);
+  out->medium_available_head_unusable = atomic_load_explicit(
+      &h8g.medium_available_head_unusable, memory_order_acquire);
+  out->medium_available_owner_list_hit_without_available =
+      atomic_load_explicit(
+          &h8g.medium_available_owner_list_hit_without_available,
+          memory_order_acquire);
+  out->medium_available_duplicate_membership = atomic_load_explicit(
+      &h8g.medium_available_duplicate_membership, memory_order_acquire);
+  out->medium_available_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_available_owner_mismatch, memory_order_acquire);
+  out->medium_available_class_mismatch = atomic_load_explicit(
+      &h8g.medium_available_class_mismatch, memory_order_acquire);
+  out->medium_available_indexed_full = atomic_load_explicit(
+      &h8g.medium_available_indexed_full, memory_order_acquire);
+  out->medium_available_indexed_detached = atomic_load_explicit(
+      &h8g.medium_available_indexed_detached, memory_order_acquire);
+  out->medium_available_indexed_nonactive = atomic_load_explicit(
+      &h8g.medium_available_indexed_nonactive, memory_order_acquire);
+  out->medium_available_exit_nonempty = atomic_load_explicit(
+      &h8g.medium_available_exit_nonempty, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

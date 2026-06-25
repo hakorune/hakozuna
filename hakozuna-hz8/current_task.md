@@ -242,6 +242,46 @@ latest local-leaf probe:
         active miss -> owner-list hit is real, but a single owner/class
         candidate hint is not stable enough
 
+  MediumOwnerAvailableRunIndex-L1:
+    implemented as opt-in build-time evidence target
+    default HOLD
+    targets:
+      bench-mediumavailable
+      bench-release-mediumavailable
+      H8_MEDIUM_ENABLE_AVAILABLE_INDEX
+    contract:
+      medium_by_class remains lifecycle inventory
+      medium_available_shadow tracks non-active attached runs with free_mask != 0
+      malloc checks available head after active miss and before owner-list scan
+      remote protocol, slot_state, pending bitmap, and qstate are unchanged
+    shadow quick:
+      default debug medium r50 T=16 30k-iters:
+        head_attempt 90,443
+        head_hit 90,443
+        owner_hit_without_available 0
+      candidate debug medium r50 T=16 30k-iters:
+        owner_scan 2,993
+        owner_steps 16,408
+        head_attempt 90,342
+        head_hit 90,342
+        owner_hit_without_available 0
+        mismatch gates 0
+    paired R10:
+      data=bench_results/20260626T075921_available_index_active_excluded2_ab/
+      medium_r50 median ratio 1.010
+      medium_r50 p25 ratio 0.991
+      main_r90 median ratio 1.051
+      main_r90 p25 ratio 1.125
+      medium_local0 median ratio 0.983
+      medium_local0 p25 ratio 0.977
+      small_remote90 median ratio 1.005
+      small_remote90 p25 ratio 1.181
+    decision:
+      keep as evidence target
+      do not promote by default
+      owner-list discovery is real, but exact available index does not clear
+      the medium_r50 +5% promotion gate
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

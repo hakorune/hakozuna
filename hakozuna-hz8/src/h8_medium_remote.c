@@ -481,6 +481,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
 #endif
     run->allocated_mask &= ~accepted;
     run->free_mask |= accepted;
+    h8_medium_available_shadow_after_mask_change(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_ADD(medium_collect_mask_ns,
                  (size_t)(h8_medium_remote_now_ns() - section_start));
