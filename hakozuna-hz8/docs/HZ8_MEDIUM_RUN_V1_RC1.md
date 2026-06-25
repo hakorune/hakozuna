@@ -1,9 +1,34 @@
 # HZ8 MediumRun V1 RC1
 
-Status: **RC1 / protocol and geometry freeze candidate**.
+Status: **RC1 / protocol and geometry freeze record**.
 
 This record covers the MediumRun-v1 default after small-v0 rc1.  It does not
 change the frozen small-v0 behavior.
+
+## Freeze Identity
+
+```text
+tag:
+  hz8-medium-v1-rc1
+
+record_sha:
+  b50a4aa17bcd484d2f9edca1d4c5b1ab306ca2f0
+
+allocator_behavior:
+  same as this record for source behavior
+  final closeout commits after behavior changes add documentation and runners
+  only
+
+scope:
+  protocol
+  geometry
+  lifecycle
+  residency contract
+
+not claimed:
+  HZ8 stable-default promotion
+  medium-r50 fresh-process outlier-free stability
+```
 
 ## Tested Default
 

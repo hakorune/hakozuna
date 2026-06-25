@@ -58,6 +58,10 @@ Do not mix this lane with preload API expansion or small hot-leaf tuning.
 Current MediumRun status:
 
 ```text
+freeze:
+  hz8-medium-v1-rc1 records protocol / geometry / lifecycle
+  stable-default promotion remains HOLD on medium-r50 retention stability
+
 implemented:
   4097..65536 routing
   owner-attached medium remote publish
@@ -188,7 +192,7 @@ Next design consultation:
 
 ```text
 Current default:
-  keep MediumRun-v1 RC1 protocol / geometry
+  keep hz8-medium-v1-rc1 protocol / geometry / lifecycle
 
 Closed candidates:
   raw owner/class 2Q retention behavior
