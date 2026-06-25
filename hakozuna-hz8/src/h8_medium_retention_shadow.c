@@ -137,6 +137,67 @@ static void h8_retention_l3_release(uint8_t model, H8MediumRun* run) {
                             memory_order_acq_rel);
 }
 
+static void h8_retention_l3_probation_remove(uint8_t model,
+                                             H8MediumRun* run) {
+  if (!run) {
+    return;
+  }
+  H8MediumRun** link = &h8g.medium_retention_l3_probation[model];
+  while (*link) {
+    if (*link == run) {
+      *link = run->debug_retention_l3_next[model];
+      run->debug_retention_l3_next[model] = NULL;
+      return;
+    }
+    link = &(*link)->debug_retention_l3_next[model];
+  }
+}
+
+static void h8_retention_l3_probation_push(uint8_t model, H8MediumRun* run) {
+  if (!run) {
+    return;
+  }
+  h8_retention_l3_probation_remove(model, run);
+  run->debug_retention_l3_next[model] =
+      h8g.medium_retention_l3_probation[model];
+  h8g.medium_retention_l3_probation[model] = run;
+}
+
+static bool h8_retention_l3_evict_probation(uint8_t model) {
+  H8MediumRun* victim = h8g.medium_retention_l3_probation[model];
+  if (!victim) {
+    return false;
+  }
+  h8g.medium_retention_l3_probation[model] =
+      victim->debug_retention_l3_next[model];
+  victim->debug_retention_l3_next[model] = NULL;
+  if (victim->debug_retention_l3_state[model] ==
+      H8_RETENTION_L3_DECOMMITTED) {
+    return true;
+  }
+  if (victim->debug_retention_l3_state[model] != H8_RETENTION_L3_LIVE) {
+    h8_retention_l3_release(model, victim);
+  }
+  victim->debug_retention_l3_state[model] = H8_RETENTION_L3_DECOMMITTED;
+  h8_retention_l3_inc_decommit(model);
+  return true;
+}
+
+static bool h8_retention_l3_make_space(uint8_t model, H8MediumRun* run) {
+  if (h8_retention_l3_charge(model, run)) {
+    return true;
+  }
+  if (model == H8_RETENTION_L3_M0) {
+    return false;
+  }
+  while (h8_retention_l3_evict_probation(model)) {
+    if (h8_retention_l3_charge(model, run)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /* L2 causal stack: record actual-policy reuse distance without changing it. */
 static uint8_t h8_retention_stack_find(H8OwnerRecord* owner, uint32_t class_id,
                                        H8MediumRun* run) {
@@ -209,6 +270,7 @@ static void h8_retention_l3_demote_victim(uint8_t model, H8MediumRun* victim) {
     return;
   }
   victim->debug_retention_l3_state[model] = H8_RETENTION_L3_PROBATION;
+  h8_retention_l3_probation_push(model, victim);
 }
 
 static void h8_retention_l3_protect(H8OwnerRecord* owner, uint8_t model,
@@ -241,7 +303,7 @@ static void h8_retention_l3_empty_model(H8OwnerRecord* owner, H8MediumRun* run,
   bool wants_protected =
       (model == H8_RETENTION_L3_M1 || model == H8_RETENTION_L3_M2) &&
       run->debug_retention_l3_reuse_evidence;
-  if (!h8_retention_l3_charge(model, run)) {
+  if (!h8_retention_l3_make_space(model, run)) {
     run->debug_retention_l3_state[model] = H8_RETENTION_L3_DECOMMITTED;
     h8_retention_l3_inc_decommit(model);
     return;
@@ -251,6 +313,7 @@ static void h8_retention_l3_empty_model(H8OwnerRecord* owner, H8MediumRun* run,
     h8_retention_l3_protect(owner, model, run);
   } else {
     run->debug_retention_l3_state[model] = H8_RETENTION_L3_PROBATION;
+    h8_retention_l3_probation_push(model, run);
   }
 }
 
@@ -268,8 +331,13 @@ static void h8_retention_l3_note_empty(H8OwnerRecord* owner, H8MediumRun* run) {
 }
 
 static void h8_retention_l3_force_decommit(H8MediumRun* run) {
+  H8OwnerRecord* owner = h8_retention_owner(run);
   for (uint8_t m = 0; m < H8_RETENTION_L3_MODEL_COUNT; ++m) {
     uint8_t state = run->debug_retention_l3_state[m];
+    h8_retention_l3_probation_remove(m, run);
+    if (owner) {
+      h8_retention_l3_protected_remove(owner, run->class_id, run);
+    }
     if (state == H8_RETENTION_L3_PROBATION ||
         state == H8_RETENTION_L3_PROTECTED) {
       h8_retention_l3_release(m, run);
@@ -451,6 +519,7 @@ void h8_medium_retention_shadow_note_alloc(H8MediumRun* run) {
   h8_retention_l3_protected_remove(owner, run->class_id, run);
   for (uint8_t m = 0; m < H8_RETENTION_L3_MODEL_COUNT; ++m) {
     uint8_t state = run->debug_retention_l3_state[m];
+    h8_retention_l3_probation_remove(m, run);
     if (state == H8_RETENTION_L3_DECOMMITTED) {
       h8_retention_l3_inc_refault(m);
       run->debug_retention_l3_reuse_evidence = true;

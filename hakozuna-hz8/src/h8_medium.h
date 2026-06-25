@@ -107,6 +107,7 @@ typedef struct H8MediumRun {
   uint8_t debug_retention_decommit_reason;
   bool debug_retention_decommitted_ghost;
   uint8_t debug_retention_l3_state[4];
+  struct H8MediumRun* debug_retention_l3_next[4];
   bool debug_retention_l3_reuse_evidence;
   bool debug_retention_l3_m0_expect_decommit;
 #endif

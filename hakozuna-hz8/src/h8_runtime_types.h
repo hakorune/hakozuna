@@ -456,6 +456,9 @@ typedef struct H8Global {
   atomic_size_t medium_retention_l3_m2_peak;
   atomic_size_t medium_retention_l3_clock_bytes;
   atomic_size_t medium_retention_l3_clock_peak;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8MediumRun* medium_retention_l3_probation[4];
+#endif
   atomic_size_t medium_madvise_fail_count;
   atomic_size_t medium_resident_empty_bytes;
   atomic_size_t medium_resident_empty_peak;

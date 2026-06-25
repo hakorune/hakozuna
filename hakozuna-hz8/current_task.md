@@ -119,7 +119,15 @@ latest implementation:
     release behavior unchanged
     quick debug medium r50:
       medium_retention_l3 mismatch = 0
-    full direct/preload R30 retention gate still required
+    direct debug R30:
+      data=bench_results/medium_retention_exactcap_victim_l3_20260625T025332Z/
+      l3_mismatch = 0
+      M2 decommit improvement only 63 / 23101
+      refault predictions all zero
+    decision:
+      baseline mismatch is closed
+      exact-cap victim model is now observable
+      2Q behavior still HOLD; candidate benefit is not material
 
 source hygiene:
   bench report output is split into bench/h8_bench_report.c
@@ -589,7 +597,8 @@ next measurement lanes:
             serialized-debug follow-up:
               implemented after L3 mismatch result
               quick medium r50 check produced l3_mismatch = 0
-              run full direct/preload R30 before using candidate predictions
+              direct debug R30 produced l3_mismatch = 0
+              candidate benefit was too small for behavior promotion
 
           MediumOwnerClassProtected2Q-L1:
             likely behavior candidate after exact-cap shadow

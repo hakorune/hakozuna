@@ -230,8 +230,13 @@ MediumRetentionSerializedDebugShadow-L1:
   implemented after L3 mismatch
   release behavior unchanged
   debug-only lock serializes actual resident budget transition + L3 model
-  quick medium r50 produced l3_mismatch = 0
-  full direct/preload R30 still required before behavior promotion
+  quick medium r50 and direct debug R30 produced l3_mismatch = 0
+  R30 data:
+    bench_results/medium_retention_exactcap_victim_l3_20260625T025332Z/
+  decision:
+    M0 acceptance closed
+    M1/M2/Mclock benefit not material
+    2Q behavior remains HOLD
 ```
 
 Likely behavior candidate after exact-cap shadow:
