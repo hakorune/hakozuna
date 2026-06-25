@@ -389,6 +389,37 @@ MediumBudgetRejectLazyPurge-L1:
     and preload R30 in the observed workload
     default promotion still requires paired main/medium/small gates and a
     final fresh-process repeat
+
+  paired gate:
+    make medium-lazy-paired-gate
+    data=bench_results/20260625T102900Z_lazy128_medium_chunk_paired_gate/
+    medium_interleaved_remote50:
+      baseline 35.56M
+      lazy128 35.29M
+      ratio 0.992
+    main_interleaved_remote90:
+      baseline 24.87M
+      lazy128 25.37M
+      ratio 1.020
+    small_interleaved_remote90:
+      baseline 47.08M
+      lazy128 54.27M
+      ratio 1.153
+    small_guard_local0:
+      first paired wall median regressed, but steady_work did not indicate a
+      small leaf regression
+      repeat i1:
+        data=bench_results/20260625T103100Z_lazy128_small_repeat/
+        baseline 163.47M
+        lazy128 166.06M
+      repeat i0:
+        data=bench_results/20260625T103100Z_lazy128_small_i0_repeat/
+        baseline 164.48M
+        lazy128 260.66M
+    decision:
+      medium r50, main r90, and small remote90 pass the first paired gate
+      small local regression was not reproduced in targeted repeats
+      final default promotion should still run a fresh repeat batch
 ```
 
 Current route shadow:

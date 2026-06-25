@@ -295,6 +295,16 @@ if improving medium r50 stability:
     closes both direct and preload retention closeout in the observed R30
     run
     RC1 protocol / geometry remains unchanged until full promotion gates pass
+  paired gate:
+    data=bench_results/20260625T102900Z_lazy128_medium_chunk_paired_gate/
+    medium r50 ratio 0.992
+    main r90 ratio 1.020
+    small remote90 ratio 1.153
+    small local first paired wall median was noisy, but targeted repeats did
+    not reproduce a regression
+  decision:
+    lazy128 is the current stable-default promotion candidate
+    run one fresh repeat batch before replacing RC1 default behavior
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane

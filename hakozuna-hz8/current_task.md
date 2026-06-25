@@ -164,6 +164,29 @@ next behavior only if shadow supports it:
         preload max faults 12,771
         post RSS unchanged
         decision: candidate for promotion gate
+    paired gate:
+      data=bench_results/20260625T102900Z_lazy128_medium_chunk_paired_gate/
+      medium_interleaved_remote50:
+        35.56M -> 35.29M
+        ratio 0.992
+      main_interleaved_remote90:
+        24.87M -> 25.37M
+        ratio 1.020
+      small_interleaved_remote90:
+        47.08M -> 54.27M
+        ratio 1.153
+      small_guard_local0:
+        first paired wall median noisy regression
+        repeat i1:
+          data=bench_results/20260625T103100Z_lazy128_small_repeat/
+          163.47M -> 166.06M
+        repeat i0:
+          data=bench_results/20260625T103100Z_lazy128_small_i0_repeat/
+          164.48M -> 260.66M
+      decision:
+        medium/main/small-remote pass
+        small-local no regression reproduced in repeats
+        final default promotion should still run one fresh repeat batch
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1

@@ -327,6 +327,21 @@ MediumBudgetRejectLazyPurge-L1:
     it is preferable to MADV_FREE if it keeps post/peak RSS bounded while
     removing the refault outliers
     still requires full paired main/medium/small gates before defaulting
+
+  paired gate:
+    data:
+      bench_results/20260625T102900Z_lazy128_medium_chunk_paired_gate/
+      bench_results/20260625T103100Z_lazy128_small_repeat/
+      bench_results/20260625T103100Z_lazy128_small_i0_repeat/
+    result:
+      medium r50 ratio 0.992
+      main r90 ratio 1.020
+      small remote90 ratio 1.153
+      small local targeted repeats did not reproduce the initial noisy wall
+      median regression
+    decision:
+      lazy128 remains the strongest stable-default candidate
+      final default switch still needs one fresh repeat batch
 ```
 
 Likely behavior candidate after exact-cap shadow:

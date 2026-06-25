@@ -1,4 +1,4 @@
-.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 preload-mediumchunk preload-mediummadvfree preload-mediumlazy medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
+.PHONY: all clean smoke smoke-mediumupper48 safety-stress preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 preload-mediumchunk preload-mediummadvfree preload-mediumlazy medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -91,6 +91,9 @@ medium-chunk-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_medi
 
 medium-shardchunk-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_mediumshardchunk
 	CANDIDATE_BIN=$(ROOT)/h8_bench_release_mediumshardchunk CANDIDATE_NAME=shardchunk $(ROOT)/scripts/run_medium_chunk_paired_gate.sh
+
+medium-lazy-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_mediumlazy
+	CANDIDATE_BIN=$(ROOT)/h8_bench_release_mediumlazy CANDIDATE_NAME=lazy128 $(ROOT)/scripts/run_medium_chunk_paired_gate.sh
 
 medium-sizepolicy-paired-gate: $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_mediumupper48
 	$(ROOT)/scripts/run_medium_sizepolicy_paired_gate.sh
