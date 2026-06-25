@@ -150,6 +150,25 @@ latest local-leaf probe:
       next performance work should focus medium interleaved r50 path, not
       same-owner local directory lookup
 
+  MediumCollectActiveRefillHint-L1:
+    implemented as opt-in build-time evidence target
+    default HOLD
+    targets:
+      bench-mediumrefillhint
+      bench-release-mediumrefillhint
+      H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT
+    contract:
+      owner collector may refill TLS active_medium_runs[class] from a
+      collected run only when accepted frees exist, ctx matches the owner,
+      run owner token matches, and current active is not usable
+    quick debug:
+      medium r50 T=16 30k-iters
+      active_refill_hint about 9.5k
+      remote protocol and pending authority unchanged
+    decision:
+      keep as evidence target
+      require paired R10 before default promotion
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

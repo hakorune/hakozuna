@@ -351,6 +351,7 @@ typedef struct H8Global {
   atomic_size_t medium_collect_periodic_pending_miss;
   atomic_size_t medium_collect_periodic_from_active;
   atomic_size_t medium_collect_periodic_from_owner_list;
+  atomic_size_t medium_collect_active_refill_hint;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

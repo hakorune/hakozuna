@@ -213,6 +213,7 @@ typedef struct H8DebugStats {
   size_t medium_collect_periodic_pending_miss;
   size_t medium_collect_periodic_from_active;
   size_t medium_collect_periodic_from_owner_list;
+  size_t medium_collect_active_refill_hint;
   size_t medium_run_reuse_active_class_8k;
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;

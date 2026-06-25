@@ -411,7 +411,7 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
       medium_collect_run > 0.0
           ? (double)debug.medium_remote_collect_slot_count / medium_collect_run
           : 0.0;
-  printf("medium_residual lease_ns_per_pub=%.1f claim_ns_per_pub=%.1f qpush_ns_per_push=%.1f collect_ns_per_run=%.1f collect_runs_per_call=%.3f collect_slots_per_run=%.3f periodic_fast=%zu periodic_slow=%zu periodic_hit=%zu periodic_miss=%zu periodic_active=%zu periodic_owner=%zu\n",
+  printf("medium_residual lease_ns_per_pub=%.1f claim_ns_per_pub=%.1f qpush_ns_per_push=%.1f collect_ns_per_run=%.1f collect_runs_per_call=%.3f collect_slots_per_run=%.3f periodic_fast=%zu periodic_slow=%zu periodic_hit=%zu periodic_miss=%zu periodic_active=%zu periodic_owner=%zu active_refill_hint=%zu\n",
          medium_lease_ns_per_pub, medium_claim_ns_per_pub,
          medium_qpush_ns_per_push, medium_collect_ns_per_run,
          medium_collect_runs_per_call, medium_collect_slots_per_run,
@@ -420,7 +420,8 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_collect_periodic_pending_hit,
          debug.medium_collect_periodic_pending_miss,
          debug.medium_collect_periodic_from_active,
-         debug.medium_collect_periodic_from_owner_list);
+         debug.medium_collect_periodic_from_owner_list,
+         debug.medium_collect_active_refill_hint);
   double medium_attributed_ms =
       (double)(debug.medium_remote_owner_lease_ns +
                debug.medium_remote_pending_claim_ns +

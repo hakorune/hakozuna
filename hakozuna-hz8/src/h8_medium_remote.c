@@ -379,6 +379,34 @@ static bool h8_medium_collect_active_keep_shadow(H8OwnerRecord* owner,
   return true;
 }
 
+#if defined(H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT)
+static bool h8_medium_active_hint_usable(H8ThreadCtx* ctx, H8MediumRun* run,
+                                         uint16_t class_id) {
+  return run && run->class_id == class_id && run->free_mask != 0 &&
+         h8_medium_run_owned_by_ctx(run, ctx) &&
+         atomic_load_explicit(&run->state, memory_order_acquire) ==
+             H8_MEDIUM_RUN_ACTIVE;
+}
+
+static void h8_medium_collect_refill_active_hint(H8OwnerRecord* owner,
+                                                 H8MediumRun* run,
+                                                 H8ThreadCtx* ctx,
+                                                 uint64_t accepted) {
+  if (!accepted || !ctx || ctx != h8_tls_ctx || ctx->owner != owner ||
+      !run || run->class_id >= H8_MEDIUM_CLASS_COUNT ||
+      !h8_medium_run_owned_by_ctx(run, ctx)) {
+    return;
+  }
+  H8MediumRun* active = ctx->active_medium_runs[run->class_id];
+  if (active == run ||
+      h8_medium_active_hint_usable(ctx, active, run->class_id)) {
+    return;
+  }
+  ctx->active_medium_runs[run->class_id] = run;
+  H8_DEBUG_INC(medium_collect_active_refill_hint);
+}
+#endif
+
 static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
                                   H8ThreadCtx* ctx) {
   uint8_t expected = H8_Q_QUEUED;
@@ -448,6 +476,12 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
   if (remaining) {
     h8_medium_mark_dirty_if_draining(run);
   }
+#if defined(H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT)
+  h8_medium_collect_refill_active_hint(owner, run, ctx, accepted);
+#else
+  (void)owner;
+  (void)ctx;
+#endif
   H8_DEBUG_ADD(medium_remote_collect_slot_count, collected);
   H8_DEBUG_ADD(medium_remote_collect_reject_count, rejected);
   H8_DEBUG_ADD(medium_remote_collect_run_count, 1);

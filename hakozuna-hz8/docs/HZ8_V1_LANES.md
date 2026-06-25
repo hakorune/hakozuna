@@ -157,6 +157,27 @@ MediumSlotPtrKnown-L1:
   decision:
     keep as code-shape cleanup
 
+MediumCollectActiveRefillHint-L1:
+  status:
+    implemented as build-time evidence target
+    HOLD as default
+  targets:
+    bench-mediumrefillhint
+    bench-release-mediumrefillhint
+  contract:
+    owner collector may set TLS active_medium_runs[class] to a collected run
+    only when:
+      accepted remote frees are present
+      ctx belongs to the owner being collected
+      run owner token matches ctx owner
+      current active hint is absent or not usable
+    remote protocol, qstate, and pending authority are unchanged
+  quick debug:
+    active_refill_hint about 9.5k in medium r50 T=16 30k-iters
+  decision:
+    keep as evidence target
+    require paired R10 before default consideration
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

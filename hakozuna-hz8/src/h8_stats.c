@@ -325,6 +325,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_periodic_from_active, memory_order_acquire);
   out->medium_collect_periodic_from_owner_list = atomic_load_explicit(
       &h8g.medium_collect_periodic_from_owner_list, memory_order_acquire);
+  out->medium_collect_active_refill_hint = atomic_load_explicit(
+      &h8g.medium_collect_active_refill_hint, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(
