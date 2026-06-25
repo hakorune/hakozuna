@@ -180,6 +180,14 @@ owner lease redesign:
   safe medium lease word A/B was flat
   HOLD
 
+medium r50 fresh-process retention stability:
+  outliers correlate with budget rejects / repeated madvise / minor faults
+  exact-cap and serialized retention shadows are recorded in
+  docs/HZ8_MEDIUM_RUN_V1.md
+  direct runtime 2Q/probation behavior was attempted and reverted as NO-GO
+  RC1 protocol / geometry remains valid, but stable medium-r50 default
+  promotion stays HOLD
+
 phase remote90:
   remains lifecycle / first-touch stress
   not the primary MediumRun throughput gate
@@ -197,6 +205,10 @@ same-run allocator matrix:
 
 if improving main stability:
   reopen chunk arena only with a medium-r50 no-regression plan
+
+if improving medium r50 stability:
+  do not retry raw retention behavior
+  require a cheaper event path or stronger predicted benefit first
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane
