@@ -458,6 +458,33 @@ next measurement lanes:
               h8_safety_stress
               preload-smoke
 
+            R30 result:
+              data=bench_results/medium_retention_causal_shadow_20260625T004617Z/
+
+              N0 reproduction:
+                sum(madvise) == sum(model_decommit_n0) == 176,235
+                current-policy model is usable as first-order signal
+
+              outliers:
+                max minor_faults 544,073
+                max budget_reject 68,700
+                max ghost_budget_reuse 68,007
+
+              fixed-depth prediction:
+                model_refault_n1: 98.90% of N0
+                model_refault_n2: 93.08% of N0
+                model_refault_n3: 85.09% of N0
+                model_refault_n4: 74.25% of N0
+
+              reuse distance:
+                pre_distance 5+ = 45.05%
+
+              decision:
+                raw depth2: NO-GO
+                depth3/4 fixed MRU: weak as standalone fix
+                next behavior should be true 2Q/probation or broader
+                purge/clock retention, not fixed-depth MRU
+
           MediumOwnerClassProtected2Q-L1:
             behavior candidate after the causal shadow
 
