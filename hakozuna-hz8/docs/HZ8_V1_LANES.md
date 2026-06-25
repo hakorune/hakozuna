@@ -303,6 +303,23 @@ MediumChunkArenaShardedCarve-L1:
       chunk placement is not a retention-outlier fix
       global chunk can remain a v1.1 evidence candidate
       default promotion still requires fresh-process outlier gate
+
+  global chunk fresh R30:
+    data=bench_results/medium_chunk_closeout_20260625T100242Z/
+    direct:
+      median 34.76M
+      p25 32.47M
+      outliers 5/30
+      max faults 1,221,670
+    preload:
+      median 36.65M
+      p25 8.37M
+      outliers 7/30
+      max faults 783,356
+    decision:
+      global chunk fails fresh-process retention gate
+      ChunkArena remains HOLD as default
+      retention/purge outlier must be solved before stable-default promotion
 ```
 
 Current route shadow:

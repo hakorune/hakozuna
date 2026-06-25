@@ -179,6 +179,23 @@ global chunk paired R10:
     it does not close retention stability
     promotion needs fresh-process outlier gate, not just paired median
 
+global chunk fresh R30:
+  data=bench_results/medium_chunk_closeout_20260625T100242Z/
+  direct:
+    median 34.76M
+    p25 32.47M
+    outliers 5/30
+    max faults 1,221,670
+  preload:
+    median 36.65M
+    p25 8.37M
+    outliers 7/30
+    max faults 783,356
+  decision:
+    ChunkArena does not close retention stability
+    keep ChunkArena HOLD as default
+    next stable-default work should return to retention/purge policy
+
 latest implementation:
   MediumRetentionSerializedDebugShadow-L1:
     debug-only retention lock added around actual resident budget transitions
