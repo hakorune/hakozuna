@@ -165,9 +165,17 @@ latest local-leaf probe:
       medium r50 T=16 30k-iters
       active_refill_hint about 9.5k
       remote protocol and pending authority unchanged
+    paired R10:
+      data=bench_results/20260626T052107_active_refill_paired_r10/
+      medium_r50 median ratio 1.013
+      medium_r50 p25 ratio 0.978
+      main_r90 median ratio 0.960
+      main_r90 p25 ratio 1.014
+      medium_local0 median ratio 0.990
+      medium_local0 p25 ratio 1.024
     decision:
       keep as evidence target
-      require paired R10 before default promotion
+      do not promote by default
 
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target

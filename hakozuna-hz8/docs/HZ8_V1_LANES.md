@@ -174,9 +174,20 @@ MediumCollectActiveRefillHint-L1:
     remote protocol, qstate, and pending authority are unchanged
   quick debug:
     active_refill_hint about 9.5k in medium r50 T=16 30k-iters
+  paired R10:
+    data=bench_results/20260626T052107_active_refill_paired_r10/
+    medium_r50 ratio:
+      median 1.013
+      p25 0.978
+    main_r90 ratio:
+      median 0.960
+      p25 1.014
+    medium_local0 ratio:
+      median 0.990
+      p25 1.024
   decision:
     keep as evidence target
-    require paired R10 before default consideration
+    do not promote by default
 
 64K two-slot:
   medium r50 positive
