@@ -289,6 +289,20 @@ MediumChunkArenaShardedCarve-L1:
       old global-lock chunk did not reproduce the medium-r50 regression here
       sharded carve increased peak RSS/outlier risk versus global chunk
       next ChunkArena work should not assume sharding alone is the fix
+
+  global chunk R10 paired:
+    data=bench_results/20260625T091840Z_medium_chunk_paired_gate/
+    medium r50:
+      32.64M baseline -> 34.62M chunk
+      high-fault outliers remain in both builds
+    main r90:
+      24.73M baseline -> 24.28M chunk
+    small remote90:
+      54.21M baseline -> 53.39M chunk
+    decision:
+      chunk placement is not a retention-outlier fix
+      global chunk can remain a v1.1 evidence candidate
+      default promotion still requires fresh-process outlier gate
 ```
 
 Current route shadow:

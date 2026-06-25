@@ -162,6 +162,23 @@ chunk 3-way audit:
     re-evaluate global chunk with formal paired/fresh gates before designing
     another sharding variant
 
+global chunk paired R10:
+  data=bench_results/20260625T091840Z_medium_chunk_paired_gate/
+  medium r50:
+    baseline 32.64M median
+    chunk16m 34.62M median
+    high-fault outliers remain in both builds
+  main r90:
+    baseline 24.73M median
+    chunk16m 24.28M median
+  small remote90:
+    baseline 54.21M median
+    chunk16m 53.39M median
+  decision:
+    global chunk is still evidence-only
+    it does not close retention stability
+    promotion needs fresh-process outlier gate, not just paired median
+
 latest implementation:
   MediumRetentionSerializedDebugShadow-L1:
     debug-only retention lock added around actual resident budget transitions
