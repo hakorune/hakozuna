@@ -218,6 +218,12 @@ MediumRunV1RC1RetentionCloseout-L1:
   fixed fresh-process direct/preload R30 diagnostic for medium r50
   summarizes p25/min, p95/max minor faults, post/peak RSS, and outlier count
   RC1 diagnostic only; stable-default blocker remains outlier-free retention
+
+  result:
+    bench_results/medium_retention_closeout_20260625T075433Z/
+    direct outliers 1/30
+    preload outliers 2/30
+    stable-default retention promotion remains HOLD
 ```
 
 Current route shadow:

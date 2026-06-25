@@ -208,6 +208,27 @@ retention closeout:
   diagnostic only for RC1
   blocker for stable-default promotion
 
+retention closeout result:
+  bench_results/medium_retention_closeout_20260625T075433Z/
+  direct:
+    median 28.72M
+    p25 28.11M
+    min 7.29M
+    median minor faults 10,208
+    max minor faults 300,968
+    outliers 1/30
+  preload:
+    median 28.90M
+    p25 27.33M
+    min 6.55M
+    median minor faults 9,976
+    max minor faults 286,976
+    outliers 2/30
+  interpretation:
+    RC1 diagnostic recorded
+    stable-default retention gate remains HOLD because preload exceeds the
+    target outlier threshold
+
 same-run allocator matrix:
   recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
 
