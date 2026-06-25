@@ -22,6 +22,7 @@
 #define H8_MEDIUM_64K_SLOT_COUNT 2u
 #endif
 #define H8_MEDIUM_PAGE_BYTES 4096u
+#define H8_MEDIUM_RETENTION_STACK_DEPTH 8u
 #if !defined(H8_MEDIUM_RESIDENT_BUDGET_CLASSES)
 #define H8_MEDIUM_RESIDENT_BUDGET_CLASSES 16u
 #endif
@@ -51,6 +52,12 @@ typedef enum H8MediumWriterKind {
   H8_MEDIUM_WRITER_GLOBAL_ATTACH = 5,
   H8_MEDIUM_WRITER_OWNER_DETACH = 6
 } H8MediumWriterKind;
+
+typedef enum H8MediumDecommitReason {
+  H8_MEDIUM_DECOMMIT_COLD = 1,
+  H8_MEDIUM_DECOMMIT_BUDGET_REJECT = 2,
+  H8_MEDIUM_DECOMMIT_OWNER_EXIT = 3
+} H8MediumDecommitReason;
 
 typedef struct H8MediumClassSpec {
   uint32_t slot_size;
@@ -93,6 +100,12 @@ typedef struct H8MediumRun {
   atomic_uint debug_writer_active;
   atomic_uint debug_writer_kind;
   atomic_uint_fast64_t debug_writer_token;
+  uint64_t debug_retention_empty_epoch;
+  uint64_t debug_retention_decommit_epoch;
+  uint8_t debug_retention_empty_distance;
+  uint8_t debug_retention_decommit_distance;
+  uint8_t debug_retention_decommit_reason;
+  bool debug_retention_decommitted_ghost;
 #endif
 } H8MediumRun;
 
@@ -182,6 +195,7 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                                        bool keep_empty_live);
 void h8_medium_release_empty_payload(H8MediumRun* run);
 void h8_medium_decommit_empty_locked(H8MediumRun* run);
+void h8_medium_decommit_empty_owner_exit_locked(H8MediumRun* run);
 void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_note_active_live_empty(H8MediumRun* run);
 void h8_medium_clear_active_live_empty(H8MediumRun* run);
@@ -218,6 +232,18 @@ bool h8_medium_owner_lease_shadow_enter(H8OwnerRecord* owner,
                                         uint16_t generation);
 void h8_medium_owner_lease_shadow_exit(H8OwnerRecord* owner);
 void h8_medium_owner_lease_shadow_check_exit(H8OwnerRecord* owner);
+#if defined(H8_ENABLE_DEBUG_STATS)
+void h8_medium_retention_shadow_owner_init(H8OwnerRecord* owner);
+void h8_medium_retention_shadow_note_empty(H8MediumRun* run);
+void h8_medium_retention_shadow_note_decommit(H8MediumRun* run,
+                                              H8MediumDecommitReason reason);
+void h8_medium_retention_shadow_note_alloc(H8MediumRun* run);
+#else
+#define h8_medium_retention_shadow_owner_init(owner) ((void)0)
+#define h8_medium_retention_shadow_note_empty(run) ((void)0)
+#define h8_medium_retention_shadow_note_decommit(run, reason) ((void)0)
+#define h8_medium_retention_shadow_note_alloc(run) ((void)0)
+#endif
 H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
 bool h8_medium_owner_has_pending(H8OwnerRecord* owner);
 size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,

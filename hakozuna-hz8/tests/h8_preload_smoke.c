@@ -69,7 +69,7 @@ int main(void) {
   }
   free(z);
 
-  void* large = malloc(8192);
+  void* large = malloc(256 * 1024);
   if (!large) {
     fprintf(stderr, "large malloc failed\n");
     return 8;

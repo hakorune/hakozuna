@@ -129,6 +129,9 @@ struct H8OwnerRecord {
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8MediumRun* medium_warm_shadow1[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_warm_shadow2[H8_MEDIUM_CLASS_COUNT][2];
+  uint64_t medium_retention_epoch[H8_MEDIUM_CLASS_COUNT];
+  H8MediumRun* medium_retention_stack[H8_MEDIUM_CLASS_COUNT]
+                                      [H8_MEDIUM_RETENTION_STACK_DEPTH];
 #endif
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
@@ -403,6 +406,37 @@ typedef struct H8Global {
   atomic_size_t medium_warm_reuse_distance_1;
   atomic_size_t medium_warm_reuse_distance_2;
   atomic_size_t medium_warm_reuse_distance_3p;
+  atomic_size_t medium_retention_empty_seen;
+  atomic_size_t medium_retention_pre_distance_1;
+  atomic_size_t medium_retention_pre_distance_2;
+  atomic_size_t medium_retention_pre_distance_3;
+  atomic_size_t medium_retention_pre_distance_4;
+  atomic_size_t medium_retention_pre_distance_5p;
+  atomic_size_t medium_retention_decommit_budget;
+  atomic_size_t medium_retention_decommit_cold;
+  atomic_size_t medium_retention_decommit_owner_exit;
+  atomic_size_t medium_retention_ghost_reuse_budget;
+  atomic_size_t medium_retention_ghost_reuse_cold;
+  atomic_size_t medium_retention_ghost_reuse_owner_exit;
+  atomic_size_t medium_retention_ghost_distance_1;
+  atomic_size_t medium_retention_ghost_distance_2;
+  atomic_size_t medium_retention_ghost_distance_3;
+  atomic_size_t medium_retention_ghost_distance_4;
+  atomic_size_t medium_retention_ghost_distance_5p;
+  atomic_size_t medium_retention_ghost_epoch_0_1;
+  atomic_size_t medium_retention_ghost_epoch_2_3;
+  atomic_size_t medium_retention_ghost_epoch_4_7;
+  atomic_size_t medium_retention_ghost_epoch_8p;
+  atomic_size_t medium_retention_model_decommit_n0;
+  atomic_size_t medium_retention_model_decommit_n1;
+  atomic_size_t medium_retention_model_decommit_n2;
+  atomic_size_t medium_retention_model_decommit_n3;
+  atomic_size_t medium_retention_model_decommit_n4;
+  atomic_size_t medium_retention_model_refault_n0;
+  atomic_size_t medium_retention_model_refault_n1;
+  atomic_size_t medium_retention_model_refault_n2;
+  atomic_size_t medium_retention_model_refault_n3;
+  atomic_size_t medium_retention_model_refault_n4;
   atomic_size_t medium_madvise_fail_count;
   atomic_size_t medium_resident_empty_bytes;
   atomic_size_t medium_resident_empty_peak;

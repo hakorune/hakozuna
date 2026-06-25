@@ -228,10 +228,15 @@ static void h8_medium_madvise_run(H8MediumRun* run) {
 #endif
 }
 
-void h8_medium_decommit_empty_locked(H8MediumRun* run) {
+static void h8_medium_decommit_empty_with_reason_locked(
+    H8MediumRun* run, H8MediumDecommitReason reason) {
   if (!run || run->allocated_mask != 0) {
     return;
   }
+#if !defined(H8_ENABLE_DEBUG_STATS)
+  (void)reason;
+#endif
+  h8_medium_retention_shadow_note_decommit(run, reason);
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     h8_medium_clear_active_live_empty(run);
   }
@@ -240,12 +245,21 @@ void h8_medium_decommit_empty_locked(H8MediumRun* run) {
   run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
 }
 
+void h8_medium_decommit_empty_locked(H8MediumRun* run) {
+  h8_medium_decommit_empty_with_reason_locked(run, H8_MEDIUM_DECOMMIT_COLD);
+}
+
+void h8_medium_decommit_empty_owner_exit_locked(H8MediumRun* run) {
+  h8_medium_decommit_empty_with_reason_locked(run, H8_MEDIUM_DECOMMIT_OWNER_EXIT);
+}
+
 void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
   if (!run || run->allocated_mask != 0) {
     H8_DEBUG_INC(medium_alloc_mark_live_nonempty);
     return;
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_retention_shadow_note_alloc(run);
   h8_medium_warm_shadow_note_alloc(run);
 #endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
@@ -274,6 +288,7 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
   H8_DEBUG_INC(medium_empty_transition_count);
   h8_medium_clear_active_live_empty(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_retention_shadow_note_empty(run);
   h8_medium_warm_shadow_install(run);
 #endif
   if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
@@ -281,5 +296,6 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
     return;
   }
-  h8_medium_decommit_empty_locked(run);
+  h8_medium_decommit_empty_with_reason_locked(
+      run, H8_MEDIUM_DECOMMIT_BUDGET_REJECT);
 }

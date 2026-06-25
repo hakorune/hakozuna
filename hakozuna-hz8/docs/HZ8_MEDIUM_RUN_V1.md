@@ -207,7 +207,7 @@ Next retention-stability box:
 
 ```text
 MediumRetentionCausalStackShadow-L2:
-  release behavior unchanged
+  implemented; release behavior unchanged
 
   per owner/class:
     empty_epoch, recent distinct empty-run stack K ~= 8
@@ -226,6 +226,11 @@ MediumRetentionCausalStackShadow-L2:
   self-check:
     N=0 must reproduce actual budget_reject, madvise, and resident peak
     closely enough before N>0 predictions are trusted
+
+model interpretation:
+  reported as medium_retention_causal
+  model_decommit/refault N=0 is current-policy reproduction
+  N=1..4 predict ghost refaults remaining if pre-distance <= N stays resident
 ```
 
 Likely behavior candidate after the causal shadow:
@@ -237,13 +242,9 @@ MediumOwnerClassProtected2Q-L1:
   PROBATION: first-empty or weak-reuse empty run using remaining capacity
   DECOMMITTED: no resident payload charge and no retention membership
 
-admission:
-  first empty enters PROBATION
-  second-touch/reuse evidence promotes a run toward PROTECTED
-
-eviction:
-  evicting PROTECTED demotes it to PROBATION
-  only a cold PROBATION victim is decommitted
+admission/eviction:
+  first empty enters PROBATION; second-touch can promote to PROTECTED
+  evicted PROTECTED demotes to PROBATION; only cold PROBATION decommits
 
 RSS cap:
   keep the current effective empty-retention bound:

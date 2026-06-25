@@ -653,16 +653,16 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       H8MediumRun* next = run->next_owner;
       h8_medium_debug_writer_enter(run, owner, H8_MEDIUM_WRITER_OWNER_DETACH);
       h8_medium_lock_run(run);
-      run->owner_attached = false;
-      atomic_store_explicit(&run->owner_word, 0, memory_order_release);
       if (run->allocated_mask == 0 &&
           run->payload_state != H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
         H8_DEBUG_INC(medium_owner_exit_drain_count);
-        h8_medium_decommit_empty_locked(run);
+        h8_medium_decommit_empty_owner_exit_locked(run);
         if (run->active_live_empty_charge) {
           H8_DEBUG_INC(medium_owner_exit_active_live_remaining);
         }
       }
+      run->owner_attached = false;
+      atomic_store_explicit(&run->owner_word, 0, memory_order_release);
       h8_medium_unlock_run(run);
       h8_medium_debug_writer_exit(run);
       run->next_owner = NULL;

@@ -441,6 +441,68 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_warm_reuse_distance_2, memory_order_acquire);
   out->medium_warm_reuse_distance_3p = atomic_load_explicit(
       &h8g.medium_warm_reuse_distance_3p, memory_order_acquire);
+  out->medium_retention_empty_seen = atomic_load_explicit(
+      &h8g.medium_retention_empty_seen, memory_order_acquire);
+  out->medium_retention_pre_distance_1 = atomic_load_explicit(
+      &h8g.medium_retention_pre_distance_1, memory_order_acquire);
+  out->medium_retention_pre_distance_2 = atomic_load_explicit(
+      &h8g.medium_retention_pre_distance_2, memory_order_acquire);
+  out->medium_retention_pre_distance_3 = atomic_load_explicit(
+      &h8g.medium_retention_pre_distance_3, memory_order_acquire);
+  out->medium_retention_pre_distance_4 = atomic_load_explicit(
+      &h8g.medium_retention_pre_distance_4, memory_order_acquire);
+  out->medium_retention_pre_distance_5p = atomic_load_explicit(
+      &h8g.medium_retention_pre_distance_5p, memory_order_acquire);
+  out->medium_retention_decommit_budget = atomic_load_explicit(
+      &h8g.medium_retention_decommit_budget, memory_order_acquire);
+  out->medium_retention_decommit_cold = atomic_load_explicit(
+      &h8g.medium_retention_decommit_cold, memory_order_acquire);
+  out->medium_retention_decommit_owner_exit = atomic_load_explicit(
+      &h8g.medium_retention_decommit_owner_exit, memory_order_acquire);
+  out->medium_retention_ghost_reuse_budget = atomic_load_explicit(
+      &h8g.medium_retention_ghost_reuse_budget, memory_order_acquire);
+  out->medium_retention_ghost_reuse_cold = atomic_load_explicit(
+      &h8g.medium_retention_ghost_reuse_cold, memory_order_acquire);
+  out->medium_retention_ghost_reuse_owner_exit = atomic_load_explicit(
+      &h8g.medium_retention_ghost_reuse_owner_exit, memory_order_acquire);
+  out->medium_retention_ghost_distance_1 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_distance_1, memory_order_acquire);
+  out->medium_retention_ghost_distance_2 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_distance_2, memory_order_acquire);
+  out->medium_retention_ghost_distance_3 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_distance_3, memory_order_acquire);
+  out->medium_retention_ghost_distance_4 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_distance_4, memory_order_acquire);
+  out->medium_retention_ghost_distance_5p = atomic_load_explicit(
+      &h8g.medium_retention_ghost_distance_5p, memory_order_acquire);
+  out->medium_retention_ghost_epoch_0_1 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_epoch_0_1, memory_order_acquire);
+  out->medium_retention_ghost_epoch_2_3 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_epoch_2_3, memory_order_acquire);
+  out->medium_retention_ghost_epoch_4_7 = atomic_load_explicit(
+      &h8g.medium_retention_ghost_epoch_4_7, memory_order_acquire);
+  out->medium_retention_ghost_epoch_8p = atomic_load_explicit(
+      &h8g.medium_retention_ghost_epoch_8p, memory_order_acquire);
+  out->medium_retention_model_decommit_n0 = atomic_load_explicit(
+      &h8g.medium_retention_model_decommit_n0, memory_order_acquire);
+  out->medium_retention_model_decommit_n1 = atomic_load_explicit(
+      &h8g.medium_retention_model_decommit_n1, memory_order_acquire);
+  out->medium_retention_model_decommit_n2 = atomic_load_explicit(
+      &h8g.medium_retention_model_decommit_n2, memory_order_acquire);
+  out->medium_retention_model_decommit_n3 = atomic_load_explicit(
+      &h8g.medium_retention_model_decommit_n3, memory_order_acquire);
+  out->medium_retention_model_decommit_n4 = atomic_load_explicit(
+      &h8g.medium_retention_model_decommit_n4, memory_order_acquire);
+  out->medium_retention_model_refault_n0 = atomic_load_explicit(
+      &h8g.medium_retention_model_refault_n0, memory_order_acquire);
+  out->medium_retention_model_refault_n1 = atomic_load_explicit(
+      &h8g.medium_retention_model_refault_n1, memory_order_acquire);
+  out->medium_retention_model_refault_n2 = atomic_load_explicit(
+      &h8g.medium_retention_model_refault_n2, memory_order_acquire);
+  out->medium_retention_model_refault_n3 = atomic_load_explicit(
+      &h8g.medium_retention_model_refault_n3, memory_order_acquire);
+  out->medium_retention_model_refault_n4 = atomic_load_explicit(
+      &h8g.medium_retention_model_refault_n4, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

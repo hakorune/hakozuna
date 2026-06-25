@@ -394,7 +394,7 @@ next measurement lanes:
 
         next branch:
           MediumRetentionCausalStackShadow-L2:
-            next
+            implemented
 
             release behavior unchanged
 
@@ -424,6 +424,39 @@ next measurement lanes:
             acceptance for the shadow:
               N=0 model must reproduce actual budget_reject, madvise, and
               resident peak closely enough to trust N>0 predictions
+
+            implementation:
+              added h8_medium_retention_shadow.c
+              debug-only owner/class stack depth K=8
+              debug-only per-run ghost metadata
+              empty transition records pre-admission stack distance
+              decommit records reason and model N=0..4 decommit prediction
+              later allocation records ghost reuse, distance, epoch delta, and
+                model N=0..4 refault prediction
+
+            bench output:
+              medium_retention_causal
+                empty
+                pre_distance=[1,2,3,4,5+]
+                decommit=[budget,cold,exit]
+                ghost_reuse=[budget,cold,exit]
+                ghost_distance=[1,2,3,4,5+]
+                ghost_epoch=[0..1,2..3,4..7,8+]
+                model_decommit=[N0,N1,N2,N3,N4]
+                model_refault=[N0,N1,N2,N3,N4]
+
+            short sanity:
+              2 threads x 20k medium r50 debug/audit
+              pre_distance showed nontrivial reuse distances
+              budget_reject=0 in this short non-outlier smoke
+              owner-exit decommit reason recorded
+
+            validation:
+              make bench
+              make bench-release preload
+              h8_smoke
+              h8_safety_stress
+              preload-smoke
 
           MediumOwnerClassProtected2Q-L1:
             behavior candidate after the causal shadow

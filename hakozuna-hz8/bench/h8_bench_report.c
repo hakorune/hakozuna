@@ -242,6 +242,39 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_warm_reuse_distance_2,
          debug.medium_warm_reuse_distance_3p);
 
+  printf("medium_retention_causal empty=%zu pre_distance=[%zu,%zu,%zu,%zu,%zu] decommit=[budget:%zu,cold:%zu,exit:%zu] ghost_reuse=[budget:%zu,cold:%zu,exit:%zu] ghost_distance=[%zu,%zu,%zu,%zu,%zu] ghost_epoch=[%zu,%zu,%zu,%zu] model_decommit=[%zu,%zu,%zu,%zu,%zu] model_refault=[%zu,%zu,%zu,%zu,%zu]\n",
+         debug.medium_retention_empty_seen,
+         debug.medium_retention_pre_distance_1,
+         debug.medium_retention_pre_distance_2,
+         debug.medium_retention_pre_distance_3,
+         debug.medium_retention_pre_distance_4,
+         debug.medium_retention_pre_distance_5p,
+         debug.medium_retention_decommit_budget,
+         debug.medium_retention_decommit_cold,
+         debug.medium_retention_decommit_owner_exit,
+         debug.medium_retention_ghost_reuse_budget,
+         debug.medium_retention_ghost_reuse_cold,
+         debug.medium_retention_ghost_reuse_owner_exit,
+         debug.medium_retention_ghost_distance_1,
+         debug.medium_retention_ghost_distance_2,
+         debug.medium_retention_ghost_distance_3,
+         debug.medium_retention_ghost_distance_4,
+         debug.medium_retention_ghost_distance_5p,
+         debug.medium_retention_ghost_epoch_0_1,
+         debug.medium_retention_ghost_epoch_2_3,
+         debug.medium_retention_ghost_epoch_4_7,
+         debug.medium_retention_ghost_epoch_8p,
+         debug.medium_retention_model_decommit_n0,
+         debug.medium_retention_model_decommit_n1,
+         debug.medium_retention_model_decommit_n2,
+         debug.medium_retention_model_decommit_n3,
+         debug.medium_retention_model_decommit_n4,
+         debug.medium_retention_model_refault_n0,
+         debug.medium_retention_model_refault_n1,
+         debug.medium_retention_model_refault_n2,
+         debug.medium_retention_model_refault_n3,
+         debug.medium_retention_model_refault_n4);
+
   size_t medium_collect_seen =
       debug.medium_remote_collect_slot_count +
       debug.medium_remote_collect_reject_count;

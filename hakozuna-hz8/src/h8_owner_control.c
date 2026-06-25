@@ -28,6 +28,7 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
     owner->medium_warm_shadow2[i][0] = NULL;
     owner->medium_warm_shadow2[i][1] = NULL;
   }
+  h8_medium_retention_shadow_owner_init(owner);
 #endif
   atomic_store_explicit(&owner->pending_head, NULL, memory_order_relaxed);
   atomic_store_explicit(&owner->pending_span_count, 0, memory_order_relaxed);
