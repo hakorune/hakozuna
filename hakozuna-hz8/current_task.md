@@ -463,7 +463,8 @@ next measurement lanes:
 
               N0 reproduction:
                 sum(madvise) == sum(model_decommit_n0) == 176,235
-                current-policy model is usable as first-order signal
+                hook coverage is good, but this does not prove that N1..N4
+                are exact counterfactual policies
 
               outliers:
                 max minor_faults 544,073
@@ -482,11 +483,51 @@ next measurement lanes:
               decision:
                 raw depth2: NO-GO
                 depth3/4 fixed MRU: weak as standalone fix
-                next behavior should be true 2Q/probation or broader
-                purge/clock retention, not fixed-depth MRU
+                do not move to behavior yet
+
+          MediumRetentionExactCap2QShadow-L3:
+            next
+
+            release behavior unchanged
+
+            goal:
+              run independent exact-cap policy simulators, not post-hoc
+              filtering of actual decommit events
+
+            models:
+              M0:
+                current first-come global budget
+              M1:
+                second-touch 2Q, protected max 1 run / owner / class
+              M2:
+                second-touch 2Q, protected max 2 runs / owner / class
+              Mclock:
+                exact-cap probation CLOCK / second chance
+
+            per-model state:
+              resident / decommitted
+              protected / probation
+              byte charge
+              victim selection
+              promotion / demotion
+              decommit
+              later allocation refault
+              owner exit drain
+
+            baseline acceptance:
+              M0 budget_reject == actual budget_reject
+              M0 decommit == actual madvise
+              M0 resident bytes == actual resident bytes
+              M0 resident peak == actual resident peak
+              M0 ghost reuse == actual decommitted-run reuse
+              per-event decision mismatch == 0
+
+            promotion evidence:
+              choose exactly one behavior only if M1/M2/Mclock predicts
+              material outlier reduction within the existing retention cap
 
           MediumOwnerClassProtected2Q-L1:
-            behavior candidate after the causal shadow
+            likely behavior candidate after exact-cap shadow
 
             tiers:
               ACTIVE_LIVE:
@@ -503,6 +544,15 @@ next measurement lanes:
               a run promoted to PROTECTED only after reuse evidence
               PROTECTED eviction demotes to PROBATION instead of immediately
               decommitting the victim
+
+            promotion gate:
+              fresh direct R30 high-fault outlier <= 1/30
+              fresh preload R30 high-fault outlier <= 1/30
+              p25 >= median * 0.90
+              p95 minor faults baseline reduction >= 75%
+              worst budget_reject / madvise baseline reduction >= 90%
+              median throughput regression <= 2%
+              post RSS no material regression
 
           Chunk/purge architecture:
             reopen only if fixed-depth/2Q retention cannot explain or reduce

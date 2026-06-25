@@ -203,37 +203,48 @@ next behavior:
   first run a causal shadow that accounts for victim-side future reuse
 ```
 
-Next retention-stability box:
+Retention-stability shadow:
 
 ```text
 MediumRetentionCausalStackShadow-L2:
   implemented; release behavior unchanged
 
-  per owner/class:
-    empty_epoch, recent distinct empty-run stack K ~= 8
-    ghost records: decommit reason, epoch, and stack distance
+  output:
+    medium_retention_causal
 
-  on reuse:
-    victim reuse distance 1 / 2 / 3 / 4 / 5+
-    empty epochs until reuse 0..1 / 2..3 / 4..7 / 8+
-    reason: budget reject / hypothetical warm eviction / cold decommit /
-      owner exit
+  result:
+    N0 decommit matched actual madvise count
+    N1..N4 were post-hoc filters, not exact counterfactual policies
 
-  counterfactual models:
-    N=0 current policy, N=1..4 protected depth, protected 2Q
-    exact byte cap and explicit victim selection
-
-  self-check:
-    N=0 must reproduce actual budget_reject, madvise, and resident peak
-    closely enough before N>0 predictions are trusted
-
-model interpretation:
-  reported as medium_retention_causal
-  model_decommit/refault N=0 is current-policy reproduction
-  N=1..4 predict ghost refaults remaining if pre-distance <= N stays resident
+  decision: raw depth2/3/4 MRU HOLD; exact-cap simulation first
 ```
 
-Likely behavior candidate after the causal shadow:
+Next box:
+
+```text
+MediumRetentionExactCap2QShadow-L3:
+  release behavior unchanged
+
+  models:
+    M0 current first-come global budget
+    M1 second-touch 2Q, protected max 1 run / owner / class
+    M2 second-touch 2Q, protected max 2 runs / owner / class
+    Mclock exact-cap probation CLOCK / second chance
+
+  simulate independently:
+    resident/decommitted, protected/probation, byte charge
+    victim selection, promotion/demotion, owner-exit drain
+
+  baseline acceptance:
+    M0 budget_reject/decommit/resident bytes/peak/ghost reuse match actual
+    per-event decision mismatch is zero
+
+  promotion:
+    choose one behavior only if exact-cap M1/M2/Mclock predicts material
+    outlier reduction inside the current retention cap
+```
+
+Likely behavior candidate after exact-cap shadow:
 
 ```text
 MediumOwnerClassProtected2Q-L1:
@@ -247,26 +258,15 @@ admission/eviction:
   evicted PROTECTED demotes to PROBATION; only cold PROBATION decommits
 
 RSS cap:
-  keep the current effective empty-retention bound:
-    active empty LIVE ~= 20MiB
-    global empty budget ~= 64MiB
-    total ~= 84MiB
-
-  one depth-2 split candidate:
-    active ~= 20MiB
-    protected ~= 40MiB
-    probation/overflow ~= 24MiB
+  keep current effective bound, about 84MiB:
+    active ~=20MiB, protected ~=40MiB, probation/overflow ~=24MiB
 ```
 
 MediumRun-v1 RC stance:
 
 ```text
-protocol / geometry / identity / lifecycle:
-  RC can proceed
-
-retention outliers:
-  v1.1 retention-stability lane
-  not a remote correctness or median performance blocker
+protocol/geometry/lifecycle RC can proceed
+medium-r50 stable default promotion remains HOLD until retention gate passes
 ```
 
 Recorded candidate outcomes:
