@@ -209,6 +209,17 @@ Required answer:
   correct next step is RC/matrix documentation only.
 ```
 
+Implemented closeout support:
+
+```text
+MediumRunV1RC1RetentionCloseout-L1:
+  behavior unchanged
+  make medium-retention-closeout
+  fixed fresh-process direct/preload R30 diagnostic for medium r50
+  summarizes p25/min, p95/max minor faults, post/peak RSS, and outlier count
+  RC1 diagnostic only; stable-default blocker remains outlier-free retention
+```
+
 Current route shadow:
 
 ```text

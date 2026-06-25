@@ -200,6 +200,14 @@ current default:
   MediumRun-v1 RC1 protocol / geometry
   plus post-RC1 local code-shape additions above
 
+retention closeout:
+  make medium-retention-closeout
+  runs direct/preload fresh-process medium_interleaved_remote50 R30
+  reports outlier count using:
+    minor_faults > max(median_faults * 8, 100000)
+  diagnostic only for RC1
+  blocker for stable-default promotion
+
 same-run allocator matrix:
   recorded in docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
 
