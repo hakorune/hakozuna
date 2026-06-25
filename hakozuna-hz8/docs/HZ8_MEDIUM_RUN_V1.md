@@ -286,6 +286,49 @@ MediumBudgetRejectMadvFreeEvidence-L1:
     not a default policy because immediate RSS behavior changes materially
 ```
 
+Bounded lazy purge evidence:
+
+```text
+MediumBudgetRejectLazyPurge-L1:
+  implemented as build-time candidate only
+  default behavior remains RC1 unless promotion gates pass
+
+  build:
+    make bench-release-mediumlazy preload-mediumlazy
+    make medium-retention-closeout-lazy
+
+  data:
+    16MiB:
+      bench_results/medium_lazy_closeout_20260625T102457Z/
+    64MiB:
+      bench_results/medium_lazy64_closeout_20260625T102543Z/
+      bench_results/medium_lazy64_repeat_20260625T102617Z/
+    128MiB:
+      bench_results/medium_lazy128_closeout_20260625T102649Z/
+
+  result:
+    16MiB:
+      direct outliers 3/30
+      preload outliers 2/30
+      NO-GO
+    64MiB:
+      direct outliers 0/30 in both R30 batches
+      preload outliers 2/30 then 1/30
+      HOLD
+    128MiB:
+      direct outliers 0/30
+      preload outliers 0/30
+      direct max minor faults 17,134
+      preload max minor faults 12,771
+      post RSS remained near RC1
+
+  decision:
+    128MiB fixed-cap lazy purge is a promotion candidate
+    it is preferable to MADV_FREE if it keeps post/peak RSS bounded while
+    removing the refault outliers
+    still requires full paired main/medium/small gates before defaulting
+```
+
 Likely behavior candidate after exact-cap shadow:
 
 ```text

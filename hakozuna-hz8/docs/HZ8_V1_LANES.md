@@ -347,6 +347,48 @@ MediumLazyPurgeShadow-L1:
     budget_reject 0
     lazy candidates 0
     zero gates clean
+
+MediumBudgetRejectLazyPurge-L1:
+  implemented as build-time candidate only
+  build macro:
+    H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE
+  candidate default cap:
+    128MiB
+  policy:
+    budget-reject owner-attached empty runs may stay resident in a bounded
+    lazy-purge pool
+    owner exit / detach / hard drain still uses MADV_DONTNEED
+    no runtime knob
+
+  cap comparison:
+    16MiB:
+      data=bench_results/medium_lazy_closeout_20260625T102457Z/
+      direct outliers 3/30
+      preload outliers 2/30
+      decision: NO-GO
+    64MiB:
+      data=bench_results/medium_lazy64_closeout_20260625T102543Z/
+      data=bench_results/medium_lazy64_repeat_20260625T102617Z/
+      direct outliers 0/30 in both batches
+      preload outliers 2/30 then 1/30
+      decision: HOLD, preload still not clean enough
+    128MiB:
+      data=bench_results/medium_lazy128_closeout_20260625T102649Z/
+      direct outliers 0/30
+      preload outliers 0/30
+      direct p95 faults 14,430
+      preload p95 faults 12,767
+      post RSS unchanged around 3.5MiB..3.6MiB
+      median peak RSS remains around the RC1 range for this workload
+      decision: promotion candidate
+
+  interpretation:
+    confirms the stable-default blocker is a DONTNEED/refault retention
+    policy issue, not medium remote protocol or chunk placement
+    128MiB cap is the first bounded lazy candidate that closes both direct
+    and preload R30 in the observed workload
+    default promotion still requires paired main/medium/small gates and a
+    final fresh-process repeat
 ```
 
 Current route shadow:

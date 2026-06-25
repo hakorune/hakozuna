@@ -138,6 +138,32 @@ next behavior only if shadow supports it:
     bounded lazy queue for budget-reject owner-attached empty runs
     owner exit / detach remains hard MADV_DONTNEED drain
     fixed cap, no OS-dependent MADV_FREE default
+    initial candidate:
+      build-time macro H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE
+      candidate default cap 128MiB
+      no runtime knob
+      promotion requires fresh direct/preload R30 outlier improvement
+      post RSS and peak RSS must stay inside explicit cap expectations
+    cap evidence:
+      16MiB:
+        data=bench_results/medium_lazy_closeout_20260625T102457Z/
+        direct outliers 3/30
+        preload outliers 2/30
+        decision: NO-GO
+      64MiB:
+        data=bench_results/medium_lazy64_closeout_20260625T102543Z/
+        data=bench_results/medium_lazy64_repeat_20260625T102617Z/
+        direct outliers 0/30 in both batches
+        preload outliers 2/30 then 1/30
+        decision: HOLD, preload not clean enough
+      128MiB:
+        data=bench_results/medium_lazy128_closeout_20260625T102649Z/
+        direct outliers 0/30
+        preload outliers 0/30
+        direct max faults 17,134
+        preload max faults 12,771
+        post RSS unchanged
+        decision: candidate for promotion gate
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1

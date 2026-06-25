@@ -88,6 +88,7 @@ typedef struct H8MediumRun {
   uint8_t payload_state;
   bool resident_charge;
   bool active_live_empty_charge;
+  bool lazy_purge_charge;
   bool owner_attached;
   bool payload_chunk_backed;
   void* meta_alloc_base;

@@ -270,6 +270,31 @@ if improving medium r50 stability:
   interpretation:
     DONTNEED/refault is the outlier source
     MADV_FREE is not default because peak RSS rises materially
+  bounded lazy purge evidence is available through:
+    make medium-retention-closeout-lazy
+  evidence result:
+    16MiB:
+      bench_results/medium_lazy_closeout_20260625T102457Z/
+      direct outliers 3/30
+      preload outliers 2/30
+      NO-GO
+    64MiB:
+      bench_results/medium_lazy64_closeout_20260625T102543Z/
+      bench_results/medium_lazy64_repeat_20260625T102617Z/
+      direct outliers 0/30 in both batches
+      preload outliers 2/30 then 1/30
+      HOLD
+    128MiB:
+      bench_results/medium_lazy128_closeout_20260625T102649Z/
+      direct outliers 0/30
+      preload outliers 0/30
+      max faults 17,134 direct / 12,771 preload
+      post RSS remained about 3.5MiB..3.6MiB
+  interpretation:
+    128MiB bounded lazy purge is the first non-MADV_FREE candidate that
+    closes both direct and preload retention closeout in the observed R30
+    run
+    RC1 protocol / geometry remains unchanged until full promotion gates pass
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane
