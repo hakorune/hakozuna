@@ -184,6 +184,31 @@ if objective is main stability / first-touch:
   fault-outlier attribution are solved
 ```
 
+Next design consultation:
+
+```text
+Current default:
+  keep MediumRun-v1 RC1 protocol / geometry
+
+Closed candidates:
+  raw owner/class 2Q retention behavior
+  owner lease redesign
+  medium remote queue / qstate micro-tuning
+
+Open design question:
+  choose the next v1.1 lane without disturbing the RC1 default
+
+Candidate lanes:
+  A. accept medium-r50 fresh-process retention outliers as known weakness
+  B. design a lower-cost retention event path with stronger prediction first
+  C. reopen ChunkArena only with medium-r50 no-regression plan
+  D. reopen SizePolicy-v1 for rounded-byte / peak-RSS improvement
+
+Required answer:
+  decide whether B/C/D has enough evidence to implement now, or whether the
+  correct next step is RC/matrix documentation only.
+```
+
 Current route shadow:
 
 ```text
