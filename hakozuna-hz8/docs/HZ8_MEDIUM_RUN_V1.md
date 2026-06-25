@@ -237,6 +237,20 @@ MediumRetentionSerializedDebugShadow-L1:
     M0 acceptance closed
     M1/M2/Mclock benefit not material
     2Q behavior remains HOLD
+
+MediumOwnerClass2QRetention-L1 direct behavior attempt:
+  tried after exact-cap shadow as a narrow runtime 2Q/probation policy
+
+  result:
+    release medium r50 quick did not complete in practical time
+    O(1) probation unlink removed the obvious list-walk tax but the row still
+    exceeded 60s for a shortened R3 probe
+
+  decision:
+    NO-GO in this shape
+    reverted before commit
+    do not retry raw runtime 2Q without a cheaper event path or stronger
+    counterfactual benefit
 ```
 
 Likely behavior candidate after exact-cap shadow:
@@ -251,6 +265,10 @@ MediumOwnerClassProtected2Q-L1:
 policy:
   first empty enters PROBATION; second-touch may promote to PROTECTED
   keep current effective cap, about 84MiB
+
+status:
+  design reference only
+  not a next implementation target after the direct behavior NO-GO
 ```
 
 MediumRun-v1 RC stance:

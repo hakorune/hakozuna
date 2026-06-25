@@ -164,10 +164,17 @@ if objective is medium r50 stability:
       madvise 574
       madvise_ms about 5ms
   budget32 sweep does not materially solve the outliers
-  next step is MediumR50RetentionPolicy-L1:
-    target the remote-collected empty churn directly while preserving owner-exit
-    hard drain and post-RSS recovery
-  do not reopen the medium remote queue / lease protocol before this evidence
+  retention shadows are recorded in docs/HZ8_MEDIUM_RUN_V1.md:
+    causal shadow
+    exact-cap 2Q shadow
+    serialized exact-cap victim shadow
+  direct runtime 2Q/probation behavior was attempted and reverted:
+    release quick did not complete in practical time
+    O(1) probation unlink was still not enough
+  next step is not another raw retention behavior:
+    either accept the outlier as a v1.1 known weakness
+    or design a lower-cost retention event path with stronger predicted benefit
+  do not reopen the medium remote queue / lease protocol before new evidence
 
 if objective is RSS / rounded bytes:
   upper48 remains evidence-only unless frozen small gates are reworked
