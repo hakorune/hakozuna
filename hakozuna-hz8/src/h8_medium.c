@@ -286,6 +286,17 @@ void h8_medium_available_shadow_after_mask_change(H8MediumRun* run) {
   }
 }
 
+void h8_medium_available_shadow_after_mask_change_ctx(H8MediumRun* run,
+                                                      H8ThreadCtx* ctx) {
+  if (ctx && run && run->class_id < H8_MEDIUM_CLASS_COUNT &&
+      ctx->owner && ctx->active_medium_runs[run->class_id] == run &&
+      h8_medium_run_owned_by_ctx(run, ctx)) {
+    h8_medium_available_shadow_remove(ctx->owner, run);
+    return;
+  }
+  h8_medium_available_shadow_after_mask_change(run);
+}
+
 static void h8_medium_available_shadow_probe(H8ThreadCtx* ctx,
                                              uint32_t class_id) {
   if (!ctx || !ctx->owner || class_id >= H8_MEDIUM_CLASS_COUNT) {
@@ -296,6 +307,12 @@ static void h8_medium_available_shadow_probe(H8ThreadCtx* ctx,
     return;
   }
   H8_DEBUG_INC(medium_available_head_attempt);
+  if (ctx->active_medium_runs[class_id] == run) {
+    H8_DEBUG_INC(medium_available_active_indexed);
+    h8_medium_available_shadow_remove(ctx->owner, run);
+    H8_DEBUG_INC(medium_available_head_unusable);
+    return;
+  }
   if (!h8_medium_run_owned_by_ctx(run, ctx)) {
     H8_DEBUG_INC(medium_available_owner_mismatch);
     H8_DEBUG_INC(medium_available_head_unusable);
@@ -407,9 +424,21 @@ static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
   if (!run) {
     return NULL;
   }
+  if (ctx->active_medium_runs[class_id] == run) {
+    H8_DEBUG_INC(medium_available_active_indexed);
+    h8_medium_available_shadow_remove(ctx->owner, run);
+    return NULL;
+  }
   h8_medium_debug_writer_enter(run, ctx->owner,
                                H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t section_start = h8_medium_now_ns();
+#endif
   h8_medium_lock_run(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_available_hit_lock_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+#endif
   if (!h8_medium_run_owned_by_ctx(run, ctx) ||
       !h8_medium_run_usable_locked(run, class_id)) {
     h8_medium_unlock_run(run);
@@ -422,12 +451,32 @@ static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
                             &h8g.medium_run_reuse_owner_class_16k,
                             &h8g.medium_run_reuse_owner_class_32k,
                             &h8g.medium_run_reuse_owner_class_64k);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  section_start = h8_medium_now_ns();
+#endif
   void* ptr = h8_medium_run_alloc_local_scaffold(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_available_hit_alloc_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  section_start = h8_medium_now_ns();
+#endif
   h8_medium_set_active_run(ctx, class_id, run);
   h8_medium_record_alloc_run(ctx, run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_available_hit_active_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+#endif
   h8_medium_unlock_run(run);
   h8_medium_debug_writer_exit(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  section_start = h8_medium_now_ns();
+#endif
   h8_medium_collect_owner_pending_periodic_owner_list(ctx);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_available_hit_collect_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  H8_DEBUG_INC(medium_available_hit_reuse);
+#endif
   return ptr;
 }
 #else

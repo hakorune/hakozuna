@@ -412,7 +412,7 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_refill_candidate_hit,
          debug.medium_refill_candidate_owner_mismatch,
          debug.medium_refill_candidate_unusable);
-  printf("medium_available_shadow add=%zu remove=%zu head_attempt=%zu head_hit=%zu head_unusable=%zu owner_hit_without_available=%zu duplicate=%zu owner_mismatch=%zu class_mismatch=%zu indexed_full=%zu indexed_detached=%zu indexed_nonactive=%zu exit_nonempty=%zu\n",
+  printf("medium_available_shadow add=%zu remove=%zu head_attempt=%zu head_hit=%zu head_unusable=%zu owner_hit_without_available=%zu duplicate=%zu owner_mismatch=%zu class_mismatch=%zu indexed_full=%zu indexed_detached=%zu indexed_nonactive=%zu active_indexed=%zu exit_nonempty=%zu\n",
          debug.medium_available_add, debug.medium_available_remove,
          debug.medium_available_head_attempt,
          debug.medium_available_head_hit,
@@ -424,7 +424,30 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_available_indexed_full,
          debug.medium_available_indexed_detached,
          debug.medium_available_indexed_nonactive,
+         debug.medium_available_active_indexed,
          debug.medium_available_exit_nonempty);
+  printf("medium_available_hit_cost reuse=%zu lock_ms=%.3f alloc_ms=%.3f active_ms=%.3f collect_ms=%.3f ns_per_reuse=[%.1f,%.1f,%.1f,%.1f]\n",
+         debug.medium_available_hit_reuse,
+         debug.medium_available_hit_lock_ns / 1000000.0,
+         debug.medium_available_hit_alloc_ns / 1000000.0,
+         debug.medium_available_hit_active_ns / 1000000.0,
+         debug.medium_available_hit_collect_ns / 1000000.0,
+         debug.medium_available_hit_reuse
+             ? (double)debug.medium_available_hit_lock_ns /
+                   (double)debug.medium_available_hit_reuse
+             : 0.0,
+         debug.medium_available_hit_reuse
+             ? (double)debug.medium_available_hit_alloc_ns /
+                   (double)debug.medium_available_hit_reuse
+             : 0.0,
+         debug.medium_available_hit_reuse
+             ? (double)debug.medium_available_hit_active_ns /
+                   (double)debug.medium_available_hit_reuse
+             : 0.0,
+         debug.medium_available_hit_reuse
+             ? (double)debug.medium_available_hit_collect_ns /
+                   (double)debug.medium_available_hit_reuse
+             : 0.0);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

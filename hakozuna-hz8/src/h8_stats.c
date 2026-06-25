@@ -365,8 +365,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_available_indexed_detached, memory_order_acquire);
   out->medium_available_indexed_nonactive = atomic_load_explicit(
       &h8g.medium_available_indexed_nonactive, memory_order_acquire);
+  out->medium_available_active_indexed = atomic_load_explicit(
+      &h8g.medium_available_active_indexed, memory_order_acquire);
   out->medium_available_exit_nonempty = atomic_load_explicit(
       &h8g.medium_available_exit_nonempty, memory_order_acquire);
+  out->medium_available_hit_reuse = atomic_load_explicit(
+      &h8g.medium_available_hit_reuse, memory_order_acquire);
+  out->medium_available_hit_lock_ns = atomic_load_explicit(
+      &h8g.medium_available_hit_lock_ns, memory_order_acquire);
+  out->medium_available_hit_alloc_ns = atomic_load_explicit(
+      &h8g.medium_available_hit_alloc_ns, memory_order_acquire);
+  out->medium_available_hit_active_ns = atomic_load_explicit(
+      &h8g.medium_available_hit_active_ns, memory_order_acquire);
+  out->medium_available_hit_collect_ns = atomic_load_explicit(
+      &h8g.medium_available_hit_collect_ns, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

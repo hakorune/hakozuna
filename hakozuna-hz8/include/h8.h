@@ -232,7 +232,13 @@ typedef struct H8DebugStats {
   size_t medium_available_indexed_full;
   size_t medium_available_indexed_detached;
   size_t medium_available_indexed_nonactive;
+  size_t medium_available_active_indexed;
   size_t medium_available_exit_nonempty;
+  size_t medium_available_hit_reuse;
+  size_t medium_available_hit_lock_ns;
+  size_t medium_available_hit_alloc_ns;
+  size_t medium_available_hit_active_ns;
+  size_t medium_available_hit_collect_ns;
   size_t medium_run_reuse_active_class_8k;
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;

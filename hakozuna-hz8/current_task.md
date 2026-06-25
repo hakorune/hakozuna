@@ -282,6 +282,52 @@ latest local-leaf probe:
       owner-list discovery is real, but exact available index does not clear
       the medium_r50 +5% promotion gate
 
+  MediumAvailableIndexActiveInvariant-L1:
+    status:
+      implemented
+    scope:
+      available index is explicitly non-active
+      debug/candidate path rejects active-indexed run
+      active_indexed counter is a hard zero gate for future promotion
+    data:
+      bench_results/20260626T082044_available_index_invariant_ab/
+    paired R10 after invariant closure:
+      medium_r50 median ratio 0.989
+      medium_r50 p25 ratio 0.982
+      main_r90 median ratio 1.144
+      main_r90 p25 ratio 1.167
+      medium_local0 median ratio 1.018
+      medium_local0 p25 ratio 1.053
+    decision:
+      active invariant is correct
+      available-index remains HOLD because medium_r50 does not improve
+
+  MediumAvailableHitCostAttribution-L1:
+    status:
+      implemented as debug-only counters on the available-index target
+    scope:
+      split available-hit cost into:
+        lock acquire
+        slot allocation mutation
+        set_active / record active bookkeeping
+        periodic owner collect call
+    goal:
+      identify whether post-discovery cost has a >=5% medium_r50 budget before
+      another behavior candidate
+    debug read:
+      data=ad-hoc h8_bench_mediumavailable medium_r50 T=16 30k-iters
+      available_hit_reuse 89,635
+      active_indexed 0
+      owner_hit_without_available 0
+      ns_per_reuse:
+        lock 105.6
+        alloc 46,357.6
+        active 85.7
+        collect 7,410.7
+      caveat:
+        debug timing overhead is large, but residual is post-discovery slot
+        allocation / live-on-alloc path, not owner-list scan
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

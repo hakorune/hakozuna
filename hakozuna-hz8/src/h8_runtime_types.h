@@ -377,7 +377,13 @@ typedef struct H8Global {
   atomic_size_t medium_available_indexed_full;
   atomic_size_t medium_available_indexed_detached;
   atomic_size_t medium_available_indexed_nonactive;
+  atomic_size_t medium_available_active_indexed;
   atomic_size_t medium_available_exit_nonempty;
+  atomic_size_t medium_available_hit_reuse;
+  atomic_size_t medium_available_hit_lock_ns;
+  atomic_size_t medium_available_hit_alloc_ns;
+  atomic_size_t medium_available_hit_active_ns;
+  atomic_size_t medium_available_hit_collect_ns;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

@@ -306,6 +306,44 @@ MediumOwnerAvailableRunIndex-L1:
     available index removes most owner-list scans, but medium_r50 does not
     clear the +5% behavior promotion gate
 
+MediumAvailableIndexActiveInvariant-L1:
+  status:
+    implemented
+  scope:
+    available index is explicitly non-active
+    debug/candidate path rejects active-indexed runs
+    active_indexed is a hard zero gate before any promotion
+  paired R10 after invariant closure:
+    data=bench_results/20260626T082044_available_index_invariant_ab/
+    medium_r50 ratio:
+      median 0.989
+      p25 0.982
+    main_r90 ratio:
+      median 1.144
+      p25 1.167
+    medium_local0 ratio:
+      median 1.018
+      p25 1.053
+  decision:
+    invariant is retained
+    available-index remains HOLD because it does not improve medium_r50
+
+MediumAvailableHitCostAttribution-L1:
+  status:
+    implemented as debug-only counters on the available-index target
+  output:
+    medium_available_hit_cost
+      lock_ms
+      alloc_ms
+      active_ms
+      collect_ms
+      ns_per_reuse
+  read:
+    next behavior candidate requires one residual component with plausible
+    >=5% medium_r50 budget
+    debug timing points to post-discovery allocation / live-on-alloc cost
+    rather than owner-list scan itself
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

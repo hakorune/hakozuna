@@ -215,6 +215,8 @@ void h8_medium_available_shadow_attach(H8OwnerRecord* owner,
 void h8_medium_available_shadow_remove(H8OwnerRecord* owner,
                                        H8MediumRun* run);
 void h8_medium_available_shadow_after_mask_change(H8MediumRun* run);
+void h8_medium_available_shadow_after_mask_change_ctx(H8MediumRun* run,
+                                                      H8ThreadCtx* ctx);
 #else
 #define h8_medium_available_shadow_attach(owner, run) \
   do {                                                \
@@ -229,6 +231,11 @@ void h8_medium_available_shadow_after_mask_change(H8MediumRun* run);
 #define h8_medium_available_shadow_after_mask_change(run) \
   do {                                                    \
     (void)(run);                                          \
+  } while (0)
+#define h8_medium_available_shadow_after_mask_change_ctx(run, ctx) \
+  do {                                                             \
+    (void)(run);                                                   \
+    (void)(ctx);                                                   \
   } while (0)
 #endif
 void h8_medium_release_empty_payload(H8MediumRun* run);
