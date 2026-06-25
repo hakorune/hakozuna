@@ -129,6 +129,42 @@ latest implementation:
       exact-cap victim model is now observable
       2Q behavior still HOLD; candidate benefit is not material
 
+MediumRunResidualReaudit-L1:
+  added script:
+    scripts/run_medium_residual_reaudit.sh
+
+  latest release data:
+    data=bench_results/20260625T_medium_residual_reaudit_medium_v1_gate/
+
+    medium_interleaved_remote50:
+      median 33.96M
+      min 3.69M
+      minor_faults median 9,829
+      minor_faults max 591,569
+
+    main_interleaved_remote90:
+      median 25.73M
+      min 15.75M
+      minor_faults max 12,456
+
+    medium_local0:
+      median 132.33M
+      minor_faults stable
+
+  latest debug attribution:
+    data=bench_results/20260625T_medium_residual_reaudit_debug/
+
+    medium_interleaved_remote50:
+      budget_reject 30,093
+      collect_ms 211,313
+      collect_empty_ms 210,151
+      l3_mismatch 0
+      M2 decommit/refault improved about one third in debug attribution
+
+  next:
+    behavior work should target medium r50 first-touch/refault stability
+    do not reopen owner lease or queue protocol from this data
+
 source hygiene:
   bench report output is split into bench/h8_bench_report.c
   medium slot identity/local slot mutation primitives are split into
