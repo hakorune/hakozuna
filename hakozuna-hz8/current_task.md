@@ -129,6 +129,27 @@ latest local-leaf probe:
     decision:
       keep as narrow code-shape cleanup
 
+  latest default gate snapshot:
+    data=bench_results/20260625T201421Z_medium_v1_gate/
+    behavior_sha=0f0a9153
+    medium_local0:
+      median 137.54M
+      steady median 150.87M
+      minor faults median 328
+    medium_interleaved_remote50:
+      median 21.55M
+      steady median 26.11M
+      minor faults median 16,920
+    main_interleaved_remote90:
+      median 24.11M
+      steady median 26.37M
+      minor faults median 8,888
+    read:
+      local-free-cache and slot pointer cleanup do not explain the remaining
+      gap
+      next performance work should focus medium interleaved r50 path, not
+      same-owner local directory lookup
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD
