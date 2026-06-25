@@ -230,8 +230,7 @@ retention closeout:
   runs direct/preload fresh-process medium_interleaved_remote50 R30
   reports outlier count using:
     minor_faults > max(median_faults * 8, 100000)
-  diagnostic only for RC1
-  blocker for stable-default promotion
+  RC1 diagnostic; superseded by lazy128 v1.1 closeout
 
 retention closeout result:
   bench_results/medium_retention_closeout_20260625T075433Z/
@@ -304,7 +303,7 @@ if improving medium r50 stability:
     not reproduce a regression
   decision:
     lazy128 is the current stable-default promotion candidate
-    run one fresh repeat batch before replacing RC1 default behavior
+    this was superseded by the longer fresh alternating closeout
   fresh repeat:
     data=bench_results/20260625T121546Z_medium_chunk_paired_gate/
     medium r50 ratio 1.037
@@ -328,8 +327,24 @@ if improving medium r50 stability:
     small local ratio 0.948
   semantic decision:
     lifecycle contract is now coherent
-    default promotion remains HOLD because paired performance is borderline
-    below the 0.98 medium-r50 gate
+    this intermediate HOLD was superseded by the final lazy128 closeout
+
+  final v1.1 lazy128 closeout:
+    data=bench_results/20260625T181810Z_medium_chunk_paired_gate/
+    medium r50 median ratio 0.993
+    main r90 median ratio 0.982
+    small local median ratio 1.162
+    small remote90 median ratio 1.017
+    data=bench_results/medium_retention_closeout_20260625T183955Z/
+    direct outliers 0/30
+    preload outliers 0/30
+    data=bench_results/medium_lazy_saturation_20260625T184159Z/
+    runtime lazy reservation reached 128MiB cap
+    normal resident budget stayed at 64MiB
+    owner exit drained lazy charge
+  final decision:
+    short paired R10 was superseded by longer fresh alternating gates
+    lazy128 is promoted as MediumRun-v1.1 default
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane

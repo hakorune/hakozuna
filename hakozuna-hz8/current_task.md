@@ -50,6 +50,12 @@ medium residency:
   ctx-aware collector active-empty-live retention
   owner exit is the hard drain point
 
+medium residency candidate:
+  lazy128 persistent owner-attached reservation
+  budget-reject empty runs may stay resident under a 128MiB lazy cap
+  conservative retained-empty overhead contract is about 212MiB
+  promoted as MediumRun-v1.1 default after longer fresh alternating gates
+
 medium remote:
   owner-attached remote free publishes to owner queue
   pending bit is remote claim authority
@@ -101,13 +107,14 @@ bench_results/20260624T200933Z_medium_codeshape/
 ```text
 current lane:
   MediumRun-v1 protocol/geometry is RC1-frozen
-  stable-default retention remains HOLD because fresh-process medium r50
-  can still produce high-fault outliers
-  ChunkArena does not close the retention outlier
+  lazy128 residency is the MediumRun-v1.1 default
+  fresh-process medium r50 outliers are closed in the latest direct/preload R30
+  short paired R10 regressions were not reproduced by longer fresh alternating
+  medium/main/small gates
+  ChunkArena remains HOLD as default
 
 next implementation:
-  MediumLazyPurgeShadow-L1
-    behavior unchanged
+  post-lazy128 default closeout / docs / optional same-run matrix
     model budget-reject runs as lazy-purge candidates
     count later reuse that would have avoided MADV_DONTNEED refault
     report conservative outstanding bytes / peak
@@ -206,7 +213,8 @@ next behavior only if shadow supports it:
         preload max faults 15,884
       decision:
         lazy128 passes repeat gate
-        ready for default promotion review
+        was ready for promotion review at this point
+        superseded by later paired R10 failures; default remains HOLD
     semantic closure:
       MediumLazyPurgeSemanticClosure-L1
       decision from design review:
@@ -240,6 +248,101 @@ next behavior only if shadow supports it:
         keep lazy128 semantic closure as candidate
         HOLD default promotion until a lower-overhead persistent reservation
         or an explicit v1.1 tradeoff gate is accepted
+      cost audit:
+        MediumLazyReservationCostAudit-L1
+        status: implemented debug/audit counters only
+        data=bench_results/medium_lazy_cost_audit_20260625T173626Z/
+        medium r50 debug R3:
+          lazy acquire 15
+          lazy reuse 0
+          lazy keep_live 0
+          lazy empty_fast 0
+          lazy drop 15
+          lazy drop_detach 0
+          lazy drop_destroy 0
+          lazy normal_budget_skip 0
+          lazy cap_reject 0
+          lazy cas_retry 0
+        read:
+          this short run shows no lazy CAS contention and no cap pressure
+          budget rejects were converted to lazy reservations one-for-one
+          all lazy reservations were released by generic cleanup paths
+          continue using R30 / paired gates for promotion decisions
+      paired after audit:
+        data=bench_results/20260625T181810Z_medium_chunk_paired_gate/
+        medium_interleaved_remote50 median ratio 0.993
+        medium_interleaved_remote50 p25 ratio 1.140
+        main_interleaved_remote90 median ratio 0.982
+        main_interleaved_remote90 p25 ratio 1.122
+        small_guard_local0 median ratio 1.162
+        small_interleaved_remote90 median ratio 1.017
+        read:
+          lazy128 cleared the paired median gate in this batch
+          p25 improved on medium and main rows
+          remaining promotion blockers are saturation RSS contract and a
+          final fresh-process stability confirmation, not this cost audit
+      final stability:
+        data=bench_results/medium_retention_closeout_20260625T183955Z/
+        direct R30 outliers 0/30
+        direct fault median 11,096
+        direct fault p95 18,660
+        direct fault max 20,647
+        preload R30 outliers 0/30
+        preload fault median 10,596
+        preload fault p95 17,826
+        preload fault max 22,998
+      saturation:
+        test=medium-lazy-saturation
+        data=bench_results/medium_lazy_saturation_20260625T184159Z/
+        live lazy bytes 134,217,728
+        lazy shadow peak 134,348,800
+        normal resident bytes 67,108,864
+        active-live bytes 2,097,152
+        lazy acquire 1,024
+        lazy cap reject 2,544
+        lazy drop after owner exit 1,024
+        result:
+          lazy reservation cap held at 128MiB
+          normal resident cap held at 64MiB
+          active-live remained far below the 20MiB structural bound
+          all lazy/resident/active charges drained after worker exit
+      final read:
+        lazy128 semantic candidate cleared fresh direct/preload R30 stability
+        and saturation accounting
+        latest post-default paired R10 did not clear relative throughput:
+          bench_results/20260625T190352Z_medium_chunk_paired_gate/
+            medium r50 median ratio 0.972
+            main r90 median ratio 0.938
+          bench_results/20260625T190422Z_medium_chunk_paired_gate/
+            medium r50 median ratio 0.915
+            main r90 median ratio 0.990
+        follow-up:
+          short R10 result was treated as suspect because both baseline and
+          candidate showed large cold/outlier swings
+          a fresh-process alternating gate with longer runs was added
+        longer fresh alternating gates:
+          medium r50:
+            data=bench_results/20260626T_lazy128_medium_r50_fresh_alt_r10_i300k/
+            nolazy median 4.51M
+            lazy128 median 32.16M
+            median ratio 7.128
+            nolazy minor faults median 1,984,487
+            lazy128 minor faults median 21,581
+          main r90:
+            data=bench_results/20260626T_lazy128_main_r90_fresh_alt_r10_i300k/
+            median ratio 0.998
+            p25 ratio 1.077
+          small local:
+            data=bench_results/20260626T_lazy128_small_fresh_alt_r10_i300k/
+            median ratio 1.035
+            p25 ratio 1.057
+          small remote90:
+            data=bench_results/20260626T_lazy128_small_remote_fresh_alt_r20_i300k/
+            median ratio 1.047
+            p25 ratio 1.102
+        decision:
+          promote lazy128 as default residency
+          keep mediumnolazy target for RC1 comparison and future A/B
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1

@@ -88,6 +88,9 @@ static void h8_medium_lazy_purge_shadow_note_reuse(H8MediumRun* run) {
   if (run && run->debug_lazy_purge_candidate) {
     H8_DEBUG_INC(medium_lazy_purge_reuse);
   }
+  if (run && run->lazy_purge_charge) {
+    H8_DEBUG_INC(medium_lazy_charge_reuse);
+  }
 }
 #endif
 
@@ -103,6 +106,7 @@ void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run) {
     atomic_fetch_sub_explicit(&h8_medium_lazy_purge_bytes_runtime, bytes,
                               memory_order_acq_rel);
     run->lazy_purge_charge = false;
+    H8_DEBUG_INC(medium_lazy_charge_drop);
   }
 #endif
 }
@@ -306,6 +310,9 @@ void h8_medium_release_empty_payload(H8MediumRun* run) {
 #if defined(H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE)
 static bool h8_medium_try_lazy_purge_payload(H8MediumRun* run) {
   if (!run || run->lazy_purge_charge || !run->owner_attached) {
+    if (run && run->lazy_purge_charge) {
+      H8_DEBUG_INC(medium_lazy_charge_keep_live);
+    }
     return run && run->lazy_purge_charge;
   }
   size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
@@ -314,6 +321,7 @@ static bool h8_medium_try_lazy_purge_payload(H8MediumRun* run) {
   for (;;) {
     if (cur > H8_MEDIUM_LAZY_PURGE_BYTES ||
         bytes > H8_MEDIUM_LAZY_PURGE_BYTES - cur) {
+      H8_DEBUG_INC(medium_lazy_cap_reject);
       return false;
     }
     size_t next = cur + bytes;
@@ -321,11 +329,13 @@ static bool h8_medium_try_lazy_purge_payload(H8MediumRun* run) {
             &h8_medium_lazy_purge_bytes_runtime, &cur, next,
             memory_order_acq_rel, memory_order_relaxed)) {
       run->lazy_purge_charge = true;
+      H8_DEBUG_INC(medium_lazy_charge_acquire);
 #if defined(H8_ENABLE_DEBUG_STATS)
       h8_medium_lazy_purge_shadow_note_candidate(run);
 #endif
       return true;
     }
+    H8_DEBUG_INC(medium_lazy_cas_retry);
   }
 }
 #endif
@@ -453,6 +463,8 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
 #endif
 #if defined(H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE)
   if (run->lazy_purge_charge) {
+    H8_DEBUG_INC(medium_lazy_charge_empty_fast);
+    H8_DEBUG_INC(medium_lazy_normal_budget_skip);
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
     h8_medium_retention_debug_lock_release();
     return;

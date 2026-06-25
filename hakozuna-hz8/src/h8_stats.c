@@ -549,6 +549,26 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_lazy_purge_over_16m, memory_order_acquire);
   out->medium_lazy_purge_over_32m = atomic_load_explicit(
       &h8g.medium_lazy_purge_over_32m, memory_order_acquire);
+  out->medium_lazy_charge_acquire = atomic_load_explicit(
+      &h8g.medium_lazy_charge_acquire, memory_order_acquire);
+  out->medium_lazy_charge_reuse = atomic_load_explicit(
+      &h8g.medium_lazy_charge_reuse, memory_order_acquire);
+  out->medium_lazy_charge_keep_live = atomic_load_explicit(
+      &h8g.medium_lazy_charge_keep_live, memory_order_acquire);
+  out->medium_lazy_charge_empty_fast = atomic_load_explicit(
+      &h8g.medium_lazy_charge_empty_fast, memory_order_acquire);
+  out->medium_lazy_charge_drop = atomic_load_explicit(
+      &h8g.medium_lazy_charge_drop, memory_order_acquire);
+  out->medium_lazy_drop_detach = atomic_load_explicit(
+      &h8g.medium_lazy_drop_detach, memory_order_acquire);
+  out->medium_lazy_drop_destroy = atomic_load_explicit(
+      &h8g.medium_lazy_drop_destroy, memory_order_acquire);
+  out->medium_lazy_normal_budget_skip = atomic_load_explicit(
+      &h8g.medium_lazy_normal_budget_skip, memory_order_acquire);
+  out->medium_lazy_cap_reject = atomic_load_explicit(
+      &h8g.medium_lazy_cap_reject, memory_order_acquire);
+  out->medium_lazy_cas_retry = atomic_load_explicit(
+      &h8g.medium_lazy_cas_retry, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

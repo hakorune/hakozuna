@@ -95,6 +95,12 @@ identity:
 
 residency:
   empty run resident retention uses a fixed budget
+  v1.1 candidate lazy128 persistent reservation:
+    128MiB lazy reservation cap
+    owner-attached only
+    allocation does not release the reservation
+    owner detach / exit / destroy release it
+    promoted as default after longer fresh alternating gates
   TLS active empty runs may stay LIVE without budget charge
   owner-thread collect may keep the current active empty run LIVE
   owner exit is the hard drain point for retained and active-live payload
@@ -340,8 +346,8 @@ MediumBudgetRejectLazyPurge-L1:
       small local targeted repeats did not reproduce the initial noisy wall
       median regression
     decision:
-      lazy128 remains the strongest stable-default candidate
-      final default switch still needs one fresh repeat batch
+      lazy128 was the strongest stable-default candidate
+      this was superseded by longer fresh alternating gates
 
   fresh repeat:
     data:
@@ -354,8 +360,9 @@ MediumBudgetRejectLazyPurge-L1:
       small remote90 ratio 1.016
       direct/preload R30 outliers 0/30 and 0/30
     decision:
-      lazy128 passed the repeat gate and is ready for default promotion
-      review
+      lazy128 passed this repeat batch
+      later paired R10 batches did not clear relative throughput, so
+      default promotion remains HOLD
 
   semantic closure:
     data:
@@ -398,7 +405,7 @@ MediumRun-v1 RC stance:
 
 ```text
 protocol/geometry/lifecycle RC can proceed
-medium-r50 stable default promotion remains HOLD until retention gate passes
+lazy128 residency is the MediumRun-v1.1 default
 ```
 
 Recorded candidate outcomes:
@@ -444,7 +451,8 @@ mutation:
 
 empty run:
   payload retained within a fixed empty-resident budget
-  budget overflow or owner-detached empty transition decommits immediately
+  budget overflow may use lazy128 persistent owner-attached reservation
+  owner-detached empty transition decommits immediately
   metadata retained in global registry
 
 owner exit:

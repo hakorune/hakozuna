@@ -272,6 +272,9 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   h8_medium_unlock_global();
   if (run->base) {
     h8_medium_release_empty_payload(run);
+    if (run->lazy_purge_charge) {
+      H8_DEBUG_INC(medium_lazy_drop_destroy);
+    }
     h8_medium_lazy_purge_shadow_drop(run);
     h8_medium_payload_free(run->base,
                            run->run_size ? run->run_size
@@ -661,6 +664,9 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
         if (run->active_live_empty_charge) {
           H8_DEBUG_INC(medium_owner_exit_active_live_remaining);
         }
+      }
+      if (run->lazy_purge_charge) {
+        H8_DEBUG_INC(medium_lazy_drop_detach);
       }
       h8_medium_lazy_purge_shadow_drop(run);
       run->owner_attached = false;

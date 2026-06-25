@@ -462,6 +462,16 @@ typedef struct H8Global {
   atomic_size_t medium_lazy_purge_peak;
   atomic_size_t medium_lazy_purge_over_16m;
   atomic_size_t medium_lazy_purge_over_32m;
+  atomic_size_t medium_lazy_charge_acquire;
+  atomic_size_t medium_lazy_charge_reuse;
+  atomic_size_t medium_lazy_charge_keep_live;
+  atomic_size_t medium_lazy_charge_empty_fast;
+  atomic_size_t medium_lazy_charge_drop;
+  atomic_size_t medium_lazy_drop_detach;
+  atomic_size_t medium_lazy_drop_destroy;
+  atomic_size_t medium_lazy_normal_budget_skip;
+  atomic_size_t medium_lazy_cap_reject;
+  atomic_size_t medium_lazy_cas_retry;
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8MediumRun* medium_retention_l3_probation[4];
 #endif

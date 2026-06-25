@@ -318,6 +318,13 @@ int main(int argc, char** argv) {
 #else
   printf("medium_arena_id=per-run-mmap\n");
 #endif
+#if defined(H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE)
+  printf("medium_residency_id=lazy128-v1.1\n");
+#elif defined(H8_MEDIUM_BUDGET_REJECT_MADV_FREE)
+  printf("medium_residency_id=madvfree-evidence\n");
+#else
+  printf("medium_residency_id=rc1-dontneed\n");
+#endif
   printf("throughput median=%.3f p25=%.3f p75=%.3f min=%.3f max=%.3f\n",
          h8_percentile(throughput, (size_t)opt.runs, 0.50),
          h8_percentile(throughput, (size_t)opt.runs, 0.25),
