@@ -100,17 +100,49 @@ bench_results/20260624T200933Z_medium_codeshape/
 
 ```text
 current lane:
-  MediumRetentionExactCap2QShadow-L3 is implemented but not accepted
-  M0 per-event mismatch remains nonzero
-  do not implement 2Q retention behavior yet
+  MediumRun-v1 protocol/geometry is RC1-frozen
+  stable-default retention remains HOLD because fresh-process medium r50
+  can still produce high-fault outliers
+
+completed closeout:
+  MediumRunV1RC1RetentionCloseout-L1
+    data=bench_results/medium_retention_closeout_20260625T075433Z/
+    direct outliers 1/30
+    preload outliers 2/30
+
+  MediumBudgetRejectMadvFreeEvidence-L1
+    data=bench_results/medium_madvfree_evidence_20260625T085006Z/
+    direct/preload outliers 0/30
+    max minor faults fell materially
+    peak RSS increased materially
+    decision: evidence only, not default
 
 next implementation:
-  make exact-cap baseline trustworthy
-  preferred shapes:
-    event-log replay
-    or serialized debug retention decision around actual + model
-  required gate:
-    M0 per-event mismatch == 0
+  MediumChunkArenaShardedCarve-L1
+    build-time candidate only
+    owner-sharded monotonic chunk carve replaces per-run mmap
+    RC1 directory / retention / remote protocol remain unchanged
+    quantum reuse remains disabled
+    per-run MADV_DONTNEED semantics remain unchanged
+
+promotion:
+  no medium r50 median/p25 regression
+  no worse fresh-process outlier count
+  material main/fault stability improvement before default consideration
+
+latest chunk quick gate:
+  data=bench_results/20260625T090638Z_medium_chunk_paired_gate/
+  medium r50:
+    baseline 30.70M median
+    shardchunk 28.86M median
+    min worsened materially
+  main r90:
+    baseline 20.04M median
+    shardchunk 24.15M median
+  decision:
+    shardchunk is evidence-only / HOLD as default
+    next work should split creation/VMA benefit from medium-r50 outlier cost
+    before any ChunkArena promotion
 
 latest implementation:
   MediumRetentionSerializedDebugShadow-L1:

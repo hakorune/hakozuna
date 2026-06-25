@@ -3,11 +3,11 @@
 
 #include <sys/mman.h>
 
-#if defined(H8_MEDIUM_CHUNK_CARVE)
+#if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 #define H8_MEDIUM_CHUNK_BYTES (16u * 1024u * 1024u)
 #endif
 
-#if defined(H8_MEDIUM_CHUNK_CARVE)
+#if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 typedef struct H8MediumChunk {
   uint8_t* base;
   size_t used;
@@ -16,6 +16,15 @@ typedef struct H8MediumChunk {
 
 static pthread_mutex_t h8_medium_arena_lock = PTHREAD_MUTEX_INITIALIZER;
 static H8MediumChunk* h8_medium_chunks;
+#endif
+
+#if defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
+typedef struct H8MediumArenaShard {
+  H8MediumChunk* current;
+  size_t used;
+} H8MediumArenaShard;
+
+static H8MediumArenaShard h8_medium_shards[H8_OWNER_MAX];
 #endif
 
 static void* h8_medium_mmap_aligned(size_t size, size_t align) {
@@ -42,7 +51,7 @@ static void* h8_medium_mmap_aligned(size_t size, size_t align) {
   return (void*)aligned;
 }
 
-#if defined(H8_MEDIUM_CHUNK_CARVE)
+#if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 static H8MediumChunk* h8_medium_chunk_create(void) {
   void* payload =
       h8_medium_mmap_aligned(H8_MEDIUM_CHUNK_BYTES, H8_MEDIUM_CHUNK_BYTES);
@@ -61,11 +70,9 @@ static H8MediumChunk* h8_medium_chunk_create(void) {
 }
 #endif
 
-void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
-  if (chunk_backed_out) {
-    *chunk_backed_out = false;
-  }
-#if defined(H8_MEDIUM_CHUNK_CARVE)
+#if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
+static void* h8_medium_payload_alloc_global_locked(size_t run_size,
+                                                   bool* chunk_backed_out) {
   if (run_size == 0 || run_size > H8_MEDIUM_CHUNK_BYTES ||
       (run_size & (H8_MEDIUM_QUANTUM_BYTES - 1u)) != 0) {
     return NULL;
@@ -99,6 +106,71 @@ void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
   H8_DEBUG_INC(medium_chunk_alloc_count);
   H8_DEBUG_ADD(medium_chunk_used_bytes, run_size);
   return chunk->base;
+}
+#endif
+
+#if defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
+static bool h8_medium_current_owner_slot(uint32_t* slot_out) {
+  H8ThreadCtx* ctx = h8_tls_ctx;
+  if (!ctx || !ctx->owner || ctx->owner->slot >= H8_OWNER_MAX) {
+    return false;
+  }
+  *slot_out = ctx->owner->slot;
+  return true;
+}
+
+static H8MediumChunk* h8_medium_chunk_refill(void) {
+  H8MediumChunk* chunk = h8_medium_chunk_create();
+  if (!chunk) {
+    return NULL;
+  }
+  pthread_mutex_lock(&h8_medium_arena_lock);
+  chunk->next = h8_medium_chunks;
+  h8_medium_chunks = chunk;
+  pthread_mutex_unlock(&h8_medium_arena_lock);
+  return chunk;
+}
+
+static void* h8_medium_payload_alloc_sharded(size_t run_size,
+                                             bool* chunk_backed_out) {
+  if (run_size == 0 || run_size > H8_MEDIUM_CHUNK_BYTES ||
+      (run_size & (H8_MEDIUM_QUANTUM_BYTES - 1u)) != 0) {
+    return NULL;
+  }
+  uint32_t owner_slot = 0;
+  if (!h8_medium_current_owner_slot(&owner_slot)) {
+    return h8_medium_payload_alloc_global_locked(run_size, chunk_backed_out);
+  }
+  H8MediumArenaShard* shard = &h8_medium_shards[owner_slot];
+  size_t used = h8_round_up_size(shard->used, run_size);
+  H8MediumChunk* chunk = shard->current;
+  if (!chunk || used + run_size > H8_MEDIUM_CHUNK_BYTES) {
+    chunk = h8_medium_chunk_refill();
+    if (!chunk) {
+      return NULL;
+    }
+    shard->current = chunk;
+    used = 0;
+  }
+  shard->used = used + run_size;
+  chunk->used = shard->used;
+  if (chunk_backed_out) {
+    *chunk_backed_out = true;
+  }
+  H8_DEBUG_INC(medium_chunk_alloc_count);
+  H8_DEBUG_ADD(medium_chunk_used_bytes, run_size);
+  return chunk->base + used;
+}
+#endif
+
+void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
+  if (chunk_backed_out) {
+    *chunk_backed_out = false;
+  }
+#if defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
+  return h8_medium_payload_alloc_sharded(run_size, chunk_backed_out);
+#elif defined(H8_MEDIUM_CHUNK_CARVE)
+  return h8_medium_payload_alloc_global_locked(run_size, chunk_backed_out);
 #else
   if (run_size == 0) {
     return NULL;

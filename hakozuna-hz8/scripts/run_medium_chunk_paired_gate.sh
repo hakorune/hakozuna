@@ -7,10 +7,14 @@ OUT="$ROOT/bench_results/${STAMP}_medium_chunk_paired_gate"
 RUNS="${RUNS:-5}"
 THREADS="${THREADS:-16}"
 ITERS="${ITERS:-100000}"
+CANDIDATE_BIN="${CANDIDATE_BIN:-$ROOT/h8_bench_release_mediumchunk}"
+CANDIDATE_NAME="${CANDIDATE_NAME:-chunk}"
 
 mkdir -p "$OUT"
 
-make -C "$ROOT" bench-release bench-release-mediumchunk
+if [[ ! -x "$ROOT/h8_bench_release" || ! -x "$CANDIDATE_BIN" ]]; then
+  make -C "$ROOT" bench-release bench-release-mediumchunk
+fi
 
 run_pair() {
   local name="$1"
@@ -18,9 +22,9 @@ run_pair() {
   "$ROOT/h8_bench_release" \
     --runs "$RUNS" --threads "$THREADS" --iters "$ITERS" "$@" \
     > "$OUT/${name}_baseline.txt"
-  "$ROOT/h8_bench_release_mediumchunk" \
+  "$CANDIDATE_BIN" \
     --runs "$RUNS" --threads "$THREADS" --iters "$ITERS" "$@" \
-    > "$OUT/${name}_chunk.txt"
+    > "$OUT/${name}_${CANDIDATE_NAME}.txt"
 }
 
 run_pair medium_interleaved_remote50 \
@@ -44,12 +48,13 @@ run_pair small_interleaved_remote90 \
   echo "threads: $THREADS"
   echo "iters: $ITERS"
   echo "baseline: h8_bench_release"
-  echo "candidate: h8_bench_release_mediumchunk"
+  echo "candidate: $CANDIDATE_BIN"
+  echo "candidate_name: $CANDIDATE_NAME"
   echo '```'
   echo
   for row in medium_interleaved_remote50 main_interleaved_remote90 \
              small_guard_local0 small_interleaved_remote90; do
-    for kind in baseline chunk; do
+    for kind in baseline "$CANDIDATE_NAME"; do
       file="$OUT/${row}_${kind}.txt"
       echo "## ${row}_${kind}"
       echo

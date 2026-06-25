@@ -311,7 +311,9 @@ int main(int argc, char** argv) {
 #else
   printf("medium_geometry_id=q64-run64k2\n");
 #endif
-#if defined(H8_MEDIUM_CHUNK_CARVE)
+#if defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
+  printf("medium_arena_id=chunk16m-sharded\n");
+#elif defined(H8_MEDIUM_CHUNK_CARVE)
   printf("medium_arena_id=chunk16m\n");
 #else
   printf("medium_arena_id=per-run-mmap\n");

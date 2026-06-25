@@ -243,6 +243,36 @@ MediumBudgetRejectMadvFreeEvidence-L1:
     confirms budget-reject DONTNEED/refault is the outlier source
     not promoted as default
     ChunkArena remains a separate placement/VMA lane
+
+MediumChunkArenaShardedCarve-L1:
+  next implementation target
+  build-time candidate only
+  replace per-run mmap with owner-sharded monotonic chunk carve
+  keep RC1 directory / retention / remote protocol unchanged
+  keep quantum reuse disabled
+  keep per-run MADV_DONTNEED semantics
+
+  reason:
+    old chunk candidate used a global arena lock and chunk-list scan
+    previous regression may be lock-shape, not chunking itself
+
+  promotion:
+    candidate must not regress medium r50 median/p25
+    candidate must not worsen fresh-process outlier count
+    main/fault stability must improve materially before default consideration
+
+  initial quick R3:
+    data=bench_results/20260625T090638Z_medium_chunk_paired_gate/
+    medium r50:
+      30.70M baseline -> 28.86M candidate
+      min worsened 23.85M -> 9.22M
+    main r90:
+      20.04M baseline -> 24.15M candidate
+    small remote90:
+      58.12M baseline -> 53.32M candidate
+    decision:
+      candidate remains evidence-only
+      do not promote without a no-regression redesign
 ```
 
 Current route shadow:
