@@ -99,6 +99,19 @@ bench_results/20260624T200933Z_medium_codeshape/
 ## Latest Direction
 
 ```text
+current lane:
+  MediumRetentionExactCap2QShadow-L3 is implemented but not accepted
+  M0 per-event mismatch remains nonzero
+  do not implement 2Q retention behavior yet
+
+next implementation:
+  make exact-cap baseline trustworthy
+  preferred shapes:
+    event-log replay
+    or serialized debug retention decision around actual + model
+  required gate:
+    M0 per-event mismatch == 0
+
 source hygiene:
   bench report output is split into bench/h8_bench_report.c
   medium slot identity/local slot mutation primitives are split into
@@ -560,8 +573,8 @@ next measurement lanes:
                 and actual reserve/decommit decision
 
               next correction:
-                either serialize debug retention decisions around actual+model
-                or log retention events and replay offline
+                event-log replay is preferred for clean attribution
+                serialized debug retention is acceptable if it stays debug-only
                 require M0 per-event mismatch == 0 before behavior selection
 
           MediumOwnerClassProtected2Q-L1:

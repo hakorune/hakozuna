@@ -3,9 +3,9 @@
 Status:
 
 ```text
-runtime scaffold present
+protocol / geometry RC candidate
 4097..65536 routes through medium runs
-performance is not yet representative
+retention-stability remains v1.1 work
 ```
 
 ## Purpose
@@ -35,7 +35,7 @@ state:
 MediumRun does not replace the small path.  It handles requests above the small
 boundary without falling directly to the platform allocator.
 
-## Initial Range
+## Range
 
 ```text
 small:
@@ -48,15 +48,14 @@ large / direct:
   >65536
 ```
 
-The upper bound is intentionally conservative.  It keeps the first medium
-implementation focused on run ownership, routing, remote free, and RSS pressure
-without mixing in huge allocation policy.
+The conservative upper bound keeps MediumRun focused on ownership, routing,
+remote free, and RSS pressure without huge allocation policy.
 
 ## Geometry
 
 MediumRun uses run-sized payload mappings rather than fixed 64KiB small spans.
 
-Initial shape:
+Shape:
 
 ```text
 run payload:
@@ -72,9 +71,9 @@ metadata:
   outside payload
 ```
 
-The final size table is not frozen in this document.  The current scaffold uses
-coarse power-of-two medium classes to prove ownership and remote free before
-SizePolicy-v1 refines the table.
+The final size table is not frozen in this document.  The current default uses
+coarse power-of-two medium classes to keep pointer identity and remote protocol
+stable before SizePolicy-v1 refines the table.
 
 Original scaffold:
 
@@ -229,11 +228,11 @@ MediumRetentionExactCap2QShadow-L3:
     M0 current budget, M1/M2 second-touch 2Q, Mclock probation CLOCK
     each tracks resident state, byte charge, victim selection, and refault
 
-  baseline acceptance:
+  acceptance required:
     M0 budget_reject/decommit/resident bytes/peak/ghost reuse match actual
     per-event decision mismatch is zero
 
-  promotion:
+  behavior promotion:
     choose one behavior only if exact-cap M1/M2/Mclock predicts material
     outlier reduction inside the current retention cap
 
@@ -243,7 +242,7 @@ MediumRetentionExactCap2QShadow-L3:
     candidate predictions not accepted
 
   next:
-    serialized debug retention or event-log replay
+    serialized debug retention or event-log replay before any 2Q behavior
     require M0 per-event mismatch == 0
 ```
 

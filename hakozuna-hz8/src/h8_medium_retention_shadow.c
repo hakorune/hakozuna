@@ -22,6 +22,10 @@ static const size_t k_h8_retention_l3_budget =
     (size_t)H8_OWNER_MAX * H8_MEDIUM_RESIDENT_BUDGET_CLASSES *
     H8_MEDIUM_RUN_BYTES;
 
+static size_t h8_retention_run_bytes(H8MediumRun* run) {
+  return run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+}
+
 static H8OwnerRecord* h8_retention_owner(H8MediumRun* run) {
   if (!run || !run->owner_attached) {
     return NULL;
@@ -110,7 +114,7 @@ static void h8_retention_l3_inc_refault(uint8_t model) {
 }
 
 static bool h8_retention_l3_charge(uint8_t model, H8MediumRun* run) {
-  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  size_t bytes = h8_retention_run_bytes(run);
   atomic_size_t* field = h8_retention_l3_bytes_field(model);
   size_t cur = atomic_load_explicit(field, memory_order_relaxed);
   for (;;) {
@@ -128,11 +132,12 @@ static bool h8_retention_l3_charge(uint8_t model, H8MediumRun* run) {
 }
 
 static void h8_retention_l3_release(uint8_t model, H8MediumRun* run) {
-  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  size_t bytes = h8_retention_run_bytes(run);
   atomic_fetch_sub_explicit(h8_retention_l3_bytes_field(model), bytes,
                             memory_order_acq_rel);
 }
 
+/* L2 causal stack: record actual-policy reuse distance without changing it. */
 static uint8_t h8_retention_stack_find(H8OwnerRecord* owner, uint32_t class_id,
                                        H8MediumRun* run) {
   if (!owner || class_id >= H8_MEDIUM_CLASS_COUNT || !run) {
@@ -177,6 +182,11 @@ static void h8_retention_stack_push(H8OwnerRecord* owner, uint32_t class_id,
   stack[0] = run;
 }
 
+/*
+ * L3 exact-cap model: debug-only, in-process counterfactual retention models.
+ * The current implementation is observational only; behavior promotion requires
+ * M0 to match the actual per-event retain/decommit decision exactly.
+ */
 static void h8_retention_l3_protected_remove(H8OwnerRecord* owner,
                                              uint32_t class_id,
                                              H8MediumRun* run) {
