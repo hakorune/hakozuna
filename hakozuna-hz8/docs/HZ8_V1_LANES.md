@@ -273,6 +273,22 @@ MediumChunkArenaShardedCarve-L1:
     decision:
       candidate remains evidence-only
       do not promote without a no-regression redesign
+
+  three-way R5 audit:
+    data=bench_results/20260625T091737Z_medium_chunk_creation_audit/
+    medium r50 median:
+      per-run-mmap 32.92M
+      chunk16m 33.13M
+      chunk16m-sharded 32.82M
+    main r90 median:
+      per-run-mmap 19.87M
+      chunk16m 24.72M
+      chunk16m-sharded 25.51M
+    interpretation:
+      chunk placement materially helps main r90 in this batch
+      old global-lock chunk did not reproduce the medium-r50 regression here
+      sharded carve increased peak RSS/outlier risk versus global chunk
+      next ChunkArena work should not assume sharding alone is the fix
 ```
 
 Current route shadow:

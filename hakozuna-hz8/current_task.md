@@ -144,6 +144,24 @@ latest chunk quick gate:
     next work should split creation/VMA benefit from medium-r50 outlier cost
     before any ChunkArena promotion
 
+chunk 3-way audit:
+  data=bench_results/20260625T091737Z_medium_chunk_creation_audit/
+  medium r50 median:
+    per-run-mmap 32.92M
+    chunk16m 33.13M
+    chunk16m-sharded 32.82M
+  main r90 median:
+    per-run-mmap 19.87M
+    chunk16m 24.72M
+    chunk16m-sharded 25.51M
+  interpretation:
+    chunk placement helps main r90
+    global chunk did not reproduce medium-r50 regression in this R5
+    sharded carve has worse peak/outlier shape than global chunk here
+  next:
+    re-evaluate global chunk with formal paired/fresh gates before designing
+    another sharding variant
+
 latest implementation:
   MediumRetentionSerializedDebugShadow-L1:
     debug-only retention lock added around actual resident budget transitions
