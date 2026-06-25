@@ -342,6 +342,20 @@ MediumBudgetRejectLazyPurge-L1:
     decision:
       lazy128 remains the strongest stable-default candidate
       final default switch still needs one fresh repeat batch
+
+  fresh repeat:
+    data:
+      bench_results/20260625T121546Z_medium_chunk_paired_gate/
+      bench_results/medium_lazy128_repeat_20260625T121557Z/
+    result:
+      medium r50 ratio 1.037
+      main r90 ratio 1.018
+      small local ratio 1.048
+      small remote90 ratio 1.016
+      direct/preload R30 outliers 0/30 and 0/30
+    decision:
+      lazy128 passed the repeat gate and is ready for default promotion
+      review
 ```
 
 Likely behavior candidate after exact-cap shadow:

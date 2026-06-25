@@ -305,6 +305,18 @@ if improving medium r50 stability:
   decision:
     lazy128 is the current stable-default promotion candidate
     run one fresh repeat batch before replacing RC1 default behavior
+  fresh repeat:
+    data=bench_results/20260625T121546Z_medium_chunk_paired_gate/
+    medium r50 ratio 1.037
+    main r90 ratio 1.018
+    small local ratio 1.048
+    small remote90 ratio 1.016
+    data=bench_results/medium_lazy128_repeat_20260625T121557Z/
+    direct outliers 0/30
+    preload outliers 0/30
+  updated decision:
+    lazy128 passes the repeat gate
+    default promotion review can proceed
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane

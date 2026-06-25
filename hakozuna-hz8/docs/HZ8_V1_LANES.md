@@ -420,6 +420,23 @@ MediumBudgetRejectLazyPurge-L1:
       medium r50, main r90, and small remote90 pass the first paired gate
       small local regression was not reproduced in targeted repeats
       final default promotion should still run a fresh repeat batch
+
+  fresh repeat:
+    paired repeat:
+      data=bench_results/20260625T121546Z_medium_chunk_paired_gate/
+      medium_interleaved_remote50 ratio 1.037
+      main_interleaved_remote90 ratio 1.018
+      small_guard_local0 ratio 1.048
+      small_interleaved_remote90 ratio 1.016
+    R30 repeat:
+      data=bench_results/medium_lazy128_repeat_20260625T121557Z/
+      direct outliers 0/30
+      preload outliers 0/30
+      direct max faults 20,426
+      preload max faults 15,884
+    decision:
+      lazy128 passes the repeat gate
+      ready for default promotion review
 ```
 
 Current route shadow:

@@ -187,6 +187,26 @@ next behavior only if shadow supports it:
         medium/main/small-remote pass
         small-local no regression reproduced in repeats
         final default promotion should still run one fresh repeat batch
+    fresh repeat:
+      paired repeat:
+        data=bench_results/20260625T121546Z_medium_chunk_paired_gate/
+        medium_interleaved_remote50:
+          ratio 1.037
+        main_interleaved_remote90:
+          ratio 1.018
+        small_guard_local0:
+          ratio 1.048
+        small_interleaved_remote90:
+          ratio 1.016
+      R30 repeat:
+        data=bench_results/medium_lazy128_repeat_20260625T121557Z/
+        direct outliers 0/30
+        preload outliers 0/30
+        direct max faults 20,426
+        preload max faults 15,884
+      decision:
+        lazy128 passes repeat gate
+        ready for default promotion review
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1
