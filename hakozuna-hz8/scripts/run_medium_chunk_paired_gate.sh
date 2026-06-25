@@ -90,7 +90,7 @@ run_pair small_interleaved_remote90 \
       echo "## ${row}_${kind}"
       echo
       echo '```text'
-      grep -E 'summary|medium_geometry_id|medium_arena_id|medium_residency_id|throughput median|steady_work|peak_rss median|post_rss median|page_faults|interleaved_phase_ms' "$file" || true
+      grep -E 'summary|medium_geometry_id|medium_arena_id|medium_residency_id|throughput median|steady_work|peak_rss median|post_rss median|page_faults|interleaved_phase_ms|medium_free_cache_shadow' "$file" || true
       echo '```'
       echo
     done

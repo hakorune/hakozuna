@@ -96,6 +96,50 @@ residency candidate:
   promoted as MediumRun-v1.1 default after longer fresh alternating gates
 ```
 
+Next local-leaf lane:
+
+```text
+MediumLocalFreeRunCache-L1:
+  status:
+    implemented as build-time evidence target
+    HOLD as default
+  targets:
+    bench-mediumfreecache
+    bench-release-mediumfreecache
+  contract:
+    TLS remembers the last medium allocation run
+    candidate free path tries cached run before the quantum directory
+    cache success still requires:
+      pointer range / slot alignment
+      owner token match
+      slot_state == ALLOCATED
+      pending bit == 0
+      debug builds verify cached run == directory run
+  quick observation:
+    medium local0 same-owner frees:
+      would_succeed 80,000 / 80,000
+      directory_mismatch 0
+    medium r50:
+      same-owner local frees would_succeed 39,901 / 39,901
+      remote frees fallback 40,099
+  focused A/B:
+    data=bench_results/20260626T045436_medium_free_cache_local_focus/
+    medium_local0 ratio:
+      median 0.998
+      p25 1.069
+    main_local0 ratio:
+      median 0.988
+      p25 1.024
+    small_remote focused R20:
+      data=bench_results/20260626T_medium_free_cache_small_remote_r20/
+      median 0.990
+      p25 1.074
+  decision:
+    do not promote by default
+    keep h8_bench_release as lazy128-v1.1 default
+    keep bench-release-mediumfreecache as an evidence target
+```
+
 Current evidence candidates:
 
 ```text

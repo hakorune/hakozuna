@@ -228,6 +228,17 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_active_miss_null, debug.medium_active_miss_owner,
          debug.medium_active_miss_unusable);
 
+  printf("medium_free_cache_shadow attempt=%zu range_hit=%zu owner_hit=%zu slot_hit=%zu would_succeed=%zu pending_block=%zu state_block=%zu directory_mismatch=%zu fallback=%zu\n",
+         debug.medium_free_cache_attempt,
+         debug.medium_free_cache_range_hit,
+         debug.medium_free_cache_owner_hit,
+         debug.medium_free_cache_slot_hit,
+         debug.medium_free_cache_would_succeed,
+         debug.medium_free_cache_pending_block,
+         debug.medium_free_cache_state_block,
+         debug.medium_free_cache_directory_mismatch,
+         debug.medium_free_cache_fallback);
+
   printf("medium_warm_shadow warm1_install=%zu warm1_replace=%zu warm1_hit=%zu warm1_avoid_reject=%zu warm2_install=%zu warm2_replace=%zu warm2_hit=%zu warm2_avoid_reject=%zu reuse_distance=[%zu,%zu,%zu,%zu]\n",
          debug.medium_warm1_would_install,
          debug.medium_warm1_would_replace,

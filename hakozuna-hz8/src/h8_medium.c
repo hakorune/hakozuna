@@ -218,6 +218,113 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
   ctx->active_medium_runs[class_id] = run;
 }
 
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)
+static void h8_medium_record_alloc_run(H8ThreadCtx* ctx, H8MediumRun* run) {
+  if (ctx) {
+    ctx->medium_last_alloc_run = run;
+  }
+}
+#else
+#define h8_medium_record_alloc_run(ctx, run) \
+  do {                                      \
+    (void)(ctx);                            \
+    (void)(run);                            \
+  } while (0)
+#endif
+
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)
+static bool h8_medium_try_cached_local_free(H8ThreadCtx* ctx, void* ptr,
+                                            bool* owned_out) {
+  H8MediumRun* cached = ctx ? ctx->medium_last_alloc_run : NULL;
+  if (!cached) {
+    return false;
+  }
+  H8_DEBUG_INC(medium_free_cache_attempt);
+
+  uintptr_t base = (uintptr_t)cached->base;
+  uintptr_t addr = (uintptr_t)ptr;
+  size_t payload = (size_t)cached->slot_size * (size_t)cached->slot_count;
+  if (addr < base || addr >= base + payload) {
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+  H8_DEBUG_INC(medium_free_cache_range_hit);
+
+  size_t slot = 0;
+  if (!h8_medium_slot_index_from_ptr_checked_fast(cached, ptr, &slot)) {
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+  H8_DEBUG_INC(medium_free_cache_slot_hit);
+
+  uint64_t owner_word =
+      atomic_load_explicit(&cached->owner_word, memory_order_acquire);
+  if (!h8_medium_owner_word_matches_ctx(owner_word, ctx)) {
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+  H8_DEBUG_INC(medium_free_cache_owner_hit);
+
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((cached->allocated_mask & bit) == 0 || (cached->free_mask & bit) != 0) {
+    H8_DEBUG_INC(medium_free_cache_state_block);
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+
+  uint64_t pending =
+      atomic_load_explicit(&cached->pending_bits[0], memory_order_acquire);
+  if ((pending & bit) != 0) {
+    H8_DEBUG_INC(medium_free_cache_pending_block);
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+
+  uint32_t state =
+      atomic_load_explicit(&cached->slot_state[slot], memory_order_acquire);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
+    H8_DEBUG_INC(medium_free_cache_state_block);
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8MediumRun* directory_run = h8_medium_directory_find(ptr);
+  if (directory_run != cached) {
+    H8_DEBUG_INC(medium_free_cache_directory_mismatch);
+    H8_DEBUG_INC(medium_free_cache_fallback);
+    return false;
+  }
+#endif
+
+  H8_DEBUG_INC(medium_free_cache_would_succeed);
+
+  H8_DEBUG_INC(medium_local_free_owner_match);
+  h8_medium_debug_lock_elide_candidate_known(true, true);
+  h8_medium_debug_writer_enter(cached, ctx ? ctx->owner : NULL,
+                               H8_MEDIUM_WRITER_OWNER_LOCAL_FREE);
+  if (owned_out) {
+    *owned_out = true;
+  }
+  bool keep_empty_live = cached->class_id < H8_MEDIUM_CLASS_COUNT &&
+                         ctx->active_medium_runs[cached->class_id] == cached;
+  bool ok = h8_medium_run_free_local_scaffold(cached, ptr, keep_empty_live);
+  if (!ok) {
+    H8_DEBUG_INC(medium_invalid_owned_count);
+  }
+  if (ok && cached->class_id < H8_MEDIUM_CLASS_COUNT) {
+    h8_medium_debug_class_inc(cached->class_id,
+                              &h8g.medium_local_free_class_8k,
+                              &h8g.medium_local_free_class_16k,
+                              &h8g.medium_local_free_class_32k,
+                              &h8g.medium_local_free_class_64k);
+    h8_medium_set_active_run(ctx, cached->class_id, cached);
+  }
+  h8_medium_debug_writer_exit(cached);
+  return ok;
+}
+#endif
+
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec) {
@@ -356,6 +463,7 @@ retry_owner_capacity:
       void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
       h8_medium_debug_writer_exit(active);
       if (ptr) {
+        h8_medium_record_alloc_run(ctx, active);
         H8_DEBUG_INC(medium_run_reuse_active_count);
         h8_medium_debug_class_inc(class_id,
                                   &h8g.medium_run_reuse_active_class_8k,
@@ -391,6 +499,7 @@ retry_owner_capacity:
                                   &h8g.medium_run_reuse_owner_class_64k);
         void* ptr = h8_medium_run_alloc_local_scaffold(run);
         h8_medium_set_active_run(ctx, class_id, run);
+        h8_medium_record_alloc_run(ctx, run);
         h8_medium_unlock_run(run);
         h8_medium_debug_writer_exit(run);
         h8_medium_collect_owner_pending_periodic_owner_list(ctx);
@@ -437,6 +546,7 @@ retry_owner_capacity:
       h8_medium_debug_writer_exit(run);
       if (ctx && h8_medium_run_owned_by_ctx(run, ctx)) {
         h8_medium_set_active_run(ctx, class_id, run);
+        h8_medium_record_alloc_run(ctx, run);
       }
       h8_medium_unlock_run(run);
       h8_medium_unlock_global();
@@ -464,6 +574,7 @@ retry_owner_capacity:
   void* ptr = h8_medium_run_alloc_local_scaffold(run);
   if (ctx) {
     h8_medium_set_active_run(ctx, class_id, run);
+    h8_medium_record_alloc_run(ctx, run);
   }
   h8_medium_unlock_run(run);
   h8_medium_debug_writer_exit(run);
@@ -482,9 +593,17 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
   }
+  H8ThreadCtx* ctx = h8_tls_ctx;
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)
+  if (h8_medium_try_cached_local_free(ctx, ptr, owned_out)) {
+    return true;
+  }
+#else
+  (void)ctx;
+#endif
+
   H8_DEBUG_INC(medium_free_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);
-  H8ThreadCtx* ctx = h8_tls_ctx;
   if (run) {
     uint64_t owner_word =
         atomic_load_explicit(&run->owner_word, memory_order_acquire);

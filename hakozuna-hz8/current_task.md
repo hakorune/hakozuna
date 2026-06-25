@@ -113,34 +113,35 @@ current lane:
   medium/main/small gates
   ChunkArena remains HOLD as default
 
-next implementation:
-  post-lazy128 default closeout / docs / optional same-run matrix
-    model budget-reject runs as lazy-purge candidates
-    count later reuse that would have avoided MADV_DONTNEED refault
-    report conservative outstanding bytes / peak
-    report 16MiB and 32MiB cap pressure counters
+latest local-leaf probe:
+  MediumLocalFreeRunCache-L1
+    implemented as opt-in build-time evidence target
+    default HOLD
+    candidate target:
+      bench-mediumfreecache
+      bench-release-mediumfreecache
+      H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE
+    default target:
+      h8_bench_release remains lazy128-v1.1 without local free cache
+    cache success still validates:
+      range / slot alignment
+      owner token
+      slot_state == ALLOCATED
+      pending bit == 0
+      debug directory equivalence
+    focused A/B:
+      data=bench_results/20260626T045436_medium_free_cache_local_focus/
+      medium_local0 median ratio 0.998
+      medium_local0 p25 ratio 1.069
+      main_local0 median ratio 0.988
+      main_local0 p25 ratio 1.024
+      small_remote focused R20 median ratio 0.990
+      small_remote focused R20 p25 ratio 1.074
+    decision:
+      evidence does not justify default promotion
+      keep as candidate for future asm/locality experiments
 
-  implementation:
-    complete
-    output line:
-      medium_lazy_purge_shadow
-    forced low-budget debug smoke:
-      H8_MEDIUM_RESIDENT_BUDGET_CLASSES=1
-      budget_reject 4,255
-      lazy_candidate 4,255
-      lazy_reuse 4,228
-      lazy_peak 2,555,904 bytes
-      over16m 0
-      over32m 0
-    next:
-      run default-budget debug/audit or fresh attribution to see whether
-      real outlier runs show similarly low lazy peak pressure
-    default-budget debug R3:
-      budget_reject 0
-      lazy_candidate 0
-      zero gates clean
-
-next behavior only if shadow supports it:
+historical lazy128 promotion lane:
   MediumBudgetRejectLazyPurge-L1
     bounded lazy queue for budget-reject owner-attached empty runs
     owner exit / detach remains hard MADV_DONTNEED drain
@@ -343,6 +344,41 @@ next behavior only if shadow supports it:
         decision:
           promote lazy128 as default residency
           keep mediumnolazy target for RC1 comparison and future A/B
+
+  MediumLocalFreeRunCache-L1:
+    status:
+      implemented as opt-in candidate
+      default HOLD
+    quick debug observations:
+      medium local0, T=4, 20k iters:
+        attempt 80,000
+        range_hit 80,000
+        owner_hit 80,000
+        slot_hit 80,000
+        would_succeed 80,000
+        directory_mismatch 0
+        fallback 0
+      medium r50 interleaved, T=4, 20k iters:
+        attempt 80,000
+        range_hit 39,901
+        owner_hit 39,901
+        slot_hit 39,901
+        would_succeed 39,901
+        directory_mismatch 0
+        fallback 40,099
+    read:
+      same-owner medium local frees are fully covered by the TLS last-run
+      cache in the quick probes
+      remote frees correctly fall back
+      behavior box can skip directory lookup on cache hit while still
+      checking owner token, slot alignment, slot_state, and pending bit
+      focused release A/B was flat:
+        medium_local0 median ratio 0.998
+        main_local0 median ratio 0.988
+        small_remote focused R20 median ratio 0.990
+      decision:
+        do not promote to default
+        keep bench-release-mediumfreecache as evidence target
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1

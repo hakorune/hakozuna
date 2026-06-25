@@ -155,6 +155,7 @@ struct H8ThreadCtx {
   H8OwnerRecord* owner;
   H8Span* active_spans[H8_CLASS_COUNT];
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
+  H8MediumRun* medium_last_alloc_run;
   uint8_t medium_collect_credit;
 };
 
@@ -493,6 +494,15 @@ typedef struct H8Global {
   atomic_size_t medium_alloc_state_check_fail;
   atomic_size_t medium_alloc_free_mask_zero;
   atomic_size_t medium_local_free_pending_nonzero;
+  atomic_size_t medium_free_cache_attempt;
+  atomic_size_t medium_free_cache_range_hit;
+  atomic_size_t medium_free_cache_owner_hit;
+  atomic_size_t medium_free_cache_slot_hit;
+  atomic_size_t medium_free_cache_would_succeed;
+  atomic_size_t medium_free_cache_pending_block;
+  atomic_size_t medium_free_cache_state_block;
+  atomic_size_t medium_free_cache_directory_mismatch;
+  atomic_size_t medium_free_cache_fallback;
   atomic_size_t medium_lock_elide_alloc_candidate;
   atomic_size_t medium_lock_elide_free_candidate;
   atomic_size_t medium_lock_elide_owner_mismatch;

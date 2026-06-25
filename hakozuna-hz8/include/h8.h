@@ -353,6 +353,15 @@ typedef struct H8DebugStats {
   size_t medium_alloc_state_check_fail;
   size_t medium_alloc_free_mask_zero;
   size_t medium_local_free_pending_nonzero;
+  size_t medium_free_cache_attempt;
+  size_t medium_free_cache_range_hit;
+  size_t medium_free_cache_owner_hit;
+  size_t medium_free_cache_slot_hit;
+  size_t medium_free_cache_would_succeed;
+  size_t medium_free_cache_pending_block;
+  size_t medium_free_cache_state_block;
+  size_t medium_free_cache_directory_mismatch;
+  size_t medium_free_cache_fallback;
   size_t medium_lock_elide_alloc_candidate;
   size_t medium_lock_elide_free_candidate;
   size_t medium_lock_elide_owner_mismatch;

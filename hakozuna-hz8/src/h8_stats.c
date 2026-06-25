@@ -605,6 +605,24 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_alloc_free_mask_zero, memory_order_acquire);
   out->medium_local_free_pending_nonzero = atomic_load_explicit(
       &h8g.medium_local_free_pending_nonzero, memory_order_acquire);
+  out->medium_free_cache_attempt = atomic_load_explicit(
+      &h8g.medium_free_cache_attempt, memory_order_acquire);
+  out->medium_free_cache_range_hit = atomic_load_explicit(
+      &h8g.medium_free_cache_range_hit, memory_order_acquire);
+  out->medium_free_cache_owner_hit = atomic_load_explicit(
+      &h8g.medium_free_cache_owner_hit, memory_order_acquire);
+  out->medium_free_cache_slot_hit = atomic_load_explicit(
+      &h8g.medium_free_cache_slot_hit, memory_order_acquire);
+  out->medium_free_cache_would_succeed = atomic_load_explicit(
+      &h8g.medium_free_cache_would_succeed, memory_order_acquire);
+  out->medium_free_cache_pending_block = atomic_load_explicit(
+      &h8g.medium_free_cache_pending_block, memory_order_acquire);
+  out->medium_free_cache_state_block = atomic_load_explicit(
+      &h8g.medium_free_cache_state_block, memory_order_acquire);
+  out->medium_free_cache_directory_mismatch = atomic_load_explicit(
+      &h8g.medium_free_cache_directory_mismatch, memory_order_acquire);
+  out->medium_free_cache_fallback = atomic_load_explicit(
+      &h8g.medium_free_cache_fallback, memory_order_acquire);
   out->medium_lock_elide_alloc_candidate = atomic_load_explicit(
       &h8g.medium_lock_elide_alloc_candidate, memory_order_acquire);
   out->medium_lock_elide_free_candidate = atomic_load_explicit(
