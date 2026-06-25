@@ -537,6 +537,18 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_retention_l3_clock_bytes, memory_order_acquire);
   out->medium_retention_l3_clock_peak = atomic_load_explicit(
       &h8g.medium_retention_l3_clock_peak, memory_order_acquire);
+  out->medium_lazy_purge_candidate = atomic_load_explicit(
+      &h8g.medium_lazy_purge_candidate, memory_order_acquire);
+  out->medium_lazy_purge_reuse = atomic_load_explicit(
+      &h8g.medium_lazy_purge_reuse, memory_order_acquire);
+  out->medium_lazy_purge_bytes = atomic_load_explicit(
+      &h8g.medium_lazy_purge_bytes, memory_order_acquire);
+  out->medium_lazy_purge_peak = atomic_load_explicit(
+      &h8g.medium_lazy_purge_peak, memory_order_acquire);
+  out->medium_lazy_purge_over_16m = atomic_load_explicit(
+      &h8g.medium_lazy_purge_over_16m, memory_order_acquire);
+  out->medium_lazy_purge_over_32m = atomic_load_explicit(
+      &h8g.medium_lazy_purge_over_32m, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

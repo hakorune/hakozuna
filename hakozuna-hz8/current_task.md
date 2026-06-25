@@ -103,6 +103,41 @@ current lane:
   MediumRun-v1 protocol/geometry is RC1-frozen
   stable-default retention remains HOLD because fresh-process medium r50
   can still produce high-fault outliers
+  ChunkArena does not close the retention outlier
+
+next implementation:
+  MediumLazyPurgeShadow-L1
+    behavior unchanged
+    model budget-reject runs as lazy-purge candidates
+    count later reuse that would have avoided MADV_DONTNEED refault
+    report conservative outstanding bytes / peak
+    report 16MiB and 32MiB cap pressure counters
+
+  implementation:
+    complete
+    output line:
+      medium_lazy_purge_shadow
+    forced low-budget debug smoke:
+      H8_MEDIUM_RESIDENT_BUDGET_CLASSES=1
+      budget_reject 4,255
+      lazy_candidate 4,255
+      lazy_reuse 4,228
+      lazy_peak 2,555,904 bytes
+      over16m 0
+      over32m 0
+    next:
+      run default-budget debug/audit or fresh attribution to see whether
+      real outlier runs show similarly low lazy peak pressure
+    default-budget debug R3:
+      budget_reject 0
+      lazy_candidate 0
+      zero gates clean
+
+next behavior only if shadow supports it:
+  MediumBudgetRejectLazyPurge-L1
+    bounded lazy queue for budget-reject owner-attached empty runs
+    owner exit / detach remains hard MADV_DONTNEED drain
+    fixed cap, no OS-dependent MADV_FREE default
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1
@@ -117,7 +152,7 @@ completed closeout:
     peak RSS increased materially
     decision: evidence only, not default
 
-next implementation:
+completed chunk implementation:
   MediumChunkArenaShardedCarve-L1
     build-time candidate only
     owner-sharded monotonic chunk carve replaces per-run mmap

@@ -36,6 +36,56 @@ static uint64_t h8_medium_residency_now_ns(void) {
 }
 #endif
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_medium_update_lazy_purge_peak(size_t value) {
+  size_t cur =
+      atomic_load_explicit(&h8g.medium_lazy_purge_peak, memory_order_relaxed);
+  while (value > cur &&
+         !atomic_compare_exchange_weak_explicit(
+             &h8g.medium_lazy_purge_peak, &cur, value, memory_order_relaxed,
+             memory_order_relaxed)) {
+  }
+}
+
+static void h8_medium_lazy_purge_shadow_note_candidate(H8MediumRun* run) {
+  if (!run || run->debug_lazy_purge_candidate) {
+    return;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  run->debug_lazy_purge_candidate = true;
+  H8_DEBUG_INC(medium_lazy_purge_candidate);
+  size_t next = atomic_fetch_add_explicit(&h8g.medium_lazy_purge_bytes, bytes,
+                                          memory_order_acq_rel) +
+                bytes;
+  h8_medium_update_lazy_purge_peak(next);
+  if (next > 16u * 1024u * 1024u) {
+    H8_DEBUG_INC(medium_lazy_purge_over_16m);
+  }
+  if (next > 32u * 1024u * 1024u) {
+    H8_DEBUG_INC(medium_lazy_purge_over_32m);
+  }
+}
+
+static bool h8_medium_lazy_purge_shadow_clear(H8MediumRun* run) {
+  if (!run || !run->debug_lazy_purge_candidate) {
+    return false;
+  }
+  size_t bytes = run->run_size ? run->run_size : H8_MEDIUM_RUN_BYTES;
+  run->debug_lazy_purge_candidate = false;
+  atomic_fetch_sub_explicit(&h8g.medium_lazy_purge_bytes, bytes,
+                            memory_order_acq_rel);
+  return true;
+}
+#endif
+
+void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  (void)h8_medium_lazy_purge_shadow_clear(run);
+#else
+  (void)run;
+#endif
+}
+
 static void h8_medium_decommit_empty_with_reason_locked_impl(
     H8MediumRun* run, H8MediumDecommitReason reason);
 
@@ -277,6 +327,13 @@ static void h8_medium_decommit_empty_with_reason_locked_impl(
   (void)reason;
 #endif
   h8_medium_retention_shadow_note_decommit(run, reason);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  if (reason == H8_MEDIUM_DECOMMIT_BUDGET_REJECT) {
+    h8_medium_lazy_purge_shadow_note_candidate(run);
+  } else {
+    (void)h8_medium_lazy_purge_shadow_clear(run);
+  }
+#endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     h8_medium_clear_active_live_empty(run);
   }
@@ -312,6 +369,9 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_retention_shadow_note_alloc(run);
   h8_medium_warm_shadow_note_alloc(run);
+  if (h8_medium_lazy_purge_shadow_clear(run)) {
+    H8_DEBUG_INC(medium_lazy_purge_reuse);
+  }
 #endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     if (run->active_live_empty_charge) {

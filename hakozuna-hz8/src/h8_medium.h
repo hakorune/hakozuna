@@ -106,6 +106,7 @@ typedef struct H8MediumRun {
   uint8_t debug_retention_decommit_distance;
   uint8_t debug_retention_decommit_reason;
   bool debug_retention_decommitted_ghost;
+  bool debug_lazy_purge_candidate;
   uint8_t debug_retention_l3_state[4];
   struct H8MediumRun* debug_retention_l3_next[4];
   bool debug_retention_l3_reuse_evidence;
@@ -204,6 +205,7 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run);
 void h8_medium_note_active_live_empty(H8MediumRun* run);
 void h8_medium_clear_active_live_empty(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
+void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run);
 static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_note_active_live_empty(run);

@@ -292,6 +292,11 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_retention_l3_m1_peak,
          debug.medium_retention_l3_m2_peak,
          debug.medium_retention_l3_clock_peak);
+  printf("medium_lazy_purge_shadow candidate=%zu reuse=%zu bytes=%zu peak=%zu over16m=%zu over32m=%zu\n",
+         debug.medium_lazy_purge_candidate, debug.medium_lazy_purge_reuse,
+         debug.medium_lazy_purge_bytes, debug.medium_lazy_purge_peak,
+         debug.medium_lazy_purge_over_16m,
+         debug.medium_lazy_purge_over_32m);
 
   size_t medium_collect_seen =
       debug.medium_remote_collect_slot_count +

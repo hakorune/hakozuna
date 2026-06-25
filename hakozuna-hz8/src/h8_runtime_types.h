@@ -456,6 +456,12 @@ typedef struct H8Global {
   atomic_size_t medium_retention_l3_m2_peak;
   atomic_size_t medium_retention_l3_clock_bytes;
   atomic_size_t medium_retention_l3_clock_peak;
+  atomic_size_t medium_lazy_purge_candidate;
+  atomic_size_t medium_lazy_purge_reuse;
+  atomic_size_t medium_lazy_purge_bytes;
+  atomic_size_t medium_lazy_purge_peak;
+  atomic_size_t medium_lazy_purge_over_16m;
+  atomic_size_t medium_lazy_purge_over_32m;
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8MediumRun* medium_retention_l3_probation[4];
 #endif

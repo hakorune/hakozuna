@@ -319,6 +319,12 @@ typedef struct H8DebugStats {
   size_t medium_retention_l3_m2_peak;
   size_t medium_retention_l3_clock_bytes;
   size_t medium_retention_l3_clock_peak;
+  size_t medium_lazy_purge_candidate;
+  size_t medium_lazy_purge_reuse;
+  size_t medium_lazy_purge_bytes;
+  size_t medium_lazy_purge_peak;
+  size_t medium_lazy_purge_over_16m;
+  size_t medium_lazy_purge_over_32m;
   size_t medium_madvise_fail_count;
   size_t medium_resident_empty_bytes;
   size_t medium_resident_empty_peak;

@@ -661,6 +661,9 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
           H8_DEBUG_INC(medium_owner_exit_active_live_remaining);
         }
       }
+      if (run->allocated_mask == 0) {
+        h8_medium_lazy_purge_shadow_drop(run);
+      }
       run->owner_attached = false;
       atomic_store_explicit(&run->owner_word, 0, memory_order_release);
       h8_medium_unlock_run(run);

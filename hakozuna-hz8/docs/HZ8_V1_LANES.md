@@ -320,6 +320,33 @@ MediumChunkArenaShardedCarve-L1:
       global chunk fails fresh-process retention gate
       ChunkArena remains HOLD as default
       retention/purge outlier must be solved before stable-default promotion
+
+MediumLazyPurgeShadow-L1:
+  implemented
+  behavior unchanged
+  tracks budget-reject runs that a bounded lazy purge queue could have kept
+  counts later reuse that would have avoided MADV_DONTNEED refault
+  tracks conservative outstanding bytes, peak, and 16MiB/32MiB cap pressure
+
+  forced low-budget smoke:
+    build flag:
+      H8_MEDIUM_RESIDENT_BUDGET_CLASSES=1
+    medium r50 debug:
+      budget_reject 4,255
+      lazy candidates 4,255
+      lazy reuse 4,228
+      lazy peak 2,555,904 bytes
+      over16m 0
+      over32m 0
+    interpretation:
+      immediately-reused budget rejects dominate in the forced case
+      bounded lazy purge is the next plausible behavior box
+      formal default-budget R30 evidence is still required
+  default-budget debug R3:
+    medium r50 debug/audit
+    budget_reject 0
+    lazy candidates 0
+    zero gates clean
 ```
 
 Current route shadow:
