@@ -114,6 +114,21 @@ current lane:
   ChunkArena remains HOLD as default
 
 latest local-leaf probe:
+  MediumSlotPtrKnown-L1
+    implemented
+    scope:
+      allocation helpers return from already-validated slot with unchecked
+      pointer arithmetic
+      removes post-mutation slot_count/base validation from the hot alloc path
+    asm read:
+      post-mutation slot_count check removed from active medium alloc
+    quick sanity:
+      data=bench_results/20260626T051304_medium_slotptr_known_quick/
+      medium_local0 median 177.19M
+      main_local0 median 169.80M
+    decision:
+      keep as narrow code-shape cleanup
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

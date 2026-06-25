@@ -182,6 +182,11 @@ static inline void* h8_medium_slot_ptr_fast(const H8MediumRun* run,
   }
   return run->base + (slot << run->slot_shift);
 }
+
+static inline void* h8_medium_slot_ptr_known(const H8MediumRun* run,
+                                             size_t slot) {
+  return run->base + (slot << run->slot_shift);
+}
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx);
 #if defined(H8_ENABLE_DEBUG_STATS)

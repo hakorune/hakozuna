@@ -24,7 +24,7 @@ bool h8_medium_slot_index_from_ptr_checked(const H8MediumRun* run,
 }
 
 void* h8_medium_slot_ptr(const H8MediumRun* run, size_t slot) {
-  return h8_medium_slot_ptr_fast(run, slot);
+  return h8_medium_slot_ptr_known(run, slot);
 }
 
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {

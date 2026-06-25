@@ -143,6 +143,20 @@ MediumLocalFreeRunCache-L1:
 Current evidence candidates:
 
 ```text
+MediumSlotPtrKnown-L1:
+  status:
+    implemented
+  scope:
+    allocation helpers return from already-validated slot with unchecked
+    pointer arithmetic
+    removes post-mutation slot_count/base validation from the hot alloc path
+  quick sanity:
+    data=bench_results/20260626T051304_medium_slotptr_known_quick/
+    medium_local0 median 177.19M
+    main_local0 median 169.80M
+  decision:
+    keep as code-shape cleanup
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence
