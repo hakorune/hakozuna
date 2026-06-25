@@ -454,7 +454,7 @@ static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
 #if defined(H8_ENABLE_DEBUG_STATS)
   section_start = h8_medium_now_ns();
 #endif
-  void* ptr = h8_medium_run_alloc_local_scaffold(run);
+  void* ptr = h8_medium_run_alloc_local_hot(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_available_hit_alloc_ns,
                (size_t)(h8_medium_now_ns() - section_start));
@@ -535,7 +535,7 @@ static void* h8_medium_try_refill_candidate(H8ThreadCtx* ctx,
     return NULL;
   }
   h8_medium_debug_lock_elide_candidate(run, ctx, false);
-  void* ptr = h8_medium_run_alloc_local_scaffold(run);
+  void* ptr = h8_medium_run_alloc_local_hot(run);
   h8_medium_set_active_run(ctx, class_id, run);
   h8_medium_record_alloc_run(ctx, run);
   h8_medium_unlock_run(run);
@@ -825,7 +825,7 @@ retry_owner_capacity:
                                   &h8g.medium_run_reuse_owner_class_16k,
                                   &h8g.medium_run_reuse_owner_class_32k,
                                   &h8g.medium_run_reuse_owner_class_64k);
-        void* ptr = h8_medium_run_alloc_local_scaffold(run);
+        void* ptr = h8_medium_run_alloc_local_hot(run);
         h8_medium_set_active_run(ctx, class_id, run);
         h8_medium_record_alloc_run(ctx, run);
         h8_medium_unlock_run(run);
@@ -870,7 +870,7 @@ retry_owner_capacity:
       }
       h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_GLOBAL_ATTACH);
-      void* ptr = h8_medium_run_alloc_local_scaffold(run);
+      void* ptr = h8_medium_run_alloc_local_hot(run);
       h8_medium_debug_writer_exit(run);
       if (ctx && h8_medium_run_owned_by_ctx(run, ctx)) {
         h8_medium_set_active_run(ctx, class_id, run);
@@ -899,7 +899,7 @@ retry_owner_capacity:
   h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
                                H8_MEDIUM_WRITER_GLOBAL_ATTACH);
   h8_medium_lock_run(run);
-  void* ptr = h8_medium_run_alloc_local_scaffold(run);
+  void* ptr = h8_medium_run_alloc_local_hot(run);
   if (ctx) {
     h8_medium_set_active_run(ctx, class_id, run);
     h8_medium_record_alloc_run(ctx, run);

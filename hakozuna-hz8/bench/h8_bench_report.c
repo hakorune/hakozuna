@@ -448,6 +448,28 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
              ? (double)debug.medium_available_hit_collect_ns /
                    (double)debug.medium_available_hit_reuse
              : 0.0);
+  printf("medium_alloc_path_cost scaffold=%zu mark_live_ms=%.3f mask_ms=%.3f slot_store_ms=%.3f ptr_ms=%.3f ns_per_scaffold=[%.1f,%.1f,%.1f,%.1f]\n",
+         debug.medium_alloc_scaffold_count,
+         debug.medium_alloc_mark_live_ns / 1000000.0,
+         debug.medium_alloc_mask_ns / 1000000.0,
+         debug.medium_alloc_slot_store_ns / 1000000.0,
+         debug.medium_alloc_ptr_ns / 1000000.0,
+         debug.medium_alloc_scaffold_count
+             ? (double)debug.medium_alloc_mark_live_ns /
+                   (double)debug.medium_alloc_scaffold_count
+             : 0.0,
+         debug.medium_alloc_scaffold_count
+             ? (double)debug.medium_alloc_mask_ns /
+                   (double)debug.medium_alloc_scaffold_count
+             : 0.0,
+         debug.medium_alloc_scaffold_count
+             ? (double)debug.medium_alloc_slot_store_ns /
+                   (double)debug.medium_alloc_scaffold_count
+             : 0.0,
+         debug.medium_alloc_scaffold_count
+             ? (double)debug.medium_alloc_ptr_ns /
+                   (double)debug.medium_alloc_scaffold_count
+             : 0.0);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

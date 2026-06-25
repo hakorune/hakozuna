@@ -344,6 +344,23 @@ MediumAvailableHitCostAttribution-L1:
     debug timing points to post-discovery allocation / live-on-alloc cost
     rather than owner-list scan itself
 
+MediumInlineOwnerAlloc-L1:
+  status:
+    implemented as opt-in release evidence target
+  build:
+    bench-release-mediumavailableinline
+  shape:
+    removes h8_medium_run_alloc_local_scaffold calls from
+    h8_medium_malloc_class_inner under H8_MEDIUM_ENABLE_INLINE_OWNER_ALLOC
+  data:
+    bench_results/20260625T233602Z_medium_inline_owner_alloc_focus/
+  focused medium_r50 R10:
+    median ratio 0.998
+    p25 ratio 0.844
+  decision:
+    HOLD
+    release call-shape cleanup is not enough and worsens p25 stability
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

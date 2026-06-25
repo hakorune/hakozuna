@@ -271,6 +271,31 @@ static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
   run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
 #endif
 }
+static inline void* h8_medium_run_alloc_local_hot(H8MediumRun* run) {
+#if defined(H8_MEDIUM_ENABLE_INLINE_OWNER_ALLOC) && \
+    !defined(H8_ENABLE_DEBUG_STATS)
+  if (!run) {
+    return NULL;
+  }
+  if (atomic_load_explicit(&run->state, memory_order_acquire) !=
+      H8_MEDIUM_RUN_ACTIVE) {
+    return NULL;
+  }
+  if (run->free_mask == 0) {
+    return NULL;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
+  uint64_t bit = UINT64_C(1) << slot;
+  h8_medium_mark_live_on_alloc_fast(run);
+  run->free_mask &= ~bit;
+  run->allocated_mask |= bit;
+  atomic_store_explicit(&run->slot_state[slot], (UINT32_C(1) << 30u),
+                        memory_order_release);
+  return h8_medium_slot_ptr_fast(run, slot);
+#else
+  return h8_medium_run_alloc_local_scaffold(run);
+#endif
+}
 void h8_medium_owner_lease_shadow_open(H8OwnerRecord* owner,
                                        uint16_t generation);
 void h8_medium_owner_lease_shadow_close(H8OwnerRecord* owner);

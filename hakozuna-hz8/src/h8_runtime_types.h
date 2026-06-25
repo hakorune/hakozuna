@@ -384,6 +384,11 @@ typedef struct H8Global {
   atomic_size_t medium_available_hit_alloc_ns;
   atomic_size_t medium_available_hit_active_ns;
   atomic_size_t medium_available_hit_collect_ns;
+  atomic_size_t medium_alloc_scaffold_count;
+  atomic_size_t medium_alloc_mark_live_ns;
+  atomic_size_t medium_alloc_mask_ns;
+  atomic_size_t medium_alloc_slot_store_ns;
+  atomic_size_t medium_alloc_ptr_ns;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

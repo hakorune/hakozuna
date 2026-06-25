@@ -379,6 +379,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_available_hit_active_ns, memory_order_acquire);
   out->medium_available_hit_collect_ns = atomic_load_explicit(
       &h8g.medium_available_hit_collect_ns, memory_order_acquire);
+  out->medium_alloc_scaffold_count = atomic_load_explicit(
+      &h8g.medium_alloc_scaffold_count, memory_order_acquire);
+  out->medium_alloc_mark_live_ns = atomic_load_explicit(
+      &h8g.medium_alloc_mark_live_ns, memory_order_acquire);
+  out->medium_alloc_mask_ns = atomic_load_explicit(
+      &h8g.medium_alloc_mask_ns, memory_order_acquire);
+  out->medium_alloc_slot_store_ns = atomic_load_explicit(
+      &h8g.medium_alloc_slot_store_ns, memory_order_acquire);
+  out->medium_alloc_ptr_ns = atomic_load_explicit(
+      &h8g.medium_alloc_ptr_ns, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

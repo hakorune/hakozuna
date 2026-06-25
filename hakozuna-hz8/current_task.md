@@ -328,6 +328,35 @@ latest local-leaf probe:
         debug timing overhead is large, but residual is post-discovery slot
         allocation / live-on-alloc path, not owner-list scan
 
+  MediumInlineOwnerAlloc-L1:
+    status:
+      implemented as opt-in evidence target
+    build:
+      bench-release-mediumavailableinline
+      flags:
+        H8_MEDIUM_ENABLE_AVAILABLE_INDEX
+        H8_MEDIUM_ENABLE_INLINE_OWNER_ALLOC
+    scope:
+      inline the locked owner/global/create allocation helper in medium malloc
+      keep default behavior unchanged
+      keep remote protocol / residency / available index contract unchanged
+    asm:
+      candidate removes h8_medium_run_alloc_local_scaffold calls from
+      h8_medium_malloc_class_inner
+      baseline keeps the out-of-line scaffold calls
+    data:
+      bench_results/20260625T233527Z_medium_chunk_paired_gate/
+      bench_results/20260625T233602Z_medium_inline_owner_alloc_focus/
+    focused medium_r50 R10:
+      median ratio 0.998
+      p25 ratio 0.844
+    decision:
+      HOLD
+      call-shape cleanup alone does not clear the medium_r50 gate and hurts
+      p25 stability
+      next attribution should look beyond owner-list discovery and simple
+      scaffold inlining
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD
