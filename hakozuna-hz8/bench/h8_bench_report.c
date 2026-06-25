@@ -135,11 +135,13 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.local_find_scan, debug.local_find_scan_span, debug.local_free_hit,
          debug.local_free_reject_owner, debug.local_free_reject_state,
          debug.local_free_reject_live);
-  printf("medium_stats malloc=%zu create=%zu active_reuse=%zu owner_reuse=%zu global_reuse=%zu madvise=%zu owner_scan=%zu owner_steps=%zu global_scan=%zu global_steps=%zu free_lookup=%zu route_lookup=%zu invalid_owned=%zu empty=%zu retain=%zu budget_reject=%zu reactivate=%zu exit_drain=%zu collect_active_would_keep=%zu collect_ctx_missing=%zu collect_ctx_owner_mismatch=%zu collect_active_hint_mismatch=%zu collect_active_not_owned=%zu empty_live_not_active=%zu active_live_bytes=%zu active_live_peak=%zu exit_active_live=%zu madvise_fail=%zu resident_bytes=%zu resident_peak=%zu madvise_ms=%.3f global_lock_ms=%.3f run_lock_ms=%.3f alloc_slot_ms=%.3f free_slot_ms=%.3f alloc_slot=%zu free_slot=%zu alloc_live_nonempty=%zu alloc_live_live=%zu alloc_live_active_empty=%zu alloc_live_resident=%zu alloc_live_decommitted=%zu alloc_state_fail=%zu alloc_free_zero=%zu local_free_pending=%zu lock_elide_alloc=%zu lock_elide_free=%zu lock_elide_mismatch=%zu active_owner_mismatch=%zu owner_list_mismatch=%zu global_skip_foreign=%zu local_free_owner=%zu remote_free_owner=%zu free_steps=%zu route_steps=%zu route_authority_mismatch=%zu remote_pub=%zu remote_lease_ms=%.3f remote_lease_enter_ms=%.3f remote_lease_exit_ms=%.3f remote_run_lock_ms=%.3f remote_claim=%zu remote_claim_ms=%.3f remote_lockless_claim=%zu remote_lockless_accept=%zu remote_lockless_rb_invalid=%zu remote_lockless_rb_accept=%zu writer_overlap=%zu writer_foreign=%zu writer_token_change=%zu collect_wrong_owner=%zu detached_while_attached=%zu remote_shadow_attempt=%zu remote_shadow_accept=%zu remote_shadow_reject=%zu remote_shadow_match=%zu remote_shadow_mismatch=%zu remote_notify=%zu remote_qpush=%zu remote_qpush_ms=%.3f remote_collect_call=%zu remote_collect_run=%zu remote_collect_slot=%zu remote_collect_ms=%.3f collect_finish_pending_rearm=%zu empty_with_pending=%zu\n",
+  printf("medium_stats malloc=%zu create=%zu active_reuse=%zu owner_reuse=%zu global_reuse=%zu refill_reuse=%zu madvise=%zu owner_scan=%zu owner_steps=%zu global_scan=%zu global_steps=%zu free_lookup=%zu route_lookup=%zu invalid_owned=%zu empty=%zu retain=%zu budget_reject=%zu reactivate=%zu exit_drain=%zu collect_active_would_keep=%zu collect_ctx_missing=%zu collect_ctx_owner_mismatch=%zu collect_active_hint_mismatch=%zu collect_active_not_owned=%zu empty_live_not_active=%zu active_live_bytes=%zu active_live_peak=%zu exit_active_live=%zu madvise_fail=%zu resident_bytes=%zu resident_peak=%zu madvise_ms=%.3f global_lock_ms=%.3f run_lock_ms=%.3f alloc_slot_ms=%.3f free_slot_ms=%.3f alloc_slot=%zu free_slot=%zu alloc_live_nonempty=%zu alloc_live_live=%zu alloc_live_active_empty=%zu alloc_live_resident=%zu alloc_live_decommitted=%zu alloc_state_fail=%zu alloc_free_zero=%zu local_free_pending=%zu lock_elide_alloc=%zu lock_elide_free=%zu lock_elide_mismatch=%zu active_owner_mismatch=%zu owner_list_mismatch=%zu global_skip_foreign=%zu local_free_owner=%zu remote_free_owner=%zu free_steps=%zu route_steps=%zu route_authority_mismatch=%zu remote_pub=%zu remote_lease_ms=%.3f remote_lease_enter_ms=%.3f remote_lease_exit_ms=%.3f remote_run_lock_ms=%.3f remote_claim=%zu remote_claim_ms=%.3f remote_lockless_claim=%zu remote_lockless_accept=%zu remote_lockless_rb_invalid=%zu remote_lockless_rb_accept=%zu writer_overlap=%zu writer_foreign=%zu writer_token_change=%zu collect_wrong_owner=%zu detached_while_attached=%zu remote_shadow_attempt=%zu remote_shadow_accept=%zu remote_shadow_reject=%zu remote_shadow_match=%zu remote_shadow_mismatch=%zu remote_notify=%zu remote_qpush=%zu remote_qpush_ms=%.3f remote_collect_call=%zu remote_collect_run=%zu remote_collect_slot=%zu remote_collect_ms=%.3f collect_finish_pending_rearm=%zu empty_with_pending=%zu\n",
          debug.medium_malloc_count, debug.medium_run_create_count,
          debug.medium_run_reuse_active_count,
          debug.medium_run_reuse_owner_list_count,
-         debug.medium_run_reuse_global_count, debug.medium_run_madvise_count,
+         debug.medium_run_reuse_global_count,
+         debug.medium_run_reuse_refill_candidate_count,
+         debug.medium_run_madvise_count,
          debug.medium_owner_scan_count, debug.medium_owner_scan_step_count,
          debug.medium_global_scan_count, debug.medium_global_scan_step_count,
          debug.medium_free_lookup_count, debug.medium_route_lookup_count,
@@ -377,10 +379,39 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
   printf("medium_remote_class_density slots_per_run=[%.3f,%.3f,%.3f,%.3f]\n",
          medium_slots_per_run_8k, medium_slots_per_run_16k,
          medium_slots_per_run_32k, medium_slots_per_run_64k);
+  double medium_qpush_per_pub_8k =
+      debug.medium_remote_publish_class_8k
+          ? (double)debug.medium_remote_qpush_class_8k /
+                (double)debug.medium_remote_publish_class_8k
+          : 0.0;
+  double medium_qpush_per_pub_16k =
+      debug.medium_remote_publish_class_16k
+          ? (double)debug.medium_remote_qpush_class_16k /
+                (double)debug.medium_remote_publish_class_16k
+          : 0.0;
+  double medium_qpush_per_pub_32k =
+      debug.medium_remote_publish_class_32k
+          ? (double)debug.medium_remote_qpush_class_32k /
+                (double)debug.medium_remote_publish_class_32k
+          : 0.0;
+  double medium_qpush_per_pub_64k =
+      debug.medium_remote_publish_class_64k
+          ? (double)debug.medium_remote_qpush_class_64k /
+                (double)debug.medium_remote_publish_class_64k
+          : 0.0;
+  printf("medium_remote_class_episode qpush_per_pub=[%.3f,%.3f,%.3f,%.3f]\n",
+         medium_qpush_per_pub_8k, medium_qpush_per_pub_16k,
+         medium_qpush_per_pub_32k, medium_qpush_per_pub_64k);
   printf("medium_remote_queue push_attempt=%zu push_retry=%zu push_success=%zu\n",
          debug.medium_remote_queue_push_attempt_count,
          debug.medium_remote_queue_push_retry_count,
          debug.medium_remote_queue_push_success_count);
+  printf("medium_refill_candidate_shadow install=%zu attempt=%zu hit=%zu owner_mismatch=%zu unusable=%zu\n",
+         debug.medium_refill_candidate_install,
+         debug.medium_refill_candidate_attempt,
+         debug.medium_refill_candidate_hit,
+         debug.medium_refill_candidate_owner_mismatch,
+         debug.medium_refill_candidate_unusable);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

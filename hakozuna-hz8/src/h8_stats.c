@@ -307,6 +307,8 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_run_reuse_owner_list_count, memory_order_acquire);
   out->medium_run_reuse_global_count = atomic_load_explicit(
       &h8g.medium_run_reuse_global_count, memory_order_acquire);
+  out->medium_run_reuse_refill_candidate_count = atomic_load_explicit(
+      &h8g.medium_run_reuse_refill_candidate_count, memory_order_acquire);
   out->medium_active_miss_null =
       atomic_load_explicit(&h8g.medium_active_miss_null, memory_order_acquire);
   out->medium_active_miss_owner =
@@ -327,6 +329,16 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_periodic_from_owner_list, memory_order_acquire);
   out->medium_collect_active_refill_hint = atomic_load_explicit(
       &h8g.medium_collect_active_refill_hint, memory_order_acquire);
+  out->medium_refill_candidate_install = atomic_load_explicit(
+      &h8g.medium_refill_candidate_install, memory_order_acquire);
+  out->medium_refill_candidate_attempt = atomic_load_explicit(
+      &h8g.medium_refill_candidate_attempt, memory_order_acquire);
+  out->medium_refill_candidate_hit = atomic_load_explicit(
+      &h8g.medium_refill_candidate_hit, memory_order_acquire);
+  out->medium_refill_candidate_owner_mismatch = atomic_load_explicit(
+      &h8g.medium_refill_candidate_owner_mismatch, memory_order_acquire);
+  out->medium_refill_candidate_unusable = atomic_load_explicit(
+      &h8g.medium_refill_candidate_unusable, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

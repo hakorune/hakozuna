@@ -22,6 +22,12 @@ void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generatio
   for (size_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     owner->medium_by_class[i] = NULL;
   }
+#if defined(H8_ENABLE_DEBUG_STATS) || \
+    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+  for (size_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    owner->medium_refill_candidate[i] = NULL;
+  }
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   for (size_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     owner->medium_warm_shadow1[i] = NULL;

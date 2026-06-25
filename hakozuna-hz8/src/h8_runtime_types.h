@@ -126,6 +126,10 @@ struct H8OwnerRecord {
   H8OwnerPlacement placement;
   H8Span* owned_by_class[H8_CLASS_COUNT];
   H8MediumRun* medium_by_class[H8_MEDIUM_CLASS_COUNT];
+#if defined(H8_ENABLE_DEBUG_STATS) || \
+    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+  H8MediumRun* medium_refill_candidate[H8_MEDIUM_CLASS_COUNT];
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8MediumRun* medium_warm_shadow1[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_warm_shadow2[H8_MEDIUM_CLASS_COUNT][2];
@@ -342,6 +346,7 @@ typedef struct H8Global {
   atomic_size_t medium_run_reuse_active_count;
   atomic_size_t medium_run_reuse_owner_list_count;
   atomic_size_t medium_run_reuse_global_count;
+  atomic_size_t medium_run_reuse_refill_candidate_count;
   atomic_size_t medium_active_miss_null;
   atomic_size_t medium_active_miss_owner;
   atomic_size_t medium_active_miss_unusable;
@@ -352,6 +357,11 @@ typedef struct H8Global {
   atomic_size_t medium_collect_periodic_from_active;
   atomic_size_t medium_collect_periodic_from_owner_list;
   atomic_size_t medium_collect_active_refill_hint;
+  atomic_size_t medium_refill_candidate_install;
+  atomic_size_t medium_refill_candidate_attempt;
+  atomic_size_t medium_refill_candidate_hit;
+  atomic_size_t medium_refill_candidate_owner_mismatch;
+  atomic_size_t medium_refill_candidate_unusable;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

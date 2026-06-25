@@ -189,6 +189,77 @@ MediumCollectActiveRefillHint-L1:
     keep as evidence target
     do not promote by default
 
+MediumRemoteRunEpisodeAttribution-L1:
+  status:
+    implemented
+  data:
+    bench_results/20260626T060900_remote_episode_attr/
+  medium_r50 debug R3:
+    collect_slots_per_run:
+      [2.240, 2.668, 1.841, 1.928]
+    owner_list_reuse / active_miss_unusable:
+      about 0.98
+  main_r90 debug R3:
+    collect_slots_per_run:
+      [5.536, 3.604, 1.976, 0.000]
+    owner_list_reuse / active_miss_unusable:
+      about 0.98
+  read:
+    active miss -> owner-list hit dominates the visible medium interleaved
+    reuse symptom
+    direct active refill is not acceptable because it regressed main_r90
+    the next candidate should avoid mutating active directly
+
+MediumOwnerClassRefillCandidate-L1:
+  status:
+    implemented as build-time evidence target
+    HOLD as default
+  targets:
+    bench-mediumrefillcandidate
+    bench-release-mediumrefillcandidate
+    H8_MEDIUM_ENABLE_REFILL_CANDIDATE
+  contract:
+    active_medium_runs remains authoritative hot hint
+    owner collector records one owner/class candidate after accepted frees
+    malloc checks the candidate only after active miss and before owner-list
+    scan
+    remote protocol, qstate, and pending authority are unchanged
+  quick debug:
+    medium r50 T=16 30k-iters
+    refill_reuse 25,681
+    candidate install 123,161
+    candidate attempt 94,229
+    candidate hit 25,681
+    owner_mismatch 0
+    unusable 68,548
+  paired R10 batch 1:
+    data=bench_results/20260626T061701_refill_candidate_ab/
+    medium_r50 ratio:
+      median 1.034
+      p25 1.074
+    main_r90 ratio:
+      median 1.078
+      p25 1.034
+    medium_local0 ratio:
+      median 1.078
+      p25 1.043
+  paired R10 batch 2:
+    data=bench_results/20260626T061746_refill_candidate_ab2/
+    medium_r50 ratio:
+      median 0.981
+      p25 0.850
+    main_r90 ratio:
+      median 0.976
+      p25 0.959
+    medium_local0 ratio:
+      median 1.014
+      p25 1.018
+  decision:
+    do not promote by default
+    keep as evidence target
+    active miss -> owner-list hit is real, but a single owner/class candidate
+    hint does not produce stable medium/main gains
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

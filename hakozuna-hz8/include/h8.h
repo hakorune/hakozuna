@@ -204,6 +204,7 @@ typedef struct H8DebugStats {
   size_t medium_run_reuse_active_count;
   size_t medium_run_reuse_owner_list_count;
   size_t medium_run_reuse_global_count;
+  size_t medium_run_reuse_refill_candidate_count;
   size_t medium_active_miss_null;
   size_t medium_active_miss_owner;
   size_t medium_active_miss_unusable;
@@ -214,6 +215,11 @@ typedef struct H8DebugStats {
   size_t medium_collect_periodic_from_active;
   size_t medium_collect_periodic_from_owner_list;
   size_t medium_collect_active_refill_hint;
+  size_t medium_refill_candidate_install;
+  size_t medium_refill_candidate_attempt;
+  size_t medium_refill_candidate_hit;
+  size_t medium_refill_candidate_owner_mismatch;
+  size_t medium_refill_candidate_unusable;
   size_t medium_run_reuse_active_class_8k;
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;

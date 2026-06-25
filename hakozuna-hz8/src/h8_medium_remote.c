@@ -379,6 +379,28 @@ static bool h8_medium_collect_active_keep_shadow(H8OwnerRecord* owner,
   return true;
 }
 
+#if defined(H8_ENABLE_DEBUG_STATS) || \
+    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+static void h8_medium_refill_candidate_install(H8OwnerRecord* owner,
+                                               H8MediumRun* run,
+                                               uint64_t accepted) {
+  if (!owner || !accepted || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  owner->medium_refill_candidate[run->class_id] = run;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(medium_refill_candidate_install);
+#endif
+}
+#else
+#define h8_medium_refill_candidate_install(owner, run, accepted) \
+  do {                                                          \
+    (void)(owner);                                              \
+    (void)(run);                                                \
+    (void)(accepted);                                           \
+  } while (0)
+#endif
+
 #if defined(H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT)
 static bool h8_medium_active_hint_usable(H8ThreadCtx* ctx, H8MediumRun* run,
                                          uint16_t class_id) {
@@ -476,6 +498,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
   if (remaining) {
     h8_medium_mark_dirty_if_draining(run);
   }
+  h8_medium_refill_candidate_install(owner, run, accepted);
 #if defined(H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT)
   h8_medium_collect_refill_active_hint(owner, run, ctx, accepted);
 #else

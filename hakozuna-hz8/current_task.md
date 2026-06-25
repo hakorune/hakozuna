@@ -177,6 +177,71 @@ latest local-leaf probe:
       keep as evidence target
       do not promote by default
 
+  MediumRemoteRunEpisodeAttribution-L1:
+    status:
+      implemented with existing class counters plus normalized qpush/pub output
+    data:
+      bench_results/20260626T060900_remote_episode_attr/
+    medium_r50 debug R3:
+      remote_pub by class [80,040,160,373,320,314,639,686]
+      qpush by class [35,725,60,108,173,981,331,869]
+      collect_slots_per_run [2.240,2.668,1.841,1.928]
+      active_miss_unusable 483,900
+      owner_list_reuse 474,130
+      owner_list_hit / active_miss_unusable approx 0.98
+    main_r90 debug R3:
+      remote_pub by class [269,883,540,255,1,082,378,0]
+      qpush by class [48,748,149,917,547,642,0]
+      collect_slots_per_run [5.536,3.604,1.976,0.000]
+      active_miss_unusable 681,903
+      owner_list_reuse 667,403
+      owner_list_hit / active_miss_unusable approx 0.98
+    read:
+      remote collect density is not the first blocker for 8K/16K
+      32K/64K still have near-2 slots/run density
+      the dominant reuse symptom is active miss falling into owner-list scan
+      direct collector-to-active refill was rejected because main_r90 regressed
+    follow-up candidate:
+      MediumOwnerClassRefillCandidate-L1
+      implemented as opt-in build-time evidence target
+      targets:
+        bench-mediumrefillcandidate
+        bench-release-mediumrefillcandidate
+        H8_MEDIUM_ENABLE_REFILL_CANDIDATE
+      contract:
+        keep ctx->active_medium_runs untouched
+        collector records one owner/class refill candidate after accepted frees
+        malloc checks candidate only after active miss and before owner-list scan
+      quick debug:
+        medium r50 T=16 30k-iters
+        refill_reuse 25,681
+        refill candidate install 123,161
+        attempt 94,229
+        hit 25,681
+        owner_mismatch 0
+        unusable 68,548
+      paired R10 batch 1:
+        data=bench_results/20260626T061701_refill_candidate_ab/
+        medium_r50 median ratio 1.034
+        medium_r50 p25 ratio 1.074
+        main_r90 median ratio 1.078
+        main_r90 p25 ratio 1.034
+        medium_local0 median ratio 1.078
+        medium_local0 p25 ratio 1.043
+      paired R10 batch 2:
+        data=bench_results/20260626T061746_refill_candidate_ab2/
+        medium_r50 median ratio 0.981
+        medium_r50 p25 ratio 0.850
+        main_r90 median ratio 0.976
+        main_r90 p25 ratio 0.959
+        medium_local0 median ratio 1.014
+        medium_local0 p25 ratio 1.018
+      decision:
+        keep as evidence target
+        do not promote by default
+        active miss -> owner-list hit is real, but a single owner/class
+        candidate hint is not stable enough
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

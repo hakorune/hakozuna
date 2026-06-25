@@ -232,6 +232,71 @@ static void h8_medium_record_alloc_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   } while (0)
 #endif
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_medium_refill_candidate_shadow_probe(H8ThreadCtx* ctx,
+                                                    uint32_t class_id) {
+  if (!ctx || !ctx->owner || class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  H8MediumRun* run = ctx->owner->medium_refill_candidate[class_id];
+  if (!run) {
+    return;
+  }
+  H8_DEBUG_INC(medium_refill_candidate_attempt);
+  h8_medium_lock_run(run);
+  bool owner_match = h8_medium_run_owned_by_ctx(run, ctx);
+  bool usable = owner_match && h8_medium_run_usable_locked(run, class_id);
+  h8_medium_unlock_run(run);
+  if (!owner_match) {
+    H8_DEBUG_INC(medium_refill_candidate_owner_mismatch);
+  } else if (!usable) {
+    H8_DEBUG_INC(medium_refill_candidate_unusable);
+  } else {
+    H8_DEBUG_INC(medium_refill_candidate_hit);
+  }
+}
+#else
+#define h8_medium_refill_candidate_shadow_probe(ctx, class_id) \
+  do {                                                        \
+    (void)(ctx);                                              \
+    (void)(class_id);                                         \
+  } while (0)
+#endif
+
+#if defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+static void* h8_medium_try_refill_candidate(H8ThreadCtx* ctx,
+                                            uint32_t class_id) {
+  if (!ctx || !ctx->owner || class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return NULL;
+  }
+  H8MediumRun* run = ctx->owner->medium_refill_candidate[class_id];
+  if (!run) {
+    return NULL;
+  }
+  h8_medium_debug_writer_enter(run, ctx->owner,
+                               H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
+  h8_medium_lock_run(run);
+  if (!h8_medium_run_owned_by_ctx(run, ctx) ||
+      !h8_medium_run_usable_locked(run, class_id)) {
+    h8_medium_unlock_run(run);
+    h8_medium_debug_writer_exit(run);
+    return NULL;
+  }
+  h8_medium_debug_lock_elide_candidate(run, ctx, false);
+  void* ptr = h8_medium_run_alloc_local_scaffold(run);
+  h8_medium_set_active_run(ctx, class_id, run);
+  h8_medium_record_alloc_run(ctx, run);
+  h8_medium_unlock_run(run);
+  h8_medium_debug_writer_exit(run);
+  H8_DEBUG_INC(medium_run_reuse_refill_candidate_count);
+  h8_medium_collect_owner_pending_periodic_owner_list(ctx);
+  return ptr;
+}
+#else
+#define h8_medium_try_refill_candidate(ctx, class_id) \
+  ((void)(ctx), (void)(class_id), (void*)NULL)
+#endif
+
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)
 static bool h8_medium_try_cached_local_free(H8ThreadCtx* ctx, void* ptr,
                                             bool* owned_out) {
@@ -475,6 +540,11 @@ retry_owner_capacity:
       }
     }
     H8_DEBUG_INC(medium_active_miss_unusable);
+  }
+  h8_medium_refill_candidate_shadow_probe(ctx, class_id);
+  void* refill_ptr = h8_medium_try_refill_candidate(ctx, class_id);
+  if (refill_ptr) {
+    return refill_ptr;
   }
   if (ctx && ctx->owner) {
     H8_DEBUG_INC(medium_owner_scan_count);
