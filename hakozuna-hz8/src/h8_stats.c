@@ -503,6 +503,40 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_retention_model_refault_n3, memory_order_acquire);
   out->medium_retention_model_refault_n4 = atomic_load_explicit(
       &h8g.medium_retention_model_refault_n4, memory_order_acquire);
+  out->medium_retention_l3_m0_mismatch = atomic_load_explicit(
+      &h8g.medium_retention_l3_m0_mismatch, memory_order_acquire);
+  out->medium_retention_l3_m0_decommit = atomic_load_explicit(
+      &h8g.medium_retention_l3_m0_decommit, memory_order_acquire);
+  out->medium_retention_l3_m0_refault = atomic_load_explicit(
+      &h8g.medium_retention_l3_m0_refault, memory_order_acquire);
+  out->medium_retention_l3_m1_decommit = atomic_load_explicit(
+      &h8g.medium_retention_l3_m1_decommit, memory_order_acquire);
+  out->medium_retention_l3_m1_refault = atomic_load_explicit(
+      &h8g.medium_retention_l3_m1_refault, memory_order_acquire);
+  out->medium_retention_l3_m2_decommit = atomic_load_explicit(
+      &h8g.medium_retention_l3_m2_decommit, memory_order_acquire);
+  out->medium_retention_l3_m2_refault = atomic_load_explicit(
+      &h8g.medium_retention_l3_m2_refault, memory_order_acquire);
+  out->medium_retention_l3_clock_decommit = atomic_load_explicit(
+      &h8g.medium_retention_l3_clock_decommit, memory_order_acquire);
+  out->medium_retention_l3_clock_refault = atomic_load_explicit(
+      &h8g.medium_retention_l3_clock_refault, memory_order_acquire);
+  out->medium_retention_l3_m0_bytes = atomic_load_explicit(
+      &h8g.medium_retention_l3_m0_bytes, memory_order_acquire);
+  out->medium_retention_l3_m0_peak = atomic_load_explicit(
+      &h8g.medium_retention_l3_m0_peak, memory_order_acquire);
+  out->medium_retention_l3_m1_bytes = atomic_load_explicit(
+      &h8g.medium_retention_l3_m1_bytes, memory_order_acquire);
+  out->medium_retention_l3_m1_peak = atomic_load_explicit(
+      &h8g.medium_retention_l3_m1_peak, memory_order_acquire);
+  out->medium_retention_l3_m2_bytes = atomic_load_explicit(
+      &h8g.medium_retention_l3_m2_bytes, memory_order_acquire);
+  out->medium_retention_l3_m2_peak = atomic_load_explicit(
+      &h8g.medium_retention_l3_m2_peak, memory_order_acquire);
+  out->medium_retention_l3_clock_bytes = atomic_load_explicit(
+      &h8g.medium_retention_l3_clock_bytes, memory_order_acquire);
+  out->medium_retention_l3_clock_peak = atomic_load_explicit(
+      &h8g.medium_retention_l3_clock_peak, memory_order_acquire);
   out->medium_madvise_fail_count =
       atomic_load_explicit(&h8g.medium_madvise_fail_count, memory_order_acquire);
   out->medium_resident_empty_bytes =

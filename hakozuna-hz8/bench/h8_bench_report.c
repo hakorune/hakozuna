@@ -274,6 +274,24 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_retention_model_refault_n2,
          debug.medium_retention_model_refault_n3,
          debug.medium_retention_model_refault_n4);
+  printf("medium_retention_l3 mismatch=%zu decommit=[%zu,%zu,%zu,%zu] refault=[%zu,%zu,%zu,%zu] bytes=[%zu,%zu,%zu,%zu] peak=[%zu,%zu,%zu,%zu]\n",
+         debug.medium_retention_l3_m0_mismatch,
+         debug.medium_retention_l3_m0_decommit,
+         debug.medium_retention_l3_m1_decommit,
+         debug.medium_retention_l3_m2_decommit,
+         debug.medium_retention_l3_clock_decommit,
+         debug.medium_retention_l3_m0_refault,
+         debug.medium_retention_l3_m1_refault,
+         debug.medium_retention_l3_m2_refault,
+         debug.medium_retention_l3_clock_refault,
+         debug.medium_retention_l3_m0_bytes,
+         debug.medium_retention_l3_m1_bytes,
+         debug.medium_retention_l3_m2_bytes,
+         debug.medium_retention_l3_clock_bytes,
+         debug.medium_retention_l3_m0_peak,
+         debug.medium_retention_l3_m1_peak,
+         debug.medium_retention_l3_m2_peak,
+         debug.medium_retention_l3_clock_peak);
 
   size_t medium_collect_seen =
       debug.medium_remote_collect_slot_count +

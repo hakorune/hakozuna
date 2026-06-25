@@ -292,6 +292,7 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
   h8_medium_warm_shadow_install(run);
 #endif
   if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
+    h8_medium_retention_shadow_note_retain(run);
     H8_DEBUG_INC(medium_empty_retain_count);
     run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
     return;

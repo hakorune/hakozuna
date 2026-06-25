@@ -132,6 +132,8 @@ struct H8OwnerRecord {
   uint64_t medium_retention_epoch[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_retention_stack[H8_MEDIUM_CLASS_COUNT]
                                       [H8_MEDIUM_RETENTION_STACK_DEPTH];
+  H8MediumRun* medium_retention_l3_protected1[H8_MEDIUM_CLASS_COUNT];
+  H8MediumRun* medium_retention_l3_protected2[H8_MEDIUM_CLASS_COUNT][2];
 #endif
   _Atomic(H8Span*) pending_head;
   _Atomic size_t pending_span_count;
@@ -437,6 +439,23 @@ typedef struct H8Global {
   atomic_size_t medium_retention_model_refault_n2;
   atomic_size_t medium_retention_model_refault_n3;
   atomic_size_t medium_retention_model_refault_n4;
+  atomic_size_t medium_retention_l3_m0_mismatch;
+  atomic_size_t medium_retention_l3_m0_decommit;
+  atomic_size_t medium_retention_l3_m0_refault;
+  atomic_size_t medium_retention_l3_m1_decommit;
+  atomic_size_t medium_retention_l3_m1_refault;
+  atomic_size_t medium_retention_l3_m2_decommit;
+  atomic_size_t medium_retention_l3_m2_refault;
+  atomic_size_t medium_retention_l3_clock_decommit;
+  atomic_size_t medium_retention_l3_clock_refault;
+  atomic_size_t medium_retention_l3_m0_bytes;
+  atomic_size_t medium_retention_l3_m0_peak;
+  atomic_size_t medium_retention_l3_m1_bytes;
+  atomic_size_t medium_retention_l3_m1_peak;
+  atomic_size_t medium_retention_l3_m2_bytes;
+  atomic_size_t medium_retention_l3_m2_peak;
+  atomic_size_t medium_retention_l3_clock_bytes;
+  atomic_size_t medium_retention_l3_clock_peak;
   atomic_size_t medium_madvise_fail_count;
   atomic_size_t medium_resident_empty_bytes;
   atomic_size_t medium_resident_empty_peak;

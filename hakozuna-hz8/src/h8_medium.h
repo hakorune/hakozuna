@@ -106,6 +106,9 @@ typedef struct H8MediumRun {
   uint8_t debug_retention_decommit_distance;
   uint8_t debug_retention_decommit_reason;
   bool debug_retention_decommitted_ghost;
+  uint8_t debug_retention_l3_state[4];
+  bool debug_retention_l3_reuse_evidence;
+  bool debug_retention_l3_m0_expect_decommit;
 #endif
 } H8MediumRun;
 
@@ -235,12 +238,14 @@ void h8_medium_owner_lease_shadow_check_exit(H8OwnerRecord* owner);
 #if defined(H8_ENABLE_DEBUG_STATS)
 void h8_medium_retention_shadow_owner_init(H8OwnerRecord* owner);
 void h8_medium_retention_shadow_note_empty(H8MediumRun* run);
+void h8_medium_retention_shadow_note_retain(H8MediumRun* run);
 void h8_medium_retention_shadow_note_decommit(H8MediumRun* run,
                                               H8MediumDecommitReason reason);
 void h8_medium_retention_shadow_note_alloc(H8MediumRun* run);
 #else
 #define h8_medium_retention_shadow_owner_init(owner) ((void)0)
 #define h8_medium_retention_shadow_note_empty(run) ((void)0)
+#define h8_medium_retention_shadow_note_retain(run) ((void)0)
 #define h8_medium_retention_shadow_note_decommit(run, reason) ((void)0)
 #define h8_medium_retention_shadow_note_alloc(run) ((void)0)
 #endif

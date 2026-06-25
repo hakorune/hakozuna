@@ -486,7 +486,7 @@ next measurement lanes:
                 do not move to behavior yet
 
           MediumRetentionExactCap2QShadow-L3:
-            next
+            implemented
 
             release behavior unchanged
 
@@ -525,6 +525,44 @@ next measurement lanes:
             promotion evidence:
               choose exactly one behavior only if M1/M2/Mclock predicts
               material outlier reduction within the existing retention cap
+
+            implementation note:
+              added in-process debug-only exact-cap model counters
+              M0/M1/M2/Mclock track decommit/refault/bytes/peak
+              M0 compares predicted budget decision with actual retain/reject
+
+            R30 result:
+              data=bench_results/medium_retention_exactcap_l3_20260625T021630Z/
+
+              actual:
+                sum(madvise) = 228,550
+                max minor_faults = 819,018
+                max budget_reject = 104,203
+
+              M0:
+                sum(l3_decommit_m0) = 229,450
+                sum(l3_mismatch) = 68,171
+                mismatch nonzero in 9 / 30 runs
+
+              candidate refault ratios:
+                M1 = 99.23% of M0
+                M2 = 99.06% of M0
+                Mclock = 99.41% of M0
+
+              decision:
+                baseline acceptance failed
+                do not use M1/M2/Mclock as promotion evidence
+                do not implement 2Q behavior from this data
+
+              likely cause:
+                actual resident budget and model budget are separate atomics
+                concurrent event interleavings diverge between model decision
+                and actual reserve/decommit decision
+
+              next correction:
+                either serialize debug retention decisions around actual+model
+                or log retention events and replay offline
+                require M0 per-event mismatch == 0 before behavior selection
 
           MediumOwnerClassProtected2Q-L1:
             likely behavior candidate after exact-cap shadow

@@ -223,17 +223,11 @@ Next box:
 
 ```text
 MediumRetentionExactCap2QShadow-L3:
-  release behavior unchanged
+  implemented; release behavior unchanged
 
   models:
-    M0 current first-come global budget
-    M1 second-touch 2Q, protected max 1 run / owner / class
-    M2 second-touch 2Q, protected max 2 runs / owner / class
-    Mclock exact-cap probation CLOCK / second chance
-
-  simulate independently:
-    resident/decommitted, protected/probation, byte charge
-    victim selection, promotion/demotion, owner-exit drain
+    M0 current budget, M1/M2 second-touch 2Q, Mclock probation CLOCK
+    each tracks resident state, byte charge, victim selection, and refault
 
   baseline acceptance:
     M0 budget_reject/decommit/resident bytes/peak/ghost reuse match actual
@@ -242,24 +236,29 @@ MediumRetentionExactCap2QShadow-L3:
   promotion:
     choose one behavior only if exact-cap M1/M2/Mclock predicts material
     outlier reduction inside the current retention cap
+
+  R30 result:
+    M0 aggregate close, but per-event mismatch nonzero
+    l3_mismatch sum 68,171 across 9/30 runs
+    candidate predictions not accepted
+
+  next:
+    serialized debug retention or event-log replay
+    require M0 per-event mismatch == 0
 ```
 
 Likely behavior candidate after exact-cap shadow:
 
 ```text
 MediumOwnerClassProtected2Q-L1:
-  ACTIVE_LIVE: current TLS active run, empty LIVE allowed as today
-  PROTECTED: owner/class run with reuse evidence
-  PROBATION: first-empty or weak-reuse empty run using remaining capacity
-  DECOMMITTED: no resident payload charge and no retention membership
+  ACTIVE_LIVE current active run
+  PROTECTED reused owner/class run
+  PROBATION first-empty or weak-reuse run
+  DECOMMITTED no resident charge
 
-admission/eviction:
-  first empty enters PROBATION; second-touch can promote to PROTECTED
-  evicted PROTECTED demotes to PROBATION; only cold PROBATION decommits
-
-RSS cap:
-  keep current effective bound, about 84MiB:
-    active ~=20MiB, protected ~=40MiB, probation/overflow ~=24MiB
+policy:
+  first empty enters PROBATION; second-touch may promote to PROTECTED
+  keep current effective cap, about 84MiB
 ```
 
 MediumRun-v1 RC stance:
