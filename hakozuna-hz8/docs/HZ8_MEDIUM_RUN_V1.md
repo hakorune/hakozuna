@@ -75,25 +75,6 @@ The final size table is not frozen in this document.  The current default uses
 coarse power-of-two medium classes to keep pointer identity and remote protocol
 stable before SizePolicy-v1 refines the table.
 
-Original scaffold:
-
-```text
-class sizes:
-  8192
-  16384
-  32768
-  65536
-
-run payload:
-  65536 bytes
-
-slots/run:
-  8
-  4
-  2
-  1
-```
-
 Current recorded default:
 
 ```text
@@ -244,6 +225,13 @@ MediumRetentionExactCap2QShadow-L3:
   next:
     serialized debug retention or event-log replay before any 2Q behavior
     require M0 per-event mismatch == 0
+
+MediumRetentionSerializedDebugShadow-L1:
+  implemented after L3 mismatch
+  release behavior unchanged
+  debug-only lock serializes actual resident budget transition + L3 model
+  quick medium r50 produced l3_mismatch = 0
+  full direct/preload R30 still required before behavior promotion
 ```
 
 Likely behavior candidate after exact-cap shadow:

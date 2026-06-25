@@ -112,6 +112,15 @@ next implementation:
   required gate:
     M0 per-event mismatch == 0
 
+latest implementation:
+  MediumRetentionSerializedDebugShadow-L1:
+    debug-only retention lock added around actual resident budget transitions
+    and L3 shadow updates
+    release behavior unchanged
+    quick debug medium r50:
+      medium_retention_l3 mismatch = 0
+    full direct/preload R30 retention gate still required
+
 source hygiene:
   bench report output is split into bench/h8_bench_report.c
   medium slot identity/local slot mutation primitives are split into
@@ -576,6 +585,11 @@ next measurement lanes:
                 event-log replay is preferred for clean attribution
                 serialized debug retention is acceptable if it stays debug-only
                 require M0 per-event mismatch == 0 before behavior selection
+
+            serialized-debug follow-up:
+              implemented after L3 mismatch result
+              quick medium r50 check produced l3_mismatch = 0
+              run full direct/preload R30 before using candidate predictions
 
           MediumOwnerClassProtected2Q-L1:
             likely behavior candidate after exact-cap shadow
