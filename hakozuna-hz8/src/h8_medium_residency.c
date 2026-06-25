@@ -83,6 +83,12 @@ static bool h8_medium_lazy_purge_shadow_clear(H8MediumRun* run) {
                             memory_order_acq_rel);
   return true;
 }
+
+static void h8_medium_lazy_purge_shadow_note_reuse(H8MediumRun* run) {
+  if (run && run->debug_lazy_purge_candidate) {
+    H8_DEBUG_INC(medium_lazy_purge_reuse);
+  }
+}
 #endif
 
 void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run) {
@@ -412,9 +418,7 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_retention_shadow_note_alloc(run);
   h8_medium_warm_shadow_note_alloc(run);
-  if (h8_medium_lazy_purge_shadow_clear(run)) {
-    H8_DEBUG_INC(medium_lazy_purge_reuse);
-  }
+  h8_medium_lazy_purge_shadow_note_reuse(run);
 #endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     if (run->active_live_empty_charge) {
@@ -428,7 +432,6 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
     H8_DEBUG_INC(medium_alloc_mark_live_resident);
     H8_DEBUG_INC(medium_empty_reactivate_count);
     h8_medium_release_empty_payload(run);
-    h8_medium_lazy_purge_shadow_drop(run);
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
     H8_DEBUG_INC(medium_alloc_mark_live_decommitted);
@@ -447,6 +450,13 @@ void h8_medium_mark_empty_locked(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_retention_shadow_note_empty(run);
   h8_medium_warm_shadow_install(run);
+#endif
+#if defined(H8_MEDIUM_BUDGET_REJECT_LAZY_PURGE)
+  if (run->lazy_purge_charge) {
+    run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
+    h8_medium_retention_debug_lock_release();
+    return;
+  }
 #endif
   if (run->owner_attached && h8_medium_try_reserve_empty_payload(run)) {
     h8_medium_retention_shadow_note_retain(run);

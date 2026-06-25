@@ -207,6 +207,39 @@ next behavior only if shadow supports it:
       decision:
         lazy128 passes repeat gate
         ready for default promotion review
+    semantic closure:
+      MediumLazyPurgeSemanticClosure-L1
+      decision from design review:
+        lazy charge is a persistent owner-attached run reservation
+        allocation does not release lazy charge
+        lazy-charged run does not acquire normal resident budget
+        owner detach / owner exit / run destroy release lazy charge
+        detached run cannot retain lazy charge
+      status:
+        implemented as build-time candidate
+      semantic closeout:
+        data=bench_results/medium_lazy128_semantic_closeout_20260625T160444Z/
+        direct outliers 0/30
+        preload outliers 0/30
+        direct max faults 21,189
+        preload max faults 19,702
+      semantic paired:
+        data=bench_results/20260625T160436Z_medium_chunk_paired_gate/
+        medium_interleaved_remote50 ratio 0.969
+        main_interleaved_remote90 ratio 0.998
+        small_guard_local0 ratio 1.060
+        small_interleaved_remote90 ratio 0.967
+        data=bench_results/20260625T160516Z_medium_chunk_paired_gate/
+        medium_interleaved_remote50 ratio 0.978
+        main_interleaved_remote90 ratio 1.038
+        small_guard_local0 ratio 0.948
+        small_interleaved_remote90 ratio 0.991
+      decision:
+        semantic closure fixes the lifecycle contract and keeps R30 outliers at 0
+        performance is borderline below the 0.98 paired gate on medium r50
+        keep lazy128 semantic closure as candidate
+        HOLD default promotion until a lower-overhead persistent reservation
+        or an explicit v1.1 tradeoff gate is accepted
 
 completed closeout:
   MediumRunV1RC1RetentionCloseout-L1

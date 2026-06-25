@@ -437,6 +437,43 @@ MediumBudgetRejectLazyPurge-L1:
     decision:
       lazy128 passes the repeat gate
       ready for default promotion review
+
+  semantic closure:
+    box:
+      MediumLazyPurgeSemanticClosure-L1
+    contract:
+      lazy charge is a persistent owner-attached run reservation
+      allocation does not release lazy charge
+      lazy-charged run does not acquire normal resident budget
+      owner detach / owner exit / run destroy release lazy charge
+      detached run cannot retain lazy charge
+      conservative retained-empty overhead is about 212MiB:
+        normal empty budget 64MiB
+        lazy reservation 128MiB
+        active-empty-LIVE structural bound about 20MiB
+    closeout:
+      data=bench_results/medium_lazy128_semantic_closeout_20260625T160444Z/
+      direct outliers 0/30
+      preload outliers 0/30
+      direct max faults 21,189
+      preload max faults 19,702
+    paired:
+      data=bench_results/20260625T160436Z_medium_chunk_paired_gate/
+      medium r50 ratio 0.969
+      main r90 ratio 0.998
+      small local ratio 1.060
+      small remote90 ratio 0.967
+      data=bench_results/20260625T160516Z_medium_chunk_paired_gate/
+      medium r50 ratio 0.978
+      main r90 ratio 1.038
+      small local ratio 0.948
+      small remote90 ratio 0.991
+    decision:
+      semantic closure fixes the lifecycle mismatch and keeps R30 outliers at 0
+      but paired performance is slightly below the 0.98 medium-r50 gate
+      keep lazy128 semantic closure as a candidate
+      HOLD default promotion unless the v1.1 gate explicitly accepts this
+      tradeoff or a lower-overhead persistent reservation is implemented
 ```
 
 Current route shadow:

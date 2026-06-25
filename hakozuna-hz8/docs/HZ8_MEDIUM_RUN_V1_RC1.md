@@ -317,6 +317,19 @@ if improving medium r50 stability:
   updated decision:
     lazy128 passes the repeat gate
     default promotion review can proceed
+  semantic closure:
+    data=bench_results/medium_lazy128_semantic_closeout_20260625T160444Z/
+    direct/preload outliers 0/30 and 0/30
+    data=bench_results/20260625T160436Z_medium_chunk_paired_gate/
+    medium r50 ratio 0.969
+    small remote90 ratio 0.967
+    data=bench_results/20260625T160516Z_medium_chunk_paired_gate/
+    medium r50 ratio 0.978
+    small local ratio 0.948
+  semantic decision:
+    lifecycle contract is now coherent
+    default promotion remains HOLD because paired performance is borderline
+    below the 0.98 medium-r50 gate
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane

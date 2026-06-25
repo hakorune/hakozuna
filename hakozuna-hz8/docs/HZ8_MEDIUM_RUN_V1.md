@@ -356,6 +356,24 @@ MediumBudgetRejectLazyPurge-L1:
     decision:
       lazy128 passed the repeat gate and is ready for default promotion
       review
+
+  semantic closure:
+    data:
+      bench_results/medium_lazy128_semantic_closeout_20260625T160444Z/
+      bench_results/20260625T160436Z_medium_chunk_paired_gate/
+      bench_results/20260625T160516Z_medium_chunk_paired_gate/
+    contract:
+      lazy reservation persists across allocation
+      lazy reservation is owner-attached only
+      detach / owner exit / destroy release the charge
+      lazy reservation and normal resident charge are mutually exclusive
+    result:
+      direct/preload R30 outliers 0/30 and 0/30
+      paired medium r50 ratios 0.969 and 0.978
+      paired small remote90 ratios 0.967 and 0.991
+    decision:
+      correct semantic closure is implemented
+      default promotion remains HOLD on the existing 0.98 paired gate
 ```
 
 Likely behavior candidate after exact-cap shadow:
