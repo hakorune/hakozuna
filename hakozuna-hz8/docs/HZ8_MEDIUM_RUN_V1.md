@@ -253,6 +253,39 @@ MediumOwnerClass2QRetention-L1 direct behavior attempt:
     counterfactual benefit
 ```
 
+Budget-reject MADV_FREE evidence:
+
+```text
+MediumBudgetRejectMadvFreeEvidence-L1:
+  implemented as build-time evidence only
+  default behavior remains MADV_DONTNEED
+
+  build:
+    make bench-release-mediummadvfree preload-mediummadvfree
+    make medium-retention-closeout-madvfree
+
+  data:
+    bench_results/medium_madvfree_evidence_20260625T085006Z/
+
+  result:
+    direct outliers 0/30
+    preload outliers 0/30
+    direct median 28.48M
+    preload median 29.16M
+    direct max minor faults 32,148
+    preload max minor faults 23,255
+
+  tradeoff:
+    peak RSS can rise materially
+    direct max observed peak about 132MiB
+    preload max observed peak about 96MiB
+    post RSS still returned to about 3.5MiB..4.4MiB
+
+  decision:
+    useful evidence that budget-reject DONTNEED/refault drives the outlier
+    not a default policy because immediate RSS behavior changes materially
+```
+
 Likely behavior candidate after exact-cap shadow:
 
 ```text

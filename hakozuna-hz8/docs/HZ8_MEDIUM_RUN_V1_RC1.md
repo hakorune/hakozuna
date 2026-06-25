@@ -263,6 +263,13 @@ if improving main stability:
 if improving medium r50 stability:
   do not retry raw retention behavior
   require a cheaper event path or stronger predicted benefit first
+  budget-reject MADV_FREE evidence is available through:
+    make medium-retention-closeout-madvfree
+  evidence result:
+    bench_results/medium_madvfree_evidence_20260625T085006Z/
+  interpretation:
+    DONTNEED/refault is the outlier source
+    MADV_FREE is not default because peak RSS rises materially
 
 if improving peak RSS:
   reopen SizePolicy-v1 as a separate lane

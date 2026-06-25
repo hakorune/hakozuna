@@ -228,6 +228,21 @@ MediumRunV1RC1RetentionCloseout-L1:
     direct outliers 1/30
     preload outliers 2/30
     stable-default retention promotion remains HOLD
+
+MediumBudgetRejectMadvFreeEvidence-L1:
+  build-time evidence only
+  make medium-retention-closeout-madvfree
+  data:
+    bench_results/medium_madvfree_evidence_20260625T085006Z/
+  result:
+    direct outliers 0/30
+    preload outliers 0/30
+    max minor faults fell materially
+    peak RSS increased materially
+  interpretation:
+    confirms budget-reject DONTNEED/refault is the outlier source
+    not promoted as default
+    ChunkArena remains a separate placement/VMA lane
 ```
 
 Current route shadow:

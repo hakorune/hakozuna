@@ -232,7 +232,19 @@ void h8_medium_release_empty_payload(H8MediumRun* run) {
   run->resident_charge = false;
 }
 
-static void h8_medium_madvise_run(H8MediumRun* run) {
+static int h8_medium_madvise_advice(H8MediumDecommitReason reason) {
+#if defined(H8_MEDIUM_BUDGET_REJECT_MADV_FREE) && defined(MADV_FREE)
+  if (reason == H8_MEDIUM_DECOMMIT_BUDGET_REJECT) {
+    return MADV_FREE;
+  }
+#else
+  (void)reason;
+#endif
+  return MADV_DONTNEED;
+}
+
+static void h8_medium_madvise_run(H8MediumRun* run,
+                                  H8MediumDecommitReason reason) {
   if (!run || !run->base || run->run_size == 0) {
     return;
   }
@@ -240,7 +252,7 @@ static void h8_medium_madvise_run(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_residency_now_ns();
 #endif
-  if (madvise(run->base, run->run_size, MADV_DONTNEED) != 0) {
+  if (madvise(run->base, run->run_size, h8_medium_madvise_advice(reason)) != 0) {
     H8_DEBUG_INC(medium_madvise_fail_count);
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -268,8 +280,18 @@ static void h8_medium_decommit_empty_with_reason_locked_impl(
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     h8_medium_clear_active_live_empty(run);
   }
-  h8_medium_madvise_run(run);
+  h8_medium_madvise_run(run, reason);
   h8_medium_release_empty_payload(run);
+#if defined(H8_MEDIUM_BUDGET_REJECT_MADV_FREE) && defined(MADV_FREE)
+  if (reason == H8_MEDIUM_DECOMMIT_BUDGET_REJECT) {
+    /*
+     * MADV_FREE may keep pages resident until pressure; owner-exit hard drain
+     * must still see this run as physically purgeable.
+     */
+    run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
+    return;
+  }
+#endif
   run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
 }
 

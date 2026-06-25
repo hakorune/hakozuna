@@ -8,13 +8,15 @@ RUNS="${RUNS:-30}"
 THREADS="${THREADS:-16}"
 ITERS="${ITERS:-100000}"
 LIVE_WINDOW="${LIVE_WINDOW:-4096}"
-BENCH_BIN="${HZ8_ROOT}/h8_bench_release"
+BENCH_BIN="${BENCH_BIN:-${HZ8_ROOT}/h8_bench_release}"
 MATRIX_BIN="${ROOT_DIR}/bench/out/bench_matrix_malloc"
-PRELOAD_SO="${HZ8_ROOT}/libhakozuna_hz8_preload.so"
+PRELOAD_SO="${PRELOAD_SO:-${HZ8_ROOT}/libhakozuna_hz8_preload.so}"
 
 mkdir -p "${OUTDIR}" "$(dirname "${MATRIX_BIN}")"
 
-make -C "${HZ8_ROOT}" bench-release preload >/dev/null
+if [[ "${H8_SKIP_BUILD:-0}" != "1" ]]; then
+  make -C "${HZ8_ROOT}" bench-release preload >/dev/null
+fi
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
   -pthread -o "${MATRIX_BIN}" "${ROOT_DIR}/bench/bench_matrix_malloc.c"
 
