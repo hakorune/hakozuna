@@ -505,6 +505,12 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
     uint64_t old_free_mask = run->free_mask;
     run->allocated_mask &= ~accepted;
     run->free_mask |= accepted;
+    if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
+        ctx->active_medium_runs[run->class_id] == run) {
+      H8_DEBUG_INC(medium_collect_active_run);
+    } else {
+      H8_DEBUG_INC(medium_collect_nonactive_run);
+    }
     h8_medium_debug_note_collect_capacity(owner, run, accepted, old_free_mask,
                                           source);
     h8_medium_available_shadow_after_mask_change_ctx(run, ctx);
@@ -646,6 +652,9 @@ static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
     if (h8_medium_collect_run(owner, run, ctx, source)) {
       h8_medium_pending_queue_push(owner, run);
     }
+  }
+  if (processed == 0) {
+    H8_DEBUG_INC(medium_collect_zero_run_call);
   }
 done:
   H8_DEBUG_ADD(medium_remote_collect_ns,

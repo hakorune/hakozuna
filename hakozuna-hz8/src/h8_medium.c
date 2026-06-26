@@ -50,11 +50,15 @@ void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner) {
 
 void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
                                               H8MediumRun* active) {
+  H8_DEBUG_INC(medium_active_miss_total);
   if (!ctx || !ctx->owner) {
     return;
   }
-  if (h8_medium_owner_has_pending(ctx->owner)) {
+  bool owner_pending = h8_medium_owner_has_pending(ctx->owner);
+  if (owner_pending) {
     H8_DEBUG_INC(medium_active_miss_owner_pending);
+  } else {
+    H8_DEBUG_INC(medium_active_miss_no_pending);
   }
   if (!active || active->class_id >= H8_MEDIUM_CLASS_COUNT) {
     return;
@@ -68,10 +72,13 @@ void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
     H8_DEBUG_INC(medium_active_miss_active_pending);
     H8_DEBUG_ADD(medium_active_miss_active_pending_slots,
                  (size_t)__builtin_popcountll(pending));
+  } else {
+    H8_DEBUG_INC(medium_active_miss_active_pending_zero);
   }
 }
 
 void h8_medium_debug_note_owner_list_hit_position(size_t position) {
+  H8_DEBUG_INC(medium_active_miss_owner_list_hit);
   if (position <= 1u) {
     H8_DEBUG_INC(medium_active_miss_owner_list_pos1);
   } else if (position == 2u) {
@@ -115,8 +122,15 @@ void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
                                            H8MediumCollectSource source) {
   size_t slots = (size_t)__builtin_popcountll(accepted);
   h8_medium_debug_collect_source_add(source, 1u, slots);
+  if (slots == 0) {
+    H8_DEBUG_INC(medium_collect_zero_slot_run);
+  }
   if (!owner || !run || slots == 0) {
     return;
+  }
+  if (run->debug_collect_free_credits != 0) {
+    H8_DEBUG_ADD(medium_collect_credit_outstanding_at_next_collect,
+                 run->debug_collect_free_credits);
   }
   if (old_free_mask == 0) {
     H8_DEBUG_INC(medium_collect_full_to_nonfull_run);
@@ -136,6 +150,28 @@ void h8_medium_debug_note_alloc_collect_credit(H8OwnerRecord* owner,
   H8_DEBUG_INC(medium_collect_credit_reused);
   uint64_t delta =
       owner->debug_medium_alloc_epoch - run->debug_collect_owner_alloc_epoch;
+  bool quick = delta <= 7u;
+  if (run->class_id == 0u) {
+    H8_DEBUG_INC(medium_collect_credit_reused_class_8k);
+    if (quick) {
+      H8_DEBUG_INC(medium_collect_credit_quick_class_8k);
+    }
+  } else if (run->class_id == 1u) {
+    H8_DEBUG_INC(medium_collect_credit_reused_class_16k);
+    if (quick) {
+      H8_DEBUG_INC(medium_collect_credit_quick_class_16k);
+    }
+  } else if (run->class_id == 2u) {
+    H8_DEBUG_INC(medium_collect_credit_reused_class_32k);
+    if (quick) {
+      H8_DEBUG_INC(medium_collect_credit_quick_class_32k);
+    }
+  } else if (run->class_id + 1u == H8_MEDIUM_CLASS_COUNT) {
+    H8_DEBUG_INC(medium_collect_credit_reused_class_64k);
+    if (quick) {
+      H8_DEBUG_INC(medium_collect_credit_quick_class_64k);
+    }
+  }
   if (delta <= 1u) {
     H8_DEBUG_INC(medium_collect_credit_reuse_d0_1);
   } else if (delta <= 3u) {

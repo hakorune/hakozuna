@@ -389,12 +389,20 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_alloc_slot_store_ns, memory_order_acquire);
   out->medium_alloc_ptr_ns = atomic_load_explicit(
       &h8g.medium_alloc_ptr_ns, memory_order_acquire);
+  out->medium_active_miss_total = atomic_load_explicit(
+      &h8g.medium_active_miss_total, memory_order_acquire);
+  out->medium_active_miss_no_pending = atomic_load_explicit(
+      &h8g.medium_active_miss_no_pending, memory_order_acquire);
   out->medium_active_miss_owner_pending = atomic_load_explicit(
       &h8g.medium_active_miss_owner_pending, memory_order_acquire);
   out->medium_active_miss_active_pending = atomic_load_explicit(
       &h8g.medium_active_miss_active_pending, memory_order_acquire);
+  out->medium_active_miss_active_pending_zero = atomic_load_explicit(
+      &h8g.medium_active_miss_active_pending_zero, memory_order_acquire);
   out->medium_active_miss_active_pending_slots = atomic_load_explicit(
       &h8g.medium_active_miss_active_pending_slots, memory_order_acquire);
+  out->medium_active_miss_owner_list_hit = atomic_load_explicit(
+      &h8g.medium_active_miss_owner_list_hit, memory_order_acquire);
   out->medium_active_miss_owner_list_pos1 = atomic_load_explicit(
       &h8g.medium_active_miss_owner_list_pos1, memory_order_acquire);
   out->medium_active_miss_owner_list_pos2 = atomic_load_explicit(
@@ -435,10 +443,21 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_src_owner_exit_slot, memory_order_acquire);
   out->medium_collect_full_to_nonfull_run = atomic_load_explicit(
       &h8g.medium_collect_full_to_nonfull_run, memory_order_acquire);
+  out->medium_collect_zero_run_call = atomic_load_explicit(
+      &h8g.medium_collect_zero_run_call, memory_order_acquire);
+  out->medium_collect_zero_slot_run = atomic_load_explicit(
+      &h8g.medium_collect_zero_slot_run, memory_order_acquire);
+  out->medium_collect_active_run = atomic_load_explicit(
+      &h8g.medium_collect_active_run, memory_order_acquire);
+  out->medium_collect_nonactive_run = atomic_load_explicit(
+      &h8g.medium_collect_nonactive_run, memory_order_acquire);
   out->medium_collect_credit_created = atomic_load_explicit(
       &h8g.medium_collect_credit_created, memory_order_acquire);
   out->medium_collect_credit_reused = atomic_load_explicit(
       &h8g.medium_collect_credit_reused, memory_order_acquire);
+  out->medium_collect_credit_outstanding_at_next_collect =
+      atomic_load_explicit(&h8g.medium_collect_credit_outstanding_at_next_collect,
+                           memory_order_acquire);
   out->medium_collect_credit_reuse_d0_1 = atomic_load_explicit(
       &h8g.medium_collect_credit_reuse_d0_1, memory_order_acquire);
   out->medium_collect_credit_reuse_d2_3 = atomic_load_explicit(
@@ -453,6 +472,22 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_credit_discarded, memory_order_acquire);
   out->medium_collect_credit_underflow = atomic_load_explicit(
       &h8g.medium_collect_credit_underflow, memory_order_acquire);
+  out->medium_collect_credit_reused_class_8k = atomic_load_explicit(
+      &h8g.medium_collect_credit_reused_class_8k, memory_order_acquire);
+  out->medium_collect_credit_reused_class_16k = atomic_load_explicit(
+      &h8g.medium_collect_credit_reused_class_16k, memory_order_acquire);
+  out->medium_collect_credit_reused_class_32k = atomic_load_explicit(
+      &h8g.medium_collect_credit_reused_class_32k, memory_order_acquire);
+  out->medium_collect_credit_reused_class_64k = atomic_load_explicit(
+      &h8g.medium_collect_credit_reused_class_64k, memory_order_acquire);
+  out->medium_collect_credit_quick_class_8k = atomic_load_explicit(
+      &h8g.medium_collect_credit_quick_class_8k, memory_order_acquire);
+  out->medium_collect_credit_quick_class_16k = atomic_load_explicit(
+      &h8g.medium_collect_credit_quick_class_16k, memory_order_acquire);
+  out->medium_collect_credit_quick_class_32k = atomic_load_explicit(
+      &h8g.medium_collect_credit_quick_class_32k, memory_order_acquire);
+  out->medium_collect_credit_quick_class_64k = atomic_load_explicit(
+      &h8g.medium_collect_credit_quick_class_64k, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(
