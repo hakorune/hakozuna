@@ -595,6 +595,25 @@ MediumSizePolicy-v1.2-48K2-AB:
     decision:
       do not default-promote v12_48k2 yet
       medium_r50 win is real, but main_r90 p25 stability remains the blocker
+  stability recheck:
+    data:
+      bench_results/20260626T140729Z_medium_v12_48k2_mainr90_stability/
+      bench_results/20260626T140756Z_medium_v12_48k2_medium_small_stability/
+    main_r90:
+      R15 x 4 alternating did not reproduce the earlier p25 failure
+      v12 p25 ratios 1.136 / 1.000 / 1.126 / 1.404
+      v12 minor faults were lower or comparable in all batches
+    medium_r50:
+      R15 x 2 median ratios 1.071 / 1.009
+      p25 ratios 1.100 / 0.995
+      v12 minor faults lower in both batches
+    small_remote90:
+      R15 x 2 median ratios 1.020 / 1.010
+      p25 ratios 1.099 / 1.005
+    updated decision:
+      earlier main_r90 p25 failure is likely variance
+      v12_48k2 remains viable
+      require one final longer mixed gate before default promotion
 
 64K two-slot:
   medium r50 positive

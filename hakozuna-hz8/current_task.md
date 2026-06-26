@@ -623,6 +623,47 @@ latest local-leaf probe:
         do not default-promote v12_48k2 yet
         main_r90 p25 stability is the blocker despite strong medium_r50
         improvement
+    stability recheck:
+      data:
+        bench_results/20260626T140729Z_medium_v12_48k2_mainr90_stability/
+        bench_results/20260626T140756Z_medium_v12_48k2_medium_small_stability/
+      main_r90 R15 x 4 alternating:
+        baseline median mean:
+          23.55M
+        v12 median mean:
+          25.43M
+        baseline p25 mean:
+          20.81M
+        v12 p25 mean:
+          23.92M
+        p25 ratios:
+          1.136 / 1.000 / 1.126 / 1.404
+        minor faults:
+          v12 median faults lower or comparable in all four batches
+        interpretation:
+          earlier main_r90 p25 failure did not reproduce
+          v12 main_r90 p25 is more stable in this longer recheck
+      medium_r50 R15 x 2 alternating:
+        median ratios:
+          1.071 / 1.009
+        p25 ratios:
+          1.100 / 0.995
+        minor faults:
+          v12 lower in both batches
+        interpretation:
+          positive but smaller than first R10 x2 in the second batch
+          remaining min variance is throughput noise, not fault/RSS regression
+      small_remote90 R15 x 2 alternating:
+        median ratios:
+          1.020 / 1.010
+        p25 ratios:
+          1.099 / 1.005
+        interpretation:
+          no small-v0 regression signal
+      updated decision:
+        main_r90 instability looks like measurement variance
+        v12_48k2 remains a viable candidate
+        require one final longer mixed gate before default promotion
     quick sanity:
       medium_r50-shaped smoke:
         one-slot v12 run ratio vs default64k2 about 1.31
