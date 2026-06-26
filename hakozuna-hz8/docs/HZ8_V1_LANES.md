@@ -97,6 +97,29 @@ residency candidate:
   128MiB lazy reservation cap
   conservative retained-empty overhead about 212MiB
   promoted as MediumRun-v1.1 default after longer fresh alternating gates
+
+current allocator matrix snapshot:
+  primary_data:
+    bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
+  phase_data:
+    bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
+  harness:
+    scripts/run_hz8_v11_same_run_matrix.sh
+  caveat:
+    HZ8 rows are direct h8_malloc/h8_free API rows, not LD_PRELOAD rows,
+    because the current HZ8 preload surface intentionally does not provide
+    realloc; other allocators are switched with LD_PRELOAD
+  read:
+    small local remains strong
+    main_r90 is better than legacy64k2/mimalloc/system and still behind
+    tcmalloc/HZ3/HZ4
+    medium local0 and medium r50 remain the clearest throughput weaknesses
+    HZ8 keeps much lower post RSS than tcmalloc/HZ3/HZ4/mimalloc on the
+    medium/main rows
+  decision:
+    keep q64-v12-48k2 + lazy128 as the MediumRun-v1.1 default
+    do not reopen retention, owner queue, or remote protocol without a new
+    >=5% bucket
 ```
 
 Next local-leaf lane:

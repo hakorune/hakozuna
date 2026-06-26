@@ -119,6 +119,39 @@ current lane:
   medium/main/small gates
   ChunkArena remains HOLD as default
 
+  HZ8-v1.1 current matrix snapshot is recorded
+  data=bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
+  phase_data=bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
+  harness=scripts/run_hz8_v11_same_run_matrix.sh
+  caveat:
+    HZ8 and hz8_legacy64k2 rows use the direct h8_malloc/h8_free API
+    because the current HZ8 preload surface does not implement realloc;
+    external allocators are still selected with LD_PRELOAD
+  matrix read:
+    small guard/local:
+      HZ8 309.45M, second behind hz8_legacy64k2 and ahead of tcmalloc
+      in this direct-API harness
+    small remote90:
+      HZ8 12.94M, close to legacy64k2, below tcmalloc/mimalloc/HZ3
+      but with much lower post RSS
+    medium local0:
+      HZ8 107.68M, below tcmalloc/HZ3/system/legacy64k2
+    medium r50:
+      HZ8 8.98M, below tcmalloc/HZ3/legacy64k2, above HZ4/mimalloc/system
+    main r50:
+      HZ8 10.05M, roughly tied with legacy64k2 and below tcmalloc/HZ3/HZ4
+    main r90:
+      HZ8 6.68M, ahead of legacy64k2/mimalloc/system, below
+      tcmalloc/HZ3/HZ4
+    RSS:
+      HZ8 post RSS remains about 3-6MiB across medium/main rows while
+      tcmalloc/HZ3/HZ4/mimalloc retain much larger post-RSS footprints
+  decision:
+    v12_48k2 remains the default because it improves main_r90 and RSS
+    positioning while preserving lazy128-v1.1 safety contracts
+    remaining weakness is still medium/main local throughput and medium r50
+    relative to tcmalloc/HZ3, not retention stability
+
 latest local-leaf probe:
   MediumSlotPtrKnown-L1
     implemented

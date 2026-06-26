@@ -415,6 +415,43 @@ protocol/geometry/lifecycle RC can proceed
 lazy128 residency is the MediumRun-v1.1 default
 ```
 
+Current v1.1 allocator matrix snapshot:
+
+```text
+primary:
+  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
+
+phase stress:
+  bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
+
+runner:
+  scripts/run_hz8_v11_same_run_matrix.sh
+
+caveat:
+  HZ8 and hz8_legacy64k2 matrix rows use direct h8_malloc/h8_free binaries;
+  external allocators use LD_PRELOAD
+```
+
+Interpretation:
+
+```text
+keep:
+  q64-v12-48k2 geometry
+  lazy128 residency
+
+strong:
+  main_r90 beats legacy64k2/mimalloc/system with low post RSS
+  medium/main post RSS remains much lower than tcmalloc/HZ3/HZ4/mimalloc
+
+weak:
+  medium_local0 and medium_interleaved_r50 still trail tcmalloc/HZ3
+  main_local0 still trails tcmalloc/system and is near HZ3
+
+next:
+  future work should target medium/main throughput lanes or size policy;
+  do not reopen retention or remote protocol without a new material bucket
+```
+
 Recorded candidate outcomes:
 
 ```text

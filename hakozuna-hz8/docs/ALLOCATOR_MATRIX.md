@@ -116,8 +116,9 @@ bench_results/20260623T160850Z_v0_freeze_phase4096_r10.log
 `SameRunAllocatorMatrix-L1` must keep HZ8 allocator behavior fixed.  Only the
 harness, allocator resolver, parser, and documentation should change.
 
-Use one common benchmark binary that calls plain `malloc` and `free` only, then
-switch allocators with startup `LD_PRELOAD`.
+Use one common benchmark harness.  External allocators are selected with startup
+`LD_PRELOAD`; HZ8 rows use direct h8_malloc/h8_free binaries until the HZ8
+preload surface has a safe realloc contract.
 
 Implementation:
 
@@ -125,14 +126,16 @@ Implementation:
 bench/bench_matrix_malloc.c:
   plain malloc/free benchmark harness
 
-bench/run_hz8_same_run_matrix.sh:
-  builds HZ8 preload and the matrix harness
+scripts/run_hz8_v11_same_run_matrix.sh:
+  builds HZ8 direct binaries, HZ8 preload artifacts, and the matrix harness
   runs each allocator sample in a fresh process
   rotates allocator order per run
   writes README.log, samples.csv, summary.md, and raw per-case logs
 
-bench/lib/bench_common.sh:
-  resolves hz8 via HZ8_SO or hakozuna-hz8/libhakozuna_hz8_preload.so
+HZ8 caveat:
+  hz8 and hz8_legacy64k2 use direct API payload allocation
+  external allocators use LD_PRELOAD
+  this avoids false failures from libc/pthread realloc under HZ8 preload
 ```
 
 ```text
@@ -169,14 +172,22 @@ Do not rank the phase row by throughput alone.
 Default invocation:
 
 ```bash
-bench/run_hz8_same_run_matrix.sh --runs 10
+RUNS=5 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
 ```
 
 Short smoke:
 
 ```bash
 ALLOCATORS=system,hz8 RUNS=1 THREADS=2 ITERS=1000 LIVE_WINDOW=128 \
-  bench/run_hz8_same_run_matrix.sh
+  scripts/run_hz8_v11_same_run_matrix.sh
+```
+
+Phase stress is intentionally explicit because it constructs a live barrier
+workload:
+
+```bash
+ROWS=medium_phase_r90 RUNS=3 THREADS=16 ITERS=1000 \
+  scripts/run_hz8_v11_same_run_matrix.sh
 ```
 
 Latest same-run result:
@@ -232,6 +243,86 @@ small-v0:
 
 next:
   SizePolicy-v1, then MediumRun-v1
+```
+
+### HZ8 v1.1 current matrix snapshot
+
+This snapshot compares the current MediumRun-v1.1 default after `lazy128` and
+`q64-v12-48k2` promotion.
+
+```text
+primary data:
+  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/summary.md
+  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/samples.csv
+
+phase stress data:
+  bench_results/hz8_v11_same_run_matrix_20260626T150540Z/summary.md
+  bench_results/hz8_v11_same_run_matrix_20260626T150540Z/samples.csv
+
+runner:
+  scripts/run_hz8_v11_same_run_matrix.sh
+
+samples:
+  primary rows: 7 rows * 7 allocators * 5 fresh process samples
+  phase row:    1 row  * 7 allocators * 3 fresh process samples
+
+caveat:
+  HZ8 and hz8_legacy64k2 are measured through direct h8_malloc/h8_free
+  binaries.  The current HZ8 preload surface does not implement realloc,
+  so a generic LD_PRELOAD harness may fail if libc or pthread code calls
+  realloc internally.  External allocators are still selected with LD_PRELOAD.
+```
+
+Primary rows, median ops/s:
+
+| Row | HZ8 | HZ8 legacy64k2 | HZ3 | HZ4 | mimalloc | tcmalloc | system |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `guard_local0` | 309.45M | 331.88M | 152.77M | 46.31M | 96.35M | 275.44M | 198.35M |
+| `small_interleaved_remote90` | 12.94M | 13.25M | 13.30M | 11.09M | 15.49M | 25.88M | 6.54M |
+| `medium_local0` | 107.68M | 113.64M | 153.09M | 25.45M | 27.17M | 251.38M | 139.82M |
+| `medium_interleaved_r50` | 8.98M | 9.73M | 17.13M | 8.87M | 5.36M | 17.50M | 2.19M |
+| `main_local0` | 133.71M | 147.45M | 136.59M | 27.28M | 31.28M | 287.72M | 162.92M |
+| `main_interleaved_r50` | 10.05M | 10.05M | 15.95M | 12.31M | 10.63M | 22.55M | 4.33M |
+| `main_interleaved_r90` | 6.68M | 6.11M | 11.15M | 9.85M | 6.53M | 14.09M | 3.13M |
+
+RSS highlights:
+
+| Row | Allocator | post RSS | peak RSS |
+|---|---|---:|---:|
+| `medium_interleaved_r50` | HZ8 | 3.66MiB | 57.12MiB |
+| `medium_interleaved_r50` | tcmalloc | 184.25MiB | 184.38MiB |
+| `medium_interleaved_r50` | HZ3 | 250.93MiB | 254.25MiB |
+| `main_interleaved_r90` | HZ8 | 4.27MiB | 62.38MiB |
+| `main_interleaved_r90` | tcmalloc | 185.75MiB | 185.88MiB |
+| `main_interleaved_r90` | HZ3 | 290.66MiB | 297.25MiB |
+
+Medium phase stress is not a throughput ranking gate.  The lightweight matrix
+row used `ITERS=1000` and confirms HZ8 post-RSS recovery:
+
+| Row | Allocator | median ops/s | post RSS | peak RSS |
+|---|---|---:|---:|---:|
+| `medium_phase_r90` | HZ8 | 0.143M | 6.14MiB | 129.25MiB |
+| `medium_phase_r90` | HZ8 legacy64k2 | 0.141M | 6.02MiB | 129.13MiB |
+| `medium_phase_r90` | tcmalloc | 0.532M | 129.75MiB | 129.88MiB |
+| `medium_phase_r90` | HZ3 | 0.651M | 136.61MiB | 140.75MiB |
+
+Interpretation:
+
+```text
+strong:
+  small local remains competitive
+  main_r90 beats legacy64k2/mimalloc/system and keeps very low post RSS
+  lazy128/v12_48k2 default preserves the RSS-recovery position
+
+weak:
+  medium local0 and medium r50 are still behind tcmalloc/HZ3
+  main_local0 remains behind tcmalloc/system and roughly HZ3
+  medium phase throughput is low, but the row is lifecycle/RSS stress
+
+decision:
+  keep q64-v12-48k2 + lazy128 as the current MediumRun-v1.1 default
+  use future work for targeted medium/main throughput lanes, not retention
+  or remote-protocol churn without a new material bucket
 ```
 
 ## One-line positioning
