@@ -26,8 +26,15 @@
 #if !defined(H8_MEDIUM_RESIDENT_BUDGET_CLASSES)
 #define H8_MEDIUM_RESIDENT_BUDGET_CLASSES 16u
 #endif
+#if defined(H8_MEDIUM_V12_48K2_CLASS) && defined(H8_MEDIUM_LEGACY_Q64_RUN64K2)
+#error "H8_MEDIUM_V12_48K2_CLASS and H8_MEDIUM_LEGACY_Q64_RUN64K2 are mutually exclusive"
+#endif
 #if defined(H8_MEDIUM_V12_48K2_CLASS) && defined(H8_MEDIUM_UPPER48_CLASS)
 #error "H8_MEDIUM_V12_48K2_CLASS and H8_MEDIUM_UPPER48_CLASS are mutually exclusive"
+#endif
+#if !defined(H8_MEDIUM_LEGACY_Q64_RUN64K2) && \
+    !defined(H8_MEDIUM_UPPER48_CLASS)
+#define H8_MEDIUM_V12_48K2_CLASS 1
 #endif
 #if defined(H8_MEDIUM_V12_48K2_CLASS) && defined(H8_MEDIUM_64K_ONE_SLOT)
 #error "H8_MEDIUM_V12_48K2_CLASS requires the default 64K two-slot geometry"

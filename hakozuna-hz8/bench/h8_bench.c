@@ -1,4 +1,5 @@
 #include "../include/h8.h"
+#include "../src/h8_medium.h"
 #include "h8_bench_support.h"
 
 #include <pthread.h>

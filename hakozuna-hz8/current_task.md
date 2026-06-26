@@ -32,16 +32,19 @@ medium range:
   4097..65536
 
 medium classes:
-  8K / 16K / 32K / 64K
+  8K / 16K / 24K / 32K / 48K / 64K
 
 medium geometry:
-  q64-run64k2
+  q64-v12-48k2
+  24K class uses 64KiB run / 2 slots
+  48K class uses 128KiB run / 2 slots
   64K class uses 128KiB run / 2 slots
 
 medium identity:
   direct registry
   64KiB quantum directory
-  power-of-two slot decode
+  power-of-two slot decode for p2 classes
+  exact multiply/divide slot decode for 24K / 48K classes
   interior pointers INVALID
 
 medium residency:
@@ -49,6 +52,9 @@ medium residency:
   TLS active empty-live retention
   ctx-aware collector active-empty-live retention
   owner exit is the hard drain point
+
+legacy comparison:
+  q64-run64k2 remains available through medium64k2 build targets
 
 medium residency candidate:
   lazy128 persistent owner-attached reservation
@@ -546,17 +552,19 @@ latest local-leaf probe:
 
   MediumSizePolicy-v1.2-48K2-AB:
     status:
-      NEXT implementation / build-time candidate only
+      promoted as current default
     scope:
-      add opt-in H8_MEDIUM_V12_48K2_CLASS build
+      H8_MEDIUM_V12_48K2_CLASS is the default medium geometry
       medium classes become 8K / 16K / 24K / 32K / 48K / 64K
       24K uses 64KiB run / 2 slots
       48K uses 128KiB run / 2 slots
-      default q64-run64k2 behavior remains unchanged
-      non-power-of-two slot decode is enabled only for this candidate
+      legacy q64-run64k2 remains available through medium64k2 targets
+      non-power-of-two slot decode is limited to 24K / 48K classes
     build targets:
       bench-mediumv12_48k2
       bench-release-mediumv12_48k2
+      bench and bench-release now use v12_48k2 by default
+      bench-medium64k2 and bench-release-medium64k2 keep legacy q64-run64k2
     acceptance:
       paired release R10 x 2 before promotion
       medium_r50 median >= baseline * 1.03 as initial evidence target
@@ -664,6 +672,42 @@ latest local-leaf probe:
         main_r90 instability looks like measurement variance
         v12_48k2 remains a viable candidate
         require one final longer mixed gate before default promotion
+    promotion:
+      default geometry after stability recheck
+      continue watching main_r90 p25 in mixed gates
+    default promotion gate:
+      data:
+        bench_results/20260626T143003Z_medium_v12_default_gate/
+        bench_results/20260626T143026Z_medium_v12_default_small_recheck/
+        bench_results/20260626T143055Z_medium_v12_default_small_r30/
+      default-vs-legacy medium_r50 R10 x 2:
+        median ratios:
+          1.127 / 1.088
+        p25 ratios:
+          1.117 / 1.050
+        minor faults:
+          default lower in both batches
+      default-vs-legacy main_r90 R10 x 2:
+        median ratios:
+          1.016 / 1.055
+        p25 ratios:
+          1.041 / 1.199
+        minor faults:
+          default lower in both batches
+      small_remote90:
+        R10 x 2 had one noisy p25-low batch, but R30 recheck cleared it
+        R30 median:
+          legacy 52.05M
+          default 52.26M
+        R30 p25:
+          legacy 50.86M
+          default 51.20M
+        R30 minor faults:
+          default median comparable and max lower
+      default decision:
+        GO
+        v12_48k2 is now the current default medium geometry
+        legacy q64-run64k2 remains available through medium64k2 targets
     quick sanity:
       medium_r50-shaped smoke:
         one-slot v12 run ratio vs default64k2 about 1.31

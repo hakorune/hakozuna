@@ -80,9 +80,12 @@ implemented:
   medium active owner-check collapse
 
 default geometry:
-  8K / 16K / 32K / 64K
-  q64-run64k2
+  8K / 16K / 24K / 32K / 48K / 64K
+  q64-v12-48k2
+  24K class uses 64KiB run / 2 slots
+  48K class uses 128KiB run / 2 slots
   64K class uses 128KiB run / 2 slots
+  q64-run64k2 remains available as a legacy comparison target
 
 default residency:
   budgeted empty-resident retention
@@ -531,7 +534,7 @@ MediumSizePolicy-v1.2-Shadow-48K2:
 
 MediumSizePolicy-v1.2-48K2-AB:
   status:
-    NEXT implementation / build-time candidate only
+    promoted as current default
   scope:
     opt-in H8_MEDIUM_V12_48K2_CLASS build
     class map:
@@ -554,6 +557,8 @@ MediumSizePolicy-v1.2-48K2-AB:
   build targets:
     bench-mediumv12_48k2
     bench-release-mediumv12_48k2
+    bench / bench-release now use this geometry by default
+    bench-medium64k2 / bench-release-medium64k2 keep legacy q64-run64k2
   acceptance:
     paired release R10 x 2 before promotion
     medium_r50 median >= baseline * 1.03 as initial evidence target
@@ -614,6 +619,28 @@ MediumSizePolicy-v1.2-48K2-AB:
       earlier main_r90 p25 failure is likely variance
       v12_48k2 remains viable
       require one final longer mixed gate before default promotion
+  promotion:
+    default geometry after stability recheck
+    continue to watch main_r90 p25 in mixed gates
+  default promotion gate:
+    data:
+      bench_results/20260626T143003Z_medium_v12_default_gate/
+      bench_results/20260626T143026Z_medium_v12_default_small_recheck/
+      bench_results/20260626T143055Z_medium_v12_default_small_r30/
+    medium_r50 R10 x 2:
+      median ratios 1.127 / 1.088
+      p25 ratios 1.117 / 1.050
+      minor faults lower in both batches
+    main_r90 R10 x 2:
+      median ratios 1.016 / 1.055
+      p25 ratios 1.041 / 1.199
+      minor faults lower in both batches
+    small_remote90:
+      noisy R10 batch did not reproduce in R30
+      R30 default median/p25 slightly above legacy
+    default decision:
+      GO
+      v12_48k2 is the current default medium geometry
 
 64K two-slot:
   medium r50 positive

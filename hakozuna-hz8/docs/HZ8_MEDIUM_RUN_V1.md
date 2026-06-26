@@ -71,25 +71,32 @@ metadata:
   outside payload
 ```
 
-The final size table is not frozen in this document.  The current default uses
-coarse power-of-two medium classes to keep pointer identity and remote protocol
-stable before SizePolicy-v1 refines the table.
+The final size table remains a policy boundary.  The current default uses the
+v12 48K2 medium table, while preserving the same owner queue, pending bitmap,
+qstate, and quantum-directory contracts.
 
 Current recorded default:
 
 ```text
 class map:
-  8K / 16K / 32K / 64K
+  8K / 16K / 24K / 32K / 48K / 64K
 
 run geometry:
-  q64-run64k2
+  q64-v12-48k2
   8K  class:  64KiB run / 8 slots
   16K class:  64KiB run / 4 slots
+  24K class:  64KiB run / 2 slots
   32K class:  64KiB run / 2 slots
+  48K class: 128KiB run / 2 slots
   64K class: 128KiB run / 2 slots
 
 identity:
   64KiB quantum directory
+  power-of-two slot decode for p2 classes
+  exact multiply/divide slot decode for 24K / 48K classes
+
+legacy comparison:
+  q64-run64k2 remains available through medium64k2 build targets
   directory capacity: 65536 quanta
   per-run mmap remains the default
 
@@ -415,7 +422,7 @@ Recorded candidate outcomes:
   128KiB run / 2 slots for 64K class
   medium r50 improved materially
   promoted with budget16 after order-rotated frozen small reruns
-  current default geometry
+  former default geometry; retained as legacy comparison
 
 chunk carve candidate:
   build-time H8_MEDIUM_CHUNK_CARVE
