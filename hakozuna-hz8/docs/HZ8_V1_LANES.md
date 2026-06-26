@@ -100,19 +100,20 @@ residency candidate:
 
 current allocator matrix snapshot:
   primary_data:
+    bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
+  previous_direct_api_data:
     bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
   phase_data:
     bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
   harness:
     scripts/run_hz8_v11_same_run_matrix.sh
-  caveat:
-    HZ8 rows are direct h8_malloc/h8_free API rows, not LD_PRELOAD rows,
-    because the current HZ8 preload surface intentionally does not provide
-    realloc; other allocators are switched with LD_PRELOAD
+  current runner:
+    HZ8PreloadReallocCompat-L1 added realloc forwarding / allocate-copy-free
+    support, so the current matrix uses LD_PRELOAD for HZ8 and hz8_legacy64k2
   read:
     small local remains strong
-    main_r90 is better than legacy64k2/mimalloc/system and still behind
-    tcmalloc/HZ3/HZ4
+    main_r90 is better than legacy64k2/system, close to mimalloc, and still
+    behind tcmalloc/HZ3/HZ4
     medium local0 and medium r50 remain the clearest throughput weaknesses
     HZ8 keeps much lower post RSS than tcmalloc/HZ3/HZ4/mimalloc on the
     medium/main rows

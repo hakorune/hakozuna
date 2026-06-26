@@ -48,6 +48,70 @@ static void* adoption_roundtrip(void* arg) {
   return NULL;
 }
 
+static int check_realloc_api(void) {
+  char* p = h8_realloc(NULL, 64);
+  if (!p) {
+    fprintf(stderr, "h8_realloc NULL failed\n");
+    return 60;
+  }
+  for (size_t i = 0; i < 64; ++i) {
+    p[i] = (char)(0x40 + (int)(i & 31u));
+  }
+  char* q = h8_realloc(p, 512);
+  if (!q) {
+    fprintf(stderr, "h8_realloc small grow failed\n");
+    return 61;
+  }
+  for (size_t i = 0; i < 64; ++i) {
+    if (q[i] != (char)(0x40 + (int)(i & 31u))) {
+      fprintf(stderr, "h8_realloc small grow lost byte %zu\n", i);
+      return 62;
+    }
+  }
+  char* r = h8_realloc(q, 32);
+  if (!r) {
+    fprintf(stderr, "h8_realloc small shrink failed\n");
+    return 63;
+  }
+  for (size_t i = 0; i < 32; ++i) {
+    if (r[i] != (char)(0x40 + (int)(i & 31u))) {
+      fprintf(stderr, "h8_realloc small shrink lost byte %zu\n", i);
+      return 64;
+    }
+  }
+  h8_free(r);
+
+  char* m = h8_malloc(9000);
+  if (!m) {
+    fprintf(stderr, "h8_realloc medium setup failed\n");
+    return 65;
+  }
+  memset(m, 0x6D, 9000);
+  char* n = h8_realloc(m, 20000);
+  if (!n) {
+    fprintf(stderr, "h8_realloc medium grow failed\n");
+    return 66;
+  }
+  for (size_t i = 0; i < 9000; ++i) {
+    if ((unsigned char)n[i] != 0x6Du) {
+      fprintf(stderr, "h8_realloc medium grow lost byte %zu\n", i);
+      return 67;
+    }
+  }
+  h8_free(n);
+
+  char* zero = h8_malloc(128);
+  if (!zero) {
+    fprintf(stderr, "h8_realloc zero setup failed\n");
+    return 68;
+  }
+  if (h8_realloc(zero, 0) != NULL) {
+    fprintf(stderr, "h8_realloc zero did not return NULL\n");
+    return 69;
+  }
+  return 0;
+}
+
 static int check_medium_scaffold(void) {
   if (h8_medium_size_supported(4096) ||
       !h8_medium_size_supported(4097) ||
@@ -149,6 +213,10 @@ int main(void) {
   int medium_rc = check_medium_scaffold();
   if (medium_rc != 0) {
     return medium_rc;
+  }
+  int realloc_rc = check_realloc_api();
+  if (realloc_rc != 0) {
+    return realloc_rc;
   }
   h8_init();
   void* medium = h8_malloc(5000);

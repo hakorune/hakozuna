@@ -116,9 +116,9 @@ bench_results/20260623T160850Z_v0_freeze_phase4096_r10.log
 `SameRunAllocatorMatrix-L1` must keep HZ8 allocator behavior fixed.  Only the
 harness, allocator resolver, parser, and documentation should change.
 
-Use one common benchmark harness.  External allocators are selected with startup
-`LD_PRELOAD`; HZ8 rows use direct h8_malloc/h8_free binaries until the HZ8
-preload surface has a safe realloc contract.
+Use one common benchmark harness that calls plain `malloc` and `free`.
+Allocators are selected with startup `LD_PRELOAD`, except `system` which uses no
+preload.
 
 Implementation:
 
@@ -127,15 +127,15 @@ bench/bench_matrix_malloc.c:
   plain malloc/free benchmark harness
 
 scripts/run_hz8_v11_same_run_matrix.sh:
-  builds HZ8 direct binaries, HZ8 preload artifacts, and the matrix harness
+  builds HZ8 preload artifacts and the matrix harness
   runs each allocator sample in a fresh process
   rotates allocator order per run
   writes README.log, samples.csv, summary.md, and raw per-case logs
 
-HZ8 caveat:
-  hz8 and hz8_legacy64k2 use direct API payload allocation
-  external allocators use LD_PRELOAD
-  this avoids false failures from libc/pthread realloc under HZ8 preload
+HZ8 preload contract:
+  HZ8PreloadReallocCompat-L1 adds realloc compatibility, so hz8 and
+  hz8_legacy64k2 matrix rows can use the same LD_PRELOAD harness as external
+  allocators
 ```
 
 ```text
@@ -252,8 +252,11 @@ This snapshot compares the current MediumRun-v1.1 default after `lazy128` and
 
 ```text
 primary data:
-  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/summary.md
-  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/samples.csv
+  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/summary.md
+  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/samples.csv
+
+previous direct-API snapshot:
+  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
 
 phase stress data:
   bench_results/hz8_v11_same_run_matrix_20260626T150540Z/summary.md
@@ -266,35 +269,34 @@ samples:
   primary rows: 7 rows * 7 allocators * 5 fresh process samples
   phase row:    1 row  * 7 allocators * 3 fresh process samples
 
-caveat:
-  HZ8 and hz8_legacy64k2 are measured through direct h8_malloc/h8_free
-  binaries.  The current HZ8 preload surface does not implement realloc,
-  so a generic LD_PRELOAD harness may fail if libc or pthread code calls
-  realloc internally.  External allocators are still selected with LD_PRELOAD.
+preload contract:
+  all allocator rows, including hz8 and hz8_legacy64k2, use the same plain
+  malloc/free harness with startup LD_PRELOAD; system uses no preload
+  HZ8PreloadReallocCompat-L1 provides the required realloc compatibility
 ```
 
 Primary rows, median ops/s:
 
 | Row | HZ8 | HZ8 legacy64k2 | HZ3 | HZ4 | mimalloc | tcmalloc | system |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `guard_local0` | 309.45M | 331.88M | 152.77M | 46.31M | 96.35M | 275.44M | 198.35M |
-| `small_interleaved_remote90` | 12.94M | 13.25M | 13.30M | 11.09M | 15.49M | 25.88M | 6.54M |
-| `medium_local0` | 107.68M | 113.64M | 153.09M | 25.45M | 27.17M | 251.38M | 139.82M |
-| `medium_interleaved_r50` | 8.98M | 9.73M | 17.13M | 8.87M | 5.36M | 17.50M | 2.19M |
-| `main_local0` | 133.71M | 147.45M | 136.59M | 27.28M | 31.28M | 287.72M | 162.92M |
-| `main_interleaved_r50` | 10.05M | 10.05M | 15.95M | 12.31M | 10.63M | 22.55M | 4.33M |
-| `main_interleaved_r90` | 6.68M | 6.11M | 11.15M | 9.85M | 6.53M | 14.09M | 3.13M |
+| `guard_local0` | 188.40M | 185.77M | 155.04M | 43.67M | 92.66M | 271.87M | 190.77M |
+| `small_interleaved_remote90` | 12.90M | 12.49M | 13.74M | 11.11M | 15.68M | 26.20M | 6.41M |
+| `medium_local0` | 90.51M | 101.17M | 151.71M | 25.23M | 28.00M | 270.84M | 141.56M |
+| `medium_interleaved_r50` | 9.23M | 8.65M | 16.76M | 8.67M | 4.07M | 17.31M | 2.18M |
+| `main_local0` | 97.35M | 111.20M | 142.62M | 27.88M | 31.57M | 255.60M | 155.34M |
+| `main_interleaved_r50` | 9.87M | 9.54M | 18.86M | 12.07M | 5.19M | 22.08M | 4.35M |
+| `main_interleaved_r90` | 6.45M | 6.01M | 10.31M | 9.58M | 6.73M | 13.67M | 3.04M |
 
 RSS highlights:
 
 | Row | Allocator | post RSS | peak RSS |
 |---|---|---:|---:|
-| `medium_interleaved_r50` | HZ8 | 3.66MiB | 57.12MiB |
-| `medium_interleaved_r50` | tcmalloc | 184.25MiB | 184.38MiB |
-| `medium_interleaved_r50` | HZ3 | 250.93MiB | 254.25MiB |
-| `main_interleaved_r90` | HZ8 | 4.27MiB | 62.38MiB |
-| `main_interleaved_r90` | tcmalloc | 185.75MiB | 185.88MiB |
-| `main_interleaved_r90` | HZ3 | 290.66MiB | 297.25MiB |
+| `medium_interleaved_r50` | HZ8 | 101.29MiB | 155.75MiB |
+| `medium_interleaved_r50` | tcmalloc | 183.63MiB | 183.63MiB |
+| `medium_interleaved_r50` | HZ3 | 242.74MiB | 247.63MiB |
+| `main_interleaved_r90` | HZ8 | 101.99MiB | 167.13MiB |
+| `main_interleaved_r90` | tcmalloc | 191.75MiB | 191.75MiB |
+| `main_interleaved_r90` | HZ3 | 295.31MiB | 302.63MiB |
 
 Medium phase stress is not a throughput ranking gate.  The lightweight matrix
 row used `ITERS=1000` and confirms HZ8 post-RSS recovery:
@@ -311,12 +313,15 @@ Interpretation:
 ```text
 strong:
   small local remains competitive
-  main_r90 beats legacy64k2/mimalloc/system and keeps very low post RSS
-  lazy128/v12_48k2 default preserves the RSS-recovery position
+  main_r90 beats legacy64k2/system and remains close to mimalloc
+  lazy128/v12_48k2 default preserves bounded RSS relative to
+  tcmalloc/HZ3/HZ4/mimalloc in remote medium/main rows
 
 weak:
   medium local0 and medium r50 are still behind tcmalloc/HZ3
   main_local0 remains behind tcmalloc/system and roughly HZ3
+  pure preload captures matrix harness control allocations, so HZ8 post RSS
+  is much higher than the earlier direct API snapshot
   medium phase throughput is low, but the row is lifecycle/RSS stress
 
 decision:

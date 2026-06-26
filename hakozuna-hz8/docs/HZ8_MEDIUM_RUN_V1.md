@@ -419,6 +419,9 @@ Current v1.1 allocator matrix snapshot:
 
 ```text
 primary:
+  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
+
+previous direct API snapshot:
   bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
 
 phase stress:
@@ -427,9 +430,9 @@ phase stress:
 runner:
   scripts/run_hz8_v11_same_run_matrix.sh
 
-caveat:
-  HZ8 and hz8_legacy64k2 matrix rows use direct h8_malloc/h8_free binaries;
-  external allocators use LD_PRELOAD
+current runner:
+  HZ8PreloadReallocCompat-L1 closes the realloc preload compatibility gap;
+  the current matrix uses LD_PRELOAD for HZ8 and hz8_legacy64k2 as well
 ```
 
 Interpretation:
@@ -440,8 +443,10 @@ keep:
   lazy128 residency
 
 strong:
-  main_r90 beats legacy64k2/mimalloc/system with low post RSS
-  medium/main post RSS remains much lower than tcmalloc/HZ3/HZ4/mimalloc
+  main_r90 beats legacy64k2/system and is close to mimalloc
+  medium/main post RSS remains lower than tcmalloc/HZ3/HZ4/mimalloc in
+  remote rows, though higher than the previous direct API snapshot because
+  harness control allocations are now captured by HZ8 preload
 
 weak:
   medium_local0 and medium_interleaved_r50 still trail tcmalloc/HZ3

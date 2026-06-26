@@ -119,38 +119,79 @@ current lane:
   medium/main/small gates
   ChunkArena remains HOLD as default
 
-  HZ8-v1.1 current matrix snapshot is recorded
-  data=bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
+  HZ8-v1.1 current pure LD_PRELOAD matrix snapshot is recorded
+  data=bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
+  previous_direct_api_data=bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
   phase_data=bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
   harness=scripts/run_hz8_v11_same_run_matrix.sh
   caveat:
-    HZ8 and hz8_legacy64k2 rows use the direct h8_malloc/h8_free API
-    because the current HZ8 preload surface does not implement realloc;
-    external allocators are still selected with LD_PRELOAD
+    all allocator rows now use the same plain malloc/free harness with
+    startup LD_PRELOAD, except system with no preload
+    HZ8 post RSS is higher than the previous direct API matrix because the
+    matrix harness control allocations are also intercepted
   matrix read:
     small guard/local:
-      HZ8 309.45M, second behind hz8_legacy64k2 and ahead of tcmalloc
-      in this direct-API harness
+      HZ8 188.40M, behind tcmalloc/system and ahead of HZ3/mimalloc/HZ4
     small remote90:
-      HZ8 12.94M, close to legacy64k2, below tcmalloc/mimalloc/HZ3
-      but with much lower post RSS
+      HZ8 12.90M, below tcmalloc/mimalloc/HZ3, ahead of HZ4/system,
+      and ahead of legacy64k2
     medium local0:
-      HZ8 107.68M, below tcmalloc/HZ3/system/legacy64k2
+      HZ8 90.51M, below tcmalloc/HZ3/system/legacy64k2
     medium r50:
-      HZ8 8.98M, below tcmalloc/HZ3/legacy64k2, above HZ4/mimalloc/system
+      HZ8 9.23M, below tcmalloc/HZ3, above HZ4/legacy64k2/mimalloc/system
     main r50:
-      HZ8 10.05M, roughly tied with legacy64k2 and below tcmalloc/HZ3/HZ4
+      HZ8 9.87M, below tcmalloc/HZ3/HZ4, above legacy64k2/mimalloc/system
     main r90:
-      HZ8 6.68M, ahead of legacy64k2/mimalloc/system, below
+      HZ8 6.45M, ahead of legacy64k2/system, slightly below mimalloc, below
       tcmalloc/HZ3/HZ4
     RSS:
-      HZ8 post RSS remains about 3-6MiB across medium/main rows while
-      tcmalloc/HZ3/HZ4/mimalloc retain much larger post-RSS footprints
+      HZ8 post RSS is about 101-102MiB in the pure preload matrix because
+      matrix harness control allocations are captured; still below
+      tcmalloc/HZ3/HZ4/mimalloc in medium/main remote rows except system
   decision:
     v12_48k2 remains the default because it improves main_r90 and RSS
     positioning while preserving lazy128-v1.1 safety contracts
     remaining weakness is still medium/main local throughput and medium r50
     relative to tcmalloc/HZ3, not retention stability
+
+  HZ8PreloadReallocCompat-L1:
+    status:
+      implemented
+    reason:
+      the previous v1.1 matrix measured HZ8 through direct h8_malloc/h8_free
+      because the preload surface did not implement realloc
+      libc/pthread may call realloc internally under LD_PRELOAD, so this
+      closes the ABI compatibility gap before the next pure LD_PRELOAD matrix
+    scope:
+      realloc(NULL, n) behaves as malloc(n)
+      realloc(p, 0) frees p and returns NULL
+      HZ8-owned valid slot pointers allocate-copy-free with min(old,new)
+      copy size derived from small class size or medium slot size
+      non-HZ8 MISS pointers forward to platform realloc
+      HZ8-owned INVALID/interior/stale pointers fail closed
+    non-goals:
+      no in-place growth/shrink
+      no realloc performance tuning
+      no small/medium protocol or geometry changes
+    gates:
+      smoke / safety-stress / preload-smoke pass
+      dedicated preload realloc smoke covers NULL, shrink, grow, medium,
+      large platform forward, and interior invalid pointer cases
+      same-run matrix runner now uses LD_PRELOAD for HZ8 and hz8_legacy64k2
+    validation:
+      make smoke safety-stress preload-smoke
+      ALLOCATORS=system,hz8 and ALLOCATORS=hz8,hz8_legacy64k2,system
+      matrix smokes pass under LD_PRELOAD
+      pure LD_PRELOAD matrix smoke:
+        data=bench_results/hz8_v11_same_run_matrix_20260626T164201Z/
+        rows=guard_local0,small_remote90,medium_local0,medium_r50,
+             main_local0,main_r50,main_r90
+        runs=3
+        read:
+          HZ8 preload rows complete without realloc failure
+          post RSS is higher than the prior direct-API snapshot because the
+          plain harness control allocations are also intercepted by HZ8
+          use future pure-preload snapshots for allocator positioning
 
 latest local-leaf probe:
   MediumSlotPtrKnown-L1

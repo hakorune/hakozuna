@@ -10,23 +10,12 @@ LIVE_WINDOW="${LIVE_WINDOW:-4096}"
 ALLOCATORS="${ALLOCATORS:-hz8,hz8_legacy64k2,hz3,hz4,mimalloc,tcmalloc,system}"
 RUN_TIMEOUT="${RUN_TIMEOUT:-120s}"
 MATRIX_BIN="${ROOT}/bench/out/bench_matrix_malloc"
-MATRIX_HZ8_BIN="${ROOT}/bench/out/bench_matrix_hz8"
-MATRIX_HZ8_LEGACY_BIN="${ROOT}/bench/out/bench_matrix_hz8_legacy64k2"
 
 mkdir -p "${OUTDIR}" "$(dirname "${MATRIX_BIN}")"
 
 make -C "${ROOT}" preload preload-medium64k2 >/dev/null
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
   -pthread -o "${MATRIX_BIN}" "${ROOT}/bench/bench_matrix_malloc.c"
-"${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
-  -DH8_MATRIX_USE_HZ8_API -I"${ROOT}/include" -I"${ROOT}/src" \
-  -pthread -ldl -o "${MATRIX_HZ8_BIN}" \
-  "${ROOT}/bench/bench_matrix_malloc.c" "${ROOT}"/src/*.c
-"${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
-  -DH8_MATRIX_USE_HZ8_API -DH8_MEDIUM_LEGACY_Q64_RUN64K2 \
-  -I"${ROOT}/include" -I"${ROOT}/src" -pthread -ldl \
-  -o "${MATRIX_HZ8_LEGACY_BIN}" \
-  "${ROOT}/bench/bench_matrix_malloc.c" "${ROOT}"/src/*.c
 
 find_lib() {
   local name="$1"
@@ -108,7 +97,7 @@ iters=${ITERS}
 live_window=${LIVE_WINDOW}
 allocators=${ALLOCATORS}
 run_timeout=${RUN_TIMEOUT}
-note=HZ8 rows use direct h8_malloc/h8_free binaries because the current HZ8 preload surface does not implement realloc; external allocators use LD_PRELOAD.
+note=All allocator rows use the same plain malloc/free harness and startup LD_PRELOAD, except system which uses no preload.
 EOF
 for alloc in "${allocator_list[@]}"; do
   printf 'allocator_lib[%s]=%s\n' "${alloc}" "${allocator_lib[$alloc]}" >> "${OUTDIR}/README.log"
@@ -161,12 +150,6 @@ run_one() {
   if [[ "${alloc}" == "system" ]]; then
     # shellcheck disable=SC2086
     timeout "${RUN_TIMEOUT}" "${MATRIX_BIN}" --runs 1 --threads "${THREADS}" --iters "${ITERS}" ${args} > "${log}" 2>&1
-  elif [[ "${alloc}" == "hz8" ]]; then
-    # shellcheck disable=SC2086
-    timeout "${RUN_TIMEOUT}" "${MATRIX_HZ8_BIN}" --runs 1 --threads "${THREADS}" --iters "${ITERS}" ${args} > "${log}" 2>&1
-  elif [[ "${alloc}" == "hz8_legacy64k2" ]]; then
-    # shellcheck disable=SC2086
-    timeout "${RUN_TIMEOUT}" "${MATRIX_HZ8_LEGACY_BIN}" --runs 1 --threads "${THREADS}" --iters "${ITERS}" ${args} > "${log}" 2>&1
   else
     # shellcheck disable=SC2086
     timeout "${RUN_TIMEOUT}" env LD_PRELOAD="${allocator_lib[$alloc]}" "${MATRIX_BIN}" --runs 1 --threads "${THREADS}" --iters "${ITERS}" ${args} > "${log}" 2>&1

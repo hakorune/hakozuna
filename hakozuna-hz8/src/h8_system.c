@@ -7,6 +7,7 @@
 
 static void* (*h8_real_malloc_fn)(size_t) = NULL;
 static void* (*h8_real_calloc_fn)(size_t, size_t) = NULL;
+static void* (*h8_real_realloc_fn)(void*, size_t) = NULL;
 static void (*h8_real_free_fn)(void*) = NULL;
 
 static void h8_load_real_allocators(void) {
@@ -15,6 +16,7 @@ static void h8_load_real_allocators(void) {
   }
   h8_real_malloc_fn = dlsym(RTLD_NEXT, "malloc");
   h8_real_calloc_fn = dlsym(RTLD_NEXT, "calloc");
+  h8_real_realloc_fn = dlsym(RTLD_NEXT, "realloc");
   h8_real_free_fn = dlsym(RTLD_NEXT, "free");
 }
 #endif
@@ -40,6 +42,15 @@ void* h8_sys_calloc(size_t count, size_t size) {
   return h8_real_calloc_fn ? h8_real_calloc_fn(count, size) : NULL;
 #else
   return calloc(count, size);
+#endif
+}
+
+void* h8_sys_realloc(void* ptr, size_t size) {
+#ifdef H8_BUILD_LD_PRELOAD
+  h8_load_real_allocators();
+  return h8_real_realloc_fn ? h8_real_realloc_fn(ptr, size) : NULL;
+#else
+  return realloc(ptr, size);
 #endif
 }
 

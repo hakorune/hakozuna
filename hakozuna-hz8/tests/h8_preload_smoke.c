@@ -1,4 +1,5 @@
 #include <dlfcn.h>
+#include <errno.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -16,6 +17,13 @@ __attribute__((noinline)) static void free_offset(char* p, size_t offset) {
   volatile uintptr_t base = (uintptr_t)p;
   void* q = (void*)(base + offset);
   free(q);
+}
+
+__attribute__((noinline)) static void* realloc_offset(char* p, size_t offset,
+                                                       size_t size) {
+  volatile uintptr_t base = (uintptr_t)p;
+  void* q = (void*)(base + offset);
+  return realloc(q, size);
 }
 
 static H8RouteFn load_route(void) {
@@ -56,6 +64,41 @@ int main(void) {
     return 5;
   }
 
+  char* r = realloc(NULL, 48);
+  if (!r) {
+    fprintf(stderr, "realloc NULL failed\n");
+    return 10;
+  }
+  for (size_t i = 0; i < 48; ++i) {
+    r[i] = (char)(0x30 + (int)(i & 15u));
+  }
+  char* rgrow = realloc(r, 200);
+  if (!rgrow) {
+    fprintf(stderr, "small realloc grow failed\n");
+    return 11;
+  }
+  for (size_t i = 0; i < 48; ++i) {
+    if (rgrow[i] != (char)(0x30 + (int)(i & 15u))) {
+      fprintf(stderr, "small realloc grow lost byte %zu\n", i);
+      return 12;
+    }
+  }
+  char* rshrink = realloc(rgrow, 24);
+  if (!rshrink) {
+    fprintf(stderr, "small realloc shrink failed\n");
+    return 13;
+  }
+  for (size_t i = 0; i < 24; ++i) {
+    if (rshrink[i] != (char)(0x30 + (int)(i & 15u))) {
+      fprintf(stderr, "small realloc shrink lost byte %zu\n", i);
+      return 14;
+    }
+  }
+  if (realloc(rshrink, 0) != NULL) {
+    fprintf(stderr, "realloc size zero did not return NULL\n");
+    return 15;
+  }
+
   unsigned char* z = calloc(32, 4);
   if (!z) {
     fprintf(stderr, "calloc failed\n");
@@ -69,6 +112,41 @@ int main(void) {
   }
   free(z);
 
+  char* m = malloc(9000);
+  if (!m) {
+    fprintf(stderr, "medium malloc failed\n");
+    return 16;
+  }
+  memset(m, 0x5A, 9000);
+  char* mgrow = realloc(m, 20000);
+  if (!mgrow) {
+    fprintf(stderr, "medium realloc grow failed\n");
+    return 17;
+  }
+  for (size_t i = 0; i < 9000; ++i) {
+    if ((unsigned char)mgrow[i] != 0x5Au) {
+      fprintf(stderr, "medium realloc lost byte %zu\n", i);
+      return 18;
+    }
+  }
+  free(mgrow);
+
+  char* bad = malloc(96);
+  if (!bad) {
+    fprintf(stderr, "invalid realloc setup failed\n");
+    return 19;
+  }
+  errno = 0;
+  if (realloc_offset(bad, 1, 128) != NULL || errno != EINVAL) {
+    fprintf(stderr, "interior realloc did not fail closed errno=%d\n", errno);
+    return 20;
+  }
+  if (route(bad) != H8_ROUTE_VALID) {
+    fprintf(stderr, "interior realloc consumed base allocation\n");
+    return 21;
+  }
+  free(bad);
+
   void* large = malloc(256 * 1024);
   if (!large) {
     fprintf(stderr, "large malloc failed\n");
@@ -77,6 +155,15 @@ int main(void) {
   if (route(large) != H8_ROUTE_MISS) {
     fprintf(stderr, "large platform allocation was not MISS\n");
     return 9;
+  }
+  large = realloc(large, 512 * 1024);
+  if (!large) {
+    fprintf(stderr, "large platform realloc failed\n");
+    return 22;
+  }
+  if (route(large) != H8_ROUTE_MISS) {
+    fprintf(stderr, "large platform realloc was not MISS\n");
+    return 23;
   }
   free(large);
 

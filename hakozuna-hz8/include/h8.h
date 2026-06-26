@@ -581,6 +581,7 @@ void h8_init(void);
 void h8_shutdown(void);
 void* h8_malloc(size_t size);
 void* h8_calloc(size_t count, size_t size);
+void* h8_realloc(void* ptr, size_t size);
 void h8_free(void* ptr);
 H8RouteKind h8_route(void* ptr);
 H8Stats h8_stats(void);

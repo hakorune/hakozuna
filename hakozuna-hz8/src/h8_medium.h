@@ -434,6 +434,8 @@ void h8_medium_unregister_locked(H8MediumRun* run);
 void* h8_medium_malloc_class_inner(uint32_t class_id);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
+bool h8_medium_usable_size_inner(void* ptr, size_t* usable_out,
+                                 bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);
 void h8_medium_owner_detach_all(H8OwnerRecord* owner);
 

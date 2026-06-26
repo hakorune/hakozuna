@@ -308,6 +308,7 @@ static inline size_t h8_bitmap_popcount(const _Atomic uint64_t* bits, size_t wor
 void h8_system_init(void);
 void* h8_sys_malloc(size_t size);
 void* h8_sys_calloc(size_t count, size_t size);
+void* h8_sys_realloc(void* ptr, size_t size);
 void h8_sys_free(void* ptr);
 
 H8ThreadCtx* h8_thread_ctx_get_slow(void);
@@ -372,6 +373,7 @@ H8PublishResult h8_remote_free_publish(void* ptr);
 H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot);
 H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
+void* h8_realloc_inner(void* ptr, size_t size);
 void h8_free_inner(void* ptr);
 void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget);
 bool h8_span_pending_quiescent(H8Span* span);

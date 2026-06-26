@@ -1,6 +1,7 @@
 #include "h8_internal.h"
 #include "h8_used_count.h"
 
+#include <errno.h>
 #include <string.h>
 #include <sched.h>
 #include <stdlib.h>
@@ -365,4 +366,70 @@ void h8_free_inner(void* ptr) {
     sched_yield();
   }
   h8_fail_invalid_free();
+}
+
+static bool h8_small_usable_size(void* ptr, size_t* usable_out) {
+  if (!h8_arena_contains(ptr)) {
+    return false;
+  }
+  H8Span* span = atomic_load_explicit(
+      &h8g.spans[h8_span_index_from_ptr(ptr)], memory_order_acquire);
+  if (!span || h8_span_state_load(span) == H8_SPAN_RETIRED) {
+    return false;
+  }
+  size_t slot = 0;
+  if (!h8_slot_index_from_ptr_checked(span, ptr, &slot)) {
+    return false;
+  }
+  uint32_t state = h8_slot_state_load_hot(span, slot);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
+      h8_bitmap_test(span->pending_bits, slot)) {
+    return false;
+  }
+  *usable_out = h8_class_size(span->class_id);
+  return true;
+}
+
+void* h8_realloc_inner(void* ptr, size_t size) {
+  if (!ptr) {
+    return h8_malloc_inner(size);
+  }
+  if (size == 0) {
+    h8_free_inner(ptr);
+    return NULL;
+  }
+  if (H8_UNLIKELY(!atomic_load_explicit(&h8g.ready, memory_order_acquire))) {
+    return h8_sys_realloc(ptr, size);
+  }
+
+  size_t old_size = 0;
+  bool owned = false;
+  if (h8_arena_contains(ptr)) {
+    owned = true;
+    if (!h8_small_usable_size(ptr, &old_size)) {
+      errno = EINVAL;
+      return NULL;
+    }
+  } else {
+    bool medium_owned = false;
+    if (h8_medium_usable_size_inner(ptr, &old_size, &medium_owned)) {
+      owned = true;
+    } else if (medium_owned) {
+      errno = EINVAL;
+      return NULL;
+    }
+  }
+
+  if (!owned) {
+    return h8_sys_realloc(ptr, size);
+  }
+
+  void* next = h8_malloc_inner(size);
+  if (!next) {
+    return NULL;
+  }
+  size_t copy_size = old_size < size ? old_size : size;
+  memcpy(next, ptr, copy_size);
+  h8_free_inner(ptr);
+  return next;
 }

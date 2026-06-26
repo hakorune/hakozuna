@@ -1396,6 +1396,48 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   return ok;
 }
 
+bool h8_medium_usable_size_inner(void* ptr, size_t* usable_out,
+                                 bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  H8MediumRun* run = h8_medium_directory_find(ptr);
+  if (run) {
+    h8_medium_lock_run(run);
+  } else {
+    h8_medium_lock_global();
+    run = h8_medium_find_run_locked(ptr, true);
+    if (!run) {
+      h8_medium_unlock_global();
+      return false;
+    }
+    h8_medium_lock_run(run);
+    h8_medium_unlock_global();
+  }
+  if (owned_out) {
+    *owned_out = true;
+  }
+  size_t slot = 0;
+  if (!h8_medium_slot_index_from_ptr_checked(run, ptr, &slot)) {
+    h8_medium_unlock_run(run);
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  bool pending = (atomic_load_explicit(&run->pending_bits[0],
+                                       memory_order_acquire) &
+                  bit) != 0;
+  uint32_t state =
+      atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
+  bool valid =
+      h8_slot_state_tag(state) == (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) &&
+      !pending;
+  if (valid && usable_out) {
+    *usable_out = run->slot_size;
+  }
+  h8_medium_unlock_run(run);
+  return valid;
+}
+
 H8RouteKind h8_medium_route_inner(void* ptr) {
   H8_DEBUG_INC(medium_route_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);

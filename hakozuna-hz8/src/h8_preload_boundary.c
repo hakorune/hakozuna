@@ -12,6 +12,10 @@ __attribute__((visibility("default"))) void* calloc(size_t count, size_t size) {
   return h8_calloc(count, size);
 }
 
+__attribute__((visibility("default"))) void* realloc(void* ptr, size_t size) {
+  return h8_realloc_inner(ptr, size);
+}
+
 __attribute__((visibility("default"))) void free(void* ptr) {
   h8_free_inner(ptr);
 }
@@ -31,6 +35,10 @@ void* h8_calloc(size_t count, size_t size) {
     memset(ptr, 0, total);
   }
   return ptr;
+}
+
+void* h8_realloc(void* ptr, size_t size) {
+  return h8_realloc_inner(ptr, size);
 }
 
 void h8_free(void* ptr) {
