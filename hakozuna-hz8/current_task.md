@@ -415,6 +415,93 @@ latest local-leaf probe:
         size policy / geometry
         or freeze MediumRun-v1.1 remote lane
 
+  MediumActiveMissDemandCollect64K-L1:
+    status:
+      implemented as opt-in evidence target
+      default HOLD
+    build:
+      bench-mediumdemand64
+      bench-release-mediumdemand64
+      H8_MEDIUM_ENABLE_ACTIVE_MISS_DEMAND_COLLECT_64K
+    scope:
+      64K class only
+      trigger requires:
+        active run exists and is owned by current owner
+        active run state ACTIVE
+        active free_mask == 0
+        active pending_bits != 0
+        active qstate == QUEUED
+        owner medium pending queue nonempty
+      collect uses existing owner pending queue path only
+      max 2 runs, collected one run at a time
+      stop when active free_mask opens
+      retry active allocation once
+      if demand work succeeds, it replaces that allocation's periodic tick
+    saved data:
+      bench_results/20260626T025816Z_medium_demand64_quick/
+    debug medium_r50 R3:
+      trigger 55,529
+      processed [0, 21,088, 34,441]
+      target_opened 34,035
+      retry_hit 34,035
+      target_not_reached 21,494
+      nonactive_runs_processed 36,399
+      retry_hit / trigger about 61%
+    release medium_r50 R10:
+      baseline median 33.17M
+      demand64 median 33.63M
+      ratio about 1.014
+      baseline p25 27.14M
+      demand64 p25 30.27M
+    release main_r90 R10:
+      baseline median 24.47M
+      demand64 median 24.16M
+      ratio about 0.987
+      demand trigger is 0 for main_r90 because max size is 32K
+    decision:
+      HOLD as default
+      mechanism works, but medium_r50 median does not clear +5% gate
+      do not expand to budget 4 or 32K without new evidence
+
+  MediumRun-v1.1 remote-lane closeout:
+    status:
+      freeze remote owner-side micro-tuning after demand64 evidence
+    rationale:
+      exact available index removed owner-list discovery but did not improve
+      medium_r50
+      inline owner allocation call-shape did not improve medium_r50
+      refill/local-free-cache candidates did not clear gates
+      post-collect utility showed collect capacity is useful overall
+      demand64 mechanism works but improves release medium_r50 only about 1.4%
+    frozen / HOLD:
+      owner lease redesign
+      qstate / pending protocol changes
+      broad collect cadence changes
+      available-index promotion
+      demand collect budget expansion
+      32K demand collect expansion
+    next lane:
+      MediumSizePolicy-v1.2-Shadow
+
+  MediumSizePolicy-v1.2-Shadow:
+    status:
+      NEXT
+    scope:
+      behavior unchanged
+      add medium class-policy shadow for request / rounded / run pressure
+      keep small-v0 default class map frozen
+      do not promote upper48 or any geometry change from shadow alone
+    questions:
+      class-wise active_miss_total / active_pending / owner_list_hit
+      active episode allocation count by class
+      active run switches per class
+      collect full_to_nonfull by class and source
+      requested bytes / rounded bytes by candidate map
+      expected run count and slots-per-run pressure
+    purpose:
+      decide whether the remaining medium/main gap is class geometry rather
+      than remote protocol overhead
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

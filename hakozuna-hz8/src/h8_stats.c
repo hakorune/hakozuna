@@ -441,6 +441,12 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_src_owner_exit_run, memory_order_acquire);
   out->medium_collect_src_owner_exit_slot = atomic_load_explicit(
       &h8g.medium_collect_src_owner_exit_slot, memory_order_acquire);
+  out->medium_collect_src_demand_call = atomic_load_explicit(
+      &h8g.medium_collect_src_demand_call, memory_order_acquire);
+  out->medium_collect_src_demand_run = atomic_load_explicit(
+      &h8g.medium_collect_src_demand_run, memory_order_acquire);
+  out->medium_collect_src_demand_slot = atomic_load_explicit(
+      &h8g.medium_collect_src_demand_slot, memory_order_acquire);
   out->medium_collect_full_to_nonfull_run = atomic_load_explicit(
       &h8g.medium_collect_full_to_nonfull_run, memory_order_acquire);
   out->medium_collect_zero_run_call = atomic_load_explicit(
@@ -488,6 +494,30 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_credit_quick_class_32k, memory_order_acquire);
   out->medium_collect_credit_quick_class_64k = atomic_load_explicit(
       &h8g.medium_collect_credit_quick_class_64k, memory_order_acquire);
+  out->medium_demand64_trigger = atomic_load_explicit(
+      &h8g.medium_demand64_trigger, memory_order_acquire);
+  out->medium_demand64_qstate_not_queued = atomic_load_explicit(
+      &h8g.medium_demand64_qstate_not_queued, memory_order_acquire);
+  out->medium_demand64_processed_0 = atomic_load_explicit(
+      &h8g.medium_demand64_processed_0, memory_order_acquire);
+  out->medium_demand64_processed_1 = atomic_load_explicit(
+      &h8g.medium_demand64_processed_1, memory_order_acquire);
+  out->medium_demand64_processed_2 = atomic_load_explicit(
+      &h8g.medium_demand64_processed_2, memory_order_acquire);
+  out->medium_demand64_target_opened = atomic_load_explicit(
+      &h8g.medium_demand64_target_opened, memory_order_acquire);
+  out->medium_demand64_retry_hit = atomic_load_explicit(
+      &h8g.medium_demand64_retry_hit, memory_order_acquire);
+  out->medium_demand64_target_not_reached = atomic_load_explicit(
+      &h8g.medium_demand64_target_not_reached, memory_order_acquire);
+  out->medium_demand64_owner_list_fallback = atomic_load_explicit(
+      &h8g.medium_demand64_owner_list_fallback, memory_order_acquire);
+  out->medium_demand64_active_slots_created = atomic_load_explicit(
+      &h8g.medium_demand64_active_slots_created, memory_order_acquire);
+  out->medium_demand64_nonactive_runs_processed = atomic_load_explicit(
+      &h8g.medium_demand64_nonactive_runs_processed, memory_order_acquire);
+  out->medium_demand64_periodic_tick_replaced = atomic_load_explicit(
+      &h8g.medium_demand64_periodic_tick_replaced, memory_order_acquire);
   out->medium_run_reuse_active_class_8k = atomic_load_explicit(
       &h8g.medium_run_reuse_active_class_8k, memory_order_acquire);
   out->medium_run_reuse_active_class_16k = atomic_load_explicit(

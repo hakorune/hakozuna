@@ -485,7 +485,7 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_active_miss_owner_list_pos5p,
          debug.medium_active_miss_create,
          debug.medium_active_miss_detached_reuse);
-  printf("medium_collect_source periodic_active=[%zu,%zu,%zu] periodic_owner=[%zu,%zu,%zu] capacity=[%zu,%zu,%zu] owner_exit=[%zu,%zu,%zu] full_to_nonfull=%zu zero_run_call=%zu zero_slot_run=%zu active_run=%zu nonactive_run=%zu\n",
+  printf("medium_collect_source periodic_active=[%zu,%zu,%zu] periodic_owner=[%zu,%zu,%zu] capacity=[%zu,%zu,%zu] owner_exit=[%zu,%zu,%zu] demand=[%zu,%zu,%zu] full_to_nonfull=%zu zero_run_call=%zu zero_slot_run=%zu active_run=%zu nonactive_run=%zu\n",
          debug.medium_collect_src_periodic_active_call,
          debug.medium_collect_src_periodic_active_run,
          debug.medium_collect_src_periodic_active_slot,
@@ -498,6 +498,9 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_collect_src_owner_exit_call,
          debug.medium_collect_src_owner_exit_run,
          debug.medium_collect_src_owner_exit_slot,
+         debug.medium_collect_src_demand_call,
+         debug.medium_collect_src_demand_run,
+         debug.medium_collect_src_demand_slot,
          debug.medium_collect_full_to_nonfull_run,
          debug.medium_collect_zero_run_call,
          debug.medium_collect_zero_slot_run,
@@ -522,6 +525,19 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.medium_collect_credit_quick_class_16k,
          debug.medium_collect_credit_quick_class_32k,
          debug.medium_collect_credit_quick_class_64k);
+  printf("medium_demand64 trigger=%zu qstate_not_queued=%zu processed=[%zu,%zu,%zu] target_opened=%zu retry_hit=%zu target_not_reached=%zu owner_list_fallback=%zu active_slots_created=%zu nonactive_runs_processed=%zu periodic_tick_replaced=%zu\n",
+         debug.medium_demand64_trigger,
+         debug.medium_demand64_qstate_not_queued,
+         debug.medium_demand64_processed_0,
+         debug.medium_demand64_processed_1,
+         debug.medium_demand64_processed_2,
+         debug.medium_demand64_target_opened,
+         debug.medium_demand64_retry_hit,
+         debug.medium_demand64_target_not_reached,
+         debug.medium_demand64_owner_list_fallback,
+         debug.medium_demand64_active_slots_created,
+         debug.medium_demand64_nonactive_runs_processed,
+         debug.medium_demand64_periodic_tick_replaced);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

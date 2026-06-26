@@ -112,6 +112,10 @@ static void h8_medium_debug_collect_source_add(H8MediumCollectSource source,
       H8_DEBUG_ADD(medium_collect_src_owner_exit_run, runs);
       H8_DEBUG_ADD(medium_collect_src_owner_exit_slot, slots);
       break;
+    case H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND:
+      H8_DEBUG_ADD(medium_collect_src_demand_run, runs);
+      H8_DEBUG_ADD(medium_collect_src_demand_slot, slots);
+      break;
   }
 }
 
@@ -901,6 +905,92 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   return h8_medium_slot_ptr_known(run, slot);
 }
 
+#if defined(H8_MEDIUM_ENABLE_ACTIVE_MISS_DEMAND_COLLECT_64K)
+static void* h8_medium_try_active_miss_demand_collect64(H8ThreadCtx* ctx,
+                                                        uint32_t class_id,
+                                                        H8MediumRun* active) {
+  if (!ctx || !ctx->owner || !active ||
+      class_id + 1u != H8_MEDIUM_CLASS_COUNT ||
+      !h8_medium_run_owned_by_ctx(active, ctx)) {
+    return NULL;
+  }
+  if (atomic_load_explicit(&active->state, memory_order_acquire) !=
+      H8_MEDIUM_RUN_ACTIVE) {
+    return NULL;
+  }
+  if (active->free_mask != 0) {
+    return NULL;
+  }
+  uint64_t valid = active->slot_count == 64u
+                       ? UINT64_MAX
+                       : ((UINT64_C(1) << active->slot_count) - 1u);
+  uint64_t pending =
+      atomic_load_explicit(&active->pending_bits[0], memory_order_acquire) &
+      valid;
+  if (!pending) {
+    return NULL;
+  }
+  uint8_t qstate = atomic_load_explicit(&active->qstate, memory_order_acquire);
+  if (qstate != H8_Q_QUEUED) {
+    H8_DEBUG_INC(medium_demand64_qstate_not_queued);
+    return NULL;
+  }
+  if (!h8_medium_owner_has_pending(ctx->owner)) {
+    return NULL;
+  }
+
+  H8_DEBUG_INC(medium_demand64_trigger);
+  size_t processed_total = 0;
+  for (unsigned i = 0; i < 2u; ++i) {
+    size_t processed = h8_medium_collect_current_pending_budget_source(
+        ctx, 1u, H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND);
+    processed_total += processed;
+    if (processed == 0 || active->free_mask != 0) {
+      break;
+    }
+  }
+  if (processed_total == 0) {
+    H8_DEBUG_INC(medium_demand64_processed_0);
+  } else if (processed_total == 1u) {
+    H8_DEBUG_INC(medium_demand64_processed_1);
+  } else {
+    H8_DEBUG_INC(medium_demand64_processed_2);
+  }
+
+  if (active->free_mask == 0) {
+    H8_DEBUG_INC(medium_demand64_target_not_reached);
+    H8_DEBUG_INC(medium_demand64_owner_list_fallback);
+    return NULL;
+  }
+
+  H8_DEBUG_INC(medium_demand64_target_opened);
+  H8_DEBUG_ADD(medium_demand64_active_slots_created,
+               (size_t)__builtin_popcountll(active->free_mask & valid));
+  h8_medium_debug_writer_enter(active, ctx->owner,
+                               H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
+  void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
+  h8_medium_debug_writer_exit(active);
+  if (!ptr) {
+    H8_DEBUG_INC(medium_demand64_owner_list_fallback);
+    return NULL;
+  }
+
+  H8_DEBUG_INC(medium_demand64_retry_hit);
+  H8_DEBUG_INC(medium_demand64_periodic_tick_replaced);
+  h8_medium_debug_note_alloc_collect_credit(ctx->owner, active);
+  h8_medium_record_alloc_run(ctx, active);
+  H8_DEBUG_INC(medium_run_reuse_active_count);
+  h8_medium_debug_class_inc(class_id, &h8g.medium_run_reuse_active_class_8k,
+                            &h8g.medium_run_reuse_active_class_16k,
+                            &h8g.medium_run_reuse_active_class_32k,
+                            &h8g.medium_run_reuse_active_class_64k);
+  return ptr;
+}
+#else
+#define h8_medium_try_active_miss_demand_collect64(ctx, class_id, active) \
+  ((void)(ctx), (void)(class_id), (void)(active), (void*)NULL)
+#endif
+
 void* h8_medium_malloc_class_inner(uint32_t class_id) {
   if (class_id >= H8_MEDIUM_CLASS_COUNT) {
     return NULL;
@@ -959,6 +1049,11 @@ retry_owner_capacity:
     H8_DEBUG_INC(medium_active_miss_unusable);
     saw_active_miss = true;
     h8_medium_debug_note_active_miss_pending(ctx, active);
+    void* demand_ptr =
+        h8_medium_try_active_miss_demand_collect64(ctx, class_id, active);
+    if (demand_ptr) {
+      return demand_ptr;
+    }
   }
   h8_medium_refill_candidate_shadow_probe(ctx, class_id);
   void* refill_ptr = h8_medium_try_refill_candidate(ctx, class_id);

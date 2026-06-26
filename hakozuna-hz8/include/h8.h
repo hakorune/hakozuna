@@ -270,6 +270,9 @@ typedef struct H8DebugStats {
   size_t medium_collect_src_owner_exit_call;
   size_t medium_collect_src_owner_exit_run;
   size_t medium_collect_src_owner_exit_slot;
+  size_t medium_collect_src_demand_call;
+  size_t medium_collect_src_demand_run;
+  size_t medium_collect_src_demand_slot;
   size_t medium_collect_full_to_nonfull_run;
   size_t medium_collect_zero_run_call;
   size_t medium_collect_zero_slot_run;
@@ -293,6 +296,18 @@ typedef struct H8DebugStats {
   size_t medium_collect_credit_quick_class_16k;
   size_t medium_collect_credit_quick_class_32k;
   size_t medium_collect_credit_quick_class_64k;
+  size_t medium_demand64_trigger;
+  size_t medium_demand64_qstate_not_queued;
+  size_t medium_demand64_processed_0;
+  size_t medium_demand64_processed_1;
+  size_t medium_demand64_processed_2;
+  size_t medium_demand64_target_opened;
+  size_t medium_demand64_retry_hit;
+  size_t medium_demand64_target_not_reached;
+  size_t medium_demand64_owner_list_fallback;
+  size_t medium_demand64_active_slots_created;
+  size_t medium_demand64_nonactive_runs_processed;
+  size_t medium_demand64_periodic_tick_replaced;
   size_t medium_run_reuse_active_class_8k;
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;

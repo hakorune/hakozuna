@@ -445,6 +445,9 @@ static void h8_medium_debug_note_collect_source_call(
     case H8_MEDIUM_COLLECT_OWNER_EXIT:
       H8_DEBUG_INC(medium_collect_src_owner_exit_call);
       break;
+    case H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND:
+      H8_DEBUG_INC(medium_collect_src_demand_call);
+      break;
   }
 #else
   (void)source;
@@ -510,6 +513,9 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
       H8_DEBUG_INC(medium_collect_active_run);
     } else {
       H8_DEBUG_INC(medium_collect_nonactive_run);
+      if (source == H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND) {
+        H8_DEBUG_INC(medium_demand64_nonactive_runs_processed);
+      }
     }
     h8_medium_debug_note_collect_capacity(owner, run, accepted, old_free_mask,
                                           source);
@@ -664,9 +670,14 @@ done:
 
 size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
                                                 size_t run_budget) {
+  return h8_medium_collect_current_pending_budget_source(
+      ctx, run_budget, H8_MEDIUM_COLLECT_CAPACITY_MISS);
+}
+
+size_t h8_medium_collect_current_pending_budget_source(
+    H8ThreadCtx* ctx, size_t run_budget, H8MediumCollectSource source) {
   return h8_medium_collect_pending_budget_ctx(ctx ? ctx->owner : NULL, ctx,
-                                             run_budget,
-                                             H8_MEDIUM_COLLECT_CAPACITY_MISS);
+                                             run_budget, source);
 }
 
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,

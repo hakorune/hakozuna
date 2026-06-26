@@ -409,6 +409,75 @@ MediumPostCollectCapacityUtility-L1:
     attribution-only
     do not change qstate, owner lease, pending authority, or residency policy
 
+MediumActiveMissDemandCollect64K-L1:
+  status:
+    implemented as opt-in evidence target
+    HOLD as default
+  builds:
+    bench-mediumdemand64
+    bench-release-mediumdemand64
+  scope:
+    64K class only
+    use only the existing owner pending queue collector
+    max 2 one-run collect attempts
+    stop once the active run opens
+    retry active allocation once
+    replace this allocation's periodic collect tick on retry hit
+  data:
+    bench_results/20260626T025816Z_medium_demand64_quick/
+  debug medium_r50 R3:
+    trigger 55,529
+    retry_hit 34,035
+    target_not_reached 21,494
+    nonactive_runs_processed 36,399
+    retry_hit / trigger about 61%
+  release medium_r50 R10:
+    baseline 33.17M
+    demand64 33.63M
+    ratio about 1.014
+  release main_r90 R10:
+    baseline 24.47M
+    demand64 24.16M
+    ratio about 0.987
+    demand trigger is zero for main_r90 because it does not use 64K class
+  decision:
+    mechanism is valid evidence, but it does not clear the +5% medium_r50 gate
+    do not promote
+    do not expand to budget 4 or 32K without a new attribution signal
+
+MediumRun-v1.1 remote-lane closeout:
+  status:
+    freeze medium remote owner-side micro-tuning after demand64 evidence
+  rationale:
+    available index, inline owner allocation, refill hints, local free cache,
+    post-collect utility, and 64K demand collect did not expose a safe +5%
+    default behavior bucket
+  HOLD:
+    owner lease redesign
+    qstate / pending protocol changes
+    broad collect cadence changes
+    available-index promotion
+    demand collect budget expansion
+    32K demand collect expansion
+  next:
+    move to SizePolicy / geometry shadow before changing remote protocol again
+
+MediumSizePolicy-v1.2-Shadow:
+  status:
+    NEXT
+  scope:
+    behavior unchanged
+    keep small-v0 class map frozen
+    add medium class-policy shadow for request / rounded / run-pressure data
+  required observations:
+    class-wise active miss and active pending
+    class-wise active episode length and run switches
+    class-wise full-to-nonfull collect by source
+    requested bytes / rounded bytes by candidate medium maps
+    expected run count and slots-per-run pressure
+  promotion:
+    no behavior promotion from shadow alone
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

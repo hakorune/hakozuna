@@ -416,6 +416,9 @@ typedef struct H8Global {
   atomic_size_t medium_collect_src_owner_exit_call;
   atomic_size_t medium_collect_src_owner_exit_run;
   atomic_size_t medium_collect_src_owner_exit_slot;
+  atomic_size_t medium_collect_src_demand_call;
+  atomic_size_t medium_collect_src_demand_run;
+  atomic_size_t medium_collect_src_demand_slot;
   atomic_size_t medium_collect_full_to_nonfull_run;
   atomic_size_t medium_collect_zero_run_call;
   atomic_size_t medium_collect_zero_slot_run;
@@ -439,6 +442,18 @@ typedef struct H8Global {
   atomic_size_t medium_collect_credit_quick_class_16k;
   atomic_size_t medium_collect_credit_quick_class_32k;
   atomic_size_t medium_collect_credit_quick_class_64k;
+  atomic_size_t medium_demand64_trigger;
+  atomic_size_t medium_demand64_qstate_not_queued;
+  atomic_size_t medium_demand64_processed_0;
+  atomic_size_t medium_demand64_processed_1;
+  atomic_size_t medium_demand64_processed_2;
+  atomic_size_t medium_demand64_target_opened;
+  atomic_size_t medium_demand64_retry_hit;
+  atomic_size_t medium_demand64_target_not_reached;
+  atomic_size_t medium_demand64_owner_list_fallback;
+  atomic_size_t medium_demand64_active_slots_created;
+  atomic_size_t medium_demand64_nonactive_runs_processed;
+  atomic_size_t medium_demand64_periodic_tick_replaced;
   atomic_size_t medium_run_reuse_active_class_8k;
   atomic_size_t medium_run_reuse_active_class_16k;
   atomic_size_t medium_run_reuse_active_class_32k;

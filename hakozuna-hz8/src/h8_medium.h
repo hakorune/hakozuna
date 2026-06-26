@@ -63,7 +63,8 @@ typedef enum H8MediumCollectSource {
   H8_MEDIUM_COLLECT_PERIODIC_ACTIVE = 1,
   H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST = 2,
   H8_MEDIUM_COLLECT_CAPACITY_MISS = 3,
-  H8_MEDIUM_COLLECT_OWNER_EXIT = 4
+  H8_MEDIUM_COLLECT_OWNER_EXIT = 4,
+  H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND = 5
 } H8MediumCollectSource;
 
 typedef struct H8MediumClassSpec {
@@ -356,6 +357,8 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr);
 bool h8_medium_owner_has_pending(H8OwnerRecord* owner);
 size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
                                                 size_t run_budget);
+size_t h8_medium_collect_current_pending_budget_source(
+    H8ThreadCtx* ctx, size_t run_budget, H8MediumCollectSource source);
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget);
 void h8_medium_collect_owner_pending_periodic(H8ThreadCtx* ctx);
