@@ -595,6 +595,34 @@ latest local-leaf probe:
         small signal is order/noise sensitive and not yet a regression
         main_r90 p25 is the current risk; require order-rotated R10 x 2
         before promotion
+    order-rotated R10 x 2 verification:
+      data:
+        bench_results/20260626T135851Z_medium_v12_48k2_verify/
+      medium_r50:
+        median ratios:
+          1.053 / 1.109
+        p25 ratios:
+          1.092 / 1.134
+        verdict:
+          PASS, material positive signal
+      main_r90:
+        median ratios:
+          1.240 / 1.044
+        p25 ratios:
+          1.540 / 0.939
+        verdict:
+          HOLD, second batch p25 violates the >=0.98 candidate gate
+      small_remote90:
+        median ratios:
+          1.019 / 1.094
+        p25 ratios:
+          1.038 / 1.059
+        verdict:
+          PASS
+      decision:
+        do not default-promote v12_48k2 yet
+        main_r90 p25 stability is the blocker despite strong medium_r50
+        improvement
     quick sanity:
       medium_r50-shaped smoke:
         one-slot v12 run ratio vs default64k2 about 1.31

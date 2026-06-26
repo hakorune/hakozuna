@@ -577,6 +577,24 @@ MediumSizePolicy-v1.2-48K2-AB:
     decision:
       continue only with order-rotated R10 x 2
       promotion blocker to watch is main_r90 p25 stability
+  order-rotated verification:
+    data:
+      bench_results/20260626T135851Z_medium_v12_48k2_verify/
+    medium_r50:
+      median ratios 1.053 / 1.109
+      p25 ratios 1.092 / 1.134
+      pass
+    main_r90:
+      median ratios 1.240 / 1.044
+      p25 ratios 1.540 / 0.939
+      hold because second-batch p25 violates the >=0.98 gate
+    small_remote90:
+      median ratios 1.019 / 1.094
+      p25 ratios 1.038 / 1.059
+      pass
+    decision:
+      do not default-promote v12_48k2 yet
+      medium_r50 win is real, but main_r90 p25 stability remains the blocker
 
 64K two-slot:
   medium r50 positive
