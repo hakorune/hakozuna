@@ -361,6 +361,46 @@ MediumInlineOwnerAlloc-L1:
     HOLD
     release call-shape cleanup is not enough and worsens p25 stability
 
+MediumPostCollectCapacityUtility-L1:
+  status:
+    implemented as debug/audit attribution
+    behavior unchanged
+  purpose:
+    decide whether remaining medium r50 work is:
+      demand-driven collect on active miss
+      periodic collect cadence
+      class geometry / size policy
+      or remote-lane freeze
+  output:
+    medium_post_collect_active_miss
+    medium_collect_source
+    medium_collect_credit
+  saved data:
+    bench_results/20260626T003225Z_post_collect_capacity_utility/
+    debug_medium_r50_R3.txt
+    debug_main_r90_R3.txt
+    release_medium_r50_R10.txt
+    release_main_r90_R10.txt
+  quick debug read:
+    default debug medium r50 T=16 30k-iters:
+      active_miss_owner_pending 83,069
+      active_miss_active_pending 34,744
+      active_miss_active_pending_slots 54,866
+      owner_hit_pos [21,726, 19,579, 15,085, 11,544, 22,062]
+      collect_source:
+        periodic_active [10,921 calls, 78,843 runs, 151,206 slots]
+        periodic_owner [2,761 calls, 20,034 runs, 39,293 slots]
+        capacity [2,549 calls, 25,565 runs, 49,121 slots]
+        owner_exit [16 calls, 158 runs, 301 slots]
+      collect_credit:
+        created 239,921
+        reused 239,083
+        discarded 838
+        reuse_distance [11,088, 14,603, 27,203, 121,993, 64,196]
+  decision:
+    attribution-only
+    do not change qstate, owner lease, pending authority, or residency policy
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

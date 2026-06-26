@@ -42,6 +42,122 @@ static uint64_t h8_medium_now_ns(void) {
   return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
 }
 
+void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner) {
+  if (owner) {
+    ++owner->debug_medium_alloc_epoch;
+  }
+}
+
+void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
+                                              H8MediumRun* active) {
+  if (!ctx || !ctx->owner) {
+    return;
+  }
+  if (h8_medium_owner_has_pending(ctx->owner)) {
+    H8_DEBUG_INC(medium_active_miss_owner_pending);
+  }
+  if (!active || active->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint64_t pending =
+      atomic_load_explicit(&active->pending_bits[0], memory_order_acquire);
+  if (active->slot_count < 64u) {
+    pending &= (UINT64_C(1) << active->slot_count) - 1u;
+  }
+  if (pending) {
+    H8_DEBUG_INC(medium_active_miss_active_pending);
+    H8_DEBUG_ADD(medium_active_miss_active_pending_slots,
+                 (size_t)__builtin_popcountll(pending));
+  }
+}
+
+void h8_medium_debug_note_owner_list_hit_position(size_t position) {
+  if (position <= 1u) {
+    H8_DEBUG_INC(medium_active_miss_owner_list_pos1);
+  } else if (position == 2u) {
+    H8_DEBUG_INC(medium_active_miss_owner_list_pos2);
+  } else if (position == 3u) {
+    H8_DEBUG_INC(medium_active_miss_owner_list_pos3);
+  } else if (position == 4u) {
+    H8_DEBUG_INC(medium_active_miss_owner_list_pos4);
+  } else {
+    H8_DEBUG_INC(medium_active_miss_owner_list_pos5p);
+  }
+}
+
+static void h8_medium_debug_collect_source_add(H8MediumCollectSource source,
+                                               size_t runs,
+                                               size_t slots) {
+  switch (source) {
+    case H8_MEDIUM_COLLECT_PERIODIC_ACTIVE:
+      H8_DEBUG_ADD(medium_collect_src_periodic_active_run, runs);
+      H8_DEBUG_ADD(medium_collect_src_periodic_active_slot, slots);
+      break;
+    case H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST:
+      H8_DEBUG_ADD(medium_collect_src_periodic_owner_run, runs);
+      H8_DEBUG_ADD(medium_collect_src_periodic_owner_slot, slots);
+      break;
+    case H8_MEDIUM_COLLECT_CAPACITY_MISS:
+      H8_DEBUG_ADD(medium_collect_src_capacity_run, runs);
+      H8_DEBUG_ADD(medium_collect_src_capacity_slot, slots);
+      break;
+    case H8_MEDIUM_COLLECT_OWNER_EXIT:
+      H8_DEBUG_ADD(medium_collect_src_owner_exit_run, runs);
+      H8_DEBUG_ADD(medium_collect_src_owner_exit_slot, slots);
+      break;
+  }
+}
+
+void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
+                                           H8MediumRun* run,
+                                           uint64_t accepted,
+                                           uint64_t old_free_mask,
+                                           H8MediumCollectSource source) {
+  size_t slots = (size_t)__builtin_popcountll(accepted);
+  h8_medium_debug_collect_source_add(source, 1u, slots);
+  if (!owner || !run || slots == 0) {
+    return;
+  }
+  if (old_free_mask == 0) {
+    H8_DEBUG_INC(medium_collect_full_to_nonfull_run);
+  }
+  ++run->debug_collect_generation;
+  run->debug_collect_free_credits += (uint32_t)slots;
+  run->debug_collect_owner_alloc_epoch = owner->debug_medium_alloc_epoch;
+  H8_DEBUG_ADD(medium_collect_credit_created, slots);
+}
+
+void h8_medium_debug_note_alloc_collect_credit(H8OwnerRecord* owner,
+                                               H8MediumRun* run) {
+  if (!owner || !run || run->debug_collect_free_credits == 0) {
+    return;
+  }
+  --run->debug_collect_free_credits;
+  H8_DEBUG_INC(medium_collect_credit_reused);
+  uint64_t delta =
+      owner->debug_medium_alloc_epoch - run->debug_collect_owner_alloc_epoch;
+  if (delta <= 1u) {
+    H8_DEBUG_INC(medium_collect_credit_reuse_d0_1);
+  } else if (delta <= 3u) {
+    H8_DEBUG_INC(medium_collect_credit_reuse_d2_3);
+  } else if (delta <= 7u) {
+    H8_DEBUG_INC(medium_collect_credit_reuse_d4_7);
+  } else if (delta <= 31u) {
+    H8_DEBUG_INC(medium_collect_credit_reuse_d8_31);
+  } else {
+    H8_DEBUG_INC(medium_collect_credit_reuse_d32p);
+  }
+}
+
+void h8_medium_debug_discard_collect_credit(H8MediumRun* run) {
+  if (!run || run->debug_collect_free_credits == 0) {
+    return;
+  }
+  H8_DEBUG_ADD(medium_collect_credit_discarded,
+               run->debug_collect_free_credits);
+  run->debug_collect_free_credits = 0;
+}
+
 static void h8_medium_debug_class_inc(uint32_t class_id,
                                       atomic_size_t* class_8k,
                                       atomic_size_t* class_16k,
@@ -455,6 +571,9 @@ static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
   section_start = h8_medium_now_ns();
 #endif
   void* ptr = h8_medium_run_alloc_local_hot(run);
+  if (ptr) {
+    h8_medium_debug_note_alloc_collect_credit(ctx->owner, run);
+  }
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_available_hit_alloc_ns,
                (size_t)(h8_medium_now_ns() - section_start));
@@ -536,6 +655,9 @@ static void* h8_medium_try_refill_candidate(H8ThreadCtx* ctx,
   }
   h8_medium_debug_lock_elide_candidate(run, ctx, false);
   void* ptr = h8_medium_run_alloc_local_hot(run);
+  if (ptr) {
+    h8_medium_debug_note_alloc_collect_credit(ctx->owner, run);
+  }
   h8_medium_set_active_run(ctx, class_id, run);
   h8_medium_record_alloc_run(ctx, run);
   h8_medium_unlock_run(run);
@@ -691,6 +813,7 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   if (!run) {
     return;
   }
+  h8_medium_debug_discard_collect_credit(run);
   h8_medium_lock_global();
   h8_medium_unregister_locked(run);
   h8_medium_unlock_global();
@@ -752,7 +875,9 @@ void* h8_medium_malloc_class_inner(uint32_t class_id) {
                             &h8g.medium_malloc_class_32k,
                             &h8g.medium_malloc_class_64k);
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
+  h8_medium_debug_note_owner_medium_alloc(ctx ? ctx->owner : NULL);
   bool did_capacity_collect = false;
+  bool saw_active_miss = false;
 retry_owner_capacity:
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
   uint64_t expected_owner_word =
@@ -760,6 +885,7 @@ retry_owner_capacity:
   bool active_owned = false;
   if (!active) {
     H8_DEBUG_INC(medium_active_miss_null);
+    saw_active_miss = true;
   } else {
     active_owned =
         expected_owner_word != 0 &&
@@ -770,6 +896,7 @@ retry_owner_capacity:
       H8_DEBUG_INC(medium_active_miss_owner);
       h8_medium_set_active_run(ctx, class_id, NULL);
       active = NULL;
+      saw_active_miss = true;
     }
   }
   if (active) {
@@ -780,6 +907,8 @@ retry_owner_capacity:
       void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
       h8_medium_debug_writer_exit(active);
       if (ptr) {
+        h8_medium_debug_note_alloc_collect_credit(ctx ? ctx->owner : NULL,
+                                                  active);
         h8_medium_record_alloc_run(ctx, active);
         H8_DEBUG_INC(medium_run_reuse_active_count);
         h8_medium_debug_class_inc(class_id,
@@ -792,6 +921,8 @@ retry_owner_capacity:
       }
     }
     H8_DEBUG_INC(medium_active_miss_unusable);
+    saw_active_miss = true;
+    h8_medium_debug_note_active_miss_pending(ctx, active);
   }
   h8_medium_refill_candidate_shadow_probe(ctx, class_id);
   void* refill_ptr = h8_medium_try_refill_candidate(ctx, class_id);
@@ -805,9 +936,11 @@ retry_owner_capacity:
   }
   if (ctx && ctx->owner) {
     H8_DEBUG_INC(medium_owner_scan_count);
+    size_t owner_scan_position = 0;
     for (H8MediumRun* run = ctx->owner->medium_by_class[class_id]; run;
          run = run->next_owner) {
       H8_DEBUG_INC(medium_owner_scan_step_count);
+      ++owner_scan_position;
       if (!h8_medium_run_owned_by_ctx(run, ctx)) {
         H8_DEBUG_INC(medium_owner_list_owner_mismatch);
         continue;
@@ -826,6 +959,10 @@ retry_owner_capacity:
                                   &h8g.medium_run_reuse_owner_class_32k,
                                   &h8g.medium_run_reuse_owner_class_64k);
         void* ptr = h8_medium_run_alloc_local_hot(run);
+        if (ptr) {
+          h8_medium_debug_note_owner_list_hit_position(owner_scan_position);
+          h8_medium_debug_note_alloc_collect_credit(ctx->owner, run);
+        }
         h8_medium_set_active_run(ctx, class_id, run);
         h8_medium_record_alloc_run(ctx, run);
         h8_medium_unlock_run(run);
@@ -860,6 +997,9 @@ retry_owner_capacity:
     }
     if (h8_medium_run_usable_locked(run, class_id)) {
       H8_DEBUG_INC(medium_run_reuse_global_count);
+      if (saw_active_miss) {
+        H8_DEBUG_INC(medium_active_miss_detached_reuse);
+      }
       h8_medium_debug_class_inc(class_id,
                                 &h8g.medium_run_reuse_global_class_8k,
                                 &h8g.medium_run_reuse_global_class_16k,
@@ -871,6 +1011,7 @@ retry_owner_capacity:
       h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_GLOBAL_ATTACH);
       void* ptr = h8_medium_run_alloc_local_hot(run);
+      h8_medium_debug_note_alloc_collect_credit(ctx ? ctx->owner : NULL, run);
       h8_medium_debug_writer_exit(run);
       if (ctx && h8_medium_run_owned_by_ctx(run, ctx)) {
         h8_medium_set_active_run(ctx, class_id, run);
@@ -889,6 +1030,9 @@ retry_owner_capacity:
     return NULL;
   }
   H8_DEBUG_INC(medium_run_create_count);
+  if (saw_active_miss) {
+    H8_DEBUG_INC(medium_active_miss_create);
+  }
   h8_medium_debug_class_inc(class_id, &h8g.medium_run_create_class_8k,
                             &h8g.medium_run_create_class_16k,
                             &h8g.medium_run_create_class_32k,
@@ -900,6 +1044,7 @@ retry_owner_capacity:
                                H8_MEDIUM_WRITER_GLOBAL_ATTACH);
   h8_medium_lock_run(run);
   void* ptr = h8_medium_run_alloc_local_hot(run);
+  h8_medium_debug_note_alloc_collect_credit(ctx ? ctx->owner : NULL, run);
   if (ctx) {
     h8_medium_set_active_run(ctx, class_id, run);
     h8_medium_record_alloc_run(ctx, run);
@@ -1115,6 +1260,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       if (run->lazy_purge_charge) {
         H8_DEBUG_INC(medium_lazy_drop_detach);
       }
+      h8_medium_debug_discard_collect_credit(run);
       h8_medium_available_shadow_remove(owner, run);
       h8_medium_lazy_purge_shadow_drop(run);
       run->owner_attached = false;

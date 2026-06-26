@@ -429,8 +429,31 @@ static void h8_medium_collect_refill_active_hint(H8OwnerRecord* owner,
 }
 #endif
 
+static void h8_medium_debug_note_collect_source_call(
+    H8MediumCollectSource source) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  switch (source) {
+    case H8_MEDIUM_COLLECT_PERIODIC_ACTIVE:
+      H8_DEBUG_INC(medium_collect_src_periodic_active_call);
+      break;
+    case H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST:
+      H8_DEBUG_INC(medium_collect_src_periodic_owner_call);
+      break;
+    case H8_MEDIUM_COLLECT_CAPACITY_MISS:
+      H8_DEBUG_INC(medium_collect_src_capacity_call);
+      break;
+    case H8_MEDIUM_COLLECT_OWNER_EXIT:
+      H8_DEBUG_INC(medium_collect_src_owner_exit_call);
+      break;
+  }
+#else
+  (void)source;
+#endif
+}
+
 static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
-                                  H8ThreadCtx* ctx) {
+                                  H8ThreadCtx* ctx,
+                                  H8MediumCollectSource source) {
   uint8_t expected = H8_Q_QUEUED;
   if (!atomic_compare_exchange_strong_explicit(&run->qstate, &expected,
                                                H8_Q_DRAINING,
@@ -479,8 +502,11 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
 #if defined(H8_ENABLE_DEBUG_STATS)
     section_start = h8_medium_remote_now_ns();
 #endif
+    uint64_t old_free_mask = run->free_mask;
     run->allocated_mask &= ~accepted;
     run->free_mask |= accepted;
+    h8_medium_debug_note_collect_capacity(owner, run, accepted, old_free_mask,
+                                          source);
     h8_medium_available_shadow_after_mask_change_ctx(run, ctx);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_ADD(medium_collect_mask_ns,
@@ -595,11 +621,13 @@ bool h8_medium_owner_has_pending(H8OwnerRecord* owner) {
 
 static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
                                                    H8ThreadCtx* ctx,
-                                                   size_t run_budget) {
+                                                   size_t run_budget,
+                                                   H8MediumCollectSource source) {
   if (!owner) {
     return 0;
   }
   H8_DEBUG_INC(medium_remote_collect_call_count);
+  h8_medium_debug_note_collect_source_call(source);
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t collect_start = h8_medium_remote_now_ns();
 #endif
@@ -615,7 +643,7 @@ static size_t h8_medium_collect_pending_budget_ctx(H8OwnerRecord* owner,
     atomic_fetch_sub_explicit(&owner->medium_pending_count, 1,
                               memory_order_acq_rel);
     ++processed;
-    if (h8_medium_collect_run(owner, run, ctx)) {
+    if (h8_medium_collect_run(owner, run, ctx, source)) {
       h8_medium_pending_queue_push(owner, run);
     }
   }
@@ -628,12 +656,14 @@ done:
 size_t h8_medium_collect_current_pending_budget(H8ThreadCtx* ctx,
                                                 size_t run_budget) {
   return h8_medium_collect_pending_budget_ctx(ctx ? ctx->owner : NULL, ctx,
-                                             run_budget);
+                                             run_budget,
+                                             H8_MEDIUM_COLLECT_CAPACITY_MISS);
 }
 
 size_t h8_medium_collect_owner_pending_budget(H8OwnerRecord* owner,
                                               size_t run_budget) {
-  return h8_medium_collect_pending_budget_ctx(owner, NULL, run_budget);
+  return h8_medium_collect_pending_budget_ctx(owner, NULL, run_budget,
+                                             H8_MEDIUM_COLLECT_OWNER_EXIT);
 }
 
 static void h8_medium_collect_owner_pending_periodic_impl(H8ThreadCtx* ctx,
@@ -655,8 +685,10 @@ static void h8_medium_collect_owner_pending_periodic_impl(H8ThreadCtx* ctx,
   ctx->medium_collect_credit = H8_MEDIUM_COLLECT_PERIOD;
   if (h8_medium_owner_has_pending_fast(ctx->owner)) {
     H8_DEBUG_INC(medium_collect_periodic_pending_hit);
-    (void)h8_medium_collect_current_pending_budget(ctx,
-                                                   H8_MEDIUM_COLLECT_BUDGET);
+    (void)h8_medium_collect_pending_budget_ctx(
+        ctx->owner, ctx, H8_MEDIUM_COLLECT_BUDGET,
+        owner_list ? H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST
+                   : H8_MEDIUM_COLLECT_PERIODIC_ACTIVE);
   } else {
     H8_DEBUG_INC(medium_collect_periodic_pending_miss);
   }

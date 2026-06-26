@@ -470,6 +470,41 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
              ? (double)debug.medium_alloc_ptr_ns /
                    (double)debug.medium_alloc_scaffold_count
              : 0.0);
+  printf("medium_post_collect_active_miss owner_pending=%zu active_pending=%zu active_pending_slots=%zu owner_hit_pos=[%zu,%zu,%zu,%zu,%zu] create=%zu detached_reuse=%zu\n",
+         debug.medium_active_miss_owner_pending,
+         debug.medium_active_miss_active_pending,
+         debug.medium_active_miss_active_pending_slots,
+         debug.medium_active_miss_owner_list_pos1,
+         debug.medium_active_miss_owner_list_pos2,
+         debug.medium_active_miss_owner_list_pos3,
+         debug.medium_active_miss_owner_list_pos4,
+         debug.medium_active_miss_owner_list_pos5p,
+         debug.medium_active_miss_create,
+         debug.medium_active_miss_detached_reuse);
+  printf("medium_collect_source periodic_active=[%zu,%zu,%zu] periodic_owner=[%zu,%zu,%zu] capacity=[%zu,%zu,%zu] owner_exit=[%zu,%zu,%zu] full_to_nonfull=%zu\n",
+         debug.medium_collect_src_periodic_active_call,
+         debug.medium_collect_src_periodic_active_run,
+         debug.medium_collect_src_periodic_active_slot,
+         debug.medium_collect_src_periodic_owner_call,
+         debug.medium_collect_src_periodic_owner_run,
+         debug.medium_collect_src_periodic_owner_slot,
+         debug.medium_collect_src_capacity_call,
+         debug.medium_collect_src_capacity_run,
+         debug.medium_collect_src_capacity_slot,
+         debug.medium_collect_src_owner_exit_call,
+         debug.medium_collect_src_owner_exit_run,
+         debug.medium_collect_src_owner_exit_slot,
+         debug.medium_collect_full_to_nonfull_run);
+  printf("medium_collect_credit created=%zu reused=%zu discarded=%zu underflow=%zu reuse_distance=[%zu,%zu,%zu,%zu,%zu]\n",
+         debug.medium_collect_credit_created,
+         debug.medium_collect_credit_reused,
+         debug.medium_collect_credit_discarded,
+         debug.medium_collect_credit_underflow,
+         debug.medium_collect_credit_reuse_d0_1,
+         debug.medium_collect_credit_reuse_d2_3,
+         debug.medium_collect_credit_reuse_d4_7,
+         debug.medium_collect_credit_reuse_d8_31,
+         debug.medium_collect_credit_reuse_d32p);
   printf("medium_chunk create=%zu alloc=%zu reserved_bytes=%zu used_bytes=%zu\n",
          debug.medium_chunk_create_count, debug.medium_chunk_alloc_count,
          debug.medium_chunk_reserved_bytes, debug.medium_chunk_used_bytes);

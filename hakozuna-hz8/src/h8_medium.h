@@ -59,6 +59,13 @@ typedef enum H8MediumDecommitReason {
   H8_MEDIUM_DECOMMIT_OWNER_EXIT = 3
 } H8MediumDecommitReason;
 
+typedef enum H8MediumCollectSource {
+  H8_MEDIUM_COLLECT_PERIODIC_ACTIVE = 1,
+  H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST = 2,
+  H8_MEDIUM_COLLECT_CAPACITY_MISS = 3,
+  H8_MEDIUM_COLLECT_OWNER_EXIT = 4
+} H8MediumCollectSource;
+
 typedef struct H8MediumClassSpec {
   uint32_t slot_size;
   uint32_t run_size;
@@ -117,6 +124,9 @@ typedef struct H8MediumRun {
   struct H8MediumRun* debug_retention_l3_next[4];
   bool debug_retention_l3_reuse_evidence;
   bool debug_retention_l3_m0_expect_decommit;
+  uint32_t debug_collect_generation;
+  uint32_t debug_collect_free_credits;
+  uint64_t debug_collect_owner_alloc_epoch;
 #endif
 } H8MediumRun;
 
@@ -246,6 +256,31 @@ void h8_medium_note_active_live_empty(H8MediumRun* run);
 void h8_medium_clear_active_live_empty(H8MediumRun* run);
 void h8_medium_mark_empty_locked(H8MediumRun* run);
 void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner);
+void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
+                                              H8MediumRun* active);
+void h8_medium_debug_note_owner_list_hit_position(size_t position);
+void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
+                                           H8MediumRun* run,
+                                           uint64_t accepted,
+                                           uint64_t old_free_mask,
+                                           H8MediumCollectSource source);
+void h8_medium_debug_note_alloc_collect_credit(H8OwnerRecord* owner,
+                                               H8MediumRun* run);
+void h8_medium_debug_discard_collect_credit(H8MediumRun* run);
+#else
+#define h8_medium_debug_note_owner_medium_alloc(owner) ((void)0)
+#define h8_medium_debug_note_active_miss_pending(ctx, active) \
+  ((void)(ctx), (void)(active))
+#define h8_medium_debug_note_owner_list_hit_position(position) ((void)0)
+#define h8_medium_debug_note_collect_capacity(owner, run, accepted, old_free_mask, source) \
+  ((void)(owner), (void)(run), (void)(accepted), (void)(old_free_mask), \
+   (void)(source))
+#define h8_medium_debug_note_alloc_collect_credit(owner, run) \
+  ((void)(owner), (void)(run))
+#define h8_medium_debug_discard_collect_credit(run) ((void)(run))
+#endif
 static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_note_active_live_empty(run);

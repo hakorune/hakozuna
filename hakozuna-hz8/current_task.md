@@ -357,6 +357,56 @@ latest local-leaf probe:
       next attribution should look beyond owner-list discovery and simple
       scaffold inlining
 
+  MediumPostCollectCapacityUtility-L1:
+    status:
+      implemented as debug/audit attribution
+      behavior unchanged
+    scope:
+      classify medium owner collect calls by source:
+        PERIODIC_AFTER_ACTIVE
+        PERIODIC_AFTER_OWNER_LIST
+        CAPACITY_MISS
+        OWNER_EXIT
+      track active-miss pending state:
+        owner pending present
+        active run pending bits present
+        active pending slot count
+      track owner-list hit position after active miss
+      track collect-created free credits and later allocation reuse distance
+    output:
+      medium_post_collect_active_miss
+      medium_collect_source
+      medium_collect_credit
+    saved data:
+      bench_results/20260626T003225Z_post_collect_capacity_utility/
+      debug_medium_r50_R3.txt
+      debug_main_r90_R3.txt
+      release_medium_r50_R10.txt
+      release_main_r90_R10.txt
+    quick debug read:
+      default debug medium r50 T=16 30k-iters:
+        active_miss_owner_pending 83,069
+        active_miss_active_pending 34,744
+        active_miss_active_pending_slots 54,866
+        owner_hit_pos [21,726, 19,579, 15,085, 11,544, 22,062]
+        collect_source:
+          periodic_active [10,921 calls, 78,843 runs, 151,206 slots]
+          periodic_owner [2,761 calls, 20,034 runs, 39,293 slots]
+          capacity [2,549 calls, 25,565 runs, 49,121 slots]
+          owner_exit [16 calls, 158 runs, 301 slots]
+        collect_credit:
+          created 239,921
+          reused 239,083
+          discarded 838
+          reuse_distance [11,088, 14,603, 27,203, 121,993, 64,196]
+    decision:
+      attribution-only
+      use the collected ratios to decide one final medium-r50 behavior box:
+        active-miss demand collect
+        periodic cadence relaxation
+        size policy / geometry
+        or freeze MediumRun-v1.1 remote lane
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD
