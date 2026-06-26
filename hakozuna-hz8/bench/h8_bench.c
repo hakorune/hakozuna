@@ -304,7 +304,9 @@ int main(int argc, char** argv) {
          0,
 #endif
          H8_CLASS_MAP_ID);
-#if defined(H8_MEDIUM_UPPER48_CLASS)
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  printf("medium_geometry_id=q64-v12-48k2\n");
+#elif defined(H8_MEDIUM_UPPER48_CLASS)
   printf("medium_geometry_id=q64-upper48\n");
 #elif defined(H8_MEDIUM_64K_ONE_SLOT)
   printf("medium_geometry_id=q64-run64k\n");

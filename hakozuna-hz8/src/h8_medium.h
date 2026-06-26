@@ -26,7 +26,15 @@
 #if !defined(H8_MEDIUM_RESIDENT_BUDGET_CLASSES)
 #define H8_MEDIUM_RESIDENT_BUDGET_CLASSES 16u
 #endif
-#if defined(H8_MEDIUM_UPPER48_CLASS)
+#if defined(H8_MEDIUM_V12_48K2_CLASS) && defined(H8_MEDIUM_UPPER48_CLASS)
+#error "H8_MEDIUM_V12_48K2_CLASS and H8_MEDIUM_UPPER48_CLASS are mutually exclusive"
+#endif
+#if defined(H8_MEDIUM_V12_48K2_CLASS) && defined(H8_MEDIUM_64K_ONE_SLOT)
+#error "H8_MEDIUM_V12_48K2_CLASS requires the default 64K two-slot geometry"
+#endif
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+#define H8_MEDIUM_CLASS_COUNT 6u
+#elif defined(H8_MEDIUM_UPPER48_CLASS)
 #define H8_MEDIUM_CLASS_COUNT 5u
 #else
 #define H8_MEDIUM_CLASS_COUNT 4u
@@ -144,6 +152,18 @@ static inline uint32_t h8_medium_class_for_size_fast(size_t size) {
   if (size <= 16384u) {
     return 1u;
   }
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  if (size <= 24576u) {
+    return 2u;
+  }
+  if (size <= 32768u) {
+    return 3u;
+  }
+  if (size <= 49152u) {
+    return 4u;
+  }
+  return 5u;
+#else
   if (size <= 32768u) {
     return 2u;
   }
@@ -154,6 +174,7 @@ static inline uint32_t h8_medium_class_for_size_fast(size_t size) {
   return 4u;
 #else
   return 3u;
+#endif
 #endif
 }
 
@@ -178,6 +199,21 @@ static inline bool h8_medium_slot_index_from_ptr_checked_fast(
   }
   uintptr_t offset = addr - base;
   size_t payload = (size_t)run->slot_size * (size_t)run->slot_count;
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  if ((run->slot_size & (run->slot_size - 1u)) != 0u) {
+    if (offset >= payload || (offset % (uintptr_t)run->slot_size) != 0u) {
+      return false;
+    }
+    size_t slot = (size_t)(offset / (uintptr_t)run->slot_size);
+    if (slot >= run->slot_count) {
+      return false;
+    }
+    if (slot_out) {
+      *slot_out = slot;
+    }
+    return true;
+  }
+#endif
   uintptr_t slot_mask = ((uintptr_t)1u << run->slot_shift) - 1u;
   if (offset >= payload || (offset & slot_mask) != 0u) {
     return false;
@@ -196,11 +232,21 @@ static inline void* h8_medium_slot_ptr_fast(const H8MediumRun* run,
   if (!run || !run->base || slot >= run->slot_count) {
     return NULL;
   }
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  if ((run->slot_size & (run->slot_size - 1u)) != 0u) {
+    return run->base + (slot * (size_t)run->slot_size);
+  }
+#endif
   return run->base + (slot << run->slot_shift);
 }
 
 static inline void* h8_medium_slot_ptr_known(const H8MediumRun* run,
                                              size_t slot) {
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  if ((run->slot_size & (run->slot_size - 1u)) != 0u) {
+    return run->base + (slot * (size_t)run->slot_size);
+  }
+#endif
   return run->base + (slot << run->slot_shift);
 }
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,

@@ -12,6 +12,12 @@
 static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
     {8192u, H8_MEDIUM_RUN_BYTES, 13u, 8u, 1u},
     {16384u, H8_MEDIUM_RUN_BYTES, 14u, 4u, 1u},
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+    {24576u, H8_MEDIUM_RUN_BYTES, 13u, 2u, 1u},
+    {32768u, H8_MEDIUM_RUN_BYTES, 15u, 2u, 1u},
+    {49152u, 2u * H8_MEDIUM_QUANTUM_BYTES, 14u, 2u, 1u},
+    {65536u, H8_MEDIUM_64K_RUN_BYTES, 16u, H8_MEDIUM_64K_SLOT_COUNT, 1u},
+#else
     {32768u, H8_MEDIUM_RUN_BYTES, 15u, 2u, 1u},
 #if defined(H8_MEDIUM_UPPER48_CLASS)
     {49152u, H8_MEDIUM_RUN_BYTES, 14u, 1u, 1u},
@@ -19,13 +25,17 @@ static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
 #else
     {65536u, H8_MEDIUM_64K_RUN_BYTES, 16u, H8_MEDIUM_64K_SLOT_COUNT, 1u},
 #endif
+#endif
 };
 
 _Static_assert(H8_MEDIUM_MIN_SIZE == 4097u,
                "medium range must start immediately after small");
 _Static_assert(H8_MEDIUM_MAX_SIZE == 65536u,
                "medium v1 scaffold currently ends at 64KiB");
-#if defined(H8_MEDIUM_UPPER48_CLASS)
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+_Static_assert(H8_MEDIUM_CLASS_COUNT == 6u,
+               "medium v12 48k2 candidate expects six classes");
+#elif defined(H8_MEDIUM_UPPER48_CLASS)
 _Static_assert(H8_MEDIUM_CLASS_COUNT == 5u,
                "upper48 medium candidate expects five classes");
 #else
@@ -257,10 +267,17 @@ static void h8_medium_debug_class_inc(uint32_t class_id,
     target = class_8k;
   } else if (class_id == 1u) {
     target = class_16k;
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  } else if (class_id == 2u || class_id == 3u) {
+    target = class_32k;
+  } else if (class_id == 4u || class_id == 5u) {
+    target = class_64k;
+#else
   } else if (class_id == 2u) {
     target = class_32k;
   } else if (class_id + 1u == H8_MEDIUM_CLASS_COUNT) {
     target = class_64k;
+#endif
   }
   if (target) {
     atomic_fetch_add_explicit(target, 1u, memory_order_relaxed);

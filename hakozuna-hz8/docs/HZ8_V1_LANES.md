@@ -499,7 +499,7 @@ MediumSizePolicy-v1.2-Shadow:
 
 MediumSizePolicy-v1.2-Shadow-48K2:
   status:
-    NEXT
+    observed / ready for AB candidate
   scope:
     behavior unchanged
     extend the existing v12 shadow with a 48K two-slot run-pressure estimate
@@ -528,6 +528,55 @@ MediumSizePolicy-v1.2-Shadow-48K2:
     do not default-promote from shadow alone
   promotion:
     no behavior promotion from shadow alone
+
+MediumSizePolicy-v1.2-48K2-AB:
+  status:
+    NEXT implementation / build-time candidate only
+  scope:
+    opt-in H8_MEDIUM_V12_48K2_CLASS build
+    class map:
+      8K / 16K / 24K / 32K / 48K / 64K
+    geometry:
+      24K:
+        64KiB run / 2 slots
+      48K:
+        128KiB run / 2 slots
+      64K:
+        current 128KiB run / 2 slots
+    unchanged:
+      small-v0 class map
+      medium remote pending/qstate protocol
+      lazy128 residency default
+      quantum directory
+  rationale:
+    shadow shows rounded-byte reduction while 48K2 keeps run pressure near
+    current q64-run64k2 for medium_r50 and main_r90 shapes
+  build targets:
+    bench-mediumv12_48k2
+    bench-release-mediumv12_48k2
+  acceptance:
+    paired release R10 x 2 before promotion
+    medium_r50 median >= baseline * 1.03 as initial evidence target
+    main_r90 median/p25 >= baseline * 0.98
+    small frozen local/remote rows >= baseline * 0.98
+    all medium zero gates clean
+    RSS / lazy128 retention contract unchanged
+  hold condition:
+    if non-power-of-two slot mechanics erase the rounded-byte benefit, keep as
+    evidence-only and do not broaden the class map
+  quick observation:
+    data:
+      bench_results/20260626T135543Z_medium_v12_48k2_quick/
+      bench_results/20260626T135603Z_medium_v12_48k2_ordercheck/
+    medium_r50 R3:
+      positive signal, v12_48k2 median 32.73M vs baseline 20.63M
+    main_r90 R5 order-check:
+      median mildly lower and p25 materially lower
+    small_remote90 R5 order-check:
+      no stable regression signal
+    decision:
+      continue only with order-rotated R10 x 2
+      promotion blocker to watch is main_r90 p25 stability
 
 64K two-slot:
   medium r50 positive

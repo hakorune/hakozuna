@@ -41,10 +41,17 @@ static void h8_medium_debug_class_add(uint16_t class_id,
     target = class_8k;
   } else if (class_id == 1) {
     target = class_16k;
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  } else if (class_id == 2 || class_id == 3) {
+    target = class_32k;
+  } else if (class_id == 4 || class_id == 5) {
+    target = class_64k;
+#else
   } else if (class_id == 2) {
     target = class_32k;
-  } else if (class_id == 3) {
+  } else if (class_id + 1u == H8_MEDIUM_CLASS_COUNT) {
     target = class_64k;
+#endif
   }
   if (target) {
     atomic_fetch_add_explicit(target, value, memory_order_relaxed);

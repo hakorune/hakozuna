@@ -60,12 +60,19 @@ static int check_medium_scaffold(void) {
       {4097u, 0u, 8192u},
       {8192u, 0u, 8192u},
       {8193u, 1u, 16384u},
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+      {16385u, 2u, 24576u},
+      {24577u, 3u, 32768u},
+      {32769u, 4u, 49152u},
+      {49153u, 5u, 65536u},
+#else
       {16385u, 2u, 32768u},
 #if defined(H8_MEDIUM_UPPER48_CLASS)
       {32769u, 3u, 49152u},
       {49153u, 4u, 65536u},
 #else
       {32769u, 3u, 65536u},
+#endif
 #endif
   };
   for (size_t i = 0; i < sizeof(probes) / sizeof(probes[0]); ++i) {
@@ -81,7 +88,7 @@ static int check_medium_scaffold(void) {
       fprintf(stderr, "medium scaffold spec mismatch\n");
         return 25;
     }
-    unsigned char payload[65536];
+    unsigned char payload[2u * H8_MEDIUM_QUANTUM_BYTES];
     H8MediumRun run;
     memset(&run, 0, sizeof(run));
     run.base = payload;

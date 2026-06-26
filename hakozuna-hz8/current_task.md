@@ -528,7 +528,7 @@ latest local-leaf probe:
 
   MediumSizePolicy-v1.2-Shadow-48K2:
     status:
-      NEXT
+      observed / ready for AB candidate
     rationale:
       v12 8/16/24/32/48/64 reduces rounded bytes, but a one-slot 48K class
       increases run pressure against the current q64-run64k2 default in
@@ -543,6 +543,58 @@ latest local-leaf probe:
       v12_48k2 remote run estimate
       v12_48k2 ratio vs current default64k2
       comparison against one-slot v12
+
+  MediumSizePolicy-v1.2-48K2-AB:
+    status:
+      NEXT implementation / build-time candidate only
+    scope:
+      add opt-in H8_MEDIUM_V12_48K2_CLASS build
+      medium classes become 8K / 16K / 24K / 32K / 48K / 64K
+      24K uses 64KiB run / 2 slots
+      48K uses 128KiB run / 2 slots
+      default q64-run64k2 behavior remains unchanged
+      non-power-of-two slot decode is enabled only for this candidate
+    build targets:
+      bench-mediumv12_48k2
+      bench-release-mediumv12_48k2
+    acceptance:
+      paired release R10 x 2 before promotion
+      medium_r50 median >= baseline * 1.03 as initial evidence target
+      main_r90 median/p25 >= baseline * 0.98
+      small frozen local/remote rows >= baseline * 0.98
+      all medium zero gates clean
+      RSS / lazy128 retention contract unchanged
+    decision rule:
+      if hot-path regression dominates rounded-byte win, HOLD as evidence
+      do not change small-v0 class map in this lane
+    quick build / smoke:
+      default smoke:
+        pass
+      v12 smoke:
+        pass
+      default safety-stress:
+        pass
+      data:
+        bench_results/20260626T135543Z_medium_v12_48k2_quick/
+        bench_results/20260626T135603Z_medium_v12_48k2_ordercheck/
+      first quick read:
+        medium_r50 R3 median:
+          baseline 20.63M
+          v12_48k2 32.73M
+        main_r90 order-check R5 median:
+          baseline 25.07M
+          v12_48k2 24.16M
+        main_r90 order-check p25:
+          baseline 24.80M
+          v12_48k2 20.16M
+        small_remote90 order-check R5 median:
+          baseline 42.48M
+          v12_48k2 51.94M
+      interpretation:
+        medium_r50 has real-looking positive signal
+        small signal is order/noise sensitive and not yet a regression
+        main_r90 p25 is the current risk; require order-rotated R10 x 2
+        before promotion
     quick sanity:
       medium_r50-shaped smoke:
         one-slot v12 run ratio vs default64k2 about 1.31
