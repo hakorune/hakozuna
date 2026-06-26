@@ -497,6 +497,25 @@ MediumSizePolicy-v1.2-Shadow:
   promotion:
     no behavior promotion from shadow alone
 
+MediumSizePolicy-v1.2-Shadow-48K2:
+  status:
+    NEXT
+  scope:
+    behavior unchanged
+    extend the existing v12 shadow with a 48K two-slot run-pressure estimate
+  rationale:
+    the 8/16/24/32/48/64 map improves rounded bytes, but one-slot 48K worsens
+    run pressure relative to current q64-run64k2 in medium_r50-like shapes
+    model 48K as a two-slot 128K run before considering any behavior change
+  quick sanity:
+    medium_r50-shaped smoke:
+      one-slot v12 run ratio vs default64k2 about 1.31
+      v12_48k2 run ratio vs default64k2 about 1.00
+    main_r90-shaped smoke:
+      v12_48k2 run ratio vs default64k2 about 1.00
+  promotion:
+    no behavior promotion from shadow alone
+
 64K two-slot:
   medium r50 positive
   promoted after budget16/order-rotated frozen small evidence

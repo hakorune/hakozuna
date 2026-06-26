@@ -526,6 +526,32 @@ latest local-leaf probe:
       decide whether the remaining medium/main gap is class geometry rather
       than remote protocol overhead
 
+  MediumSizePolicy-v1.2-Shadow-48K2:
+    status:
+      NEXT
+    rationale:
+      v12 8/16/24/32/48/64 reduces rounded bytes, but a one-slot 48K class
+      increases run pressure against the current q64-run64k2 default in
+      medium_r50-like shapes
+      the next shadow keeps the same rounded-size map while modeling 48K as
+      a two-slot 128K run, preserving the density property that made 64K2 work
+    scope:
+      behavior unchanged
+      bench attribution only
+      no allocator geometry promotion
+    required output:
+      v12_48k2 remote run estimate
+      v12_48k2 ratio vs current default64k2
+      comparison against one-slot v12
+    quick sanity:
+      medium_r50-shaped smoke:
+        one-slot v12 run ratio vs default64k2 about 1.31
+        v12_48k2 run ratio vs default64k2 about 1.00
+        rounded byte improvement is unchanged from v12
+      main_r90-shaped smoke:
+        v12_48k2 run ratio vs default64k2 about 1.00
+        rounded ratio about 1.21
+
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
     default HOLD

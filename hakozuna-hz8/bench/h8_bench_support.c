@@ -234,10 +234,13 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
       8, 4, 2, 1, 1};
   static const size_t v12_slots[H8_BENCH_MEDIUM_V12_COUNT] = {
       8, 4, 2, 2, 1, 2};
+  static const size_t v12_48k2_slots[H8_BENCH_MEDIUM_V12_COUNT] = {
+      8, 4, 2, 2, 2, 2};
   size_t medium_mix_runs = 0;
   size_t medium_mix_runs_64k_x2 = 0;
   size_t upper48_runs = 0;
   size_t v12_runs = 0;
+  size_t v12_48k2_runs = 0;
   for (uint32_t c = 0; c < H8_BENCH_MEDIUM_CLASS_COUNT; ++c) {
     medium_mix_runs +=
         (totals->remote_live_by_class[c] + medium_slots[c] - 1u) /
@@ -255,6 +258,9 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
     v12_runs +=
         (totals->remote_live_v12_by_class[c] + v12_slots[c] - 1u) /
         v12_slots[c];
+    v12_48k2_runs +=
+        (totals->remote_live_v12_by_class[c] + v12_48k2_slots[c] - 1u) /
+        v12_48k2_slots[c];
   }
   printf("medium_class_dist alloc=[%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu] one_slot_alloc_ratio=%.6f one_slot_remote_ratio=%.6f\n",
          totals->candidate_by_class[0], totals->candidate_by_class[1],
@@ -290,7 +296,7 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
              ? (double)totals->remote_upper48_rounded_bytes /
                    (double)totals->remote_requested_bytes
              : 0.0);
-  printf("medium_v12_sizepolicy_shadow policy=8/16/24/32/48/64 alloc=[%zu,%zu,%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=%" PRIu64 " rounded_ratio=%.6f remote_rounded_bytes=%" PRIu64 " remote_ratio=%.6f remote_runs=%zu run_ratio_vs_one_slot64k=%.6f run_ratio_vs_default64k2=%.6f\n",
+  printf("medium_v12_sizepolicy_shadow policy=8/16/24/32/48/64 alloc=[%zu,%zu,%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=%" PRIu64 " rounded_ratio=%.6f remote_rounded_bytes=%" PRIu64 " remote_ratio=%.6f remote_runs=%zu run_ratio_vs_one_slot64k=%.6f run_ratio_vs_default64k2=%.6f remote_runs_48k2=%zu run48k2_ratio_vs_default64k2=%.6f\n",
          totals->candidate_v12_by_class[0], totals->candidate_v12_by_class[1],
          totals->candidate_v12_by_class[2], totals->candidate_v12_by_class[3],
          totals->candidate_v12_by_class[4], totals->candidate_v12_by_class[5],
@@ -313,9 +319,14 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
          medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs : 0.0,
          medium_mix_runs_64k_x2
              ? (double)v12_runs / (double)medium_mix_runs_64k_x2
+             : 0.0,
+         v12_48k2_runs,
+         medium_mix_runs_64k_x2
+             ? (double)v12_48k2_runs / (double)medium_mix_runs_64k_x2
              : 0.0);
-  printf("medium_run_mix_est one_slot64k_runs=%zu default64k2_runs=%zu upper48_runs=%zu v12_runs=%zu default64k2_vs_one_slot_ratio=%.6f upper48_vs_one_slot_ratio=%.6f v12_vs_one_slot_ratio=%.6f v12_vs_default64k2_ratio=%.6f\n",
+  printf("medium_run_mix_est one_slot64k_runs=%zu default64k2_runs=%zu upper48_runs=%zu v12_runs=%zu v12_48k2_runs=%zu default64k2_vs_one_slot_ratio=%.6f upper48_vs_one_slot_ratio=%.6f v12_vs_one_slot_ratio=%.6f v12_vs_default64k2_ratio=%.6f v12_48k2_vs_default64k2_ratio=%.6f\n",
          medium_mix_runs, medium_mix_runs_64k_x2, upper48_runs, v12_runs,
+         v12_48k2_runs,
          medium_mix_runs ? (double)medium_mix_runs_64k_x2 /
                                (double)medium_mix_runs
                          : 0.0,
@@ -325,7 +336,10 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
                          : 0.0,
          medium_mix_runs_64k_x2
              ? (double)v12_runs / (double)medium_mix_runs_64k_x2
-                         : 0.0);
+             : 0.0,
+         medium_mix_runs_64k_x2
+             ? (double)v12_48k2_runs / (double)medium_mix_runs_64k_x2
+             : 0.0);
 }
 
 uint64_t h8_now_ns(void) {
