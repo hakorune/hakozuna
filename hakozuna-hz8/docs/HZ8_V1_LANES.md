@@ -513,6 +513,19 @@ MediumSizePolicy-v1.2-Shadow-48K2:
       v12_48k2 run ratio vs default64k2 about 1.00
     main_r90-shaped smoke:
       v12_48k2 run ratio vs default64k2 about 1.00
+  R10 observation:
+    data:
+      bench_results/20260626T133628Z_medium_v12_48k2_shadow/
+    medium_r50:
+      v12 remote rounded ratio about 1.176
+      one-slot v12 run ratio vs default64k2 about 1.302
+      v12_48k2 run ratio vs default64k2 about 1.000
+    main_r90:
+      v12 remote rounded ratio about 1.206
+      v12_48k2 run ratio vs default64k2 about 1.000
+  next:
+    build-time MediumSizePolicy-v1.2-48K2-AB candidate
+    do not default-promote from shadow alone
   promotion:
     no behavior promotion from shadow alone
 

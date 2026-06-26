@@ -551,6 +551,24 @@ latest local-leaf probe:
       main_r90-shaped smoke:
         v12_48k2 run ratio vs default64k2 about 1.00
         rounded ratio about 1.21
+    R10 observation:
+      data:
+        bench_results/20260626T133628Z_medium_v12_48k2_shadow/
+      medium_r50:
+        throughput median 548.92k debug ops/s
+        v12 remote rounded ratio 1.176
+        one-slot v12 run ratio vs default64k2 1.302
+        v12_48k2 run ratio vs default64k2 1.000
+        active miss concentrated in 64K then 32K
+      main_r90:
+        throughput median 416.42k debug ops/s
+        v12 remote rounded ratio 1.206
+        v12_48k2 run ratio vs default64k2 1.000
+        active miss concentrated in 32K
+      decision:
+        strongest size-policy candidate so far
+        next implementation should be build-time AB, not direct default
+        candidate must preserve small-v0 and lazy128 contracts
 
   MediumLocalFreeRunCache-L1
     implemented as opt-in build-time evidence target
