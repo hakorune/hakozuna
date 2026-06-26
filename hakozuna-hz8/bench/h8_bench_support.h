@@ -13,6 +13,7 @@
 #define H8_BENCH_MEDIUM_MAX_SIZE 65536u
 #define H8_BENCH_MEDIUM_CLASS_COUNT 4u
 #define H8_BENCH_MEDIUM_UPPER48_COUNT 5u
+#define H8_BENCH_MEDIUM_V12_COUNT 6u
 
 typedef struct H8BenchOptions {
   int runs;
@@ -63,13 +64,17 @@ typedef struct H8BenchThread {
   uint64_t medium_candidate_requested_bytes;
   uint64_t medium_candidate_rounded_bytes;
   uint64_t medium_candidate_upper48_bytes;
+  uint64_t medium_candidate_v12_bytes;
   uint64_t medium_remote_live_requested_bytes;
   uint64_t medium_remote_live_rounded_bytes;
   uint64_t medium_remote_live_upper48_bytes;
+  uint64_t medium_remote_live_v12_bytes;
   size_t medium_candidate_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
   size_t medium_remote_live_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
   size_t medium_candidate_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
   size_t medium_remote_live_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
+  size_t medium_candidate_v12_by_class[H8_BENCH_MEDIUM_V12_COUNT];
+  size_t medium_remote_live_v12_by_class[H8_BENCH_MEDIUM_V12_COUNT];
   size_t remote_live_upper1536[H8_BENCH_CANDIDATE_UPPER1536_COUNT];
   size_t remote_live_upper1p5[H8_BENCH_CANDIDATE_UPPER1P5_COUNT];
   int error;
@@ -86,13 +91,17 @@ typedef struct H8BenchMediumTotals {
   uint64_t requested_bytes;
   uint64_t rounded_bytes;
   uint64_t upper48_rounded_bytes;
+  uint64_t v12_rounded_bytes;
   uint64_t remote_requested_bytes;
   uint64_t remote_rounded_bytes;
   uint64_t remote_upper48_rounded_bytes;
+  uint64_t remote_v12_rounded_bytes;
   size_t candidate_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
   size_t remote_live_by_class[H8_BENCH_MEDIUM_CLASS_COUNT];
   size_t candidate_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
   size_t remote_live_upper48_by_class[H8_BENCH_MEDIUM_UPPER48_COUNT];
+  size_t candidate_v12_by_class[H8_BENCH_MEDIUM_V12_COUNT];
+  size_t remote_live_v12_by_class[H8_BENCH_MEDIUM_V12_COUNT];
 } H8BenchMediumTotals;
 
 typedef struct H8BenchReportInput {

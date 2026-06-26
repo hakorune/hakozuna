@@ -464,11 +464,28 @@ MediumRun-v1.1 remote-lane closeout:
 
 MediumSizePolicy-v1.2-Shadow:
   status:
-    NEXT
+    implemented as attribution / shadow
   scope:
     behavior unchanged
     keep small-v0 class map frozen
     add medium class-policy shadow for request / rounded / run-pressure data
+  output:
+    medium_v12_sizepolicy_shadow:
+      policy=8/16/24/32/48/64
+      alloc / remote_live distribution
+      rounded_bytes / remote_rounded_bytes
+      remote_runs / remote_run_ratio
+    medium_sizepolicy_runtime:
+      active_miss_class
+      active_pending_class
+      owner_list_hit_class
+      active_switch_class
+    medium_sizepolicy_collect:
+      full_to_nonfull_class
+      full_to_nonfull_source
+  quick sanity:
+    medium r50 debug smoke showed v12 remote_run_ratio about 0.818 and
+    remote rounded ratio about 1.175
   required observations:
     class-wise active miss and active pending
     class-wise active episode length and run switches

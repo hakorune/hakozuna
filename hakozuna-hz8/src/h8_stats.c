@@ -417,6 +417,38 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_active_miss_create, memory_order_acquire);
   out->medium_active_miss_detached_reuse = atomic_load_explicit(
       &h8g.medium_active_miss_detached_reuse, memory_order_acquire);
+  out->medium_active_miss_class_8k = atomic_load_explicit(
+      &h8g.medium_active_miss_class_8k, memory_order_acquire);
+  out->medium_active_miss_class_16k = atomic_load_explicit(
+      &h8g.medium_active_miss_class_16k, memory_order_acquire);
+  out->medium_active_miss_class_32k = atomic_load_explicit(
+      &h8g.medium_active_miss_class_32k, memory_order_acquire);
+  out->medium_active_miss_class_64k = atomic_load_explicit(
+      &h8g.medium_active_miss_class_64k, memory_order_acquire);
+  out->medium_active_pending_class_8k = atomic_load_explicit(
+      &h8g.medium_active_pending_class_8k, memory_order_acquire);
+  out->medium_active_pending_class_16k = atomic_load_explicit(
+      &h8g.medium_active_pending_class_16k, memory_order_acquire);
+  out->medium_active_pending_class_32k = atomic_load_explicit(
+      &h8g.medium_active_pending_class_32k, memory_order_acquire);
+  out->medium_active_pending_class_64k = atomic_load_explicit(
+      &h8g.medium_active_pending_class_64k, memory_order_acquire);
+  out->medium_owner_list_hit_class_8k = atomic_load_explicit(
+      &h8g.medium_owner_list_hit_class_8k, memory_order_acquire);
+  out->medium_owner_list_hit_class_16k = atomic_load_explicit(
+      &h8g.medium_owner_list_hit_class_16k, memory_order_acquire);
+  out->medium_owner_list_hit_class_32k = atomic_load_explicit(
+      &h8g.medium_owner_list_hit_class_32k, memory_order_acquire);
+  out->medium_owner_list_hit_class_64k = atomic_load_explicit(
+      &h8g.medium_owner_list_hit_class_64k, memory_order_acquire);
+  out->medium_active_switch_class_8k = atomic_load_explicit(
+      &h8g.medium_active_switch_class_8k, memory_order_acquire);
+  out->medium_active_switch_class_16k = atomic_load_explicit(
+      &h8g.medium_active_switch_class_16k, memory_order_acquire);
+  out->medium_active_switch_class_32k = atomic_load_explicit(
+      &h8g.medium_active_switch_class_32k, memory_order_acquire);
+  out->medium_active_switch_class_64k = atomic_load_explicit(
+      &h8g.medium_active_switch_class_64k, memory_order_acquire);
   out->medium_collect_src_periodic_active_call = atomic_load_explicit(
       &h8g.medium_collect_src_periodic_active_call, memory_order_acquire);
   out->medium_collect_src_periodic_active_run = atomic_load_explicit(
@@ -449,6 +481,26 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_collect_src_demand_slot, memory_order_acquire);
   out->medium_collect_full_to_nonfull_run = atomic_load_explicit(
       &h8g.medium_collect_full_to_nonfull_run, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_class_8k = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_class_8k, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_class_16k = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_class_16k, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_class_32k = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_class_32k, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_class_64k = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_class_64k, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_periodic_active = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_periodic_active,
+      memory_order_acquire);
+  out->medium_collect_full_to_nonfull_periodic_owner = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_periodic_owner,
+      memory_order_acquire);
+  out->medium_collect_full_to_nonfull_capacity = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_capacity, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_owner_exit = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_owner_exit, memory_order_acquire);
+  out->medium_collect_full_to_nonfull_demand = atomic_load_explicit(
+      &h8g.medium_collect_full_to_nonfull_demand, memory_order_acquire);
   out->medium_collect_zero_run_call = atomic_load_explicit(
       &h8g.medium_collect_zero_run_call, memory_order_acquire);
   out->medium_collect_zero_slot_run = atomic_load_explicit(

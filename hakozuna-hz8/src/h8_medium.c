@@ -36,6 +36,12 @@ _Static_assert((H8_MEDIUM_64K_RUN_BYTES % H8_MEDIUM_QUANTUM_BYTES) == 0u,
                "medium run size must be quantum-aligned");
 
 #if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_medium_debug_class_inc(uint32_t class_id,
+                                      atomic_size_t* class_8k,
+                                      atomic_size_t* class_16k,
+                                      atomic_size_t* class_32k,
+                                      atomic_size_t* class_64k);
+
 static uint64_t h8_medium_now_ns(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -49,8 +55,13 @@ void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner) {
 }
 
 void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
+                                              uint32_t class_id,
                                               H8MediumRun* active) {
   H8_DEBUG_INC(medium_active_miss_total);
+  h8_medium_debug_class_inc(class_id, &h8g.medium_active_miss_class_8k,
+                            &h8g.medium_active_miss_class_16k,
+                            &h8g.medium_active_miss_class_32k,
+                            &h8g.medium_active_miss_class_64k);
   if (!ctx || !ctx->owner) {
     return;
   }
@@ -72,6 +83,10 @@ void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
     H8_DEBUG_INC(medium_active_miss_active_pending);
     H8_DEBUG_ADD(medium_active_miss_active_pending_slots,
                  (size_t)__builtin_popcountll(pending));
+    h8_medium_debug_class_inc(class_id, &h8g.medium_active_pending_class_8k,
+                              &h8g.medium_active_pending_class_16k,
+                              &h8g.medium_active_pending_class_32k,
+                              &h8g.medium_active_pending_class_64k);
   } else {
     H8_DEBUG_INC(medium_active_miss_active_pending_zero);
   }
@@ -90,6 +105,13 @@ void h8_medium_debug_note_owner_list_hit_position(size_t position) {
   } else {
     H8_DEBUG_INC(medium_active_miss_owner_list_pos5p);
   }
+}
+
+void h8_medium_debug_note_owner_list_hit_class(uint32_t class_id) {
+  h8_medium_debug_class_inc(class_id, &h8g.medium_owner_list_hit_class_8k,
+                            &h8g.medium_owner_list_hit_class_16k,
+                            &h8g.medium_owner_list_hit_class_32k,
+                            &h8g.medium_owner_list_hit_class_64k);
 }
 
 static void h8_medium_debug_collect_source_add(H8MediumCollectSource source,
@@ -119,6 +141,27 @@ static void h8_medium_debug_collect_source_add(H8MediumCollectSource source,
   }
 }
 
+static void h8_medium_debug_collect_full_to_nonfull_source(
+    H8MediumCollectSource source) {
+  switch (source) {
+    case H8_MEDIUM_COLLECT_PERIODIC_ACTIVE:
+      H8_DEBUG_INC(medium_collect_full_to_nonfull_periodic_active);
+      break;
+    case H8_MEDIUM_COLLECT_PERIODIC_OWNER_LIST:
+      H8_DEBUG_INC(medium_collect_full_to_nonfull_periodic_owner);
+      break;
+    case H8_MEDIUM_COLLECT_CAPACITY_MISS:
+      H8_DEBUG_INC(medium_collect_full_to_nonfull_capacity);
+      break;
+    case H8_MEDIUM_COLLECT_OWNER_EXIT:
+      H8_DEBUG_INC(medium_collect_full_to_nonfull_owner_exit);
+      break;
+    case H8_MEDIUM_COLLECT_ACTIVE_MISS_DEMAND:
+      H8_DEBUG_INC(medium_collect_full_to_nonfull_demand);
+      break;
+  }
+}
+
 void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
                                            H8MediumRun* run,
                                            uint64_t accepted,
@@ -138,6 +181,12 @@ void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
   }
   if (old_free_mask == 0) {
     H8_DEBUG_INC(medium_collect_full_to_nonfull_run);
+    h8_medium_debug_class_inc(run->class_id,
+                              &h8g.medium_collect_full_to_nonfull_class_8k,
+                              &h8g.medium_collect_full_to_nonfull_class_16k,
+                              &h8g.medium_collect_full_to_nonfull_class_32k,
+                              &h8g.medium_collect_full_to_nonfull_class_64k);
+    h8_medium_debug_collect_full_to_nonfull_source(source);
   }
   ++run->debug_collect_generation;
   run->debug_collect_free_credits += (uint32_t)slots;
@@ -545,6 +594,10 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
   }
   H8MediumRun* old = ctx->active_medium_runs[class_id];
   if (old != run) {
+    h8_medium_debug_class_inc(class_id, &h8g.medium_active_switch_class_8k,
+                              &h8g.medium_active_switch_class_16k,
+                              &h8g.medium_active_switch_class_32k,
+                              &h8g.medium_active_switch_class_64k);
     if (h8_medium_run_owned_by_ctx(old, ctx)) {
       h8_medium_demote_active_empty_live(old);
       h8_medium_available_shadow_after_mask_change(old);
@@ -1048,7 +1101,7 @@ retry_owner_capacity:
     }
     H8_DEBUG_INC(medium_active_miss_unusable);
     saw_active_miss = true;
-    h8_medium_debug_note_active_miss_pending(ctx, active);
+    h8_medium_debug_note_active_miss_pending(ctx, class_id, active);
     void* demand_ptr =
         h8_medium_try_active_miss_demand_collect64(ctx, class_id, active);
     if (demand_ptr) {
@@ -1092,6 +1145,7 @@ retry_owner_capacity:
         void* ptr = h8_medium_run_alloc_local_hot(run);
         if (ptr) {
           h8_medium_debug_note_owner_list_hit_position(owner_scan_position);
+          h8_medium_debug_note_owner_list_hit_class(class_id);
           h8_medium_debug_note_alloc_collect_credit(ctx->owner, run);
         }
         h8_medium_set_active_run(ctx, class_id, run);

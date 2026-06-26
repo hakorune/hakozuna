@@ -485,12 +485,34 @@ latest local-leaf probe:
 
   MediumSizePolicy-v1.2-Shadow:
     status:
-      NEXT
+      implemented as attribution / shadow
     scope:
       behavior unchanged
       add medium class-policy shadow for request / rounded / run pressure
       keep small-v0 default class map frozen
       do not promote upper48 or any geometry change from shadow alone
+    added output:
+      medium_v12_sizepolicy_shadow
+        policy=8/16/24/32/48/64
+        alloc / remote_live distribution
+        rounded_bytes and remote_rounded_bytes ratios
+        remote_runs and remote_run_ratio
+      medium_sizepolicy_runtime
+        active_miss_class
+        active_pending_class
+        owner_list_hit_class
+        active_switch_class
+      medium_sizepolicy_collect
+        full_to_nonfull_class
+        full_to_nonfull_source
+    quick sanity:
+      command:
+        h8_bench --runs 1 --threads 4 --iters 5000
+          --min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1
+      observed:
+        v12 remote_run_ratio about 0.818
+        v12 remote rounded ratio about 1.175
+        full_to_nonfull is concentrated in 32K/64K for this row
     questions:
       class-wise active_miss_total / active_pending / owner_list_hit
       active episode allocation count by class

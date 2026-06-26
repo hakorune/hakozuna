@@ -102,6 +102,20 @@ static uint32_t h8_bench_medium_upper48_class_for_size(size_t size) {
                                      size);
 }
 
+static uint32_t h8_bench_medium_v12_size(uint32_t class_id) {
+  static const uint32_t sizes[H8_BENCH_MEDIUM_V12_COUNT] = {
+      8192u, 16384u, 24576u, 32768u, 49152u, 65536u};
+  return sizes[class_id < H8_BENCH_MEDIUM_V12_COUNT
+                   ? class_id
+                   : H8_BENCH_MEDIUM_V12_COUNT - 1u];
+}
+
+static uint32_t h8_bench_medium_v12_class_for_size(size_t size) {
+  static const uint32_t sizes[H8_BENCH_MEDIUM_V12_COUNT] = {
+      8192u, 16384u, 24576u, 32768u, 49152u, 65536u};
+  return h8_candidate_class_for_size(sizes, H8_BENCH_MEDIUM_V12_COUNT, size);
+}
+
 size_t h8_bench_upper1536_slots_for_class(uint32_t class_id) {
   return 65536u / h8_upper1536_size(class_id);
 }
@@ -115,14 +129,18 @@ uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size) {
     if (size <= H8_BENCH_MEDIUM_MAX_SIZE) {
       uint32_t medium_class = h8_bench_medium_class_for_size(size);
       uint32_t upper48_class = h8_bench_medium_upper48_class_for_size(size);
+      uint32_t v12_class = h8_bench_medium_v12_class_for_size(size);
       th->medium_candidate_count++;
       th->medium_candidate_by_class[medium_class]++;
       th->medium_candidate_upper48_by_class[upper48_class]++;
+      th->medium_candidate_v12_by_class[v12_class]++;
       th->medium_candidate_requested_bytes += (uint64_t)size;
       th->medium_candidate_rounded_bytes +=
           (uint64_t)h8_bench_medium_round_size(size);
       th->medium_candidate_upper48_bytes +=
           (uint64_t)h8_bench_medium_upper48_size(upper48_class);
+      th->medium_candidate_v12_bytes +=
+          (uint64_t)h8_bench_medium_v12_size(v12_class);
     }
     return H8_CLASS_COUNT;
   }
@@ -142,14 +160,18 @@ void h8_bench_note_remote_live(H8BenchThread* th, size_t size) {
     if (size <= H8_BENCH_MEDIUM_MAX_SIZE) {
       uint32_t medium_class = h8_bench_medium_class_for_size(size);
       uint32_t upper48_class = h8_bench_medium_upper48_class_for_size(size);
+      uint32_t v12_class = h8_bench_medium_v12_class_for_size(size);
       th->medium_remote_live_count++;
       th->medium_remote_live_by_class[medium_class]++;
       th->medium_remote_live_upper48_by_class[upper48_class]++;
+      th->medium_remote_live_v12_by_class[v12_class]++;
       th->medium_remote_live_requested_bytes += (uint64_t)size;
       th->medium_remote_live_rounded_bytes +=
           (uint64_t)h8_bench_medium_round_size(size);
       th->medium_remote_live_upper48_bytes +=
           (uint64_t)h8_bench_medium_upper48_size(upper48_class);
+      th->medium_remote_live_v12_bytes +=
+          (uint64_t)h8_bench_medium_v12_size(v12_class);
     }
     return;
   }
@@ -175,10 +197,12 @@ void h8_bench_medium_totals_add(H8BenchMediumTotals* totals,
     totals->requested_bytes += th->medium_candidate_requested_bytes;
     totals->rounded_bytes += th->medium_candidate_rounded_bytes;
     totals->upper48_rounded_bytes += th->medium_candidate_upper48_bytes;
+    totals->v12_rounded_bytes += th->medium_candidate_v12_bytes;
     totals->remote_requested_bytes += th->medium_remote_live_requested_bytes;
     totals->remote_rounded_bytes += th->medium_remote_live_rounded_bytes;
     totals->remote_upper48_rounded_bytes +=
         th->medium_remote_live_upper48_bytes;
+    totals->remote_v12_rounded_bytes += th->medium_remote_live_v12_bytes;
     for (uint32_t c = 0; c < H8_BENCH_MEDIUM_CLASS_COUNT; ++c) {
       totals->candidate_by_class[c] += th->medium_candidate_by_class[c];
       totals->remote_live_by_class[c] += th->medium_remote_live_by_class[c];
@@ -188,6 +212,11 @@ void h8_bench_medium_totals_add(H8BenchMediumTotals* totals,
           th->medium_candidate_upper48_by_class[c];
       totals->remote_live_upper48_by_class[c] +=
           th->medium_remote_live_upper48_by_class[c];
+    }
+    for (uint32_t c = 0; c < H8_BENCH_MEDIUM_V12_COUNT; ++c) {
+      totals->candidate_v12_by_class[c] += th->medium_candidate_v12_by_class[c];
+      totals->remote_live_v12_by_class[c] +=
+          th->medium_remote_live_v12_by_class[c];
     }
   }
 }
@@ -203,9 +232,12 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
       8, 4, 2, 2};
   static const size_t upper48_slots[H8_BENCH_MEDIUM_UPPER48_COUNT] = {
       8, 4, 2, 1, 1};
+  static const size_t v12_slots[H8_BENCH_MEDIUM_V12_COUNT] = {
+      8, 4, 2, 2, 1, 2};
   size_t medium_mix_runs = 0;
   size_t medium_mix_runs_64k_x2 = 0;
   size_t upper48_runs = 0;
+  size_t v12_runs = 0;
   for (uint32_t c = 0; c < H8_BENCH_MEDIUM_CLASS_COUNT; ++c) {
     medium_mix_runs +=
         (totals->remote_live_by_class[c] + medium_slots[c] - 1u) /
@@ -218,6 +250,11 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
     upper48_runs +=
         (totals->remote_live_upper48_by_class[c] + upper48_slots[c] - 1u) /
         upper48_slots[c];
+  }
+  for (uint32_t c = 0; c < H8_BENCH_MEDIUM_V12_COUNT; ++c) {
+    v12_runs +=
+        (totals->remote_live_v12_by_class[c] + v12_slots[c] - 1u) /
+        v12_slots[c];
   }
   printf("medium_class_dist alloc=[%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu] one_slot_alloc_ratio=%.6f one_slot_remote_ratio=%.6f\n",
          totals->candidate_by_class[0], totals->candidate_by_class[1],
@@ -253,12 +290,35 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
              ? (double)totals->remote_upper48_rounded_bytes /
                    (double)totals->remote_requested_bytes
              : 0.0);
-  printf("medium_run_mix_est current_runs=%zu two_slot_64k_runs=%zu upper48_runs=%zu two_slot_64k_ratio=%.6f upper48_ratio=%.6f\n",
-         medium_mix_runs, medium_mix_runs_64k_x2, upper48_runs,
+  printf("medium_v12_sizepolicy_shadow policy=8/16/24/32/48/64 alloc=[%zu,%zu,%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=%" PRIu64 " rounded_ratio=%.6f remote_rounded_bytes=%" PRIu64 " remote_ratio=%.6f remote_runs=%zu remote_run_ratio=%.6f\n",
+         totals->candidate_v12_by_class[0], totals->candidate_v12_by_class[1],
+         totals->candidate_v12_by_class[2], totals->candidate_v12_by_class[3],
+         totals->candidate_v12_by_class[4], totals->candidate_v12_by_class[5],
+         totals->remote_live_v12_by_class[0],
+         totals->remote_live_v12_by_class[1],
+         totals->remote_live_v12_by_class[2],
+         totals->remote_live_v12_by_class[3],
+         totals->remote_live_v12_by_class[4],
+         totals->remote_live_v12_by_class[5], totals->v12_rounded_bytes,
+         totals->requested_bytes
+             ? (double)totals->v12_rounded_bytes /
+                   (double)totals->requested_bytes
+             : 0.0,
+         totals->remote_v12_rounded_bytes,
+         totals->remote_requested_bytes
+             ? (double)totals->remote_v12_rounded_bytes /
+                   (double)totals->remote_requested_bytes
+             : 0.0,
+         v12_runs,
+         medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs : 0.0);
+  printf("medium_run_mix_est current_runs=%zu two_slot_64k_runs=%zu upper48_runs=%zu v12_runs=%zu two_slot_64k_ratio=%.6f upper48_ratio=%.6f v12_ratio=%.6f\n",
+         medium_mix_runs, medium_mix_runs_64k_x2, upper48_runs, v12_runs,
          medium_mix_runs ? (double)medium_mix_runs_64k_x2 /
                                (double)medium_mix_runs
                          : 0.0,
          medium_mix_runs ? (double)upper48_runs / (double)medium_mix_runs
+                         : 0.0,
+         medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs
                          : 0.0);
 }
 

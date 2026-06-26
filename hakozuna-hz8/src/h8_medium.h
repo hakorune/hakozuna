@@ -260,8 +260,10 @@ void h8_medium_lazy_purge_shadow_drop(H8MediumRun* run);
 #if defined(H8_ENABLE_DEBUG_STATS)
 void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner);
 void h8_medium_debug_note_active_miss_pending(H8ThreadCtx* ctx,
+                                              uint32_t class_id,
                                               H8MediumRun* active);
 void h8_medium_debug_note_owner_list_hit_position(size_t position);
+void h8_medium_debug_note_owner_list_hit_class(uint32_t class_id);
 void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
                                            H8MediumRun* run,
                                            uint64_t accepted,
@@ -272,9 +274,10 @@ void h8_medium_debug_note_alloc_collect_credit(H8OwnerRecord* owner,
 void h8_medium_debug_discard_collect_credit(H8MediumRun* run);
 #else
 #define h8_medium_debug_note_owner_medium_alloc(owner) ((void)0)
-#define h8_medium_debug_note_active_miss_pending(ctx, active) \
-  ((void)(ctx), (void)(active))
+#define h8_medium_debug_note_active_miss_pending(ctx, class_id, active) \
+  ((void)(ctx), (void)(class_id), (void)(active))
 #define h8_medium_debug_note_owner_list_hit_position(position) ((void)0)
+#define h8_medium_debug_note_owner_list_hit_class(class_id) ((void)(class_id))
 #define h8_medium_debug_note_collect_capacity(owner, run, accepted, old_free_mask, source) \
   ((void)(owner), (void)(run), (void)(accepted), (void)(old_free_mask), \
    (void)(source))
