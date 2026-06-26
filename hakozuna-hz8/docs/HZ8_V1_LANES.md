@@ -484,8 +484,10 @@ MediumSizePolicy-v1.2-Shadow:
       full_to_nonfull_class
       full_to_nonfull_source
   quick sanity:
-    medium r50 debug smoke showed v12 remote_run_ratio about 0.818 and
-    remote rounded ratio about 1.175
+    medium r50 debug smoke showed v12 remote run ratio about 0.818 vs old
+    one-slot-64K model and remote rounded ratio about 1.175
+    v12 increases run count vs current default q64-run64k2 for medium_r50-like
+    shapes because the 48K shadow class is one-slot
   required observations:
     class-wise active miss and active pending
     class-wise active episode length and run switches

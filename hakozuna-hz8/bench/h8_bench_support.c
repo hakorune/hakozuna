@@ -290,7 +290,7 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
              ? (double)totals->remote_upper48_rounded_bytes /
                    (double)totals->remote_requested_bytes
              : 0.0);
-  printf("medium_v12_sizepolicy_shadow policy=8/16/24/32/48/64 alloc=[%zu,%zu,%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=%" PRIu64 " rounded_ratio=%.6f remote_rounded_bytes=%" PRIu64 " remote_ratio=%.6f remote_runs=%zu remote_run_ratio=%.6f\n",
+  printf("medium_v12_sizepolicy_shadow policy=8/16/24/32/48/64 alloc=[%zu,%zu,%zu,%zu,%zu,%zu] remote_live=[%zu,%zu,%zu,%zu,%zu,%zu] rounded_bytes=%" PRIu64 " rounded_ratio=%.6f remote_rounded_bytes=%" PRIu64 " remote_ratio=%.6f remote_runs=%zu run_ratio_vs_one_slot64k=%.6f run_ratio_vs_default64k2=%.6f\n",
          totals->candidate_v12_by_class[0], totals->candidate_v12_by_class[1],
          totals->candidate_v12_by_class[2], totals->candidate_v12_by_class[3],
          totals->candidate_v12_by_class[4], totals->candidate_v12_by_class[5],
@@ -310,8 +310,11 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
                    (double)totals->remote_requested_bytes
              : 0.0,
          v12_runs,
-         medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs : 0.0);
-  printf("medium_run_mix_est current_runs=%zu two_slot_64k_runs=%zu upper48_runs=%zu v12_runs=%zu two_slot_64k_ratio=%.6f upper48_ratio=%.6f v12_ratio=%.6f\n",
+         medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs : 0.0,
+         medium_mix_runs_64k_x2
+             ? (double)v12_runs / (double)medium_mix_runs_64k_x2
+             : 0.0);
+  printf("medium_run_mix_est one_slot64k_runs=%zu default64k2_runs=%zu upper48_runs=%zu v12_runs=%zu default64k2_vs_one_slot_ratio=%.6f upper48_vs_one_slot_ratio=%.6f v12_vs_one_slot_ratio=%.6f v12_vs_default64k2_ratio=%.6f\n",
          medium_mix_runs, medium_mix_runs_64k_x2, upper48_runs, v12_runs,
          medium_mix_runs ? (double)medium_mix_runs_64k_x2 /
                                (double)medium_mix_runs
@@ -319,6 +322,9 @@ void h8_bench_print_medium_totals(const H8BenchMediumTotals* totals) {
          medium_mix_runs ? (double)upper48_runs / (double)medium_mix_runs
                          : 0.0,
          medium_mix_runs ? (double)v12_runs / (double)medium_mix_runs
+                         : 0.0,
+         medium_mix_runs_64k_x2
+             ? (double)v12_runs / (double)medium_mix_runs_64k_x2
                          : 0.0);
 }
 

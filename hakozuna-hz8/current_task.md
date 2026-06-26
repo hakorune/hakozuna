@@ -510,7 +510,9 @@ latest local-leaf probe:
         h8_bench --runs 1 --threads 4 --iters 5000
           --min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1
       observed:
-        v12 remote_run_ratio about 0.818
+        v12 remote run ratio about 0.818 vs old one-slot-64K model
+        v12 increases run count vs current default q64-run64k2 in medium_r50
+          shapes because 48K is one-slot in the shadow model
         v12 remote rounded ratio about 1.175
         full_to_nonfull is concentrated in 32K/64K for this row
     questions:
