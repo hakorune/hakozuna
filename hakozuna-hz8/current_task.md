@@ -120,34 +120,37 @@ current lane:
   ChunkArena remains HOLD as default
 
   HZ8-v1.1 current pure LD_PRELOAD matrix snapshot is recorded
-  data=bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
+  data=bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
+  artifact_data=bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
   previous_direct_api_data=bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
   phase_data=bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
   harness=scripts/run_hz8_v11_same_run_matrix.sh
   caveat:
     all allocator rows now use the same plain malloc/free harness with
     startup LD_PRELOAD, except system with no preload
-    HZ8 post RSS is higher than the previous direct API matrix because the
-    matrix harness control allocations are also intercepted
+    20260626T192109Z overstated HZ8 post RSS because the matrix harness
+    preallocated large per-inbox control vectors and measured post RSS before
+    freeing them
+    bench_matrix_malloc now uses growable vectors and measures post RSS after
+    control-vector destruction
   matrix read:
     small guard/local:
-      HZ8 188.40M, behind tcmalloc/system and ahead of HZ3/mimalloc/HZ4
+      HZ8 234.26M, behind tcmalloc, ahead of system/HZ3/mimalloc/HZ4
     small remote90:
-      HZ8 12.90M, below tcmalloc/mimalloc/HZ3, ahead of HZ4/system,
+      HZ8 13.16M, below tcmalloc/mimalloc/HZ3, ahead of HZ4/system,
       and ahead of legacy64k2
     medium local0:
-      HZ8 90.51M, below tcmalloc/HZ3/system/legacy64k2
+      HZ8 105.28M, below tcmalloc/HZ3/system/legacy64k2
     medium r50:
-      HZ8 9.23M, below tcmalloc/HZ3, above HZ4/legacy64k2/mimalloc/system
+      HZ8 9.07M, below tcmalloc/HZ3/legacy64k2, above HZ4/mimalloc/system
     main r50:
-      HZ8 9.87M, below tcmalloc/HZ3/HZ4, above legacy64k2/mimalloc/system
+      HZ8 9.82M, below tcmalloc/HZ3/HZ4, above legacy64k2/mimalloc/system
     main r90:
-      HZ8 6.45M, ahead of legacy64k2/system, slightly below mimalloc, below
+      HZ8 6.38M, ahead of system, roughly tied with legacy64k2, below mimalloc,
       tcmalloc/HZ3/HZ4
     RSS:
-      HZ8 post RSS is about 101-102MiB in the pure preload matrix because
-      matrix harness control allocations are captured; still below
-      tcmalloc/HZ3/HZ4/mimalloc in medium/main remote rows except system
+      HZ8 post RSS is again about 2-5MiB across rows after harness fix
+      the previous 100MiB reading was not allocator retention
   decision:
     v12_48k2 remains the default because it improves main_r90 and RSS
     positioning while preserving lazy128-v1.1 safety contracts
@@ -192,6 +195,45 @@ current lane:
           post RSS is higher than the prior direct-API snapshot because the
           plain harness control allocations are also intercepted by HZ8
           use future pure-preload snapshots for allocator positioning
+
+  HZ8PreloadRSSAttribution-L1:
+    status:
+      closed as measurement artifact
+    reason:
+      after realloc compatibility, pure LD_PRELOAD matrix is valid but HZ8
+      post RSS is around 100MiB on small/medium/main rows
+      direct API rows were much lower because harness control allocations
+      bypassed HZ8
+    question:
+      determine whether the preload RSS floor is:
+        small arena span commitment from intercepted control/libc allocations
+        medium lazy/resident retention
+        owner/thread lifetime residue
+        or a measurement artifact of the matrix harness
+    scope:
+      behavior unchanged
+      collect H8Stats/H8DebugStats through dlsym under LD_PRELOAD
+      compare tiny control-only, guard_local0-like, and medium/main matrix
+      shapes
+    decision target:
+      if RSS is small-arena/owner structural overhead, document it as the
+      preload RSS contract or design a separate owner/span release lane
+      if RSS is medium lazy/resident charge, tune retention accounting
+      if RSS is harness-only, keep matrix caveat and avoid changing allocator
+    result:
+      temporary dlsym stats probe showed RSS returns to a few MiB after
+      freeing matrix control vectors
+      root cause was bench_matrix_malloc preallocating each inbox at
+      iters * threads pointers and sampling post RSS before vec_destroy
+      fix:
+        grow inbox/local pointer vectors with realloc
+        initialize inboxes at 1024 entries
+        sample post RSS after control-vector destruction
+      corrected matrix:
+        data=bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
+      decision:
+        no allocator behavior change needed
+        preload RSS floor is not the current weak lane
 
 latest local-leaf probe:
   MediumSlotPtrKnown-L1

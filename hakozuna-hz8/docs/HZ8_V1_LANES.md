@@ -100,6 +100,8 @@ residency candidate:
 
 current allocator matrix snapshot:
   primary_data:
+    bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
+  artifact_data:
     bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
   previous_direct_api_data:
     bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
@@ -110,6 +112,8 @@ current allocator matrix snapshot:
   current runner:
     HZ8PreloadReallocCompat-L1 added realloc forwarding / allocate-copy-free
     support, so the current matrix uses LD_PRELOAD for HZ8 and hz8_legacy64k2
+    MatrixHarnessControlRSS-L1 fixed the false 100MiB HZ8 post-RSS reading by
+    growing inbox vectors and sampling post RSS after control-vector teardown
   read:
     small local remains strong
     main_r90 is better than legacy64k2/system, close to mimalloc, and still

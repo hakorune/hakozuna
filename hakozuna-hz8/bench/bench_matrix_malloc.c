@@ -90,8 +90,16 @@ static long minor_faults(void) {
 static void vec_push(PtrVec* vec, void* p) {
   pthread_mutex_lock(&vec->lock);
   if (vec->len >= vec->cap) {
-    fprintf(stderr, "matrix vector capacity exceeded\n");
-    abort();
+    size_t next_cap = vec->cap ? vec->cap * 2u : 1024u;
+    void** next = (void**)realloc(vec->items, next_cap * sizeof(*next));
+    if (!next) {
+      pthread_mutex_unlock(&vec->lock);
+      fprintf(stderr, "realloc failed in matrix vector\n");
+      abort();
+    }
+    memset(next + vec->cap, 0, (next_cap - vec->cap) * sizeof(*next));
+    vec->items = next;
+    vec->cap = next_cap;
   }
   vec->items[vec->len++] = p;
   pthread_mutex_unlock(&vec->lock);
@@ -173,7 +181,7 @@ static void* worker(void* argp) {
   uint64_t seed = arg->seed;
   int phase_mode = !opt->interleaved && opt->remote_pct > 0;
   PtrVec local = {0};
-  vec_init(&local, opt->live_window ? opt->live_window + 1u : opt->iters);
+  vec_init(&local, opt->live_window ? opt->live_window + 1u : 1024u);
   uint64_t alloc_start = now_ns();
 
   if (opt->interleaved) {
@@ -321,7 +329,7 @@ int main(int argc, char** argv) {
       return 4;
     }
     for (int t = 0; t < opt.threads; ++t) {
-      vec_init(&inboxes[t], opt.iters * (size_t)opt.threads);
+      vec_init(&inboxes[t], 1024u);
     }
     pthread_barrier_t barrier;
     pthread_barrier_init(&barrier, NULL, (unsigned)opt.threads);
@@ -351,12 +359,7 @@ int main(int argc, char** argv) {
     throughput[run] = ops / (ms / 1000.0);
     work_ms[run] = alloc_sum / (double)opt.threads;
     tail_ms[run] = remote_sum / (double)opt.threads;
-    post_rss[run] = (double)rss_bytes();
-    peak_rss[run] = (double)peak_rss_bytes();
     faults[run] = (double)(faults_after - faults_before);
-    printf("run=%d ops/s=%.3f post_rss=%.0f peak_rss=%.0f minor_faults=%.0f work_ms=%.3f tail_ms=%.3f\n",
-           run + 1, throughput[run], post_rss[run], peak_rss[run],
-           faults[run], work_ms[run], tail_ms[run]);
     pthread_barrier_destroy(&barrier);
     for (int t = 0; t < opt.threads; ++t) {
       vec_destroy(&inboxes[t]);
@@ -364,6 +367,11 @@ int main(int argc, char** argv) {
     free(inboxes);
     free(threads);
     free(args);
+    post_rss[run] = (double)rss_bytes();
+    peak_rss[run] = (double)peak_rss_bytes();
+    printf("run=%d ops/s=%.3f post_rss=%.0f peak_rss=%.0f minor_faults=%.0f work_ms=%.3f tail_ms=%.3f\n",
+           run + 1, throughput[run], post_rss[run], peak_rss[run],
+           faults[run], work_ms[run], tail_ms[run]);
   }
 
   qsort(throughput, (size_t)opt.runs, sizeof(*throughput), cmp_double);

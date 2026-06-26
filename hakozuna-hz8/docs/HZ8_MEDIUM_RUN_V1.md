@@ -419,6 +419,9 @@ Current v1.1 allocator matrix snapshot:
 
 ```text
 primary:
+  bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
+
+artifact snapshot:
   bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
 
 previous direct API snapshot:
@@ -433,6 +436,8 @@ runner:
 current runner:
   HZ8PreloadReallocCompat-L1 closes the realloc preload compatibility gap;
   the current matrix uses LD_PRELOAD for HZ8 and hz8_legacy64k2 as well
+  MatrixHarnessControlRSS-L1 avoids counting matrix control vectors as
+  allocator post-RSS by growing inbox vectors and sampling after teardown
 ```
 
 Interpretation:
@@ -445,8 +450,7 @@ keep:
 strong:
   main_r90 beats legacy64k2/system and is close to mimalloc
   medium/main post RSS remains lower than tcmalloc/HZ3/HZ4/mimalloc in
-  remote rows, though higher than the previous direct API snapshot because
-  harness control allocations are now captured by HZ8 preload
+  remote rows
 
 weak:
   medium_local0 and medium_interleaved_r50 still trail tcmalloc/HZ3

@@ -252,8 +252,13 @@ This snapshot compares the current MediumRun-v1.1 default after `lazy128` and
 
 ```text
 primary data:
-  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/summary.md
-  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/samples.csv
+  bench_results/hz8_v11_same_run_matrix_20260626T193636Z/summary.md
+  bench_results/hz8_v11_same_run_matrix_20260626T193636Z/samples.csv
+
+artifact snapshot:
+  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
+  overstates HZ8 post RSS because matrix control vectors were sampled before
+  destruction
 
 previous direct-API snapshot:
   bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
@@ -273,30 +278,35 @@ preload contract:
   all allocator rows, including hz8 and hz8_legacy64k2, use the same plain
   malloc/free harness with startup LD_PRELOAD; system uses no preload
   HZ8PreloadReallocCompat-L1 provides the required realloc compatibility
+
+harness RSS note:
+  bench_matrix_malloc now grows inbox vectors with realloc and records post RSS
+  after destroying control vectors.  The earlier pure-preload R5 snapshot at
+  20260626T192109Z measured the harness's own preallocated inbox arrays.
 ```
 
 Primary rows, median ops/s:
 
 | Row | HZ8 | HZ8 legacy64k2 | HZ3 | HZ4 | mimalloc | tcmalloc | system |
 |---|---:|---:|---:|---:|---:|---:|---:|
-| `guard_local0` | 188.40M | 185.77M | 155.04M | 43.67M | 92.66M | 271.87M | 190.77M |
-| `small_interleaved_remote90` | 12.90M | 12.49M | 13.74M | 11.11M | 15.68M | 26.20M | 6.41M |
-| `medium_local0` | 90.51M | 101.17M | 151.71M | 25.23M | 28.00M | 270.84M | 141.56M |
-| `medium_interleaved_r50` | 9.23M | 8.65M | 16.76M | 8.67M | 4.07M | 17.31M | 2.18M |
-| `main_local0` | 97.35M | 111.20M | 142.62M | 27.88M | 31.57M | 255.60M | 155.34M |
-| `main_interleaved_r50` | 9.87M | 9.54M | 18.86M | 12.07M | 5.19M | 22.08M | 4.35M |
-| `main_interleaved_r90` | 6.45M | 6.01M | 10.31M | 9.58M | 6.73M | 13.67M | 3.04M |
+| `guard_local0` | 234.26M | 233.52M | 150.39M | 49.68M | 101.33M | 333.41M | 151.95M |
+| `small_interleaved_remote90` | 13.16M | 13.37M | 12.35M | 10.99M | 15.96M | 26.14M | 6.67M |
+| `medium_local0` | 105.28M | 121.05M | 172.14M | 26.03M | 34.50M | 471.15M | 158.08M |
+| `medium_interleaved_r50` | 9.07M | 9.24M | 15.15M | 8.84M | 6.53M | 17.37M | 2.17M |
+| `main_local0` | 121.71M | 127.66M | 147.11M | 28.85M | 34.19M | 313.96M | 157.32M |
+| `main_interleaved_r50` | 9.82M | 9.48M | 15.54M | 12.11M | 9.32M | 22.65M | 4.17M |
+| `main_interleaved_r90` | 6.38M | 6.41M | 11.85M | 9.63M | 8.60M | 13.24M | 3.09M |
 
 RSS highlights:
 
 | Row | Allocator | post RSS | peak RSS |
 |---|---|---:|---:|
-| `medium_interleaved_r50` | HZ8 | 101.29MiB | 155.75MiB |
-| `medium_interleaved_r50` | tcmalloc | 183.63MiB | 183.63MiB |
-| `medium_interleaved_r50` | HZ3 | 242.74MiB | 247.63MiB |
-| `main_interleaved_r90` | HZ8 | 101.99MiB | 167.13MiB |
-| `main_interleaved_r90` | tcmalloc | 191.75MiB | 191.75MiB |
-| `main_interleaved_r90` | HZ3 | 295.31MiB | 302.63MiB |
+| `medium_interleaved_r50` | HZ8 | 3.76MiB | 56.13MiB |
+| `medium_interleaved_r50` | tcmalloc | 81.63MiB | 81.75MiB |
+| `medium_interleaved_r50` | HZ3 | 154.09MiB | 158.88MiB |
+| `main_interleaved_r90` | HZ8 | 4.41MiB | 60.13MiB |
+| `main_interleaved_r90` | tcmalloc | 95.25MiB | 95.38MiB |
+| `main_interleaved_r90` | HZ3 | 149.57MiB | 159.50MiB |
 
 Medium phase stress is not a throughput ranking gate.  The lightweight matrix
 row used `ITERS=1000` and confirms HZ8 post-RSS recovery:
@@ -320,8 +330,6 @@ strong:
 weak:
   medium local0 and medium r50 are still behind tcmalloc/HZ3
   main_local0 remains behind tcmalloc/system and roughly HZ3
-  pure preload captures matrix harness control allocations, so HZ8 post RSS
-  is much higher than the earlier direct API snapshot
   medium phase throughput is low, but the row is lifecycle/RSS stress
 
 decision:
