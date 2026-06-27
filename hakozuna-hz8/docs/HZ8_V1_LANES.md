@@ -125,6 +125,47 @@ current allocator matrix snapshot:
     keep q64-v12-48k2 + lazy128 as the MediumRun-v1.1 default
     do not reopen retention, owner queue, or remote protocol without a new
     >=5% bucket
+    freeze v1.1 as the balanced fail-closed / bounded-RSS default
+    move tcmalloc-class absolute throughput work to a separate v2 design lane
+```
+
+V1.1 freeze boundary:
+
+```text
+frozen:
+  q64-v12-48k2 medium geometry
+  lazy128 residency
+  owner queue / pending bitmap / qstate remote protocol
+  64KiB quantum directory
+  pure LD_PRELOAD realloc-compatible surface
+
+closed for v1.1:
+  remote owner-side micro-tuning
+  local decode / cache / active-empty micro-tuning
+  broad collect cadence changes
+  owner lease redesign
+
+known weaknesses:
+  medium/main local throughput trails tcmalloc/HZ3/system on the corrected
+  SameRun matrix
+  medium r50 trails tcmalloc/HZ3
+  these are v2 throughput-lane inputs, not v1.1 freeze blockers
+```
+
+V2 throughput lane seed:
+
+```text
+LocalFastTier-v2:
+  design goal is a material medium/main local gain by changing the owner-local
+  fast path structure, not by adding one more v1.1 counter or branch tweak
+
+RemoteTransferTier-v2:
+  design goal is a material medium_r50 gain by changing the transfer/reuse
+  shape while preserving lost-publish and duplicate-collect safety gates
+
+policy:
+  keep v1.1 as the baseline
+  document any RSS, ownership, or fail-closed tradeoff explicitly
 ```
 
 Next local-leaf lane:

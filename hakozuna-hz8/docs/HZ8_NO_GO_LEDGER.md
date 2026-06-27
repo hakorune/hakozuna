@@ -39,6 +39,8 @@ bucket appears.
 | Medium local contract ceiling targets | HOLD | Unsafe ceiling builds showed medium-only headroom, but noslotstate is not a correctness path and pending elision regressed main-r50/main-r90. |
 | Medium owner lease redesign | HOLD | Dedicated lease-word A/B was flat; lifetime complexity is not justified by current evidence. |
 | Broad medium collect cadence changes | NO-GO | Post-collect utility showed periodic collect is high-utility, not empty churn. |
+| More MediumRun-v1.1 micro-tuning to chase tcmalloc throughput | NO-GO | Local/free cache, available index, demand collect, v12 decode, active-empty charge elide, and unsafe ceilings did not produce a clean cross-row bucket. Move absolute throughput work to a v2 architecture lane. |
+| Weakening fail-closed ownership in the v1.1 default | HARD NO-GO | v1.1 is the bounded-RSS / fail-closed default. Any faster profile must be a separately named v2 candidate with explicit safety and RSS tradeoffs. |
 
 ## Design Budget
 

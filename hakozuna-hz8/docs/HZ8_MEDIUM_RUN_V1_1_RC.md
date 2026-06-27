@@ -1,10 +1,16 @@
 # HZ8 MediumRun V1.1 RC
 
-Status: **current default / positioning record**.
+Status: **frozen current default / positioning record**.
 
 This record closes the MediumRun-v1.1 default after `lazy128` residency,
 `q64-v12-48k2` geometry, pure `LD_PRELOAD` compatibility, and the corrected
 same-run allocator matrix.  It does not change the frozen small-v0 behavior.
+
+MediumRun-v1.1 is the balanced HZ8 default: fail-closed pointer ownership,
+bounded retained-empty residency, owner-exit hard drain, and preload ABI
+compatibility are part of the contract.  It is not a tcmalloc-throughput clone.
+Further attempts to close the absolute local/remote throughput gap belong in a
+separate v2 throughput lane, not in this RC record.
 
 ## Identity
 
@@ -216,6 +222,71 @@ do not reopen without new evidence:
 
 future lanes:
   SameRun positioning / public RC record
+  HZ8-v2 throughput architecture
   SizePolicy / rounded-byte policy as a separate lane
   ChunkArena / VMA and creation variance only with no-regression evidence
+```
+
+## V2 Boundary
+
+The corrected matrix shows real throughput gaps:
+
+```text
+medium_local0:
+  below tcmalloc, HZ3, system, and legacy64k2
+
+medium_interleaved_r50:
+  below tcmalloc and HZ3
+
+small_interleaved_remote90:
+  below tcmalloc and mimalloc
+```
+
+These are not good candidates for more v1.1 micro-tuning.  The recent
+evidence boxes already failed to produce a clean cross-row bucket:
+
+```text
+local-free cache:
+  flat
+
+owner available index:
+  removed discovery cost but did not improve medium_r50
+
+demand collect:
+  mechanism worked but release gain was about 1.4%
+
+v12 decode:
+  24K local-free retained, 48K and broad specialization held or rejected
+
+active-empty charge elide:
+  not stable enough for default
+
+local contract ceilings:
+  unsafe evidence only, with main-row regressions
+```
+
+The next meaningful throughput work should be architectural:
+
+```text
+Local Fast Tier:
+  owner-local medium alloc/free path that batches or defers some accounting
+  without weakening fail-closed route authority
+
+Remote Transfer Tier:
+  medium remote handoff / owner-side reuse policy that reduces episode cost
+  without reopening lost-publish or duplicate-collect hazards
+
+Throughput Profile:
+  only if it has an explicit RSS and safety contract distinct from v1.1
+```
+
+Any v2 lane must keep v1.1 as the comparison baseline and must report when it
+trades off:
+
+```text
+fail-closed invalid pointer handling
+owner generation / lifetime safety
+lazy128 retained-empty cap
+owner-exit hard drain
+pure LD_PRELOAD compatibility
 ```

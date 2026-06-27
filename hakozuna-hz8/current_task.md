@@ -18,6 +18,10 @@ medium-v1.1 current default:
 ```
 
 Small-v0 behavior is frozen unless a hard safety issue appears.
+MediumRun-v1.1 is now frozen as the current balanced default.  Do not reopen
+its owner queue, pending/qstate protocol, residency policy, or class geometry
+for incremental micro-tuning.  Throughput-vs-tcmalloc work moves to a separate
+v2 design lane.
 
 ```text
 frozen small:
@@ -122,6 +126,7 @@ bench_results/20260624T200933Z_medium_codeshape/
 
 ```text
 current lane:
+  freeze MediumRun-v1.1 as the current balanced default
   MediumRun-v1 protocol/geometry is RC1-frozen
   lazy128 residency is the MediumRun-v1.1 default
   fresh-process medium r50 outliers are closed in the latest direct/preload R30
@@ -166,6 +171,24 @@ current lane:
     positioning while preserving lazy128-v1.1 safety contracts
     remaining weakness is still medium/main local throughput and medium r50
     relative to tcmalloc/HZ3, not retention stability
+    do not treat this remaining gap as a v1.1 bug; it is the input to the v2
+    throughput lane
+
+  HZ8-v2 throughput lane:
+    status:
+      design only / not default behavior
+    reason:
+      same-run matrix shows tcmalloc-class absolute throughput requires a
+      larger architectural change than v1.1 micro-tuning
+    candidate direction:
+      local fast tier for medium owner-local alloc/free
+      remote transfer tier for medium interleaved r50
+      optional throughput profile only if RSS / fail-closed tradeoffs are
+      explicit and benchmarked
+    guardrail:
+      v2 must not silently weaken v1.1 fail-closed pointer ownership,
+      lazy128 bounded residency, owner-exit hard drain, or LD_PRELOAD ABI
+      compatibility
 
   HZ8PreloadReallocCompat-L1:
     status:
