@@ -124,6 +124,9 @@ row_args() {
     fixed24_local0)
       printf '%s\n' "--min-size 24576 --max-size 24576 --remote-pct 0 --interleaved 0 --live-window 0"
       ;;
+    fixed48_local0)
+      printf '%s\n' "--min-size 49152 --max-size 49152 --remote-pct 0 --interleaved 0 --live-window 0"
+      ;;
     main_local0)
       printf '%s\n' "--min-size 16 --max-size 32768 --remote-pct 0 --interleaved 0 --live-window 0"
       ;;
@@ -198,6 +201,7 @@ else
     guard_local0
     small_interleaved_remote90
     fixed24_local0
+    fixed48_local0
     medium_local0
     medium_interleaved_r50
     main_local0

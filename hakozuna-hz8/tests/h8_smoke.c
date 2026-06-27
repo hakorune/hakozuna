@@ -189,21 +189,44 @@ static int check_medium_scaffold(void) {
   }
   void* run24_first = h8_medium_run_alloc_local_scaffold(run24);
   void* run24_second = h8_medium_run_alloc_local_scaffold(run24);
+  void* run24_tail = run24->base + ((size_t)run24->slot_size *
+                                    (size_t)run24->slot_count);
   if (!run24_first || !run24_second || run24_first == run24_second ||
       !h8_medium_run_free_local_scaffold(run24, run24_first, false) ||
       h8_medium_run_free_local_scaffold(run24, run24_first, false) ||
       h8_medium_run_free_local_scaffold(run24, (char*)run24_second + 1, false) ||
+      h8_medium_run_free_local_scaffold(run24, run24_tail, false) ||
       !h8_medium_run_free_local_scaffold(run24, run24_second, false)) {
     fprintf(stderr, "medium 24K local-free decode mismatch\n");
     h8_medium_run_destroy_scaffold(run24);
     return 28;
   }
   h8_medium_run_destroy_scaffold(run24);
+  H8MediumRun* run48 = h8_medium_run_create_scaffold(4u);
+  if (!run48) {
+    fprintf(stderr, "medium 48K scaffold run create failed\n");
+    return 29;
+  }
+  void* run48_first = h8_medium_run_alloc_local_scaffold(run48);
+  void* run48_second = h8_medium_run_alloc_local_scaffold(run48);
+  void* run48_tail = run48->base + ((size_t)run48->slot_size *
+                                    (size_t)run48->slot_count);
+  if (!run48_first || !run48_second || run48_first == run48_second ||
+      !h8_medium_run_free_local_scaffold(run48, run48_first, false) ||
+      h8_medium_run_free_local_scaffold(run48, run48_first, false) ||
+      h8_medium_run_free_local_scaffold(run48, (char*)run48_second + 1, false) ||
+      h8_medium_run_free_local_scaffold(run48, run48_tail, false) ||
+      !h8_medium_run_free_local_scaffold(run48, run48_second, false)) {
+    fprintf(stderr, "medium 48K local-free decode mismatch\n");
+    h8_medium_run_destroy_scaffold(run48);
+    return 30;
+  }
+  h8_medium_run_destroy_scaffold(run48);
 #endif
   H8MediumRun* run = h8_medium_run_create_scaffold(0);
   if (!run) {
     fprintf(stderr, "medium scaffold run create failed\n");
-    return 29;
+    return 31;
   }
   void* first = h8_medium_run_alloc_local_scaffold(run);
   void* second = h8_medium_run_alloc_local_scaffold(run);
@@ -214,7 +237,7 @@ static int check_medium_scaffold(void) {
       !h8_medium_run_free_local_scaffold(run, second, false)) {
     fprintf(stderr, "medium scaffold local alloc/free mismatch\n");
     h8_medium_run_destroy_scaffold(run);
-    return 30;
+    return 32;
   }
   h8_medium_run_destroy_scaffold(run);
   return 0;

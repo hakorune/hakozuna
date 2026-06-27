@@ -329,6 +329,40 @@ medium_local0 and main_local0 still trail, so 48K or broader local mechanics
 remain the follow-up bucket
 ```
 
+Second narrow box result:
+
+```text
+Medium48KLocalFreeDecodeFastPath-L1: HOLD
+```
+
+Scope:
+
+```text
+48K local-free slot decode only
+valid offsets are 0 and 49152
+keep remote publish, route, usable_size, class map, lazy128, and qstate frozen
+do not generalize to all v12 two-slot classes until 24K and 48K both pass
+```
+
+Matrix row:
+
+```text
+fixed48_local0
+```
+
+Observation:
+
+```text
+48K is absent from main_local0, so fixed48 and medium_local0 were the target
+rows.
+
+f04 vs candidate fixed48 release R10 moved only about +1%, below the +5%
+mechanism gate. The 48K fast branch is not retained as default behavior.
+
+The fixed48_local0 row and 48K slot1 / tail-smoke coverage remain useful for
+future local mechanics attribution.
+```
+
 ## Active-Hit Collapse A/B
 
 Record:

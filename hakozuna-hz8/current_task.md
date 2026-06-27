@@ -1439,6 +1439,13 @@ if optimizing medium/main local speed:
         24K-only row is now clearly faster than legacy64k2
         medium_local0 / main_local0 still trail, so 48K or broader local
         mechanics remain the follow-up bucket
+  Medium48KLocalFreeDecodeFastPath-L1 was tested as local evidence and is HOLD:
+    valid offsets are 0 and 49152 for the two-slot 48K run
+    release f04 vs candidate fixed48 R10 moved only about +1%
+    debug equivalence adds overhead and is not a performance signal
+    fixed48_local0 row remains for future local mechanics checks
+    48K slot1 / tail-smoke coverage is kept
+    do not default the 48K branch without a cleaner +5% bucket
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:
