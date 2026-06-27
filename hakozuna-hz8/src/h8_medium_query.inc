@@ -229,6 +229,9 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
     return;
   }
   h8_medium_collect_owner_pending(owner);
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+  h8_hz9_local_mag_shadow_flush_owner(h8_tls_ctx, true);
+#endif
   h8_medium_lock_global();
   for (uint32_t c = 0; c < H8_MEDIUM_CLASS_COUNT; ++c) {
     H8MediumRun* run = owner->medium_by_class[c];

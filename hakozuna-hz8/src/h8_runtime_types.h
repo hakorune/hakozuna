@@ -165,6 +165,10 @@ struct H8ThreadCtx {
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_last_alloc_run;
   uint8_t medium_collect_credit;
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+  H8MediumRun* medium_local_mag_shadow_run[H8_MEDIUM_CLASS_COUNT];
+  uint64_t medium_local_mag_shadow_mask[H8_MEDIUM_CLASS_COUNT];
+#endif
 };
 
 #include "h8_runtime_types_global.inc"

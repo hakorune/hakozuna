@@ -447,6 +447,25 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_local_fast_pending_block, memory_order_acquire);
   out->medium_local_fast_not_active_run = atomic_load_explicit(
       &h8g.medium_local_fast_not_active_run, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_eligible_free = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_eligible_free, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_eligible_alloc = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_eligible_alloc, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_avoid_mark_empty = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_avoid_mark_empty, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_avoid_mark_live = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_avoid_mark_live, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_active_switch_flush =
+      atomic_load_explicit(&h8g.medium_hz9_local_mag_shadow_active_switch_flush,
+                           memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_owner_exit_flush = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_owner_exit_flush, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_pending_block = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_pending_block, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_not_active_run = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_not_active_run, memory_order_acquire);
+  out->medium_hz9_local_mag_shadow_state_mismatch = atomic_load_explicit(
+      &h8g.medium_hz9_local_mag_shadow_state_mismatch, memory_order_acquire);
   out->medium_active_miss_total = atomic_load_explicit(
       &h8g.medium_active_miss_total, memory_order_acquire);
   out->medium_active_miss_no_pending = atomic_load_explicit(

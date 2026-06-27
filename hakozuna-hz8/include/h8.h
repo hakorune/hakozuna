@@ -275,6 +275,15 @@ typedef struct H8DebugStats {
   size_t medium_local_fast_owner_exit_flush;
   size_t medium_local_fast_pending_block;
   size_t medium_local_fast_not_active_run;
+  size_t medium_hz9_local_mag_shadow_eligible_free;
+  size_t medium_hz9_local_mag_shadow_eligible_alloc;
+  size_t medium_hz9_local_mag_shadow_avoid_mark_empty;
+  size_t medium_hz9_local_mag_shadow_avoid_mark_live;
+  size_t medium_hz9_local_mag_shadow_active_switch_flush;
+  size_t medium_hz9_local_mag_shadow_owner_exit_flush;
+  size_t medium_hz9_local_mag_shadow_pending_block;
+  size_t medium_hz9_local_mag_shadow_not_active_run;
+  size_t medium_hz9_local_mag_shadow_state_mismatch;
   size_t medium_active_miss_total;
   size_t medium_active_miss_no_pending;
   size_t medium_active_miss_owner_pending;

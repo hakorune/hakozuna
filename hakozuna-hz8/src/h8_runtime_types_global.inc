@@ -254,6 +254,15 @@ typedef struct H8Global {
   atomic_size_t medium_local_fast_owner_exit_flush;
   atomic_size_t medium_local_fast_pending_block;
   atomic_size_t medium_local_fast_not_active_run;
+  atomic_size_t medium_hz9_local_mag_shadow_eligible_free;
+  atomic_size_t medium_hz9_local_mag_shadow_eligible_alloc;
+  atomic_size_t medium_hz9_local_mag_shadow_avoid_mark_empty;
+  atomic_size_t medium_hz9_local_mag_shadow_avoid_mark_live;
+  atomic_size_t medium_hz9_local_mag_shadow_active_switch_flush;
+  atomic_size_t medium_hz9_local_mag_shadow_owner_exit_flush;
+  atomic_size_t medium_hz9_local_mag_shadow_pending_block;
+  atomic_size_t medium_hz9_local_mag_shadow_not_active_run;
+  atomic_size_t medium_hz9_local_mag_shadow_state_mismatch;
   atomic_size_t medium_active_miss_total;
   atomic_size_t medium_active_miss_no_pending;
   atomic_size_t medium_active_miss_owner_pending;

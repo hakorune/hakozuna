@@ -222,6 +222,23 @@ the regression is broad across local, remote, and small rows, so this is
 not a single-row noise artifact
 ```
 
+Next lane after this HOLD:
+
+```text
+HZ9MediumLocalMagazineShadow-L0
+
+goal:
+  separate local authority from the HZ8 run hot path instead of adding more
+  branches to it
+
+first principle:
+  keep remote authority unchanged
+  keep slot_state authority fail-closed
+  keep owner-exit hard drain
+  keep lazy128 bounded RSS
+  keep the shadow lane sideband-only until the design proves itself
+```
+
 Shadow counters:
 
 ```text
@@ -330,30 +347,33 @@ a mode flag that changes HZ8 metadata semantics
 a benchmark-only profile with unclear safety boundaries
 ```
 
-Possible first HZ9 concept:
+Recommended first HZ9 shadow lane:
 
 ```text
-HZ9LocalMagazineOwnerEpoch-L1
+HZ9MediumLocalMagazineShadow-L0
 
 local:
-  size-class magazines with fixed or adaptive depth
+  per-thread medium local magazine keyed by active owner run
+  keep the first lane sideband-only in thread context
+  do not add a new generic slot_state tag in the shadow
 
 free:
-  same-thread free returns to magazine
-  remote free publishes to owner/run remote list
+  same-owner active-run free can be attributed to the local magazine
+  remote free continues to publish to the existing pending bitmap / qstate /
+  owner queue
 
 validation:
-  batch validate magazine refill/drain
-  keep owner epoch checks at transfer boundaries
+  shadow same-owner reuse, flush pressure, fallback rate, and state mismatch
+  keep owner identity checks and fail-closed INVALID handling intact
 
 RSS:
-  explicit cap:
-    threads * classes * magazine_depth * slot_size
+  bounded by the existing v1.1 contract
+  no new retention semantics in the shadow lane
 
 owner exit:
-  close owner epoch
-  drain owner magazines / transfer lists
-  reclaim retained payload
+  flush local magazine state
+  drain existing owner/remote structures
+  leave no shadow-only residue
 ```
 
 ## Decision Rule

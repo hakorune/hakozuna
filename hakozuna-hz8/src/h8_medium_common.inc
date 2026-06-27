@@ -684,6 +684,9 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
       h8_medium_local_fast_flush_locked(old);
 #endif
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+      h8_hz9_local_mag_shadow_flush_class(ctx, class_id, false);
+#endif
       h8_medium_debug_note_local_fast_flush(old, false);
       h8_medium_demote_active_empty_live(old);
       h8_medium_available_shadow_after_mask_change(old);

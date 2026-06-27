@@ -387,6 +387,37 @@ void h8_medium_debug_note_local_fast_flush(H8MediumRun* run, bool owner_exit);
 #define h8_medium_debug_note_local_fast_flush(run, owner_exit) \
   ((void)(run), (void)(owner_exit))
 #endif
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+void h8_hz9_local_mag_shadow_note_free(H8MediumRun* run, size_t slot,
+                                       bool keep_empty_live);
+void h8_hz9_local_mag_shadow_note_alloc(H8MediumRun* run, size_t slot);
+void h8_hz9_local_mag_shadow_flush_class(H8ThreadCtx* ctx, uint32_t class_id,
+                                         bool owner_exit);
+void h8_hz9_local_mag_shadow_flush_owner(H8ThreadCtx* ctx, bool owner_exit);
+#else
+#define h8_hz9_local_mag_shadow_note_free(run, slot, keep_empty_live) \
+  do {                                                                 \
+    (void)(run);                                                       \
+    (void)(slot);                                                      \
+    (void)(keep_empty_live);                                           \
+  } while (0)
+#define h8_hz9_local_mag_shadow_note_alloc(run, slot) \
+  do {                                                \
+    (void)(run);                                      \
+    (void)(slot);                                     \
+  } while (0)
+#define h8_hz9_local_mag_shadow_flush_class(ctx, class_id, owner_exit) \
+  do {                                                                 \
+    (void)(ctx);                                                       \
+    (void)(class_id);                                                  \
+    (void)(owner_exit);                                                \
+  } while (0)
+#define h8_hz9_local_mag_shadow_flush_owner(ctx, owner_exit) \
+  do {                                                      \
+    (void)(ctx);                                            \
+    (void)(owner_exit);                                     \
+  } while (0)
+#endif
 static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_note_active_live_empty(run);

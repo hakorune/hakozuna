@@ -15,6 +15,7 @@ medium-v1 protocol/geometry:
 
 medium-v1.1 current default:
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+  docs/HZ8_V1_1_RELEASE.md
 ```
 
 Small-v0 behavior is frozen unless a hard safety issue appears.
@@ -22,6 +23,23 @@ MediumRun-v1.1 is now frozen as the current balanced default.  Do not reopen
 its owner queue, pending/qstate protocol, residency policy, or class geometry
 for incremental micro-tuning.  Throughput-vs-tcmalloc work moves to a separate
 v2 design lane.
+
+User-facing policy:
+
+```text
+public allocator:
+  HZ8
+
+internal lineage / reference:
+  HZ3 / HZ4 / HZ5 / HZ6 / HZ7
+
+experimental lab:
+  HZ9
+```
+
+Do not ask users to choose among HZ3..HZ9.  HZ8 is the balanced release line;
+HZ9 remains an opt-in throughput research lane until it earns a separate,
+simple public promise.
 
 ```text
 frozen small:
@@ -233,6 +251,45 @@ current lane:
       make bench-release-mediumv12_48k2 preload-smoke
       make safety-stress
       ./h8_safety_stress
+
+  HZ9 throughput lane:
+    status:
+      design only / not default behavior
+    record:
+      docs/HZ8_V2_HZ9_DESIGN.md
+    reason:
+      the HZ8 local-fast tier regressed broadly, so the next throughput lane
+      should split local authority instead of adding more branches to the HZ8
+      common path
+    candidate direction:
+      TLS-side medium local magazine shadow
+      remote authority unchanged
+    guardrail:
+      keep fail-closed INVALID handling
+      keep slot_state authority
+      keep owner-exit hard drain
+      keep lazy128 bounded residency
+    next box:
+      HZ9MediumLocalMagazineShadow-L0
+    next box scope:
+      behavior unchanged
+      measure TLS-side local magazine eligibility and flush pressure
+      keep existing pending bitmap / qstate / owner queue remote authority
+      do not add new generic slot_state tags in the shadow lane
+    implementation note:
+      HZ9MediumLocalMagazineShadow scaffold is wired as an opt-in build target
+      shadow helper hooks are in place for active switch, active alloc, same-
+      owner free, and owner detach
+      make -j2 bench-hz9mediumlocalmagshadow bench-release-hz9mediumlocalmagshadow
+      passes
+      ./h8_smoke passes
+    shadow observation:
+      debug fixed24/medium_local0 rows show eligible_free ~= eligible_alloc and
+      reuse_ratio ~= 1.000 with zero state mismatch
+      release medium_local0 regressed versus v12 baseline
+      release main_local0 and medium_interleaved_remote50 improved versus v12
+      baseline
+      mixed release signal is not enough to promote HZ9 behavior yet
 
   HZ8PreloadReallocCompat-L1:
     status:

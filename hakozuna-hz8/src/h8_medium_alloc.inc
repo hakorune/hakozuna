@@ -318,12 +318,14 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   h8_sys_free(run);
 }
 
-static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
+static void* h8_medium_run_alloc_active_hit(H8ThreadCtx* ctx,
+                                            H8MediumRun* run,
                                             uint32_t class_id) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
   uint64_t section_start = start;
 #endif
+  (void)ctx;
   if (!run || run->class_id != class_id) {
     return NULL;
   }
@@ -336,6 +338,9 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   if (run->local_fast_mask != 0u) {
     size_t fast_slot = 0;
     if (h8_medium_local_fast_take_active(run, &fast_slot)) {
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+      h8_hz9_local_mag_shadow_note_alloc(run, fast_slot);
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
       H8_DEBUG_INC(medium_active_alloc_hit_count);
       H8_DEBUG_INC(medium_alloc_slot_count);
@@ -374,6 +379,9 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
+#endif
+#if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
+  h8_hz9_local_mag_shadow_note_alloc(run, slot);
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_active_alloc_slot_store_ns,
@@ -453,7 +461,7 @@ static void* h8_medium_try_active_miss_demand_collect64(H8ThreadCtx* ctx,
                (size_t)__builtin_popcountll(active->free_mask & valid));
   h8_medium_debug_writer_enter(active, ctx->owner,
                                H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
-  void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
+  void* ptr = h8_medium_run_alloc_active_hit(ctx, active, class_id);
   h8_medium_debug_writer_exit(active);
   if (!ptr) {
     H8_DEBUG_INC(medium_demand64_owner_list_fallback);
@@ -519,7 +527,7 @@ retry_owner_capacity:
       h8_medium_debug_lock_elide_candidate_known(true, false);
       h8_medium_debug_writer_enter(active, ctx ? ctx->owner : NULL,
                                    H8_MEDIUM_WRITER_OWNER_LOCAL_ALLOC);
-      void* ptr = h8_medium_run_alloc_active_hit(active, class_id);
+      void* ptr = h8_medium_run_alloc_active_hit(ctx, active, class_id);
       h8_medium_debug_writer_exit(active);
       if (ptr) {
         h8_medium_debug_note_alloc_collect_credit(ctx ? ctx->owner : NULL,

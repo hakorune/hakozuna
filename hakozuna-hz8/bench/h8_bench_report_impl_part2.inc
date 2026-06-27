@@ -169,6 +169,20 @@
              ? (double)debug.medium_local_fast_eligible_alloc /
                    (double)debug.medium_local_fast_eligible_free
              : 0.0);
+  printf("medium_hz9_local_mag_shadow eligible_free=%zu eligible_alloc=%zu avoid_mark_empty=%zu avoid_mark_live=%zu active_switch_flush=%zu owner_exit_flush=%zu pending_block=%zu not_active_run=%zu state_mismatch=%zu reuse_ratio=%.3f\n",
+         debug.medium_hz9_local_mag_shadow_eligible_free,
+         debug.medium_hz9_local_mag_shadow_eligible_alloc,
+         debug.medium_hz9_local_mag_shadow_avoid_mark_empty,
+         debug.medium_hz9_local_mag_shadow_avoid_mark_live,
+         debug.medium_hz9_local_mag_shadow_active_switch_flush,
+         debug.medium_hz9_local_mag_shadow_owner_exit_flush,
+         debug.medium_hz9_local_mag_shadow_pending_block,
+         debug.medium_hz9_local_mag_shadow_not_active_run,
+         debug.medium_hz9_local_mag_shadow_state_mismatch,
+         debug.medium_hz9_local_mag_shadow_eligible_free
+             ? (double)debug.medium_hz9_local_mag_shadow_eligible_alloc /
+                   (double)debug.medium_hz9_local_mag_shadow_eligible_free
+             : 0.0);
   printf("medium_post_collect_active_miss total=%zu no_pending=%zu owner_pending=%zu active_pending=%zu active_pending_zero=%zu active_pending_slots=%zu owner_list_hit=%zu owner_hit_pos=[%zu,%zu,%zu,%zu,%zu] create=%zu detached_reuse=%zu\n",
          debug.medium_active_miss_total,
          debug.medium_active_miss_no_pending,
