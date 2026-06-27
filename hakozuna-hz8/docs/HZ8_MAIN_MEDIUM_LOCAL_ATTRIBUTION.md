@@ -363,6 +363,57 @@ The fixed48_local0 row and 48K slot1 / tail-smoke coverage remain useful for
 future local mechanics attribution.
 ```
 
+Current candidate:
+
+```text
+MediumActiveEmptyChargeElide-L1
+```
+
+Observation:
+
+```text
+local0 rows spend almost every medium allocation in the active-empty-live
+reactivation path:
+
+  fixed24: alloc_live_active_empty=2399952 / 2400000
+  fixed48: alloc_live_active_empty=2399952 / 2400000
+  main:    alloc_live_active_empty=2101457 / 2101649
+  medium:  alloc_live_active_empty=2399712 / 2400000
+```
+
+Candidate shape:
+
+```text
+release-only H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE
+
+skip active_live_empty_charge set/clear on the steady local active-empty loop
+keep debug behavior unchanged
+keep owner exit / active replacement based on allocated_mask + payload_state
+```
+
+Quick release R10 signal:
+
+```text
+candidate / baseline
+  fixed24_local0: 0.971
+  fixed48_local0: 1.026
+  main_local0:    1.170
+  medium_local0:  1.021
+  guard_local0:   1.080
+  small_r90:      0.978
+  main_r90:       1.086
+  medium_r50:     0.993
+```
+
+Interpretation:
+
+```text
+this is the strongest remaining local/main signal after 24K decode
+
+promotion is still HOLD until small_interleaved_remote90 reproduces within the
+2% regression gate and owner-exit/lazy drain checks remain clean
+```
+
 ## Active-Hit Collapse A/B
 
 Record:

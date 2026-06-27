@@ -1446,6 +1446,24 @@ if optimizing medium/main local speed:
     fixed48_local0 row remains for future local mechanics checks
     48K slot1 / tail-smoke coverage is kept
     do not default the 48K branch without a cleaner +5% bucket
+  MediumActiveEmptyChargeElide-L1 is the current candidate:
+    release-only macro H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE skips the
+    active_live_empty_charge set/clear on the steady active-empty-live loop
+    owner exit / active replacement still use allocated_mask + payload_state
+    to find empty LIVE runs, so the charge bit is not the only release
+    lifecycle authority
+    quick R10 signal:
+      main_local0 +17.0%, main_r90 +8.6%, guard +8.0%
+      medium_local0 +2.1%, medium_r50 -0.7%
+      fixed24 -2.9%, fixed48 +2.6%, small_r90 -2.2%
+    release macro checks:
+      H8_SMOKE_REGULAR_ADOPTION=0 ./h8_smoke_elide passes
+      LD_PRELOAD=libhakozuna_hz8_preload_elide.so ./h8_preload_smoke passes
+      regular adoption smoke without debug is not used as a gate here
+    next gate:
+      paired R10 x2 or fresh alternating R20
+      small_interleaved_remote90 must stay within 2%
+      owner-exit/lazy charge drains must remain clean
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:
