@@ -319,6 +319,7 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
                                             uint32_t class_id) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
+  uint64_t section_start = start;
 #endif
   if (!run || run->class_id != class_id) {
     return NULL;
@@ -334,16 +335,39 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);
   uint64_t bit = UINT64_C(1) << slot;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_active_alloc_precheck_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  section_start = h8_medium_now_ns();
+#endif
   h8_medium_mark_live_on_alloc_fast(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_active_alloc_mark_live_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  section_start = h8_medium_now_ns();
+#endif
   run->free_mask &= ~bit;
   run->allocated_mask |= bit;
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_active_alloc_mask_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  section_start = h8_medium_now_ns();
+#endif
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_active_alloc_slot_store_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  section_start = h8_medium_now_ns();
+  void* ptr = h8_medium_slot_ptr_known(run, slot);
+  H8_DEBUG_ADD(medium_active_alloc_ptr_ns,
+               (size_t)(h8_medium_now_ns() - section_start));
+  H8_DEBUG_INC(medium_active_alloc_hit_count);
   H8_DEBUG_INC(medium_alloc_slot_count);
   H8_DEBUG_ADD(medium_alloc_slot_ns, (size_t)(h8_medium_now_ns() - start));
+  return ptr;
 #endif
   return h8_medium_slot_ptr_known(run, slot);
 }

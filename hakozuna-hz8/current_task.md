@@ -1479,6 +1479,34 @@ if optimizing medium/main local speed:
     decision:
       HOLD as opt-in evidence
       do not default because medium_r50 p25 regressed materially
+  MediumActiveHitLocalShapeAttribution-L1 is in progress:
+    behavior change:
+      none
+    purpose:
+      split the remaining local hot-path cost after 24K decode, 48K HOLD, and
+      active-empty charge elide HOLD
+    added output:
+      medium_active_alloc_path_cost
+      medium_free_path_cost
+    active-hit buckets:
+      precheck / ctz
+      mark_live
+      allocated/free mask mutation
+      slot_state ALLOCATED store
+      pointer generation
+    free path buckets:
+      decode
+      allocated/free mask state check
+      pending bit check
+      slot_state FREE store
+      allocated/free mask mutation
+      empty/live retention transition
+    paired with existing:
+      medium_alloc_path_cost
+    decision rule:
+      if one free/alloc bucket is clearly material, open a narrow behavior A/B
+      if no single bucket is material, freeze local micro-tuning and record the
+      remaining gap as safety/ownership/fail-closed contract cost
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:

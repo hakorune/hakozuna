@@ -70,6 +70,65 @@
              ? (double)debug.medium_alloc_ptr_ns /
                    (double)debug.medium_alloc_scaffold_count
              : 0.0);
+  printf("medium_active_alloc_path_cost hits=%zu precheck_ms=%.3f mark_live_ms=%.3f mask_ms=%.3f slot_store_ms=%.3f ptr_ms=%.3f ns_per_hit=[%.1f,%.1f,%.1f,%.1f,%.1f]\n",
+         debug.medium_active_alloc_hit_count,
+         debug.medium_active_alloc_precheck_ns / 1000000.0,
+         debug.medium_active_alloc_mark_live_ns / 1000000.0,
+         debug.medium_active_alloc_mask_ns / 1000000.0,
+         debug.medium_active_alloc_slot_store_ns / 1000000.0,
+         debug.medium_active_alloc_ptr_ns / 1000000.0,
+         debug.medium_active_alloc_hit_count
+             ? (double)debug.medium_active_alloc_precheck_ns /
+                   (double)debug.medium_active_alloc_hit_count
+             : 0.0,
+         debug.medium_active_alloc_hit_count
+             ? (double)debug.medium_active_alloc_mark_live_ns /
+                   (double)debug.medium_active_alloc_hit_count
+             : 0.0,
+         debug.medium_active_alloc_hit_count
+             ? (double)debug.medium_active_alloc_mask_ns /
+                   (double)debug.medium_active_alloc_hit_count
+             : 0.0,
+         debug.medium_active_alloc_hit_count
+             ? (double)debug.medium_active_alloc_slot_store_ns /
+                   (double)debug.medium_active_alloc_hit_count
+             : 0.0,
+         debug.medium_active_alloc_hit_count
+             ? (double)debug.medium_active_alloc_ptr_ns /
+                   (double)debug.medium_active_alloc_hit_count
+             : 0.0);
+  printf("medium_free_path_cost scaffold=%zu decode_ms=%.3f state_ms=%.3f pending_ms=%.3f slot_store_ms=%.3f mask_ms=%.3f empty_ms=%.3f ns_per_scaffold=[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f]\n",
+         debug.medium_free_scaffold_count,
+         debug.medium_free_decode_ns / 1000000.0,
+         debug.medium_free_state_ns / 1000000.0,
+         debug.medium_free_pending_ns / 1000000.0,
+         debug.medium_free_slot_store_ns / 1000000.0,
+         debug.medium_free_mask_ns / 1000000.0,
+         debug.medium_free_empty_ns / 1000000.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_decode_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_state_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_pending_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_slot_store_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_mask_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0,
+         debug.medium_free_scaffold_count
+             ? (double)debug.medium_free_empty_ns /
+                   (double)debug.medium_free_scaffold_count
+             : 0.0);
   printf("medium_post_collect_active_miss total=%zu no_pending=%zu owner_pending=%zu active_pending=%zu active_pending_zero=%zu active_pending_slots=%zu owner_list_hit=%zu owner_hit_pos=[%zu,%zu,%zu,%zu,%zu] create=%zu detached_reuse=%zu\n",
          debug.medium_active_miss_total,
          debug.medium_active_miss_no_pending,
