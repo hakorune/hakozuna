@@ -4,6 +4,24 @@ This is a comparison sheet for the current HZ work.  It shows where
 `mimalloc`, `tcmalloc`, and the HZ series sit relative to each other in design
 shape and in the current public benchmark snapshot.
 
+## User-Facing Policy
+
+Do not expose the HZ series as a menu of public allocator choices.
+
+```text
+public recommendation:
+  HZ8
+
+internal lineage:
+  HZ3 / HZ4 / HZ5 / HZ6 / HZ7
+
+experimental research:
+  HZ9
+```
+
+HZ3..HZ7 are design references used to explain how HZ8 was assembled.  HZ9 is
+an opt-in throughput research lane.  HZ8 is the current release line.
+
 Benchmark source for the numeric rows below:
 
 - Public Hakozuna README snapshot, 2026-05-26:
