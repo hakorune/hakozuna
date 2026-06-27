@@ -93,36 +93,91 @@ LocalFastTier-v2:
   merge remote work into local truth at controlled points
 ```
 
-Possible shape:
+Chosen minimal shape:
 
 ```text
 local alloc/free:
-  use a run-local lightweight free-list or bitmap for owner-local hits
-  avoid repeated global directory / scan work
-  batch or defer selected accounting only if fail-closed route remains exact
+  active owner-local run only
+  add a per-run owner-only LOCAL_FAST_FREE bitmap
+  keep LOCAL_FAST_FREE slots out of normal free_mask
+  keep allocated_mask set while the slot is in LOCAL_FAST_FREE so the run
+  stays LIVE/pinned and avoids empty/residency churn
 
 remote free:
-  publish to run/owner remote authority
-  do not directly mutate local free-list
-  keep duplicate-claim and stale-owner gates
+  keep existing pending bitmap + qstate + owner queue
+  do not introduce a concurrent freelist in the first HZ8-v2 box
+  do not let remote producers mutate the local fast tier
 
 merge:
-  owner allocation miss
-  bounded periodic maintenance
+  active switch
+  owner detach / run destroy
   owner exit hard drain
+  allocation miss as an optional demand merge
+  no periodic full merge in the first behavior candidate
+```
+
+Proposed slot states:
+
+```text
+ALLOCATED:
+  slot_state == ALLOCATED
+  allocated_mask bit = 1
+  free_mask bit = 0
+  local_fast_mask bit = 0
+
+LOCAL_FAST_FREE:
+  slot_state == LOCAL_FAST_FREE
+  allocated_mask bit = 1
+  free_mask bit = 0
+  local_fast_mask bit = 1
+
+NORMAL_FREE:
+  slot_state == FREE
+  allocated_mask bit = 0
+  free_mask bit = 1
+  local_fast_mask bit = 0
+
+REMOTE_PENDING:
+  slot_state == ALLOCATED
+  pending bit = 1
+  owner collector later publishes FREE through the existing protocol
+```
+
+The purpose is not to remove `slot_state` authority first.  The purpose is to
+avoid round-tripping immediate owner-local free/reallocatable slots through:
+
+```text
+free_mask mutation
+allocated_mask clear/set
+mark_empty
+mark_live_on_alloc
+resident/lazy transitions
 ```
 
 Initial design box:
 
 ```text
-HZ8V2LocalFastTierDesign-L1
+MediumLocalFastTierActiveRun-Shadow-L1
 
 scope:
   no behavior change
-  define local authority, remote authority, and merge points
-  enumerate which v1.1 stores/checks can be batched
-  prove invalid pointer and duplicate remote free behavior
-  define RSS/cache caps
+  measure same-owner active-run frees eligible for LOCAL_FAST_FREE
+  measure later active-run allocations that would consume LOCAL_FAST_FREE
+  measure avoided mark_empty / mark_live_on_alloc opportunities
+  measure active-switch and owner-exit flush pressure
+```
+
+Shadow counters:
+
+```text
+local_fast_eligible_free[class]
+local_fast_eligible_alloc[class]
+local_fast_avoid_mark_empty[class]
+local_fast_avoid_mark_live[class]
+local_fast_active_switch_flush[class]
+local_fast_owner_exit_flush[class]
+local_fast_pending_block[class]
+local_fast_not_active_run[class]
 ```
 
 Promotion gates for a later prototype:
@@ -145,6 +200,36 @@ RSS:
 
 safety:
   all v1.1 zero gates clean
+```
+
+Behavior candidate after a clean shadow:
+
+```text
+MediumLocalFastTierActiveRun-L1
+
+free:
+  if same-owner
+  and run == ctx->active_medium_runs[class]
+  and pending bit == 0
+  and slot_state == ALLOCATED:
+    slot_state = LOCAL_FAST_FREE
+    local_fast_mask |= bit
+    do not add to free_mask
+    do not clear allocated_mask
+    do not call mark_empty
+
+malloc:
+  if active local_fast_mask != 0:
+    pop bit
+    slot_state = ALLOCATED
+    return slot pointer
+
+merge:
+  LOCAL_FAST_FREE -> FREE
+  clear allocated_mask
+  set free_mask
+  clear local_fast_mask
+  then use existing empty/residency logic
 ```
 
 ## HZ9

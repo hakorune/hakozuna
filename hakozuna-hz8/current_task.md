@@ -191,6 +191,14 @@ current lane:
       v2 must not silently weaken v1.1 fail-closed pointer ownership,
       lazy128 bounded residency, owner-exit hard drain, or LD_PRELOAD ABI
       compatibility
+    next box:
+      MediumLocalFastTierActiveRun-Shadow-L1
+    next box scope:
+      behavior unchanged
+      measure owner-local active-run LOCAL_FAST_FREE eligibility
+      keep existing pending bitmap / qstate / owner queue remote authority
+      prove whether active-run local tier can avoid mark_empty /
+      mark_live_on_alloc and mask churn without remote or RSS regressions
 
   HZ8PreloadReallocCompat-L1:
     status:
