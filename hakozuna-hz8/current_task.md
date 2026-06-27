@@ -1520,6 +1520,9 @@ if optimizing medium/main local speed:
       local micro-tuning is closed for now
       remaining gap is recorded as safety / ownership / fail-closed contract
       cost
+    next lane:
+      PostAsmSameRunAllocatorMatrixRefresh-L1
+      same-run positioning / public RC record
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:

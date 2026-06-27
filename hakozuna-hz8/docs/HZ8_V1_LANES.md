@@ -497,6 +497,11 @@ MediumRun-v1.1 remote-lane closeout:
     SameRun positioning / MediumRun-v1.1 RC record is captured in
     docs/HZ8_MEDIUM_RUN_V1_1_RC.md
     keep SizePolicy as a separate future lane
+    the local micro-tuning lane is frozen:
+      MediumActiveHitLocalShapeAttribution-L1
+      no further local split without a new material bucket
+    next measurement lane:
+      PostAsmSameRunAllocatorMatrixRefresh-L1
 
 MediumV12TwoSlotDecodeFastPath-L1:
   status:
