@@ -193,12 +193,24 @@ current lane:
       compatibility
     next box:
       MediumLocalFastTierActiveRun-Shadow-L1
+    status:
+      implemented as debug/audit attribution
     next box scope:
       behavior unchanged
       measure owner-local active-run LOCAL_FAST_FREE eligibility
       keep existing pending bitmap / qstate / owner queue remote authority
       prove whether active-run local tier can avoid mark_empty /
       mark_live_on_alloc and mask churn without remote or RSS regressions
+    initial observation:
+      fixed24 local debug smoke showed eligible_free=20000,
+      eligible_alloc=19999, reuse_ratio=1.000, active_switch_flush=0,
+      owner_exit_flush=1
+    validation:
+      make smoke bench-mediumv12_48k2
+      ./h8_smoke
+      make bench-release-mediumv12_48k2 preload-smoke
+      make safety-stress
+      ./h8_safety_stress
 
   HZ8PreloadReallocCompat-L1:
     status:

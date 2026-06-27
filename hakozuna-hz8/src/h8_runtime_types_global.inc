@@ -246,6 +246,14 @@ typedef struct H8Global {
   atomic_size_t medium_free_slot_store_ns;
   atomic_size_t medium_free_mask_ns;
   atomic_size_t medium_free_empty_ns;
+  atomic_size_t medium_local_fast_eligible_free;
+  atomic_size_t medium_local_fast_eligible_alloc;
+  atomic_size_t medium_local_fast_avoid_mark_empty;
+  atomic_size_t medium_local_fast_avoid_mark_live;
+  atomic_size_t medium_local_fast_active_switch_flush;
+  atomic_size_t medium_local_fast_owner_exit_flush;
+  atomic_size_t medium_local_fast_pending_block;
+  atomic_size_t medium_local_fast_not_active_run;
   atomic_size_t medium_active_miss_total;
   atomic_size_t medium_active_miss_no_pending;
   atomic_size_t medium_active_miss_owner_pending;

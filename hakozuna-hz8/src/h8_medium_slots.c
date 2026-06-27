@@ -157,6 +157,9 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                  (size_t)(h8_medium_slots_now_ns() - section_start));
 #endif
     H8_DEBUG_INC(medium_local_free_pending_nonzero);
+    if (keep_empty_live) {
+      H8_DEBUG_INC(medium_local_fast_pending_block);
+    }
     return false;
   }
 #endif
@@ -165,6 +168,11 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                (size_t)(h8_medium_slots_now_ns() - section_start));
   section_start = h8_medium_slots_now_ns();
 #endif
+  if (keep_empty_live) {
+    h8_medium_debug_note_local_fast_eligible_free(run, bit);
+  } else {
+    H8_DEBUG_INC(medium_local_fast_not_active_run);
+  }
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_FREE | H8_SLOT_NONE,
                         memory_order_release);
 #if defined(H8_ENABLE_DEBUG_STATS)

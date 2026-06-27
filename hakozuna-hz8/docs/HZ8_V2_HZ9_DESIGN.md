@@ -167,6 +167,23 @@ scope:
   measure active-switch and owner-exit flush pressure
 ```
 
+Implementation status:
+
+```text
+implemented:
+  debug/audit attribution only
+
+release behavior:
+  unchanged
+
+initial fixed24 local smoke:
+  eligible_free=20000
+  eligible_alloc=19999
+  reuse_ratio=1.000
+  active_switch_flush=0
+  owner_exit_flush=1
+```
+
 Shadow counters:
 
 ```text

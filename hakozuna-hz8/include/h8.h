@@ -267,6 +267,14 @@ typedef struct H8DebugStats {
   size_t medium_free_slot_store_ns;
   size_t medium_free_mask_ns;
   size_t medium_free_empty_ns;
+  size_t medium_local_fast_eligible_free;
+  size_t medium_local_fast_eligible_alloc;
+  size_t medium_local_fast_avoid_mark_empty;
+  size_t medium_local_fast_avoid_mark_live;
+  size_t medium_local_fast_active_switch_flush;
+  size_t medium_local_fast_owner_exit_flush;
+  size_t medium_local_fast_pending_block;
+  size_t medium_local_fast_not_active_run;
   size_t medium_active_miss_total;
   size_t medium_active_miss_no_pending;
   size_t medium_active_miss_owner_pending;

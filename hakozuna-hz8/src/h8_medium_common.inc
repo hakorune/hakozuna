@@ -620,6 +620,42 @@ static void h8_medium_available_shadow_note_owner_hit(H8ThreadCtx* ctx,
   } while (0)
 #endif
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+void h8_medium_debug_note_local_fast_eligible_free(H8MediumRun* run,
+                                                   uint64_t bit) {
+  if (!run || bit == 0 || (run->debug_local_fast_shadow_mask & bit) != 0) {
+    return;
+  }
+  run->debug_local_fast_shadow_mask |= bit;
+  H8_DEBUG_INC(medium_local_fast_eligible_free);
+  H8_DEBUG_INC(medium_local_fast_avoid_mark_empty);
+}
+
+void h8_medium_debug_note_local_fast_alloc(H8MediumRun* run) {
+  if (!run || run->debug_local_fast_shadow_mask == 0) {
+    return;
+  }
+  uint64_t bit = run->debug_local_fast_shadow_mask &
+                 (UINT64_C(0) - run->debug_local_fast_shadow_mask);
+  run->debug_local_fast_shadow_mask &= ~bit;
+  H8_DEBUG_INC(medium_local_fast_eligible_alloc);
+  H8_DEBUG_INC(medium_local_fast_avoid_mark_live);
+}
+
+void h8_medium_debug_note_local_fast_flush(H8MediumRun* run, bool owner_exit) {
+  if (!run || run->debug_local_fast_shadow_mask == 0) {
+    return;
+  }
+  size_t count = (size_t)__builtin_popcountll(run->debug_local_fast_shadow_mask);
+  if (owner_exit) {
+    H8_DEBUG_ADD(medium_local_fast_owner_exit_flush, count);
+  } else {
+    H8_DEBUG_ADD(medium_local_fast_active_switch_flush, count);
+  }
+  run->debug_local_fast_shadow_mask = 0;
+}
+#endif
+
 static void h8_medium_demote_active_empty_live(H8MediumRun* run) {
   if (!run || pthread_mutex_trylock(&run->lock) != 0) {
     return;
@@ -645,6 +681,7 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
                               &h8g.medium_active_switch_class_32k,
                               &h8g.medium_active_switch_class_64k);
     if (h8_medium_run_owned_by_ctx(old, ctx)) {
+      h8_medium_debug_note_local_fast_flush(old, false);
       h8_medium_demote_active_empty_live(old);
       h8_medium_available_shadow_after_mask_change(old);
     }

@@ -143,6 +143,7 @@ typedef struct H8MediumRun {
   uint32_t debug_collect_generation;
   uint32_t debug_collect_free_credits;
   uint64_t debug_collect_owner_alloc_epoch;
+  uint64_t debug_local_fast_shadow_mask;
 #endif
 } H8MediumRun;
 
@@ -361,6 +362,10 @@ void h8_medium_debug_note_collect_capacity(H8OwnerRecord* owner,
 void h8_medium_debug_note_alloc_collect_credit(H8OwnerRecord* owner,
                                                H8MediumRun* run);
 void h8_medium_debug_discard_collect_credit(H8MediumRun* run);
+void h8_medium_debug_note_local_fast_eligible_free(H8MediumRun* run,
+                                                   uint64_t bit);
+void h8_medium_debug_note_local_fast_alloc(H8MediumRun* run);
+void h8_medium_debug_note_local_fast_flush(H8MediumRun* run, bool owner_exit);
 #else
 #define h8_medium_debug_note_owner_medium_alloc(owner) ((void)0)
 #define h8_medium_debug_note_active_miss_pending(ctx, class_id, active) \
@@ -373,6 +378,11 @@ void h8_medium_debug_discard_collect_credit(H8MediumRun* run);
 #define h8_medium_debug_note_alloc_collect_credit(owner, run) \
   ((void)(owner), (void)(run))
 #define h8_medium_debug_discard_collect_credit(run) ((void)(run))
+#define h8_medium_debug_note_local_fast_eligible_free(run, bit) \
+  ((void)(run), (void)(bit))
+#define h8_medium_debug_note_local_fast_alloc(run) ((void)(run))
+#define h8_medium_debug_note_local_fast_flush(run, owner_exit) \
+  ((void)(run), (void)(owner_exit))
 #endif
 static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)

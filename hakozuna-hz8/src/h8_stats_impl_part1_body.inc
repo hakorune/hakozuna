@@ -431,6 +431,22 @@
       &h8g.medium_free_mask_ns, memory_order_acquire);
   out->medium_free_empty_ns = atomic_load_explicit(
       &h8g.medium_free_empty_ns, memory_order_acquire);
+  out->medium_local_fast_eligible_free = atomic_load_explicit(
+      &h8g.medium_local_fast_eligible_free, memory_order_acquire);
+  out->medium_local_fast_eligible_alloc = atomic_load_explicit(
+      &h8g.medium_local_fast_eligible_alloc, memory_order_acquire);
+  out->medium_local_fast_avoid_mark_empty = atomic_load_explicit(
+      &h8g.medium_local_fast_avoid_mark_empty, memory_order_acquire);
+  out->medium_local_fast_avoid_mark_live = atomic_load_explicit(
+      &h8g.medium_local_fast_avoid_mark_live, memory_order_acquire);
+  out->medium_local_fast_active_switch_flush = atomic_load_explicit(
+      &h8g.medium_local_fast_active_switch_flush, memory_order_acquire);
+  out->medium_local_fast_owner_exit_flush = atomic_load_explicit(
+      &h8g.medium_local_fast_owner_exit_flush, memory_order_acquire);
+  out->medium_local_fast_pending_block = atomic_load_explicit(
+      &h8g.medium_local_fast_pending_block, memory_order_acquire);
+  out->medium_local_fast_not_active_run = atomic_load_explicit(
+      &h8g.medium_local_fast_not_active_run, memory_order_acquire);
   out->medium_active_miss_total = atomic_load_explicit(
       &h8g.medium_active_miss_total, memory_order_acquire);
   out->medium_active_miss_no_pending = atomic_load_explicit(

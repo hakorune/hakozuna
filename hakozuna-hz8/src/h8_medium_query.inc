@@ -237,6 +237,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       H8MediumRun* next = run->next_owner;
       h8_medium_debug_writer_enter(run, owner, H8_MEDIUM_WRITER_OWNER_DETACH);
       h8_medium_lock_run(run);
+      h8_medium_debug_note_local_fast_flush(run, true);
       if (run->allocated_mask == 0 &&
           run->payload_state != H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
         H8_DEBUG_INC(medium_owner_exit_drain_count);

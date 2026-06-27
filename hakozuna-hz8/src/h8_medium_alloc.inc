@@ -340,6 +340,7 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
                (size_t)(h8_medium_now_ns() - section_start));
   section_start = h8_medium_now_ns();
 #endif
+  h8_medium_debug_note_local_fast_alloc(run);
   h8_medium_mark_live_on_alloc_fast(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_active_alloc_mark_live_ns,
