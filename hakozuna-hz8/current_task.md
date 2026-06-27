@@ -194,7 +194,7 @@ current lane:
     next box:
       MediumLocalFastTierActiveRun-Shadow-L1
     status:
-      implemented as debug/audit attribution
+      implemented as opt-in behavior candidate
     next box scope:
       behavior unchanged
       measure owner-local active-run LOCAL_FAST_FREE eligibility
@@ -205,6 +205,28 @@ current lane:
       fixed24 local debug smoke showed eligible_free=20000,
       eligible_alloc=19999, reuse_ratio=1.000, active_switch_flush=0,
       owner_exit_flush=1
+    candidate spot check:
+      build targets:
+        bench-mediumlocalfasttier
+        bench-release-mediumlocalfasttier
+      24K local-only baseline=32.226M
+      24K local-only candidate=27.291M
+      paired gate runs=3 threads=8 iters=20000:
+        medium_interleaved_remote50 ratio=0.955
+        main_interleaved_remote90 ratio=0.953
+        small_guard_local0 ratio=0.869
+        small_interleaved_remote90 ratio=1.006
+      why slow:
+        shadow reuse was almost perfect, so miss rate is not the limiter
+        release text grew by about 5 KiB
+        h8_medium_malloc_class_inner grew 0x445 -> 0x4ba
+        h8_medium_run_free_local_scaffold grew 0x111 -> 0x210
+        h8_medium_set_active_run grew 0xa0 -> 0xe8
+        the added local_fast branch and per-run state are likely heavier than
+        the mark_empty / mark_live_on_alloc churn they save
+      decision:
+        HOLD
+        keep as evidence target only
     validation:
       make smoke bench-mediumv12_48k2
       ./h8_smoke

@@ -299,6 +299,9 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   h8_medium_unregister_locked(run);
   h8_medium_unlock_global();
   if (run->base) {
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+    h8_medium_local_fast_flush_locked(run);
+#endif
     h8_medium_release_empty_payload(run);
     if (run->lazy_purge_charge) {
       H8_DEBUG_INC(medium_lazy_drop_destroy);
@@ -324,13 +327,27 @@ static void* h8_medium_run_alloc_active_hit(H8MediumRun* run,
   if (!run || run->class_id != class_id) {
     return NULL;
   }
-  if (run->free_mask == 0) {
-    H8_DEBUG_INC(medium_alloc_free_mask_zero);
-    return NULL;
-  }
   if (atomic_load_explicit(&run->state, memory_order_acquire) !=
       H8_MEDIUM_RUN_ACTIVE) {
     H8_DEBUG_INC(medium_alloc_state_check_fail);
+    return NULL;
+  }
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+  if (run->local_fast_mask != 0u) {
+    size_t fast_slot = 0;
+    if (h8_medium_local_fast_take_active(run, &fast_slot)) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+      H8_DEBUG_INC(medium_active_alloc_hit_count);
+      H8_DEBUG_INC(medium_alloc_slot_count);
+      H8_DEBUG_ADD(medium_alloc_slot_ns,
+                   (size_t)(h8_medium_now_ns() - start));
+#endif
+      return h8_medium_slot_ptr_known(run, fast_slot);
+    }
+  }
+#endif
+  if (run->free_mask == 0) {
+    H8_DEBUG_INC(medium_alloc_free_mask_zero);
     return NULL;
   }
   uint32_t slot = (uint32_t)__builtin_ctzll(run->free_mask);

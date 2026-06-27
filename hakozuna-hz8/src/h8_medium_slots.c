@@ -135,7 +135,10 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   section_start = h8_medium_slots_now_ns();
 #endif
   uint64_t bit = UINT64_C(1) << slot;
-  if ((run->allocated_mask & bit) == 0 || (run->free_mask & bit) != 0) {
+  uint32_t state =
+      atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
+  if (h8_slot_state_tag(state) != (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT) ||
+      (run->allocated_mask & bit) == 0 || (run->free_mask & bit) != 0) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_ADD(medium_free_state_ns,
                  (size_t)(h8_medium_slots_now_ns() - section_start));
@@ -167,6 +170,23 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   H8_DEBUG_ADD(medium_free_pending_ns,
                (size_t)(h8_medium_slots_now_ns() - section_start));
   section_start = h8_medium_slots_now_ns();
+#endif
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+  if (keep_empty_live &&
+      h8_medium_local_fast_store_active_free(run, slot, bit)) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_free_slot_store_ns,
+                 (size_t)(h8_medium_slots_now_ns() - section_start));
+    section_start = h8_medium_slots_now_ns();
+#endif
+    H8_DEBUG_INC(medium_free_scaffold_count);
+    H8_DEBUG_INC(medium_free_slot_count);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_free_slot_ns,
+                 (size_t)(h8_medium_slots_now_ns() - start));
+#endif
+    return true;
+  }
 #endif
   if (keep_empty_live) {
     h8_medium_debug_note_local_fast_eligible_free(run, bit);

@@ -171,10 +171,14 @@ Implementation status:
 
 ```text
 implemented:
-  debug/audit attribution only
+  opt-in behavior candidate + debug/audit attribution
 
 release behavior:
-  unchanged
+  unchanged by default build
+  candidate is gated by H8_MEDIUM_ENABLE_LOCAL_FAST_TIER
+build targets:
+  bench-mediumlocalfasttier
+  bench-release-mediumlocalfasttier
 
 initial fixed24 local smoke:
   eligible_free=20000
@@ -182,6 +186,40 @@ initial fixed24 local smoke:
   reuse_ratio=1.000
   active_switch_flush=0
   owner_exit_flush=1
+
+release spot check:
+  24K local-only baseline=32.226M
+  24K local-only candidate=27.291M
+
+paired gate (runs=3 threads=8 iters=20000):
+  medium_interleaved_remote50 ratio=0.955
+  main_interleaved_remote90 ratio=0.953
+  small_guard_local0 ratio=0.869
+  small_interleaved_remote90 ratio=1.006
+
+decision:
+  HOLD
+  keep as an evidence target only
+```
+
+Why it is slow:
+
+```text
+shadow reuse was near-perfect, so miss rate is not the limiter
+release fast path got larger, not smaller:
+  text baseline=71498
+  text candidate=76546
+  delta=5048 bytes
+h8_medium_malloc_class_inner:
+  0x445 -> 0x4ba
+h8_medium_run_free_local_scaffold:
+  0x111 -> 0x210
+h8_medium_set_active_run:
+  0xa0 -> 0xe8
+the added local_fast branch and per-run state outweigh the saved
+mark_empty / mark_live_on_alloc churn in the current medium mix
+the regression is broad across local, remote, and small rows, so this is
+not a single-row noise artifact
 ```
 
 Shadow counters:

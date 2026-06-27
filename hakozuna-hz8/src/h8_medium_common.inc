@@ -681,6 +681,9 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
                               &h8g.medium_active_switch_class_32k,
                               &h8g.medium_active_switch_class_64k);
     if (h8_medium_run_owned_by_ctx(old, ctx)) {
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+      h8_medium_local_fast_flush_locked(old);
+#endif
       h8_medium_debug_note_local_fast_flush(old, false);
       h8_medium_demote_active_empty_live(old);
       h8_medium_available_shadow_after_mask_change(old);

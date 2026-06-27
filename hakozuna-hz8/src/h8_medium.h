@@ -108,6 +108,9 @@ typedef struct H8MediumRun {
   pthread_mutex_t lock;
   uint64_t free_mask;
   uint64_t allocated_mask;
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+  uint64_t local_fast_mask;
+#endif
   uint8_t payload_state;
   bool resident_charge;
   bool active_live_empty_charge;
@@ -415,6 +418,89 @@ static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
   run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
 #endif
 }
+#if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
+static inline bool h8_medium_local_fast_take_active(H8MediumRun* run,
+                                                    size_t* slot_out) {
+  if (!run || run->local_fast_mask == 0u) {
+    return false;
+  }
+  uint64_t bit = run->local_fast_mask & (UINT64_C(0) - run->local_fast_mask);
+  size_t slot = (size_t)__builtin_ctzll(bit);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_debug_note_local_fast_alloc(run);
+#endif
+  run->local_fast_mask &= ~bit;
+#if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
+  atomic_store_explicit(&run->slot_state[slot], UINT32_C(1) << 30u,
+                        memory_order_release);
+#endif
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  return true;
+}
+
+static inline bool h8_medium_local_fast_store_active_free(H8MediumRun* run,
+                                                          size_t slot,
+                                                          uint64_t bit) {
+  if (!run || bit == 0u || (run->local_fast_mask & bit) != 0u) {
+    return false;
+  }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  h8_medium_debug_note_local_fast_eligible_free(run, bit);
+#endif
+  run->local_fast_mask |= bit;
+#if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
+  atomic_store_explicit(
+      &run->slot_state[slot],
+      (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u),
+      memory_order_release);
+#endif
+  return true;
+}
+
+static inline void h8_medium_local_fast_flush_locked(H8MediumRun* run) {
+  if (!run || run->local_fast_mask == 0u) {
+    return;
+  }
+  uint64_t mask = run->local_fast_mask;
+  run->local_fast_mask = 0u;
+  run->free_mask |= mask;
+  run->allocated_mask &= ~mask;
+#if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
+  while (mask) {
+    uint32_t slot = (uint32_t)__builtin_ctzll(mask);
+    atomic_store_explicit(
+        &run->slot_state[slot],
+        (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u),
+        memory_order_release);
+    mask &= mask - 1;
+  }
+#else
+  (void)mask;
+#endif
+}
+#else
+static inline bool h8_medium_local_fast_take_active(H8MediumRun* run,
+                                                    size_t* slot_out) {
+  (void)run;
+  (void)slot_out;
+  return false;
+}
+
+static inline bool h8_medium_local_fast_store_active_free(H8MediumRun* run,
+                                                          size_t slot,
+                                                          uint64_t bit) {
+  (void)run;
+  (void)slot;
+  (void)bit;
+  return false;
+}
+
+static inline void h8_medium_local_fast_flush_locked(H8MediumRun* run) {
+  (void)run;
+}
+#endif
 static inline void* h8_medium_run_alloc_local_hot(H8MediumRun* run) {
 #if defined(H8_MEDIUM_ENABLE_INLINE_OWNER_ALLOC) && \
     !defined(H8_ENABLE_DEBUG_STATS)

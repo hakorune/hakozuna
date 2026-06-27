@@ -1,4 +1,4 @@
-.PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
+.PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -61,6 +61,8 @@ bench-mediumavailable: $(ROOT)/h8_bench_mediumavailable
 
 bench-mediumdemand64: $(ROOT)/h8_bench_mediumdemand64
 
+bench-mediumlocalfasttier: $(ROOT)/h8_bench_mediumlocalfasttier
+
 bench-release: $(ROOT)/h8_bench_release
 
 bench-release-audit: $(ROOT)/h8_bench_release_audit
@@ -82,6 +84,8 @@ bench-release-mediumavailable: $(ROOT)/h8_bench_release_mediumavailable
 bench-release-mediumavailableinline: $(ROOT)/h8_bench_release_mediumavailableinline
 
 bench-release-mediumdemand64: $(ROOT)/h8_bench_release_mediumdemand64
+
+bench-release-mediumlocalfasttier: $(ROOT)/h8_bench_release_mediumlocalfasttier
 
 bench-release-mediumceiling-noslotstate: $(ROOT)/h8_bench_release_mediumceiling_noslotstate
 
@@ -213,6 +217,9 @@ $(ROOT)/h8_bench_mediumavailable: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPOR
 $(ROOT)/h8_bench_mediumdemand64: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_ENABLE_ACTIVE_MISS_DEMAND_COLLECT_64K -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_bench_mediumlocalfasttier: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_ENABLE_LOCAL_FAST_TIER -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_bench_release: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -245,6 +252,9 @@ $(ROOT)/h8_bench_release_mediumavailableinline: $(SRC) $(ROOT)/bench/h8_bench.c 
 
 $(ROOT)/h8_bench_release_mediumdemand64: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_ENABLE_ACTIVE_MISS_DEMAND_COLLECT_64K -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_release_mediumlocalfasttier: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_ENABLE_LOCAL_FAST_TIER -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_mediumceiling_noslotstate: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
