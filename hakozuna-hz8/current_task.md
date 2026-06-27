@@ -177,6 +177,8 @@ current lane:
   HZ8-v2 throughput lane:
     status:
       design only / not default behavior
+    record:
+      docs/HZ8_V2_HZ9_DESIGN.md
     reason:
       same-run matrix shows tcmalloc-class absolute throughput requires a
       larger architectural change than v1.1 micro-tuning

@@ -155,6 +155,9 @@ known weaknesses:
 V2 throughput lane seed:
 
 ```text
+record:
+  docs/HZ8_V2_HZ9_DESIGN.md
+
 LocalFastTier-v2:
   design goal is a material medium/main local gain by changing the owner-local
   fast path structure, not by adding one more v1.1 counter or branch tweak

@@ -222,7 +222,8 @@ do not reopen without new evidence:
 
 future lanes:
   SameRun positioning / public RC record
-  HZ8-v2 throughput architecture
+  HZ8-v2 throughput architecture:
+    docs/HZ8_V2_HZ9_DESIGN.md
   SizePolicy / rounded-byte policy as a separate lane
   ChunkArena / VMA and creation variance only with no-regression evidence
 ```
