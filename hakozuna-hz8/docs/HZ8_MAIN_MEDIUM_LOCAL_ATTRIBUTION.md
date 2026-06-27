@@ -212,12 +212,13 @@ MediumMallocInitFastPath-L1:
 
 ## Next V12 Local Lane
 
-The clean next step is not another remote protocol change.  Split the v12 local
-mechanics counters so 24K and 48K can be measured separately from the existing
-32K / 64K buckets.
+The clean next step was to split the v12 local mechanics counters so 24K and
+48K could be measured separately from the existing 32K / 64K buckets. That
+lane is now frozen after the later 24K / 48K attribution and the mark_live
+breakdown failed to expose a single material bucket.
 
 ```text
-MediumV12LocalMechanicsAttribution-L1
+MediumV12LocalMechanicsAttribution-L1: frozen
 ```
 
 Scope:
@@ -228,6 +229,9 @@ lazy128 unchanged
 owner queue unchanged
 remote protocol unchanged
 class map unchanged
+freeze reason:
+  no single remaining local bucket was clearly material enough to justify
+  another behavior split
 ```
 
 Counters to add:

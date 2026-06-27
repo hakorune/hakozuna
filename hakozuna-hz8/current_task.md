@@ -1479,7 +1479,7 @@ if optimizing medium/main local speed:
     decision:
       HOLD as opt-in evidence
       do not default because medium_r50 p25 regressed materially
-  MediumActiveHitLocalShapeAttribution-L1 is in progress:
+  MediumActiveHitLocalShapeAttribution-L1 is frozen:
     behavior change:
       none
     purpose:
@@ -1508,10 +1508,6 @@ if optimizing medium/main local speed:
       empty/live retention transition
     paired with existing:
       medium_alloc_path_cost
-    decision rule:
-      if one free/alloc bucket is clearly material, open a narrow behavior A/B
-      if no single bucket is material, freeze local micro-tuning and record the
-      remaining gap as safety/ownership/fail-closed contract cost
     latest fixed24 observation:
       active_alloc mark_live remains the largest bucket, but the sub-buckets
       are flat:
@@ -1520,6 +1516,10 @@ if optimizing medium/main local speed:
         lazy_shadow_ms ~= 0.43
       no single retention helper dominates enough to justify another behavior
       split on the current evidence
+    freeze decision:
+      local micro-tuning is closed for now
+      remaining gap is recorded as safety / ownership / fail-closed contract
+      cost
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:
