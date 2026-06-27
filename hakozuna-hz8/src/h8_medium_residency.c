@@ -420,15 +420,32 @@ void h8_medium_decommit_empty_owner_exit_locked(H8MediumRun* run) {
 }
 
 void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  uint64_t start = h8_medium_residency_now_ns();
+  uint64_t section_start = start;
+  H8_DEBUG_INC(medium_mark_live_call_count);
+#endif
   if (!run || run->allocated_mask != 0) {
     H8_DEBUG_INC(medium_alloc_mark_live_nonempty);
     return;
   }
   h8_medium_retention_debug_lock_acquire();
 #if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_mark_live_lock_ns,
+               (size_t)(h8_medium_residency_now_ns() - section_start));
+  section_start = h8_medium_residency_now_ns();
   h8_medium_retention_shadow_note_alloc(run);
+  H8_DEBUG_ADD(medium_mark_live_retention_shadow_ns,
+               (size_t)(h8_medium_residency_now_ns() - section_start));
+  section_start = h8_medium_residency_now_ns();
   h8_medium_warm_shadow_note_alloc(run);
+  H8_DEBUG_ADD(medium_mark_live_warm_shadow_ns,
+               (size_t)(h8_medium_residency_now_ns() - section_start));
+  section_start = h8_medium_residency_now_ns();
   h8_medium_lazy_purge_shadow_note_reuse(run);
+  H8_DEBUG_ADD(medium_mark_live_lazy_shadow_ns,
+               (size_t)(h8_medium_residency_now_ns() - section_start));
+  section_start = h8_medium_residency_now_ns();
 #endif
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     if (run->active_live_empty_charge) {
@@ -437,17 +454,36 @@ void h8_medium_mark_live_on_alloc(H8MediumRun* run) {
       H8_DEBUG_INC(medium_alloc_mark_live_live);
     }
     h8_medium_clear_active_live_empty(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_mark_live_live_ns,
+                 (size_t)(h8_medium_residency_now_ns() - section_start));
+    section_start = h8_medium_residency_now_ns();
+#endif
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
     H8_DEBUG_INC(medium_alloc_mark_live_resident);
     H8_DEBUG_INC(medium_empty_reactivate_count);
     h8_medium_release_empty_payload(run);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_mark_live_resident_ns,
+                 (size_t)(h8_medium_residency_now_ns() - section_start));
+    section_start = h8_medium_residency_now_ns();
+#endif
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED) {
     H8_DEBUG_INC(medium_alloc_mark_live_decommitted);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_ADD(medium_mark_live_decommitted_ns,
+                 (size_t)(h8_medium_residency_now_ns() - section_start));
+    section_start = h8_medium_residency_now_ns();
+#endif
   }
   run->payload_state = H8_MEDIUM_PAYLOAD_LIVE;
   h8_medium_retention_debug_lock_release();
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(medium_alloc_mark_live_ns,
+               (size_t)(h8_medium_residency_now_ns() - start));
+#endif
 }
 
 void h8_medium_mark_empty_locked(H8MediumRun* run) {

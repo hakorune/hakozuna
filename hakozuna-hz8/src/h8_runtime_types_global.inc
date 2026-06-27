@@ -231,6 +231,14 @@ typedef struct H8Global {
   atomic_size_t medium_active_alloc_mask_ns;
   atomic_size_t medium_active_alloc_slot_store_ns;
   atomic_size_t medium_active_alloc_ptr_ns;
+  atomic_size_t medium_mark_live_call_count;
+  atomic_size_t medium_mark_live_lock_ns;
+  atomic_size_t medium_mark_live_retention_shadow_ns;
+  atomic_size_t medium_mark_live_warm_shadow_ns;
+  atomic_size_t medium_mark_live_lazy_shadow_ns;
+  atomic_size_t medium_mark_live_live_ns;
+  atomic_size_t medium_mark_live_resident_ns;
+  atomic_size_t medium_mark_live_decommitted_ns;
   atomic_size_t medium_free_scaffold_count;
   atomic_size_t medium_free_decode_ns;
   atomic_size_t medium_free_state_ns;

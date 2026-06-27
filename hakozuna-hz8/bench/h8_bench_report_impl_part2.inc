@@ -97,6 +97,33 @@
              ? (double)debug.medium_active_alloc_ptr_ns /
                    (double)debug.medium_active_alloc_hit_count
              : 0.0);
+  printf("medium_mark_live_path_cost calls=%zu lock_ms=%.3f retention_shadow_ms=%.3f warm_shadow_ms=%.3f lazy_shadow_ms=%.3f total_ms=%.3f ns_per_call=[%.1f,%.1f,%.1f,%.1f,%.1f]\n",
+         debug.medium_mark_live_call_count,
+         debug.medium_mark_live_lock_ns / 1000000.0,
+         debug.medium_mark_live_retention_shadow_ns / 1000000.0,
+         debug.medium_mark_live_warm_shadow_ns / 1000000.0,
+         debug.medium_mark_live_lazy_shadow_ns / 1000000.0,
+         debug.medium_alloc_mark_live_ns / 1000000.0,
+         debug.medium_mark_live_call_count
+             ? (double)debug.medium_mark_live_lock_ns /
+                   (double)debug.medium_mark_live_call_count
+             : 0.0,
+         debug.medium_mark_live_call_count
+             ? (double)debug.medium_mark_live_retention_shadow_ns /
+                   (double)debug.medium_mark_live_call_count
+             : 0.0,
+         debug.medium_mark_live_call_count
+             ? (double)debug.medium_mark_live_warm_shadow_ns /
+                   (double)debug.medium_mark_live_call_count
+             : 0.0,
+         debug.medium_mark_live_call_count
+             ? (double)debug.medium_mark_live_lazy_shadow_ns /
+                   (double)debug.medium_mark_live_call_count
+             : 0.0,
+         debug.medium_mark_live_call_count
+             ? (double)debug.medium_alloc_mark_live_ns /
+                   (double)debug.medium_mark_live_call_count
+             : 0.0);
   printf("medium_free_path_cost scaffold=%zu decode_ms=%.3f state_ms=%.3f pending_ms=%.3f slot_store_ms=%.3f mask_ms=%.3f empty_ms=%.3f ns_per_scaffold=[%.1f,%.1f,%.1f,%.1f,%.1f,%.1f]\n",
          debug.medium_free_scaffold_count,
          debug.medium_free_decode_ns / 1000000.0,

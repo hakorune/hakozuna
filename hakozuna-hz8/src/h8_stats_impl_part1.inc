@@ -401,6 +401,22 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.medium_active_alloc_slot_store_ns, memory_order_acquire);
   out->medium_active_alloc_ptr_ns = atomic_load_explicit(
       &h8g.medium_active_alloc_ptr_ns, memory_order_acquire);
+  out->medium_mark_live_call_count = atomic_load_explicit(
+      &h8g.medium_mark_live_call_count, memory_order_acquire);
+  out->medium_mark_live_lock_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_lock_ns, memory_order_acquire);
+  out->medium_mark_live_retention_shadow_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_retention_shadow_ns, memory_order_acquire);
+  out->medium_mark_live_warm_shadow_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_warm_shadow_ns, memory_order_acquire);
+  out->medium_mark_live_lazy_shadow_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_lazy_shadow_ns, memory_order_acquire);
+  out->medium_mark_live_live_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_live_ns, memory_order_acquire);
+  out->medium_mark_live_resident_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_resident_ns, memory_order_acquire);
+  out->medium_mark_live_decommitted_ns = atomic_load_explicit(
+      &h8g.medium_mark_live_decommitted_ns, memory_order_acquire);
   out->medium_free_scaffold_count = atomic_load_explicit(
       &h8g.medium_free_scaffold_count, memory_order_acquire);
   out->medium_free_decode_ns = atomic_load_explicit(

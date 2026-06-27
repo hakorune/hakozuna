@@ -1487,13 +1487,18 @@ if optimizing medium/main local speed:
       active-empty charge elide HOLD
     added output:
       medium_active_alloc_path_cost
+      medium_mark_live_path_cost
       medium_free_path_cost
     active-hit buckets:
       precheck / ctz
+      mark_live input
       mark_live
       allocated/free mask mutation
       slot_state ALLOCATED store
       pointer generation
+    mark_live buckets:
+      retention lock
+      live / resident / decommitted transition
     free path buckets:
       decode
       allocated/free mask state check
@@ -1507,6 +1512,14 @@ if optimizing medium/main local speed:
       if one free/alloc bucket is clearly material, open a narrow behavior A/B
       if no single bucket is material, freeze local micro-tuning and record the
       remaining gap as safety/ownership/fail-closed contract cost
+    latest fixed24 observation:
+      active_alloc mark_live remains the largest bucket, but the sub-buckets
+      are flat:
+        retention_shadow_ms ~= 0.6
+        warm_shadow_ms ~= 0.55
+        lazy_shadow_ms ~= 0.43
+      no single retention helper dominates enough to justify another behavior
+      split on the current evidence
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:

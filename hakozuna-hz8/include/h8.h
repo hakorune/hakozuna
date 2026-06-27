@@ -252,6 +252,14 @@ typedef struct H8DebugStats {
   size_t medium_active_alloc_mask_ns;
   size_t medium_active_alloc_slot_store_ns;
   size_t medium_active_alloc_ptr_ns;
+  size_t medium_mark_live_call_count;
+  size_t medium_mark_live_lock_ns;
+  size_t medium_mark_live_retention_shadow_ns;
+  size_t medium_mark_live_warm_shadow_ns;
+  size_t medium_mark_live_lazy_shadow_ns;
+  size_t medium_mark_live_live_ns;
+  size_t medium_mark_live_resident_ns;
+  size_t medium_mark_live_decommitted_ns;
   size_t medium_free_scaffold_count;
   size_t medium_free_decode_ns;
   size_t medium_free_state_ns;
