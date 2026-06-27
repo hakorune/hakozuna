@@ -490,12 +490,94 @@ MediumRun-v1.1 remote-lane closeout:
     available-index promotion
     demand collect budget expansion
     32K demand collect expansion
-  next:
-    move to SizePolicy / geometry shadow before changing remote protocol again
+  follow-up:
+    MediumV12TwoSlotDecodeFastPath-L1 was the final narrow mechanics check
+    before closing this remote/local micro-tuning lane
+  closeout:
+    SameRun positioning / MediumRun-v1.1 RC record is captured in
+    docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+    keep SizePolicy as a separate future lane
+
+MediumV12TwoSlotDecodeFastPath-L1:
+  status:
+    tested and reverted as NO-GO
+  scope:
+    behavior-equivalent mechanics cleanup
+    keep q64-v12-48k2 class policy and lazy128 residency unchanged
+    keep owner lease / pending claim / qstate protocol unchanged
+  reason:
+    corrected pure LD_PRELOAD matrix shows RSS is strong, while v12 local rows
+    are slower than legacy64k2
+    24K and 48K are non-power-of-two two-slot classes, so their pointer
+    identity can use exact offset checks instead of modulo/divide
+  target:
+    24K / 48K valid slot offsets:
+      offset == 0
+      offset == slot_size
+    all other offsets remain INVALID / interior
+  gates:
+    smoke / safety / preload clean
+    no div/idiv on the 24K/48K two-slot decode path in release asm
+    medium/main rows decide whether this is a promoted fast path or only
+    code-shape cleanup
+  data:
+    quick:
+      bench_results/20260626T203547Z_medium_v12_twoslot_decode_fast_quick/
+    gate_batch1:
+      bench_results/20260626T203613Z_medium_v12_twoslot_decode_fast_gate1/
+    gate_batch2:
+      bench_results/20260626T203655Z_medium_v12_twoslot_decode_fast_gate2/
+  result:
+    exact offset decode removed the target div path, but release R10 batches
+    did not produce stable local gains and gate_batch2 regressed main_r50 /
+    main_r90
+    keep existing v12 multiply/divide decode in default
+  next local lane:
+    MediumV12LocalMechanicsAttribution-L1
+      class-specific 24K / 48K local-malloc, local-free, and reuse counters
+      keep the v12 class map and lazy128 contract unchanged
+
+MediumLocalContractCostCeiling-L1:
+  status:
+    implemented as unsafe measurement targets
+    HOLD as behavior
+  scope:
+    quantify remaining medium/main local contract-cost ceiling
+    default allocator behavior unchanged
+    keep small-v0, lazy128, owner queue, pending/qstate protocol unchanged
+  targets:
+    bench-release-mediumceiling-noslotstate:
+      skips local allocation slot_state publication
+      local-only unsafe ceiling; not valid for remote correctness rows
+    bench-release-mediumceiling-freepending:
+      skips same-owner local free pending check in release
+    bench-release-mediumceiling-combined:
+      stacks both ceilings as an upper bound
+  data:
+    bench_results/20260626T205005Z_medium_local_contract_ceiling_l1/
+  result:
+    medium_local0:
+      noslotstate about +4.0%
+      freepending flat
+      combined about +11.8%
+    main_local0:
+      noslotstate about +0.5% with weaker p25
+      freepending about -7.5%
+      combined about -4.8%
+    remote:
+      freepending improved medium_r50 about +15.1%
+      but regressed main_r50 about -16.0% and main_r90 about -12.4%
+  decision:
+    do not promote any ceiling target
+    remaining local gap has some medium-only removable ceiling, but no clean
+    cross-row bucket was identified
+    further throughput work needs a selective design that preserves main
+    remote rows and the slot_state/pending fail-closed contract
 
 MediumSizePolicy-v1.2-Shadow:
   status:
     implemented as attribution / shadow
+    HOLD as separate future lane
   scope:
     behavior unchanged
     keep small-v0 class map frozen

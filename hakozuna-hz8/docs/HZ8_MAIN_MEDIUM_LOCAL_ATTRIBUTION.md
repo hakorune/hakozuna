@@ -210,6 +210,125 @@ MediumMallocInitFastPath-L1:
   remove steady medium malloc pthread_once/init check if still present
 ```
 
+## Next V12 Local Lane
+
+The clean next step is not another remote protocol change.  Split the v12 local
+mechanics counters so 24K and 48K can be measured separately from the existing
+32K / 64K buckets.
+
+```text
+MediumV12LocalMechanicsAttribution-L1
+```
+
+Scope:
+
+```text
+behavior unchanged
+lazy128 unchanged
+owner queue unchanged
+remote protocol unchanged
+class map unchanged
+```
+
+Counters to add:
+
+```text
+medium_v12_malloc_class_24k
+medium_v12_malloc_class_48k
+medium_v12_run_reuse_active_class_24k
+medium_v12_run_reuse_active_class_48k
+medium_v12_run_reuse_owner_class_24k
+medium_v12_run_reuse_owner_class_48k
+medium_v12_local_free_class_24k
+medium_v12_local_free_class_48k
+```
+
+Interpretation:
+
+```text
+if 24K / 48K dominate the residual gap:
+  the next optimization is v12 mechanics, not remote tuning
+
+if 24K / 48K do not dominate:
+  keep the current v12 default and freeze the local lane
+```
+
+First narrow box:
+
+```text
+Medium24KLocalFreeDecodeFastPath-L1
+```
+
+Scope:
+
+```text
+24K local-free slot decode only
+leave 48K for the follow-up if 24K is not enough
+keep lazy128, owner queue, remote protocol, and class map frozen
+```
+
+Counter focus:
+
+```text
+medium_24k_local_free_decode_attempt
+medium_24k_local_free_decode_valid_slot0
+medium_24k_local_free_decode_valid_slot1
+medium_24k_local_free_decode_invalid
+medium_24k_local_free_decode_equiv_mismatch
+```
+
+Matrix row:
+
+```text
+fixed24_local0
+```
+
+Latest same-run snapshot:
+
+```text
+hz8 vs legacy64k2
+  medium_local0: 106.67M vs 117.11M
+  main_local0:   122.94M vs 137.52M
+
+debug counters
+  medium_local0: 24K=320345, 48K=639584
+  main_local0:   24K=599520, 48K=0
+```
+
+Interpretation:
+
+```text
+24K is present in both medium_local0 and main_local0, so it is the common
+mechanics bucket to attack next.
+
+48K is meaningful in medium_local0 but absent from main_local0, so it is a
+secondary residual bucket rather than the primary one.
+```
+
+Latest fixed24 snapshot:
+
+```text
+hz8 vs legacy64k2
+  fixed24_local0: 147.81M vs 123.63M
+
+debug counters
+  attempt=2400000
+  valid0=2400000
+  valid1=0
+  invalid=0
+  equiv_mismatch=0
+```
+
+Interpretation:
+
+```text
+the 24K-only row is now clearly faster than legacy64k2, so the narrow fast
+decode box is valid
+
+medium_local0 and main_local0 still trail, so 48K or broader local mechanics
+remain the follow-up bucket
+```
+
 ## Active-Hit Collapse A/B
 
 Record:

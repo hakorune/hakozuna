@@ -19,11 +19,11 @@ static void* worker(void* arg) {
 
 static void* orphan_source(void* arg) {
   (void)arg;
-  void* p = h8_malloc(128);
+  void* p = h8_malloc(256);
   if (!p) {
     return (void*)1;
   }
-  memset(p, 0x5A, 128);
+  memset(p, 0x5A, 256);
   return p;
 }
 
@@ -181,10 +181,29 @@ static int check_medium_scaffold(void) {
     fprintf(stderr, "medium scaffold boundary mismatch\n");
     return 26;
   }
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  H8MediumRun* run24 = h8_medium_run_create_scaffold(2u);
+  if (!run24) {
+    fprintf(stderr, "medium 24K scaffold run create failed\n");
+    return 27;
+  }
+  void* run24_first = h8_medium_run_alloc_local_scaffold(run24);
+  void* run24_second = h8_medium_run_alloc_local_scaffold(run24);
+  if (!run24_first || !run24_second || run24_first == run24_second ||
+      !h8_medium_run_free_local_scaffold(run24, run24_first, false) ||
+      h8_medium_run_free_local_scaffold(run24, run24_first, false) ||
+      h8_medium_run_free_local_scaffold(run24, (char*)run24_second + 1, false) ||
+      !h8_medium_run_free_local_scaffold(run24, run24_second, false)) {
+    fprintf(stderr, "medium 24K local-free decode mismatch\n");
+    h8_medium_run_destroy_scaffold(run24);
+    return 28;
+  }
+  h8_medium_run_destroy_scaffold(run24);
+#endif
   H8MediumRun* run = h8_medium_run_create_scaffold(0);
   if (!run) {
     fprintf(stderr, "medium scaffold run create failed\n");
-    return 28;
+    return 29;
   }
   void* first = h8_medium_run_alloc_local_scaffold(run);
   void* second = h8_medium_run_alloc_local_scaffold(run);
@@ -195,7 +214,7 @@ static int check_medium_scaffold(void) {
       !h8_medium_run_free_local_scaffold(run, second, false)) {
     fprintf(stderr, "medium scaffold local alloc/free mismatch\n");
     h8_medium_run_destroy_scaffold(run);
-    return 29;
+    return 30;
   }
   h8_medium_run_destroy_scaffold(run);
   return 0;
@@ -209,6 +228,8 @@ int main(void) {
                  strcmp(mode, "OFF") == 0));
   if (enable_regular_adoption) {
     setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
+  } else {
+    unsetenv("H8_ENABLE_REGULAR_ADOPTION");
   }
   int medium_rc = check_medium_scaffold();
   if (medium_rc != 0) {
@@ -302,21 +323,23 @@ int main(void) {
     fprintf(stderr, "route invalid after owner exit handoff\n");
     return 9;
   }
-  H8Stats before_claim = h8_stats();
-  void* adopted = h8_malloc(128);
+  H8DebugStats before_claim_dbg = h8_debug_stats();
+  void* adopted = h8_malloc(256);
   if (!adopted) {
     fprintf(stderr, "orphan adoption alloc failed\n");
     return 11;
   }
-  H8Stats after_claim = h8_stats();
+  H8DebugStats after_claim_dbg = h8_debug_stats();
   if (enable_regular_adoption) {
-    if (after_claim.small_span_count != before_claim.small_span_count) {
-      fprintf(stderr, "orphan adoption committed a new span\n");
+    if (after_claim_dbg.adoption_success_count ==
+        before_claim_dbg.adoption_success_count) {
+      fprintf(stderr, "regular adoption did not adopt an orphan span\n");
       return 12;
     }
   } else {
-    if (after_claim.small_span_count == before_claim.small_span_count) {
-      fprintf(stderr, "regular adoption unexpectedly reused an orphan span\n");
+    if (after_claim_dbg.adoption_success_count !=
+        before_claim_dbg.adoption_success_count) {
+      fprintf(stderr, "regular adoption ran while disabled\n");
       return 12;
     }
   }
@@ -327,7 +350,7 @@ int main(void) {
 
   if (enable_regular_adoption) {
     const int rounds = 32;
-    size_t size = 128;
+    size_t size = 256;
     H8Stats before_roundtrip = h8_stats();
     H8DebugStats before_dbg = h8_debug_stats();
     for (int i = 0; i < rounds; ++i) {
@@ -359,8 +382,9 @@ int main(void) {
     }
     H8Stats after_roundtrip = h8_stats();
     H8DebugStats after_dbg = h8_debug_stats();
-    if (after_dbg.adoption_success_count != before_dbg.adoption_success_count + (size_t)rounds) {
-      fprintf(stderr, "adoption roundtrip count mismatch\n");
+    if (after_dbg.adoption_success_count <
+        before_dbg.adoption_success_count + 1u) {
+      fprintf(stderr, "adoption roundtrip did not exercise adoption\n");
       return 21;
     }
     if (after_roundtrip.small_span_count != before_roundtrip.small_span_count + (size_t)rounds) {

@@ -12,6 +12,9 @@ small-v0:
 
 medium-v1 protocol/geometry:
   docs/HZ8_MEDIUM_RUN_V1_RC1.md
+
+medium-v1.1 current default:
+  docs/HZ8_MEDIUM_RUN_V1_1_RC.md
 ```
 
 Small-v0 behavior is frozen unless a hard safety issue appears.
@@ -250,6 +253,13 @@ latest local-leaf probe:
       main_local0 median 169.80M
     decision:
       keep as narrow code-shape cleanup
+
+smoke contract:
+  H8_SMOKE_REGULAR_ADOPTION now uses a dedicated 256-byte adoption class so the
+  adoption path is not masked by earlier realloc smoke allocations
+  smoke verifies adoption through adoption_success_count rather than span-count
+  reuse heuristics
+  default smoke and disabled smoke both pass
 
   latest default gate snapshot:
     data=bench_results/20260625T201421Z_medium_v1_gate/
@@ -602,12 +612,69 @@ latest local-leaf probe:
       available-index promotion
       demand collect budget expansion
       32K demand collect expansion
-    next lane:
-      MediumSizePolicy-v1.2-Shadow
+    follow-up:
+      MediumV12TwoSlotDecodeFastPath-L1 was the final narrow mechanics check
+      before freezing this lane
+    closeout:
+      SameRun positioning / MediumRun-v1.1 RC record is captured in
+      docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+
+  MediumV12TwoSlotDecodeFastPath-L1:
+    status:
+      tested and reverted as NO-GO
+    reason:
+      corrected pure LD_PRELOAD matrix shows RSS is strong; remaining weak
+      points are medium/main local throughput and medium/main remote
+      throughput
+      v12_48k2 is slower than legacy64k2 on local rows, so the v12-specific
+      24K/48K non-power-of-two mechanics are the narrowest removable bucket
+    latest_same_run_snapshot:
+      bench_results/hz8_v11_same_run_matrix_20260627T000248Z/
+      medium_local0:
+        hz8 106.67M ops/s vs legacy64k2 117.11M ops/s
+      main_local0:
+        hz8 122.94M ops/s vs legacy64k2 137.52M ops/s
+      attribution_debug:
+        medium_local0 v12 counters 24K=320345 48K=639584
+        main_local0 v12 counters 24K=599520 48K=0
+    scope:
+      keep small-v0 frozen
+      keep lazy128 residency default
+      keep owner lease / pending claim / qstate protocol frozen
+      keep class policy and run geometry unchanged
+      specialize only 24K/48K two-slot pointer decode
+    implementation target:
+      replace modulo/divide slot-index decode for non-p2 two-slot runs with
+      exact offset checks:
+        offset == 0
+        offset == slot_size
+      preserve interior pointer INVALID behavior
+    gates:
+      smoke / safety / preload clean
+      no div/idiv in 24K/48K slot decode in release asm
+      medium/main paired rows must show material improvement or the box is
+      recorded as code-shape cleanup only
+    data:
+      quick:
+        bench_results/20260626T203547Z_medium_v12_twoslot_decode_fast_quick/
+      gate_batch1:
+        bench_results/20260626T203613Z_medium_v12_twoslot_decode_fast_gate1/
+      gate_batch2:
+        bench_results/20260626T203655Z_medium_v12_twoslot_decode_fast_gate2/
+    result:
+      exact two-offset decode removed div from the 24K/48K two-slot path, but
+      paired release data did not show stable local gains and regressed
+      main_r50/main_r90 in the second R10 batch
+      do not promote; keep the existing multiply/divide decode shape
+    after:
+      treat remaining local gap as ownership / slot_state / fail-closed
+      contract cost unless a new, class-specific measurement identifies a
+      larger bucket
 
   MediumSizePolicy-v1.2-Shadow:
     status:
       implemented as attribution / shadow
+      HOLD as separate future lane
     scope:
       behavior unchanged
       add medium class-policy shadow for request / rounded / run pressure
@@ -647,6 +714,76 @@ latest local-leaf probe:
     purpose:
       decide whether the remaining medium/main gap is class geometry rather
       than remote protocol overhead
+
+  MediumLocalContractCostCeiling-L1:
+    status:
+      implemented as unsafe ceiling measurement targets
+    purpose:
+      quantify how much of the remaining medium/main local throughput gap is
+      removable mechanics versus the ownership / slot_state / pending /
+      fail-closed contract
+    scope:
+      measurement-only compile-time candidates
+      no default behavior promotion from unsafe variants
+      keep small-v0, lazy128, owner queue, pending/qstate protocol unchanged
+    first candidates:
+      alloc_no_slot_state_store:
+        owner-local active allocation skips the release slot_state publication
+        to estimate slot_state authority cost
+        local-only unsafe ceiling; do not use on remote/free correctness rows
+      free_pending_elide:
+        same-owner local free skips the pending bitmap check in release
+        to estimate local pending-visibility cost
+      combined:
+        stack both ceilings only to estimate upper bound
+    gates:
+      candidates are not correctness candidates
+      run only targeted release rows:
+        medium_local0
+        main_local0
+        medium_interleaved_r50
+        main_interleaved_r50
+        main_interleaved_r90
+      if every ceiling is below about 5%, freeze the local throughput lane
+      if a single ceiling is above about 10%, design a safe replacement for
+      that specific contract
+    data:
+      bench_results/20260626T205005Z_medium_local_contract_ceiling_l1/
+    result:
+      medium_local0:
+        baseline median 172.18M
+        noslotstate median 179.02M, about +4.0%
+        freepending median 171.71M, flat
+        combined median 192.41M, about +11.8%
+      main_local0:
+        baseline median 204.48M
+        noslotstate median 205.50M, about +0.5% with weaker p25
+        freepending median 189.09M, about -7.5%
+        combined median 194.65M, about -4.8%
+      medium_r50:
+        freepending median 32.33M vs 28.08M, about +15.1%
+      main_r50:
+        freepending median 33.30M vs 39.64M, about -16.0%
+      main_r90:
+        freepending median 23.95M vs 27.33M, about -12.4%
+    interpretation:
+      slot_state publication has only a small isolated medium-local ceiling
+      pending-check elision improves medium_r50 but regresses main remote rows
+      combined ceiling is medium-only and not transferable to mixed/main rows
+      no candidate is a safe behavior path as implemented
+    decision:
+      keep default unchanged
+      do not promote these targets
+      use them only as local contract-cost evidence
+      if continuing throughput work, require a more selective design that
+      preserves main_r50/main_r90 and remote correctness
+    artifacts:
+      bench-release-mediumceiling-noslotstate:
+        H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE
+      bench-release-mediumceiling-freepending:
+        H8_MEDIUM_LOCAL_FREE_PENDING_ELIDE
+      bench-release-mediumceiling-combined:
+        both ceiling macros
 
   MediumSizePolicy-v1.2-Shadow-48K2:
     status:
@@ -1285,6 +1422,23 @@ if optimizing medium/main local speed:
   MediumMarkLiveInline-L1 is confirmed:
     medium_i0 +10.8%, main_i0 +3.3%, medium_r50 flat after R10 x4,
     small_i0 -1.9% within quick gate
+  MediumV12LocalMechanicsAttribution-L1 is the next narrow lane:
+    split 24K / 48K local mechanics from the existing 8K / 16K / 32K / 64K
+    buckets before attempting any further behavior change
+    keep lazy128, owner queue, and remote protocol frozen
+  Medium24KLocalFreeDecodeFastPath-L1 is the first box in that lane:
+    attack 24K local-free slot decode only
+    leave 48K for the follow-up if 24K is not enough
+    latest fixed24 row:
+      bench_results/hz8_v11_same_run_matrix_20260627T015335Z/
+      fixed24_local0:
+        hz8 147.81M ops/s vs legacy64k2 123.63M ops/s
+      debug counters:
+        attempt=2400000 valid0=2400000 valid1=0 invalid=0 equiv_mismatch=0
+      interpretation:
+        24K-only row is now clearly faster than legacy64k2
+        medium_local0 / main_local0 still trail, so 48K or broader local
+        mechanics remain the follow-up bucket
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:
@@ -1776,6 +1930,14 @@ next measurement lanes:
     MediumActiveOwnerTokenInlineAudit-L1 remains NO-GO
     do not reintroduce broad owner-token inline; only active-hit-only code
     shape may be tested, and must be reverted if medium_r50 regresses
+
+source modularization:
+  h8_medium.c, h8_medium_remote.c, h8_stats.c, bench/h8_bench_report.c are
+  now wrapper entrypoints
+  large implementation bodies were moved into split include fragments
+  h8_runtime_types.h was trimmed after extracting the global runtime record
+  current source tree is being kept under the line-count ceiling by splitting
+  oversized implementation units before adding new behavior work
 
 if optimizing RSS / rounded bytes:
   upper48 remains evidence-only until frozen small gates are reworked

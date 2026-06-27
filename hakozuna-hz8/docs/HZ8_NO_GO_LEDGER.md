@@ -21,6 +21,23 @@ evidence changes the problem.  Keep this file short and decision-oriented.
 | Medium/large per-4KiB route registration | NO-GO | Recreates known remote-tail pressure from page-level registration. |
 | All sizes in v0 | NO-GO | Hides whether local small, remote small, or boundary safety caused a result. |
 
+## MediumRun-v1.1 Closed Candidates
+
+These are closed for the current MediumRun-v1.1 default unless a new material
+bucket appears.
+
+| Direction | Status | Reason |
+| --- | --- | --- |
+| Medium local free run cache | HOLD | Same-owner directory skip did not improve medium/main enough. |
+| Collector active refill hint | HOLD | Medium-r50 signal was small and main-r90 regressed. |
+| Owner available run index | HOLD | Exact available work-set removed owner-list discovery but did not improve medium-r50 enough. |
+| Owner-list allocation helper inline | HOLD | Helper call shape did not explain the medium-r50 residual. |
+| Active-miss demand collect expansion | NO-GO | 64K demand collect mechanism worked but release gain was about 1.4%; do not expand to budget 4 or 32K without new evidence. |
+| V12 24K/48K exact-offset decode | NO-GO | Removed the target div path, but release R10 batches did not show stable local gains and regressed main-r50/main-r90. |
+| Medium local contract ceiling targets | HOLD | Unsafe ceiling builds showed medium-only headroom, but noslotstate is not a correctness path and pending elision regressed main-r50/main-r90. |
+| Medium owner lease redesign | HOLD | Dedicated lease-word A/B was flat; lifetime complexity is not justified by current evidence. |
+| Broad medium collect cadence changes | NO-GO | Post-collect utility showed periodic collect is high-utility, not empty churn. |
+
 ## Design Budget
 
 Always-on global stats budget:

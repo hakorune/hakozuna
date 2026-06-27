@@ -61,8 +61,10 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
                (size_t)(h8_medium_slots_now_ns() - section_start));
   section_start = h8_medium_slots_now_ns();
 #endif
+#if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_alloc_slot_store_ns,
                (size_t)(h8_medium_slots_now_ns() - section_start));
@@ -85,6 +87,38 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
   uint64_t start = h8_medium_slots_now_ns();
 #endif
   size_t slot = 0;
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+  if (run && run->class_id == 2u) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+    H8_DEBUG_INC(medium_24k_local_free_decode_attempt);
+    size_t generic_slot = 0u;
+    bool generic_ok = h8_medium_slot_index_from_ptr_checked_fast(
+        run, ptr, &generic_slot);
+    bool fast_ok = h8_medium_24k_local_free_slot_index_fast(run, ptr, &slot);
+    if (fast_ok) {
+      if (slot == 0u) {
+        H8_DEBUG_INC(medium_24k_local_free_decode_valid_slot0);
+      } else if (slot == 1u) {
+        H8_DEBUG_INC(medium_24k_local_free_decode_valid_slot1);
+      } else {
+        H8_DEBUG_INC(medium_24k_local_free_decode_invalid);
+      }
+    } else {
+      H8_DEBUG_INC(medium_24k_local_free_decode_invalid);
+    }
+    if (fast_ok != generic_ok || (fast_ok && slot != generic_slot)) {
+      H8_DEBUG_INC(medium_24k_local_free_decode_equiv_mismatch);
+    }
+    if (!fast_ok) {
+      return false;
+    }
+#else
+    if (!h8_medium_24k_local_free_slot_index_fast(run, ptr, &slot)) {
+      return false;
+    }
+#endif
+  } else
+#endif
   if (!h8_medium_slot_index_from_ptr_checked_fast(run, ptr, &slot)) {
     return false;
   }

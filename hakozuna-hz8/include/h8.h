@@ -200,6 +200,8 @@ typedef struct H8DebugStats {
   size_t medium_malloc_class_16k;
   size_t medium_malloc_class_32k;
   size_t medium_malloc_class_64k;
+  size_t medium_malloc_class_24k;
+  size_t medium_malloc_class_48k;
   size_t medium_run_create_count;
   size_t medium_run_reuse_active_count;
   size_t medium_run_reuse_owner_list_count;
@@ -337,10 +339,14 @@ typedef struct H8DebugStats {
   size_t medium_run_reuse_active_class_16k;
   size_t medium_run_reuse_active_class_32k;
   size_t medium_run_reuse_active_class_64k;
+  size_t medium_run_reuse_active_class_24k;
+  size_t medium_run_reuse_active_class_48k;
   size_t medium_run_reuse_owner_class_8k;
   size_t medium_run_reuse_owner_class_16k;
   size_t medium_run_reuse_owner_class_32k;
   size_t medium_run_reuse_owner_class_64k;
+  size_t medium_run_reuse_owner_class_24k;
+  size_t medium_run_reuse_owner_class_48k;
   size_t medium_run_reuse_global_class_8k;
   size_t medium_run_reuse_global_class_16k;
   size_t medium_run_reuse_global_class_32k;
@@ -353,6 +359,13 @@ typedef struct H8DebugStats {
   size_t medium_local_free_class_16k;
   size_t medium_local_free_class_32k;
   size_t medium_local_free_class_64k;
+  size_t medium_local_free_class_24k;
+  size_t medium_local_free_class_48k;
+  size_t medium_24k_local_free_decode_attempt;
+  size_t medium_24k_local_free_decode_valid_slot0;
+  size_t medium_24k_local_free_decode_valid_slot1;
+  size_t medium_24k_local_free_decode_invalid;
+  size_t medium_24k_local_free_decode_equiv_mismatch;
   size_t medium_run_madvise_count;
   size_t medium_chunk_create_count;
   size_t medium_chunk_alloc_count;

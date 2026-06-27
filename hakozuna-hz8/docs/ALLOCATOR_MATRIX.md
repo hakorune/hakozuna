@@ -241,14 +241,23 @@ RC1 position:
 small-v0:
   soft-frozen as hz8-small-v0-rc1
 
-next:
-  SizePolicy-v1, then MediumRun-v1
+recorded:
+  MediumRun-v1.1 positioning / RC record:
+    docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+  remote owner-side micro-tuning is frozen unless a new material bucket appears
+  SizePolicy remains a separate future lane
 ```
 
 ### HZ8 v1.1 current matrix snapshot
 
 This snapshot compares the current MediumRun-v1.1 default after `lazy128` and
 `q64-v12-48k2` promotion.
+
+Positioning record:
+
+```text
+docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+```
 
 ```text
 primary data:

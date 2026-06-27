@@ -1,0 +1,15 @@
+#include "h8_internal.h"
+
+#include <string.h>
+
+void h8_debug_stats_snapshot(H8DebugStats* out) {
+#if !defined(H8_ENABLE_DEBUG_STATS)
+  memset(out, 0, sizeof(*out));
+  return;
+#else
+#include "h8_stats_impl_part1_body.inc"
+#include "h8_stats_impl_part2_body.inc"
+#endif
+}
+
+#include "h8_stats_query.inc"

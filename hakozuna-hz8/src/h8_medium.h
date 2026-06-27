@@ -256,6 +256,42 @@ static inline void* h8_medium_slot_ptr_known(const H8MediumRun* run,
 #endif
   return run->base + (slot << run->slot_shift);
 }
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+static inline bool h8_medium_24k_local_free_slot_index_fast(
+    const H8MediumRun* run, const void* ptr, size_t* slot_out) {
+  if (!run || !run->base || !ptr || run->class_id != 2u ||
+      run->slot_size != 24576u || run->slot_count != 2u) {
+    return false;
+  }
+  uintptr_t base = (uintptr_t)run->base;
+  uintptr_t addr = (uintptr_t)ptr;
+  if (addr < base) {
+    return false;
+  }
+  uintptr_t offset = addr - base;
+  if (offset == 0u) {
+    if (slot_out) {
+      *slot_out = 0u;
+    }
+    return true;
+  }
+  if (offset == (uintptr_t)run->slot_size) {
+    if (slot_out) {
+      *slot_out = 1u;
+    }
+    return true;
+  }
+  return false;
+}
+#else
+static inline bool h8_medium_24k_local_free_slot_index_fast(
+    const H8MediumRun* run, const void* ptr, size_t* slot_out) {
+  (void)run;
+  (void)ptr;
+  (void)slot_out;
+  return false;
+}
+#endif
 bool h8_medium_run_owned_by_ctx(const H8MediumRun* run,
                                 const H8ThreadCtx* ctx);
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -381,8 +417,10 @@ static inline void* h8_medium_run_alloc_local_hot(H8MediumRun* run) {
   h8_medium_mark_live_on_alloc_fast(run);
   run->free_mask &= ~bit;
   run->allocated_mask |= bit;
+#if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   atomic_store_explicit(&run->slot_state[slot], (UINT32_C(1) << 30u),
                         memory_order_release);
+#endif
   return h8_medium_slot_ptr_fast(run, slot);
 #else
   return h8_medium_run_alloc_local_scaffold(run);

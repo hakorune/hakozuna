@@ -418,6 +418,9 @@ lazy128 residency is the MediumRun-v1.1 default
 Current v1.1 allocator matrix snapshot:
 
 ```text
+positioning record:
+  docs/HZ8_MEDIUM_RUN_V1_1_RC.md
+
 primary:
   bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
 
@@ -457,7 +460,10 @@ weak:
   main_local0 still trails tcmalloc/system and is near HZ3
 
 next:
-  future work should target medium/main throughput lanes or size policy;
+  MediumV12TwoSlotDecodeFastPath-L1 was tested and reverted after remote row
+  regressions.
+  MediumRun-v1.1 remote/local micro-tuning is frozen for now; move to SameRun
+  positioning / RC record unless a new material bucket appears.
   do not reopen retention or remote protocol without a new material bucket
 ```
 
