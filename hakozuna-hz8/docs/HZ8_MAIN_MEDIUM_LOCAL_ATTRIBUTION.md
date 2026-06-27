@@ -363,10 +363,10 @@ The fixed48_local0 row and 48K slot1 / tail-smoke coverage remain useful for
 future local mechanics attribution.
 ```
 
-Implemented release behavior:
+Opt-in evidence:
 
 ```text
-MediumActiveEmptyChargeElide-L1
+MediumActiveEmptyChargeElide-L1: HOLD
 ```
 
 Observation:
@@ -381,37 +381,37 @@ reactivation path:
   medium:  alloc_live_active_empty=2399712 / 2400000
 ```
 
-Behavior:
+Candidate shape:
 
 ```text
+H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE
+
 skip active_live_empty_charge set/clear on the steady local active-empty loop
 keep debug charge accounting and counters unchanged
 keep owner exit / active replacement based on allocated_mask + payload_state
 ```
 
-Paired-to-74641877 R10 signal:
+R20 confirmation against 74641877:
 
 ```text
 candidate / baseline
-  main_local0:    1.106
-  medium_local0:  0.994
-  small_r90:      0.986
-  main_r90:       1.007
-  medium_r50:     0.999
+  main_local0:    median 0.998, p25 0.970
+  medium_local0:  median 1.001, p25 0.996
+  small_r90:      median 1.012, p25 0.971
+  main_r90:       median 1.025, p25 1.021
+  medium_r50:     median 0.984, p25 0.903
+  guard_local0:   median 1.205, p25 1.188
 ```
 
 Interpretation:
 
 ```text
-this is the strongest remaining local/main signal after 24K decode
+the candidate is useful evidence that active-empty accounting is a hot local
+bucket, but it is not defaultable: medium_r50 p25 regressed materially and
+main_local0 did not reproduce the initial gain.
 
-the release hot path no longer uses active_live_empty_charge as an authority.
-It is a debug/statistics charge; lifecycle recovery derives empty LIVE runs
-from allocated_mask and payload_state.
-
-promotion still needs a fresh alternating R20 confirmation and owner-exit/lazy
-drain checks, but the immediate paired rows keep small/remote within the 2%
-regression gate.
+Keep this as opt-in evidence only. The next lane should look for a narrower
+way to remove the local accounting cost without perturbing medium remote tails.
 ```
 
 ## Active-Hit Collapse A/B

@@ -1446,27 +1446,27 @@ if optimizing medium/main local speed:
     fixed48_local0 row remains for future local mechanics checks
     48K slot1 / tail-smoke coverage is kept
     do not default the 48K branch without a cleaner +5% bucket
-  MediumActiveEmptyChargeElide-L1 is implemented as the release default:
-    release builds skip active_live_empty_charge set/clear on the steady
-    active-empty-live loop
+  MediumActiveEmptyChargeElide-L1 is HOLD:
+    opt-in macro H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE skips
+    active_live_empty_charge set/clear on the steady active-empty-live loop
     debug builds keep the old charge accounting and counters
     owner exit / active replacement still use allocated_mask + payload_state
     to find empty LIVE runs, so the charge bit is not the only release
     lifecycle authority
-    paired-to-74641877 R10 signal:
-      main_local0 +10.6%
-      medium_local0 -0.6%
-      small_r90 -1.4%
-      main_r90 +0.7% on confirm R10
-      medium_r50 flat on confirm R10
+    initial R10 signal looked positive, but R20 confirmation did not promote:
+      main_local0 median 0.998, p25 0.970
+      medium_local0 median 1.001, p25 0.996
+      small_r90 median 1.012, p25 0.971
+      main_r90 median 1.025, p25 1.021
+      medium_r50 median 0.984, p25 0.903
+      guard_local0 median 1.205, p25 1.188
     release-candidate checks:
       normal smoke / preload-smoke must pass
       owner exit and active replacement must still hard-drain empty LIVE runs
       regular adoption remains covered by the normal debug smoke build
-    next gate:
-      fresh alternating R20 before promotion tag
-      small_interleaved_remote90 must stay within 2%
-      owner-exit/lazy charge drains must remain clean
+    decision:
+      HOLD as opt-in evidence
+      do not default because medium_r50 p25 regressed materially
   MediumActiveOwnerTokenInlineAudit-L1 was tested and reverted as NO-GO:
     asm target achieved, but medium_r50 regressed materially
   MediumPendingCheckInline-L1 is confirmed:
