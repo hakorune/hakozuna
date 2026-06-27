@@ -159,9 +159,12 @@ MediumActiveMissDemandCollect64K-L1:
   mechanism worked, but release medium_r50 gain was about 1.4%
 
 MediumV12TwoSlotDecodeFastPath-L1:
-  NO-GO
+  NO-GO as a broad 24K/48K specialization
   exact 24K/48K two-slot offset decode removed the target div path, but release
   R10 batches did not show stable local gains and regressed main_r50/main_r90
+  later narrow result:
+    24K local-free exact-offset decode is retained as default
+    48K local-free exact-offset decode is HOLD
 
 MediumLocalContractCostCeiling-L1:
   HOLD as behavior
@@ -209,7 +212,7 @@ do not reopen without new evidence:
   broad collect cadence
   available-index promotion
   demand collect expansion
-  v12 two-slot decode specialization
+  broad v12 24K/48K two-slot decode specialization
 
 future lanes:
   SameRun positioning / public RC record

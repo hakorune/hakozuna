@@ -33,7 +33,9 @@ bucket appears.
 | Owner available run index | HOLD | Exact available work-set removed owner-list discovery but did not improve medium-r50 enough. |
 | Owner-list allocation helper inline | HOLD | Helper call shape did not explain the medium-r50 residual. |
 | Active-miss demand collect expansion | NO-GO | 64K demand collect mechanism worked but release gain was about 1.4%; do not expand to budget 4 or 32K without new evidence. |
-| V12 24K/48K exact-offset decode | NO-GO | Removed the target div path, but release R10 batches did not show stable local gains and regressed main-r50/main-r90. |
+| Broad V12 24K/48K exact-offset decode | NO-GO | Removed the target div path, but release R10 batches did not show stable local gains and regressed main-r50/main-r90. Narrow 24K local-free decode is retained separately. |
+| V12 48K local-free exact-offset decode | HOLD | Fixed48 release moved only about +1%, below the +5% mechanism gate; keep the row and slot1/tail smoke coverage as evidence. |
+| Medium active-empty charge elide | HOLD | Opt-in evidence only; R20 did not reproduce the local win and medium-r50 p25 regressed materially. |
 | Medium local contract ceiling targets | HOLD | Unsafe ceiling builds showed medium-only headroom, but noslotstate is not a correctness path and pending elision regressed main-r50/main-r90. |
 | Medium owner lease redesign | HOLD | Dedicated lease-word A/B was flat; lifetime complexity is not justified by current evidence. |
 | Broad medium collect cadence changes | NO-GO | Post-collect utility showed periodic collect is high-utility, not empty churn. |

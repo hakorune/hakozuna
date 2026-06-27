@@ -491,8 +491,8 @@ MediumRun-v1.1 remote-lane closeout:
     demand collect budget expansion
     32K demand collect expansion
   follow-up:
-    MediumV12TwoSlotDecodeFastPath-L1 was the final narrow mechanics check
-    before closing this remote/local micro-tuning lane
+    the broad MediumV12TwoSlotDecodeFastPath-L1 was the final remote/local
+    mechanics check before closing this lane
   closeout:
     SameRun positioning / MediumRun-v1.1 RC record is captured in
     docs/HZ8_MEDIUM_RUN_V1_1_RC.md
@@ -500,7 +500,7 @@ MediumRun-v1.1 remote-lane closeout:
 
 MediumV12TwoSlotDecodeFastPath-L1:
   status:
-    tested and reverted as NO-GO
+    tested and reverted as broad NO-GO
   scope:
     behavior-equivalent mechanics cleanup
     keep q64-v12-48k2 class policy and lazy128 residency unchanged
@@ -508,8 +508,9 @@ MediumV12TwoSlotDecodeFastPath-L1:
   reason:
     corrected pure LD_PRELOAD matrix shows RSS is strong, while v12 local rows
     are slower than legacy64k2
-    24K and 48K are non-power-of-two two-slot classes, so their pointer
-    identity can use exact offset checks instead of modulo/divide
+    24K and 48K are non-power-of-two two-slot classes, so a broad pointer
+    identity specialization can use exact offset checks instead of
+    modulo/divide
   target:
     24K / 48K valid slot offsets:
       offset == 0
@@ -517,7 +518,7 @@ MediumV12TwoSlotDecodeFastPath-L1:
     all other offsets remain INVALID / interior
   gates:
     smoke / safety / preload clean
-    no div/idiv on the 24K/48K two-slot decode path in release asm
+    no div/idiv on the broad 24K/48K two-slot decode path in release asm
     medium/main rows decide whether this is a promoted fast path or only
     code-shape cleanup
   data:
@@ -531,7 +532,12 @@ MediumV12TwoSlotDecodeFastPath-L1:
     exact offset decode removed the target div path, but release R10 batches
     did not produce stable local gains and gate_batch2 regressed main_r50 /
     main_r90
-    keep existing v12 multiply/divide decode in default
+    do not promote this broad shape
+    later narrow result:
+      24K local-free exact-offset decode is retained as default
+      48K local-free exact-offset decode is HOLD
+      remote publish / route / usable_size keep the generic exact non-p2
+      decode shape
   next local lane:
     MediumV12LocalMechanicsAttribution-L1
       class-specific 24K / 48K local-malloc, local-free, and reuse counters

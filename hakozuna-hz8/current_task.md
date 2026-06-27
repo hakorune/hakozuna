@@ -47,7 +47,8 @@ medium identity:
   direct registry
   64KiB quantum directory
   power-of-two slot decode for p2 classes
-  exact multiply/divide slot decode for 24K / 48K classes
+  24K local-free uses exact two-offset decode
+  remote/route/usable_size and 48K still use the generic exact non-p2 decode
   interior pointers INVALID
 
 medium residency:
@@ -75,6 +76,12 @@ medium remote:
 ## Promoted Post-RC1 Local Shape
 
 ```text
+Medium24KLocalFreeDecodeFastPath-L1:
+  default
+  24K same-owner local-free uses exact two-offset decode
+  remote publish / route / usable_size remain on the generic exact non-p2
+  decode path
+
 MediumActiveHitValidationCollapse-L1:
   default
 
@@ -613,15 +620,15 @@ smoke contract:
       demand collect budget expansion
       32K demand collect expansion
     follow-up:
-      MediumV12TwoSlotDecodeFastPath-L1 was the final narrow mechanics check
-      before freezing this lane
+      the broad MediumV12TwoSlotDecodeFastPath-L1 was the final remote/local
+      mechanics check before freezing this lane
     closeout:
       SameRun positioning / MediumRun-v1.1 RC record is captured in
       docs/HZ8_MEDIUM_RUN_V1_1_RC.md
 
   MediumV12TwoSlotDecodeFastPath-L1:
     status:
-      tested and reverted as NO-GO
+      tested and reverted as broad NO-GO
     reason:
       corrected pure LD_PRELOAD matrix shows RSS is strong; remaining weak
       points are medium/main local throughput and medium/main remote
@@ -642,7 +649,7 @@ smoke contract:
       keep lazy128 residency default
       keep owner lease / pending claim / qstate protocol frozen
       keep class policy and run geometry unchanged
-      specialize only 24K/48K two-slot pointer decode
+      specialize 24K/48K two-slot pointer decode broadly
     implementation target:
       replace modulo/divide slot-index decode for non-p2 two-slot runs with
       exact offset checks:
@@ -665,7 +672,12 @@ smoke contract:
       exact two-offset decode removed div from the 24K/48K two-slot path, but
       paired release data did not show stable local gains and regressed
       main_r50/main_r90 in the second R10 batch
-      do not promote; keep the existing multiply/divide decode shape
+      do not promote this broad shape
+      later narrow result:
+        24K local-free exact-offset decode is retained as default
+        48K local-free exact-offset decode is HOLD
+        remote publish / route / usable_size keep the generic exact non-p2
+        decode shape
     after:
       treat remaining local gap as ownership / slot_state / fail-closed
       contract cost unless a new, class-specific measurement identifies a

@@ -93,7 +93,8 @@ run geometry:
 identity:
   64KiB quantum directory
   power-of-two slot decode for p2 classes
-  exact multiply/divide slot decode for 24K / 48K classes
+  24K local-free exact two-offset decode
+  generic exact non-p2 decode for 48K and for remote/route/usable_size paths
 
 legacy comparison:
   q64-run64k2 remains available through medium64k2 build targets
@@ -460,8 +461,10 @@ weak:
   main_local0 still trails tcmalloc/system and is near HZ3
 
 next:
-  MediumV12TwoSlotDecodeFastPath-L1 was tested and reverted after remote row
-  regressions.
+  Broad MediumV12TwoSlotDecodeFastPath-L1 was tested and reverted after remote
+  row regressions.
+  Narrow 24K local-free exact-offset decode is retained as default; the 48K
+  local-free variant is HOLD.
   MediumRun-v1.1 remote/local micro-tuning is frozen for now; move to SameRun
   positioning / RC record unless a new material bucket appears.
   do not reopen retention or remote protocol without a new material bucket
