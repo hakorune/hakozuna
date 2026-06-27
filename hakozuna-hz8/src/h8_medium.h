@@ -377,13 +377,8 @@ void h8_medium_debug_discard_collect_credit(H8MediumRun* run);
 static inline void h8_medium_note_active_live_empty_fast(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   h8_medium_note_active_live_empty(run);
-#elif defined(H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE)
-  (void)run;
 #else
-  if (!run || run->active_live_empty_charge) {
-    return;
-  }
-  run->active_live_empty_charge = true;
+  (void)run;
 #endif
 }
 static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
@@ -394,11 +389,7 @@ static inline void h8_medium_mark_live_on_alloc_fast(H8MediumRun* run) {
     return;
   }
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
-#if defined(H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE)
     return;
-#else
-    run->active_live_empty_charge = false;
-#endif
   } else if (run->payload_state == H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT) {
     h8_medium_release_empty_payload(run);
   }

@@ -363,7 +363,7 @@ The fixed48_local0 row and 48K slot1 / tail-smoke coverage remain useful for
 future local mechanics attribution.
 ```
 
-Current candidate:
+Implemented release behavior:
 
 ```text
 MediumActiveEmptyChargeElide-L1
@@ -381,28 +381,23 @@ reactivation path:
   medium:  alloc_live_active_empty=2399712 / 2400000
 ```
 
-Candidate shape:
+Behavior:
 
 ```text
-release-only H8_MEDIUM_ELIDE_ACTIVE_EMPTY_CHARGE
-
 skip active_live_empty_charge set/clear on the steady local active-empty loop
-keep debug behavior unchanged
+keep debug charge accounting and counters unchanged
 keep owner exit / active replacement based on allocated_mask + payload_state
 ```
 
-Quick release R10 signal:
+Paired-to-74641877 R10 signal:
 
 ```text
 candidate / baseline
-  fixed24_local0: 0.971
-  fixed48_local0: 1.026
-  main_local0:    1.170
-  medium_local0:  1.021
-  guard_local0:   1.080
-  small_r90:      0.978
-  main_r90:       1.086
-  medium_r50:     0.993
+  main_local0:    1.106
+  medium_local0:  0.994
+  small_r90:      0.986
+  main_r90:       1.007
+  medium_r50:     0.999
 ```
 
 Interpretation:
@@ -410,8 +405,13 @@ Interpretation:
 ```text
 this is the strongest remaining local/main signal after 24K decode
 
-promotion is still HOLD until small_interleaved_remote90 reproduces within the
-2% regression gate and owner-exit/lazy drain checks remain clean
+the release hot path no longer uses active_live_empty_charge as an authority.
+It is a debug/statistics charge; lifecycle recovery derives empty LIVE runs
+from allocated_mask and payload_state.
+
+promotion still needs a fresh alternating R20 confirmation and owner-exit/lazy
+drain checks, but the immediate paired rows keep small/remote within the 2%
+regression gate.
 ```
 
 ## Active-Hit Collapse A/B
