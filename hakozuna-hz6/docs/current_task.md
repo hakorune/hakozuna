@@ -71,6 +71,12 @@ Runners:
 ## Latest Evidence
 
 ```text
+Latest Windows rerun:
+  20260629 Larson paper runner capture / rc parsing is fixed. HZ6 appcap
+  rows now report clean exits again, and the strongest Windows Larson row in
+  the rerun is `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and
+  `2,250,008 KB` peak RSS.
+
 Archived profile/control repeats:
   profile_frontier/broad_guard/realloc/calloc raws before 20260616_060000 are
   summarized in HZ6_UBUNTU_PRELOAD_LANES.md and archive snapshots.
@@ -147,4 +153,7 @@ Default no-go/control-only without substantially different evidence:
    `mixed_ws16384` and `midpage_ws16384`, while normal guard `120345` keeps it
    out of broad default. Plus remains stronger on `small_ws16384`.
 8. Do not reopen cold-retire/cold-purge, active-map widening, page-kind/free-order tables, packed metadata, or route inline work without new diagnostics.
+9. Keep the Windows Larson runner capture / rc fix in place; treat the latest
+   appcap rerun as the current clean baseline for HZ6 Windows throughput
+   comparisons.
 ```

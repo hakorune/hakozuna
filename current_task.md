@@ -20,6 +20,8 @@ Current strength:
   HZ6 is strongest as a speed/RSS balance allocator.
   Ubuntu LD_PRELOAD malloc_trim support recovers quiescent current RSS well.
   Peak RSS is still mostly touched MidPage payload residency.
+  Latest Windows Larson remeasure now runs clean after runner capture/rc parsing
+  fixes; HZ6 ownerlocality-speed is the current strongest Windows Larson lane.
 ```
 
 ## Read First
