@@ -3,14 +3,15 @@
 Status:
 
 ```text
-protocol / geometry RC candidate
+protocol / geometry RC summary
 4097..65536 routes through medium runs
-retention-stability remains v1.1 work
+v1.1 balanced default is frozen
+v2 throughput work is design/evidence only
 ```
 
 ## Purpose
 
-MediumRun-v1 exists to make these rows meaningful:
+MediumRun-v1 keeps the medium range explicit so these rows stay meaningful:
 
 ```text
 main_r0
@@ -32,7 +33,7 @@ state:
   frozen small-v0 / rc1 default
 ```
 
-MediumRun does not replace the small path.  It handles requests above the small
+MediumRun does not replace the small path. It handles requests above the small
 boundary without falling directly to the platform allocator.
 
 ## Range
@@ -48,34 +49,14 @@ large / direct:
   >65536
 ```
 
-The conservative upper bound keeps MediumRun focused on ownership, routing,
-remote free, and RSS pressure without huge allocation policy.
+The upper bound keeps MediumRun focused on ownership, routing, remote free,
+and RSS pressure rather than huge-allocation policy.
 
 ## Geometry
 
 MediumRun uses run-sized payload mappings rather than fixed 64KiB small spans.
 
-Shape:
-
-```text
-run payload:
-  power-of-two page multiple
-
-run slot size:
-  rounded request size
-
-slot count:
-  run_payload_size / slot_size
-
-metadata:
-  outside payload
-```
-
-The final size table remains a policy boundary.  The current default uses the
-v12 48K2 medium table, while preserving the same owner queue, pending bitmap,
-qstate, and quantum-directory contracts.
-
-Current recorded default:
+Current default:
 
 ```text
 class map:
@@ -100,862 +81,97 @@ legacy comparison:
   q64-run64k2 remains available through medium64k2 build targets
   directory capacity: 65536 quanta
   per-run mmap remains the default
-
-residency:
-  empty run resident retention uses a fixed budget
-  v1.1 candidate lazy128 persistent reservation:
-    128MiB lazy reservation cap
-    owner-attached only
-    allocation does not release the reservation
-    owner detach / exit / destroy release it
-    promoted as default after longer fresh alternating gates
-  TLS active empty runs may stay LIVE without budget charge
-  owner-thread collect may keep the current active empty run LIVE
-  owner exit is the hard drain point for retained and active-live payload
-```
-
-Current residency weakness:
-
-```text
-problem:
-  global empty-resident budget is first-come first-served
-  it does not know which owner/class/run is likely to be reused soon
-
-observed failure mode:
-  cold empty runs can occupy the budget
-  recently used non-active empty run gets budget reject
-  the run is MADV_DONTNEED'ed
-  the same owner soon reuses it and refaults pages
-
-evidence:
-  bench_results/medium_r50_fault_source_20260624T223112Z/
-  worst run:
-    budget_reject ~= 102k
-    madvise ~= 103k
-    madvise_ms ~= 1.88s
-```
-
-Warm-set shadow:
-
-```text
-MediumOwnerClassWarmSetShadow-L1:
-  behavior unchanged
-  debug-only virtual warm sets per owner/class
-  N=1 and N=2 MRU models are maintained simultaneously
-
-reported as:
-  medium_warm_shadow
-
-fields:
-  warm1_install / warm1_replace / warm1_hit / warm1_avoid_reject
-  warm2_install / warm2_replace / warm2_hit / warm2_avoid_reject
-  reuse_distance=[active,warm_mru,warm_second,miss]
-
-promotion decision:
-  this shadow is admission-side only
-  it does not simulate the future cost of the run evicted from the warm set
-  do not use it alone to select depth
-```
-
-Shadow result:
-
-```text
-data:
-  bench_results/medium_warm_shadow_20260624T225728Z/
-
-debug/audit medium r50:
-  30 fresh-process direct runs
-
-outliers:
-  3 / 30 high-fault runs
-  max minor_faults 130,712
-  max budget_reject 13,393
-
-N=1:
-  warm1_avoid_reject == budget_reject in every outlier
-
-N=2:
-  warm2_avoid_reject == budget_reject in every outlier
-  warm2_hit is about 2x warm1_hit
-
-Depth 1 behavior trial:
-  data=bench_results/medium_warm_behavior_20260624T231837Z/
-  reverted as NO-GO
-
-  outliers:
-    5 / 30
-    max minor_faults 754,494
-    max budget_reject 91,436
-
-  diagnosis:
-    protecting only the current MRU run moves churn to the evicted previous
-    warm run when overflow budget is full
-
-next behavior:
-  do not promote depth 1
-  do not implement raw depth 2 directly
-  first run a causal shadow that accounts for victim-side future reuse
-```
-
-Retention-stability shadow:
-
-```text
-MediumRetentionCausalStackShadow-L2:
-  implemented; release behavior unchanged
-
-  output:
-    medium_retention_causal
-
-  result:
-    N0 decommit matched actual madvise count
-    N1..N4 were post-hoc filters, not exact counterfactual policies
-
-  decision: raw depth2/3/4 MRU HOLD; exact-cap simulation first
-```
-
-Next box:
-
-```text
-MediumRetentionExactCap2QShadow-L3:
-  implemented; release behavior unchanged
-
-  models:
-    M0 current budget, M1/M2 second-touch 2Q, Mclock probation CLOCK
-    each tracks resident state, byte charge, victim selection, and refault
-
-  acceptance required:
-    M0 budget_reject/decommit/resident bytes/peak/ghost reuse match actual
-    per-event decision mismatch is zero
-
-  behavior promotion:
-    choose one behavior only if exact-cap M1/M2/Mclock predicts material
-    outlier reduction inside the current retention cap
-
-  R30 result:
-    M0 aggregate close, but per-event mismatch nonzero
-    l3_mismatch sum 68,171 across 9/30 runs
-    candidate predictions not accepted
-
-  next:
-    serialized debug retention or event-log replay before any 2Q behavior
-    require M0 per-event mismatch == 0
-
-MediumRetentionSerializedDebugShadow-L1:
-  implemented after L3 mismatch
-  release behavior unchanged
-  debug-only lock serializes actual resident budget transition + L3 model
-  quick medium r50 and direct debug R30 produced l3_mismatch = 0
-  R30 data:
-    bench_results/medium_retention_exactcap_victim_l3_20260625T025332Z/
-  decision:
-    M0 acceptance closed
-    M1/M2/Mclock benefit not material
-    2Q behavior remains HOLD
-
-MediumOwnerClass2QRetention-L1 direct behavior attempt:
-  tried after exact-cap shadow as a narrow runtime 2Q/probation policy
-
-  result:
-    release medium r50 quick did not complete in practical time
-    O(1) probation unlink removed the obvious list-walk tax but the row still
-    exceeded 60s for a shortened R3 probe
-
-  decision:
-    NO-GO in this shape
-    reverted before commit
-    do not retry raw runtime 2Q without a cheaper event path or stronger
-    counterfactual benefit
-```
-
-Budget-reject MADV_FREE evidence:
-
-```text
-MediumBudgetRejectMadvFreeEvidence-L1:
-  implemented as build-time evidence only
-  default behavior remains MADV_DONTNEED
-
-  build:
-    make bench-release-mediummadvfree preload-mediummadvfree
-    make medium-retention-closeout-madvfree
-
-  data:
-    bench_results/medium_madvfree_evidence_20260625T085006Z/
-
-  result:
-    direct outliers 0/30
-    preload outliers 0/30
-    direct median 28.48M
-    preload median 29.16M
-    direct max minor faults 32,148
-    preload max minor faults 23,255
-
-  tradeoff:
-    peak RSS can rise materially
-    direct max observed peak about 132MiB
-    preload max observed peak about 96MiB
-    post RSS still returned to about 3.5MiB..4.4MiB
-
-  decision:
-    useful evidence that budget-reject DONTNEED/refault drives the outlier
-    not a default policy because immediate RSS behavior changes materially
-```
-
-Bounded lazy purge evidence:
-
-```text
-MediumBudgetRejectLazyPurge-L1:
-  implemented as build-time candidate only
-  default behavior remains RC1 unless promotion gates pass
-
-  build:
-    make bench-release-mediumlazy preload-mediumlazy
-    make medium-retention-closeout-lazy
-
-  data:
-    16MiB:
-      bench_results/medium_lazy_closeout_20260625T102457Z/
-    64MiB:
-      bench_results/medium_lazy64_closeout_20260625T102543Z/
-      bench_results/medium_lazy64_repeat_20260625T102617Z/
-    128MiB:
-      bench_results/medium_lazy128_closeout_20260625T102649Z/
-
-  result:
-    16MiB:
-      direct outliers 3/30
-      preload outliers 2/30
-      NO-GO
-    64MiB:
-      direct outliers 0/30 in both R30 batches
-      preload outliers 2/30 then 1/30
-      HOLD
-    128MiB:
-      direct outliers 0/30
-      preload outliers 0/30
-      direct max minor faults 17,134
-      preload max minor faults 12,771
-      post RSS remained near RC1
-
-  decision:
-    128MiB fixed-cap lazy purge is a promotion candidate
-    it is preferable to MADV_FREE if it keeps post/peak RSS bounded while
-    removing the refault outliers
-    still requires full paired main/medium/small gates before defaulting
-
-  paired gate:
-    data:
-      bench_results/20260625T102900Z_lazy128_medium_chunk_paired_gate/
-      bench_results/20260625T103100Z_lazy128_small_repeat/
-      bench_results/20260625T103100Z_lazy128_small_i0_repeat/
-    result:
-      medium r50 ratio 0.992
-      main r90 ratio 1.020
-      small remote90 ratio 1.153
-      small local targeted repeats did not reproduce the initial noisy wall
-      median regression
-    decision:
-      lazy128 was the strongest stable-default candidate
-      this was superseded by longer fresh alternating gates
-
-  fresh repeat:
-    data:
-      bench_results/20260625T121546Z_medium_chunk_paired_gate/
-      bench_results/medium_lazy128_repeat_20260625T121557Z/
-    result:
-      medium r50 ratio 1.037
-      main r90 ratio 1.018
-      small local ratio 1.048
-      small remote90 ratio 1.016
-      direct/preload R30 outliers 0/30 and 0/30
-    decision:
-      lazy128 passed this repeat batch
-      later paired R10 batches did not clear relative throughput, so
-      default promotion remains HOLD
-
-  semantic closure:
-    data:
-      bench_results/medium_lazy128_semantic_closeout_20260625T160444Z/
-      bench_results/20260625T160436Z_medium_chunk_paired_gate/
-      bench_results/20260625T160516Z_medium_chunk_paired_gate/
-    contract:
-      lazy reservation persists across allocation
-      lazy reservation is owner-attached only
-      detach / owner exit / destroy release the charge
-      lazy reservation and normal resident charge are mutually exclusive
-    result:
-      direct/preload R30 outliers 0/30 and 0/30
-      paired medium r50 ratios 0.969 and 0.978
-      paired small remote90 ratios 0.967 and 0.991
-    decision:
-      correct semantic closure is implemented
-      default promotion remains HOLD on the existing 0.98 paired gate
-```
-
-Likely behavior candidate after exact-cap shadow:
-
-```text
-MediumOwnerClassProtected2Q-L1:
-  ACTIVE_LIVE current active run
-  PROTECTED reused owner/class run
-  PROBATION first-empty or weak-reuse run
-  DECOMMITTED no resident charge
-
-policy:
-  first empty enters PROBATION; second-touch may promote to PROTECTED
-  keep current effective cap, about 84MiB
-
-status:
-  design reference only
-  not a next implementation target after the direct behavior NO-GO
-```
-
-MediumRun-v1 RC stance:
-
-```text
-protocol/geometry/lifecycle RC can proceed
-lazy128 residency is the MediumRun-v1.1 default
-```
-
-Current v1.1 allocator matrix snapshot:
-
-```text
-positioning record:
-  docs/HZ8_MEDIUM_RUN_V1_1_RC.md
-
-primary:
-  bench_results/hz8_v11_same_run_matrix_20260626T193636Z/
-
-artifact snapshot:
-  bench_results/hz8_v11_same_run_matrix_20260626T192109Z/
-
-previous direct API snapshot:
-  bench_results/hz8_v11_same_run_matrix_20260626T150310Z/
-
-phase stress:
-  bench_results/hz8_v11_same_run_matrix_20260626T150540Z/
-
-runner:
-  scripts/run_hz8_v11_same_run_matrix.sh
-
-current runner:
-  HZ8PreloadReallocCompat-L1 closes the realloc preload compatibility gap;
-  the current matrix uses LD_PRELOAD for HZ8 and hz8_legacy64k2 as well
-  MatrixHarnessControlRSS-L1 avoids counting matrix control vectors as
-  allocator post-RSS by growing inbox vectors and sampling after teardown
-```
-
-Interpretation:
-
-```text
-keep:
-  q64-v12-48k2 geometry
-  lazy128 residency
-
-strong:
-  main_r90 beats legacy64k2/system and is close to mimalloc
-  medium/main post RSS remains lower than tcmalloc/HZ3/HZ4/mimalloc in
-  remote rows
-
-weak:
-  medium_local0 and medium_interleaved_r50 still trail tcmalloc/HZ3
-  main_local0 still trails tcmalloc/system and is near HZ3
-
-next:
-  Broad MediumV12TwoSlotDecodeFastPath-L1 was tested and reverted after remote
-  row regressions.
-  Narrow 24K local-free exact-offset decode is retained as default; the 48K
-  local-free variant is HOLD.
-  MediumRun-v1.1 remote/local micro-tuning is frozen for now; move to SameRun
-  positioning / RC record unless a new material bucket appears.
-  do not reopen retention or remote protocol without a new material bucket
-```
-
-Recorded candidate outcomes:
-
-```text
-64K two-slot candidate:
-  128KiB run / 2 slots for 64K class
-  medium r50 improved materially
-  promoted with budget16 after order-rotated frozen small reruns
-  former default geometry; retained as legacy comparison
-
-chunk carve candidate:
-  build-time H8_MEDIUM_CHUNK_CARVE
-  removes per-run mmap in candidate build
-  release medium r50 ratio about 0.984
-  HOLD as default
-
-48K size-policy shadow:
-  candidate map 8K / 16K / 32K / 48K / 64K
-  rounded medium bytes improved about 9.5%
-  run count did not improve with current 64KiB geometry
-  RSS / first-touch evidence only
-
-48K size-policy A/B target:
-  build macro H8_MEDIUM_UPPER48_CLASS
-  medium_geometry_id q64-upper48
-  smoke-clean in short validation
-  paired medium r50 was positive
-  small interleaved quick gate failed
-  HOLD as default
-```
-
-Current runtime scaffold:
-
-```text
-allocation:
-  TLS active run hint
-  owner-local medium_by_class list on miss
-  global registry fallback on miss
-
-mutation:
-  run-local mutex protects free_mask, allocated_mask, and slot_state
-
-empty run:
-  payload retained within a fixed empty-resident budget
-  budget overflow may use lazy128 persistent owner-attached reservation
-  owner-detached empty transition decommits immediately
-  metadata retained in global registry
-
-owner exit:
-  owner-local list detached
-  retained empty payload drained
-  global registry retains runs to keep stale medium pointers fail-closed
-```
-
-Smoke coverage:
-
-```text
-range classification:
-  4096 excluded
-  4097 included
-  65536 included
-  65537 excluded
-
-class mapping:
-  4097..8192 -> 8192
-  8193..16384 -> 16384
-  16385..32768 -> 32768
-  32769..65536 -> 65536
-
-pointer identity helper:
-  aligned slot pointer accepted
-  interior pointer rejected
-  out-of-run pointer rejected
 ```
 
 ## Pointer Identity
 
-Boundary classification:
+The medium contract keeps pointer identity fail-closed:
 
 ```text
-arena miss:
-  MISS
+VALID:
+  pointer resolves to an owned run slot
 
-inside known medium run and aligned to slot:
-  candidate VALID / INVALID based on slot state
+INVALID:
+  pointer looks medium-like but does not match the run slot state
 
-inside known medium run but misaligned:
-  INVALID
-
-inside retired/decommitted medium run:
-  INVALID
+MISS:
+  pointer is not owned by HZ8 medium routing
 ```
 
-No platform free fallback for arena-owned invalid pointers.
-
-Medium identity must include:
+Medium pointer identity is still driven by:
 
 ```text
-run index
-slot index
-slot size
-owner token
-run epoch
-state
+exact slot decode
+owner-attached run state
+directory-based route lookup
 ```
 
 ## Ownership
 
-MediumRun follows the HZ8 owner lifecycle rules:
+The ownership contract remains:
 
 ```text
-owner lifecycle lease:
-  protects regular owner-owned run publication
-
-run publish lease:
-  protects orphan/adoption-style per-run handoff if needed
-
-owner exit:
-  close admission
-  wait refs zero
-  drain pending
-  retire or handoff run
+owner queue
+pending bitmap
+qstate
+quantum-directory
 ```
 
-V1 should avoid regular adoption at first.
-
-Initial ownership policy:
-
-```text
-source:
-  current owner only
-
-remote free:
-  publish to owning run
-
-owner exit:
-  drain and retire empty medium runs
-  handoff nonempty runs only if required by correctness
-```
+Keep the current medium owner queue semantics frozen until a narrower
+mechanics lane shows a clear win.
 
 ## Remote Free Authority
 
-Medium remote free needs a per-slot claim authority.
+Remote free stays attached-owner and fail-closed.
 
-Initial rule:
+Current medium remote findings:
 
 ```text
-slot_state:
-  allocation validity authority
-
-pending bitmap or equivalent:
-  remote-free duplicate claim authority
-
-qstate / pending queue:
-  run collection scheduling authority
+owner-attached remote correctness remains clean
+owner collect is the largest debug bucket
+notify / queue-push is close to one per remote free
+current owner collect cadence is eager but still not free
 ```
 
-Do not remove the duplicate-claim authority in the first version.
+The next protocol change, if any, should come from a dedicated audit doc, not
+from re-opening the medium geometry contract.
 
 ## RSS Policy
 
-Default RSS behavior should match small-v0 discipline:
+The medium policy still prefers bounded resident memory over aggressive
+retention.
+
+Current stance:
 
 ```text
-logical retirement:
-  immediate
-
-table unlink:
-  immediate
-
-physical decommit:
-  batched when safe
-
-post-run RSS:
-  must recover
+empty-run resident retention uses a fixed budget
+upper48 / chunk-carving ideas are evidence only
+do not promote a new medium geometry from the current evidence alone
 ```
-
-Resident retention is allowed only through the fixed empty-run budget.  Unbounded
-resident caching remains HOLD because it conflicts with low-RSS claims.
 
 ## Implementation Order
 
+Keep the medium lane in this order:
+
 ```text
-1. MediumRunBoundaryDesign-L1
-   docs only
-
-2. MediumRunRouteShadow-L1
-   classify >4096 requests and record would-medium counts
-   still direct-fallback
-
-3. MediumRunMetadataScaffold-L1
-   compile structs, tables, and verification helpers
-   no runtime routing
-   status: implemented
-   smoke: range and coarse class table covered
-
-4. MediumRunLocalOnly-L1
-   same-owner malloc/free only
-   final remote publication still pending
-   status: initial routing scaffold implemented
-   smoke: create / alloc / free / double-free reject / interior reject
-   routing: h8_malloc / h8_free / h8_route connected for 4097..65536
-   implementation: TLS active run hint, run-local lock, global registry mutex
-   RSS: original version decommitted every empty transition
-   observation:
-     pure medium t1 local median about 204k ops/s
-     pure medium t2 local median about 277k ops/s
-     pure medium t2 interleaved r50 median about 254k ops/s
-     main-like 16..32768 audit about 380k ops/s after medium routing
-   data:
-     bench_results/20260623T220629Z_medium_observation/README.md
-
-5. MediumRunStats-L1
-   add medium-specific attribution before changing policy
-   status: implemented
-   counters:
-     run_create
-     run_reuse_active
-     run_reuse_owner_list
-     run_reuse_global
-     run_madvise
-     global_scan
-     global_scan_steps
-     route_lookup
-     free_lookup
-     invalid_owned_medium
-   first probe:
-     bench_results/20260623T221339Z_medium_stats_probe.md
-   initial signal:
-     active and owner-list reuse dominate successful allocations
-     empty-run MADV_DONTNEED is very frequent
-     global reuse is visible but not dominant in the short probe
-
-6. MediumRunEmptyRetentionBudget-L1
-   status: implemented
-   keep one-run-per-mmap and global registry scaffold
-   retain empty payload pages within a fixed global hard cap
-   hard cap:
-     H8_OWNER_MAX * H8_MEDIUM_CLASS_COUNT * H8_MEDIUM_RUN_BYTES
-   owner exit:
-     drains retained empty payloads
-   owner-detached runs:
-     decommit immediately when they become empty
-   validation:
-     retained reactivation should be nonzero
-     steady madvise count should drop materially
-     resident_empty_peak must stay within budget
-     post-RSS must recover
-   result:
-     bench_results/20260623T224437Z_medium_empty_retention_fix/README.md
-     medium release r50 median about 3.43M ops/s
-     medium release local median about 7.98M ops/s
-     r50 minor faults about 337
-     debug probe retain=15863 reactivate=15751 exit_drain=112
-
-7. MediumRunResidualCostAudit-L1
-   status: implemented
-   residual counters:
-     medium_madvise_ns
-     medium_global_lock_wait_ns
-     medium_run_lock_wait_ns
-     medium_free_lookup_step_count
-     medium_route_lookup_step_count
-   decision target:
-     direct medium arena identity
-     run lock shape
-     run pool / chunked allocation
-   result:
-     bench_results/20260623T231948Z_medium_residual_audit/README.md
-     free lookup walked about 341k global-list steps for 20k frees
-     global lock wait about 6.8ms in debug probe
-     madvise time about 0.3ms after retention
-   interpretation:
-     direct medium identity is the likely next box
-
-8. MediumArenaIdentity-L1
-   status: implemented
-   keep one-run-per-mmap and retention budget
-   make each medium payload mapping 64KiB-aligned
-   add direct run directory keyed by payload base
-   free/route:
-     derive base from pointer
-     use direct directory first
-     fall back to global registry scan
-   validation:
-     invalid-owned fallback remains 0
-     free lookup steps should collapse to near 0 on direct-hit rows
-     small-v0 guard/interleaved quick gates must not regress materially
-   result:
-     bench_results/20260623T233410Z_medium_arena_identity/README.md
-     debug r50 free_steps=0 for 20000 frees
-     release r50 median about 7.07M ops/s
-     release local median about 9.70M ops/s
-   interpretation:
-     direct identity removes the registry scan bottleneck
-     remaining scaffold cost should be audited before changing remote protocol
-
-9. MediumPostIdentityObservation-L1
-   status: recorded
-   result:
-     bench_results/20260623T233805Z_medium_post_identity_observation/README.md
-     debug r50 free_steps=0
-     debug r50 global_lock_ms about 0.05
-     debug r50 run_lock_ms about 2.85
-     release r50 median about 8.12M ops/s
-     release local median about 10.72M ops/s
-   interpretation:
-     registry scan is no longer the dominant medium bottleneck
-     next decision requires slot mutation timing rather than more lookup work
-
-10. MediumRunSlotProtocolAudit-L1
-   status: recorded
-   no behavior change
-   add debug-only counters:
-     medium_alloc_slot_ns
-     medium_free_slot_ns
-     medium_alloc_slot_count
-     medium_free_slot_count
-   purpose:
-     separate run lock wait from in-lock slot mutation work
-     decide whether run lock shape or chunk/run-pool construction is next
-   result:
-     bench_results/20260623T235455Z_medium_slot_protocol_audit/README.md
-     debug r50 run_lock_ms about 3.04
-     debug r50 alloc_slot_ms about 1.06
-     debug r50 free_slot_ms about 1.27
-     release r50 median about 8.20M ops/s
-   interpretation:
-     registry lookup is closed
-     remaining medium cost is split between lock wait and slot mutation
-
-11. MediumRunP2SlotDecode-L1
-   status: implemented
-   use medium class slot_shift for pointer identity
-   replace variable slot modulo/division with mask/shift
-   replace slot pointer multiplication with shift
-   validation:
-     medium smoke and safety stress pass
-     release code shape has no div/idiv in slot decode
-   result:
-     bench_results/20260624T000855Z_medium_p2_slot_decode/README.md
-     release r50 median about 8.43M ops/s
-     release local median about 11.96M ops/s
-   interpretation:
-     safe cleanup with modest positive signal
-     remaining bottleneck is still run lock / protocol shape
-
-12. MediumRunOwnerLocalLockElisionShadow-L1
-   status: recorded
-   no behavior change
-   publish owner token on run attach and clear it on detach
-   count same-owner alloc/free candidates before run lock
-   result:
-     bench_results/20260624T001822Z_medium_lock_elision_shadow/README.md
-     debug r50 lock_elide_alloc=10943
-     debug r50 lock_elide_free=9958
-     debug local lock_elide_alloc=16598
-     debug local lock_elide_free=16604
-   interpretation:
-     opportunities are material
-     actual lock elision is blocked by current remote-free-direct-mutation scaffold
-
-13. MediumRunOwnerAffinity-L1
-   status: recorded
-   ensure medium run ownership is unambiguous before remote publish
-   TLS active run belongs to the current owner only
-   owner medium_by_class list contains only that owner token
-   global reuse skips attached foreign runs and may attach detached runs only
-   successful foreign free does not seed the current thread active hint
-   result:
-     bench_results/20260624T005226Z_medium_owner_affinity/README.md
-     debug r50 active_owner_mismatch=0
-     debug r50 owner_list_mismatch=0
-     debug local remote_free_owner=0
-   interpretation:
-     global skip counts are informational attached-foreign exclusions
-     owner affinity is now explicit enough for owner medium pending queues
-
-14. MediumRunRemoteOwnedPublish-L1
-   status: recorded
-   remote free publish/owner collect for medium
-   stop foreign threads from mutating run masks directly
-   duplicate claim gates
-   unlocks future owner-local run lock elision
-   result:
-     bench_results/20260624T010753Z_medium_remote_owned_publish/README.md
-     debug r50 publish_enter=9972 and remote_free_owner=9972
-     debug r50 free_slot=10028, so foreign frees no longer mutate slots directly
-     release r50 median about 5.18M ops/s
-   interpretation:
-     correctness boundary is closed for attached owner remote frees
-     performance cost is now owner lease plus pending publish plus owner collect
-     next step is MediumRunRemoteCostAudit-L1 before further protocol changes
-
-15. MediumRunRemoteCostAudit-L1
-   status: recorded
-   split medium remote cost into owner lease, pending claim, queue publish,
-   owner collect, qstate handoff, and run lock wait
-   result:
-     bench_results/20260624T011936Z_medium_remote_cost_audit/README.md
-     debug r50 remote_pub=9972
-     debug r50 remote_lease_ms=0.684
-     debug r50 remote_run_lock_ms=0.574
-     debug r50 remote_claim_ms=0.348
-     debug r50 remote_notify=9657
-     debug r50 remote_qpush=9657
-     debug r50 remote_collect_run=9657
-     debug r50 remote_collect_slot=9972
-     debug r50 remote_collect_ms=2.390
-   interpretation:
-     owner-attached remote correctness remains clean
-     owner collect is the largest measured debug bucket
-     notify / queue-push is almost one per remote free
-     current owner collect cadence is intentionally eager but too expensive
-   next:
-     MediumRunRemoteNotifyCoalescing-L1
-     MediumRunOwnerCollectCadence-L1
-     keep owner lease reduction and chunk arena HOLD until this is resolved
-
-16. MediumRunOwnerCollectCadence-L1
-   status: recorded
-   remove unconditional medium malloc-entry full drain
-   active allocation success performs fixed-period budget maintenance
-   capacity miss performs a full drain before detached global reuse or create
-   owner exit remains a full drain point
-   owner medium pending carry preserves unprocessed queued runs
-   initial policy:
-     active-success poll interval = 8 medium malloc calls
-     periodic collect budget = 4 runs
-   acceptance:
-     remote_collect_call drops materially
-     empty collect calls drop sharply
-     collect slots per nonempty collect call increases
-     run create does not grow materially
-     small-v0 gates do not regress
-   result:
-     bench_results/20260624T014320Z_medium_collect_cadence/README.md
-     debug r50 remote_collect_call 20002 -> 2511
-     debug r50 remote_collect_ms 2.390 -> 1.120
-     debug r50 remote_notify 9657 -> 8671
-     release r50 median about 5.18M -> about 5.42M ops/s
-   interpretation:
-     owner collect cadence is no longer the primary eager-call problem
-     queue handoff remains frequent because medium has many 1-slot/2-slot runs
-     next step is residual cadence attribution, then route authority cleanup
-
-17. MediumRunRunPool-L1
-   replace one-run-per-mmap scaffold with pooled or chunked run allocation
-   keep fail-closed medium pointer identity
-   keep post-RSS recovery measurement
-
-18. MediumRunLifecycle-L1
-   owner exit, purge, post-RSS recovery
+1. Freeze the v1.1 balanced default
+2. Use the current matrix / RC docs as evidence
+3. Route new work through narrow mechanics lanes only
+4. Revisit larger size or run-pool changes only when the evidence is explicit
 ```
 
 ## Current Next-Lane Decision
 
-Do not promote the 48K class from current evidence.
+Do not promote 48K or chunk carving from the current evidence.
 
 ```text
 reason:
-  it reduces rounded bytes
-  it does not reduce current run count or queue episodes
-  it introduces non-p2 medium decode and a fifth medium class
-  small interleaved frozen quick gate regressed
+  the changes can reduce rounded bytes
+  they do not automatically reduce queue episodes or owner cadence cost
+  they add more geometry without a single clearly dominant win
 ```
 
-Do not promote chunk carving directly.
-
-```text
-reason:
-  directory fallback is already closed
-  per-run mmap removal was not a release r50 win in the candidate build
-```
-
-Near-term work should either:
-
-```text
-1. pursue explicit RSS / first-touch improvement
-   then use upper48 only as an evidence target
-
-or
-
-2. pursue run-count / queue-episode reduction
-   then keep p2 medium class map and revisit 64K geometry or chunk arena
-   only with small frozen paired gates as promotion blockers
-```
+The current stable default stays frozen.
 
 ## Gates
 
@@ -965,7 +181,6 @@ Safety:
 invalid platform fallback = 0
 duplicate claim = 0
 remote publish lost = 0
-quiescent pending bitmap = 0
 timeout / abort = 0
 ```
 
@@ -979,7 +194,7 @@ small_interleaved_remote90:
   no material regression
 
 main_*:
-  measured only after medium is default-routable
+  measured only after the medium lane is default-routable
 ```
 
 Memory:
@@ -998,4 +213,14 @@ medium regular adoption
 remote_head without pending claim authority
 runtime size-policy profiles
 full arbitrary class redesign
+```
+
+## Read Next
+
+```text
+docs/HZ8_MEDIUM_RUN_V1_RC1.md
+docs/HZ8_MEDIUM_RUN_V1_MATRIX.md
+docs/HZ8_MAIN_MEDIUM_LOCAL_ATTRIBUTION.md
+docs/HZ8_BENCH_GATE.md
+docs/HZ8_V2_HZ9_DESIGN.md
 ```
