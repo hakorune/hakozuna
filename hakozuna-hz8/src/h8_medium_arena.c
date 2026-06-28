@@ -36,52 +36,30 @@ typedef struct H8MediumAlignedReserve {
 static H8MediumAlignedReserve h8_medium_reserve_aligned(size_t size,
                                                         size_t align) {
   H8MediumAlignedReserve result = {0};
-#if defined(_WIN32)
   /*
-   * Win64 bring-up keeps the contract explicit even for larger alignments such
-   * as chunk-carve arenas. We over-reserve one alignment window and keep the
-   * raw reservation so release stays exact.
+   * Reserve an over-aligned window, then commit only the aligned payload
+   * interval. This keeps Win64 and POSIX aligned-payload contracts symmetric:
+   * the outer reservation stays exact for release while the inner committed
+   * range stays tight for RSS.
    */
   if (size == 0 || align == 0) {
     return result;
   }
   size_t reserve = size + align;
-  void* raw = h8_platform_reserve_rw(reserve);
+  void* raw = h8_platform_reserve(reserve);
   if (!raw) {
     return result;
   }
   uintptr_t aligned =
       ((uintptr_t)raw + (uintptr_t)align - 1u) & ~((uintptr_t)align - 1u);
+  if (h8_platform_commit((void*)aligned, size) != 0) {
+    h8_platform_release(raw, reserve);
+    return result;
+  }
   result.aligned_base = (void*)aligned;
   result.raw_base = raw;
   result.raw_bytes = reserve;
   return result;
-#else
-  size_t reserve = size + align;
-  uint8_t* raw = mmap(NULL, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS,
-                      -1, 0);
-  if (raw == MAP_FAILED) {
-    return result;
-  }
-  uintptr_t aligned =
-      ((uintptr_t)raw + align - 1u) & ~(uintptr_t)(align - 1u);
-  size_t prefix = (size_t)((uint8_t*)aligned - raw);
-  size_t suffix = reserve - prefix - size;
-  if (prefix != 0) {
-    munmap(raw, prefix);
-  }
-  if (suffix != 0) {
-    munmap((uint8_t*)aligned + size, suffix);
-  }
-  if (mprotect((void*)aligned, size, PROT_READ | PROT_WRITE) != 0) {
-    munmap((void*)aligned, size);
-    return result;
-  }
-  result.aligned_base = (void*)aligned;
-  result.raw_base = (void*)aligned;
-  result.raw_bytes = size;
-  return result;
-#endif
 }
 
 #if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
@@ -198,9 +176,16 @@ static void* h8_medium_payload_alloc_sharded(size_t run_size,
 }
 #endif
 
-void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
+void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out,
+                              void** raw_base_out, size_t* raw_bytes_out) {
   if (chunk_backed_out) {
     *chunk_backed_out = false;
+  }
+  if (raw_base_out) {
+    *raw_base_out = NULL;
+  }
+  if (raw_bytes_out) {
+    *raw_bytes_out = 0;
   }
 #if defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
   return h8_medium_payload_alloc_sharded(run_size, chunk_backed_out);
@@ -212,15 +197,21 @@ void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
   }
   H8MediumAlignedReserve reserve =
       h8_medium_reserve_aligned(run_size, run_size);
+  if (raw_base_out) {
+    *raw_base_out = reserve.raw_base;
+  }
+  if (raw_bytes_out) {
+    *raw_bytes_out = reserve.raw_bytes;
+  }
   return reserve.aligned_base;
 #endif
 }
 
-void h8_medium_payload_free(void* ptr, size_t run_size, bool chunk_backed) {
-  if (!ptr || run_size == 0) {
+void h8_medium_payload_free(void* raw_base, size_t raw_bytes, bool chunk_backed) {
+  if (!raw_base || raw_bytes == 0) {
     return;
   }
   if (!chunk_backed) {
-    h8_platform_release(ptr, run_size);
+    h8_platform_release(raw_base, raw_bytes);
   }
 }

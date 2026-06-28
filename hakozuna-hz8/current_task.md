@@ -355,15 +355,13 @@ current lane:
       span arena and medium registry/common/query/residency layers now use
       platform mutex/time/purge wrappers
       Linux-only Win64 hard stop in h8_arena_gate.c was removed
-      medium payload arena still needs a stronger Win64 alignment/release
-      contract review before any parity or performance claim
+      medium payload arena now tracks the raw reservation handle on Win64 so
+      aligned run release stays exact instead of best-effort
       scripts/build_hz8_win64_smoke.ps1 now builds the Win64 direct-API smoke
       with clang-cl
       current Win64 smoke passes for MISS / VALID / INVALID, small remote-safe
       free, and medium owner-exit route validity
     current blockers:
-      medium_arena.c still keeps a Linux-first aligned carve path and only a
-      best-effort Win64 bring-up fallback
       h8_system.c preload/dlsym surface remains Linux-only by design for this
       box and should stay outside the first Win64 direct-API gate
       regular adoption remains out of scope for the first Win64 smoke box

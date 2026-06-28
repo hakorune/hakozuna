@@ -117,6 +117,8 @@ typedef struct H8MediumRun {
   bool lazy_purge_charge;
   bool owner_attached;
   bool payload_chunk_backed;
+  void* payload_raw_base;
+  size_t payload_raw_bytes;
   void* meta_alloc_base;
   struct H8MediumRun* next_owner;
   struct H8MediumRun* next_global;
@@ -308,8 +310,9 @@ void h8_medium_debug_writer_exit(H8MediumRun* run);
 #endif
 H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id);
 void h8_medium_run_destroy_scaffold(H8MediumRun* run);
-void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out);
-void h8_medium_payload_free(void* ptr, size_t run_size, bool chunk_backed);
+void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out,
+                              void** raw_base_out, size_t* raw_bytes_out);
+void h8_medium_payload_free(void* raw_base, size_t raw_bytes, bool chunk_backed);
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                                        bool keep_empty_live);

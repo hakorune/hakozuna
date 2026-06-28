@@ -262,12 +262,17 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
     return NULL;
   }
   bool chunk_backed = false;
-  void* payload = h8_medium_payload_alloc(spec->run_size, &chunk_backed);
+  void* raw_base = NULL;
+  size_t raw_bytes = 0;
+  void* payload = h8_medium_payload_alloc(spec->run_size, &chunk_backed,
+                                          &raw_base, &raw_bytes);
   if (!payload) {
     h8_medium_run_destroy_scaffold(run);
     return NULL;
   }
   run->base = payload;
+  run->payload_raw_base = raw_base;
+  run->payload_raw_bytes = raw_bytes;
   run->payload_chunk_backed = chunk_backed;
   run->class_id = (uint16_t)class_id;
   run->slot_size = spec->slot_size;
@@ -307,9 +312,12 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
       H8_DEBUG_INC(medium_lazy_drop_destroy);
     }
     h8_medium_lazy_purge_shadow_drop(run);
-    h8_medium_payload_free(run->base,
-                           run->run_size ? run->run_size
-                                         : H8_MEDIUM_RUN_BYTES,
+    h8_medium_payload_free(run->payload_raw_base ? run->payload_raw_base
+                                                  : run->base,
+                           run->payload_raw_bytes ? run->payload_raw_bytes
+                                                  : (run->run_size
+                                                         ? run->run_size
+                                                         : H8_MEDIUM_RUN_BYTES),
                            run->payload_chunk_backed);
   }
   h8_sys_free(run->pending_bits);

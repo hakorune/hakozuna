@@ -84,6 +84,14 @@ uint64_t h8_platform_now_ns(void) {
                     h8_platform_qpc_freq.QuadPart);
 }
 
+void* h8_platform_reserve(size_t bytes) {
+  return VirtualAlloc(NULL, bytes, MEM_RESERVE, PAGE_READWRITE);
+}
+
+int h8_platform_commit(void* ptr, size_t bytes) {
+  return VirtualAlloc(ptr, bytes, MEM_COMMIT, PAGE_READWRITE) ? 0 : -1;
+}
+
 void* h8_platform_reserve_rw(size_t bytes) {
   return VirtualAlloc(NULL, bytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
@@ -150,6 +158,19 @@ uint64_t h8_platform_now_ns(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
   return (uint64_t)ts.tv_sec * 1000000000ull + (uint64_t)ts.tv_nsec;
+}
+
+void* h8_platform_reserve(size_t bytes) {
+  int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
+#ifdef MAP_NORESERVE
+  mmap_flags |= MAP_NORESERVE;
+#endif
+  void* ptr = mmap(NULL, bytes, PROT_NONE, mmap_flags, -1, 0);
+  return ptr == MAP_FAILED ? NULL : ptr;
+}
+
+int h8_platform_commit(void* ptr, size_t bytes) {
+  return mprotect(ptr, bytes, PROT_READ | PROT_WRITE);
 }
 
 void* h8_platform_reserve_rw(size_t bytes) {
