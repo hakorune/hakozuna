@@ -452,7 +452,9 @@ int main(int argc, char** argv) {
     for (t = 0; t < threads; ++t) {
         total_allocs += tds[t].alloc_count;
         total_frees += tds[t].free_count;
+#if defined(HZ_BENCH_USE_HZ6)
 #include "bench_larson_hz6_stats_accumulate.inc"
+#endif
         CloseHandle(handles[t]);
         handles[t] = NULL;
     }

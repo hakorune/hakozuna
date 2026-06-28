@@ -20,8 +20,10 @@ typedef struct Hz6SharedRouteDirectoryEntry {
 
 static Hz6SharedRouteDirectoryEntry g_hz6_shared_route_directory
     [HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY];
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
 static atomic_flag g_hz6_shared_route_directory_writer_locks
     [HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS];
+#endif
 
 #define HZ6_SHARED_ROUTE_DIRECTORY_TOMBSTONE ((uintptr_t)UINTPTR_MAX)
 
@@ -29,6 +31,7 @@ static size_t hz6_shared_route_directory_index(uintptr_t base) {
   return hz6_route_directory_index(base, HZ6_SHARED_ROUTE_DIRECTORY_CAPACITY);
 }
 
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
 static size_t hz6_shared_route_directory_lock_index(size_t start) {
   return start % HZ6_SHARED_ROUTE_DIRECTORY_LOCK_SHARDS;
 }
@@ -53,6 +56,7 @@ static void hz6_shared_route_directory_writer_unlock(size_t lock_index) {
   (void)lock_index;
 #endif
 }
+#endif
 
 #include "hz6_allocator_route_shared_directory_entry.inc"
 

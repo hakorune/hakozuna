@@ -1,3 +1,4 @@
+#if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
 static void hz6_shared_route_directory_entry_begin_update(
     Hz6SharedRouteDirectoryEntry* entry) {
 #if HZ6_SHARED_ROUTE_DIRECTORY_SEQ_SNAPSHOT_L1
@@ -34,8 +35,8 @@ static void hz6_shared_route_directory_entry_publish(
     Hz6SharedRouteDirectoryEntry* entry,
     Hz6Allocator* allocator,
     void* base,
-    uint16_t front_id,
-    uint16_t class_id,
+  uint16_t front_id,
+  uint16_t class_id,
     uint32_t generation,
     void* descriptor) {
   hz6_shared_route_directory_entry_begin_update(entry);
@@ -68,6 +69,8 @@ static void hz6_shared_route_directory_entry_publish(
 #endif
   hz6_shared_route_directory_entry_end_update(entry);
 }
+
+#endif
 
 static Hz6SharedRouteLookup hz6_shared_route_directory_lookup_result(
     Hz6SharedRouteLookupStatus status,

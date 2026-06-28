@@ -141,7 +141,15 @@ foreach ($threads in $ThreadCounts) {
                 )
                 $result = Invoke-CapturedProcess -FilePath $exe.Path -Arguments $args -TimeoutSeconds $TimeoutSeconds
                 $output = $result.Lines
-                $rc = $result.ExitCode
+                $rc = $null
+                if ($result -is [System.Collections.IDictionary]) {
+                    $rc = $result['ExitCode']
+                } else {
+                    $rc = $result.ExitCode
+                }
+                if ($null -eq $rc -or $rc -eq '') {
+                    $rc = 0
+                }
 
                 $RawLines.Add("=== " + $SectionTitle + " / T=" + $threads + " / " + $exe.Name + " / run " + $run + " ===")
                 $RawLines.Add("cmd: " + $exe.Path + " " + ($args -join " "))

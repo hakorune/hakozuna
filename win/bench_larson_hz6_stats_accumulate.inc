@@ -1,4 +1,3 @@
-#if defined(HZ_BENCH_USE_HZ6)
         hz6_stats.route_valid += tds[t].hz6_stats_after.route_valid;
         hz6_stats.route_invalid += tds[t].hz6_stats_after.route_invalid;
         hz6_stats.route_miss += tds[t].hz6_stats_after.route_miss;

@@ -47,7 +47,6 @@
                 hz6_transfer_used_max_allocator = local_transfer_used;
             }
         }
-#endif
         if (tds[t].hz6_stats_after.metadata_descriptor_entry_bytes >
             hz6_stats.metadata_descriptor_entry_bytes) {
             hz6_stats.metadata_descriptor_entry_bytes =

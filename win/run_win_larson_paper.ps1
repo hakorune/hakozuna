@@ -93,33 +93,24 @@ function Invoke-CapturedProcess {
         [int]$TimeoutSeconds = 120
     )
 
-    $psi = New-Object System.Diagnostics.ProcessStartInfo
-    $psi.FileName = $FilePath
-    $psi.UseShellExecute = $false
-    $psi.RedirectStandardOutput = $true
-    $psi.RedirectStandardError = $true
-    $psi.Arguments = ($Arguments | ForEach-Object {
-        if ($_ -match '[\s"]') { '"' + ($_ -replace '"', '\"') + '"' } else { $_ }
-    }) -join ' '
-
-    $proc = New-Object System.Diagnostics.Process
-    $proc.StartInfo = $psi
-    [void]$proc.Start()
+    $tempRoot = Join-Path ([System.IO.Path]::GetTempPath()) ("larson-capture-{0}" -f ([Guid]::NewGuid().ToString('N')))
+    New-Item -ItemType Directory -Force -Path $tempRoot | Out-Null
+    $stdoutPath = Join-Path $tempRoot 'stdout.log'
+    $stderrPath = Join-Path $tempRoot 'stderr.log'
+    $proc = $null
     $peakWorkingSetBytes = [Int64]0
     $timedOut = $false
     $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
-    try {
-        $proc.Refresh()
-        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
-            $peakWorkingSetBytes = $proc.WorkingSet64
-        }
-        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
-            $peakWorkingSetBytes = $proc.PeakWorkingSet64
-        }
-    } catch {
-    }
 
-    while (-not $proc.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+    try {
+        $proc = Start-Process `
+            -FilePath $FilePath `
+            -ArgumentList $Arguments `
+            -RedirectStandardOutput $stdoutPath `
+            -RedirectStandardError $stderrPath `
+            -PassThru `
+            -WindowStyle Hidden
+
         try {
             $proc.Refresh()
             if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
@@ -130,56 +121,81 @@ function Invoke-CapturedProcess {
             }
         } catch {
         }
-        Start-Sleep -Milliseconds 1
-    }
 
-    if (-not $proc.HasExited) {
-        $timedOut = $true
-        try {
-            $proc.Kill($true)
-        } catch {
-            try { $proc.Kill() } catch {}
+        while (-not $proc.HasExited -and [DateTime]::UtcNow -lt $deadline) {
+            try {
+                $proc.Refresh()
+                if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                    $peakWorkingSetBytes = $proc.WorkingSet64
+                }
+                if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                    $peakWorkingSetBytes = $proc.PeakWorkingSet64
+                }
+            } catch {
+            }
+            Start-Sleep -Milliseconds 5
         }
-        $proc.WaitForExit()
-        return @{
-            ExitCode = 124
-            TimedOut = $true
-            Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
-            PeakKb = "NA"
-        }
-    }
 
-    try {
-        $proc.Refresh()
-        if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
-            $peakWorkingSetBytes = $proc.WorkingSet64
-        }
-        if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
-            $peakWorkingSetBytes = $proc.PeakWorkingSet64
-        }
-    } catch {
-    }
-
-    $stdout = $proc.StandardOutput.ReadToEnd()
-    $stderr = $proc.StandardError.ReadToEnd()
-    $proc.WaitForExit()
-    $lines = New-Object System.Collections.Generic.List[string]
-    foreach ($chunk in @($stdout, $stderr)) {
-        if (-not [string]::IsNullOrEmpty($chunk)) {
-            foreach ($line in ($chunk -split "`r?`n")) {
-                if ($line -ne "") { $lines.Add($line) }
+        if (-not $proc.HasExited) {
+            $timedOut = $true
+            try { $proc.Kill($true) } catch {
+                try { $proc.Kill() } catch {}
+            }
+            try { $proc.WaitForExit() } catch {}
+            return @{
+                ExitCode = 124
+                TimedOut = $true
+                Lines = @("[TIMEOUT] exceeded ${TimeoutSeconds}s")
+                PeakKb = "NA"
             }
         }
-    }
 
-    $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
-    if ($stdout -match 'peak_kb=([0-9]+)') {
-        $peakKb = $Matches[1]
-    } elseif ($stderr -match 'peak_kb=([0-9]+)') {
-        $peakKb = $Matches[1]
-    }
+        try {
+            $proc.Refresh()
+            if ($proc.WorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.WorkingSet64
+            }
+            if ($proc.PeakWorkingSet64 -gt $peakWorkingSetBytes) {
+                $peakWorkingSetBytes = $proc.PeakWorkingSet64
+            }
+        } catch {
+        }
 
-    return @{ ExitCode = $proc.ExitCode; TimedOut = $timedOut; Lines = $lines; PeakKb = $peakKb }
+        try { $proc.WaitForExit() } catch {}
+
+        $stdout = if (Test-Path -LiteralPath $stdoutPath) {
+            Get-Content -LiteralPath $stdoutPath -Raw
+        } else {
+            ""
+        }
+        $stderr = if (Test-Path -LiteralPath $stderrPath) {
+            Get-Content -LiteralPath $stderrPath -Raw
+        } else {
+            ""
+        }
+        $lines = New-Object System.Collections.Generic.List[string]
+        foreach ($chunk in @($stdout, $stderr)) {
+            if (-not [string]::IsNullOrEmpty($chunk)) {
+                foreach ($line in ($chunk -split "`r?`n")) {
+                    if ($line -ne "") { $lines.Add($line) }
+                }
+            }
+        }
+
+        $peakKb = if ($peakWorkingSetBytes -gt 0) { [string][UInt64]([Math]::Ceiling($peakWorkingSetBytes / 1024.0)) } else { "NA" }
+        if ($stdout -match 'peak_kb=([0-9]+)') {
+            $peakKb = $Matches[1]
+        } elseif ($stderr -match 'peak_kb=([0-9]+)') {
+            $peakKb = $Matches[1]
+        }
+
+        return @{ ExitCode = $proc.ExitCode; TimedOut = $timedOut; Lines = $lines; PeakKb = $peakKb }
+    } finally {
+        if ($proc) {
+            try { $proc.Dispose() } catch {}
+        }
+        try { Remove-Item -LiteralPath $tempRoot -Recurse -Force -ErrorAction SilentlyContinue } catch {}
+    }
 }
 
 function Parse-Hz6Stats {
