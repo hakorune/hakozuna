@@ -22,6 +22,8 @@ Current strength:
   Peak RSS is still mostly touched MidPage payload residency.
   Latest Windows Larson remeasure now runs clean after runner capture/rc parsing
   fixes; HZ6 ownerlocality-speed is the current strongest Windows Larson lane.
+  The same rerun keeps the default non-appcap Windows HZ6 lanes as warmup
+  no-go/control evidence.
 ```
 
 ## Read First

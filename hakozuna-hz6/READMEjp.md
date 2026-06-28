@@ -114,6 +114,15 @@ speed / remote:
   rss をまだ超えていない
 ```
 
+Latest Windows rerun note:
+
+- 2026-06-29 の Larson rerun は runner の capture / rc 修正後に clean exit
+  まで戻りました。
+- ただし default の `hz6-strict` / `hz6-speed` / `hz6-rss` / `hz6-*-broad`
+  / `hz6-*-route4k` は、この matrix では warmup no-go のままです。
+- clean baseline は `hz6-ownerlocality-appcap-speed`
+  (`40.788M ops/s`, `2,250,008 KB`) です。
+
 ## サイズ対応の境界
 
 R1 はまだ完成した large-object allocator ではありません。現時点では、

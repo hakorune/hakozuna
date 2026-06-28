@@ -131,6 +131,9 @@ Latest Windows rerun note:
 
 - The 2026-06-29 Larson paper runner capture / rc parsing fix is in place.
 - HZ6 appcap rows now report clean exits again.
+- The default `hz6-strict`, `hz6-speed`, `hz6-rss`, `hz6-*-broad`, and
+  `hz6-*-route4k` lanes still fail warmup on this matrix; keep them as
+  control / no-go evidence.
 - The strongest HZ6 row in the rerun is
   `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and `2,250,008 KB`
   peak RSS.

@@ -76,6 +76,9 @@ Latest Windows rerun:
   rows now report clean exits again, and the strongest Windows Larson row in
   the rerun is `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and
   `2,250,008 KB` peak RSS.
+  The same rerun also shows the default `hz6-strict`, `hz6-speed`, `hz6-rss`,
+  `hz6-*-broad`, and `hz6-*-route4k` rows as warmup no-go / control evidence on
+  this matrix.
 
 Archived profile/control repeats:
   profile_frontier/broad_guard/realloc/calloc raws before 20260616_060000 are
@@ -155,5 +158,5 @@ Default no-go/control-only without substantially different evidence:
 8. Do not reopen cold-retire/cold-purge, active-map widening, page-kind/free-order tables, packed metadata, or route inline work without new diagnostics.
 9. Keep the Windows Larson runner capture / rc fix in place; treat the latest
    appcap rerun as the current clean baseline for HZ6 Windows throughput
-   comparisons.
+   comparisons, and keep the default warmup no-go rows as control evidence.
 ```
