@@ -360,13 +360,14 @@ current lane:
       medium payload arena now tracks the raw reservation handle on Win64 so
       aligned run release stays exact instead of best-effort
       scripts/build_hz8_win64_smoke.ps1 now builds the Win64 direct-API smoke
-      with clang-cl
+      with clang-cl and runs both a default pass and an adoption-enabled pass
       current Win64 smoke passes for MISS / VALID / INVALID, small remote-safe
-      free, and medium owner-exit route validity
+      free, medium owner-exit route validity, and the dedicated adoption class
     current blockers:
       h8_system.c preload/dlsym surface remains Linux-only by design for this
       box and should stay outside the first Win64 direct-API gate
-      regular adoption remains out of scope for the first Win64 smoke box
+      regular adoption remains deferred as a default policy, but the smoke lane
+      now verifies the adoption path explicitly
 
   HZ8PreloadReallocCompat-L1:
     status:

@@ -155,7 +155,8 @@ Current expectation:
 ```text
 - builds h8_smoke_win.exe with clang-cl
 - runs direct-API smoke on Win64
-- keeps regular adoption disabled by default for this first box
+- runs a second adoption-enabled smoke pass for the dedicated 256-byte
+  adoption class
 - medium payload arenas keep a raw reservation handle so Win64 release is
   exact instead of best-effort over the aligned carve
 - the small arena is reserved up front and committed per span on demand
