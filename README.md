@@ -252,6 +252,14 @@ Selected-small decision evidence:
 | `larger_sizes` | 35.407M / 70,952 KB | 37.857M / 71,684 KB | +6.92% | +732 KB |
 | `large_slice_16k` | 46.308M / 17,096 KB | 53.940M / 17,664 KB | +16.48% | +568 KB |
 
+Latest Windows rerun note:
+
+- The 2026-06-29 Windows Larson rerun now exits cleanly after the runner
+  capture/rc fix.
+- The strongest HZ6 row in that rerun is
+  `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and `2,250,008 KB`
+  peak RSS.
+
 Sources:
 
 - `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/selected-random-sameowner/20260603_204102_hz6_capacity_matrix_windows.md`

@@ -127,6 +127,14 @@ sourcerun-*:
 Use `docs/HZ6_LANE_GUIDE.md` before interpreting new HZ6 numbers. No broad
 performance claim should be made from a single lane or a single row.
 
+Latest Windows rerun note:
+
+- The 2026-06-29 Larson paper runner capture / rc parsing fix is in place.
+- HZ6 appcap rows now report clean exits again.
+- The strongest HZ6 row in the rerun is
+  `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and `2,250,008 KB`
+  peak RSS.
+
 Snapshot:
 
 ```text
