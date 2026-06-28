@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Windows HZ6 Larson appcap-only baseline, 2026-06-29](./windows/paper/20260629_045702_paper_larson_windows.md)
 - [Linux x86_64 HZ6 remote allocator compare full R10, 2026-06-21](./2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md)
 - [Linux x86_64 HZ6 Toy2 adaptive descriptor segment, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT.md)
 - [Linux x86_64 HZ6 Toy2 descriptor pressure audit, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY2_DESCRIPTOR_PRESSURE_AUDIT.md)
