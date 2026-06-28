@@ -1,6 +1,6 @@
 typedef struct H8Global {
-  pthread_once_t once;
-  pthread_key_t thread_key;
+  h8_platform_once_t once;
+  h8_platform_thread_key_t thread_key;
   _Atomic bool ready;
   void* arena_base;
   size_t arena_bytes;
@@ -10,7 +10,7 @@ typedef struct H8Global {
   _Atomic(H8Span*)* spans;
   H8OwnerRecord owners[H8_OWNER_MAX];
   H8OwnerRecord* owner_free;
-  pthread_mutex_t owner_lock;
+  h8_platform_mutex_t owner_lock;
   H8OwnerRecord* orphan_owner;
   H8OwnerRecord* current_owner;
   atomic_size_t owner_count;

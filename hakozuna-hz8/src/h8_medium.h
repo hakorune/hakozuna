@@ -3,11 +3,11 @@
 
 #include "../include/h8.h"
 #include "h8_class_map.h"
+#include "h8_platform.h"
 
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include <pthread.h>
 #include <stdint.h>
 
 #define H8_MEDIUM_MIN_SIZE (H8_MAX_SMALL_SIZE + 1u)
@@ -105,7 +105,7 @@ typedef struct H8MediumRun {
   _Atomic uint64_t pending_word_mask;
   _Atomic uint64_t* pending_bits;
   _Atomic uint32_t* slot_state;
-  pthread_mutex_t lock;
+  h8_platform_mutex_t lock;
   uint64_t free_mask;
   uint64_t allocated_mask;
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)

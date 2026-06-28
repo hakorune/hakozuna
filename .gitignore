@@ -27,6 +27,9 @@ hakozuna-hz8/h8_bench_release_mediumchunk
 hakozuna-hz8/h8_bench_release_mediumupper48
 hakozuna-hz8/h8_remote_micro
 hakozuna-hz8/h8_remote_micro_release
+hakozuna-hz8/h8_bench_*
+hakozuna-hz8/h8_bench_release_*
+hakozuna-hz8/bench/out/
 *.o
 *.d
 *.a

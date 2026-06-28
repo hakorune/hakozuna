@@ -8,7 +8,7 @@
 #include <string.h>
 
 H8Global h8g = {
-    .once = PTHREAD_ONCE_INIT,
+    .once = H8_PLATFORM_ONCE_INIT,
 };
 
 _Thread_local H8ThreadCtx* h8_tls_ctx H8_TLS_FAST;
@@ -41,25 +41,25 @@ static bool h8_parse_unsafe_evidence_env(const char* primary,
 #endif
 
 void h8_init(void) {
-  pthread_once(&h8g.once, h8_init_once);
+  h8_platform_once(&h8g.once, h8_init_once);
 }
 
 void h8_shutdown(void) {
 }
 
 static H8OwnerRecord* h8_owner_free_stack_pop(void) {
-  pthread_mutex_lock(&h8g.owner_lock);
+  h8_platform_mutex_lock(&h8g.owner_lock);
   H8OwnerRecord* owner = h8g.owner_free;
   if (owner) {
     h8g.owner_free = owner->free_next;
   }
-  pthread_mutex_unlock(&h8g.owner_lock);
+  h8_platform_mutex_unlock(&h8g.owner_lock);
   return owner;
 }
 
 static void h8_init_once(void) {
   h8_system_init();
-  pthread_mutex_init(&h8g.owner_lock, NULL);
+  h8_platform_mutex_init(&h8g.owner_lock);
   atomic_store_explicit(&h8g.regular_adoption_enabled,
                         h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
                         memory_order_relaxed);
@@ -99,21 +99,21 @@ static void h8_init_once(void) {
     fprintf(stderr, "HZ8 span table allocation failed\n");
     abort();
   }
-  if (pthread_key_create(&h8g.thread_key, h8_thread_shutdown) != 0) {
+  if (h8_platform_thread_key_create(&h8g.thread_key, h8_thread_shutdown) != 0) {
     fprintf(stderr, "HZ8 TLS key init failed\n");
     abort();
   }
   H8OwnerRecord* orphan = &h8g.owners[0];
-  pthread_mutex_init(&orphan->owned_lock, NULL);
-  pthread_mutex_init(&orphan->pending_lock, NULL);
+  h8_platform_mutex_init(&orphan->owned_lock);
+  h8_platform_mutex_init(&orphan->pending_lock);
   h8_owner_mark_alive(orphan, 0, kGenerationSeed, true);
   orphan->permanent = true;
   h8g.orphan_owner = orphan;
   h8g.current_owner = orphan;
   h8g.owner_free = NULL;
   for (uint32_t i = 1; i < H8_OWNER_MAX; ++i) {
-    pthread_mutex_init(&h8g.owners[i].owned_lock, NULL);
-    pthread_mutex_init(&h8g.owners[i].pending_lock, NULL);
+    h8_platform_mutex_init(&h8g.owners[i].owned_lock);
+    h8_platform_mutex_init(&h8g.owners[i].pending_lock);
     h8_owner_mark_dead(&h8g.owners[i]);
     h8g.owners[i].slot = i;
     h8g.owners[i].free_next = h8g.owner_free;
@@ -147,7 +147,7 @@ static H8ThreadCtx* h8_thread_ctx_new(void) {
 
 H8ThreadCtx* h8_thread_ctx_get_slow(void) {
   h8_init();
-  H8ThreadCtx* ctx = pthread_getspecific(h8g.thread_key);
+  H8ThreadCtx* ctx = h8_platform_thread_getspecific(h8g.thread_key);
   if (ctx) {
     h8_tls_ctx = ctx;
     return ctx;
@@ -157,7 +157,7 @@ H8ThreadCtx* h8_thread_ctx_get_slow(void) {
     return NULL;
   }
   h8_tls_ctx = ctx;
-  pthread_setspecific(h8g.thread_key, ctx);
+  h8_platform_thread_setspecific(h8g.thread_key, ctx);
   return ctx;
 }
 

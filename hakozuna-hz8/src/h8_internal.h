@@ -4,8 +4,8 @@
 #include "../include/h8.h"
 #include "h8_class_map.h"
 #include "h8_medium.h"
+#include "h8_platform.h"
 
-#include <pthread.h>
 #include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>

@@ -154,8 +154,8 @@ struct H8OwnerRecord {
   size_t span_chunk_next;
   size_t span_chunk_end;
   atomic_size_t medium_pending_count;
-  pthread_mutex_t owned_lock;
-  pthread_mutex_t pending_lock;
+  h8_platform_mutex_t owned_lock;
+  h8_platform_mutex_t pending_lock;
   struct H8OwnerRecord* free_next;
 };
 

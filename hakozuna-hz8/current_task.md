@@ -41,6 +41,19 @@ Do not ask users to choose among HZ3..HZ9.  HZ8 is the balanced release line;
 HZ9 remains an opt-in throughput research lane until it earns a separate,
 simple public promise.
 
+Platform policy:
+
+```text
+Linux:
+  current release/default evidence line
+  v1.1 stays frozen except hard safety fixes
+
+Windows:
+  bring-up lane only
+  no public default claim yet
+  no parity claim vs Linux v1.1 yet
+```
+
 ```text
 frozen small:
   p2-v0 class map
@@ -290,6 +303,51 @@ current lane:
       release main_local0 and medium_interleaved_remote50 improved versus v12
       baseline
       mixed release signal is not enough to promote HZ9 behavior yet
+
+  Windows bring-up lane:
+    status:
+      start now
+      direct-API bring-up first
+      not a preload/interpose port in the first box
+    record:
+      docs/HZ8_WINDOWS_BRINGUP.md
+    principle:
+      preserve Linux v1.1 default shape and evidence
+      keep Windows work in a separate bring-up lane
+      do not reopen small-v0 or MediumRun-v1.1 policy on Linux
+    first scope:
+      Win64 buildable source tree
+      platform abstraction for reserve/release, thread key, mutex, once,
+      yield, time, and purge/decommit hooks
+      direct API only:
+        h8_malloc / h8_free / h8_calloc / h8_realloc / h8_usable_size
+      smoke correctness for MISS / VALID / INVALID
+      small local alloc/free
+      small remote-safe free
+      medium local correctness only
+    first non-goals:
+      no Windows CRT replacement claim
+      no Detours/AppInit/global override surface
+      no benchmark parity claim vs Linux
+      no preload-equivalent compatibility promise
+      no Windows-specific tuning knobs before clean smoke
+    success gate for first box:
+      builds on Win64
+      smoke passes
+      safety counters stay clean
+      no owned-looking INVALID falls to platform free
+    next box:
+      PlatformAbstraction-Win64-L1
+    next box tasks:
+      isolate pthread/mmap/madvise/sched_yield/clock_gettime/dlsym usage
+      add Win64 backend for VirtualAlloc / VirtualFree / purge-or-noop hooks
+      add Win64 thread key / once / mutex / yield / monotonic time wrappers
+      compile direct API target before any allocator behavior tuning
+    start note:
+      src/h8_platform.h and src/h8_platform.c now exist as the first shared
+      platform layer scaffold
+      global once/thread-key/mutex types now route through platform typedefs
+      h8_core.c initialization and TLS bootstrap now use platform wrappers first
 
   HZ8PreloadReallocCompat-L1:
     status:
