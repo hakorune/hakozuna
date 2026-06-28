@@ -7,44 +7,34 @@ benchmark logs here.
 
 ```text
 Primary family:
-  HZ6 Windows/Linux allocator development and benchmarking
+  HZ8 allocator development and benchmarking
 
-Current Ubuntu direction:
-  Keep selected/default stable.
-  ToyTrustedDefault-L1 is now selected/default; continue measured profile or
-  narrow code-shape optimization from HZ6 docs.
-  Current preferred profile lane:
-    hz6-small-boundary-trusted-target
+Current direction:
+  Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
+  HZ8-v2 throughput work is the next research box.
+  Treat the narrow HZ6 Windows appcap-only baseline as frozen reference
+  evidence, not a current promotion target.
 
 Current strength:
-  HZ6 is strongest as a speed/RSS balance allocator.
-  Ubuntu LD_PRELOAD malloc_trim support recovers quiescent current RSS well.
-  Peak RSS is still mostly touched MidPage payload residency.
-  Latest Windows Larson remeasure now runs clean after runner capture/rc parsing
-  fixes; the narrow appcap-only rerun makes `hz6-ownerlocality-appcap-speed`
-  the current strongest Windows Larson lane at `45.754M ops/s` and
-  `2,250,016 KB` peak RSS.
-  The same rerun keeps the default non-appcap Windows HZ6 lanes as warmup
-  no-go/control evidence, while the other appcap rows remain control rows.
+  HZ8 is the balanced default line.
+  HZ6 narrow Windows baselines are frozen as reference evidence.
+  The next value gain is expected from HZ8-v2 throughput work, not from
+  reopening HZ6 control rows.
 ```
 
 ## Read First
 
 ```text
-HZ6 active orientation:
+HZ8 active orientation:
+  hakozuna-hz8/current_task.md
+  hakozuna-hz8/README.md
+  hakozuna-hz8/README.ja.md
+  hakozuna-hz8/docs/HZ8_V2_HZ9_DESIGN.md
+  hakozuna-hz8/docs/HZ8_BENCH_GATE.md
+
+Frozen HZ6 reference:
+  docs/benchmarks/windows/paper/20260629_045702_paper_larson_windows.md
   hakozuna-hz6/docs/current_task.md
-
-HZ6 selected rows and comparisons:
-  hakozuna-hz6/docs/HZ6_SELECTED_FAMILY_SUMMARY.md
-  hakozuna-hz6/docs/HZ6_UBUNTU_SELECTED_BALANCE.md
-
-HZ6 lane decisions:
-  hakozuna-hz6/docs/HZ6_LANE_GUIDE.md
-  hakozuna-hz6/docs/HZ6_UBUNTU_PRELOAD_LANES.md
-
-Repo/source hygiene:
-  hakozuna-hz6/docs/HZ6_REPO_HYGIENE.md
-  hakozuna-hz6/docs/HZ6_SOURCE_MODULARIZATION.md
 ```
 
 ## Archive Map
