@@ -1,51 +1,139 @@
 #include "../include/h8.h"
 #include "../src/h8_medium.h"
 
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static void* worker(void* arg) {
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+typedef void* h8_smoke_thread_ret_t;
+typedef struct H8SmokeThreadStart {
+  h8_smoke_thread_ret_t (*fn)(void*);
+  void* arg;
+  void* result;
+} H8SmokeThreadStart;
+typedef struct h8_smoke_thread_t {
+  HANDLE handle;
+  H8SmokeThreadStart* start;
+} h8_smoke_thread_t;
+#define H8_SMOKE_THREAD_RETVAL(code) ((void*)(uintptr_t)(code))
+#define H8_SMOKE_THREAD_RETVAL_PTR(ptr) (ptr)
+static DWORD WINAPI h8_smoke_thread_trampoline(void* arg) {
+  H8SmokeThreadStart* start = (H8SmokeThreadStart*)arg;
+  start->result = start->fn(start->arg);
+  return 0;
+}
+static int h8_smoke_thread_create(h8_smoke_thread_t* thread,
+                                  h8_smoke_thread_ret_t (*fn)(void*),
+                                  void* arg) {
+  H8SmokeThreadStart* start =
+      (H8SmokeThreadStart*)calloc(1, sizeof(*start));
+  if (!start) {
+    return -1;
+  }
+  start->fn = fn;
+  start->arg = arg;
+  thread->start = start;
+  thread->handle =
+      CreateThread(NULL, 0, h8_smoke_thread_trampoline, start, 0, NULL);
+  if (!thread->handle) {
+    free(start);
+    thread->start = NULL;
+    return -1;
+  }
+  return 0;
+}
+static int h8_smoke_thread_join(h8_smoke_thread_t thread, void** out) {
+  if (WaitForSingleObject(thread.handle, INFINITE) != WAIT_OBJECT_0) {
+    if (thread.handle) {
+      CloseHandle(thread.handle);
+    }
+    free(thread.start);
+    return -1;
+  }
+  if (out) {
+    *out = thread.start ? thread.start->result : NULL;
+  }
+  if (thread.handle) {
+    CloseHandle(thread.handle);
+  }
+  free(thread.start);
+  return 0;
+}
+static void h8_smoke_set_regular_adoption(int enabled) {
+  if (enabled) {
+    _putenv("H8_ENABLE_REGULAR_ADOPTION=1");
+  } else {
+    _putenv("H8_ENABLE_REGULAR_ADOPTION=");
+  }
+}
+#else
+#include <pthread.h>
+typedef pthread_t h8_smoke_thread_t;
+typedef void* h8_smoke_thread_ret_t;
+#define H8_SMOKE_THREAD_RETVAL(code) ((void*)(uintptr_t)(code))
+#define H8_SMOKE_THREAD_RETVAL_PTR(ptr) (ptr)
+static int h8_smoke_thread_create(h8_smoke_thread_t* thread,
+                                  h8_smoke_thread_ret_t (*fn)(void*),
+                                  void* arg) {
+  return pthread_create(thread, NULL, fn, arg);
+}
+static int h8_smoke_thread_join(h8_smoke_thread_t thread, void** out) {
+  return pthread_join(thread, out);
+}
+static void h8_smoke_set_regular_adoption(int enabled) {
+  if (enabled) {
+    setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
+  } else {
+    unsetenv("H8_ENABLE_REGULAR_ADOPTION");
+  }
+}
+#endif
+
+static h8_smoke_thread_ret_t worker(void* arg) {
   (void)arg;
   void* p = h8_malloc(64);
   if (!p) {
-    return (void*)1;
+    return H8_SMOKE_THREAD_RETVAL(1);
   }
   memset(p, 0xA5, 64);
   h8_free(p);
-  return NULL;
+  return H8_SMOKE_THREAD_RETVAL(0);
 }
 
-static void* orphan_source(void* arg) {
+static h8_smoke_thread_ret_t orphan_source(void* arg) {
   (void)arg;
   void* p = h8_malloc(256);
   if (!p) {
-    return (void*)1;
+    return H8_SMOKE_THREAD_RETVAL(1);
   }
   memset(p, 0x5A, 256);
-  return p;
+  return H8_SMOKE_THREAD_RETVAL_PTR(p);
 }
 
-static void* medium_source(void* arg) {
+static h8_smoke_thread_ret_t medium_source(void* arg) {
   (void)arg;
   void* p = h8_malloc(9000);
   if (!p) {
-    return (void*)1;
+    return H8_SMOKE_THREAD_RETVAL(1);
   }
   memset(p, 0x4D, 9000);
-  return p;
+  return H8_SMOKE_THREAD_RETVAL_PTR(p);
 }
 
-static void* adoption_roundtrip(void* arg) {
+static h8_smoke_thread_ret_t adoption_roundtrip(void* arg) {
   size_t size = *(size_t*)arg;
   void* p = h8_malloc(size);
   if (!p) {
-    return (void*)1;
+    return H8_SMOKE_THREAD_RETVAL(1);
   }
   memset(p, 0xC3, size);
   h8_free(p);
-  return NULL;
+  return H8_SMOKE_THREAD_RETVAL(0);
 }
 
 static int check_realloc_api(void) {
@@ -245,15 +333,19 @@ static int check_medium_scaffold(void) {
 
 int main(void) {
   const char* mode = getenv("H8_SMOKE_REGULAR_ADOPTION");
+#if defined(_WIN32)
+  int enable_regular_adoption =
+      mode && (strcmp(mode, "1") == 0 || strcmp(mode, "true") == 0 ||
+               strcmp(mode, "TRUE") == 0 || strcmp(mode, "on") == 0 ||
+               strcmp(mode, "ON") == 0 || strcmp(mode, "yes") == 0 ||
+               strcmp(mode, "YES") == 0);
+#else
   int enable_regular_adoption =
       !(mode && (strcmp(mode, "0") == 0 || strcmp(mode, "false") == 0 ||
                  strcmp(mode, "FALSE") == 0 || strcmp(mode, "off") == 0 ||
                  strcmp(mode, "OFF") == 0));
-  if (enable_regular_adoption) {
-    setenv("H8_ENABLE_REGULAR_ADOPTION", "1", 1);
-  } else {
-    unsetenv("H8_ENABLE_REGULAR_ADOPTION");
-  }
+#endif
+  h8_smoke_set_regular_adoption(enable_regular_adoption);
   int medium_rc = check_medium_scaffold();
   if (medium_rc != 0) {
     return medium_rc;
@@ -279,19 +371,25 @@ int main(void) {
     fprintf(stderr, "medium route still valid after free\n");
     return 32;
   }
-  pthread_t medium_thread;
-  if (pthread_create(&medium_thread, NULL, medium_source, NULL) != 0) {
-    perror("pthread_create medium");
+  h8_smoke_thread_t medium_thread;
+  if (h8_smoke_thread_create(&medium_thread, medium_source, NULL) != 0) {
+    perror("thread_create medium");
     return 33;
   }
   void* medium_orphan = NULL;
-  if (pthread_join(medium_thread, &medium_orphan) != 0) {
-    perror("pthread_join medium");
+  if (h8_smoke_thread_join(medium_thread, &medium_orphan) != 0) {
+    perror("thread_join medium");
     return 34;
   }
+  H8RouteKind medium_orphan_route =
+      medium_orphan ? h8_route(medium_orphan) : H8_ROUTE_INVALID;
   if (!medium_orphan || medium_orphan == (void*)1 ||
-      h8_route(medium_orphan) != H8_ROUTE_VALID) {
-    fprintf(stderr, "medium route invalid after owner exit\n");
+      medium_orphan_route != H8_ROUTE_VALID) {
+    H8MediumRun* medium_run =
+        medium_orphan ? h8_medium_directory_find(medium_orphan) : NULL;
+    fprintf(stderr,
+            "medium route invalid after owner exit ptr=%p route=%d run=%p\n",
+            medium_orphan, (int)medium_orphan_route, (void*)medium_run);
     return 35;
   }
   h8_free(medium_orphan);
@@ -318,24 +416,24 @@ int main(void) {
     fprintf(stderr, "route still valid after free\n");
     return 3;
   }
-  pthread_t t;
-  if (pthread_create(&t, NULL, worker, NULL) != 0) {
-    perror("pthread_create");
+  h8_smoke_thread_t t;
+  if (h8_smoke_thread_create(&t, worker, NULL) != 0) {
+    perror("thread_create");
     return 4;
   }
   void* rc = NULL;
-  pthread_join(t, &rc);
+  h8_smoke_thread_join(t, &rc);
   if (rc != NULL) {
     return 5;
   }
-  pthread_t orphan_thread;
-  if (pthread_create(&orphan_thread, NULL, orphan_source, NULL) != 0) {
-    perror("pthread_create");
+  h8_smoke_thread_t orphan_thread;
+  if (h8_smoke_thread_create(&orphan_thread, orphan_source, NULL) != 0) {
+    perror("thread_create");
     return 6;
   }
   void* orphan_ptr = NULL;
-  if (pthread_join(orphan_thread, &orphan_ptr) != 0) {
-    perror("pthread_join");
+  if (h8_smoke_thread_join(orphan_thread, &orphan_ptr) != 0) {
+    perror("thread_join");
     return 7;
   }
   if (orphan_ptr == (void*)1 || !orphan_ptr) {
@@ -377,14 +475,14 @@ int main(void) {
     H8Stats before_roundtrip = h8_stats();
     H8DebugStats before_dbg = h8_debug_stats();
     for (int i = 0; i < rounds; ++i) {
-      pthread_t src;
-      if (pthread_create(&src, NULL, orphan_source, NULL) != 0) {
-        perror("pthread_create source");
+      h8_smoke_thread_t src;
+      if (h8_smoke_thread_create(&src, orphan_source, NULL) != 0) {
+        perror("thread_create source");
         return 16;
       }
       void* round_orphan = NULL;
-      if (pthread_join(src, &round_orphan) != 0) {
-        perror("pthread_join source");
+      if (h8_smoke_thread_join(src, &round_orphan) != 0) {
+        perror("thread_join source");
         return 17;
       }
       if (!round_orphan || round_orphan == (void*)1) {
@@ -392,13 +490,13 @@ int main(void) {
         return 18;
       }
 
-      pthread_t round_adopter;
-      if (pthread_create(&round_adopter, NULL, adoption_roundtrip, &size) != 0) {
-        perror("pthread_create adopter");
+      h8_smoke_thread_t round_adopter;
+      if (h8_smoke_thread_create(&round_adopter, adoption_roundtrip, &size) != 0) {
+        perror("thread_create adopter");
         return 19;
       }
-      if (pthread_join(round_adopter, NULL) != 0) {
-        perror("pthread_join adopter");
+      if (h8_smoke_thread_join(round_adopter, NULL) != 0) {
+        perror("thread_join adopter");
         return 20;
       }
       h8_free(round_orphan);

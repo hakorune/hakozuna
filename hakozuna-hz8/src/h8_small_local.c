@@ -2,9 +2,8 @@
 #include "h8_used_count.h"
 
 #include <errno.h>
-#include <string.h>
-#include <sched.h>
 #include <stdlib.h>
+#include <string.h>
 
 static void h8_fail_invalid_free(void) {
   H8_DEBUG_INC(invalid_count);
@@ -170,7 +169,7 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
     H8_DEBUG_INC(local_find_skip_scan_no_pending);
     return NULL;
   }
-  pthread_mutex_lock(&owner->owned_lock);
+  h8_platform_mutex_lock(&owner->owned_lock);
   for (H8Span* span = owner->owned_by_class[class_id]; span;
        span = span->next_owned_class) {
     H8_DEBUG_INC(local_find_scan_span);
@@ -183,10 +182,10 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
       continue;
     }
     H8_DEBUG_INC(local_find_scan_span_usable);
-    pthread_mutex_unlock(&owner->owned_lock);
+    h8_platform_mutex_unlock(&owner->owned_lock);
     return span;
   }
-  pthread_mutex_unlock(&owner->owned_lock);
+  h8_platform_mutex_unlock(&owner->owned_lock);
   return NULL;
 }
 
@@ -363,7 +362,7 @@ void h8_free_inner(void* ptr) {
     if (res != H8_PUBLISH_OWNER_TRANSITION) {
       break;
     }
-    sched_yield();
+    h8_platform_yield();
   }
   h8_fail_invalid_free();
 }

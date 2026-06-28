@@ -254,7 +254,7 @@ H8MediumRun* h8_medium_run_create_scaffold(uint32_t class_id) {
   if (!run) {
     return NULL;
   }
-  pthread_mutex_init(&run->lock, NULL);
+  h8_platform_mutex_init(&run->lock);
   run->slot_state = h8_sys_calloc(spec->slot_count, sizeof(*run->slot_state));
   run->pending_bits = h8_sys_calloc(spec->bitmap_words, sizeof(*run->pending_bits));
   if (!run->slot_state || !run->pending_bits) {
@@ -314,7 +314,7 @@ void h8_medium_run_destroy_scaffold(H8MediumRun* run) {
   }
   h8_sys_free(run->pending_bits);
   h8_sys_free(run->slot_state);
-  pthread_mutex_destroy(&run->lock);
+  h8_platform_mutex_destroy(&run->lock);
   h8_sys_free(run);
 }
 

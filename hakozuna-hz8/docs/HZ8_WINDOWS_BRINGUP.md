@@ -42,6 +42,8 @@ Scope:
 - small local alloc/free
 - small remote-safe free
 - medium local correctness
+- adoption / orphan-span optimization is deferred;
+  first Win64 smoke may run with regular adoption disabled by default
 ```
 
 Non-goals:
@@ -139,3 +141,19 @@ The first box passes only if:
 
 Throughput and RSS comparison come later.  The first milestone is correctness
 and architectural cleanliness, not benchmark parity.
+
+## Current Bring-Up Hook
+
+Win64 direct-API smoke is now wired through:
+
+```text
+scripts/build_hz8_win64_smoke.ps1
+```
+
+Current expectation:
+
+```text
+- builds h8_smoke_win.exe with clang-cl
+- runs direct-API smoke on Win64
+- keeps regular adoption disabled by default for this first box
+```

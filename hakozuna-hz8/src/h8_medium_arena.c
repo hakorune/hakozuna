@@ -1,8 +1,6 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
 
-#include <sys/mman.h>
-
 #if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 #define H8_MEDIUM_CHUNK_BYTES (16u * 1024u * 1024u)
 #endif
@@ -10,11 +8,13 @@
 #if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 typedef struct H8MediumChunk {
   uint8_t* base;
+  void* raw_base;
+  size_t raw_bytes;
   size_t used;
   struct H8MediumChunk* next;
 } H8MediumChunk;
 
-static pthread_mutex_t h8_medium_arena_lock = PTHREAD_MUTEX_INITIALIZER;
+static h8_platform_mutex_t h8_medium_arena_lock = H8_PLATFORM_MUTEX_INIT;
 static H8MediumChunk* h8_medium_chunks;
 #endif
 
@@ -27,12 +27,41 @@ typedef struct H8MediumArenaShard {
 static H8MediumArenaShard h8_medium_shards[H8_OWNER_MAX];
 #endif
 
-static void* h8_medium_mmap_aligned(size_t size, size_t align) {
+typedef struct H8MediumAlignedReserve {
+  void* aligned_base;
+  void* raw_base;
+  size_t raw_bytes;
+} H8MediumAlignedReserve;
+
+static H8MediumAlignedReserve h8_medium_reserve_aligned(size_t size,
+                                                        size_t align) {
+  H8MediumAlignedReserve result = {0};
+#if defined(_WIN32)
+  /*
+   * Win64 bring-up keeps the contract explicit even for larger alignments such
+   * as chunk-carve arenas. We over-reserve one alignment window and keep the
+   * raw reservation so release stays exact.
+   */
+  if (size == 0 || align == 0) {
+    return result;
+  }
+  size_t reserve = size + align;
+  void* raw = h8_platform_reserve_rw(reserve);
+  if (!raw) {
+    return result;
+  }
+  uintptr_t aligned =
+      ((uintptr_t)raw + (uintptr_t)align - 1u) & ~((uintptr_t)align - 1u);
+  result.aligned_base = (void*)aligned;
+  result.raw_base = raw;
+  result.raw_bytes = reserve;
+  return result;
+#else
   size_t reserve = size + align;
   uint8_t* raw = mmap(NULL, reserve, PROT_NONE, MAP_PRIVATE | MAP_ANONYMOUS,
                       -1, 0);
   if (raw == MAP_FAILED) {
-    return MAP_FAILED;
+    return result;
   }
   uintptr_t aligned =
       ((uintptr_t)raw + align - 1u) & ~(uintptr_t)(align - 1u);
@@ -46,24 +75,30 @@ static void* h8_medium_mmap_aligned(size_t size, size_t align) {
   }
   if (mprotect((void*)aligned, size, PROT_READ | PROT_WRITE) != 0) {
     munmap((void*)aligned, size);
-    return MAP_FAILED;
+    return result;
   }
-  return (void*)aligned;
+  result.aligned_base = (void*)aligned;
+  result.raw_base = (void*)aligned;
+  result.raw_bytes = size;
+  return result;
+#endif
 }
 
 #if defined(H8_MEDIUM_CHUNK_CARVE) || defined(H8_MEDIUM_CHUNK_SHARDED_CARVE)
 static H8MediumChunk* h8_medium_chunk_create(void) {
-  void* payload =
-      h8_medium_mmap_aligned(H8_MEDIUM_CHUNK_BYTES, H8_MEDIUM_CHUNK_BYTES);
-  if (payload == MAP_FAILED) {
+  H8MediumAlignedReserve reserve = h8_medium_reserve_aligned(
+      H8_MEDIUM_CHUNK_BYTES, H8_MEDIUM_CHUNK_BYTES);
+  if (!reserve.aligned_base) {
     return NULL;
   }
   H8MediumChunk* chunk = h8_sys_calloc(1, sizeof(*chunk));
   if (!chunk) {
-    munmap(payload, H8_MEDIUM_CHUNK_BYTES);
+    h8_platform_release(reserve.raw_base, reserve.raw_bytes);
     return NULL;
   }
-  chunk->base = payload;
+  chunk->base = reserve.aligned_base;
+  chunk->raw_base = reserve.raw_base;
+  chunk->raw_bytes = reserve.raw_bytes;
   H8_DEBUG_INC(medium_chunk_create_count);
   H8_DEBUG_ADD(medium_chunk_reserved_bytes, H8_MEDIUM_CHUNK_BYTES);
   return chunk;
@@ -77,12 +112,12 @@ static void* h8_medium_payload_alloc_global_locked(size_t run_size,
       (run_size & (H8_MEDIUM_QUANTUM_BYTES - 1u)) != 0) {
     return NULL;
   }
-  pthread_mutex_lock(&h8_medium_arena_lock);
+  h8_platform_mutex_lock(&h8_medium_arena_lock);
   for (H8MediumChunk* chunk = h8_medium_chunks; chunk; chunk = chunk->next) {
     size_t used = h8_round_up_size(chunk->used, run_size);
     if (used + run_size <= H8_MEDIUM_CHUNK_BYTES) {
       chunk->used = used + run_size;
-      pthread_mutex_unlock(&h8_medium_arena_lock);
+      h8_platform_mutex_unlock(&h8_medium_arena_lock);
       if (chunk_backed_out) {
         *chunk_backed_out = true;
       }
@@ -93,13 +128,13 @@ static void* h8_medium_payload_alloc_global_locked(size_t run_size,
   }
   H8MediumChunk* chunk = h8_medium_chunk_create();
   if (!chunk) {
-    pthread_mutex_unlock(&h8_medium_arena_lock);
+    h8_platform_mutex_unlock(&h8_medium_arena_lock);
     return NULL;
   }
   chunk->next = h8_medium_chunks;
   h8_medium_chunks = chunk;
   chunk->used = run_size;
-  pthread_mutex_unlock(&h8_medium_arena_lock);
+  h8_platform_mutex_unlock(&h8_medium_arena_lock);
   if (chunk_backed_out) {
     *chunk_backed_out = true;
   }
@@ -124,10 +159,10 @@ static H8MediumChunk* h8_medium_chunk_refill(void) {
   if (!chunk) {
     return NULL;
   }
-  pthread_mutex_lock(&h8_medium_arena_lock);
+  h8_platform_mutex_lock(&h8_medium_arena_lock);
   chunk->next = h8_medium_chunks;
   h8_medium_chunks = chunk;
-  pthread_mutex_unlock(&h8_medium_arena_lock);
+  h8_platform_mutex_unlock(&h8_medium_arena_lock);
   return chunk;
 }
 
@@ -175,8 +210,9 @@ void* h8_medium_payload_alloc(size_t run_size, bool* chunk_backed_out) {
   if (run_size == 0) {
     return NULL;
   }
-  void* payload = h8_medium_mmap_aligned(run_size, run_size);
-  return payload == MAP_FAILED ? NULL : payload;
+  H8MediumAlignedReserve reserve =
+      h8_medium_reserve_aligned(run_size, run_size);
+  return reserve.aligned_base;
 #endif
 }
 
@@ -185,6 +221,6 @@ void h8_medium_payload_free(void* ptr, size_t run_size, bool chunk_backed) {
     return;
   }
   if (!chunk_backed) {
-    munmap(ptr, run_size);
+    h8_platform_release(ptr, run_size);
   }
 }

@@ -82,7 +82,7 @@
   H8_DEBUG_ADD(medium_collect_empty_ns,
                (size_t)(h8_medium_remote_now_ns() - section_start));
 #endif
-  pthread_mutex_unlock(&run->lock);
+  h8_platform_mutex_unlock(&run->lock);
   h8_medium_debug_writer_exit(run);
 
   uint8_t expected_finish = H8_Q_DRAINING;
@@ -111,7 +111,7 @@
 }
 
 static H8MediumRun* h8_medium_pending_pop_one(H8OwnerRecord* owner) {
-  pthread_mutex_lock(&owner->pending_lock);
+  h8_platform_mutex_lock(&owner->pending_lock);
   if (!owner->medium_pending_carry) {
     owner->medium_pending_carry = atomic_exchange_explicit(
         &owner->medium_pending_head, NULL, memory_order_acq_rel);
@@ -121,7 +121,7 @@ static H8MediumRun* h8_medium_pending_pop_one(H8OwnerRecord* owner) {
     owner->medium_pending_carry = run->next_pending;
     run->next_pending = NULL;
   }
-  pthread_mutex_unlock(&owner->pending_lock);
+  h8_platform_mutex_unlock(&owner->pending_lock);
   return run;
 }
 

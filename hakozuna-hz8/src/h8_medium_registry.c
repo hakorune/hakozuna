@@ -1,14 +1,9 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
 
-#include <sys/mman.h>
-#if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
-
 #define H8_MEDIUM_DIRECTORY_CAP 65536u
 
-static pthread_mutex_t h8_medium_lock = PTHREAD_MUTEX_INITIALIZER;
+static h8_platform_mutex_t h8_medium_lock = H8_PLATFORM_MUTEX_INIT;
 static H8MediumRun* h8_medium_runs;
 static H8MediumRun* h8_medium_detached_by_class[H8_MEDIUM_CLASS_COUNT];
 static _Atomic uintptr_t h8_medium_directory_addr;
@@ -17,9 +12,7 @@ static _Atomic uintptr_t h8_medium_max_addr;
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_medium_registry_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 
@@ -27,7 +20,7 @@ void h8_medium_lock_global(void) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_registry_now_ns();
 #endif
-  pthread_mutex_lock(&h8_medium_lock);
+  h8_platform_mutex_lock(&h8_medium_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_global_lock_wait_ns,
                (size_t)(h8_medium_registry_now_ns() - start));
@@ -35,7 +28,7 @@ void h8_medium_lock_global(void) {
 }
 
 void h8_medium_unlock_global(void) {
-  pthread_mutex_unlock(&h8_medium_lock);
+  h8_platform_mutex_unlock(&h8_medium_lock);
 }
 
 H8MediumRun* h8_medium_global_head(void) {

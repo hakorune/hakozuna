@@ -3,10 +3,10 @@
 #include <stdlib.h>
 
 void h8_owner_free_stack_push(H8OwnerRecord* owner) {
-  pthread_mutex_lock(&h8g.owner_lock);
+  h8_platform_mutex_lock(&h8g.owner_lock);
   owner->free_next = h8g.owner_free;
   h8g.owner_free = owner;
-  pthread_mutex_unlock(&h8g.owner_lock);
+  h8_platform_mutex_unlock(&h8g.owner_lock);
 }
 
 void h8_owner_mark_alive(H8OwnerRecord* owner, uint32_t slot, uint16_t generation,

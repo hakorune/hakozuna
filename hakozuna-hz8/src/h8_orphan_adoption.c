@@ -3,25 +3,25 @@
 
 static void h8_owner_lock_pair(H8OwnerRecord* a, H8OwnerRecord* b) {
   if (a == b) {
-    pthread_mutex_lock(&a->owned_lock);
+    h8_platform_mutex_lock(&a->owned_lock);
     return;
   }
   if (a->slot < b->slot) {
-    pthread_mutex_lock(&a->owned_lock);
-    pthread_mutex_lock(&b->owned_lock);
+    h8_platform_mutex_lock(&a->owned_lock);
+    h8_platform_mutex_lock(&b->owned_lock);
   } else {
-    pthread_mutex_lock(&b->owned_lock);
-    pthread_mutex_lock(&a->owned_lock);
+    h8_platform_mutex_lock(&b->owned_lock);
+    h8_platform_mutex_lock(&a->owned_lock);
   }
 }
 
 static void h8_owner_unlock_pair(H8OwnerRecord* a, H8OwnerRecord* b) {
   if (a == b) {
-    pthread_mutex_unlock(&a->owned_lock);
+    h8_platform_mutex_unlock(&a->owned_lock);
     return;
   }
-  pthread_mutex_unlock(&a->owned_lock);
-  pthread_mutex_unlock(&b->owned_lock);
+  h8_platform_mutex_unlock(&a->owned_lock);
+  h8_platform_mutex_unlock(&b->owned_lock);
 }
 
 static void h8_owner_add_owned_span_locked(H8OwnerRecord* owner, H8Span* span) {
@@ -84,7 +84,7 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
   bool saw_span = false;
   bool saw_candidate = false;
 
-  pthread_mutex_lock(&orphan->owned_lock);
+  h8_platform_mutex_lock(&orphan->owned_lock);
   for (H8Span* span = orphan->orphan_by_class[class_id]; span;
        span = span->next_orphan_class) {
     if (!h8_span_has_free_slot(span)) {
@@ -109,7 +109,7 @@ bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
 
     H8_DEBUG_INC(adoption_dry_run_block_state_count);
   }
-  pthread_mutex_unlock(&orphan->owned_lock);
+  h8_platform_mutex_unlock(&orphan->owned_lock);
 
   if (!saw_span) {
     H8_DEBUG_INC(adoption_dry_run_empty_count);
@@ -132,7 +132,7 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
     H8Span* candidate = NULL;
     H8SpanState candidate_state = H8_SPAN_RETIRED;
 
-    pthread_mutex_lock(&orphan->owned_lock);
+    h8_platform_mutex_lock(&orphan->owned_lock);
     for (H8Span* span = orphan->orphan_by_class[class_id]; span;
          span = span->next_orphan_class) {
       if (!h8_span_has_free_slot(span)) {
@@ -165,7 +165,7 @@ H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
       candidate = span;
       break;
     }
-    pthread_mutex_unlock(&orphan->owned_lock);
+    h8_platform_mutex_unlock(&orphan->owned_lock);
 
     if (!candidate) {
       h8_owner_lifecycle_exit(adopter);

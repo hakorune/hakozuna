@@ -13,12 +13,14 @@ typedef INIT_ONCE h8_platform_once_t;
 typedef DWORD h8_platform_thread_key_t;
 typedef SRWLOCK h8_platform_mutex_t;
 #define H8_PLATFORM_ONCE_INIT INIT_ONCE_STATIC_INIT
+#define H8_PLATFORM_MUTEX_INIT SRWLOCK_INIT
 #else
 #include <pthread.h>
 typedef pthread_once_t h8_platform_once_t;
 typedef pthread_key_t h8_platform_thread_key_t;
 typedef pthread_mutex_t h8_platform_mutex_t;
 #define H8_PLATFORM_ONCE_INIT PTHREAD_ONCE_INIT
+#define H8_PLATFORM_MUTEX_INIT PTHREAD_MUTEX_INITIALIZER
 #endif
 
 int h8_platform_once(h8_platform_once_t* once, void (*fn)(void));

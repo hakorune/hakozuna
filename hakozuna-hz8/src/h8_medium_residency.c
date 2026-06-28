@@ -1,11 +1,6 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
 
-#include <sys/mman.h>
-#if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
-
 static const size_t k_h8_medium_empty_resident_budget =
     (size_t)H8_OWNER_MAX * H8_MEDIUM_RESIDENT_BUDGET_CLASSES *
     H8_MEDIUM_RUN_BYTES;
@@ -18,14 +13,14 @@ static atomic_size_t h8_medium_lazy_purge_bytes_runtime;
 #endif
 
 #if defined(H8_ENABLE_DEBUG_STATS)
-static pthread_mutex_t h8_medium_retention_debug_lock = PTHREAD_MUTEX_INITIALIZER;
+static h8_platform_mutex_t h8_medium_retention_debug_lock = H8_PLATFORM_MUTEX_INIT;
 
 static void h8_medium_retention_debug_lock_acquire(void) {
-  pthread_mutex_lock(&h8_medium_retention_debug_lock);
+  h8_platform_mutex_lock(&h8_medium_retention_debug_lock);
 }
 
 static void h8_medium_retention_debug_lock_release(void) {
-  pthread_mutex_unlock(&h8_medium_retention_debug_lock);
+  h8_platform_mutex_unlock(&h8_medium_retention_debug_lock);
 }
 #else
 static void h8_medium_retention_debug_lock_acquire(void) {
@@ -37,9 +32,7 @@ static void h8_medium_retention_debug_lock_release(void) {
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_medium_residency_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 
@@ -340,19 +333,9 @@ static bool h8_medium_try_lazy_purge_payload(H8MediumRun* run) {
 }
 #endif
 
-static int h8_medium_madvise_advice(H8MediumDecommitReason reason) {
-#if defined(H8_MEDIUM_BUDGET_REJECT_MADV_FREE) && defined(MADV_FREE)
-  if (reason == H8_MEDIUM_DECOMMIT_BUDGET_REJECT) {
-    return MADV_FREE;
-  }
-#else
+static void h8_medium_purge_run(H8MediumRun* run,
+                                H8MediumDecommitReason reason) {
   (void)reason;
-#endif
-  return MADV_DONTNEED;
-}
-
-static void h8_medium_madvise_run(H8MediumRun* run,
-                                  H8MediumDecommitReason reason) {
   if (!run || !run->base || run->run_size == 0) {
     return;
   }
@@ -360,7 +343,7 @@ static void h8_medium_madvise_run(H8MediumRun* run,
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_residency_now_ns();
 #endif
-  if (madvise(run->base, run->run_size, h8_medium_madvise_advice(reason)) != 0) {
+  if (h8_platform_purge(run->base, run->run_size) != 0) {
     H8_DEBUG_INC(medium_madvise_fail_count);
   }
 #if defined(H8_ENABLE_DEBUG_STATS)
@@ -395,19 +378,9 @@ static void h8_medium_decommit_empty_with_reason_locked_impl(
   if (run->payload_state == H8_MEDIUM_PAYLOAD_LIVE) {
     h8_medium_clear_active_live_empty(run);
   }
-  h8_medium_madvise_run(run, reason);
+  h8_medium_purge_run(run, reason);
   h8_medium_release_empty_payload(run);
   h8_medium_lazy_purge_shadow_drop(run);
-#if defined(H8_MEDIUM_BUDGET_REJECT_MADV_FREE) && defined(MADV_FREE)
-  if (reason == H8_MEDIUM_DECOMMIT_BUDGET_REJECT) {
-    /*
-     * MADV_FREE may keep pages resident until pressure; owner-exit hard drain
-     * must still see this run as physically purgeable.
-     */
-    run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_RESIDENT;
-    return;
-  }
-#endif
   run->payload_state = H8_MEDIUM_PAYLOAD_EMPTY_DECOMMITTED;
 }
 

@@ -28,7 +28,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
         if (res != H8_PUBLISH_OWNER_TRANSITION) {
           return false;
         }
-        sched_yield();
+        h8_platform_yield();
       }
     }
     h8_medium_debug_lock_elide_candidate_known(same_owner, true);
@@ -91,7 +91,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
         if (res != H8_PUBLISH_OWNER_TRANSITION) {
           return false;
         }
-        sched_yield();
+        h8_platform_yield();
       }
     }
     if (same_owner) {

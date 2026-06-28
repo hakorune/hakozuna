@@ -6,22 +6,11 @@
 #include <stdio.h>
 #include <string.h>
 
-#ifdef _WIN32
-#error "HZ8 v0 implementation currently targets Linux x86_64."
-#endif
-
-#include <sys/mman.h>
-#if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
-
-static pthread_mutex_t h8_span_table_lock = PTHREAD_MUTEX_INITIALIZER;
+static h8_platform_mutex_t h8_span_table_lock = H8_PLATFORM_MUTEX_INIT;
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_debug_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 
@@ -93,8 +82,8 @@ static void h8_span_commit_memory(H8Span* span) {
 }
 
 static void h8_span_decommit_range(void* base, size_t bytes) {
-  if (madvise(base, bytes, MADV_DONTNEED) != 0) {
-    perror("madvise");
+  if (h8_platform_purge(base, bytes) != 0) {
+    perror("h8_platform_purge");
     abort();
   }
   atomic_fetch_sub_explicit(&h8g.arena_committed_bytes, bytes,
@@ -161,14 +150,14 @@ H8Span* h8_span_retire_logical(H8Span* span) {
   uint64_t total_start = h8_debug_now_ns();
   uint64_t lock_start = total_start;
 #endif
-  pthread_mutex_lock(&h8_span_table_lock);
+  h8_platform_mutex_lock(&h8_span_table_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(span_retire_lock_wait_ns,
                (size_t)(h8_debug_now_ns() - lock_start));
 #endif
   size_t index = h8_span_index_from_ptr(span->base);
   if (h8_span_state_load(span) == H8_SPAN_RETIRED) {
-    pthread_mutex_unlock(&h8_span_table_lock);
+    h8_platform_mutex_unlock(&h8_span_table_lock);
     return NULL;
   }
   h8_span_state_store(span, H8_SPAN_RETIRED, memory_order_release);
@@ -176,7 +165,7 @@ H8Span* h8_span_retire_logical(H8Span* span) {
       atomic_load_explicit(&h8g.spans[index], memory_order_acquire) == span) {
     atomic_store_explicit(&h8g.spans[index], NULL, memory_order_release);
   }
-  pthread_mutex_unlock(&h8_span_table_lock);
+  h8_platform_mutex_unlock(&h8_span_table_lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(span_retire_count);
   H8_DEBUG_ADD(span_retire_total_ns,

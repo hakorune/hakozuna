@@ -562,7 +562,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   }
   H8_DEBUG_INC(pending_collect_call_count);
 
-  pthread_mutex_lock(&owner->pending_lock);
+  h8_platform_mutex_lock(&owner->pending_lock);
 
   H8Span* carry = owner->pending_carry;
   owner->pending_carry = NULL;
@@ -574,7 +574,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
     if (carry) {
       owner->pending_carry = carry;
       H8_DEBUG_INC(pending_collect_requeue_count);
-      pthread_mutex_unlock(&owner->pending_lock);
+      h8_platform_mutex_unlock(&owner->pending_lock);
       return;
     }
   }
@@ -590,7 +590,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
     }
   }
 
-  pthread_mutex_unlock(&owner->pending_lock);
+  h8_platform_mutex_unlock(&owner->pending_lock);
 }
 
 void h8_collect_owner_pending(H8OwnerRecord* owner) {

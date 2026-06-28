@@ -1,13 +1,9 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
 
-#include <sched.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
-#if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
 
 static const H8MediumClassSpec k_h8_medium_classes[H8_MEDIUM_CLASS_COUNT] = {
     {8192u, H8_MEDIUM_RUN_BYTES, 13u, 8u, 1u},
@@ -53,9 +49,7 @@ static void h8_medium_debug_class_inc(uint32_t class_id,
                                       atomic_size_t* class_64k);
 
 static uint64_t h8_medium_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 
 void h8_medium_debug_note_owner_medium_alloc(H8OwnerRecord* owner) {
@@ -330,7 +324,7 @@ static void h8_medium_lock_run(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
-  pthread_mutex_lock(&run->lock);
+  h8_platform_mutex_lock(&run->lock);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_run_lock_wait_ns,
                (size_t)(h8_medium_now_ns() - start));
@@ -338,7 +332,7 @@ static void h8_medium_lock_run(H8MediumRun* run) {
 }
 
 static void h8_medium_unlock_run(H8MediumRun* run) {
-  pthread_mutex_unlock(&run->lock);
+  h8_platform_mutex_unlock(&run->lock);
 }
 
 static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {
@@ -657,7 +651,7 @@ void h8_medium_debug_note_local_fast_flush(H8MediumRun* run, bool owner_exit) {
 #endif
 
 static void h8_medium_demote_active_empty_live(H8MediumRun* run) {
-  if (!run || pthread_mutex_trylock(&run->lock) != 0) {
+  if (!run || h8_platform_mutex_trylock(&run->lock) != 0) {
     return;
   }
   uint64_t pending =

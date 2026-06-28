@@ -1,6 +1,5 @@
 #include "h8_internal.h"
 
-#include <sched.h>
 #include <stdlib.h>
 
 static H8OwnerWord h8_owner_word_from_span(const H8Span* span) {
@@ -51,7 +50,7 @@ void h8_span_wait_publishers_zero(H8Span* span) {
     if (atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0) {
       return;
     }
-    sched_yield();
+    h8_platform_yield();
   }
 }
 

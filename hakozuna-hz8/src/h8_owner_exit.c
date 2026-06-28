@@ -1,17 +1,11 @@
 #include "h8_internal.h"
 #include "h8_used_count.h"
 
-#include <sched.h>
 #include <stdlib.h>
-#if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_owner_exit_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 
@@ -57,9 +51,9 @@ static void h8_owner_quiesce_span(H8Span* span) {
     if (qstate == H8_Q_QUEUED) {
       h8_span_collect_remote(owner, span);
     } else if (qstate == H8_Q_DRAINING_DIRTY) {
-      sched_yield();
+      h8_platform_yield();
     } else {
-      sched_yield();
+      h8_platform_yield();
     }
   }
 
@@ -94,10 +88,10 @@ void h8_owner_exit(H8OwnerRecord* owner) {
                (size_t)(h8_owner_exit_now_ns() - collect_start));
 #endif
 
-  pthread_mutex_lock(&owner->owned_lock);
+  h8_platform_mutex_lock(&owner->owned_lock);
   H8Span* span = owner->owned_head;
   owner->owned_head = NULL;
-  pthread_mutex_unlock(&owner->owned_lock);
+  h8_platform_mutex_unlock(&owner->owned_lock);
 
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t walk_start = h8_owner_exit_now_ns();

@@ -325,6 +325,7 @@ current lane:
       small local alloc/free
       small remote-safe free
       medium local correctness only
+      regular adoption may stay disabled in the first Win64 smoke lane
     first non-goals:
       no Windows CRT replacement claim
       no Detours/AppInit/global override surface
@@ -348,6 +349,24 @@ current lane:
       platform layer scaffold
       global once/thread-key/mutex types now route through platform typedefs
       h8_core.c initialization and TLS bootstrap now use platform wrappers first
+    progress note:
+      owner lifecycle files now use platform mutex/yield/time helpers
+      small local/remote-safe paths now route through platform mutex/yield
+      span arena and medium registry/common/query/residency layers now use
+      platform mutex/time/purge wrappers
+      Linux-only Win64 hard stop in h8_arena_gate.c was removed
+      medium payload arena still needs a stronger Win64 alignment/release
+      contract review before any parity or performance claim
+      scripts/build_hz8_win64_smoke.ps1 now builds the Win64 direct-API smoke
+      with clang-cl
+      current Win64 smoke passes for MISS / VALID / INVALID, small remote-safe
+      free, and medium owner-exit route validity
+    current blockers:
+      medium_arena.c still keeps a Linux-first aligned carve path and only a
+      best-effort Win64 bring-up fallback
+      h8_system.c preload/dlsym surface remains Linux-only by design for this
+      box and should stay outside the first Win64 direct-API gate
+      regular adoption remains out of scope for the first Win64 smoke box
 
   HZ8PreloadReallocCompat-L1:
     status:

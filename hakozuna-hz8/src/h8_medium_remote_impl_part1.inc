@@ -3,11 +3,8 @@
 
 #include <stdlib.h>
 #if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
 static uint64_t h8_medium_remote_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 
@@ -473,7 +470,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
   }
 
   h8_medium_debug_writer_enter(run, owner, H8_MEDIUM_WRITER_OWNER_COLLECT);
-  pthread_mutex_lock(&run->lock);
+  h8_platform_mutex_lock(&run->lock);
   uint64_t bits = atomic_load_explicit(&run->pending_bits[0],
                                        memory_order_acquire);
   uint64_t valid = run->slot_count == 64u

@@ -6,14 +6,8 @@
 #include <stddef.h>
 #include <stdint.h>
 #if defined(H8_ENABLE_DEBUG_STATS)
-#include <time.h>
-#endif
-
-#if defined(H8_ENABLE_DEBUG_STATS)
 static uint64_t h8_medium_slots_now_ns(void) {
-  struct timespec ts;
-  clock_gettime(CLOCK_MONOTONIC, &ts);
-  return (uint64_t)ts.tv_sec * UINT64_C(1000000000) + (uint64_t)ts.tv_nsec;
+  return h8_platform_now_ns();
 }
 #endif
 

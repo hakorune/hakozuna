@@ -1,8 +1,6 @@
 #include "h8_internal.h"
 
-#include <errno.h>
 #include <stdlib.h>
-#include <sys/mman.h>
 #include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
@@ -84,13 +82,8 @@ static void h8_init_once(void) {
 #endif
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
-  int mmap_flags = MAP_PRIVATE | MAP_ANONYMOUS;
-#ifdef MAP_NORESERVE
-  mmap_flags |= MAP_NORESERVE;
-#endif
-  h8g.arena_base = mmap(NULL, h8g.arena_bytes, PROT_READ | PROT_WRITE,
-                        mmap_flags, -1, 0);
-  if (h8g.arena_base == MAP_FAILED) {
+  h8g.arena_base = h8_platform_reserve_rw(h8g.arena_bytes);
+  if (!h8g.arena_base) {
     fprintf(stderr, "HZ8 arena reservation failed\n");
     abort();
   }
