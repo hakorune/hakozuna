@@ -118,10 +118,14 @@ Latest Windows rerun note:
 
 - 2026-06-29 の Larson rerun は runner の capture / rc 修正後に clean exit
   まで戻りました。
+- narrow な `-LarsonAppcapOnly` rerun が、いまの clean Windows HZ6
+  baseline です。
 - ただし default の `hz6-strict` / `hz6-speed` / `hz6-rss` / `hz6-*-broad`
   / `hz6-*-route4k` は、この matrix では warmup no-go のままです。
-- clean baseline は `hz6-ownerlocality-appcap-speed`
-  (`40.788M ops/s`, `2,250,008 KB`) です。
+- clean baseline の最強 row は `hz6-ownerlocality-appcap-speed`
+  (`45.754M ops/s`, `2,250,016 KB`) です。
+- appcap family をこの rerun の Windows baseline として扱い、default
+  lane は引き続き control-only にします。
 
 ## サイズ対応の境界
 

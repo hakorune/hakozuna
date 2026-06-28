@@ -256,13 +256,15 @@ Latest Windows rerun note:
 
 - The 2026-06-29 Windows Larson rerun now exits cleanly after the runner
   capture/rc fix.
+- The narrow `-LarsonAppcapOnly` rerun is the current clean Windows HZ6
+  baseline.
 - In that rerun, the default `hz6-strict`, `hz6-speed`, `hz6-rss`,
-  `hz6-*-broad`, and `hz6-*-route4k` lanes are warmup no-go rows on this
+  `hz6-*-broad`, and `hz6-*-route4k` lanes remain warmup no-go rows on this
   matrix; keep them as control / failure evidence, not as promotion claims.
-- The strongest HZ6 row in that rerun is
-  `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and `2,250,008 KB`
+- The strongest HZ6 row in that narrow rerun is
+  `hz6-ownerlocality-appcap-speed` at `45.754M ops/s` and `2,250,016 KB`
   peak RSS.
-- Treat the appcap family as the clean Windows baseline for this rerun; the
+- The appcap family is the clean Windows baseline for this rerun; the
   non-appcap default lanes are still control-only.
 
 Sources:

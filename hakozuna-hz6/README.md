@@ -130,12 +130,13 @@ performance claim should be made from a single lane or a single row.
 Latest Windows rerun note:
 
 - The 2026-06-29 Larson paper runner capture / rc parsing fix is in place.
-- HZ6 appcap rows now report clean exits again.
+- The narrow `-LarsonAppcapOnly` rerun is the current clean Windows HZ6
+  baseline.
 - The default `hz6-strict`, `hz6-speed`, `hz6-rss`, `hz6-*-broad`, and
   `hz6-*-route4k` lanes still fail warmup on this matrix; keep them as
   control / no-go evidence.
-- The strongest HZ6 row in the rerun is
-  `hz6-ownerlocality-appcap-speed` at `40.788M ops/s` and `2,250,008 KB`
+- The strongest HZ6 row in the narrow rerun is
+  `hz6-ownerlocality-appcap-speed` at `45.754M ops/s` and `2,250,016 KB`
   peak RSS.
 
 Snapshot:
