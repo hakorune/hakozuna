@@ -158,4 +158,5 @@ Current expectation:
 - keeps regular adoption disabled by default for this first box
 - medium payload arenas keep a raw reservation handle so Win64 release is
   exact instead of best-effort over the aligned carve
+- the small arena is reserved up front and committed per span on demand
 ```

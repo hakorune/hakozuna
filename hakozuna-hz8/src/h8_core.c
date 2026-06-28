@@ -82,7 +82,7 @@ static void h8_init_once(void) {
 #endif
   h8g.arena_bytes = H8_SMALL_ARENA_BYTES;
   h8g.span_count = h8g.arena_bytes / H8_SPAN_BYTES;
-  h8g.arena_base = h8_platform_reserve_rw(h8g.arena_bytes);
+  h8g.arena_base = h8_platform_reserve(h8g.arena_bytes);
   if (!h8g.arena_base) {
     fprintf(stderr, "HZ8 arena reservation failed\n");
     abort();

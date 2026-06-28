@@ -76,7 +76,13 @@ static size_t h8_owner_next_span_index(H8OwnerRecord* owner) {
 }
 
 static void h8_span_commit_memory(H8Span* span) {
-  (void)span;
+  if (!span || !span->base) {
+    return;
+  }
+  if (h8_platform_commit(span->base, H8_SPAN_BYTES) != 0) {
+    perror("h8_platform_commit");
+    abort();
+  }
   atomic_fetch_add_explicit(&h8g.arena_committed_bytes, H8_SPAN_BYTES,
                             memory_order_relaxed);
 }

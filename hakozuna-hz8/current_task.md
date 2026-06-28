@@ -355,6 +355,8 @@ current lane:
       span arena and medium registry/common/query/residency layers now use
       platform mutex/time/purge wrappers
       Linux-only Win64 hard stop in h8_arena_gate.c was removed
+      h8_core now reserves the small arena on Win64 and commits span pages on
+      demand through h8_span_commit_for_class
       medium payload arena now tracks the raw reservation handle on Win64 so
       aligned run release stays exact instead of best-effort
       scripts/build_hz8_win64_smoke.ps1 now builds the Win64 direct-API smoke
