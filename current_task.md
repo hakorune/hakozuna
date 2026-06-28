@@ -21,9 +21,11 @@ Current strength:
   Ubuntu LD_PRELOAD malloc_trim support recovers quiescent current RSS well.
   Peak RSS is still mostly touched MidPage payload residency.
   Latest Windows Larson remeasure now runs clean after runner capture/rc parsing
-  fixes; HZ6 ownerlocality-speed is the current strongest Windows Larson lane.
+  fixes; the narrow appcap-only rerun makes `hz6-ownerlocality-appcap-speed`
+  the current strongest Windows Larson lane at `45.754M ops/s` and
+  `2,250,016 KB` peak RSS.
   The same rerun keeps the default non-appcap Windows HZ6 lanes as warmup
-  no-go/control evidence.
+  no-go/control evidence, while the other appcap rows remain control rows.
 ```
 
 ## Read First

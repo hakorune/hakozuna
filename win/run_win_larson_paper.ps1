@@ -7,6 +7,7 @@ param(
     [switch]$IncludeWorkerWarmupControl,
     [int]$CompactChunksPerThread = 400,
     [switch]$IncludeHz6CapacityControls,
+    [switch]$LarsonAppcapOnly,
     [switch]$ContinueOnFailure
 )
 
@@ -40,7 +41,14 @@ $Executables = @(
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_larson_tcmalloc.exe") }
 )
 
-if ($IncludeHz6CapacityControls) {
+if ($LarsonAppcapOnly) {
+    $Executables = @(
+        @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_strict_appcap.exe") },
+        @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_appcap.exe") },
+        @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_larson_hz6_rss_appcap.exe") },
+        @{ Name = "hz6-ownerlocality-appcap-speed"; Path = (Join-Path $SuiteDir "bench_larson_hz6_speed_ownerlocality_appcap.exe") }
+    )
+} elseif ($IncludeHz6CapacityControls) {
     $Executables = @(
         @{ Name = "crt"; Path = (Join-Path $SuiteDir "bench_larson_crt.exe") },
         @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_larson_hz3.exe") },

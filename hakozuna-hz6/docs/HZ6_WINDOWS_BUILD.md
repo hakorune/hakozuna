@@ -121,6 +121,16 @@ powershell -ExecutionPolicy Bypass -File .\win\run_win_hz6_capacity_matrix.ps1 `
   -SkipBuild
 ```
 
+Run the appcap-only Larson baseline:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\win\run_win_larson_paper.ps1 `
+  -LarsonAppcapOnly `
+  -Runs 3 `
+  -TimeoutSeconds 240 `
+  -ContinueOnFailure
+```
+
 Default capacity matrix lanes:
 
 ```text
@@ -148,6 +158,17 @@ ownerlocalityfast-appcap:
   throughput/RSS checks after `ownerlocality-appcap` has validated the
   counters. Repeat-3 is now enough to treat it as the preferred
   candidate-control lane for fast owner-locality comparisons.
+
+Larson appcap-only baseline:
+  `run_win_larson_paper.ps1 -LarsonAppcapOnly`
+  keeps the clean HZ6 appcap family together without the default warmup
+  no-go rows. The narrow baseline currently includes
+  `hz6-strict-appcap`, `hz6-speed-appcap`, `hz6-rss-appcap`, and
+  `hz6-ownerlocality-appcap-speed`, so it is short enough to rerun quickly
+  when the goal is the current Windows baseline rather than a full paper
+  comparison. In the latest narrow rerun, the strongest row is
+  `hz6-ownerlocality-appcap-speed` at `45.754M ops/s` and `2,250,016 KB`
+  peak RSS.
 ```
 
 Current selected HZ6 rows are maintained in:
