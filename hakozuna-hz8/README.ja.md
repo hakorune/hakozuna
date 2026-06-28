@@ -42,6 +42,9 @@ release record:
 
 experimental throughput lane:
   docs/HZ8_V2_HZ9_DESIGN.md
+
+windows bring-up lane:
+  docs/HZ8_WINDOWS_BRINGUP.md
 ```
 
 HZ8-v1.1で固定しているdefault:
@@ -138,6 +141,7 @@ docs/HZ8_SMALL_V0_RC1.md
 docs/HZ8_OWNERSHIP_CONTRACT.md
 docs/HZ8_OWNER_LIFECYCLE.md
 docs/HZ8_BENCH_GATE.md
+docs/HZ8_WINDOWS_BRINGUP.md
 docs/ALLOCATOR_MATRIX.md
 docs/HZ8_V2_HZ9_DESIGN.md
 ```
