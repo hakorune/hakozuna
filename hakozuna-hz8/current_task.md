@@ -204,6 +204,11 @@ Implementation status:
   smoke pass: ./h8_smoke
   next check: benchmark the three weakness-first rows again
 
+Current attribution box:
+  docs/HZ8_REMOTE_PRESSURE_COLLECT_ATTRIBUTION_L2.md
+  source-tagged collect attribution is now in the working tree
+  next decision depends on active_full vs active_miss dominance
+
 Local-only tuning is not the next ROI.
 
 Current policy:

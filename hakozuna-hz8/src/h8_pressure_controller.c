@@ -48,7 +48,28 @@ void h8_pressure_owner_collect(H8OwnerRecord* owner) {
   (void)h8_collect_owner_pending_budget(owner, budget);
 }
 
-void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner) {
+static void h8_pressure_collect_note_source(H8RemotePressureCollectSource source) {
+#if defined(H8_ENABLE_DEBUG_STATS)
+  switch (source) {
+    case H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL:
+      H8_DEBUG_INC(remote_pressure_collect_source_active_hit_full_count);
+      break;
+    case H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_MISS:
+      H8_DEBUG_INC(remote_pressure_collect_source_active_miss_count);
+      break;
+    case H8_REMOTE_PRESSURE_COLLECT_SOURCE_OWNER_EXIT:
+      H8_DEBUG_INC(remote_pressure_collect_source_owner_exit_count);
+      break;
+    case H8_REMOTE_PRESSURE_COLLECT_SOURCE_COUNT:
+      break;
+  }
+#else
+  (void)source;
+#endif
+}
+
+void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner,
+                                              H8RemotePressureCollectSource source) {
   if (!owner) {
     return;
   }
@@ -58,6 +79,7 @@ void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner) {
   if (budget == 0) {
     return;
   }
+  h8_pressure_collect_note_source(source);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_INC(small_remote_pressure_collect_call_count);
   H8_DEBUG_ADD(small_remote_pressure_collect_budget_count, budget);

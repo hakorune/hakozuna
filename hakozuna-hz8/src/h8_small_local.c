@@ -235,7 +235,8 @@ void* h8_malloc_inner(size_t size) {
     if (pending_before > 0) {
       H8_DEBUG_INC(small_active_full_pending_nonzero_count);
       remote_pressure_collect_triggered = true;
-      h8_pressure_owner_collect_remote_pressure(owner);
+      h8_pressure_owner_collect_remote_pressure(
+          owner, H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL);
     } else {
       h8_pressure_owner_collect(owner);
     }
@@ -258,7 +259,8 @@ void* h8_malloc_inner(size_t size) {
     if (pending_before > 0) {
       H8_DEBUG_INC(small_active_full_pending_nonzero_count);
       remote_pressure_collect_triggered = true;
-      h8_pressure_owner_collect_remote_pressure(owner);
+      h8_pressure_owner_collect_remote_pressure(
+          owner, H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_MISS);
     } else {
       h8_pressure_owner_collect(owner);
     }

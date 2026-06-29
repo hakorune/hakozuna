@@ -128,6 +128,17 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.local_alloc_pending_nonzero, debug.local_free_pending_nonzero,
          debug.owner_live_set_already_live,
          debug.owner_live_clear_already_free);
+  printf("remote_pressure_collect source_active_hit_full=%zu source_active_miss=%zu source_owner_exit=%zu small_call=%zu small_budget=%zu small_spans=%zu small_pending_before=%zu small_pending_after=%zu small_helped=%zu small_no_help=%zu\n",
+         debug.remote_pressure_collect_source_active_hit_full_count,
+         debug.remote_pressure_collect_source_active_miss_count,
+         debug.remote_pressure_collect_source_owner_exit_count,
+         debug.small_remote_pressure_collect_call_count,
+         debug.small_remote_pressure_collect_budget_count,
+         debug.small_remote_pressure_collect_span_count,
+         debug.small_remote_pressure_collect_pending_before_count,
+         debug.small_remote_pressure_collect_pending_after_count,
+         debug.small_active_full_collect_helped_count,
+         debug.small_active_full_collect_no_help_count);
   printf("local_path active_hit=%zu active_miss=%zu freelist=%zu bump=%zu slow_collect=%zu span_commit=%zu find_scan=%zu scan_span=%zu free_hit=%zu reject_owner=%zu reject_state=%zu reject_live=%zu\n",
          debug.local_active_hit, debug.local_active_miss,
          debug.local_freelist_pop, debug.local_bump_alloc,

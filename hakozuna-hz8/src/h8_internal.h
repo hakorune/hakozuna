@@ -332,8 +332,15 @@ H8Span* h8_span_retire_logical(H8Span* span);
 void h8_span_purge_retired_batch(H8Span* spans);
 void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span);
 void h8_span_notify(H8OwnerRecord* owner, H8Span* span);
+typedef enum H8RemotePressureCollectSource {
+  H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL = 0,
+  H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_MISS = 1,
+  H8_REMOTE_PRESSURE_COLLECT_SOURCE_OWNER_EXIT = 2,
+  H8_REMOTE_PRESSURE_COLLECT_SOURCE_COUNT = 3
+} H8RemotePressureCollectSource;
 void h8_pressure_owner_collect(H8OwnerRecord* owner);
-void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner);
+void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner,
+                                              H8RemotePressureCollectSource source);
 void h8_collect_owner_pending(H8OwnerRecord* owner);
 void h8_owner_exit(H8OwnerRecord* owner);
 bool h8_owner_lifecycle_enter(H8OwnerRecord* owner, uint16_t expected_generation);

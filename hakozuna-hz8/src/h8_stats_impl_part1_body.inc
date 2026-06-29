@@ -98,6 +98,13 @@
       &h8g.small_active_full_collect_helped_count, memory_order_acquire);
   out->small_active_full_collect_no_help_count = atomic_load_explicit(
       &h8g.small_active_full_collect_no_help_count, memory_order_acquire);
+  out->remote_pressure_collect_source_active_hit_full_count =
+      atomic_load_explicit(&h8g.remote_pressure_collect_source_active_hit_full_count,
+                           memory_order_acquire);
+  out->remote_pressure_collect_source_active_miss_count = atomic_load_explicit(
+      &h8g.remote_pressure_collect_source_active_miss_count, memory_order_acquire);
+  out->remote_pressure_collect_source_owner_exit_count = atomic_load_explicit(
+      &h8g.remote_pressure_collect_source_owner_exit_count, memory_order_acquire);
   out->pending_word_summary_set =
       atomic_load_explicit(&h8g.pending_word_summary_set, memory_order_acquire);
   out->pending_word_summary_shadow_hit = atomic_load_explicit(

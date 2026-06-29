@@ -27,6 +27,12 @@ medium_interleaved_r50:
 This is enough to keep L1 as a real mechanism box rather than a no-op
 diagnostic.
 
+The next step is attribution, not new behavior:
+
+```text
+docs/HZ8_REMOTE_PRESSURE_COLLECT_ATTRIBUTION_L2.md
+```
+
 ## Why This Box Exists
 
 The latest same-run matrix shows that HZ8-v1.1 is already useful on local rows
