@@ -88,7 +88,30 @@ quiescent pending repair = 0
 timeout / abort = 0
 ```
 
-## Lane 4: App / Preload Compatibility
+## Lane 4: Small Remote Pressure
+
+The current weak-row candidate is:
+
+- [HZ8 SmallRemotePressureCollect L1](./HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md)
+
+Target rows:
+
+```text
+primary:
+  small_interleaved_remote90
+
+secondary:
+  main_interleaved_r90
+```
+
+This lane should adjust owner-side collect timing / budget only at active
+full, active miss, or pending-exists paths. Keep local active-hit success,
+remote publish protocol, pending bitmap authority, and qstate authority frozen.
+
+If this lane fails, switch to `SmallRemotePublishCostAttribution-L1` before
+changing cross-owner handoff or residency.
+
+## Lane 5: App / Preload Compatibility
 
 Current preload API surface:
 

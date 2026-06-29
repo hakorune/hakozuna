@@ -52,6 +52,27 @@ The current optimization sequence is:
 17. PendingWordMaskAuthority-L1
 ```
 
+## Current Weak-Row Follow-Up
+
+The latest full matrix moved the next small remote question back to owner-side
+collect timing:
+
+```text
+next box:
+  HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md
+
+target:
+  small_interleaved_remote90
+
+secondary:
+  main_interleaved_r90
+```
+
+This follow-up should not reopen remote publish authority, pending bitmap
+authority, qstate authority, or owner lifecycle. It only tests whether active
+miss / active full paths collect too little pending work under remote-heavy
+pressure.
+
 ## Admission Shape
 
 Keep `active_spans[]` as a weak hint, not as ownership truth.  Owner admission

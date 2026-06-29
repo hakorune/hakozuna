@@ -556,9 +556,9 @@ static size_t h8_collect_pending_list(H8OwnerRecord* owner, H8Span* list,
   return collected;
 }
 
-void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
+size_t h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   if (!owner || budget == 0) {
-    return;
+    return 0;
   }
   H8_DEBUG_INC(pending_collect_call_count);
 
@@ -575,7 +575,7 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
       owner->pending_carry = carry;
       H8_DEBUG_INC(pending_collect_requeue_count);
       h8_platform_mutex_unlock(&owner->pending_lock);
-      return;
+      return collected;
     }
   }
 
@@ -591,8 +591,9 @@ void h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   }
 
   h8_platform_mutex_unlock(&owner->pending_lock);
+  return collected;
 }
 
 void h8_collect_owner_pending(H8OwnerRecord* owner) {
-  h8_collect_owner_pending_budget(owner, SIZE_MAX);
+  (void)h8_collect_owner_pending_budget(owner, SIZE_MAX);
 }

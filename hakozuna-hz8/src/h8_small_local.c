@@ -212,6 +212,7 @@ void* h8_malloc_inner(size_t size) {
 #endif
   H8Span* span = ctx->active_spans[class_id];
   bool active_hint_ok = false;
+  bool remote_pressure_collect_triggered = false;
   if (span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     active_hint_ok = h8_active_hint_matches(span, owner, class_id);
@@ -229,7 +230,15 @@ void* h8_malloc_inner(size_t size) {
 #if !defined(H8_ENABLE_DEBUG_STATS)
     owner = h8_ctx_owner_assume(ctx);
 #endif
-    h8_pressure_owner_collect(owner);
+    size_t pending_before =
+        atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
+    if (pending_before > 0) {
+      H8_DEBUG_INC(small_active_full_pending_nonzero_count);
+      remote_pressure_collect_triggered = true;
+      h8_pressure_owner_collect_remote_pressure(owner);
+    } else {
+      h8_pressure_owner_collect(owner);
+    }
   }
 #if !defined(H8_ENABLE_DEBUG_STATS)
   if (!owner) {
@@ -238,10 +247,30 @@ void* h8_malloc_inner(size_t size) {
 #endif
   H8_DEBUG_INC(local_active_miss);
   span = h8_find_active_span(ctx, owner, class_id);
+  if (remote_pressure_collect_triggered && span) {
+    H8_DEBUG_INC(small_active_full_collect_helped_count);
+    remote_pressure_collect_triggered = false;
+  }
   if (!span) {
     H8_DEBUG_INC(local_slow_collect);
-    h8_pressure_owner_collect(owner);
+    size_t pending_before =
+        atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
+    if (pending_before > 0) {
+      H8_DEBUG_INC(small_active_full_pending_nonzero_count);
+      remote_pressure_collect_triggered = true;
+      h8_pressure_owner_collect_remote_pressure(owner);
+    } else {
+      h8_pressure_owner_collect(owner);
+    }
     span = h8_find_active_span(ctx, owner, class_id);
+    if (remote_pressure_collect_triggered) {
+      if (span) {
+        H8_DEBUG_INC(small_active_full_collect_helped_count);
+      } else {
+        H8_DEBUG_INC(small_active_full_collect_no_help_count);
+      }
+      remote_pressure_collect_triggered = false;
+    }
   }
   if (!span && h8_regular_adoption_enabled() &&
       atomic_load_explicit(&h8g.orphan_span_count, memory_order_acquire) > 0) {

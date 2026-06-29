@@ -18,6 +18,25 @@ static size_t h8_pressure_collect_budget(H8OwnerRecord* owner) {
   return 8;
 }
 
+static size_t h8_pressure_collect_budget_remote(size_t pending) {
+  if (pending == 0) {
+    return 0;
+  }
+  if (pending <= 2) {
+    return pending;
+  }
+  if (pending <= 8) {
+    return 4;
+  }
+  if (pending <= 32) {
+    return 8;
+  }
+  if (pending <= 128) {
+    return 16;
+  }
+  return 32;
+}
+
 void h8_pressure_owner_collect(H8OwnerRecord* owner) {
   if (!owner) {
     return;
@@ -26,7 +45,34 @@ void h8_pressure_owner_collect(H8OwnerRecord* owner) {
   if (budget == 0) {
     return;
   }
-  h8_collect_owner_pending_budget(owner, budget);
+  (void)h8_collect_owner_pending_budget(owner, budget);
+}
+
+void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner) {
+  if (!owner) {
+    return;
+  }
+  size_t pending_before =
+      atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
+  size_t budget = h8_pressure_collect_budget_remote(pending_before);
+  if (budget == 0) {
+    return;
+  }
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_INC(small_remote_pressure_collect_call_count);
+  H8_DEBUG_ADD(small_remote_pressure_collect_budget_count, budget);
+  H8_DEBUG_ADD(small_remote_pressure_collect_pending_before_count, pending_before);
+#endif
+  size_t collected = h8_collect_owner_pending_budget(owner, budget);
+  size_t pending_after =
+      atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  H8_DEBUG_ADD(small_remote_pressure_collect_span_count, collected);
+  H8_DEBUG_ADD(small_remote_pressure_collect_pending_after_count, pending_after);
+#else
+  (void)collected;
+  (void)pending_after;
+#endif
 }
 
 H8Span* h8_pressure_refill(H8OwnerRecord* owner, uint32_t class_id) {

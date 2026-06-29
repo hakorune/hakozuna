@@ -175,6 +175,14 @@ Weakness-first order:
   2. main_interleaved_r90
   3. medium_interleaved_r50
 
+Next design box:
+  docs/HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md
+
+Implementation status:
+  HZ8 SmallRemotePressureCollect L1 is in the working tree
+  smoke pass: ./h8_smoke
+  next check: benchmark the three weakness-first rows again
+
 Local-only tuning is not the next ROI.
 
 Current policy:
@@ -221,6 +229,9 @@ main/medium attribution:
 
 benchmark gates:
   docs/HZ8_BENCH_GATE.md
+
+small remote pressure collect:
+  docs/HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md
 
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md

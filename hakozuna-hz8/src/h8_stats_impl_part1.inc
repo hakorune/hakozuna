@@ -89,6 +89,24 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
       &h8g.pending_collect_carry_hit_count, memory_order_acquire);
   out->pending_collect_requeue_count =
       atomic_load_explicit(&h8g.pending_collect_requeue_count, memory_order_acquire);
+  out->small_remote_pressure_collect_call_count = atomic_load_explicit(
+      &h8g.small_remote_pressure_collect_call_count, memory_order_acquire);
+  out->small_remote_pressure_collect_budget_count = atomic_load_explicit(
+      &h8g.small_remote_pressure_collect_budget_count, memory_order_acquire);
+  out->small_remote_pressure_collect_span_count = atomic_load_explicit(
+      &h8g.small_remote_pressure_collect_span_count, memory_order_acquire);
+  out->small_remote_pressure_collect_pending_before_count =
+      atomic_load_explicit(&h8g.small_remote_pressure_collect_pending_before_count,
+                           memory_order_acquire);
+  out->small_remote_pressure_collect_pending_after_count =
+      atomic_load_explicit(&h8g.small_remote_pressure_collect_pending_after_count,
+                           memory_order_acquire);
+  out->small_active_full_pending_nonzero_count = atomic_load_explicit(
+      &h8g.small_active_full_pending_nonzero_count, memory_order_acquire);
+  out->small_active_full_collect_helped_count = atomic_load_explicit(
+      &h8g.small_active_full_collect_helped_count, memory_order_acquire);
+  out->small_active_full_collect_no_help_count = atomic_load_explicit(
+      &h8g.small_active_full_collect_no_help_count, memory_order_acquire);
   out->pending_word_summary_set =
       atomic_load_explicit(&h8g.pending_word_summary_set, memory_order_acquire);
   out->pending_word_summary_shadow_hit = atomic_load_explicit(
