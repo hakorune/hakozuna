@@ -8,6 +8,25 @@ target: small_interleaved_remote90 first
 secondary target: main_interleaved_r90
 ```
 
+Observed R3 signal:
+
+```text
+small_interleaved_remote90:
+  0.91M -> 1.06M ops/s
+  868.28 MiB -> 455.47 MiB peak RSS
+
+main_interleaved_r90:
+  2.68M -> 4.54M ops/s
+  144.06 MiB -> 113.75 MiB peak RSS
+
+medium_interleaved_r50:
+  2.93M -> 8.19M ops/s
+  168.01 MiB -> 122.10 MiB peak RSS
+```
+
+This is enough to keep L1 as a real mechanism box rather than a no-op
+diagnostic.
+
 ## Why This Box Exists
 
 The latest same-run matrix shows that HZ8-v1.1 is already useful on local rows

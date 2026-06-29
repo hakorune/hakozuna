@@ -136,6 +136,20 @@ main_interleaved_r90:
 
 small_interleaved_remote90:
   hz8 0.91M ops/s, RSS 868.28 MiB
+
+Post-L1 targeted R3:
+
+```text
+record:
+  bench_results/small_interleaved_remote90_hz8_r3.log
+  bench_results/main_interleaved_r90_hz8_r3.log
+  bench_results/medium_interleaved_r50_hz8_r3.log
+
+hz8 medians:
+  small_interleaved_remote90  1.06M ops/s, peak RSS 455.47 MiB
+  main_interleaved_r90        4.54M ops/s, peak RSS 113.75 MiB
+  medium_interleaved_r50      8.19M ops/s, peak RSS 122.10 MiB
+```
 ```
 
 Interpretation:
@@ -149,6 +163,13 @@ interleaved / remote-heavy rows:
   remain the weakest area
   small_interleaved_remote90 is the clearest pain point
   main_interleaved_r90 and medium_interleaved_r50 are the next two
+
+L1 observation:
+  owner-side remote-pressure collect helped the weakest rows
+  small_interleaved_remote90 improved modestly
+  main_interleaved_r90 improved clearly
+  medium_interleaved_r50 improved the most
+  RSS stayed bounded on HZ8 while mimalloc/tcmalloc still trade RSS for speed
 ```
 
 ## Current Direction
