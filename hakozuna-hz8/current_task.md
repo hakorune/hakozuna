@@ -100,6 +100,57 @@ medium remote:
   detached direct-lock fallback remains
 ```
 
+## Latest Benchmark Snapshot
+
+Same-run matrix:
+
+```text
+record:
+  bench_results/hz8_v11_same_run_matrix_20260629T004316Z/
+
+row family:
+  hz8 / hz8_legacy64k2 / hz3 / hz4 / mimalloc / tcmalloc / system
+  RUNS=10, THREADS=16, ITERS=100000
+```
+
+Representative medians:
+
+```text
+guard_local0:
+  hz8 264.15M ops/s, RSS 6.14 MiB
+
+fixed24_local0:
+  hz8 323.23M ops/s, RSS 6.05 MiB
+
+fixed48_local0:
+  hz8 340.68M ops/s, RSS 6.10 MiB
+
+medium_local0:
+  hz8 169.49M ops/s, RSS 6.21 MiB
+
+main_local0:
+  hz8 136.48M ops/s, RSS 6.53 MiB
+
+main_interleaved_r90:
+  hz8 2.68M ops/s, RSS 144.06 MiB
+
+small_interleaved_remote90:
+  hz8 0.91M ops/s, RSS 868.28 MiB
+```
+
+Interpretation:
+
+```text
+local rows:
+  low RSS remains the best HZ8 property
+  fixed-class local rows are the clearest strength
+
+interleaved / remote-heavy rows:
+  remain the weakest area
+  small_interleaved_remote90 is the clearest pain point
+  main_interleaved_r90 and medium_interleaved_r50 are the next two
+```
+
 ## Current Direction
 
 ```text
@@ -108,8 +159,8 @@ HZ8-v1.1:
 
 HZ8-v2:
   throughput lane only
-  design / evidence work may continue if it preserves v1.1 safety and RSS
-  identity
+  next work should attack the weakest rows first
+  preserve v1.1 safety and RSS
 
 Current candidate box:
   MediumLocalFastTierActiveRun-Shadow-L1
@@ -118,6 +169,13 @@ Current candidate box:
 Interpretation:
   shadow reuse was near-perfect, so miss rate is not the limiter
   v2 throughput gains need a larger architectural move than local micro-tuning
+
+Weakness-first order:
+  1. small_interleaved_remote90
+  2. main_interleaved_r90
+  3. medium_interleaved_r50
+
+Local-only tuning is not the next ROI.
 
 Current policy:
   keep the v1.1 default stable
