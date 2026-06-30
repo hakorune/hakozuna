@@ -61,6 +61,8 @@ Highlights:
 - HZ8-v2 / KeepRefill default build and preload targets
 - Fail-closed ownership and route contract documentation
 - Public benchmark matrix scripts and release notes
+- Paper-facing Ubuntu/Linux x86_64 matrix snapshot:
+  hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 - HZ8 public release preparation notes:
   hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md
 
@@ -82,4 +84,3 @@ Release shape:
 - [ ] Public benchmark captions include RUNS, THREADS, ITERS, platform, and RSS.
 - [ ] Release body avoids "universally beats tcmalloc" style claims.
 - [ ] Windows HZ8 remains described as bring-up/evidence only.
-

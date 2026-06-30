@@ -46,7 +46,7 @@ Primary HZ8 table:
 
 ```text
 record:
-  bench_results/20260630T124112Z_hz8_keeprefill_public_matrix/
+  bench_results/20260630T191745Z_hz8_keeprefill_public_matrix/
 
 rows:
   small_interleaved_remote90
@@ -58,6 +58,7 @@ rows:
 
 allocators:
   hz8
+  hz8_keeprefill
   mimalloc
   tcmalloc
   system
@@ -69,10 +70,16 @@ Required caption details:
 RUNS=10
 THREADS=16
 ITERS=50000
-median ops/s
-peak RSS
-Ubuntu/Linux x86_64 environment
-prepared mimalloc / tcmalloc LD_PRELOAD DSOs
+  median ops/s
+  peak RSS
+  Ubuntu/Linux x86_64 environment
+  prepared mimalloc / tcmalloc LD_PRELOAD DSOs
+```
+
+Paper-ready snapshot:
+
+```text
+hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 ```
 
 Interpretation:
@@ -119,4 +126,3 @@ Suggested Zenodo title:
 Hakozuna HZ8: Balanced Low-RSS Allocator with Fail-Closed Ownership and
 Remote-Heavy KeepRefill Control
 ```
-

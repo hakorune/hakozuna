@@ -43,6 +43,8 @@ Main components include:
 - hakozuna-hz8/README.md and README.ja.md: English/Japanese entry points
 - hakozuna-hz8/docs/: ownership, lifecycle, remote collection, gate, and release
   documentation
+- hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md: paper-facing
+  Ubuntu/Linux x86_64 public matrix snapshot
 - hakozuna-hz8/scripts/: public benchmark matrix helpers
 - hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md: release and paper preparation
   checklist
@@ -78,4 +80,3 @@ HZ6 DOI:
 GitHub repository:
   https://github.com/hakorune/hakozuna
 ```
-

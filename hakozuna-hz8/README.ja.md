@@ -40,6 +40,7 @@ release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
+  docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 
 experimental throughput lane:
   docs/HZ8_V2_HZ9_DESIGN.md
@@ -162,6 +163,12 @@ TCMALLOC_SO=/path/to/libtcmalloc_minimal.so \
   scripts/run_hz8_keeprefill_public_matrix.sh
 ```
 
+論文向けの公開マトリクス:
+
+```text
+docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+```
+
 ## ドキュメント入口
 
 ```text
@@ -172,6 +179,7 @@ docs/HZ8_OWNERSHIP_CONTRACT.md
 docs/HZ8_OWNER_LIFECYCLE.md
 docs/HZ8_BENCH_GATE.md
 docs/HZ8_PUBLIC_RELEASE_PREP.md
+docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 docs/HZ8_WINDOWS_BRINGUP.md
 docs/ALLOCATOR_MATRIX.md
 docs/HZ8_V2_HZ9_DESIGN.md
