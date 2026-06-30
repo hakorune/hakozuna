@@ -362,6 +362,52 @@ remote90 peak_rss <= 90MiB
 cross128 peak_rss <= 96MiB
 ```
 
+## HZ8 v2 RC Gate
+
+`ActiveFullDefer4 + MediumCapacityCollectBudget` is the current balanced v2 RC
+candidate.  Its gate is intentionally narrower than the broad allocator
+comparison matrix because the candidate only changes small remote-pressure
+defer timing and medium capacity-miss collect budgeting.
+
+Primary RC rows:
+
+```text
+small_interleaved_remote90:
+  T=16
+  size=16..4096
+  remote_pct=90
+  interleaved=1
+
+guard_remote50 / guard_remote90:
+  T=16
+  size=16..2048
+  remote_pct=50 / 90
+  interleaved=1
+
+main_remote50 / main_remote90:
+  T=16
+  size=16..32768
+  remote_pct=50 / 90
+  interleaved=1
+
+medium_remote50 / medium_remote90:
+  T=16
+  size=4097..65536
+  remote_pct=50 / 90
+  interleaved=1
+
+main_local0 / medium_local0:
+  local neutrality checks
+```
+
+Do not include `largeish_*` in the Defer4 RC pass/fail decision.  Current
+largeish evidence shows route-miss/direct boundary behavior, not the small or
+medium paths changed by Defer4:
+
+```text
+docs/HZ8_LARGEISH_ROUTE_MISS_BOUNDARY.md
+```
+
 ## Stretch Goals
 
 To claim HZ8 as a broad throughput leader, the final target must move beyond

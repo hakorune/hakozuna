@@ -426,6 +426,19 @@ Defer4 medium r50 same-run pair:
     candidate RSS is lower
     pending counters remain zero, so this row is not exercising small defer
 
+Largeish boundary:
+  docs/HZ8_LARGEISH_ROUTE_MISS_BOUNDARY.md
+  current evidence:
+    bench_results/hz8_defer8_rc_broad_gate_20260630T115242/largeish_remote50.log
+  read:
+    miss = 1600287
+    pending_enqueue = 0
+    pending_dequeue = 0
+    remote_pressure_collect small/active sources = 0
+  decision:
+    not part of the Defer4 RC pass/fail gate
+    treat as separate large/sys route boundary work if it becomes the next priority
+
 Local-only tuning is not the next ROI.
 
 Current policy:
@@ -478,6 +491,9 @@ small remote pressure collect:
 
 active-full defer balanced RC:
   docs/HZ8_ACTIVE_FULL_DEFER4_L1.md
+
+largeish route boundary:
+  docs/HZ8_LARGEISH_ROUTE_MISS_BOUNDARY.md
 
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md
