@@ -122,6 +122,7 @@ MediumKeepRefillEmpty-L1
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
   make bench-mediumkeeprefillempty
   make bench-release-mediumkeeprefillempty
+  make preload-mediumkeeprefillempty
 ```
 
 It keeps owner-local refill-candidate medium runs active-live after remote
@@ -137,6 +138,7 @@ make preload
 make bench          # debug/counter build
 make bench-release  # release throughput build
 make bench-release-mediumkeeprefillempty  # HZ8 v2 RC candidate
+make preload-mediumkeeprefillempty        # HZ8 v2 RC LD_PRELOAD DSO
 ```
 
 Common local checks:
@@ -151,6 +153,9 @@ Pure preload matrix:
 
 ```bash
 RUNS=5 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
+ALLOCATORS=hz8,hz8_keeprefill,system \
+  ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50 \
+  RUNS=3 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
 ```
 
 ## Documentation Map

@@ -602,11 +602,31 @@ Current medium collect candidate:
     remaining work is public/cross-allocator matrix and any final naming cleanup
   bench plumbing:
     make bench-release-mediumkeeprefillempty
+    make preload-mediumkeeprefillempty
     scripts/run_medium_chunk_paired_gate.sh now accepts:
       BASELINE_MAKE_TARGET
       CANDIDATE_MAKE_TARGET
     .gitattributes pins *.sh to LF so bash scripts do not break under
     core.autocrlf=true
+  preload smoke:
+    record: bench_results/hz8_keeprefill_preload_matrix_smoke_20260630T211800/
+    allocators: hz8, hz8_keeprefill, system
+    small_interleaved_remote90:
+      hz8 = 0.44M ops/s, peak RSS 1136.37 MiB
+      hz8_keeprefill = 6.54M ops/s, peak RSS 43.04 MiB
+      system = 3.60M ops/s, peak RSS 35.37 MiB
+    main_interleaved_r90:
+      hz8 = 2.04M ops/s, peak RSS 138.06 MiB
+      hz8_keeprefill = 2.44M ops/s, peak RSS 107.60 MiB
+      system = 2.20M ops/s, peak RSS 112.28 MiB
+    medium_interleaved_r50:
+      hz8 = 2.11M ops/s, peak RSS 151.89 MiB
+      hz8_keeprefill = 2.46M ops/s, peak RSS 126.07 MiB
+      system = 1.96M ops/s, peak RSS 74.42 MiB
+    note:
+      mimalloc/tcmalloc were not found by the default resolver in this
+      Windows/WSL workspace; use MIMALLOC_SO / TCMALLOC_SO or the Ubuntu bench
+      side for the public cross-allocator matrix
 
 Local-only tuning is not the next ROI.
 

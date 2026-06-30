@@ -35,6 +35,12 @@ static H8RouteFn load_route(void) {
   return (H8RouteFn)sym;
 }
 
+__attribute__((noinline)) static int route_addr(H8RouteFn route,
+                                                uintptr_t addr) {
+  volatile uintptr_t v = addr;
+  return route((void*)v);
+}
+
 int main(void) {
   H8RouteFn route = load_route();
   if (!route) {
@@ -58,8 +64,9 @@ int main(void) {
     fprintf(stderr, "interior free consumed base allocation\n");
     return 4;
   }
+  uintptr_t p_addr = (uintptr_t)p;
   free(p);
-  if (route(p) == H8_ROUTE_VALID) {
+  if (route_addr(route, p_addr) == H8_ROUTE_VALID) {
     fprintf(stderr, "base stayed valid after free\n");
     return 5;
   }

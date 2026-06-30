@@ -13,7 +13,7 @@ MATRIX_BIN="${ROOT}/bench/out/bench_matrix_malloc"
 
 mkdir -p "${OUTDIR}" "$(dirname "${MATRIX_BIN}")"
 
-make -C "${ROOT}" preload preload-medium64k2 >/dev/null
+make -C "${ROOT}" preload preload-medium64k2 preload-mediumkeeprefillempty >/dev/null
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
   -pthread -o "${MATRIX_BIN}" "${ROOT}/bench/bench_matrix_malloc.c"
 
@@ -32,6 +32,9 @@ find_lib() {
       ;;
     hz8_legacy64k2)
       printf '%s\n' "${ROOT}/libhakozuna_hz8_preload_medium64k2.so"
+      ;;
+    hz8_keeprefill)
+      printf '%s\n' "${ROOT}/libhakozuna_hz8_preload_keeprefill.so"
       ;;
     hz3)
       for p in \
@@ -251,7 +254,7 @@ for row in rows:
         allocs.append(row["allocator"])
 
 with open(dst, "w", encoding="utf-8") as f:
-    f.write("# HZ8 v1.1 Same-Run Allocator Matrix\n\n")
+    f.write("# HZ8 Same-Run Allocator Matrix\n\n")
     f.write("Median ops/s. Raw samples: `samples.csv`.\n\n")
     for row in row_names:
         ranked = []

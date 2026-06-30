@@ -173,6 +173,7 @@ Build:
 
 ```bash
 make bench-release bench-release-mediumkeeprefillempty
+make preload-mediumkeeprefillempty
 ```
 
 Record:
@@ -221,6 +222,45 @@ promote within research ledger:
 still not:
   frozen HZ8 v1.1 replacement until cross-allocator/public release matrix is
   regenerated
+```
+
+## Preload Matrix Smoke
+
+Record:
+
+```text
+bench_results/hz8_keeprefill_preload_matrix_smoke_20260630T211800/
+ALLOCATORS=hz8,hz8_keeprefill,system
+ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50
+RUNS=3, THREADS=16, ITERS=50000
+```
+
+Median ops/s:
+
+| Row | hz8 | hz8_keeprefill | system |
+|---|---:|---:|---:|
+| small_interleaved_remote90 | 0.44M | 6.54M | 3.60M |
+| main_interleaved_r90 | 2.04M | 2.44M | 2.20M |
+| medium_interleaved_r50 | 2.11M | 2.46M | 1.96M |
+
+Peak RSS:
+
+| Row | hz8 | hz8_keeprefill | system |
+|---|---:|---:|---:|
+| small_interleaved_remote90 | 1136.37 MiB | 43.04 MiB | 35.37 MiB |
+| main_interleaved_r90 | 138.06 MiB | 107.60 MiB | 112.28 MiB |
+| medium_interleaved_r50 | 151.89 MiB | 126.07 MiB | 74.42 MiB |
+
+Notes:
+
+```text
+LD_PRELOAD smoke:
+  pass
+
+local Windows/WSL allocator paths:
+  mimalloc/tcmalloc were not found by the default resolver in this workspace
+  set MIMALLOC_SO / TCMALLOC_SO or run on the Ubuntu benchmark side for the
+  public cross-allocator matrix
 ```
 
 The generic paired-gate helper can also be used with custom candidate targets:
