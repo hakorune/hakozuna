@@ -282,7 +282,9 @@ Next check:
 
 Current small behavior box:
   docs/HZ8_ACTIVE_FULL_DEFER8_L1.md
+  docs/HZ8_ACTIVE_FULL_DEFER4_L1.md
   build target: make bench-activefulldefer8
+  balanced build target: make bench-defer4mediumcapacity
   combined build target: make bench-defer8mediumcapacity
   default build unchanged
 
@@ -341,9 +343,55 @@ Local gate:
     candidate 810129 ops/s, peak RSS 7.15 MiB
 
 Current decision:
-  promote to HZ8 v2 RC candidate
+  Defer8 + MediumCapacityCollectBudget was the first v2 RC candidate
+  broader weak-row gate found main_remote50 regression risk
   do not replace frozen v1.1 default yet
-  next check, if needed: broader release matrix
+  next check should prefer the Defer4 balanced lane
+
+Broader gate:
+  candidate record: bench_results/hz8_defer8_rc_broad_gate_20260630T115242/
+  default record: bench_results/hz8_default_rc_compare_20260630T115859/
+
+Defer8 broader read:
+  guard_remote90:
+    default 4.051M ops/s, peak RSS 121.13 MiB
+    defer8  4.693M ops/s, peak RSS 55.01 MiB
+  main_remote50:
+    default 401673 ops/s, peak RSS 22.16 MiB
+    defer8  367322 ops/s, peak RSS 27.46 MiB
+  main_remote90:
+    default 200548 ops/s, peak RSS 38.88 MiB
+    defer8  287243 ops/s, peak RSS 38.98 MiB
+  medium_remote90:
+    default 174881 ops/s, peak RSS 50.29 MiB
+    defer8  240177 ops/s, peak RSS 41.14 MiB
+  decision:
+    keep as high remote-pressure evidence/control
+    not default because main_remote50 regresses too much
+
+Current balanced v2 RC:
+  ActiveFullDefer4 + MediumCapacityCollectBudget
+  docs/HZ8_ACTIVE_FULL_DEFER4_L1.md
+  build target: make bench-defer4mediumcapacity
+  record: bench_results/hz8_defer4_mediumcapacity_gate_20260630T120049/
+
+Defer4 balanced gate:
+  guard_remote90:
+    default 4.051M ops/s, peak RSS 121.13 MiB
+    defer4  4.715M ops/s, peak RSS 61.52 MiB
+  main_remote50:
+    default 401673 ops/s, peak RSS 22.16 MiB
+    defer4  393920 ops/s, peak RSS 22.85 MiB
+  main_remote90:
+    default 200548 ops/s, peak RSS 38.88 MiB
+    defer4  270743 ops/s, peak RSS 33.51 MiB
+  medium_remote90:
+    default 174881 ops/s, peak RSS 50.29 MiB
+    defer4  237225 ops/s, peak RSS 34.96 MiB
+  decision:
+    keep as balanced HZ8 v2 RC candidate
+    Defer4 preserves most remote90 gains while avoiding the Defer8 r50 cliff
+    run broader release matrix before any default promotion
 
 Local-only tuning is not the next ROI.
 
@@ -394,6 +442,9 @@ benchmark gates:
 
 small remote pressure collect:
   docs/HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md
+
+active-full defer balanced RC:
+  docs/HZ8_ACTIVE_FULL_DEFER4_L1.md
 
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md

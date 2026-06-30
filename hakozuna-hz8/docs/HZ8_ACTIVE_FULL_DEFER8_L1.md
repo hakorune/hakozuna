@@ -5,7 +5,8 @@ Status:
 ```text
 experimental behavior lane
 default unchanged
-KEEP as v2 candidate-watch
+KEEP as high remote-pressure evidence/control
+superseded for balanced RC by ActiveFullDefer4 + MediumCapacityCollectBudget
 ```
 
 ## Why This Box Exists
@@ -252,6 +253,49 @@ Decision:
 
 ```text
 combined lane passes the first weak-row and local gate
-promote to HZ8 v2 RC candidate
+initially promoted to HZ8 v2 RC candidate
 do not replace the frozen v1.1 default without the broader release matrix
+```
+
+## Broader Gate Follow-up
+
+Records:
+
+```text
+candidate: bench_results/hz8_defer8_rc_broad_gate_20260630T115242/
+default:   bench_results/hz8_default_rc_compare_20260630T115859/
+```
+
+Comparison:
+
+```text
+guard_remote90:
+  default 4.051M ops/s, peak RSS 121.13 MiB
+  defer8  4.693M ops/s, peak RSS 55.01 MiB
+
+main_remote50:
+  default 401673 ops/s, peak RSS 22.16 MiB
+  defer8  367322 ops/s, peak RSS 27.46 MiB
+
+main_remote90:
+  default 200548 ops/s, peak RSS 38.88 MiB
+  defer8  287243 ops/s, peak RSS 38.98 MiB
+
+medium_remote90:
+  default 174881 ops/s, peak RSS 50.29 MiB
+  defer8  240177 ops/s, peak RSS 41.14 MiB
+```
+
+Read:
+
+```text
+defer8 is still strong on remote90 rows
+main_remote50 regresses too much for default promotion
+```
+
+Decision:
+
+```text
+KEEP Defer8 as evidence/control
+prefer docs/HZ8_ACTIVE_FULL_DEFER4_L1.md for the balanced HZ8 v2 RC
 ```

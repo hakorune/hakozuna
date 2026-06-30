@@ -93,6 +93,8 @@ timeout / abort = 0
 The current weak-row candidate is:
 
 - [HZ8 SmallRemotePressureCollect L1](./HZ8_SMALL_REMOTE_PRESSURE_COLLECT_L1.md)
+- [HZ8 ActiveFullDefer4 L1](./HZ8_ACTIVE_FULL_DEFER4_L1.md)
+- [HZ8 ActiveFullDefer8 L1](./HZ8_ACTIVE_FULL_DEFER8_L1.md)
 
 Target rows:
 
@@ -107,6 +109,17 @@ secondary:
 This lane should adjust owner-side collect timing / budget only at active
 full, active miss, or pending-exists paths. Keep local active-hit success,
 remote publish protocol, pending bitmap authority, and qstate authority frozen.
+
+Current read:
+
+```text
+ActiveFullDefer4 + MediumCapacityCollectBudget:
+  balanced HZ8 v2 RC candidate
+
+ActiveFullDefer8 + MediumCapacityCollectBudget:
+  high remote90 evidence/control
+  not default because main_remote50 regressed in the broader gate
+```
 
 If this lane fails, switch to `SmallRemotePublishCostAttribution-L1` before
 changing cross-owner handoff or residency.
