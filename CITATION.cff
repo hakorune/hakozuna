@@ -1,9 +1,9 @@
 cff-version: 1.2.0
-message: "If you use Hakozuna, please cite the relevant HZ3/HZ4, HZ5, or HZ6 Zenodo record listed in README.md."
-title: "Hakozuna allocator family: HZ3/HZ4, HZ5, and HZ6 source and paper artifacts"
+message: "If you use Hakozuna, please cite the relevant HZ3/HZ4, HZ5, HZ6, or HZ8 Zenodo record listed in README.md."
+title: "Hakozuna allocator family: HZ3/HZ4, HZ5, HZ6, and HZ8 source and paper artifacts"
 type: software
-version: "2026.06"
-date-released: 2026-06-19
+version: "2026.07"
+date-released: 2026-07-01
 url: https://github.com/hakorune/hakozuna
 repository-code: https://github.com/hakorune/hakozuna
 license: Apache-2.0

@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
@@ -18,17 +18,19 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
 - **HZ5 (hakozuna-hz5)**: Linux research sidecar for low-RSS, fail-closed,
   descriptor-owned profile families. It is not the default general allocator.
-- **HZ6 (hakozuna-hz6)**: active Windows/Linux allocator family with explicit
+- **HZ6 (hakozuna-hz6)**: Windows/Linux allocator family with explicit
   route/source/frontcache contracts, Ubuntu `LD_PRELOAD` selected/profile
-  lanes, and ongoing speed/RSS balance work.
+  lanes, and selected-family speed/RSS evidence.
 - **HZ7 TinyRoute (design seed)**: tiny-binary, single-shape allocator line
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
   `v2`, `v3`, and `v4`.
+- **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
+  is HZ8-v2 / KeepRefill.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
 
-Hakozuna currently contains four allocator lines with deliberately different
+Hakozuna currently contains allocator lines with deliberately different
 metadata and ownership models:
 
 | Line | Focus | Metadata / routing model | Best read as |
@@ -38,6 +40,7 @@ metadata and ownership models:
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | the low-RSS fail-closed research line |
 | HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | the active Windows/Linux successor line |
 | HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
+| HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | the current public allocator line |
 
 In short:
 
@@ -45,6 +48,7 @@ In short:
 - **HZ4 is remote-free-first.**
 - **HZ5 is ownership/policy-first.**
 - **HZ6 is contract-first with selected/default and profile-only lanes.**
+- **HZ8 is the recommended balanced allocator line.**
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply
 depending on how `free(ptr)` recovers pointer identity and where ownership is
@@ -136,6 +140,9 @@ This repository already includes public Windows-native allocator comparisons and
 - Latest published GitHub Release body template: `docs/releases/GITHUB_RELEASE_v3.3.md`
 - Next source/artifact release draft: `docs/releases/GITHUB_RELEASE_v3.4.md`
 - HZ6 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz6.md`
+- HZ8 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz8.md`
+- HZ8 Zenodo description draft: `docs/releases/ZENODO_hz8_DESCRIPTION.md`
+- HZ8 release/paper preparation: `hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md`
 
 ## Benchmark Snapshot (Ubuntu native)
 

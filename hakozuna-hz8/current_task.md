@@ -763,6 +763,9 @@ large direct owned evidence:
 medium keep-refill-empty candidate:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
 
+public release / paper prep:
+  docs/HZ8_PUBLIC_RELEASE_PREP.md
+
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md
 ```
