@@ -627,6 +627,33 @@ Current medium collect candidate:
       mimalloc/tcmalloc were not found by the default resolver in this
       Windows/WSL workspace; use MIMALLOC_SO / TCMALLOC_SO or the Ubuntu bench
       side for the public cross-allocator matrix
+  local mimalloc matrix:
+    local mimalloc build:
+      private/bench-assets/linux/allocators/local/mimalloc-install/lib/libmimalloc.so.2.2
+    record: bench_results/hz8_keeprefill_mimalloc_matrix_r5_20260630T212900/
+    small_interleaved_remote90:
+      hz8 = 0.41M ops/s, peak RSS 1126.86 MiB
+      hz8_keeprefill = 6.15M ops/s, peak RSS 52.03 MiB
+      mimalloc = 8.48M ops/s, peak RSS 332.82 MiB
+      system = 3.24M ops/s, peak RSS 34.18 MiB
+    main_interleaved_r90:
+      hz8 = 2.05M ops/s, peak RSS 116.45 MiB
+      hz8_keeprefill = 2.40M ops/s, peak RSS 103.01 MiB
+      mimalloc = 4.41M ops/s, peak RSS 1043.07 MiB
+      system = 1.99M ops/s, peak RSS 115.73 MiB
+    medium_interleaved_r50:
+      hz8 = 2.78M ops/s, peak RSS 111.25 MiB
+      hz8_keeprefill = 2.36M ops/s, peak RSS 133.27 MiB
+      mimalloc = 4.77M ops/s, peak RSS 1202.80 MiB
+      system = 1.80M ops/s, peak RSS 71.03 MiB
+    HZ8-only medium r50 R10:
+      record: bench_results/hz8_keeprefill_medium_r50_preload_r10_20260630T213200/
+      hz8 = 2.32M ops/s, peak RSS 131.45 MiB
+      hz8_keeprefill = 2.52M ops/s, peak RSS 134.18 MiB
+    read:
+      KeepRefill strongly fixes small remote-heavy and improves main remote-heavy
+      mimalloc is still faster in these rows but pays much higher RSS
+      medium r50 is positive but noisy, so avoid overclaiming that row
 
 Local-only tuning is not the next ROI.
 

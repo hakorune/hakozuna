@@ -263,6 +263,57 @@ local Windows/WSL allocator paths:
   public cross-allocator matrix
 ```
 
+## Local Mimalloc Matrix
+
+Local mimalloc build:
+
+```text
+private/bench-assets/linux/allocators/local/mimalloc-install/lib/libmimalloc.so.2.2
+```
+
+Record:
+
+```text
+bench_results/hz8_keeprefill_mimalloc_matrix_r5_20260630T212900/
+ALLOCATORS=hz8,hz8_keeprefill,mimalloc,system
+ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50
+RUNS=5, THREADS=16, ITERS=50000
+```
+
+Median ops/s / peak RSS:
+
+| Row | hz8 | hz8_keeprefill | mimalloc | system |
+|---|---:|---:|---:|---:|
+| small_interleaved_remote90 | 0.41M / 1126.86 MiB | 6.15M / 52.03 MiB | 8.48M / 332.82 MiB | 3.24M / 34.18 MiB |
+| main_interleaved_r90 | 2.05M / 116.45 MiB | 2.40M / 103.01 MiB | 4.41M / 1043.07 MiB | 1.99M / 115.73 MiB |
+| medium_interleaved_r50 | 2.78M / 111.25 MiB | 2.36M / 133.27 MiB | 4.77M / 1202.80 MiB | 1.80M / 71.03 MiB |
+
+The R5 medium r50 row was noisy and put plain `hz8` above `hz8_keeprefill`.
+An HZ8-only R10 check reversed that median:
+
+```text
+bench_results/hz8_keeprefill_medium_r50_preload_r10_20260630T213200/
+
+medium_interleaved_r50:
+  hz8            2.32M ops/s, peak RSS 131.45 MiB
+  hz8_keeprefill 2.52M ops/s, peak RSS 134.18 MiB
+```
+
+Read:
+
+```text
+small remote-heavy:
+  KeepRefill closes most of the old HZ8 cliff and uses far less RSS than
+  mimalloc, though mimalloc remains faster in this local build.
+
+main remote-heavy:
+  KeepRefill improves HZ8 and system with much lower RSS than mimalloc.
+
+medium r50:
+  KeepRefill is positive but noisy; do not claim a universal medium win from
+  the short R5 matrix alone.
+```
+
 The generic paired-gate helper can also be used with custom candidate targets:
 
 ```bash

@@ -56,6 +56,7 @@ find_lib() {
       ;;
     mimalloc)
       for p in \
+        /mnt/z/TextureVoice_local/git/allocator-bench-lab/private/bench-assets/linux/allocators/local/mimalloc-install/lib/libmimalloc.so.2.2 \
         /mnt/workdisk/public_share/hakmem/allocators/mimalloc/libmimalloc.so \
         /mnt/workdisk/public_share/hakmem/mimalloc-install/lib/libmimalloc.so.2 \
         /mnt/workdisk/public_share/hakozuna_repo/private/bench-assets/linux/allocators/x86_64/libmimalloc2.0/usr/lib/x86_64-linux-gnu/libmimalloc.so.2.0; do
