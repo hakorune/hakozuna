@@ -330,7 +330,20 @@ Current read:
   small remote-heavy cliff is substantially fixed
   main remote-heavy improves versus fresh default R5
   medium row is neutral
-  next check: full weak-row matrix before default promotion
+  local gate record: bench_results/hz8_defer8_local_gate_20260630T115020/
+
+Local gate:
+  main_local0:
+    default 951376 ops/s, peak RSS 9.98 MiB
+    candidate 941214 ops/s, peak RSS 8.03 MiB
+  medium_local0:
+    default 804919 ops/s, peak RSS 7.19 MiB
+    candidate 810129 ops/s, peak RSS 7.15 MiB
+
+Current decision:
+  promote to HZ8 v2 RC candidate
+  do not replace frozen v1.1 default yet
+  next check, if needed: broader release matrix
 
 Local-only tuning is not the next ROI.
 

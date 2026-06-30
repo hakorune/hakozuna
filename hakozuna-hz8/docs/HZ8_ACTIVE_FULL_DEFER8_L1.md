@@ -219,3 +219,39 @@ Decision:
 KEEP as current best HZ8 v2 candidate
 next gate is full weak-row matrix before default promotion
 ```
+
+## Local Gate
+
+Record:
+
+```text
+bench_results/hz8_defer8_local_gate_20260630T115020/
+```
+
+Same-run local comparison:
+
+```text
+main_local0:
+  default   951376 ops/s, peak RSS 9.98 MiB
+  candidate 941214 ops/s, peak RSS 8.03 MiB
+
+medium_local0:
+  default   804919 ops/s, peak RSS 7.19 MiB
+  candidate 810129 ops/s, peak RSS 7.15 MiB
+```
+
+Read:
+
+```text
+main_local0 is effectively neutral within this short gate
+medium_local0 is slightly positive
+local safety counters stay clean
+```
+
+Decision:
+
+```text
+combined lane passes the first weak-row and local gate
+promote to HZ8 v2 RC candidate
+do not replace the frozen v1.1 default without the broader release matrix
+```
