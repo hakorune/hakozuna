@@ -167,13 +167,13 @@ The redis-like row remains from the 2026-02-18 paper snapshot.
 
 ### MT lane x remote% (median ops/s, RUNS=10, T=16)
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 |
-|------|-----|-----|----------|----------|----------|-----|
-| `main_r0` | 292.15M | 85.63M | 146.73M | **318.82M** | 157.44M | 16.88M |
-| `main_r50` | 31.46M | 62.32M | 14.26M | 64.87M | **79.43M** | 15.08M |
-| `main_r90` | 22.31M | **67.14M** | 7.72M | 45.42M | 62.31M | 10.99M |
-| `guard_r0` | 318.98M | 156.68M | 258.19M | **375.71M** | 149.00M | 189.48M |
-| `cross128_r90` | 2.78M | **27.66M** | 3.52M | 7.21M | 22.39M | 6.38M |
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 | HZ8 |
+|------|-----|-----|----------|----------|----------|-----|-----|
+| `main_r0` | 292.15M | 85.63M | 146.73M | **318.82M** | 157.44M | 16.88M | 107.633M |
+| `main_r50` | 31.46M | 62.32M | 14.26M | 64.87M | **79.43M** | 15.08M | 29.633M |
+| `main_r90` | 22.31M | **67.14M** | 7.72M | 45.42M | 62.31M | 10.99M | 20.610M |
+| `guard_r0` | 318.98M | 156.68M | 258.19M | **375.71M** | 149.00M | 189.48M | 224.750M |
+| `cross128_r90` | 2.78M | **27.66M** | 3.52M | 7.21M | 22.39M | 6.38M | 37.342k |
 
 HZ5 is shown as "Best HZ5" because it is a profile family. The selected HZ5 row
 is listed explicitly so the table does not hide profile dependence.
@@ -187,6 +187,11 @@ this full R10 run, not the throughput leader. The HZ6 runner uses `local0` /
 `remote50` / `remote90`, which correspond to `main_r0` / `main_r50` /
 `main_r90` in the older table.
 
+HZ8 is added from the same Ubuntu-native table shape after the HZ8 paper record
+was published. It should be read as the recommended balanced line, not as a
+universal throughput winner. The `cross128_r90` row is intentionally kept visible
+as a current weak row.
+
 Profile-selection notes:
 
 - HZ5 selected rows: `main_r0` and `guard_r0` use `hz5-pagerun64-main`;
@@ -197,6 +202,10 @@ Profile-selection notes:
   rerun; `cross128_r90` uses the full R10 `cross128_r90` row.
 - HZ6 peak RSS medians: `main_r0` 67.38 MiB, `main_r50` 69.50 MiB,
   `main_r90` 72.07 MiB, `guard_r0` 65.88 MiB, `cross128_r90` 68.91 MiB.
+- HZ8 selected rows use the Ubuntu-native R10 HZ8 table: `main_r0`,
+  `main_r50`, `main_r90`, `guard_r0`, and `cross128_r90`.
+- HZ8 `cross128_r90` is a known weak row: 37.342k ops/s, post RSS 151.40 MiB,
+  peak RSS 196.85 MiB, `n_ok=10`, `n_fail=0`.
 
 Lane legend:
 

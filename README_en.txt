@@ -101,13 +101,17 @@ added from the Linux x86_64 full allocator frontier run
 `guard_r0` filled by a same-machine/same-runner selected-row rerun. Its role in
 this table is low and flat RSS, not top throughput.
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 |
-|------|-----|-----|----------|----------|----------|-----|
-| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | 16.88M |
-| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | 15.08M |
-| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | 10.99M |
-| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | 189.48M |
-| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | 6.38M |
+HZ8 is added from the same Ubuntu-native table shape after the HZ8 paper record
+was published. HZ8 should be read as the recommended balanced line, not a
+universal throughput winner; cross128_r90 is shown as a current weak row.
+
+| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 | HZ8 |
+|------|-----|-----|----------|----------|----------|-----|-----|
+| main_r0 | 292.15M | 85.63M | 146.73M | 318.82M | 157.44M | 16.88M | 107.633M |
+| main_r50 | 31.46M | 62.32M | 14.26M | 64.87M | 79.43M | 15.08M | 29.633M |
+| main_r90 | 22.31M | 67.14M | 7.72M | 45.42M | 62.31M | 10.99M | 20.610M |
+| guard_r0 | 318.98M | 156.68M | 258.19M | 375.71M | 149.00M | 189.48M | 224.750M |
+| cross128_r90 | 2.78M | 27.66M | 3.52M | 7.21M | 22.39M | 6.38M | 37.342k |
 
 Profile-selection notes:
 
@@ -119,6 +123,10 @@ Profile-selection notes:
   cross128_r90 uses the full R10 cross128_r90 row.
 - HZ6 peak RSS medians: main_r0 67.38 MiB, main_r50 69.50 MiB,
   main_r90 72.07 MiB, guard_r0 65.88 MiB, cross128_r90 68.91 MiB.
+- HZ8 selected rows use the Ubuntu-native R10 HZ8 table: main_r0, main_r50,
+  main_r90, guard_r0, and cross128_r90.
+- HZ8 cross128_r90 is a known weak row: 37.342k ops/s, post RSS 151.40 MiB,
+  peak RSS 196.85 MiB, n_ok=10, n_fail=0.
 
 HZ5 Linux profile family
 ------------------------
