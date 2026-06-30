@@ -627,6 +627,28 @@ Current medium collect candidate:
       mimalloc/tcmalloc were not found by the default resolver in this
       Windows/WSL workspace; use MIMALLOC_SO / TCMALLOC_SO or the Ubuntu bench
       side for the public cross-allocator matrix
+
+  public matrix:
+    record: bench_results/20260630T124112Z_hz8_keeprefill_public_matrix/
+    allocators: hz8, hz8_keeprefill, mimalloc, tcmalloc, system
+    rows: small_interleaved_remote90, main_interleaved_r90, medium_interleaved_r50,
+      guard_local0, main_local0, medium_local0
+    read:
+      small_interleaved_remote90:
+        keeprefill removes the remote-heavy cliff and stays far below mimalloc RSS
+      main_interleaved_r90:
+        keeprefill stays close to hz8 and keeps RSS much lower than mimalloc
+      medium_interleaved_r50:
+        keeprefill is better than hz8 on speed and still keeps RSS bounded
+      guard/local:
+        keeprefill is neutral to slightly positive, not a regression story
+      local rows:
+        keeprefill does not beat tcmalloc, but it is a balanced HZ8-v2 candidate
+    decision:
+      keeprefill is a confirmed HZ8 v2 RC nucleus
+      do not claim tcmalloc parity or universal throughput leadership
+      next step is broader release-sized validation before default promotion
+
   local mimalloc matrix:
     local mimalloc build:
       private/bench-assets/linux/allocators/local/mimalloc-install/lib/libmimalloc.so.2.2
