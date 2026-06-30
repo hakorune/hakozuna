@@ -49,6 +49,8 @@ bench-defer4mediumcapacity: $(ROOT)/h8_bench_defer4mediumcapacity
 
 bench-defer4mediumcapacity-largedirect: $(ROOT)/h8_bench_defer4mediumcapacity_largedirect
 
+bench-defer4mediumcapacity-largedirect-refillhint: $(ROOT)/h8_bench_defer4mediumcapacity_largedirect_refillhint
+
 bench-defer8mediumcapacity: $(ROOT)/h8_bench_defer8mediumcapacity
 
 bench-remoteactivefullbudget: $(ROOT)/h8_bench_remoteactivefullbudget
@@ -216,6 +218,9 @@ $(ROOT)/h8_bench_defer4mediumcapacity: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_S
 
 $(ROOT)/h8_bench_defer4mediumcapacity_largedirect: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_LARGE_DIRECT_OWNED_L1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_defer4mediumcapacity_largedirect_refillhint: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_LARGE_DIRECT_OWNED_L1 -DH8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_defer8mediumcapacity: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)

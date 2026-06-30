@@ -496,6 +496,18 @@ Current next box:
     keep as strong focused win / evidence lane
     do not promote broadly because medium_remote50 regresses
     next ROI is medium remote collect/free path without direct lookup-first tax
+  refill-hint probe:
+    build target: make bench-defer4mediumcapacity-largedirect-refillhint
+    record: bench_results/hz8_large_direct_refillhint_probe_20260630T203855/
+    medium_remote50:
+      largedirect = 339849 ops/s, peak RSS 21.35 MiB
+      refillhint = 337556 ops/s, peak RSS 21.06 MiB
+    largeish_remote50:
+      largedirect = 939878 ops/s, peak RSS 25.49 MiB
+      refillhint = 956964 ops/s, peak RSS 24.67 MiB
+    read:
+      small positive on largeish, neutral/slightly weak on medium
+      keep as probe target only, not promotion
 
 Local-only tuning is not the next ROI.
 

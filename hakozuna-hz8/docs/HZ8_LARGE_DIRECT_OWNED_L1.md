@@ -170,6 +170,40 @@ It is not a broad default promotion because medium_remote50 regresses.
 Keep the lane as focused large/sys-boundary evidence.
 ```
 
+## Refill-Hint Probe
+
+Record:
+
+```text
+bench_results/hz8_large_direct_refillhint_probe_20260630T203855/
+```
+
+This combines the large-direct focused lane with the existing medium collect
+refill hint:
+
+```text
+H8_MEDIUM_ENABLE_COLLECT_ACTIVE_REFILL_HINT
+```
+
+Result:
+
+```text
+medium_remote50:
+  largedirect = 339849 ops/s, peak RSS 21.35 MiB
+  refillhint  = 337556 ops/s, peak RSS 21.06 MiB
+
+largeish_remote50:
+  largedirect = 939878 ops/s, peak RSS 25.49 MiB
+  refillhint  = 956964 ops/s, peak RSS 24.67 MiB
+```
+
+Read:
+
+```text
+Refill hint slightly helps largeish but does not solve the medium row.
+Keep it as a reproducible probe target, not a default promotion.
+```
+
 ## Decision
 
 Keep as evidence/control:
@@ -184,6 +218,5 @@ LargeDirectOwned-L1:
 Next likely ROI:
 
 ```text
-medium remote collect/free path without putting direct lookup before every
-medium free
+medium remote collect/free path
 ```
