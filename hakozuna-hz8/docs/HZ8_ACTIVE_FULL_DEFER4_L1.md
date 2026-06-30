@@ -118,6 +118,40 @@ Defer4:
   preserves the medium capacity budget win
 ```
 
+## Local Gate
+
+Record:
+
+```text
+bench_results/hz8_defer4_local_gate_20260630T120825/
+```
+
+Candidate R3 medians:
+
+```text
+main_local0:
+  959777 ops/s
+  peak RSS 7.76 MiB
+  pending_enqueue = 0
+  pending_dequeue = 0
+  remote = 0
+
+medium_local0:
+  827891 ops/s
+  peak RSS 8.75 MiB
+  pending_enqueue = 0
+  pending_dequeue = 0
+  remote = 0
+```
+
+Read:
+
+```text
+local rows do not exercise the active-full defer path
+main_local0 stays neutral/positive in this short gate
+medium_local0 stays throughput-positive with a modest RSS movement
+```
+
 ## Decision
 
 ```text

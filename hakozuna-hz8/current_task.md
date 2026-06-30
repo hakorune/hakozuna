@@ -393,6 +393,18 @@ Defer4 balanced gate:
     Defer4 preserves most remote90 gains while avoiding the Defer8 r50 cliff
     run broader release matrix before any default promotion
 
+Defer4 local gate:
+  record: bench_results/hz8_defer4_local_gate_20260630T120825/
+  main_local0:
+    candidate 959777 ops/s, peak RSS 7.76 MiB
+    pending_enqueue = 0, pending_dequeue = 0, remote = 0
+  medium_local0:
+    candidate 827891 ops/s, peak RSS 8.75 MiB
+    pending_enqueue = 0, pending_dequeue = 0, remote = 0
+  decision:
+    local rows do not exercise the active-full defer path
+    local throughput is neutral/positive in this short gate
+
 Local-only tuning is not the next ROI.
 
 Current policy:
