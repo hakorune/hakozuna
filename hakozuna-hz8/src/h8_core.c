@@ -181,18 +181,27 @@ H8RouteKind h8_route_inner(void* ptr) {
     return H8_ROUTE_INVALID;
   }
   if (!h8_arena_contains(ptr)) {
-    H8RouteKind direct_exact_route = h8_direct_large_route_exact_inner(ptr);
-    if (direct_exact_route != H8_ROUTE_MISS) {
-      return direct_exact_route;
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+    bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
+    if (direct_maybe) {
+      H8RouteKind direct_exact_route = h8_direct_large_route_exact_inner(ptr);
+      if (direct_exact_route != H8_ROUTE_MISS) {
+        return direct_exact_route;
+      }
     }
+#endif
     H8RouteKind medium_route = h8_medium_route_inner(ptr);
     if (medium_route != H8_ROUTE_MISS) {
       return medium_route;
     }
-    H8RouteKind direct_route = h8_direct_large_route_inner(ptr);
-    if (direct_route != H8_ROUTE_MISS) {
-      return direct_route;
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+    if (direct_maybe) {
+      H8RouteKind direct_route = h8_direct_large_route_inner(ptr);
+      if (direct_route != H8_ROUTE_MISS) {
+        return direct_route;
+      }
     }
+#endif
     return H8_ROUTE_MISS;
   }
   H8Span* span = atomic_load_explicit(&h8g.spans[h8_span_index_from_ptr(ptr)],

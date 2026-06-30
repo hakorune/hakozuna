@@ -89,6 +89,12 @@ Paper-ready snapshot:
 hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 ```
 
+Supporting MT lane snapshot:
+
+```text
+hakozuna-hz8/docs/HZ8_MT_LANE_REMOTE_PERCENT_SNAPSHOT.md
+```
+
 Interpretation:
 
 ```text

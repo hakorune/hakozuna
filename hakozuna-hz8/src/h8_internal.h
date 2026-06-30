@@ -82,6 +82,18 @@ static inline bool h8_arena_contains(const void* ptr) {
   return addr >= base && addr < base + h8g.arena_bytes;
 }
 
+static inline bool h8_direct_large_maybe_contains_hot(const void* ptr) {
+  uintptr_t min =
+      atomic_load_explicit(&h8g.direct_large_min_addr, memory_order_acquire);
+  if (min == 0) {
+    return false;
+  }
+  uintptr_t addr = (uintptr_t)ptr;
+  uintptr_t max =
+      atomic_load_explicit(&h8g.direct_large_max_addr, memory_order_acquire);
+  return addr >= min && addr < max;
+}
+
 static inline size_t h8_slot_count_for_class(uint32_t class_id) {
   return h8_class_slot_count(class_id);
 }

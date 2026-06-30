@@ -99,6 +99,12 @@ The HZ8 rows above are not a same-run cross-allocator comparison.  They are
 bring-up evidence from the HZ8 harness and should be re-run against the other
 allocators before claiming a matrix rank.
 
+The MT lane x remote% HZ8 values are fixed in:
+
+```text
+docs/HZ8_MT_LANE_REMOTE_PERCENT_SNAPSHOT.md
+```
+
 For the soft-freeze row, track both commits:
 
 ```text

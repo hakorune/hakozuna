@@ -2,6 +2,8 @@ typedef struct H8Global {
   h8_platform_once_t once;
   h8_platform_thread_key_t thread_key;
   _Atomic bool ready;
+  _Atomic uintptr_t direct_large_min_addr;
+  _Atomic uintptr_t direct_large_max_addr;
   void* arena_base;
   size_t arena_bytes;
   size_t span_count;

@@ -382,10 +382,13 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+    bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
     bool direct_owned = false;
-    if (h8_direct_large_free_exact_inner(ptr, &direct_owned)) {
+    if (direct_maybe && h8_direct_large_free_exact_inner(ptr, &direct_owned)) {
       return;
     }
+#endif
     bool medium_owned = false;
     if (h8_medium_free_inner(ptr, &medium_owned)) {
       return;
@@ -394,13 +397,15 @@ void h8_free_inner(void* ptr) {
       h8_fail_invalid_free();
       return;
     }
-    if (h8_direct_large_free_inner(ptr, &direct_owned)) {
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+    if (direct_maybe && h8_direct_large_free_inner(ptr, &direct_owned)) {
       return;
     }
     if (direct_owned) {
       h8_fail_invalid_free();
       return;
     }
+#endif
     H8_DEBUG_INC(miss_count);
     h8_sys_free(ptr);
     return;
@@ -489,14 +494,18 @@ void* h8_realloc_inner(void* ptr, size_t size) {
       return NULL;
     }
   } else {
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+    bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
     bool direct_owned = false;
-    if (h8_direct_large_usable_size_exact_inner(ptr, &old_size,
-                                               &direct_owned)) {
+    if (direct_maybe &&
+        h8_direct_large_usable_size_exact_inner(ptr, &old_size,
+                                                &direct_owned)) {
       owned = true;
     } else if (direct_owned) {
       errno = EINVAL;
       return NULL;
     }
+#endif
     bool medium_owned = false;
     if (!owned && h8_medium_usable_size_inner(ptr, &old_size, &medium_owned)) {
       owned = true;
@@ -504,12 +513,15 @@ void* h8_realloc_inner(void* ptr, size_t size) {
       errno = EINVAL;
       return NULL;
     } else if (!owned) {
-      if (h8_direct_large_usable_size_inner(ptr, &old_size, &direct_owned)) {
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+      if (direct_maybe &&
+          h8_direct_large_usable_size_inner(ptr, &old_size, &direct_owned)) {
         owned = true;
       } else if (direct_owned) {
         errno = EINVAL;
         return NULL;
       }
+#endif
     }
   }
 

@@ -1,4 +1,5 @@
 .PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-activefulldefer8 bench-defer4mediumcapacity bench-defer8mediumcapacity bench-remoteactivefullbudget bench-mediumcapacitybudget bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-hz9mediumlocalmagshadow bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-hz9mediumlocalmagshadow bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy preload-mediumkeeprefillempty medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
+.PHONY: preload-largedirectdefault bench-release-largedirectdefault
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -12,6 +13,7 @@ BENCH_ATTR_CFLAGS := -DH8_BENCH_ATTRIBUTION
 MEDIUM_BUDGET_CFLAGS ?= -DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE
 MEDIUM_COLLECT_CFLAGS ?=
 HZ8_DEFAULT_CFLAGS := $(MEDIUM_BUDGET_CFLAGS) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_MEDIUM_KEEP_REFILL_EMPTY_L1
+HZ8_LARGE_DIRECT_DEFAULT_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_OWNED_L1
 SRC := $(wildcard $(ROOT)/src/*.c)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 CORE_SRC := $(filter-out $(ROOT)/src/h8_preload_boundary.c,$(SRC))
@@ -110,6 +112,8 @@ bench-release-mediumlocalfasttier: $(ROOT)/h8_bench_release_mediumlocalfasttier
 
 bench-release-mediumkeeprefillempty: $(ROOT)/h8_bench_release_mediumkeeprefillempty
 
+bench-release-largedirectdefault: $(ROOT)/h8_bench_release_largedirectdefault
+
 bench-release-hz9mediumlocalmagshadow: $(ROOT)/h8_bench_release_hz9mediumlocalmagshadow
 
 bench-release-mediumceiling-noslotstate: $(ROOT)/h8_bench_release_mediumceiling_noslotstate
@@ -143,6 +147,8 @@ preload-mediummadvfree: $(ROOT)/libhakozuna_hz8_preload_mediummadvfree.so
 preload-mediumlazy: $(ROOT)/libhakozuna_hz8_preload_mediumlazy.so
 
 preload-mediumkeeprefillempty: $(ROOT)/libhakozuna_hz8_preload_keeprefill.so
+
+preload-largedirectdefault: $(ROOT)/libhakozuna_hz8_preload_largedirectdefault.so
 
 medium-v1-gate: $(ROOT)/h8_bench_release
 	$(ROOT)/scripts/run_medium_v1_gate.sh
@@ -180,6 +186,9 @@ remote-micro-release: $(ROOT)/h8_remote_micro_release
 
 $(ROOT)/libhakozuna_hz8_preload.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/libhakozuna_hz8_preload_largedirectdefault.so: $(SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/libhakozuna_hz8_preload_mediumnolazy.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
@@ -283,6 +292,9 @@ $(ROOT)/h8_bench_hz9mediumlocalmagshadow: $(SRC) $(ROOT)/bench/h8_bench.c $(BENC
 $(ROOT)/h8_bench_release: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_bench_release_largedirectdefault: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_bench_release_audit: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(BENCH_ATTR_CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -360,3 +372,4 @@ $(ROOT)/h8_remote_micro_release: $(SRC) $(REMOTE_MICRO_SRC) $(BENCH_SUPPORT_SRC)
 
 clean:
 	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/libhakozuna_hz8_preload_mediumnolazy.so $(ROOT)/libhakozuna_hz8_preload_medium64k2.so $(ROOT)/libhakozuna_hz8_preload_mediumchunk.so $(ROOT)/libhakozuna_hz8_preload_mediummadvfree.so $(ROOT)/libhakozuna_hz8_preload_mediumlazy.so $(ROOT)/libhakozuna_hz8_preload_keeprefill.so $(ROOT)/h8_smoke $(ROOT)/h8_smoke_mediumupper48 $(ROOT)/h8_safety_stress $(ROOT)/h8_medium_lazy_saturation $(ROOT)/h8_preload_smoke $(ROOT)/h8_bench $(ROOT)/h8_bench_medium64k2 $(ROOT)/h8_bench_mediumchunk $(ROOT)/h8_bench_mediumshardchunk $(ROOT)/h8_bench_mediumupper48 $(ROOT)/h8_bench_mediumv12_48k2 $(ROOT)/h8_bench_mediumfreecache $(ROOT)/h8_bench_mediumrefillhint $(ROOT)/h8_bench_mediumrefillcandidate $(ROOT)/h8_bench_mediumavailable $(ROOT)/h8_bench_mediumdemand64 $(ROOT)/h8_bench_mediumlocalfasttier $(ROOT)/h8_bench_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_audit $(ROOT)/h8_bench_release_upper1p5 $(ROOT)/h8_bench_release_upper3072 $(ROOT)/h8_bench_release_mediumnolazy $(ROOT)/h8_bench_release_mediumfreecache $(ROOT)/h8_bench_release_mediumrefillhint $(ROOT)/h8_bench_release_mediumrefillcandidate $(ROOT)/h8_bench_release_mediumavailable $(ROOT)/h8_bench_release_mediumavailableinline $(ROOT)/h8_bench_release_mediumdemand64 $(ROOT)/h8_bench_release_mediumlocalfasttier $(ROOT)/h8_bench_release_mediumkeeprefillempty $(ROOT)/h8_bench_release_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release_mediumceiling_noslotstate $(ROOT)/h8_bench_release_mediumceiling_freepending $(ROOT)/h8_bench_release_mediumceiling_combined $(ROOT)/h8_bench_release_mediummadvfree $(ROOT)/h8_bench_release_mediumlazy $(ROOT)/h8_bench_release_medium64k2 $(ROOT)/h8_bench_release_mediumchunk $(ROOT)/h8_bench_release_mediumshardchunk $(ROOT)/h8_bench_release_mediumupper48 $(ROOT)/h8_bench_release_mediumv12_48k2 $(ROOT)/h8_remote_micro $(ROOT)/h8_remote_micro_release
+	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirectdefault.so $(ROOT)/h8_bench_release_largedirectdefault

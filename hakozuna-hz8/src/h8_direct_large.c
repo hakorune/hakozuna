@@ -20,8 +20,6 @@ typedef struct H8DirectLarge {
 
 static h8_platform_mutex_t h8_direct_large_lock = H8_PLATFORM_MUTEX_INIT;
 static H8DirectLarge* h8_direct_large_buckets[H8_DIRECT_LARGE_BUCKETS];
-static _Atomic uintptr_t h8_direct_large_min_addr;
-static _Atomic uintptr_t h8_direct_large_max_addr;
 
 static size_t h8_direct_large_hash(const void* ptr) {
   uintptr_t value = (uintptr_t)ptr >> 4;
@@ -35,14 +33,16 @@ static void h8_direct_large_insert_locked(H8DirectLarge* node) {
   uintptr_t begin = (uintptr_t)node->user_ptr;
   uintptr_t end = begin + node->usable_size;
   uintptr_t min =
-      atomic_load_explicit(&h8_direct_large_min_addr, memory_order_relaxed);
+      atomic_load_explicit(&h8g.direct_large_min_addr, memory_order_relaxed);
   if (min == 0 || begin < min) {
-    atomic_store_explicit(&h8_direct_large_min_addr, begin, memory_order_release);
+    atomic_store_explicit(&h8g.direct_large_min_addr, begin,
+                          memory_order_release);
   }
   uintptr_t max =
-      atomic_load_explicit(&h8_direct_large_max_addr, memory_order_relaxed);
+      atomic_load_explicit(&h8g.direct_large_max_addr, memory_order_relaxed);
   if (end > max) {
-    atomic_store_explicit(&h8_direct_large_max_addr, end, memory_order_release);
+    atomic_store_explicit(&h8g.direct_large_max_addr, end,
+                          memory_order_release);
   }
   size_t bucket = h8_direct_large_hash(node->user_ptr);
   H8DirectLarge* head = h8_direct_large_buckets[bucket];
@@ -77,15 +77,7 @@ static bool h8_direct_large_contains(const H8DirectLarge* node,
 }
 
 static bool h8_direct_large_maybe_contains(const void* ptr) {
-  uintptr_t min =
-      atomic_load_explicit(&h8_direct_large_min_addr, memory_order_acquire);
-  if (min == 0) {
-    return false;
-  }
-  uintptr_t addr = (uintptr_t)ptr;
-  uintptr_t max =
-      atomic_load_explicit(&h8_direct_large_max_addr, memory_order_acquire);
-  return addr >= min && addr < max;
+  return h8_direct_large_maybe_contains_hot(ptr);
 }
 
 static H8DirectLarge* h8_direct_large_find_locked(const void* ptr,

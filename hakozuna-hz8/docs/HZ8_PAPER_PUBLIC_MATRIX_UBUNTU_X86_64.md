@@ -190,3 +190,11 @@ HZ8 is the fastest allocator on every local-only row.
 HZ8 replaces all earlier HZ lines as evidence.
 Windows HZ8 has Linux parity.
 ```
+
+## Supporting MT Lane
+
+If you need the missing MT lane x remote% values for HZ8 itself, use:
+
+```text
+hakozuna-hz8/docs/HZ8_MT_LANE_REMOTE_PERCENT_SNAPSHOT.md
+```
