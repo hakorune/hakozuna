@@ -343,6 +343,22 @@ remaining public matrix:
   libtcmalloc preload DSO.
 ```
 
+Public matrix runner:
+
+```bash
+MIMALLOC_SO=/path/to/libmimalloc.so \
+TCMALLOC_SO=/path/to/libtcmalloc_minimal.so \
+  scripts/run_hz8_keeprefill_public_matrix.sh
+```
+
+Local smoke without tcmalloc:
+
+```bash
+ALLOCATORS=hz8,hz8_keeprefill,mimalloc,system \
+RUNS=3 \
+  scripts/run_hz8_keeprefill_public_matrix.sh
+```
+
 The generic paired-gate helper can also be used with custom candidate targets:
 
 ```bash

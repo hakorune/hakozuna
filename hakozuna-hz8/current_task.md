@@ -659,6 +659,17 @@ Current medium collect candidate:
       Bazel exposes benchmark binaries but no ready libtcmalloc preload DSO
       do not fabricate a tcmalloc row from non-preload targets
       public matrix still needs Ubuntu-side prepared TCMALLOC_SO or bench-assets
+    public matrix runner:
+      scripts/run_hz8_keeprefill_public_matrix.sh
+      default allocators:
+        hz8,hz8_keeprefill,mimalloc,tcmalloc,system
+      default rows:
+        small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50,
+        guard_local0,main_local0,medium_local0
+      smoke:
+        bench_results/hz8_keeprefill_public_matrix_smoke_20260630T214000_hz8_keeprefill_public_matrix/
+      handoff:
+        set MIMALLOC_SO / TCMALLOC_SO for prepared external preload DSOs
 
 Local-only tuning is not the next ROI.
 

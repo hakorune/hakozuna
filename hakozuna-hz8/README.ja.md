@@ -151,6 +151,9 @@ RUNS=5 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
 ALLOCATORS=hz8,hz8_keeprefill,system \
   ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50 \
   RUNS=3 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
+MIMALLOC_SO=/path/to/libmimalloc.so \
+TCMALLOC_SO=/path/to/libtcmalloc_minimal.so \
+  scripts/run_hz8_keeprefill_public_matrix.sh
 ```
 
 ## ドキュメント入口
