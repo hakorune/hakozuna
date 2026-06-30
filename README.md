@@ -143,6 +143,8 @@ This repository already includes public Windows-native allocator comparisons and
 - HZ8 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz8.md`
 - HZ8 Zenodo description draft: `docs/releases/ZENODO_hz8_DESCRIPTION.md`
 - HZ8 release/paper preparation: `hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md`
+- HZ8 paper-ready Ubuntu matrix:
+  `hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md`
 
 ## Benchmark Snapshot (Ubuntu native)
 
@@ -258,6 +260,35 @@ Selected-small decision evidence:
 | `balanced` | 76.471M / 96,776 KB | 82.939M / 98,288 KB | +8.46% | +1,512 KB |
 | `larger_sizes` | 35.407M / 70,952 KB | 37.857M / 71,684 KB | +6.92% | +732 KB |
 | `large_slice_16k` | 46.308M / 17,096 KB | 53.940M / 17,664 KB | +16.48% | +568 KB |
+
+## HZ8 Paper-Ready Snapshot (2026-06-30, Ubuntu x86_64)
+
+HZ8 is the recommended balanced allocator line.  The current public default is
+HZ8-v2 / KeepRefill.  The HZ8 paper-facing matrix is intentionally interpreted
+as a throughput/RSS tradeoff, not as a universal tcmalloc replacement claim.
+
+Snapshot:
+
+```text
+hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+Ubuntu 22.04.5 / Linux 6.8.0-90 / x86_64
+RUNS=10, THREADS=16, ITERS=50000
+```
+
+Representative rows:
+
+| Row | HZ8 KeepRefill | mimalloc | tcmalloc |
+|---|---:|---:|---:|
+| `small_interleaved_remote90` ops/s | 12.023M | 10.960M | 23.900M |
+| `small_interleaved_remote90` post RSS | 2.91 MiB | 50.98 MiB | 32.94 MiB |
+| `main_interleaved_r90` ops/s | 6.048M | 4.715M | 12.178M |
+| `main_interleaved_r90` post RSS | 4.57 MiB | 183.12 MiB | 90.31 MiB |
+| `medium_interleaved_r50` ops/s | 8.128M | 4.151M | 15.870M |
+| `medium_interleaved_r50` post RSS | 3.81 MiB | 162.54 MiB | 79.06 MiB |
+
+Read HZ8 as the low-post-workload-RSS balanced line: tcmalloc remains stronger
+on raw throughput in several rows, while HZ8 keeps post RSS much lower on the
+reported remote/interleaved rows.
 
 Latest Windows rerun note:
 

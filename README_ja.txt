@@ -1,18 +1,19 @@
 Hakozuna 公開リポジトリ案内 (日本語)
 ====================================
 
-この公開リポジトリには、安定運用向けの2つのアロケータ実装と、
+この公開リポジトリには、安定運用向けのアロケータ実装と、
 研究用 allocator family が含まれています。
 
 - hakozuna/     : hz3 (local-heavy 向け)
 - hakozuna-mt/  : hz4 (remote-heavy / 高スレッド向け)
 - hakozuna-hz5/ : HZ5 (低 RSS / fail-closed / descriptor-owned profile family 向け研究 sidecar)
 - hakozuna-hz6/: HZ6 (route safety / 明示的 ownership state / speed-RSS profile lane を持つ selected-family prototype)
+- hakozuna-hz8/: HZ8 (低い post-workload RSS / fail-closed ownership / KeepRefill を持つ推奨 balanced allocator line)
 
 allocator profile map
 ---------------------
 
-Hakozuna には、metadata と ownership の流し方が違う4つの allocator line があります。
+Hakozuna には、metadata と ownership の流し方が違う allocator line があります。
 
 | Line | Focus | Metadata / routing model | 読み方 |
 |------|-------|--------------------------|--------|
@@ -20,6 +21,7 @@ Hakozuna には、metadata と ownership の流し方が違う4つの allocator 
 | HZ4 | remote-heavy / message-passing workload | remote-free-first: page-local metadata / remote queue / pending collect | remote-free 実験線 |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptor が owner / profile / dispatch policy を決める | 低 RSS / fail-closed 研究線 |
 | HZ6 | speed/RSS balance と明示的 safety contract | RouteLayer + descriptor + SourceLayer + FrontCache | selected-family 後継線 |
+| HZ8 | 推奨 balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | 現在の公開 allocator line |
 
 短く言うと:
 
@@ -27,6 +29,7 @@ Hakozuna には、metadata と ownership の流し方が違う4つの allocator 
 - HZ4 は remote-free-first。
 - HZ5 は ownership/policy-first。
 - HZ6 は contract-first で、selected/default lane と profile-only lane を分ける。
+- HZ8 は通常利用時に最初に選ぶ balanced allocator line。
 
 同じ malloc/free API でも、free(ptr) のときに pointer の正体をどう復元するか、
 そして ownership をどこへ流すかで allocator の性格は大きく変わります。
@@ -45,10 +48,9 @@ Hakozuna には、metadata と ownership の流し方が違う4つの allocator 
 推奨プロファイル選択
 --------------------
 
-- 迷ったら hz3 を使う
-- Redis系・local-heavy ワークロードは hz3
-- cross-thread free が多い remote-heavy ワークロードは hz4
-- HZ5 は既定 allocator ではなく、低 RSS / fail-closed な研究 profile family として扱う
+- 現在の公開 line で迷ったら HZ8 から試す
+- hz3/hz4/HZ5/HZ6 は設計系譜とベンチ比較基準として扱う
+- HZ8 は tcmalloc を全面的に置き換える主張ではなく、balanced low-RSS line として扱う
 
 最新版の結果と論文
 ------------------
@@ -78,6 +80,8 @@ Hakozuna には、metadata と ownership の流し方が違う4つの allocator 
   https://doi.org/10.5281/zenodo.20753968
 - HZ6 selected-family allocator series 全体の DOI:
   https://doi.org/10.5281/zenodo.20753967
+- HZ8 論文向け Ubuntu matrix:
+  hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 
 代表 MT snapshot
 ----------------

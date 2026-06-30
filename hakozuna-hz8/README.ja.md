@@ -132,6 +132,31 @@ active-liveとして保持し、重いempty/reactivate loopを避けます。公
 cross-allocator matrixでもbalanced defaultとして確認済みです。ただし、HZ8が
 tcmallocを全面的に超えたという主張ではありません。
 
+## 論文向け公開マトリクスの要点
+
+主スナップショット:
+
+```text
+docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+Ubuntu 22.04.5 / Linux 6.8.0-90 / x86_64
+RUNS=10, THREADS=16, ITERS=50000
+```
+
+代表行:
+
+| Row | HZ8 KeepRefill | mimalloc | tcmalloc |
+|---|---:|---:|---:|
+| `small_interleaved_remote90` ops/s | 12.023M | 10.960M | 23.900M |
+| `small_interleaved_remote90` post RSS | 2.91 MiB | 50.98 MiB | 32.94 MiB |
+| `main_interleaved_r90` ops/s | 6.048M | 4.715M | 12.178M |
+| `main_interleaved_r90` post RSS | 4.57 MiB | 183.12 MiB | 90.31 MiB |
+| `medium_interleaved_r50` ops/s | 8.128M | 4.151M | 15.870M |
+| `medium_interleaved_r50` post RSS | 3.81 MiB | 162.54 MiB | 79.06 MiB |
+
+これは throughput / RSS tradeoff の表として読んでください。tcmallocは複数行で
+raw throughput が強く、HZ8の主張は「実用速度を保ちつつ post-workload RSS が
+非常に低い balanced allocator」です。
+
 ## Build
 
 ```bash

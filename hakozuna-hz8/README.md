@@ -137,6 +137,31 @@ remote-heavy rows.  The public cross-allocator matrix confirms it as the
 current balanced default.  It is not a claim that HZ8 universally beats
 tcmalloc.
 
+## Paper-Ready Matrix Highlights
+
+Primary paper snapshot:
+
+```text
+docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+Ubuntu 22.04.5 / Linux 6.8.0-90 / x86_64
+RUNS=10, THREADS=16, ITERS=50000
+```
+
+Representative rows:
+
+| Row | HZ8 KeepRefill | mimalloc | tcmalloc |
+|---|---:|---:|---:|
+| `small_interleaved_remote90` ops/s | 12.023M | 10.960M | 23.900M |
+| `small_interleaved_remote90` post RSS | 2.91 MiB | 50.98 MiB | 32.94 MiB |
+| `main_interleaved_r90` ops/s | 6.048M | 4.715M | 12.178M |
+| `main_interleaved_r90` post RSS | 4.57 MiB | 183.12 MiB | 90.31 MiB |
+| `medium_interleaved_r50` ops/s | 8.128M | 4.151M | 15.870M |
+| `medium_interleaved_r50` post RSS | 3.81 MiB | 162.54 MiB | 79.06 MiB |
+
+Read these as throughput/RSS tradeoff rows.  tcmalloc remains the stronger raw
+throughput baseline on several rows; HZ8's claim is practical throughput with
+very low post-workload RSS.
+
 ## Build
 
 ```bash

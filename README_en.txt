@@ -1,8 +1,8 @@
 Hakozuna Public Repository Guide (English)
 ==========================================
 
-This public repository contains two stable allocator implementations and two
-research allocator families:
+This public repository contains stable allocator implementations and research
+allocator families:
 
 - hakozuna/     : hz3 (optimized for local-heavy workloads)
 - hakozuna-mt/  : hz4 (optimized for remote-heavy, high-thread workloads)
@@ -10,11 +10,14 @@ research allocator families:
                  descriptor-owned profile families
 - hakozuna-hz6/: HZ6 selected-family allocator prototype with route safety,
                  explicit ownership states, and speed/RSS profile lanes
+- hakozuna-hz8/: HZ8 recommended balanced allocator line with low post-workload
+                 RSS, fail-closed ownership, and KeepRefill remote-pressure
+                 control
 
 Allocator profile map
 ---------------------
 
-Hakozuna contains four allocator lines with deliberately different metadata
+Hakozuna contains allocator lines with deliberately different metadata
 and ownership models.
 
 | Line | Focus | Metadata / routing model | Best read as |
@@ -23,6 +26,7 @@ and ownership models.
 | HZ4 | remote-heavy / message-passing workloads | remote-free-first: page-local metadata, remote queues, pending collect | remote-free experiment line |
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | low-RSS fail-closed research line |
 | HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | selected-family successor line |
+| HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | current public allocator line |
 
 In short:
 
@@ -30,6 +34,7 @@ In short:
 - HZ4 is remote-free-first.
 - HZ5 is ownership/policy-first.
 - HZ6 is contract-first with selected/default and profile-only lanes.
+- HZ8 is the recommended balanced allocator line.
 
 The API is still malloc/free, but allocator behavior changes sharply depending
 on how free(ptr) recovers pointer identity and where ownership is sent next.
@@ -46,10 +51,9 @@ Platform support
 Recommended profile selection
 -----------------------------
 
-- If unsure, start with hz3
-- Use hz3 for Redis-like and local-heavy patterns
-- Use hz4 for cross-thread free heavy (remote-heavy) patterns
-- Treat HZ5 as a research profile family, not as the default allocator
+- If unsure in the current public line, start with HZ8.
+- Use hz3/hz4/HZ5/HZ6 as design lineage and benchmark references.
+- HZ8 is not a universal tcmalloc replacement; it is the balanced low-RSS line.
 
 Latest benchmark and paper
 --------------------------
@@ -78,6 +82,8 @@ Latest benchmark and paper
   https://doi.org/10.5281/zenodo.20753968
 - All-version DOI for the HZ6 selected-family allocator series:
   https://doi.org/10.5281/zenodo.20753967
+- HZ8 paper-ready Ubuntu matrix:
+  hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 
 Representative MT snapshot
 --------------------------
