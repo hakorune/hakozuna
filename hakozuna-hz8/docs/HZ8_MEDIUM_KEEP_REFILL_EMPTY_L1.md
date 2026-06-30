@@ -309,9 +309,38 @@ small remote-heavy:
 main remote-heavy:
   KeepRefill improves HZ8 and system with much lower RSS than mimalloc.
 
-medium r50:
+  medium r50:
   KeepRefill is positive but noisy; do not claim a universal medium win from
   the short R5 matrix alone.
+```
+
+## Tcmalloc Status
+
+The local `private/allocators/tcmalloc` checkout is the upstream TCMalloc source
+tree.  In this workspace it exposes Bazel benchmark binaries, but no ready
+`libtcmalloc*.so` suitable for the `LD_PRELOAD` matrix:
+
+```text
+available:
+  bazel query kind(cc_binary, //tcmalloc:*)
+  //tcmalloc:central_freelist_benchmark
+  //tcmalloc:guarded_page_allocator_benchmark
+  //tcmalloc:span_benchmark
+  //tcmalloc:transfer_cache_benchmark
+
+not available locally:
+  libtcmalloc.so / libtcmalloc_minimal.so preload artifact
+```
+
+So the current Windows/WSL checkpoint is:
+
+```text
+local matrix:
+  hz8 / hz8_keeprefill / mimalloc / system
+
+remaining public matrix:
+  rerun on the Ubuntu benchmark side or set TCMALLOC_SO to a prepared
+  libtcmalloc preload DSO.
 ```
 
 The generic paired-gate helper can also be used with custom candidate targets:

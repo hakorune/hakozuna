@@ -654,6 +654,11 @@ Current medium collect candidate:
       KeepRefill strongly fixes small remote-heavy and improves main remote-heavy
       mimalloc is still faster in these rows but pays much higher RSS
       medium r50 is positive but noisy, so avoid overclaiming that row
+    tcmalloc status:
+      local private/allocators/tcmalloc is an upstream source checkout
+      Bazel exposes benchmark binaries but no ready libtcmalloc preload DSO
+      do not fabricate a tcmalloc row from non-preload targets
+      public matrix still needs Ubuntu-side prepared TCMALLOC_SO or bench-assets
 
 Local-only tuning is not the next ROI.
 
