@@ -139,6 +139,13 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          debug.small_remote_pressure_collect_pending_after_count,
          debug.small_active_full_collect_helped_count,
          debug.small_active_full_collect_no_help_count);
+  printf("small_active_full_pending_bucket b1=%zu b2_4=%zu b5_8=%zu b9_32=%zu b33p=%zu defer=%zu\n",
+         debug.small_active_full_pending_bucket_1,
+         debug.small_active_full_pending_bucket_2_4,
+         debug.small_active_full_pending_bucket_5_8,
+         debug.small_active_full_pending_bucket_9_32,
+         debug.small_active_full_pending_bucket_33p,
+         debug.small_active_full_defer_count);
   printf("local_path active_hit=%zu active_miss=%zu freelist=%zu bump=%zu slow_collect=%zu span_commit=%zu find_scan=%zu scan_span=%zu free_hit=%zu reject_owner=%zu reject_state=%zu reject_live=%zu\n",
          debug.local_active_hit, debug.local_active_miss,
          debug.local_freelist_pop, debug.local_bump_alloc,

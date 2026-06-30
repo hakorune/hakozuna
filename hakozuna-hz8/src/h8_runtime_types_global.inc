@@ -65,6 +65,12 @@ typedef struct H8Global {
   atomic_size_t small_active_full_pending_nonzero_count;
   atomic_size_t small_active_full_collect_helped_count;
   atomic_size_t small_active_full_collect_no_help_count;
+  atomic_size_t small_active_full_pending_bucket_1;
+  atomic_size_t small_active_full_pending_bucket_2_4;
+  atomic_size_t small_active_full_pending_bucket_5_8;
+  atomic_size_t small_active_full_pending_bucket_9_32;
+  atomic_size_t small_active_full_pending_bucket_33p;
+  atomic_size_t small_active_full_defer_count;
   atomic_size_t remote_pressure_collect_source_active_hit_full_count;
   atomic_size_t remote_pressure_collect_source_active_miss_count;
   atomic_size_t remote_pressure_collect_source_owner_exit_count;

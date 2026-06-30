@@ -98,6 +98,18 @@
       &h8g.small_active_full_collect_helped_count, memory_order_acquire);
   out->small_active_full_collect_no_help_count = atomic_load_explicit(
       &h8g.small_active_full_collect_no_help_count, memory_order_acquire);
+  out->small_active_full_pending_bucket_1 = atomic_load_explicit(
+      &h8g.small_active_full_pending_bucket_1, memory_order_acquire);
+  out->small_active_full_pending_bucket_2_4 = atomic_load_explicit(
+      &h8g.small_active_full_pending_bucket_2_4, memory_order_acquire);
+  out->small_active_full_pending_bucket_5_8 = atomic_load_explicit(
+      &h8g.small_active_full_pending_bucket_5_8, memory_order_acquire);
+  out->small_active_full_pending_bucket_9_32 = atomic_load_explicit(
+      &h8g.small_active_full_pending_bucket_9_32, memory_order_acquire);
+  out->small_active_full_pending_bucket_33p = atomic_load_explicit(
+      &h8g.small_active_full_pending_bucket_33p, memory_order_acquire);
+  out->small_active_full_defer_count = atomic_load_explicit(
+      &h8g.small_active_full_defer_count, memory_order_acquire);
   out->remote_pressure_collect_source_active_hit_full_count =
       atomic_load_explicit(&h8g.remote_pressure_collect_source_active_hit_full_count,
                            memory_order_acquire);

@@ -149,6 +149,27 @@ static bool h8_span_local_exhausted(H8Span* span) {
   return bump >= span->slot_count;
 }
 
+#if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_debug_record_active_full_pending(size_t pending) {
+  if (pending <= 1) {
+    H8_DEBUG_INC(small_active_full_pending_bucket_1);
+  } else if (pending <= 4) {
+    H8_DEBUG_INC(small_active_full_pending_bucket_2_4);
+  } else if (pending <= 8) {
+    H8_DEBUG_INC(small_active_full_pending_bucket_5_8);
+  } else if (pending <= 32) {
+    H8_DEBUG_INC(small_active_full_pending_bucket_9_32);
+  } else {
+    H8_DEBUG_INC(small_active_full_pending_bucket_33p);
+  }
+}
+#endif
+
+#if defined(H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1) && \
+    !defined(H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT)
+#define H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT 8u
+#endif
+
 static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                    uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
@@ -234,9 +255,19 @@ void* h8_malloc_inner(size_t size) {
         atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
     if (pending_before > 0) {
       H8_DEBUG_INC(small_active_full_pending_nonzero_count);
-      remote_pressure_collect_triggered = true;
-      h8_pressure_owner_collect_remote_pressure(
-          owner, H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL);
+#if defined(H8_ENABLE_DEBUG_STATS)
+      h8_debug_record_active_full_pending(pending_before);
+#endif
+#if defined(H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1)
+      if (pending_before <= H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT) {
+        H8_DEBUG_INC(small_active_full_defer_count);
+      } else
+#endif
+      {
+        remote_pressure_collect_triggered = true;
+        h8_pressure_owner_collect_remote_pressure(
+            owner, H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL);
+      }
     } else {
       h8_pressure_owner_collect(owner);
     }

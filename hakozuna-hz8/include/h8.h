@@ -90,6 +90,12 @@ typedef struct H8DebugStats {
   size_t small_active_full_pending_nonzero_count;
   size_t small_active_full_collect_helped_count;
   size_t small_active_full_collect_no_help_count;
+  size_t small_active_full_pending_bucket_1;
+  size_t small_active_full_pending_bucket_2_4;
+  size_t small_active_full_pending_bucket_5_8;
+  size_t small_active_full_pending_bucket_9_32;
+  size_t small_active_full_pending_bucket_33p;
+  size_t small_active_full_defer_count;
   size_t remote_pressure_collect_source_active_hit_full_count;
   size_t remote_pressure_collect_source_active_miss_count;
   size_t remote_pressure_collect_source_owner_exit_count;

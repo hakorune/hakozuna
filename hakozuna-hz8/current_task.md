@@ -278,8 +278,59 @@ MediumCapacityCollectBudget-L1 decision:
   guard/local safety is clean in this pass
 
 Next check:
-  if pursuing promotion, repeat with full weak-row matrix and RSS gate
-  otherwise attack the next bottleneck instead of tuning this budget ladder
+  pair with the small-side active-full defer fix instead of tuning this budget ladder
+
+Current small behavior box:
+  docs/HZ8_ACTIVE_FULL_DEFER8_L1.md
+  build target: make bench-activefulldefer8
+  combined build target: make bench-defer8mediumcapacity
+  default build unchanged
+
+Bucket probe:
+  bench_results/hz8_small_active_full_bucket_20260630T114050/
+  small active-full pending was mostly <= 8
+  b33p was only 4 in the R3 probe
+
+ActiveFullDefer8-L1 R5:
+  bench_results/hz8_active_full_defer8_r5_20260630T114414/
+  small_interleaved_remote90:
+    4.63M ops/s, peak RSS 69.02 MiB
+  main_interleaved_r90:
+    176543 ops/s, peak RSS 44.70 MiB
+  read:
+    very strong small-row fix
+    not sufficient alone for mixed main rows
+
+Defer8 + MediumCapacity R3:
+  bench_results/hz8_defer8_mediumcapacity_20260630T114531/
+  small_interleaved_remote90:
+    4.35M ops/s, peak RSS 60.29 MiB
+  main_interleaved_r90:
+    294364 ops/s, peak RSS 37.69 MiB
+  medium_interleaved_r50:
+    368147 ops/s, peak RSS 22.54 MiB
+
+Current v2 candidate:
+  ActiveFullDefer8 + MediumCapacityCollectBudget
+  not default yet
+  combined R5 record: bench_results/hz8_defer8_mediumcapacity_r5_20260630T114702/
+
+Combined R5:
+  small_interleaved_remote90:
+    4.39M ops/s, peak RSS 62.32 MiB
+  main_interleaved_r90:
+    251703 ops/s, peak RSS 41.00 MiB
+  medium_interleaved_r50:
+    362853 ops/s, peak RSS 22.38 MiB
+  guard_local0:
+    7.40M ops/s, peak RSS 9.30 MiB
+
+Current read:
+  current best HZ8 v2 candidate
+  small remote-heavy cliff is substantially fixed
+  main remote-heavy improves versus fresh default R5
+  medium row is neutral
+  next check: full weak-row matrix before default promotion
 
 Local-only tuning is not the next ROI.
 

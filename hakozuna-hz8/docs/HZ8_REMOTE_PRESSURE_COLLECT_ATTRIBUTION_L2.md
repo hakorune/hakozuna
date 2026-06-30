@@ -127,3 +127,11 @@ the next narrow behavior lane is:
 ```text
 docs/HZ8_ACTIVE_FULL_REMOTE_COLLECT_BUDGET_L1.md
 ```
+
+That budget-thickening lane did not improve the small row. A follow-up bucket
+probe showed that most active-full pending counts are small, so the current
+small-side candidate is:
+
+```text
+docs/HZ8_ACTIVE_FULL_DEFER8_L1.md
+```
