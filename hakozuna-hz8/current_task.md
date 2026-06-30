@@ -405,6 +405,27 @@ Defer4 local gate:
     local rows do not exercise the active-full defer path
     local throughput is neutral/positive in this short gate
 
+Defer4 focus extra:
+  record: bench_results/hz8_defer4_rc_focus_extra_20260630T121137/
+  guard_remote50:
+    5.587M ops/s, peak RSS 12.65 MiB
+    at/above default with lower RSS
+  small_interleaved_remote90:
+    4.39M ops/s, peak RSS 49.05 MiB
+    default probe was 527124 ops/s, peak RSS 864.04 MiB
+  medium_remote50:
+    unpaired R3 was noisy, so use same-run pair below
+
+Defer4 medium r50 same-run pair:
+  record: bench_results/hz8_defer4_medium_r50_pair_20260630T121206/
+  medium_remote50:
+    default   313948 ops/s, peak RSS 27.32 MiB
+    candidate 311970 ops/s, peak RSS 24.23 MiB
+  decision:
+    medium_remote50 is neutral in same-run comparison
+    candidate RSS is lower
+    pending counters remain zero, so this row is not exercising small defer
+
 Local-only tuning is not the next ROI.
 
 Current policy:

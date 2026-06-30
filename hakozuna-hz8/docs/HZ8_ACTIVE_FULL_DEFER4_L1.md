@@ -152,12 +152,71 @@ main_local0 stays neutral/positive in this short gate
 medium_local0 stays throughput-positive with a modest RSS movement
 ```
 
+## Focus Extra Gate
+
+Record:
+
+```text
+bench_results/hz8_defer4_rc_focus_extra_20260630T121137/
+```
+
+Candidate R3 medians:
+
+```text
+guard_remote50:
+  5.587M ops/s
+  peak RSS 12.65 MiB
+
+medium_remote50:
+  318804 ops/s
+  peak RSS 25.45 MiB
+
+small_interleaved_remote90:
+  4.39M ops/s
+  peak RSS 49.05 MiB
+```
+
+Read:
+
+```text
+guard_remote50 stays at or above default with lower RSS
+small_interleaved_remote90 keeps the main Defer fix:
+  default probe 527124 ops/s, peak RSS 864.04 MiB
+  defer4       4.39M ops/s, peak RSS 49.05 MiB
+medium_remote50 was noisy in this unpaired R3 and needed a same-run pair
+```
+
+## Medium Remote50 Pair
+
+Record:
+
+```text
+bench_results/hz8_defer4_medium_r50_pair_20260630T121206/
+```
+
+Same-run R5 medians:
+
+```text
+medium_remote50:
+  default   313948 ops/s, peak RSS 27.32 MiB
+  candidate 311970 ops/s, peak RSS 24.23 MiB
+```
+
+Read:
+
+```text
+same-run pair turns the unpaired medium_remote50 dip into neutral throughput
+candidate RSS is lower
+pending_enqueue/dequeue remain zero, so this row is not exercising the small
+active-full defer path
+```
+
 ## Decision
 
 ```text
 KEEP Defer4 + MediumCapacityCollectBudget as the balanced HZ8 v2 RC candidate
 KEEP Defer8 as high-remote-pressure evidence/control
-do not replace the frozen v1.1 default until the broader release matrix passes
+do not replace the frozen v1.1 default until the release matrix policy is chosen
 largeish remote rows remain separate because they currently exercise sys/route-miss behavior
 ```
 
