@@ -384,7 +384,8 @@ static bool h8_medium_collect_active_keep_shadow(H8OwnerRecord* owner,
 }
 
 #if defined(H8_ENABLE_DEBUG_STATS) || \
-    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE) || \
+    defined(H8_MEDIUM_KEEP_REFILL_EMPTY_L1)
 static void h8_medium_refill_candidate_install(H8OwnerRecord* owner,
                                                H8MediumRun* run,
                                                uint64_t accepted) {

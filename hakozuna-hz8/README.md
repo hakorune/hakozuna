@@ -113,6 +113,22 @@ The remaining known weakness is throughput relative to throughput-first
 allocators on local-only and medium remote-heavy rows.  That is now treated as a
 v2 / HZ9 research input, not an HZ8-v1.1 correctness issue.
 
+## HZ8 v2 Candidate
+
+The current HZ8 v2 RC candidate is opt-in:
+
+```text
+MediumKeepRefillEmpty-L1
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+  make bench-mediumkeeprefillempty
+  make bench-release-mediumkeeprefillempty
+```
+
+It keeps owner-local refill-candidate medium runs active-live after remote
+collect drains them, avoiding the expensive empty/reactivate loop seen in
+remote-heavy rows.  The frozen v1.1 default is unchanged until the public
+cross-allocator matrix is regenerated.
+
 ## Build
 
 ```bash
@@ -120,6 +136,7 @@ make smoke
 make preload
 make bench          # debug/counter build
 make bench-release  # release throughput build
+make bench-release-mediumkeeprefillempty  # HZ8 v2 RC candidate
 ```
 
 Common local checks:

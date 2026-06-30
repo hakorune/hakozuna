@@ -109,6 +109,21 @@ HZ9は、HZ8とは違う明確なpublic promiseを証明するまで、opt-inの
 残っている弱点は、local-only rowやmedium remote-heavy rowでのthroughputです。
 これはHZ8-v1.1のcorrectness issueではなく、v2 / HZ9研究laneの入力として扱います。
 
+## HZ8 v2候補
+
+現在のHZ8 v2 RC候補は opt-in です。
+
+```text
+MediumKeepRefillEmpty-L1
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+  make bench-mediumkeeprefillempty
+  make bench-release-mediumkeeprefillempty
+```
+
+remote collectでmedium runが空になったとき、owner-local refill candidateなら
+active-liveとして保持し、重いempty/reactivate loopを避けます。公開用の
+cross-allocator matrixを取り直すまでは、frozen v1.1 defaultは変更しません。
+
 ## Build
 
 ```bash
@@ -116,6 +131,7 @@ make smoke
 make preload
 make bench          # debug/counter build
 make bench-release  # release throughput build
+make bench-release-mediumkeeprefillempty  # HZ8 v2 RC candidate
 ```
 
 よく使う確認:

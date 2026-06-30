@@ -167,6 +167,56 @@ overall:
   still needs a release-sized repeat before replacing any documented default
 ```
 
+## Release Gate
+
+Record:
+
+```text
+bench_results/hz8_keeprefill_release_gate_20260630T210134/
+RUNS=5, THREADS=16, ITERS=100000
+baseline: h8_bench_release
+candidate: h8_bench_release_mediumkeeprefillempty
+```
+
+Release medians:
+
+| Row | Release ops/s | KeepRefill ops/s | Release RSS | KeepRefill RSS |
+|---|---:|---:|---:|---:|
+| main_interleaved_remote90 | 3.62M | 5.92M | 183.86 MiB | 97.65 MiB |
+| medium_interleaved_remote50 | 4.29M | 5.81M | 96.62 MiB | 105.05 MiB |
+| small_guard_local0 | 312.94M | 328.33M | 5.39 MiB | 3.71 MiB |
+| small_interleaved_remote90 | 0.56M | 12.76M | 1795.07 MiB | 74.05 MiB |
+
+Interpretation:
+
+```text
+release build:
+  validates that the win is not debug-counter-only
+
+small_interleaved_remote90:
+  the old remote-pressure cliff is largely removed
+
+main_interleaved_remote90:
+  clear speed and RSS win
+
+medium_interleaved_remote50:
+  clear speed win with modest RSS increase
+
+small_guard_local0:
+  local small guard stays strong
+```
+
+Updated decision:
+
+```text
+promote within research ledger:
+  HZ8 v2 RC candidate
+
+still not:
+  frozen HZ8 v1.1 replacement until cross-allocator/public release matrix is
+  regenerated
+```
+
 ## Acceptance Before Promotion
 
 ```text

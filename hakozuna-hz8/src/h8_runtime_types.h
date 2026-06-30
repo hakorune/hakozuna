@@ -130,7 +130,8 @@ struct H8OwnerRecord {
   H8MediumRun* medium_available_shadow[H8_MEDIUM_CLASS_COUNT];
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS) || \
-    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE)
+    defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE) || \
+    defined(H8_MEDIUM_KEEP_REFILL_EMPTY_L1)
   H8MediumRun* medium_refill_candidate[H8_MEDIUM_CLASS_COUNT];
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS)

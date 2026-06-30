@@ -575,6 +575,31 @@ Current medium collect candidate:
     safety counters stayed clean: invalid_owned = 0, route_authority_mismatch = 0
     promote to HZ8 v2 RC candidate-watch, but keep frozen v1.1 default unchanged
     next step: longer repeat / release-sized matrix before default switch
+  release gate:
+    build target: make bench-release-mediumkeeprefillempty
+    record: bench_results/hz8_keeprefill_release_gate_20260630T210134/
+    baseline: h8_bench_release
+    candidate: h8_bench_release_mediumkeeprefillempty
+    RUNS=5, THREADS=16, ITERS=100000
+    main_interleaved_remote90:
+      release = 3.62M ops/s, peak RSS 183.86 MiB
+      keeprefill = 5.92M ops/s, peak RSS 97.65 MiB
+    medium_interleaved_remote50:
+      release = 4.29M ops/s, peak RSS 96.62 MiB
+      keeprefill = 5.81M ops/s, peak RSS 105.05 MiB
+    small_guard_local0:
+      release = 312.94M ops/s, peak RSS 5.39 MiB
+      keeprefill = 328.33M ops/s, peak RSS 3.71 MiB
+    small_interleaved_remote90:
+      release = 0.56M ops/s, peak RSS 1795.07 MiB
+      keeprefill = 12.76M ops/s, peak RSS 74.05 MiB
+  release read:
+    release build confirms the win is not debug-counter-only
+    small_interleaved_remote90 cliff is largely removed
+    main remote-heavy wins on both speed and RSS
+    medium remote50 wins speed with modest RSS increase
+    keep as the current HZ8 v2 RC nucleus
+    remaining work is public/cross-allocator matrix and any final naming cleanup
 
 Local-only tuning is not the next ROI.
 
