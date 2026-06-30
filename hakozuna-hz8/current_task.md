@@ -509,6 +509,73 @@ Current next box:
       small positive on largeish, neutral/slightly weak on medium
       keep as probe target only, not promotion
 
+Current medium collect candidate:
+  MediumKeepRefillEmpty-L1
+  docs:
+    docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+  build target:
+    make bench-mediumkeeprefillempty
+  purpose:
+    keep owner-local refill-candidate runs active-live when a remote collect
+    drains them to zero, instead of immediately marking them empty
+  scope:
+    opt-in HZ8 v2 candidate only
+    paired with Defer4 + MediumCapacityCollectBudget
+    default build unchanged
+  record:
+    bench_results/hz8_medium_keeprefill_empty_l1_20260630T204156/
+  same-run R3:
+    medium_remote50:
+      defer4 = 326521 ops/s, peak RSS 22.21 MiB
+      keeprefill = 1397369 ops/s, peak RSS 21.75 MiB
+    main_remote90:
+      defer4 = 285865 ops/s, peak RSS 31.21 MiB
+      keeprefill = 1787769 ops/s, peak RSS 30.77 MiB
+  attribution:
+    medium_remote50 empty_ms:
+      defer4 = 26313.306 ms
+      keeprefill = 78.695 ms
+    main_remote90 empty_ms:
+      defer4 = 46821.476 ms
+      keeprefill = 143.879 ms
+  decision:
+    KEEP as strong HZ8 v2 candidate evidence
+    not default promotion yet
+    next gate should compare Defer4 vs KeepRefill on the broader RC rows
+    watch active_live_peak / RSS because this deliberately keeps refill
+    candidates live instead of cycling them through empty/reactivate
+  broad gate:
+    record: bench_results/hz8_medium_keeprefill_empty_broad_gate_20260630T204641/
+    guard_remote90:
+      defer4 = 4.61M ops/s, peak RSS 47.38 MiB
+      keeprefill = 4.66M ops/s, peak RSS 49.91 MiB
+    main_remote50:
+      defer4 = 427029 ops/s, peak RSS 21.75 MiB
+      keeprefill = 1862192 ops/s, peak RSS 19.75 MiB
+    main_remote90:
+      defer4 = 281138 ops/s, peak RSS 33.02 MiB
+      keeprefill = 1958436 ops/s, peak RSS 28.05 MiB
+    medium_remote50:
+      defer4 = 339018 ops/s, peak RSS 21.13 MiB
+      keeprefill = 1442871 ops/s, peak RSS 21.01 MiB
+    medium_remote90:
+      defer4 = 228223 ops/s, peak RSS 37.14 MiB
+      keeprefill = 1441980 ops/s, peak RSS 29.13 MiB
+    main_local0:
+      defer4 = 962453 ops/s, peak RSS 7.44 MiB
+      keeprefill = 930269 ops/s, peak RSS 7.57 MiB
+    medium_local0:
+      defer4 = 826416 ops/s, peak RSS 6.67 MiB
+      keeprefill = 825518 ops/s, peak RSS 8.71 MiB
+  broad read:
+    main/medium remote-heavy rows improve strongly
+    the prior Defer8-style r50 cliff is not present in this short gate
+    guard_remote90 is neutral/slightly positive
+    local rows are neutral to slightly weak
+    safety counters stayed clean: invalid_owned = 0, route_authority_mismatch = 0
+    promote to HZ8 v2 RC candidate-watch, but keep frozen v1.1 default unchanged
+    next step: longer repeat / release-sized matrix before default switch
+
 Local-only tuning is not the next ROI.
 
 Current policy:
@@ -567,6 +634,9 @@ largeish route boundary:
 
 large direct owned evidence:
   docs/HZ8_LARGE_DIRECT_OWNED_L1.md
+
+medium keep-refill-empty candidate:
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
 
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md

@@ -71,7 +71,17 @@
   bool would_keep_live =
       h8_medium_collect_active_keep_shadow(owner, run, ctx, remaining);
   (void)would_keep_live;
-  if (run->allocated_mask == 0 && remaining == 0 && would_keep_live) {
+  bool would_keep_refill_live = false;
+#if defined(H8_MEDIUM_KEEP_REFILL_EMPTY_L1)
+  would_keep_refill_live =
+      !would_keep_live && accepted != 0 && remaining == 0 && ctx &&
+      ctx == h8_tls_ctx && ctx->owner == owner &&
+      run->class_id < H8_MEDIUM_CLASS_COUNT &&
+      owner->medium_refill_candidate[run->class_id] == run &&
+      h8_medium_run_owned_by_ctx(run, ctx);
+#endif
+  if (run->allocated_mask == 0 && remaining == 0 &&
+      (would_keep_live || would_keep_refill_live)) {
     h8_medium_note_active_live_empty_fast(run);
   } else if (run->allocated_mask == 0 && remaining == 0) {
     h8_medium_mark_empty_locked(run);
