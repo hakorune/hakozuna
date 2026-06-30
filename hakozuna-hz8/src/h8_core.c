@@ -185,6 +185,10 @@ H8RouteKind h8_route_inner(void* ptr) {
     if (medium_route != H8_ROUTE_MISS) {
       return medium_route;
     }
+    H8RouteKind direct_route = h8_direct_large_route_inner(ptr);
+    if (direct_route != H8_ROUTE_MISS) {
+      return direct_route;
+    }
     return H8_ROUTE_MISS;
   }
   H8Span* span = atomic_load_explicit(&h8g.spans[h8_span_index_from_ptr(ptr)],

@@ -32,6 +32,8 @@ preload-smoke: $(ROOT)/h8_preload_smoke $(ROOT)/libhakozuna_hz8_preload.so
 
 smoke: $(ROOT)/h8_smoke
 
+smoke-largedirect: $(ROOT)/h8_smoke_largedirect
+
 smoke-mediumupper48: $(ROOT)/h8_smoke_mediumupper48
 
 safety-stress: $(ROOT)/h8_safety_stress
@@ -44,6 +46,8 @@ bench: $(ROOT)/h8_bench
 bench-activefulldefer8: $(ROOT)/h8_bench_activefulldefer8
 
 bench-defer4mediumcapacity: $(ROOT)/h8_bench_defer4mediumcapacity
+
+bench-defer4mediumcapacity-largedirect: $(ROOT)/h8_bench_defer4mediumcapacity_largedirect
 
 bench-defer8mediumcapacity: $(ROOT)/h8_bench_defer8mediumcapacity
 
@@ -186,6 +190,9 @@ $(ROOT)/libhakozuna_hz8_preload_mediumlazy.so: $(SRC) $(HEADERS)
 $(ROOT)/h8_smoke: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_smoke_largedirect: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_LARGE_DIRECT_OWNED_L1 -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_smoke_mediumupper48: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_MEDIUM_UPPER48_CLASS -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -206,6 +213,9 @@ $(ROOT)/h8_bench_activefulldefer8: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPO
 
 $(ROOT)/h8_bench_defer4mediumcapacity: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_defer4mediumcapacity_largedirect: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_LARGE_DIRECT_OWNED_L1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_defer8mediumcapacity: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(BENCH_ATTR_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)

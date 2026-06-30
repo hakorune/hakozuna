@@ -311,6 +311,13 @@ void* h8_sys_calloc(size_t count, size_t size);
 void* h8_sys_realloc(void* ptr, size_t size);
 void h8_sys_free(void* ptr);
 
+bool h8_direct_large_size_supported(size_t size);
+void* h8_direct_large_malloc(size_t size);
+bool h8_direct_large_free_inner(void* ptr, bool* owned_out);
+bool h8_direct_large_usable_size_inner(void* ptr, size_t* usable_out,
+                                       bool* owned_out);
+H8RouteKind h8_direct_large_route_inner(void* ptr);
+
 H8ThreadCtx* h8_thread_ctx_get_slow(void);
 H8ThreadCtx* h8_thread_ctx_get(void);
 H8OwnerRecord* h8_owner_current(void);

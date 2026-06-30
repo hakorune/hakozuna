@@ -219,6 +219,12 @@ void* h8_malloc_inner(size_t size) {
       uint32_t medium_class_id = h8_medium_class_for_size_fast(size);
       return h8_medium_malloc_class_inner(medium_class_id);
     }
+    if (h8_direct_large_size_supported(size)) {
+      void* ptr = h8_direct_large_malloc(size);
+      if (ptr) {
+        return ptr;
+      }
+    }
     return h8_sys_malloc(size);
   }
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
@@ -384,6 +390,14 @@ void h8_free_inner(void* ptr) {
       h8_fail_invalid_free();
       return;
     }
+    bool direct_owned = false;
+    if (h8_direct_large_free_inner(ptr, &direct_owned)) {
+      return;
+    }
+    if (direct_owned) {
+      h8_fail_invalid_free();
+      return;
+    }
     H8_DEBUG_INC(miss_count);
     h8_sys_free(ptr);
     return;
@@ -478,6 +492,14 @@ void* h8_realloc_inner(void* ptr, size_t size) {
     } else if (medium_owned) {
       errno = EINVAL;
       return NULL;
+    } else {
+      bool direct_owned = false;
+      if (h8_direct_large_usable_size_inner(ptr, &old_size, &direct_owned)) {
+        owned = true;
+      } else if (direct_owned) {
+        errno = EINVAL;
+        return NULL;
+      }
     }
   }
 

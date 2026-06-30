@@ -2,6 +2,7 @@
 #include "../src/h8_medium.h"
 
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -524,6 +525,31 @@ int main(void) {
     fprintf(stderr, "route still valid after adopted free\n");
     return 15;
   }
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+  void* large_direct = h8_malloc(96u * 1024u);
+  if (!large_direct) {
+    fprintf(stderr, "large direct alloc failed\n");
+    return 23;
+  }
+  if (h8_route(large_direct) != H8_ROUTE_VALID) {
+    fprintf(stderr, "large direct exact route is not valid\n");
+    return 24;
+  }
+  if (h8_route((uint8_t*)large_direct + 16u) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "large direct interior route is not invalid\n");
+    return 25;
+  }
+  void* grown_direct = h8_realloc(large_direct, 112u * 1024u);
+  if (!grown_direct || h8_route(grown_direct) != H8_ROUTE_VALID) {
+    fprintf(stderr, "large direct realloc failed\n");
+    return 26;
+  }
+  h8_free(grown_direct);
+  if (h8_route(grown_direct) == H8_ROUTE_VALID) {
+    fprintf(stderr, "large direct route still valid after free\n");
+    return 27;
+  }
+#endif
   H8Stats stats = h8_stats();
   printf("arena=%zu committed=%zu owners=%zu local=%zu remote=%zu\n",
          stats.arena_reserved_bytes, stats.arena_committed_bytes,

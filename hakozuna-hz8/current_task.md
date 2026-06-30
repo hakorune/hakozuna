@@ -439,6 +439,46 @@ Largeish boundary:
     not part of the Defer4 RC pass/fail gate
     treat as separate large/sys route boundary work if it becomes the next priority
 
+Current next box:
+  LargeDirectOwned-L1
+  docs:
+    docs/HZ8_LARGE_DIRECT_OWNED_L1.md
+  build target:
+    make smoke-largedirect
+    make bench-defer4mediumcapacity-largedirect
+  purpose:
+    turn 64K..128K direct-large allocations from platform fallback into HZ8-owned
+    direct objects
+  why:
+    largeish_remote50 currently reports miss = 1600287
+    largeish does not exercise small active-full defer or medium capacity collect
+  scope:
+    size > H8_MEDIUM_MAX_SIZE and size <= H8_DIRECT_FALLBACK_LIMIT
+    HZ8-owned route VALID / INVALID / MISS boundary
+    fail-closed free for owned-looking invalid direct objects
+  non-goals:
+    retained large cache
+    remote-fast large handoff
+    direct-large throughput leadership
+    changing small/medium Defer4 RC policy
+  first gate:
+    h8_smoke
+    h8_smoke_largedirect
+    largeish_remote50 focused R3
+    route miss should fall materially on the largeish row
+    source files remain below 800 lines
+  result:
+    record: bench_results/hz8_large_direct_l1_20260630T175949/
+    throughput median = 227983 ops/s
+    peak RSS median = 60.13 MiB
+    miss = 0
+    invalid = 0
+  read:
+    route ownership boundary is fixed
+    throughput barely improves over the old 220129 ops/s boundary read
+    keep as mechanism evidence/control, not default
+    next ROI is medium remote collect/free path in mixed largeish rows
+
 Local-only tuning is not the next ROI.
 
 Current policy:
@@ -494,6 +534,9 @@ active-full defer balanced RC:
 
 largeish route boundary:
   docs/HZ8_LARGEISH_ROUTE_MISS_BOUNDARY.md
+
+large direct owned evidence:
+  docs/HZ8_LARGE_DIRECT_OWNED_L1.md
 
 v2 design:
   docs/HZ8_V2_HZ9_DESIGN.md
