@@ -209,6 +209,78 @@ Current attribution box:
   source-tagged collect attribution is now in the working tree
   next decision depends on active_full vs active_miss dominance
 
+Latest L2 diagnostic:
+  bench_results/hz8_remote_pressure_l2_20260630T095411/
+
+L2 read:
+  small_interleaved_remote90 is ACTIVE_HIT_FULL dominated
+  main_interleaved_r90 is mixed but still ACTIVE_HIT_FULL leaning
+  medium_interleaved_r50 is not using the small remote-pressure collector
+
+Current behavior box:
+  docs/HZ8_ACTIVE_FULL_REMOTE_COLLECT_BUDGET_L1.md
+  build target: make bench-remoteactivefullbudget
+  default build unchanged
+  purpose: test whether active-full remote collect budget is too thin
+
+ActiveFullRemoteCollectBudget-L1 result:
+  KEEP as control evidence
+  not promotion
+  larger active-full budget drains pending_after sharply
+  small throughput is effectively unchanged and peak RSS worsens
+  main throughput is neutral/slightly down
+  medium row movement is unrelated to small collect counters
+
+Next likely target:
+  medium remote collect cost / collect source policy
+  medium_interleaved_r50 and main_interleaved_r90 show large medium_collect_source
+  and medium_residual_budget collect/slot attribution
+
+Current medium behavior box:
+  docs/HZ8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1.md
+  build target: make bench-mediumcapacitybudget
+  default build unchanged
+  purpose: test whether unbounded capacity-miss collect is too expensive
+
+MediumCapacityCollectBudget-L1 R3:
+  bench_results/hz8_medium_capacity_budget_l1_20260630T100420/
+  main_interleaved_r90 improved clearly in debug R3
+  medium_interleaved_r50 stayed roughly neutral
+  small_interleaved_remote90 movement is likely noise for this knob
+  KEEP as promising candidate
+
+MediumCapacityCollectBudget-L1 R5:
+  bench_results/hz8_medium_capacity_budget_l1_r5_20260630T100542/
+  fresh default compare: bench_results/hz8_default_r5_compare_20260630T100915/
+
+R5 compare:
+  main_interleaved_r90:
+    default 207432 ops/s, peak RSS 39.28 MiB
+    candidate 246696 ops/s, peak RSS 33.79 MiB
+
+  medium_interleaved_r50:
+    default 364069 ops/s, peak RSS 22.34 MiB
+    candidate 373551 ops/s, peak RSS 24.26 MiB
+
+  guard_local0:
+    default 7.12M ops/s, peak RSS 7.22 MiB
+    candidate 7.16M ops/s, peak RSS 9.35 MiB
+
+  medium_local0:
+    default 0.756M ops/s, peak RSS 9.02 MiB
+    candidate 0.753M ops/s, peak RSS 7.12 MiB
+
+MediumCapacityCollectBudget-L1 decision:
+  KEEP as v2 candidate-watch
+  not default yet
+  main remote-heavy signal is real enough to preserve
+  medium-only gain is small
+  guard/local safety is clean in this pass
+
+Next check:
+  if pursuing promotion, repeat with full weak-row matrix and RSS gate
+  otherwise attack the next bottleneck instead of tuning this budget ladder
+
 Local-only tuning is not the next ROI.
 
 Current policy:

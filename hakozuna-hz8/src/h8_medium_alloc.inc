@@ -75,6 +75,14 @@ static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
   ((void)(ctx), (void)(class_id), (void*)NULL)
 #endif
 
+#if defined(H8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1)
+#if !defined(H8_MEDIUM_CAPACITY_COLLECT_BUDGET_VALUE)
+#define H8_MEDIUM_CAPACITY_COLLECT_BUDGET_VALUE 16u
+#endif
+#else
+#define H8_MEDIUM_CAPACITY_COLLECT_BUDGET_VALUE SIZE_MAX
+#endif
+
 #if defined(H8_ENABLE_DEBUG_STATS)
 static void h8_medium_refill_candidate_shadow_probe(H8ThreadCtx* ctx,
                                                     uint32_t class_id) {
@@ -627,7 +635,8 @@ retry_owner_capacity:
   if (ctx && ctx->owner && !did_capacity_collect &&
       h8_medium_owner_has_pending(ctx->owner)) {
     did_capacity_collect = true;
-    (void)h8_medium_collect_current_pending_budget(ctx, SIZE_MAX);
+    (void)h8_medium_collect_current_pending_budget(
+        ctx, H8_MEDIUM_CAPACITY_COLLECT_BUDGET_VALUE);
     goto retry_owner_capacity;
   }
   h8_medium_lock_global();

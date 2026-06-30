@@ -37,6 +37,39 @@ static size_t h8_pressure_collect_budget_remote(size_t pending) {
   return 32;
 }
 
+#if defined(H8_REMOTE_PRESSURE_ACTIVE_FULL_BUDGET_L1)
+static size_t h8_pressure_collect_budget_active_full(size_t pending) {
+  if (pending == 0) {
+    return 0;
+  }
+  if (pending <= 2) {
+    return pending;
+  }
+  if (pending <= 8) {
+    return 8;
+  }
+  if (pending <= 32) {
+    return 16;
+  }
+  if (pending <= 128) {
+    return 32;
+  }
+  return 64;
+}
+#endif
+
+static size_t h8_pressure_collect_budget_remote_source(
+    size_t pending, H8RemotePressureCollectSource source) {
+#if defined(H8_REMOTE_PRESSURE_ACTIVE_FULL_BUDGET_L1)
+  if (source == H8_REMOTE_PRESSURE_COLLECT_SOURCE_ACTIVE_HIT_FULL) {
+    return h8_pressure_collect_budget_active_full(pending);
+  }
+#else
+  (void)source;
+#endif
+  return h8_pressure_collect_budget_remote(pending);
+}
+
 void h8_pressure_owner_collect(H8OwnerRecord* owner) {
   if (!owner) {
     return;
@@ -75,7 +108,8 @@ void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner,
   }
   size_t pending_before =
       atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
-  size_t budget = h8_pressure_collect_budget_remote(pending_before);
+  size_t budget =
+      h8_pressure_collect_budget_remote_source(pending_before, source);
   if (budget == 0) {
     return;
   }

@@ -120,3 +120,10 @@ MainRemoteCollectBudget-L1
 
 If `ACTIVE_HIT_FULL` dominates instead, keep the same mechanism but tighten the
 budget trigger and measure `MediumRemoteCollectBudget-L1` separately.
+
+Current L2 diagnostic showed `ACTIVE_HIT_FULL` dominance on the small row, so
+the next narrow behavior lane is:
+
+```text
+docs/HZ8_ACTIVE_FULL_REMOTE_COLLECT_BUDGET_L1.md
+```
