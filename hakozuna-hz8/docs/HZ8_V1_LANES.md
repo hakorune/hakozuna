@@ -113,8 +113,11 @@ remote publish protocol, pending bitmap authority, and qstate authority frozen.
 Current read:
 
 ```text
+MediumKeepRefillEmpty-L1:
+  current balanced HZ8 v2 RC nucleus
+
 ActiveFullDefer4 + MediumCapacityCollectBudget:
-  balanced HZ8 v2 RC candidate
+  prior balanced RC base for KeepRefill
 
 ActiveFullDefer8 + MediumCapacityCollectBudget:
   high remote90 evidence/control

@@ -127,8 +127,9 @@ MediumKeepRefillEmpty-L1
 
 It keeps owner-local refill-candidate medium runs active-live after remote
 collect drains them, avoiding the expensive empty/reactivate loop seen in
-remote-heavy rows.  The frozen v1.1 default is unchanged until the public
-cross-allocator matrix is regenerated.
+remote-heavy rows.  The public cross-allocator matrix confirms it as the
+current HZ8 v2 RC nucleus.  The frozen v1.1 default is unchanged until the
+release-sized repeat and safety gate are closed.
 
 ## Build
 

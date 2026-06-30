@@ -369,7 +369,7 @@ Defer8 broader read:
     keep as high remote-pressure evidence/control
     not default because main_remote50 regresses too much
 
-Current balanced v2 RC:
+Prior balanced v2 RC base:
   ActiveFullDefer4 + MediumCapacityCollectBudget
   docs/HZ8_ACTIVE_FULL_DEFER4_L1.md
   build target: make bench-defer4mediumcapacity
@@ -389,9 +389,9 @@ Defer4 balanced gate:
     default 174881 ops/s, peak RSS 50.29 MiB
     defer4  237225 ops/s, peak RSS 34.96 MiB
   decision:
-    keep as balanced HZ8 v2 RC candidate
+    keep as the balanced base that led to KeepRefill
     Defer4 preserves most remote90 gains while avoiding the Defer8 r50 cliff
-    run broader release matrix before any default promotion
+    superseded for current RC positioning by MediumKeepRefillEmpty-L1
 
 Defer4 local gate:
   record: bench_results/hz8_defer4_local_gate_20260630T120825/

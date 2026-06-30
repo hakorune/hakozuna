@@ -5,7 +5,8 @@ Status:
 ```text
 experimental behavior lane
 default unchanged
-KEEP as balanced HZ8 v2 RC candidate
+KEEP as balanced HZ8 v2 RC base
+superseded for current RC positioning by MediumKeepRefillEmpty-L1
 ```
 
 ## Why This Box Exists
@@ -214,9 +215,10 @@ active-full defer path
 ## Decision
 
 ```text
-KEEP Defer4 + MediumCapacityCollectBudget as the balanced HZ8 v2 RC candidate
+KEEP Defer4 + MediumCapacityCollectBudget as the balanced HZ8 v2 RC base
 KEEP Defer8 as high-remote-pressure evidence/control
-do not replace the frozen v1.1 default until the release matrix policy is chosen
+current RC positioning is handled by docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+do not replace the frozen v1.1 default from this historical box alone
 largeish remote rows remain separate because they currently exercise sys/route-miss behavior
 ```
 

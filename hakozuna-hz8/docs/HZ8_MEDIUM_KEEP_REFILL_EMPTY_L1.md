@@ -220,8 +220,8 @@ promote within research ledger:
   HZ8 v2 RC candidate
 
 still not:
-  frozen HZ8 v1.1 replacement until cross-allocator/public release matrix is
-  regenerated
+  frozen HZ8 v1.1 replacement until the release-sized repeat and safety gate
+  are closed
 ```
 
 ## Preload Matrix Smoke
@@ -338,9 +338,10 @@ So the current Windows/WSL checkpoint is:
 local matrix:
   hz8 / hz8_keeprefill / mimalloc / system
 
-remaining public matrix:
-  rerun on the Ubuntu benchmark side or set TCMALLOC_SO to a prepared
-  libtcmalloc preload DSO.
+public matrix:
+  recorded on the Ubuntu benchmark side with a prepared tcmalloc preload DSO
+  in bench_results/20260630T124112Z_hz8_keeprefill_public_matrix/
+  keeprefill is a balanced RC, not a universal tcmalloc-beating claim
 ```
 
 Public matrix runner:

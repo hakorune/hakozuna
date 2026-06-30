@@ -123,7 +123,8 @@ MediumKeepRefillEmpty-L1
 
 remote collectでmedium runが空になったとき、owner-local refill candidateなら
 active-liveとして保持し、重いempty/reactivate loopを避けます。公開用の
-cross-allocator matrixを取り直すまでは、frozen v1.1 defaultは変更しません。
+cross-allocator matrixでもHZ8 v2 RC nucleusとして確認済みです。release-sized
+repeatとsafety gateを閉じるまでは、frozen v1.1 defaultは変更しません。
 
 ## Build
 

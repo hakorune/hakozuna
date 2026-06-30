@@ -364,10 +364,11 @@ cross128 peak_rss <= 96MiB
 
 ## HZ8 v2 RC Gate
 
-`ActiveFullDefer4 + MediumCapacityCollectBudget` is the current balanced v2 RC
-candidate.  Its gate is intentionally narrower than the broad allocator
-comparison matrix because the candidate only changes small remote-pressure
-defer timing and medium capacity-miss collect budgeting.
+`MediumKeepRefillEmpty-L1` is the current HZ8 v2 RC nucleus, built on the
+earlier `ActiveFullDefer4 + MediumCapacityCollectBudget` candidate.  Its gate
+is intentionally narrower than the broad allocator comparison matrix because
+the candidate changes remote-pressure collection and medium empty-run handling,
+not the large/direct paths.
 
 Primary RC rows:
 
@@ -400,12 +401,28 @@ main_local0 / medium_local0:
   local neutrality checks
 ```
 
-Do not include `largeish_*` in the Defer4 RC pass/fail decision.  Current
+Do not include `largeish_*` in the KeepRefill RC pass/fail decision.  Current
 largeish evidence shows route-miss/direct boundary behavior, not the small or
-medium paths changed by Defer4:
+medium paths changed by the v2 RC:
 
 ```text
 docs/HZ8_LARGEISH_ROUTE_MISS_BOUNDARY.md
+```
+
+Current RC evidence:
+
+```text
+focused / broad / release gates:
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+
+public matrix:
+  bench_results/20260630T124112Z_hz8_keeprefill_public_matrix/
+
+decision:
+  keep HZ8 v2 / KeepRefill as balanced RC
+  do not claim tcmalloc parity or universal throughput leadership
+  do not replace the frozen v1.1 default until release-sized repeat and safety
+  counters are closed
 ```
 
 ## Stretch Goals
