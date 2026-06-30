@@ -42,6 +42,12 @@ release record:
   docs/HZ8_V1_1_RELEASE.md
   docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 
+paper DOI:
+  https://doi.org/10.5281/zenodo.21084279
+
+paper Zenodo record:
+  https://zenodo.org/records/21084279
+
 experimental throughput lane:
   docs/HZ8_V2_HZ9_DESIGN.md
 

@@ -82,6 +82,12 @@ Latest benchmark and paper
   https://doi.org/10.5281/zenodo.20753968
 - All-version DOI for the HZ6 selected-family allocator series:
   https://doi.org/10.5281/zenodo.20753967
+- HZ8 paper Zenodo record:
+  https://zenodo.org/records/21084279
+- DOI for HZ8 paper:
+  https://doi.org/10.5281/zenodo.21084279
+- All-version DOI for the HZ8 paper series:
+  https://doi.org/10.5281/zenodo.21084278
 - HZ8 paper-ready Ubuntu matrix:
   hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 

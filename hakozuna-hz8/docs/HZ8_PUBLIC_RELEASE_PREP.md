@@ -5,6 +5,13 @@ Status: public-release preparation / paper input.
 HZ8 is the recommended Hakozuna allocator line.  The current default is
 HZ8-v2 / KeepRefill, with HZ8-v1.1 kept as the frozen comparison baseline.
 
+Published HZ8 paper record:
+
+```text
+https://zenodo.org/records/21084279
+https://doi.org/10.5281/zenodo.21084279
+```
+
 ## Public Claim
 
 Use this wording:
@@ -100,13 +107,13 @@ medium_interleaved_r50:
 ## Pre-Publish Checklist
 
 ```text
-[ ] README mentions HZ8 as the recommended allocator line.
-[ ] README does not say HZ8 universally beats tcmalloc.
-[ ] HZ8 Zenodo description says "balanced allocator", not "fastest allocator".
-[ ] HZ8 paper/table captions include RUNS, THREADS, ITERS, platform, and RSS.
-[ ] HZ8 Windows text remains bring-up/evidence only.
-[ ] CITATION.cff is reviewed once a Zenodo DOI exists.
-[ ] GitHub release body links the HZ8 Zenodo record once available.
+[x] README mentions HZ8 as the recommended allocator line.
+[x] README does not say HZ8 universally beats tcmalloc.
+[x] HZ8 Zenodo description says "balanced allocator", not "fastest allocator".
+[x] HZ8 paper/table captions include RUNS, THREADS, ITERS, platform, and RSS.
+[x] HZ8 Windows text remains bring-up/evidence only.
+[x] CITATION.cff is reviewed once a Zenodo DOI exists.
+[x] GitHub release body links the HZ8 Zenodo record once available.
 [ ] Generated binaries are excluded from the source release unless explicitly
     attached as separate artifacts.
 ```

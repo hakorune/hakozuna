@@ -1,5 +1,12 @@
 # Zenodo Description Draft: HZ8
 
+Published HZ8 paper record:
+
+```text
+https://zenodo.org/records/21084279
+https://doi.org/10.5281/zenodo.21084279
+```
+
 ## Resource Type
 
 ```text
@@ -79,4 +86,7 @@ HZ6 DOI:
 
 GitHub repository:
   https://github.com/hakorune/hakozuna
+
+HZ8 paper DOI:
+  https://doi.org/10.5281/zenodo.21084279
 ```

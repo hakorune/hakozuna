@@ -18,13 +18,13 @@ Fill after the HZ8 record is created:
 
 ```text
 HZ8 archived Zenodo record:
-  TODO
+  https://zenodo.org/records/21084279
 
 HZ8 version DOI:
-  TODO
+  https://doi.org/10.5281/zenodo.21084279
 
 HZ8 all-version DOI:
-  TODO
+  https://doi.org/10.5281/zenodo.21084278
 ```
 
 Existing paper artifacts:
@@ -65,6 +65,10 @@ Highlights:
   hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 - HZ8 public release preparation notes:
   hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md
+- HZ8 paper Zenodo record:
+  https://zenodo.org/records/21084279
+- HZ8 paper DOI:
+  https://doi.org/10.5281/zenodo.21084279
 
 Release shape:
 
@@ -77,10 +81,10 @@ Release shape:
 
 ## Pre-Publish Checklist
 
-- [ ] HZ8 Zenodo record and DOI are available.
-- [ ] README badge/link is added after DOI assignment.
-- [ ] `CITATION.cff` is updated or explicitly left at repository-level citation.
-- [ ] `hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md` is up to date.
+- [x] HZ8 Zenodo record and DOI are available.
+- [x] README badge/link is added after DOI assignment.
+- [x] `CITATION.cff` is explicitly left at repository-level citation.
+- [x] `hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md` is up to date.
 - [ ] Public benchmark captions include RUNS, THREADS, ITERS, platform, and RSS.
 - [ ] Release body avoids "universally beats tcmalloc" style claims.
 - [ ] Windows HZ8 remains described as bring-up/evidence only.

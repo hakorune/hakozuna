@@ -3,6 +3,7 @@
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
 [![HZ6 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753968.svg)](https://doi.org/10.5281/zenodo.20753968)
+[![HZ8 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21084279.svg)](https://doi.org/10.5281/zenodo.21084279)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -133,6 +134,12 @@ This repository already includes public Windows-native allocator comparisons and
   https://doi.org/10.5281/zenodo.20753968
 - All-version DOI for the HZ6 selected-family allocator series:
   https://doi.org/10.5281/zenodo.20753967
+- HZ8 paper Zenodo record:
+  https://zenodo.org/records/21084279
+- DOI for HZ8 paper:
+  https://doi.org/10.5281/zenodo.21084279
+- All-version DOI for the HZ8 paper series:
+  https://doi.org/10.5281/zenodo.21084278
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
