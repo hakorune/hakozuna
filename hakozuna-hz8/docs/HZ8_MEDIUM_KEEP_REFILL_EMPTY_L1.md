@@ -169,6 +169,12 @@ overall:
 
 ## Release Gate
 
+Build:
+
+```bash
+make bench-release bench-release-mediumkeeprefillempty
+```
+
 Record:
 
 ```text
@@ -215,6 +221,18 @@ promote within research ledger:
 still not:
   frozen HZ8 v1.1 replacement until cross-allocator/public release matrix is
   regenerated
+```
+
+The generic paired-gate helper can also be used with custom candidate targets:
+
+```bash
+CANDIDATE_BIN="$PWD/h8_bench_release_mediumkeeprefillempty" \
+CANDIDATE_NAME=keeprefill \
+CANDIDATE_MAKE_TARGET=bench-release-mediumkeeprefillempty \
+BASELINE_BIN="$PWD/h8_bench_release" \
+BASELINE_NAME=release \
+BASELINE_MAKE_TARGET=bench-release \
+bash scripts/run_medium_chunk_paired_gate.sh
 ```
 
 ## Acceptance Before Promotion

@@ -600,6 +600,13 @@ Current medium collect candidate:
     medium remote50 wins speed with modest RSS increase
     keep as the current HZ8 v2 RC nucleus
     remaining work is public/cross-allocator matrix and any final naming cleanup
+  bench plumbing:
+    make bench-release-mediumkeeprefillempty
+    scripts/run_medium_chunk_paired_gate.sh now accepts:
+      BASELINE_MAKE_TARGET
+      CANDIDATE_MAKE_TARGET
+    .gitattributes pins *.sh to LF so bash scripts do not break under
+    core.autocrlf=true
 
 Local-only tuning is not the next ROI.
 

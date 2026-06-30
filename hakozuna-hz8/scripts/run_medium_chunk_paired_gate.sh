@@ -10,13 +10,15 @@ ITERS="${ITERS:-100000}"
 FRESH_PROCESS="${FRESH_PROCESS:-0}"
 CANDIDATE_BIN="${CANDIDATE_BIN:-$ROOT/h8_bench_release_mediumchunk}"
 CANDIDATE_NAME="${CANDIDATE_NAME:-chunk}"
+CANDIDATE_MAKE_TARGET="${CANDIDATE_MAKE_TARGET:-bench-release-mediumchunk}"
 BASELINE_BIN="${BASELINE_BIN:-$ROOT/h8_bench_release}"
 BASELINE_NAME="${BASELINE_NAME:-baseline}"
+BASELINE_MAKE_TARGET="${BASELINE_MAKE_TARGET:-bench-release}"
 
 mkdir -p "$OUT"
 
 if [[ ! -x "$BASELINE_BIN" || ! -x "$CANDIDATE_BIN" ]]; then
-  make -C "$ROOT" bench-release bench-release-mediumchunk
+  make -C "$ROOT" "$BASELINE_MAKE_TARGET" "$CANDIDATE_MAKE_TARGET"
 fi
 
 run_pair() {
@@ -79,8 +81,10 @@ run_pair small_interleaved_remote90 \
   echo "order: baseline/candidate alternates when fresh_process=1"
   echo "baseline: $BASELINE_BIN"
   echo "baseline_name: $BASELINE_NAME"
+  echo "baseline_make_target: $BASELINE_MAKE_TARGET"
   echo "candidate: $CANDIDATE_BIN"
   echo "candidate_name: $CANDIDATE_NAME"
+  echo "candidate_make_target: $CANDIDATE_MAKE_TARGET"
   echo '```'
   echo
   for row in medium_interleaved_remote50 main_interleaved_remote90 \
