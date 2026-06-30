@@ -31,12 +31,13 @@ HZ8はtcmallocのようなthroughput-only allocatorではありません。
 
 ```text
 current public line:
-  HZ8 MediumRun-v1.1
+  HZ8 v2 / KeepRefill
 
 recommended default:
   yes
 
 release record:
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
 
@@ -47,7 +48,8 @@ windows bring-up lane:
   docs/HZ8_WINDOWS_BRINGUP.md
 ```
 
-HZ8-v1.1で固定しているdefault:
+HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy
+pressure fixとしてdefault化しています。
 
 ```text
 small:
@@ -63,6 +65,9 @@ remote free:
   owner-attached medium pending queue
   pending bitmap as remote-claim authority
   qstate owner collector protocol
+  active-full Defer4 remote-pressure collection
+  medium capacity collect budgeting
+  owner-local refill-candidate empty-run keep-live
 
 residency:
   budgeted empty-resident retention
@@ -106,12 +111,12 @@ HZ9は、HZ8とは違う明確なpublic promiseを証明するまで、opt-inの
 8. slow-path pressure policyをhot-path profile selectorにしない
 ```
 
-残っている弱点は、local-only rowやmedium remote-heavy rowでのthroughputです。
-これはHZ8-v1.1のcorrectness issueではなく、v2 / HZ9研究laneの入力として扱います。
+残っている弱点は、一部local-only rowでthroughput-first allocatorに届かない点です。
+これはHZ8のcorrectness issueではなく、HZ9研究laneの入力として扱います。
 
-## HZ8 v2候補
+## HZ8 v2 default
 
-現在のHZ8 v2 RC候補は opt-in です。
+現在のHZ8 defaultには以下が入っています。
 
 ```text
 MediumKeepRefillEmpty-L1
@@ -123,8 +128,8 @@ MediumKeepRefillEmpty-L1
 
 remote collectでmedium runが空になったとき、owner-local refill candidateなら
 active-liveとして保持し、重いempty/reactivate loopを避けます。公開用の
-cross-allocator matrixでもHZ8 v2 RC nucleusとして確認済みです。release-sized
-repeatとsafety gateを閉じるまでは、frozen v1.1 defaultは変更しません。
+cross-allocator matrixでもbalanced defaultとして確認済みです。ただし、HZ8が
+tcmallocを全面的に超えたという主張ではありません。
 
 ## Build
 
@@ -133,8 +138,8 @@ make smoke
 make preload
 make bench          # debug/counter build
 make bench-release  # release throughput build
-make bench-release-mediumkeeprefillempty  # HZ8 v2 RC candidate
-make preload-mediumkeeprefillempty        # HZ8 v2 RC LD_PRELOAD DSO
+make bench-release-mediumkeeprefillempty  # v2 default互換alias
+make preload-mediumkeeprefillempty        # v2 default DSO互換alias
 ```
 
 よく使う確認:
@@ -149,7 +154,7 @@ pure preload matrix:
 
 ```bash
 RUNS=5 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
-ALLOCATORS=hz8,hz8_keeprefill,system \
+ALLOCATORS=hz8,system \
   ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50 \
   RUNS=3 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
 MIMALLOC_SO=/path/to/libmimalloc.so \

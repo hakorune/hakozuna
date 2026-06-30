@@ -13,13 +13,17 @@ small-v0:
 medium-v1 protocol/geometry:
   docs/HZ8_MEDIUM_RUN_V1_RC1.md
 
-medium-v1.1 current default:
+medium-v1.1 frozen baseline:
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
+
+HZ8-v2 current default:
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
 ```
 
 Small-v0 behavior is frozen unless a hard safety issue appears. MediumRun-v1.1
-is the current balanced default. Do not reopen its owner queue, pending/qstate
+is the frozen balanced baseline. HZ8-v2 promotes KeepRefill as the current
+default remote-heavy pressure fix. Do not reopen owner queue, pending/qstate
 protocol, residency policy, or class geometry for incremental tuning.
 
 User-facing policy:
@@ -43,8 +47,8 @@ Platform policy:
 
 ```text
 Linux:
-  current release/default evidence line
-  v1.1 stays frozen except hard safety fixes
+  current release/default evidence line is HZ8-v2 / KeepRefill
+  v1.1 stays frozen as comparison baseline except hard safety fixes
 
 Windows:
   bring-up lane only
@@ -98,6 +102,9 @@ medium remote:
   pending bit is remote claim authority
   qstate uses IDLE / QUEUED / DRAINING / DRAINING_DIRTY
   detached direct-lock fallback remains
+  active-full remote-pressure defer limit is 4
+  medium capacity collect budgeting is enabled
+  owner-local refill-candidate empty runs stay active-live after remote collect
 ```
 
 ## Latest Benchmark Snapshot
@@ -176,11 +183,11 @@ L1 observation:
 
 ```text
 HZ8-v1.1:
-  frozen balanced default
+  frozen balanced baseline
 
 HZ8-v2:
-  throughput lane only
-  next work should attack the weakest rows first
+  current default after KeepRefill promotion
+  next work should measure default gates before adding more behavior
   preserve v1.1 safety and RSS
 
 Current candidate box:
@@ -539,9 +546,8 @@ Current medium collect candidate:
       defer4 = 46821.476 ms
       keeprefill = 143.879 ms
   decision:
-    KEEP as strong HZ8 v2 candidate evidence
-    not default promotion yet
-    next gate should compare Defer4 vs KeepRefill on the broader RC rows
+    KEEP as strong HZ8 v2 default evidence
+    later gates compare default KeepRefill against v1.1/defer baselines
     watch active_live_peak / RSS because this deliberately keeps refill
     candidates live instead of cycling them through empty/reactivate
   broad gate:
@@ -573,8 +579,8 @@ Current medium collect candidate:
     guard_remote90 is neutral/slightly positive
     local rows are neutral to slightly weak
     safety counters stayed clean: invalid_owned = 0, route_authority_mismatch = 0
-    promote to HZ8 v2 RC candidate-watch, but keep frozen v1.1 default unchanged
-    next step: longer repeat / release-sized matrix before default switch
+    promote to HZ8 v2 default; keep frozen v1.1 as comparison baseline
+    next step: default gate repeats before adding more behavior
   release gate:
     build target: make bench-release-mediumkeeprefillempty
     record: bench_results/hz8_keeprefill_release_gate_20260630T210134/
@@ -598,8 +604,8 @@ Current medium collect candidate:
     small_interleaved_remote90 cliff is largely removed
     main remote-heavy wins on both speed and RSS
     medium remote50 wins speed with modest RSS increase
-    keep as the current HZ8 v2 RC nucleus
-    remaining work is public/cross-allocator matrix and any final naming cleanup
+    keep as the current HZ8 v2 default nucleus
+    public matrix confirms balanced positioning, not universal throughput leadership
   bench plumbing:
     make bench-release-mediumkeeprefillempty
     make preload-mediumkeeprefillempty
@@ -643,11 +649,11 @@ Current medium collect candidate:
       guard/local:
         keeprefill is neutral to slightly positive, not a regression story
       local rows:
-        keeprefill does not beat tcmalloc, but it is a balanced HZ8-v2 candidate
+        keeprefill does not beat tcmalloc, but it is a balanced HZ8-v2 default
     decision:
-      keeprefill is a confirmed HZ8 v2 RC nucleus
+      keeprefill is the confirmed HZ8 v2 default nucleus
       do not claim tcmalloc parity or universal throughput leadership
-      next step is broader release-sized validation before default promotion
+      next step is default gate repeat before adding more behavior
 
   local mimalloc matrix:
     local mimalloc build:
@@ -680,11 +686,11 @@ Current medium collect candidate:
       local private/allocators/tcmalloc is an upstream source checkout
       Bazel exposes benchmark binaries but no ready libtcmalloc preload DSO
       do not fabricate a tcmalloc row from non-preload targets
-      public matrix still needs Ubuntu-side prepared TCMALLOC_SO or bench-assets
+      public matrix is recorded on Ubuntu with prepared TCMALLOC_SO
     public matrix runner:
       scripts/run_hz8_keeprefill_public_matrix.sh
       default allocators:
-        hz8,hz8_keeprefill,mimalloc,tcmalloc,system
+        hz8,mimalloc,tcmalloc,system
       default rows:
         small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50,
         guard_local0,main_local0,medium_local0
@@ -692,11 +698,13 @@ Current medium collect candidate:
         bench_results/hz8_keeprefill_public_matrix_smoke_20260630T214000_hz8_keeprefill_public_matrix/
       handoff:
         set MIMALLOC_SO / TCMALLOC_SO for prepared external preload DSOs
+        add hz8_keeprefill to ALLOCATORS only to check the compatibility alias
 
 Local-only tuning is not the next ROI.
 
 Current policy:
-  keep the v1.1 default stable
+  keep HZ8-v2 / KeepRefill as the current default
+  keep v1.1 stable as comparison baseline
   keep Windows as bring-up / evidence only
   do not promote profile-only lanes without focused guards
 ```

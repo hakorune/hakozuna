@@ -30,12 +30,13 @@ and practical throughput.
 
 ```text
 current public line:
-  HZ8 MediumRun-v1.1
+  HZ8 v2 / KeepRefill
 
 recommended default:
   yes
 
 release record:
+  docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
 
@@ -46,7 +47,8 @@ windows bring-up lane:
   docs/HZ8_WINDOWS_BRINGUP.md
 ```
 
-HZ8-v1.1 freezes the balanced default:
+HZ8-v2 keeps the HZ8-v1.1 balanced base and promotes KeepRefill as the default
+remote-heavy pressure fix:
 
 ```text
 small:
@@ -62,6 +64,9 @@ remote free:
   owner-attached medium pending queue
   pending bitmap as remote-claim authority
   qstate owner collector protocol
+  active-full Defer4 remote-pressure collection
+  medium capacity collect budgeting
+  owner-local refill-candidate empty-run keep-live
 
 residency:
   budgeted empty-resident retention
@@ -110,12 +115,12 @@ HZ8 keeps these contracts:
 ```
 
 The remaining known weakness is throughput relative to throughput-first
-allocators on local-only and medium remote-heavy rows.  That is now treated as a
-v2 / HZ9 research input, not an HZ8-v1.1 correctness issue.
+allocators on some local-only rows.  That is now treated as HZ9 research input,
+not an HZ8 correctness issue.
 
-## HZ8 v2 Candidate
+## HZ8 v2 Default
 
-The current HZ8 v2 RC candidate is opt-in:
+The current HZ8 default includes:
 
 ```text
 MediumKeepRefillEmpty-L1
@@ -128,8 +133,8 @@ MediumKeepRefillEmpty-L1
 It keeps owner-local refill-candidate medium runs active-live after remote
 collect drains them, avoiding the expensive empty/reactivate loop seen in
 remote-heavy rows.  The public cross-allocator matrix confirms it as the
-current HZ8 v2 RC nucleus.  The frozen v1.1 default is unchanged until the
-release-sized repeat and safety gate are closed.
+current balanced default.  It is not a claim that HZ8 universally beats
+tcmalloc.
 
 ## Build
 
@@ -138,8 +143,8 @@ make smoke
 make preload
 make bench          # debug/counter build
 make bench-release  # release throughput build
-make bench-release-mediumkeeprefillempty  # HZ8 v2 RC candidate
-make preload-mediumkeeprefillempty        # HZ8 v2 RC LD_PRELOAD DSO
+make bench-release-mediumkeeprefillempty  # compatibility alias for v2 default
+make preload-mediumkeeprefillempty        # compatibility alias for v2 default DSO
 ```
 
 Common local checks:
@@ -154,7 +159,7 @@ Pure preload matrix:
 
 ```bash
 RUNS=5 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
-ALLOCATORS=hz8,hz8_keeprefill,system \
+ALLOCATORS=hz8,system \
   ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50 \
   RUNS=3 THREADS=16 ITERS=50000 scripts/run_hz8_v11_same_run_matrix.sh
 MIMALLOC_SO=/path/to/libmimalloc.so \

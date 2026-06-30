@@ -114,7 +114,7 @@ Current read:
 
 ```text
 MediumKeepRefillEmpty-L1:
-  current balanced HZ8 v2 RC nucleus
+  current balanced HZ8 v2 default nucleus
 
 ActiveFullDefer4 + MediumCapacityCollectBudget:
   prior balanced RC base for KeepRefill

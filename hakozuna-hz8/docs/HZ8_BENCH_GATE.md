@@ -362,9 +362,9 @@ remote90 peak_rss <= 90MiB
 cross128 peak_rss <= 96MiB
 ```
 
-## HZ8 v2 RC Gate
+## HZ8 v2 Default Gate
 
-`MediumKeepRefillEmpty-L1` is the current HZ8 v2 RC nucleus, built on the
+`MediumKeepRefillEmpty-L1` is the current HZ8 v2 default nucleus, built on the
 earlier `ActiveFullDefer4 + MediumCapacityCollectBudget` candidate.  Its gate
 is intentionally narrower than the broad allocator comparison matrix because
 the candidate changes remote-pressure collection and medium empty-run handling,
@@ -419,10 +419,10 @@ public matrix:
   bench_results/20260630T124112Z_hz8_keeprefill_public_matrix/
 
 decision:
-  keep HZ8 v2 / KeepRefill as balanced RC
+  keep HZ8 v2 / KeepRefill as balanced default
   do not claim tcmalloc parity or universal throughput leadership
-  do not replace the frozen v1.1 default until release-sized repeat and safety
-  counters are closed
+  keep v1.1 as the comparison baseline
+  use this gate for default-preservation checks before adding more behavior
 ```
 
 ## Stretch Goals

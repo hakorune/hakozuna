@@ -107,10 +107,10 @@ main_remote90 empty:
 
 ```text
 KEEP:
-  strong HZ8 v2 RC candidate evidence
+  strong HZ8 v2 default evidence
 
-not yet:
-  frozen v1.1 default replacement
+default:
+  promoted over the frozen v1.1 baseline
 
 why:
   same-run rows show a large speed gain
@@ -118,7 +118,7 @@ why:
   the attribution matches the expected empty-run cost collapse
 
 next:
-  run longer repeat and cross-allocator release matrix if promoting v2
+  run default gate repeats before adding more behavior
 ```
 
 ## Broad Gate
@@ -163,8 +163,8 @@ local rows:
   medium_local0 is neutral with a small RSS increase
 
 overall:
-  strong v2 RC candidate
-  still needs a release-sized repeat before replacing any documented default
+  strong v2 default candidate, now promoted after release/public evidence
+  keep v1.1 as the comparison baseline
 ```
 
 ## Release Gate
@@ -216,12 +216,12 @@ small_guard_local0:
 Updated decision:
 
 ```text
-promote within research ledger:
-  HZ8 v2 RC candidate
+promote to default:
+  HZ8 v2 / KeepRefill
 
-still not:
-  frozen HZ8 v1.1 replacement until the release-sized repeat and safety gate
-  are closed
+keep:
+  frozen HZ8 v1.1 as comparison baseline
+  no tcmalloc-parity or universal-throughput claim
 ```
 
 ## Preload Matrix Smoke
@@ -230,7 +230,7 @@ Record:
 
 ```text
 bench_results/hz8_keeprefill_preload_matrix_smoke_20260630T211800/
-ALLOCATORS=hz8,hz8_keeprefill,system
+ALLOCATORS=hz8,system
 ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50
 RUNS=3, THREADS=16, ITERS=50000
 ```
@@ -275,7 +275,7 @@ Record:
 
 ```text
 bench_results/hz8_keeprefill_mimalloc_matrix_r5_20260630T212900/
-ALLOCATORS=hz8,hz8_keeprefill,mimalloc,system
+ALLOCATORS=hz8,mimalloc,system
 ROWS=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50
 RUNS=5, THREADS=16, ITERS=50000
 ```
@@ -355,10 +355,13 @@ TCMALLOC_SO=/path/to/libtcmalloc_minimal.so \
 Local smoke without tcmalloc:
 
 ```bash
-ALLOCATORS=hz8,hz8_keeprefill,mimalloc,system \
+ALLOCATORS=hz8,mimalloc,system \
 RUNS=3 \
   scripts/run_hz8_keeprefill_public_matrix.sh
 ```
+
+`hz8_keeprefill` remains available as a compatibility alias for explicit
+same-run checks, but `hz8` is now the default KeepRefill build.
 
 The generic paired-gate helper can also be used with custom candidate targets:
 
@@ -398,5 +401,5 @@ not a generic empty-run cache
 not a larger retention budget
 not a direct-large fix
 not a Windows default
-not a replacement for the frozen HZ8 v1.1 default yet
+not a universal tcmalloc-throughput claim
 ```
