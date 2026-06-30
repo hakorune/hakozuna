@@ -20,6 +20,8 @@ typedef struct H8DirectLarge {
 
 static h8_platform_mutex_t h8_direct_large_lock = H8_PLATFORM_MUTEX_INIT;
 static H8DirectLarge* h8_direct_large_buckets[H8_DIRECT_LARGE_BUCKETS];
+static _Atomic uintptr_t h8_direct_large_min_addr;
+static _Atomic uintptr_t h8_direct_large_max_addr;
 
 static size_t h8_direct_large_hash(const void* ptr) {
   uintptr_t value = (uintptr_t)ptr >> 4;
@@ -30,6 +32,18 @@ static size_t h8_direct_large_hash(const void* ptr) {
 }
 
 static void h8_direct_large_insert_locked(H8DirectLarge* node) {
+  uintptr_t begin = (uintptr_t)node->user_ptr;
+  uintptr_t end = begin + node->usable_size;
+  uintptr_t min =
+      atomic_load_explicit(&h8_direct_large_min_addr, memory_order_relaxed);
+  if (min == 0 || begin < min) {
+    atomic_store_explicit(&h8_direct_large_min_addr, begin, memory_order_release);
+  }
+  uintptr_t max =
+      atomic_load_explicit(&h8_direct_large_max_addr, memory_order_relaxed);
+  if (end > max) {
+    atomic_store_explicit(&h8_direct_large_max_addr, end, memory_order_release);
+  }
   size_t bucket = h8_direct_large_hash(node->user_ptr);
   H8DirectLarge* head = h8_direct_large_buckets[bucket];
   node->hash_prev = NULL;
@@ -62,6 +76,18 @@ static bool h8_direct_large_contains(const H8DirectLarge* node,
   return addr >= begin && addr < end;
 }
 
+static bool h8_direct_large_maybe_contains(const void* ptr) {
+  uintptr_t min =
+      atomic_load_explicit(&h8_direct_large_min_addr, memory_order_acquire);
+  if (min == 0) {
+    return false;
+  }
+  uintptr_t addr = (uintptr_t)ptr;
+  uintptr_t max =
+      atomic_load_explicit(&h8_direct_large_max_addr, memory_order_acquire);
+  return addr >= min && addr < max;
+}
+
 static H8DirectLarge* h8_direct_large_find_locked(const void* ptr,
                                                   bool* exact_out) {
   size_t bucket = h8_direct_large_hash(ptr);
@@ -83,6 +109,17 @@ static H8DirectLarge* h8_direct_large_find_locked(const void* ptr,
     }
   }
   *exact_out = false;
+  return NULL;
+}
+
+static H8DirectLarge* h8_direct_large_find_exact_locked(const void* ptr) {
+  size_t bucket = h8_direct_large_hash(ptr);
+  for (H8DirectLarge* node = h8_direct_large_buckets[bucket]; node;
+       node = node->hash_next) {
+    if (node->magic == H8_DIRECT_LARGE_MAGIC_LIVE && node->user_ptr == ptr) {
+      return node;
+    }
+  }
   return NULL;
 }
 
@@ -115,7 +152,7 @@ void* h8_direct_large_malloc(size_t size) {
 
 bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
   *owned_out = false;
-  if (!ptr) {
+  if (!ptr || !h8_direct_large_maybe_contains(ptr)) {
     return false;
   }
   h8_platform_mutex_lock(&h8_direct_large_lock);
@@ -137,9 +174,31 @@ bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
   return true;
 }
 
+bool h8_direct_large_free_exact_inner(void* ptr, bool* owned_out) {
+  *owned_out = false;
+  if (!ptr || !h8_direct_large_maybe_contains(ptr)) {
+    return false;
+  }
+  h8_platform_mutex_lock(&h8_direct_large_lock);
+  H8DirectLarge* node = h8_direct_large_find_exact_locked(ptr);
+  if (!node) {
+    h8_platform_mutex_unlock(&h8_direct_large_lock);
+    return false;
+  }
+  *owned_out = true;
+  h8_direct_large_remove_locked(node);
+  node->magic = H8_DIRECT_LARGE_MAGIC_DEAD;
+  h8_platform_mutex_unlock(&h8_direct_large_lock);
+  h8_sys_free(node);
+  return true;
+}
+
 bool h8_direct_large_usable_size_inner(void* ptr, size_t* usable_out,
                                        bool* owned_out) {
   *owned_out = false;
+  if (!h8_direct_large_maybe_contains(ptr)) {
+    return false;
+  }
   h8_platform_mutex_lock(&h8_direct_large_lock);
   bool exact = false;
   H8DirectLarge* node = h8_direct_large_find_locked(ptr, &exact);
@@ -157,7 +216,28 @@ bool h8_direct_large_usable_size_inner(void* ptr, size_t* usable_out,
   return true;
 }
 
+bool h8_direct_large_usable_size_exact_inner(void* ptr, size_t* usable_out,
+                                             bool* owned_out) {
+  *owned_out = false;
+  if (!h8_direct_large_maybe_contains(ptr)) {
+    return false;
+  }
+  h8_platform_mutex_lock(&h8_direct_large_lock);
+  H8DirectLarge* node = h8_direct_large_find_exact_locked(ptr);
+  if (!node) {
+    h8_platform_mutex_unlock(&h8_direct_large_lock);
+    return false;
+  }
+  *owned_out = true;
+  *usable_out = node->requested_size;
+  h8_platform_mutex_unlock(&h8_direct_large_lock);
+  return true;
+}
+
 H8RouteKind h8_direct_large_route_inner(void* ptr) {
+  if (!h8_direct_large_maybe_contains(ptr)) {
+    return H8_ROUTE_MISS;
+  }
   h8_platform_mutex_lock(&h8_direct_large_lock);
   bool exact = false;
   H8DirectLarge* node = h8_direct_large_find_locked(ptr, &exact);
@@ -166,6 +246,16 @@ H8RouteKind h8_direct_large_route_inner(void* ptr) {
     return H8_ROUTE_MISS;
   }
   return exact ? H8_ROUTE_VALID : H8_ROUTE_INVALID;
+}
+
+H8RouteKind h8_direct_large_route_exact_inner(void* ptr) {
+  if (!h8_direct_large_maybe_contains(ptr)) {
+    return H8_ROUTE_MISS;
+  }
+  h8_platform_mutex_lock(&h8_direct_large_lock);
+  H8DirectLarge* node = h8_direct_large_find_exact_locked(ptr);
+  h8_platform_mutex_unlock(&h8_direct_large_lock);
+  return node ? H8_ROUTE_VALID : H8_ROUTE_MISS;
 }
 
 #else
@@ -186,6 +276,12 @@ bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
   return false;
 }
 
+bool h8_direct_large_free_exact_inner(void* ptr, bool* owned_out) {
+  (void)ptr;
+  *owned_out = false;
+  return false;
+}
+
 bool h8_direct_large_usable_size_inner(void* ptr, size_t* usable_out,
                                        bool* owned_out) {
   (void)ptr;
@@ -194,7 +290,20 @@ bool h8_direct_large_usable_size_inner(void* ptr, size_t* usable_out,
   return false;
 }
 
+bool h8_direct_large_usable_size_exact_inner(void* ptr, size_t* usable_out,
+                                             bool* owned_out) {
+  (void)ptr;
+  (void)usable_out;
+  *owned_out = false;
+  return false;
+}
+
 H8RouteKind h8_direct_large_route_inner(void* ptr) {
+  (void)ptr;
+  return H8_ROUTE_MISS;
+}
+
+H8RouteKind h8_direct_large_route_exact_inner(void* ptr) {
   (void)ptr;
   return H8_ROUTE_MISS;
 }

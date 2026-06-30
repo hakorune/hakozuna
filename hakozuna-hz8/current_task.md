@@ -473,11 +473,29 @@ Current next box:
     peak RSS median = 60.13 MiB
     miss = 0
     invalid = 0
+  lookup-first follow-up:
+    record: bench_results/hz8_large_direct_lookupfirst_l1_20260630T202900/
+    throughput median = 974032 ops/s
+    peak RSS median = 22.16 MiB
+    miss = 0
+    invalid = 0
+    medium_free_lookup = 799713
+    free_steps = 0
+  broader gate:
+    record: bench_results/hz8_large_direct_rangeguard_gate_20260630T203238/
+    medium_remote50:
+      defer4 = 359831 ops/s, peak RSS 23.46 MiB
+      largedirect = 314325 ops/s, peak RSS 21.56 MiB
+    largeish_remote50:
+      defer4 = 228539 ops/s, peak RSS 56.09 MiB, miss = 1600287
+      largedirect = 901406 ops/s, peak RSS 22.36 MiB, miss = 0
   read:
     route ownership boundary is fixed
-    throughput barely improves over the old 220129 ops/s boundary read
-    keep as mechanism evidence/control, not default
-    next ROI is medium remote collect/free path in mixed largeish rows
+    the first L1 still paid medium lookup before direct free
+    lookup-first removes the huge medium free fallback scan
+    keep as strong focused win / evidence lane
+    do not promote broadly because medium_remote50 regresses
+    next ROI is medium remote collect/free path without direct lookup-first tax
 
 Local-only tuning is not the next ROI.
 

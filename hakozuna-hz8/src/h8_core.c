@@ -181,6 +181,10 @@ H8RouteKind h8_route_inner(void* ptr) {
     return H8_ROUTE_INVALID;
   }
   if (!h8_arena_contains(ptr)) {
+    H8RouteKind direct_exact_route = h8_direct_large_route_exact_inner(ptr);
+    if (direct_exact_route != H8_ROUTE_MISS) {
+      return direct_exact_route;
+    }
     H8RouteKind medium_route = h8_medium_route_inner(ptr);
     if (medium_route != H8_ROUTE_MISS) {
       return medium_route;

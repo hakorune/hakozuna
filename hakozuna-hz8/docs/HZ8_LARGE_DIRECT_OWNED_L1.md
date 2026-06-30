@@ -94,6 +94,82 @@ blocked by direct-large route ownership after the boundary is fixed. The next
 dominant cost is still in the medium/remote side of the same mixed row, notably
 medium collect/free path cost.
 
+## Lookup-First Follow-Up
+
+The first L1 implementation still called the medium route/free path before the
+direct-large path. That made exact direct-large frees pay the medium directory
+and fallback scan first.
+
+The follow-up adds an exact-pointer direct-large lookup before the medium path:
+
+```text
+direct-large exact hit -> direct free / route / usable-size
+direct-large exact miss -> existing medium path
+medium miss -> full direct-large lookup for live interior INVALID detection
+```
+
+Record:
+
+```text
+bench_results/hz8_large_direct_lookupfirst_l1_20260630T202900/largeish_remote50.log
+```
+
+Result:
+
+```text
+throughput median = 974032 ops/s
+peak RSS median   = 22.16 MiB
+miss              = 0
+invalid           = 0
+medium_free_lookup = 799713
+free_steps         = 0
+```
+
+Compared with the first LargeDirectOwned-L1:
+
+```text
+throughput median = 227983 -> 974032 ops/s
+peak RSS median   = 60.13 -> 22.16 MiB
+free_steps        = 477415058 -> 0
+```
+
+Read:
+
+```text
+The largeish route boundary was real, but the bigger cost was free ordering.
+Direct-large exact frees must not fall through medium lookup first.
+```
+
+## Broader Gate
+
+Record:
+
+```text
+bench_results/hz8_large_direct_rangeguard_gate_20260630T203238/
+```
+
+The range guard keeps the exact-direct lookup from locking when no direct-large
+object has ever been allocated in the process. Even so, the broad row is not a
+default candidate yet:
+
+```text
+medium_remote50:
+  defer4      = 359831 ops/s, peak RSS 23.46 MiB
+  largedirect = 314325 ops/s, peak RSS 21.56 MiB
+
+largeish_remote50:
+  defer4      = 228539 ops/s, peak RSS 56.09 MiB, miss = 1600287
+  largedirect = 901406 ops/s, peak RSS 22.36 MiB, miss = 0
+```
+
+Read:
+
+```text
+LargeDirectOwned lookup-first is a strong largeish fix.
+It is not a broad default promotion because medium_remote50 regresses.
+Keep the lane as focused large/sys-boundary evidence.
+```
+
 ## Decision
 
 Keep as evidence/control:
@@ -101,12 +177,13 @@ Keep as evidence/control:
 ```text
 LargeDirectOwned-L1:
   route ownership mechanism evidence
-  not default
-  not a throughput promotion
+  lookup-first is a strong focused win on largeish_remote50
+  not default because medium_remote50 regresses in the broader gate
 ```
 
 Next likely ROI:
 
 ```text
-medium remote collect/free path in mixed largeish rows
+medium remote collect/free path without putting direct lookup before every
+medium free
 ```
