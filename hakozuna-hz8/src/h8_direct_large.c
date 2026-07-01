@@ -20,6 +20,11 @@
 #error H8_LARGE_DIRECT_HOTCOLD_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
 #endif
 
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1) && \
+    !defined(H8_LARGE_DIRECT_MMAP_PAYLOAD_L1)
+#error H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
+#endif
+
 #if defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
     !defined(H8_LARGE_DIRECT_MMAP_PAYLOAD_L1)
 #error H8_LARGE_DIRECT_PURGE_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
@@ -30,7 +35,11 @@
     (defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
      defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)) || \
     (defined(H8_LARGE_DIRECT_RECYCLE_CACHE_L1) && \
-     defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1))
+     defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)) || \
+    (defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1) && \
+     (defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) || \
+      defined(H8_LARGE_DIRECT_RECYCLE_CACHE_L1) || \
+      defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)))
 #error choose only one direct-large cache policy
 #endif
 
@@ -41,7 +50,8 @@
 
 #if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2) || \
     defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1) || \
-    defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1)
+    defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1) || \
+    defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1)
 #define H8_DIRECT_LARGE_HOTCOLD_L1 1
 #endif
 
@@ -56,8 +66,12 @@
 #define H8_DIRECT_LARGE_HOTCOLD_HOT_CLASS_BYTES (8u * 1024u * 1024u)
 #define H8_DIRECT_LARGE_HOTCOLD_COLD_BYTES (64u * 1024u * 1024u)
 #define H8_DIRECT_LARGE_SHARDED_HOT_SHARDS 8u
+#if !defined(H8_DIRECT_LARGE_SHARDED_HOT_BYTES)
 #define H8_DIRECT_LARGE_SHARDED_HOT_BYTES (64u * 1024u * 1024u)
+#endif
+#if !defined(H8_DIRECT_LARGE_SHARDED_HOT_SHARD_BYTES)
 #define H8_DIRECT_LARGE_SHARDED_HOT_SHARD_BYTES (16u * 1024u * 1024u)
+#endif
 
 typedef struct H8DirectLarge {
   uint64_t magic;
@@ -377,6 +391,17 @@ void* h8_direct_large_malloc(size_t size) {
     return NULL;
   }
   size_t mapped_size = h8_direct_large_mapped_size_for(size);
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1)
+  H8DirectLarge* sharded = h8_direct_large_sharded_hot_cache_pop(size);
+  if (sharded) {
+    sharded->requested_size = size;
+    sharded->usable_size = size;
+    h8_direct_large_record_alloc(size);
+    return sharded->user_ptr;
+  }
+  atomic_fetch_add_explicit(&h8g.direct_large_raw_alloc_count, 1,
+                            memory_order_relaxed);
+#endif
 #if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
   h8_direct_large_lock_hotcold();
   uint64_t hold_start = h8_direct_large_now_ns();
@@ -465,6 +490,13 @@ bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
     return false;
   }
   size_t size = node->usable_size;
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1)
+  if (h8_direct_large_sharded_hot_cache_push(node)) {
+    h8_platform_mutex_unlock(&h8_direct_large_lock);
+    h8_direct_large_record_free(size);
+    return true;
+  }
+#endif
 #if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
   if (h8_direct_large_hotcold_push_locked(node)) {
     h8_direct_large_unlock_hotcold(hold_start);
@@ -530,6 +562,13 @@ bool h8_direct_large_free_exact_inner(void* ptr, bool* owned_out) {
     return false;
   }
   size_t size = node->usable_size;
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1)
+  if (h8_direct_large_sharded_hot_cache_push(node)) {
+    h8_platform_mutex_unlock(&h8_direct_large_lock);
+    h8_direct_large_record_free(size);
+    return true;
+  }
+#endif
 #if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
   if (h8_direct_large_hotcold_push_locked(node)) {
     h8_direct_large_unlock_hotcold(hold_start);

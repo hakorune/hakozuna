@@ -188,6 +188,112 @@ read:
   next measurement should compare hit/reject/shard skew before behavior work
 ```
 
+Cap sweep:
+
+```text
+record:
+  bench_results/20260701T061808Z_sharded_hot_cap_sweep_l1/
+
+row:
+  cross128_r90
+  R3, T=16, iters=50k, size=16..131072, interleaved=1
+
+64MiB total / 16MiB shard:
+  hit_rate:       45.2%
+  raw_alloc:      219,033
+  reject:         218,350
+  hot_peak:       64.0MiB
+  max_shard:      16.0MiB
+
+128MiB total / 32MiB shard:
+  hit_rate:       66.3%
+  raw_alloc:      134,802
+  reject:         133,801
+  hot_peak:       128.0MiB
+  max_shard:      32.0MiB
+
+128MiB total / 64MiB shard:
+  hit_rate:       53.8%
+  raw_alloc:      184,764
+  reject:         183,254
+  hot_peak:       128.0MiB
+  max_shard:      64.0MiB
+
+192MiB total / 32MiB shard:
+  hit_rate:       69.2%
+  raw_alloc:      123,174
+  reject:         121,874
+  hot_peak:       173.6MiB
+  max_shard:      32.0MiB
+```
+
+Read:
+
+```text
+best default-shaped cap:
+  128MiB total / 32MiB shard
+
+why:
+  materially better hit rate than 64/16
+  lower raw_alloc
+  128/64 is worse, so per-shard cap still matters
+  192/32 improves only modestly while increasing retained-hot contract
+
+behavior decision:
+  do not implement yet
+  next evidence, if needed, should compare 128/32 behavior against
+  sysmalloc-backed LargeDirect and default HZ8 in a paired R10
+```
+
+Behavior probe:
+
+```text
+target:
+  bench-release-largedirectshardedhotcache
+  preload-largedirectshardedhotcache
+
+macro:
+  H8_LARGE_DIRECT_SHARDED_HOT_CACHE_L1
+
+cap:
+  128MiB total / 32MiB shard
+
+record:
+  bench_results/20260701T063132Z_sharded_hot_cache_l1_light/
+
+cross128_r90 light R3:
+  LargeDirect sysmalloc-backed:
+    median:   1.688M
+    post RSS: 10.39MiB
+    peak RSS: 26.79MiB
+
+  ShardedHotCache 128/32:
+    median:   1.426M
+    post RSS: 27.59MiB
+    peak RSS: 55.50MiB
+    hit_rate: 100%
+    reject/store: 3.7%
+    hot_peak: 128MiB
+    max_shard: 32MiB
+```
+
+Read:
+
+```text
+mechanism:
+  works
+  cache hit rate is excellent
+
+problem:
+  even with hits, mmap-backed sharded cache is slower than sysmalloc-backed
+  LargeDirect in this light row
+  RSS contract is also heavier
+
+disposition:
+  keep as opt-in evidence target
+  HOLD for default
+```
+
 Current read:
 
 ```text

@@ -681,3 +681,66 @@ Do not tune the current global-lock HotColdCache-L1 shape further. The counter
 follow-up shows that the primary blocker is not hit rate; it is serialized cache
 traffic. A future candidate should first remove that serialization, then measure
 whether a cold tier is still useful.
+
+## Sharded Hot Cache Follow-up
+
+The sharded hot-cache lane was added as an opt-in profile experiment after the
+global-lock HotCold cache was closed.
+
+```text
+shadow target:
+  bench-release-largedirectshardedhotshadow
+
+cap sweep targets:
+  bench-release-largedirectshardedhot128_32
+  bench-release-largedirectshardedhot128_64
+  bench-release-largedirectshardedhot192_32
+
+behavior target:
+  bench-release-largedirectshardedhotcache
+```
+
+Cap sweep read:
+
+```text
+best profile-shaped cap:
+  128MiB total / 32MiB per shard
+
+why:
+  materially better hit rate than 64/16
+  128/64 is worse, so per-shard balance matters
+  192/32 adds retained-hot budget for only modest hit-rate improvement
+```
+
+Behavior light read:
+
+```text
+record:
+  bench_results/20260701T063132Z_sharded_hot_cache_l1_light/
+
+cross128_r90 light R3:
+  LargeDirect sysmalloc-backed:
+    median:   1.688M
+    post RSS: 10.39MiB
+    peak RSS: 26.79MiB
+
+  ShardedHotCache 128/32:
+    median:   1.426M
+    post RSS: 27.59MiB
+    peak RSS: 55.50MiB
+    hit_rate: 100%
+    reject/store: 3.7%
+```
+
+Decision:
+
+```text
+ShardedHotCache-L1:
+  HOLD for default
+  keep as opt-in evidence target
+
+why:
+  mechanism works and cache hit rate is high
+  but mmap-backed sharded cache is slower than sysmalloc-backed LargeDirect
+  and carries a heavier retained-hot RSS contract
+```
