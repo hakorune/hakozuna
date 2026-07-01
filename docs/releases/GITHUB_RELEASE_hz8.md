@@ -10,6 +10,7 @@ as the recommended Hakozuna allocator line.
 - HZ8 is presented as the recommended balanced allocator line.
 - HZ8-v2 / KeepRefill is the current default.
 - HZ8-v1.1 remains the frozen comparison baseline.
+- LargeDirectOwned and ShardedHotCache are opt-in evidence lanes, not defaults.
 - HZ9 remains an opt-in throughput research lane, not a release default.
 
 ## Zenodo / DOI
@@ -54,11 +55,18 @@ medium refill candidates active-live after remote collection drains them.  In
 the public Ubuntu/Linux matrix, HZ8 is best read as a balanced low-RSS allocator
 with practical throughput, not as a universal tcmalloc replacement.
 
+LargeDirectOwned is included as opt-in/profile evidence for the known
+`cross128_r90` weakness: it shows that the weakness is largely at the
+large/direct boundary, but it has a larger RSS tradeoff and is not the default.
+ShardedHotCache-L1 is kept as HOLD/future-work evidence; it does not yet provide
+a default-quality throughput/RSS Pareto point.
+
 Highlights:
 
 - HZ8 source under hakozuna-hz8/
 - HZ8 English/Japanese README files
 - HZ8-v2 / KeepRefill default build and preload targets
+- Opt-in LargeDirect / ShardedHot evidence targets
 - Fail-closed ownership and route contract documentation
 - Public benchmark matrix scripts and release notes
 - Paper-facing Ubuntu/Linux x86_64 matrix snapshot:
@@ -77,6 +85,7 @@ Release shape:
 - Generated benchmark outputs are not part of the source archive unless
   attached separately
 - HZ9 remains an opt-in research lane
+- LargeDirect / ShardedHot are not promoted as release defaults
 ```
 
 ## Pre-Publish Checklist
@@ -88,3 +97,4 @@ Release shape:
 - [ ] Public benchmark captions include RUNS, THREADS, ITERS, platform, and RSS.
 - [ ] Release body avoids "universally beats tcmalloc" style claims.
 - [ ] Windows HZ8 remains described as bring-up/evidence only.
+- [ ] LargeDirect / ShardedHot wording remains opt-in evidence only.

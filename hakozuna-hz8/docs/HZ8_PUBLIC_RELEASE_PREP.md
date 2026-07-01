@@ -5,6 +5,11 @@ Status: public-release preparation / paper input.
 HZ8 is the recommended Hakozuna allocator line.  The current default is
 HZ8-v2 / KeepRefill, with HZ8-v1.1 kept as the frozen comparison baseline.
 
+LargeDirectOwned and LargeDirectShardedHotCache-L1 are not release defaults.
+They are opt-in evidence lanes showing that the `cross128_r90` weakness is
+large/direct-boundary related and that bounded hot caching needs more work
+before it becomes a default-quality throughput/RSS Pareto point.
+
 Published HZ8 paper record:
 
 ```text
@@ -45,6 +50,7 @@ exclude by default:
   generated binaries
   private raw benchmark dumps
   profile-only or HZ9 claims
+  LargeDirect / ShardedHot promotion claims
 ```
 
 ## Paper Tables
@@ -108,6 +114,11 @@ main_interleaved_r90:
 medium_interleaved_r50:
   HZ8 improves over the prior default, but do not overclaim this as a universal
   medium-size win.
+
+cross128 / LargeDirect:
+  LargeDirectOwned is useful paper evidence: it closes much of the cross128
+  throughput weakness, but with a higher RSS contract.  ShardedHotCache-L1 is
+  HOLD: it is opt-in evidence, not a public default.
 ```
 
 ## Pre-Publish Checklist
@@ -120,6 +131,7 @@ medium_interleaved_r50:
 [x] HZ8 Windows text remains bring-up/evidence only.
 [x] CITATION.cff is reviewed once a Zenodo DOI exists.
 [x] GitHub release body links the HZ8 Zenodo record once available.
+[x] LargeDirect / ShardedHot are described as opt-in evidence, not defaults.
 [ ] Generated binaries are excluded from the source release unless explicitly
     attached as separate artifacts.
 ```

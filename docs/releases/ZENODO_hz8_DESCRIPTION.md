@@ -44,6 +44,12 @@ ownership, cross-thread free correctness, and practical throughput.  It is not
 claimed to universally outperform tcmalloc on every local-only or throughput
 row.
 
+LargeDirectOwned and ShardedHotCache are included as opt-in evidence lanes, not
+as default behavior.  LargeDirectOwned shows that the cross128 weakness is
+largely a large/direct-boundary issue, while ShardedHotCache records that the
+current bounded hot-cache shape has not yet reached a default-quality
+throughput/RSS Pareto point.
+
 Main components include:
 
 - hakozuna-hz8/: HZ8 allocator source
@@ -55,6 +61,8 @@ Main components include:
 - hakozuna-hz8/scripts/: public benchmark matrix helpers
 - hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md: release and paper preparation
   checklist
+- hakozuna-hz8/docs/HZ8_LARGE_DIRECT_DEFAULT_PROBE_L1.md: LargeDirect and
+  ShardedHot opt-in evidence notes
 
 Code repository: https://github.com/hakorune/hakozuna
 ```

@@ -138,6 +138,29 @@ active-liveとして保持し、重いempty/reactivate loopを避けます。公
 cross-allocator matrixでもbalanced defaultとして確認済みです。ただし、HZ8が
 tcmallocを全面的に超えたという主張ではありません。
 
+## LargeDirect / ShardedHot evidence
+
+HZ8 論文 line では、public default を保守的に維持します。
+
+```text
+default:
+  HZ8-v2 / KeepRefill balanced default
+
+opt-in evidence:
+  LargeDirectOwned
+  LargeDirectShardedHotCache-L1
+```
+
+LargeDirectOwned は、`cross128_r90` の弱点が主に large/direct boundary に
+由来することを示す evidence です。cross128 row は大きく改善しますが、RSS
+tradeoff も大きいため、default behavior ではなく opt-in profile / paper
+evidence として扱います。
+
+ShardedHotCache-L1 も evidence 扱いです。mechanism は動いており、現在の
+sweep では 128 MiB total / 32 MiB per-shard cap が最も筋の良い形でした。
+ただし throughput/RSS Pareto 点としてはまだ default-quality ではないため、
+release default とは書きません。
+
 ## 論文向け公開マトリクスの要点
 
 主スナップショット:
@@ -172,6 +195,8 @@ make bench          # debug/counter build
 make bench-release  # release throughput build
 make bench-release-mediumkeeprefillempty  # v2 default互換alias
 make preload-mediumkeeprefillempty        # v2 default DSO互換alias
+make bench-release-largedirectdefault      # opt-in LargeDirect evidence
+make bench-release-largedirectshardedhotcache  # opt-in ShardedHot evidence
 ```
 
 よく使う確認:

@@ -143,6 +143,29 @@ remote-heavy rows.  The public cross-allocator matrix confirms it as the
 current balanced default.  It is not a claim that HZ8 universally beats
 tcmalloc.
 
+## LargeDirect and ShardedHot Evidence
+
+The HZ8 paper line keeps the public default conservative:
+
+```text
+default:
+  HZ8-v2 / KeepRefill balanced default
+
+opt-in evidence:
+  LargeDirectOwned
+  LargeDirectShardedHotCache-L1
+```
+
+LargeDirectOwned shows that the `cross128_r90` weakness is largely a
+large/direct-boundary issue.  It can improve the cross128 row by a large factor,
+but the RSS tradeoff is significant, so it remains an opt-in profile and paper
+evidence rather than the default allocator behavior.
+
+ShardedHotCache-L1 is also kept as evidence only.  The mechanism works, and the
+128 MiB total / 32 MiB per-shard cap is the best observed shape in the current
+sweep, but the measured throughput/RSS Pareto point is not default-quality yet.
+Do not present it as a release default.
+
 ## Paper-Ready Matrix Highlights
 
 Primary paper snapshot:
@@ -177,6 +200,8 @@ make bench          # debug/counter build
 make bench-release  # release throughput build
 make bench-release-mediumkeeprefillempty  # compatibility alias for v2 default
 make preload-mediumkeeprefillempty        # compatibility alias for v2 default DSO
+make bench-release-largedirectdefault      # opt-in LargeDirect evidence
+make bench-release-largedirectshardedhotcache  # opt-in ShardedHot evidence
 ```
 
 Common local checks:
