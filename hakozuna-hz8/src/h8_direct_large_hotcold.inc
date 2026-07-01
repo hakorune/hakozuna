@@ -26,6 +26,147 @@ static size_t h8_direct_large_hotcold_payload(size_t bucket) {
          bucket * H8_DIRECT_LARGE_HOTCOLD_UNIT;
 }
 
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1)
+static h8_platform_mutex_t h8_direct_large_sharded_hot_lock
+    [H8_DIRECT_LARGE_SHARDED_HOT_SHARDS] = {
+        H8_PLATFORM_MUTEX_INIT, H8_PLATFORM_MUTEX_INIT,
+        H8_PLATFORM_MUTEX_INIT, H8_PLATFORM_MUTEX_INIT,
+        H8_PLATFORM_MUTEX_INIT, H8_PLATFORM_MUTEX_INIT,
+        H8_PLATFORM_MUTEX_INIT, H8_PLATFORM_MUTEX_INIT};
+static size_t h8_direct_large_sharded_hot_count
+    [H8_DIRECT_LARGE_SHARDED_HOT_SHARDS][H8_DIRECT_LARGE_HOTCOLD_CLASSES];
+static size_t h8_direct_large_sharded_hot_shard_bytes
+    [H8_DIRECT_LARGE_SHARDED_HOT_SHARDS];
+static atomic_size_t h8_direct_large_sharded_hot_total_bytes;
+
+static size_t h8_direct_large_sharded_hot_bytes(size_t bucket) {
+  return h8_direct_large_hotcold_payload(bucket) +
+         H8_DIRECT_LARGE_HEADER_BYTES;
+}
+
+static size_t h8_direct_large_sharded_hot_current_shard(void) {
+  H8ThreadCtx* ctx = h8_tls_ctx;
+  if (!ctx || !ctx->owner) {
+    return 0;
+  }
+  return ctx->owner->slot & (H8_DIRECT_LARGE_SHARDED_HOT_SHARDS - 1u);
+}
+
+static void h8_direct_large_sharded_hot_update_peak(atomic_size_t* counter,
+                                                    size_t value) {
+  h8_direct_large_update_peak(counter, value);
+}
+
+static bool h8_direct_large_sharded_hot_reserve_total(size_t bytes,
+                                                      size_t* total_out) {
+  size_t total = atomic_load_explicit(&h8_direct_large_sharded_hot_total_bytes,
+                                      memory_order_relaxed);
+  for (;;) {
+    if (total + bytes > H8_DIRECT_LARGE_SHARDED_HOT_BYTES) {
+      return false;
+    }
+    if (atomic_compare_exchange_weak_explicit(
+            &h8_direct_large_sharded_hot_total_bytes, &total, total + bytes,
+            memory_order_acq_rel, memory_order_relaxed)) {
+      *total_out = total + bytes;
+      return true;
+    }
+  }
+}
+
+static bool h8_direct_large_sharded_hot_take(size_t shard, size_t bucket,
+                                             size_t request) {
+  for (size_t i = bucket; i < H8_DIRECT_LARGE_HOTCOLD_CLASSES; ++i) {
+    atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_scan_steps, 1,
+                              memory_order_relaxed);
+    if (h8_direct_large_sharded_hot_count[shard][i] == 0) {
+      continue;
+    }
+    size_t bytes = h8_direct_large_sharded_hot_bytes(i);
+    --h8_direct_large_sharded_hot_count[shard][i];
+    h8_direct_large_sharded_hot_shard_bytes[shard] -= bytes;
+    atomic_fetch_sub_explicit(&h8_direct_large_sharded_hot_total_bytes, bytes,
+                              memory_order_relaxed);
+    atomic_fetch_sub_explicit(&h8g.direct_large_sharded_hot_bytes, bytes,
+                              memory_order_relaxed);
+    atomic_fetch_sub_explicit(
+        &h8g.direct_large_sharded_hot_bytes_by_shard[shard], bytes,
+        memory_order_relaxed);
+    atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_hit_count, 1,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(
+        &h8g.direct_large_sharded_hot_hit_by_shard[shard], 1,
+        memory_order_relaxed);
+    if (i == bucket) {
+      atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_exact_hit, 1,
+                                memory_order_relaxed);
+    } else {
+      size_t payload = h8_direct_large_hotcold_payload(i);
+      atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_near_hit, 1,
+                                memory_order_relaxed);
+      atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_oversize_bytes,
+                                payload > request ? payload - request : 0,
+                                memory_order_relaxed);
+    }
+    return true;
+  }
+  return false;
+}
+
+static void h8_direct_large_sharded_hot_store(size_t shard, size_t bucket) {
+  size_t bytes = h8_direct_large_sharded_hot_bytes(bucket);
+  if (h8_direct_large_sharded_hot_shard_bytes[shard] + bytes >
+          H8_DIRECT_LARGE_SHARDED_HOT_SHARD_BYTES) {
+    atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_reject_count, 1,
+                              memory_order_relaxed);
+    return;
+  }
+  size_t new_total = 0;
+  if (!h8_direct_large_sharded_hot_reserve_total(bytes, &new_total)) {
+    atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_reject_count, 1,
+                              memory_order_relaxed);
+    return;
+  }
+  ++h8_direct_large_sharded_hot_count[shard][bucket];
+  h8_direct_large_sharded_hot_shard_bytes[shard] += bytes;
+  atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_bytes, bytes,
+                            memory_order_relaxed);
+  atomic_fetch_add_explicit(
+      &h8g.direct_large_sharded_hot_bytes_by_shard[shard], bytes,
+      memory_order_relaxed);
+  atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_store_count, 1,
+                            memory_order_relaxed);
+  atomic_fetch_add_explicit(
+      &h8g.direct_large_sharded_hot_store_by_shard[shard], 1,
+      memory_order_relaxed);
+  h8_direct_large_sharded_hot_update_peak(
+      &h8g.direct_large_sharded_hot_peak_bytes, new_total);
+  h8_direct_large_sharded_hot_update_peak(
+      &h8g.direct_large_sharded_hot_max_shard_bytes,
+      h8_direct_large_sharded_hot_shard_bytes[shard]);
+}
+
+static void h8_direct_large_sharded_hot_shadow_record_alloc(size_t size) {
+  size_t shard = h8_direct_large_sharded_hot_current_shard();
+  size_t bucket = h8_direct_large_hotcold_bucket(size);
+  h8_platform_mutex_lock(&h8_direct_large_sharded_hot_lock[shard]);
+  bool hit = h8_direct_large_sharded_hot_take(shard, bucket, size);
+  h8_platform_mutex_unlock(&h8_direct_large_sharded_hot_lock[shard]);
+  if (!hit) {
+    atomic_fetch_add_explicit(&h8g.direct_large_sharded_hot_raw_alloc_count, 1,
+                              memory_order_relaxed);
+  }
+}
+
+static void h8_direct_large_sharded_hot_shadow_record_free(size_t size) {
+  size_t shard = h8_direct_large_sharded_hot_current_shard();
+  size_t bucket = h8_direct_large_hotcold_bucket(size);
+  h8_platform_mutex_lock(&h8_direct_large_sharded_hot_lock[shard]);
+  h8_direct_large_sharded_hot_store(shard, bucket);
+  h8_platform_mutex_unlock(&h8_direct_large_sharded_hot_lock[shard]);
+}
+#endif
+
 #if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2)
 static size_t h8_direct_large_hotcold_bytes(size_t bucket) {
   return h8_direct_large_hotcold_payload(bucket) +

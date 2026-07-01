@@ -111,18 +111,18 @@ System-large frees can pay medium lookup/global scan in mixed 16..131072 rows.
 ## Current Box
 
 ```text
-LargeDirectHotColdCacheCloseout-L1
+LargeDirectShardedHotCacheShadow-L1
 
 scope:
   keep HZ8 default as KeepRefill balanced default
   keep LargeDirect as opt-in/profile evidence
   do not promote sysmalloc-backed LargeDirect to default
-  close the current global-lock HotCold cache experiment
+  model a sharded hot-only direct-large cache
 
 target:
-  record why the current HotCold shape is not default-quality
-  keep the source buildable for evidence/profiling
-  define the next lane without changing default behavior
+  estimate whether hot-only reuse can avoid the global-lock HotCold bottleneck
+  measure shard distribution and required resident bytes
+  decide if a behavior box is worth implementing
 
 default:
   HZ8-v2 KeepRefill balanced default remains unchanged
@@ -132,15 +132,60 @@ opt-in:
   HotColdCache-L1 remains diagnostic evidence only
 
 next lane, if reopened:
-  LargeDirectShardedHotCacheShadow-L1
+  LargeDirectShardedHotCache-L1
   hot-cache sharding first
   cold tier optional and less eager
+
+shadow model:
+  8 shards from current owner slot
+  8KiB direct-large buckets from 72KiB through 128KiB
+  hot-only cache
+  total hot cap: 64MiB
+  per-shard hot cap: 16MiB
 
 non-goals:
   no default promotion
   no benchmark-row auto detection
   no medium/small behavior changes
   no further tuning of the current global-lock HotColdCache-L1 shape
+```
+
+Initial implementation:
+
+```text
+target:
+  bench-release-largedirectshardedhotshadow
+  preload-largedirectshardedhotshadow
+
+macro:
+  H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1
+
+behavior:
+  shadow only
+  no allocation policy change
+```
+
+Short smoke observation:
+
+```text
+command:
+  h8_bench_release_largedirectshardedhotshadow
+    --runs 1 --threads 16 --iters 20000
+    --min-size 16 --max-size 131072
+    --remote-pct 90 --interleaved 1
+
+direct_large_sharded_hot:
+  hit:             103,658
+  store:           104,018
+  raw_alloc:       56,195
+  reject:          55,835
+  hot_peak:        67,283,968
+  max_shard_bytes: 16,773,568
+
+read:
+  model is wired and producing shard/cap evidence
+  current 64MiB total / 16MiB per-shard cap rejects many frees
+  next measurement should compare hit/reject/shard skew before behavior work
 ```
 
 Current read:

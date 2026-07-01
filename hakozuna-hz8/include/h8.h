@@ -87,6 +87,20 @@ typedef struct H8Stats {
   size_t direct_large_purge_ns;
   size_t direct_large_release_ns;
   size_t direct_large_raw_alloc_ns;
+  size_t direct_large_sharded_hot_hit_count;
+  size_t direct_large_sharded_hot_store_count;
+  size_t direct_large_sharded_hot_raw_alloc_count;
+  size_t direct_large_sharded_hot_reject_count;
+  size_t direct_large_sharded_hot_exact_hit;
+  size_t direct_large_sharded_hot_near_hit;
+  size_t direct_large_sharded_hot_oversize_bytes;
+  size_t direct_large_sharded_hot_scan_steps;
+  size_t direct_large_sharded_hot_bytes;
+  size_t direct_large_sharded_hot_peak_bytes;
+  size_t direct_large_sharded_hot_max_shard_bytes;
+  size_t direct_large_sharded_hot_hit_by_shard[8];
+  size_t direct_large_sharded_hot_store_by_shard[8];
+  size_t direct_large_sharded_hot_bytes_by_shard[8];
 } H8Stats;
 
 typedef struct H8DebugStats {

@@ -40,7 +40,8 @@
 #endif
 
 #if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2) || \
-    defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+    defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1) || \
+    defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1)
 #define H8_DIRECT_LARGE_HOTCOLD_L1 1
 #endif
 
@@ -54,6 +55,9 @@
 #define H8_DIRECT_LARGE_HOTCOLD_HOT_BYTES (64u * 1024u * 1024u)
 #define H8_DIRECT_LARGE_HOTCOLD_HOT_CLASS_BYTES (8u * 1024u * 1024u)
 #define H8_DIRECT_LARGE_HOTCOLD_COLD_BYTES (64u * 1024u * 1024u)
+#define H8_DIRECT_LARGE_SHARDED_HOT_SHARDS 8u
+#define H8_DIRECT_LARGE_SHARDED_HOT_BYTES (64u * 1024u * 1024u)
+#define H8_DIRECT_LARGE_SHARDED_HOT_SHARD_BYTES (16u * 1024u * 1024u)
 
 typedef struct H8DirectLarge {
   uint64_t magic;
@@ -166,6 +170,9 @@ static void h8_direct_large_record_alloc(size_t size) {
 #if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2)
   h8_direct_large_shadow_record_alloc(size);
 #endif
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1)
+  h8_direct_large_sharded_hot_shadow_record_alloc(size);
+#endif
   size_t bucket = h8_direct_large_bucket(size);
   size_t event =
       atomic_fetch_add_explicit(&h8g.direct_large_event_epoch, 1,
@@ -204,6 +211,9 @@ static void h8_direct_large_record_alloc(size_t size) {
 static void h8_direct_large_record_free(size_t size) {
 #if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2)
   h8_direct_large_shadow_record_free(size);
+#endif
+#if defined(H8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1)
+  h8_direct_large_sharded_hot_shadow_record_free(size);
 #endif
   size_t bucket = h8_direct_large_bucket(size);
   size_t event =

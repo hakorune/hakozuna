@@ -1,5 +1,5 @@
 .PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-activefulldefer8 bench-defer4mediumcapacity bench-defer8mediumcapacity bench-remoteactivefullbudget bench-mediumcapacitybudget bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-hz9mediumlocalmagshadow bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-hz9mediumlocalmagshadow bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy preload-mediumkeeprefillempty medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
-.PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache
+.PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache preload-largedirectshardedhotshadow bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache bench-release-largedirectshardedhotshadow
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -19,6 +19,7 @@ HZ8_LARGE_DIRECT_PURGE_CACHE_CFLAGS := $(HZ8_LARGE_DIRECT_MMAP_CFLAGS) -DH8_LARG
 HZ8_LARGE_DIRECT_RECYCLE_CACHE_CFLAGS := $(HZ8_LARGE_DIRECT_MMAP_CFLAGS) -DH8_LARGE_DIRECT_RECYCLE_CACHE_L1
 HZ8_LARGE_DIRECT_HOTCOLD_SHADOW_CFLAGS := $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_HOTCOLD_SHADOW_L2
 HZ8_LARGE_DIRECT_HOTCOLD_CACHE_CFLAGS := $(HZ8_LARGE_DIRECT_MMAP_CFLAGS) -DH8_LARGE_DIRECT_HOTCOLD_CACHE_L1
+HZ8_LARGE_DIRECT_SHARDED_HOT_SHADOW_CFLAGS := $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_SHARDED_HOT_SHADOW_L1
 SRC := $(wildcard $(ROOT)/src/*.c)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 CORE_SRC := $(filter-out $(ROOT)/src/h8_preload_boundary.c,$(SRC))
@@ -129,6 +130,8 @@ bench-release-largedirecthotcoldshadow: $(ROOT)/h8_bench_release_largedirecthotc
 
 bench-release-largedirecthotcoldcache: $(ROOT)/h8_bench_release_largedirecthotcoldcache
 
+bench-release-largedirectshardedhotshadow: $(ROOT)/h8_bench_release_largedirectshardedhotshadow
+
 bench-release-hz9mediumlocalmagshadow: $(ROOT)/h8_bench_release_hz9mediumlocalmagshadow
 
 bench-release-mediumceiling-noslotstate: $(ROOT)/h8_bench_release_mediumceiling_noslotstate
@@ -174,6 +177,8 @@ preload-largedirectrecyclecache: $(ROOT)/libhakozuna_hz8_preload_largedirectrecy
 preload-largedirecthotcoldshadow: $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldshadow.so
 
 preload-largedirecthotcoldcache: $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldcache.so
+
+preload-largedirectshardedhotshadow: $(ROOT)/libhakozuna_hz8_preload_largedirectshardedhotshadow.so
 
 medium-v1-gate: $(ROOT)/h8_bench_release
 	$(ROOT)/scripts/run_medium_v1_gate.sh
@@ -229,6 +234,9 @@ $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldshadow.so: $(SRC) $(HEADERS)
 
 $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldcache.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_HOTCOLD_CACHE_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/libhakozuna_hz8_preload_largedirectshardedhotshadow.so: $(SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_SHARDED_HOT_SHADOW_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/libhakozuna_hz8_preload_mediumnolazy.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
@@ -350,6 +358,9 @@ $(ROOT)/h8_bench_release_largedirecthotcoldshadow: $(SRC) $(ROOT)/bench/h8_bench
 $(ROOT)/h8_bench_release_largedirecthotcoldcache: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_HOTCOLD_CACHE_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_bench_release_largedirectshardedhotshadow: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_SHARDED_HOT_SHADOW_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_bench_release_audit: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(BENCH_ATTR_CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -433,3 +444,4 @@ clean:
 	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirectrecyclecache.so $(ROOT)/h8_bench_release_largedirectrecyclecache
 	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldshadow.so $(ROOT)/h8_bench_release_largedirecthotcoldshadow
 	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirecthotcoldcache.so $(ROOT)/h8_bench_release_largedirecthotcoldcache
+	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirectshardedhotshadow.so $(ROOT)/h8_bench_release_largedirectshardedhotshadow

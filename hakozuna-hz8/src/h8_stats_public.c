@@ -140,6 +140,36 @@ void h8_stats_snapshot(H8Stats* out) {
       atomic_load_explicit(&h8g.direct_large_release_ns, memory_order_acquire);
   out->direct_large_raw_alloc_ns =
       atomic_load_explicit(&h8g.direct_large_raw_alloc_ns, memory_order_acquire);
+  out->direct_large_sharded_hot_hit_count = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_hit_count, memory_order_acquire);
+  out->direct_large_sharded_hot_store_count = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_store_count, memory_order_acquire);
+  out->direct_large_sharded_hot_raw_alloc_count = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_raw_alloc_count, memory_order_acquire);
+  out->direct_large_sharded_hot_reject_count = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_reject_count, memory_order_acquire);
+  out->direct_large_sharded_hot_exact_hit = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_exact_hit, memory_order_acquire);
+  out->direct_large_sharded_hot_near_hit = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_near_hit, memory_order_acquire);
+  out->direct_large_sharded_hot_oversize_bytes = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_oversize_bytes, memory_order_acquire);
+  out->direct_large_sharded_hot_scan_steps = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_scan_steps, memory_order_acquire);
+  out->direct_large_sharded_hot_bytes = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_bytes, memory_order_acquire);
+  out->direct_large_sharded_hot_peak_bytes = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_peak_bytes, memory_order_acquire);
+  out->direct_large_sharded_hot_max_shard_bytes = atomic_load_explicit(
+      &h8g.direct_large_sharded_hot_max_shard_bytes, memory_order_acquire);
+  for (size_t i = 0; i < 8; ++i) {
+    out->direct_large_sharded_hot_hit_by_shard[i] = atomic_load_explicit(
+        &h8g.direct_large_sharded_hot_hit_by_shard[i], memory_order_acquire);
+    out->direct_large_sharded_hot_store_by_shard[i] = atomic_load_explicit(
+        &h8g.direct_large_sharded_hot_store_by_shard[i], memory_order_acquire);
+    out->direct_large_sharded_hot_bytes_by_shard[i] = atomic_load_explicit(
+        &h8g.direct_large_sharded_hot_bytes_by_shard[i], memory_order_acquire);
+  }
 }
 
 H8Stats h8_stats(void) {
