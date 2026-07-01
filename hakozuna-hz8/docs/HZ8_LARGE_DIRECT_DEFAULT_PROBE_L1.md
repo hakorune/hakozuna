@@ -216,3 +216,154 @@ default promotion:
   reasonable if cross128 is part of the public MT matrix contract
   otherwise keep as opt-in LargeDirect profile
 ```
+
+## RSS Policy Shadow
+
+`LargeDirectRSSPolicyShadow-L1` adds counters without changing allocation
+behavior.
+
+```text
+direct_large_shadow:
+  alloc/free count
+  alloc/free payload bytes
+  live payload bytes
+  peak live payload bytes
+  cache hits / stores / retained bytes
+  size buckets:
+    0: <=80KiB
+    1: <=96KiB
+    2: <=112KiB
+    3: <=128KiB
+  free-to-next-alloc reuse distance:
+    0..1
+    2..7
+    8..31
+    32+
+```
+
+Initial linked-bench smoke:
+
+```text
+row:
+  cross128_r90
+  runs=2, threads=4, iters=5000
+
+direct_large_shadow:
+  alloc=19975
+  free=19975
+  alloc_bytes=1959095411
+  free_bytes=1959095411
+  live_bytes=0
+  live_peak=9810770
+  alloc_bucket=[5094,4967,5029,4885]
+  free_bucket=[5094,4967,5029,4885]
+  reuse_distance=[1968,8439,8716,842]
+```
+
+## RSS Policy Probes
+
+After the throughput probe, three opt-in payload policies were measured:
+
+```text
+profiles:
+  largedirectdefault:
+    system malloc/free payload
+
+  largedirectmmap:
+    mmap/munmap payload
+
+  largedirectpurgecache:
+    mmap payload + bounded dead mapping cache + payload purge on free
+
+  largedirectrecyclecache:
+    mmap payload + bounded dead mapping cache without purge
+```
+
+R5 linked-bench results:
+
+```text
+record:
+  bench_results/20260701T025517Z_large_direct_purgecache_probe/
+  bench_results/20260701T025734Z_large_direct_recyclecache_probe/
+
+cross128_r90:
+  largedirectdefault:
+    median:   3.286M ops/s
+    post RSS: 125.87MiB
+    peak RSS: 184.02MiB
+
+  largedirectmmap:
+    median:   150.0k ops/s
+    post RSS: 10.23MiB
+    peak RSS: 39.86MiB
+
+  largedirectpurgecache:
+    median:   506.2k ops/s
+    post RSS: 14.84MiB
+    peak RSS: 40.32MiB
+    cache:    hit=1,999,842 store=2,000,234 bytes=40,554,905
+
+  largedirectrecyclecache:
+    median:   1.459M ops/s
+    post RSS: 22.16MiB
+    peak RSS: 335.23MiB
+    cache:    hit=1,958,024 store=1,958,710 bytes=67,105,770
+
+cross128_r0:
+  largedirectdefault:
+    median:   5.012M ops/s
+    post RSS: 7.78MiB
+    peak RSS: 8.03MiB
+
+  largedirectmmap:
+    median:   174.7k ops/s
+    post RSS: 6.27MiB
+    peak RSS: 7.54MiB
+
+  largedirectpurgecache:
+    median:   504.2k ops/s
+    post RSS: 7.25MiB
+    peak RSS: 8.76MiB
+
+  largedirectrecyclecache:
+    median:   2.794M ops/s
+    post RSS: 7.73MiB
+    peak RSS: 8.16MiB
+```
+
+Read:
+
+```text
+mmap/munmap:
+  RSS improvement is real, but per-operation mapping cost destroys throughput.
+
+purge cache:
+  keeps RSS low, but purge/refault cost remains too high.
+
+recycle cache:
+  recovers part of the throughput, but still loses heavily to sysmalloc-backed
+  LargeDirect and worsens remote-heavy peak RSS in this R5.
+```
+
+Current decision:
+
+```text
+LargeDirectOwned:
+  profile evidence / paper probe
+
+default promotion:
+  HOLD
+
+cache policies:
+  HOLD
+```
+
+Read:
+
+```text
+all direct-large payload returned to zero live bytes in this smoke
+reuse distance is mostly short-to-medium, so a bounded recycle cache may be
+worth testing
+but public default promotion still depends on cross128 RSS policy, not just
+throughput
+```

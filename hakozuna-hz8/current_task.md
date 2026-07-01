@@ -111,34 +111,28 @@ System-large frees can pay medium lookup/global scan in mixed 16..131072 rows.
 ## Current Box
 
 ```text
-HZ8LargeDirectDefaultProbe-L1
+LargeDirectRSSPolicyShadow-L1
 
 scope:
-  add build targets for HZ8 default + H8_LARGE_DIRECT_OWNED_L1
-  add hot-path range guard so medium default paths are not taxed
-  run paired gates before any default promotion
+  keep HZ8 default as KeepRefill balanced default
+  keep LargeDirect as opt-in/profile evidence
+  add direct-large RSS/reuse policy counters
+  do not add a retained large cache yet
 
-targets:
-  preload-largedirectdefault
-  bench-release-largedirectdefault
+target:
+  understand whether cross128 throughput can be kept while lowering RSS
 
-primary rows:
-  cross128_r90
-  cross128_r0
+counters:
+  direct-large alloc/free count
+  payload bytes allocated/freed
+  live payload bytes and peak
+  size bucket alloc/free counts
+  free-to-next-alloc reuse-distance buckets
 
-regression rows:
-  small_interleaved_remote90
-  main_interleaved_r90
-  medium_interleaved_r50
-  guard_local0
-  main_local0
-  medium_local0
-
-promotion bar:
-  cross128 improves materially
-  small/main/medium regressions <= 2%
-  RSS contract remains acceptable
-  fail-closed owned INVALID behavior remains clean
+non-goals:
+  no default promotion
+  no large cache behavior yet
+  no medium/small behavior changes
 ```
 
 Current read:
@@ -153,7 +147,59 @@ regression:
 
 remaining decision:
   cross128_r90 RSS rises while throughput improves about 45x
-  default promotion depends on accepting that RSS tradeoff
+  default promotion is HOLD while HZ8 is positioned as low-RSS balanced
+```
+
+RSS policy probes:
+
+```text
+record:
+  bench_results/20260701T025517Z_large_direct_purgecache_probe/
+  bench_results/20260701T025734Z_large_direct_recyclecache_probe/
+
+LargeDirect sysmalloc-backed default candidate:
+  cross128_r90 median: 3.286M
+  post RSS:            125.87MiB
+  peak RSS:            184.02MiB
+
+mmap/munmap payload:
+  cross128_r90 median: 150.0k
+  post RSS:            10.23MiB
+  peak RSS:            39.86MiB
+  read:                RSS good, throughput unacceptable
+
+mmap + purge cache:
+  cross128_r90 median: 506.2k
+  post RSS:            14.84MiB
+  peak RSS:            40.32MiB
+  read:                RSS good, purge/refault cost too high
+
+mmap + recycle cache:
+  cross128_r90 median: 1.459M
+  post RSS:            22.16MiB
+  peak RSS:            335.23MiB
+  read:                throughput better than purge, still far below sysmalloc
+                       and peak RSS regresses
+```
+
+Decision:
+
+```text
+LargeDirectOwned:
+  keep as opt-in/profile evidence
+
+LargeDirect default promotion:
+  HOLD
+
+RSS policy variants:
+  mmap: HOLD
+  purge cache: HOLD
+  recycle cache: HOLD
+
+paper wording:
+  LargeDirect probe closes cross128 throughput but exposes a throughput/RSS
+  tradeoff; bounded cache attempts did not yet produce a default-quality
+  combined point.
 ```
 
 ## Hold

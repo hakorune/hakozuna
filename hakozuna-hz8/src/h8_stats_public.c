@@ -36,6 +36,38 @@ void h8_stats_snapshot(H8Stats* out) {
       atomic_load_explicit(&h8g.orphan_handoff_count, memory_order_acquire);
   out->handoff_success_count =
       atomic_load_explicit(&h8g.handoff_success_count, memory_order_acquire);
+  out->direct_large_alloc_count =
+      atomic_load_explicit(&h8g.direct_large_alloc_count, memory_order_acquire);
+  out->direct_large_free_count =
+      atomic_load_explicit(&h8g.direct_large_free_count, memory_order_acquire);
+  out->direct_large_alloc_bytes =
+      atomic_load_explicit(&h8g.direct_large_alloc_bytes, memory_order_acquire);
+  out->direct_large_free_bytes =
+      atomic_load_explicit(&h8g.direct_large_free_bytes, memory_order_acquire);
+  out->direct_large_live_bytes =
+      atomic_load_explicit(&h8g.direct_large_live_bytes, memory_order_acquire);
+  out->direct_large_live_peak_bytes = atomic_load_explicit(
+      &h8g.direct_large_live_peak_bytes, memory_order_acquire);
+  for (size_t i = 0; i < 4; ++i) {
+    out->direct_large_alloc_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_alloc_bucket[i], memory_order_acquire);
+    out->direct_large_free_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_free_bucket[i], memory_order_acquire);
+  }
+  out->direct_large_reuse_distance_0_1 = atomic_load_explicit(
+      &h8g.direct_large_reuse_distance_0_1, memory_order_acquire);
+  out->direct_large_reuse_distance_2_7 = atomic_load_explicit(
+      &h8g.direct_large_reuse_distance_2_7, memory_order_acquire);
+  out->direct_large_reuse_distance_8_31 = atomic_load_explicit(
+      &h8g.direct_large_reuse_distance_8_31, memory_order_acquire);
+  out->direct_large_reuse_distance_32p = atomic_load_explicit(
+      &h8g.direct_large_reuse_distance_32p, memory_order_acquire);
+  out->direct_large_cache_hit_count = atomic_load_explicit(
+      &h8g.direct_large_cache_hit_count, memory_order_acquire);
+  out->direct_large_cache_store_count = atomic_load_explicit(
+      &h8g.direct_large_cache_store_count, memory_order_acquire);
+  out->direct_large_cache_bytes =
+      atomic_load_explicit(&h8g.direct_large_cache_bytes, memory_order_acquire);
 }
 
 H8Stats h8_stats(void) {

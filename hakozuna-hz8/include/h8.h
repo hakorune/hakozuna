@@ -38,6 +38,21 @@ typedef struct H8Stats {
   size_t pending_dequeue_count;
   size_t orphan_handoff_count;
   size_t handoff_success_count;
+  size_t direct_large_alloc_count;
+  size_t direct_large_free_count;
+  size_t direct_large_alloc_bytes;
+  size_t direct_large_free_bytes;
+  size_t direct_large_live_bytes;
+  size_t direct_large_live_peak_bytes;
+  size_t direct_large_alloc_bucket[4];
+  size_t direct_large_free_bucket[4];
+  size_t direct_large_reuse_distance_0_1;
+  size_t direct_large_reuse_distance_2_7;
+  size_t direct_large_reuse_distance_8_31;
+  size_t direct_large_reuse_distance_32p;
+  size_t direct_large_cache_hit_count;
+  size_t direct_large_cache_store_count;
+  size_t direct_large_cache_bytes;
 } H8Stats;
 
 typedef struct H8DebugStats {
