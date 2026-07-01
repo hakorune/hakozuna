@@ -141,7 +141,7 @@ done
       echo "## ${row}_${kind}"
       echo
       echo '```text'
-      grep -E 'summary|class_map_id|medium_geometry_id|medium_arena_id|medium_residency_id|throughput median|steady_work|post_rss median|peak_rss median|page_faults|interleaved_phase_ms|direct_large_shadow|medium_stats|medium_residual_budget' "$file" || true
+      grep -E 'summary|class_map_id|medium_geometry_id|medium_arena_id|medium_residency_id|throughput median|steady_work|post_rss median|peak_rss median|page_faults|interleaved_phase_ms|direct_large_shadow|direct_large_hotcold|medium_stats|medium_residual_budget' "$file" || true
       echo '```'
       echo
     done

@@ -68,6 +68,78 @@ void h8_stats_snapshot(H8Stats* out) {
       &h8g.direct_large_cache_store_count, memory_order_acquire);
   out->direct_large_cache_bytes =
       atomic_load_explicit(&h8g.direct_large_cache_bytes, memory_order_acquire);
+  for (size_t i = 0; i < 8; ++i) {
+    out->direct_large_hot_hit_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_hot_hit_bucket[i], memory_order_acquire);
+    out->direct_large_hot_store_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_hot_store_bucket[i], memory_order_acquire);
+    out->direct_large_hot_reject_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_hot_reject_bucket[i], memory_order_acquire);
+  }
+  out->direct_large_hot_exact_hit = atomic_load_explicit(
+      &h8g.direct_large_hot_exact_hit, memory_order_acquire);
+  out->direct_large_hot_near_hit = atomic_load_explicit(
+      &h8g.direct_large_hot_near_hit, memory_order_acquire);
+  out->direct_large_hot_oversize_bytes = atomic_load_explicit(
+      &h8g.direct_large_hot_oversize_bytes, memory_order_acquire);
+  out->direct_large_hot_scan_steps = atomic_load_explicit(
+      &h8g.direct_large_hot_scan_steps, memory_order_acquire);
+  out->direct_large_hot_bytes =
+      atomic_load_explicit(&h8g.direct_large_hot_bytes, memory_order_acquire);
+  out->direct_large_hot_peak_bytes = atomic_load_explicit(
+      &h8g.direct_large_hot_peak_bytes, memory_order_acquire);
+  out->direct_large_cold_bytes =
+      atomic_load_explicit(&h8g.direct_large_cold_bytes, memory_order_acquire);
+  out->direct_large_cold_peak_bytes = atomic_load_explicit(
+      &h8g.direct_large_cold_peak_bytes, memory_order_acquire);
+  out->direct_large_hot_to_cold_count = atomic_load_explicit(
+      &h8g.direct_large_hot_to_cold_count, memory_order_acquire);
+  out->direct_large_lazy_purge_count = atomic_load_explicit(
+      &h8g.direct_large_lazy_purge_count, memory_order_acquire);
+  out->direct_large_lazy_purge_bytes = atomic_load_explicit(
+      &h8g.direct_large_lazy_purge_bytes, memory_order_acquire);
+  out->direct_large_cold_release_count = atomic_load_explicit(
+      &h8g.direct_large_cold_release_count, memory_order_acquire);
+  out->direct_large_cold_release_bytes = atomic_load_explicit(
+      &h8g.direct_large_cold_release_bytes, memory_order_acquire);
+  out->direct_large_raw_alloc_count = atomic_load_explicit(
+      &h8g.direct_large_raw_alloc_count, memory_order_acquire);
+  out->direct_large_shadow_cache_hit_count = atomic_load_explicit(
+      &h8g.direct_large_shadow_cache_hit_count, memory_order_acquire);
+  out->direct_large_free_to_hot_count = atomic_load_explicit(
+      &h8g.direct_large_free_to_hot_count, memory_order_acquire);
+  out->direct_large_free_to_release_count = atomic_load_explicit(
+      &h8g.direct_large_free_to_release_count, memory_order_acquire);
+  out->direct_large_cache_lock_acquire_count = atomic_load_explicit(
+      &h8g.direct_large_cache_lock_acquire_count, memory_order_acquire);
+  out->direct_large_cache_lock_wait_ns = atomic_load_explicit(
+      &h8g.direct_large_cache_lock_wait_ns, memory_order_acquire);
+  out->direct_large_cache_lock_hold_ns = atomic_load_explicit(
+      &h8g.direct_large_cache_lock_hold_ns, memory_order_acquire);
+  out->direct_large_hot_miss_empty = atomic_load_explicit(
+      &h8g.direct_large_hot_miss_empty, memory_order_acquire);
+  out->direct_large_hot_miss_too_small = atomic_load_explicit(
+      &h8g.direct_large_hot_miss_too_small, memory_order_acquire);
+  out->direct_large_cold_miss_empty = atomic_load_explicit(
+      &h8g.direct_large_cold_miss_empty, memory_order_acquire);
+  out->direct_large_cold_miss_too_small = atomic_load_explicit(
+      &h8g.direct_large_cold_miss_too_small, memory_order_acquire);
+  for (size_t i = 0; i < 8; ++i) {
+    out->direct_large_hot_hit_by_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_hot_hit_by_bucket[i], memory_order_acquire);
+    out->direct_large_cold_hit_by_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_cold_hit_by_bucket[i], memory_order_acquire);
+    out->direct_large_demote_by_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_demote_by_bucket[i], memory_order_acquire);
+    out->direct_large_release_by_bucket[i] = atomic_load_explicit(
+        &h8g.direct_large_release_by_bucket[i], memory_order_acquire);
+  }
+  out->direct_large_purge_ns =
+      atomic_load_explicit(&h8g.direct_large_purge_ns, memory_order_acquire);
+  out->direct_large_release_ns =
+      atomic_load_explicit(&h8g.direct_large_release_ns, memory_order_acquire);
+  out->direct_large_raw_alloc_ns =
+      atomic_load_explicit(&h8g.direct_large_raw_alloc_ns, memory_order_acquire);
 }
 
 H8Stats h8_stats(void) {

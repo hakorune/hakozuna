@@ -15,13 +15,22 @@
 #error H8_LARGE_DIRECT_RECYCLE_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
 #endif
 
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1) && \
+    !defined(H8_LARGE_DIRECT_MMAP_PAYLOAD_L1)
+#error H8_LARGE_DIRECT_HOTCOLD_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
+#endif
+
 #if defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
     !defined(H8_LARGE_DIRECT_MMAP_PAYLOAD_L1)
 #error H8_LARGE_DIRECT_PURGE_CACHE_L1 requires H8_LARGE_DIRECT_MMAP_PAYLOAD_L1
 #endif
 
-#if defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
-    defined(H8_LARGE_DIRECT_RECYCLE_CACHE_L1)
+#if (defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
+     defined(H8_LARGE_DIRECT_RECYCLE_CACHE_L1)) || \
+    (defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) && \
+     defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)) || \
+    (defined(H8_LARGE_DIRECT_RECYCLE_CACHE_L1) && \
+     defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1))
 #error choose only one direct-large cache policy
 #endif
 
@@ -30,9 +39,21 @@
 #define H8_DIRECT_LARGE_CACHE_L1 1
 #endif
 
+#if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2) || \
+    defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+#define H8_DIRECT_LARGE_HOTCOLD_L1 1
+#endif
+
 #if !defined(H8_DIRECT_LARGE_PURGE_CACHE_BYTES)
 #define H8_DIRECT_LARGE_PURGE_CACHE_BYTES (64u * 1024u * 1024u)
 #endif
+
+#define H8_DIRECT_LARGE_HOTCOLD_CLASSES 8u
+#define H8_DIRECT_LARGE_HOTCOLD_UNIT (8u * 1024u)
+#define H8_DIRECT_LARGE_HOTCOLD_MIN (72u * 1024u)
+#define H8_DIRECT_LARGE_HOTCOLD_HOT_BYTES (64u * 1024u * 1024u)
+#define H8_DIRECT_LARGE_HOTCOLD_HOT_CLASS_BYTES (8u * 1024u * 1024u)
+#define H8_DIRECT_LARGE_HOTCOLD_COLD_BYTES (64u * 1024u * 1024u)
 
 typedef struct H8DirectLarge {
   uint64_t magic;
@@ -75,7 +96,18 @@ static size_t h8_direct_large_payload_capacity(const H8DirectLarge* node) {
   return node->usable_size;
 }
 
-#if defined(H8_LARGE_DIRECT_PURGE_CACHE_L1)
+static size_t h8_direct_large_mapped_size_for(size_t size) {
+  size_t bytes = size + H8_DIRECT_LARGE_HEADER_BYTES;
+#if defined(H8_LARGE_DIRECT_MMAP_PAYLOAD_L1)
+  return (bytes + H8_DIRECT_LARGE_PAGE_BYTES - 1u) &
+         ~(size_t)(H8_DIRECT_LARGE_PAGE_BYTES - 1u);
+#else
+  return bytes;
+#endif
+}
+
+#if defined(H8_LARGE_DIRECT_PURGE_CACHE_L1) || \
+    defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
 static void h8_direct_large_purge_payload(H8DirectLarge* node) {
   uintptr_t begin = (uintptr_t)node->user_ptr;
   uintptr_t end = begin + h8_direct_large_payload_capacity(node);
@@ -112,7 +144,28 @@ static void h8_direct_large_update_live_peak(size_t live) {
   }
 }
 
+static void h8_direct_large_remove_locked(H8DirectLarge* node);
+
+#if defined(H8_DIRECT_LARGE_HOTCOLD_L1)
+static void h8_direct_large_update_peak(atomic_size_t* peak_counter,
+                                        size_t value) {
+  size_t peak = atomic_load_explicit(peak_counter, memory_order_relaxed);
+  while (value > peak &&
+         !atomic_compare_exchange_weak_explicit(
+             peak_counter, &peak, value, memory_order_release,
+             memory_order_relaxed)) {
+  }
+}
+#endif
+
+#if defined(H8_DIRECT_LARGE_HOTCOLD_L1)
+#include "h8_direct_large_hotcold.inc"
+#endif
+
 static void h8_direct_large_record_alloc(size_t size) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2)
+  h8_direct_large_shadow_record_alloc(size);
+#endif
   size_t bucket = h8_direct_large_bucket(size);
   size_t event =
       atomic_fetch_add_explicit(&h8g.direct_large_event_epoch, 1,
@@ -149,6 +202,9 @@ static void h8_direct_large_record_alloc(size_t size) {
 }
 
 static void h8_direct_large_record_free(size_t size) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_SHADOW_L2)
+  h8_direct_large_shadow_record_free(size);
+#endif
   size_t bucket = h8_direct_large_bucket(size);
   size_t event =
       atomic_fetch_add_explicit(&h8g.direct_large_event_epoch, 1,
@@ -310,7 +366,22 @@ void* h8_direct_large_malloc(size_t size) {
       size > SIZE_MAX - H8_DIRECT_LARGE_HEADER_BYTES) {
     return NULL;
   }
-  size_t mapped_size = size + H8_DIRECT_LARGE_HEADER_BYTES;
+  size_t mapped_size = h8_direct_large_mapped_size_for(size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  h8_direct_large_lock_hotcold();
+  uint64_t hold_start = h8_direct_large_now_ns();
+  H8DirectLarge* hotcold = h8_direct_large_hotcold_pop_locked(size);
+  if (hotcold) {
+    hotcold->requested_size = size;
+    hotcold->usable_size = size;
+    h8_direct_large_unlock_hotcold(hold_start);
+    h8_direct_large_record_alloc(size);
+    return hotcold->user_ptr;
+  }
+  h8_direct_large_unlock_hotcold(hold_start);
+  atomic_fetch_add_explicit(&h8g.direct_large_raw_alloc_count, 1,
+                            memory_order_relaxed);
+#endif
 #if defined(H8_DIRECT_LARGE_CACHE_L1)
   h8_platform_mutex_lock(&h8_direct_large_lock);
   H8DirectLarge* cached = h8_direct_large_cache_pop_locked(size);
@@ -324,7 +395,15 @@ void* h8_direct_large_malloc(size_t size) {
   }
   h8_platform_mutex_unlock(&h8_direct_large_lock);
 #endif
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  uint64_t raw_start = h8_platform_now_ns();
+#endif
   uint8_t* raw = h8_direct_large_alloc_raw(mapped_size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  atomic_fetch_add_explicit(&h8g.direct_large_raw_alloc_ns,
+                            (size_t)(h8_platform_now_ns() - raw_start),
+                            memory_order_relaxed);
+#endif
   if (!raw) {
     return NULL;
   }
@@ -350,19 +429,39 @@ bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
   if (!ptr || !h8_direct_large_maybe_contains(ptr)) {
     return false;
   }
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  h8_direct_large_lock_hotcold();
+  uint64_t hold_start = h8_direct_large_now_ns();
+#else
   h8_platform_mutex_lock(&h8_direct_large_lock);
+#endif
   bool exact = false;
   H8DirectLarge* node = h8_direct_large_find_locked(ptr, &exact);
   if (!node) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+    h8_direct_large_unlock_hotcold(hold_start);
+#else
     h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
     return false;
   }
   *owned_out = true;
   if (node->magic != H8_DIRECT_LARGE_MAGIC_LIVE || !exact) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+    h8_direct_large_unlock_hotcold(hold_start);
+#else
     h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
     return false;
   }
   size_t size = node->usable_size;
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  if (h8_direct_large_hotcold_push_locked(node)) {
+    h8_direct_large_unlock_hotcold(hold_start);
+    h8_direct_large_record_free(size);
+    return true;
+  }
+#endif
 #if defined(H8_DIRECT_LARGE_CACHE_L1)
   if (h8_direct_large_cache_push_locked(node)) {
     h8_platform_mutex_unlock(&h8_direct_large_lock);
@@ -373,9 +472,21 @@ bool h8_direct_large_free_inner(void* ptr, bool* owned_out) {
   h8_direct_large_remove_locked(node);
   size_t mapped_size = node->mapped_size;
   node->magic = H8_DIRECT_LARGE_MAGIC_DEAD;
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  h8_direct_large_unlock_hotcold(hold_start);
+#else
   h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
   h8_direct_large_record_free(size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  uint64_t free_start = h8_platform_now_ns();
+#endif
   h8_direct_large_free_raw(node, mapped_size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  atomic_fetch_add_explicit(&h8g.direct_large_release_ns,
+                            (size_t)(h8_platform_now_ns() - free_start),
+                            memory_order_relaxed);
+#endif
   return true;
 }
 
@@ -384,18 +495,38 @@ bool h8_direct_large_free_exact_inner(void* ptr, bool* owned_out) {
   if (!ptr || !h8_direct_large_maybe_contains(ptr)) {
     return false;
   }
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  h8_direct_large_lock_hotcold();
+  uint64_t hold_start = h8_direct_large_now_ns();
+#else
   h8_platform_mutex_lock(&h8_direct_large_lock);
+#endif
   H8DirectLarge* node = h8_direct_large_find_exact_locked(ptr);
   if (!node) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+    h8_direct_large_unlock_hotcold(hold_start);
+#else
     h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
     return false;
   }
   *owned_out = true;
   if (node->magic != H8_DIRECT_LARGE_MAGIC_LIVE) {
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+    h8_direct_large_unlock_hotcold(hold_start);
+#else
     h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
     return false;
   }
   size_t size = node->usable_size;
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  if (h8_direct_large_hotcold_push_locked(node)) {
+    h8_direct_large_unlock_hotcold(hold_start);
+    h8_direct_large_record_free(size);
+    return true;
+  }
+#endif
 #if defined(H8_DIRECT_LARGE_CACHE_L1)
   if (h8_direct_large_cache_push_locked(node)) {
     h8_platform_mutex_unlock(&h8_direct_large_lock);
@@ -406,9 +537,21 @@ bool h8_direct_large_free_exact_inner(void* ptr, bool* owned_out) {
   h8_direct_large_remove_locked(node);
   size_t mapped_size = node->mapped_size;
   node->magic = H8_DIRECT_LARGE_MAGIC_DEAD;
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  h8_direct_large_unlock_hotcold(hold_start);
+#else
   h8_platform_mutex_unlock(&h8_direct_large_lock);
+#endif
   h8_direct_large_record_free(size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  uint64_t free_start = h8_platform_now_ns();
+#endif
   h8_direct_large_free_raw(node, mapped_size);
+#if defined(H8_LARGE_DIRECT_HOTCOLD_CACHE_L1)
+  atomic_fetch_add_explicit(&h8g.direct_large_release_ns,
+                            (size_t)(h8_platform_now_ns() - free_start),
+                            memory_order_relaxed);
+#endif
   return true;
 }
 

@@ -358,12 +358,326 @@ cache policies:
   HOLD
 ```
 
+Next direction:
+
+```text
+LargeDirectHotColdCacheShadow-L2:
+  GO as research
+
+LargeDirect sysmalloc-backed default:
+  HOLD
+
+benchmark-row adaptive policy:
+  HOLD
+```
+
+## Hot/Cold Cache Research Lane
+
+The current four-policy probe shows a clean Pareto split:
+
+```text
+sysmalloc-backed LargeDirect:
+  high throughput, higher RSS
+
+mmap/munmap:
+  low RSS, unacceptable throughput
+
+purge-on-free cache:
+  low RSS, still too much purge/refault cost
+
+recycle-only cache:
+  partial throughput recovery, but remote-heavy peak RSS regresses
+```
+
+The next research lane is not a default change. It is a shadow/evidence lane
+for a two-tier direct-large cache:
+
+```text
+hot resident cache:
+  exact or near-exact page-rounded size classes
+  small per-class cap
+  total hot cap
+  no purge on immediate free
+
+cold lazy cache:
+  receives hot evictions
+  may use MADV_FREE / MEM_RESET-style lazy purge
+  hard cap
+
+release:
+  cold overflow is unmapped / released
+```
+
+Required counters:
+
+```text
+direct_large_cache_hit_bucket[class]
+direct_large_cache_store_bucket[class]
+direct_large_cache_reject_cap_bucket[class]
+
+direct_large_cache_exact_hit
+direct_large_cache_near_hit
+direct_large_cache_oversize_bytes
+direct_large_cache_scan_steps
+
+direct_large_hot_bytes
+direct_large_hot_peak_bytes
+direct_large_cold_bytes
+direct_large_cold_peak_bytes
+
+direct_large_demote_hot_to_cold
+direct_large_lazy_purge_count
+direct_large_lazy_purge_bytes
+
+direct_large_release_from_cold
+direct_large_release_bytes
+
+direct_large_alloc_raw_count
+direct_large_alloc_cache_hit_count
+direct_large_free_to_hot
+direct_large_free_to_release
+```
+
+Observed shadow:
+
+```text
+record:
+  bench_results/20260701T042501Z_large_direct_hotcold_shadow_l2/
+
+model:
+  8KiB-granularity classes from 72KiB through 128KiB
+  hot total cap:       64MiB
+  hot per-class cap:   8MiB
+  cold total cap:      64MiB
+
+cross128_r90:
+  alloc:       2,000,234
+  shadow_hit:  1,999,289
+  raw_alloc:   945
+  exact_hit:   1,997,990
+  near_hit:    1,299
+  oversize:    20,182,078 bytes
+  hot_peak:    66,758,848 bytes
+  cold_peak:   30,696,320 bytes
+  demote:      270
+  release:     0
+
+cross128_r0:
+  alloc:       2,000,735
+  shadow_hit:  2,000,675
+  raw_alloc:   60
+  exact_hit:   2,000,484
+  near_hit:    191
+  hot_peak:    6,172,416 bytes
+  cold_peak:   0
+```
+
 Read:
 
 ```text
-all direct-large payload returned to zero live bytes in this smoke
-reuse distance is mostly short-to-medium, so a bounded recycle cache may be
-worth testing
-but public default promotion still depends on cross128 RSS policy, not just
-throughput
+hot/cold shape:
+  strong hit-rate evidence
+
+oversize reuse:
+  low enough to remain plausible with 8KiB classes
+
+cold tier:
+  material in remote-heavy row, but fits inside the modeled cap
+
+behavior:
+  not implemented yet
+  shadow target adds lock/counter overhead, so throughput is not a promotion
+  metric
 ```
+
+## Hot/Cold Cache Behavior Probe
+
+The shadow model was implemented as an opt-in behavior target:
+
+```text
+target:
+  bench-release-largedirecthotcoldcache
+
+backend:
+  mmap payload
+  hot resident cache
+  cold purged mapping cache
+  cold hard release on cap overflow
+```
+
+R5 result:
+
+```text
+record:
+  bench_results/20260701T043525Z_large_direct_hotcold_cache_l1/
+
+cross128_r90:
+  largedirectdefault:
+    median:   3.294M ops/s
+    post RSS: 94.02MiB
+    peak RSS: 142.46MiB
+
+  hotcoldcache:
+    median:   1.354M ops/s
+    post RSS: 27.88MiB
+    peak RSS: 202.42MiB
+    cache:    hit=1,952,706 store=2,000,234 bytes=133,795,840
+    churn:    demote=47,667 release=46,481 raw_alloc=47,528
+
+cross128_r0:
+  largedirectdefault:
+    median:   4.517M ops/s
+    post RSS: 7.80MiB
+    peak RSS: 8.08MiB
+
+  hotcoldcache:
+    median:   2.372M ops/s
+    post RSS: 7.82MiB
+    peak RSS: 8.00MiB
+```
+
+Decision:
+
+```text
+HotColdCache-L1:
+  HOLD
+
+why:
+  high hit rate is real, but global lock + demote/purge/release churn costs too
+  much
+  r90 post RSS improves, but peak RSS regresses and throughput is far below
+  sysmalloc-backed LargeDirect
+
+next:
+  do not promote this behavior
+  if revisited, reduce churn before changing default:
+    lower release frequency
+    shard cache lock
+    avoid purge on hot/cold oscillation
+```
+
+## Hot/Cold Counter Follow-up
+
+Additional diagnostic counters were added after the first behavior result:
+
+```text
+record:
+  bench_results/20260701T044331Z_large_direct_hotcold_counter_l2/
+
+cross128_r90:
+  throughput median: 708.7k ops/s
+  lock_acquire:      5,874,298
+  lock_wait_ns:      55.508s
+  lock_hold_ns:      2.436s
+  hot misses:
+    empty:           73,823
+    too_small:       21,961
+  cold misses:
+    empty:           94,643
+    too_small:       66
+  demote:            95,256
+  release:           93,649
+  purge_ns:          0.642s
+  release_ns:        0.662s
+  raw_alloc_ns:      0.845s
+
+cross128_r0:
+  lock_acquire:      5,876,056
+  lock_wait_ns:      36.560s
+  lock_hold_ns:      0.721s
+  demote/release:    0 / 0
+```
+
+Read:
+
+```text
+primary blocker:
+  global direct-large cache lock contention
+
+secondary blocker:
+  hot/cold churn in remote-heavy row
+
+cold tier:
+  almost no useful cold hits in the measured row
+  most cold activity becomes purge/release overhead
+
+timing counters:
+  diagnostic only; they make the measured build slower
+```
+
+Next design implication:
+
+```text
+do not continue tuning the current global-lock HotColdCache-L1 shape
+
+if the lane is reopened:
+  first split or shard the hot cache
+  avoid eager hot->cold purge/release oscillation
+  consider hot-only bounded cache before restoring a cold tier
+```
+
+Promotion gate for a future behavior candidate:
+
+```text
+cross128_r90:
+  throughput >= 60..70% of sysmalloc-backed LargeDirect
+  or at least 10x over default HZ8 baseline
+
+RSS:
+  peak/post RSS must stay within an explicit low-RSS product contract
+
+regression:
+  small_interleaved_remote90 <= 2%
+  main_interleaved_r90 <= 2%
+  medium_interleaved_r50 <= 2%
+  guard/main/medium local <= 2%
+
+safety:
+  owned INVALID fail-closed
+  interior/stale/double free rejected
+  exact pointer free only
+```
+
+Paper framing:
+
+```text
+HZ8 default:
+  balanced low-RSS allocator
+
+LargeDirectOwned:
+  shows cross128 is solvable at the large/direct boundary
+
+default promotion:
+  remains a product RSS/throughput tradeoff, not a correctness blocker
+```
+
+## Current Disposition
+
+```text
+HZ8 default:
+  unchanged
+  KeepRefill balanced default remains the public Linux default
+
+LargeDirectOwned:
+  keep as opt-in / profile / paper evidence
+  do not promote to default without a measured RSS/throughput Pareto point
+
+HotColdCache-L1:
+  HOLD
+  high cache hit rate is real
+  global-lock contention and hot/cold churn make this shape non-promotable
+
+current global-lock HotCold cache:
+  closed as a default lane
+  keep build targets for diagnostics and regression evidence only
+
+next possible research:
+  LargeDirectShardedHotCacheShadow-L1
+  start with a sharded or thread-local hot resident cache
+  add a cold tier only after hot-cache lock contention is solved
+```
+
+Do not tune the current global-lock HotColdCache-L1 shape further. The counter
+follow-up shows that the primary blocker is not hit rate; it is serialized cache
+traffic. A future candidate should first remove that serialization, then measure
+whether a cold tier is still useful.

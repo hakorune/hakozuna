@@ -111,28 +111,36 @@ System-large frees can pay medium lookup/global scan in mixed 16..131072 rows.
 ## Current Box
 
 ```text
-LargeDirectRSSPolicyShadow-L1
+LargeDirectHotColdCacheCloseout-L1
 
 scope:
   keep HZ8 default as KeepRefill balanced default
   keep LargeDirect as opt-in/profile evidence
-  add direct-large RSS/reuse policy counters
-  do not add a retained large cache yet
+  do not promote sysmalloc-backed LargeDirect to default
+  close the current global-lock HotCold cache experiment
 
 target:
-  understand whether cross128 throughput can be kept while lowering RSS
+  record why the current HotCold shape is not default-quality
+  keep the source buildable for evidence/profiling
+  define the next lane without changing default behavior
 
-counters:
-  direct-large alloc/free count
-  payload bytes allocated/freed
-  live payload bytes and peak
-  size bucket alloc/free counts
-  free-to-next-alloc reuse-distance buckets
+default:
+  HZ8-v2 KeepRefill balanced default remains unchanged
+
+opt-in:
+  LargeDirectOwned remains profile / paper evidence
+  HotColdCache-L1 remains diagnostic evidence only
+
+next lane, if reopened:
+  LargeDirectShardedHotCacheShadow-L1
+  hot-cache sharding first
+  cold tier optional and less eager
 
 non-goals:
   no default promotion
-  no large cache behavior yet
+  no benchmark-row auto detection
   no medium/small behavior changes
+  no further tuning of the current global-lock HotColdCache-L1 shape
 ```
 
 Current read:
@@ -202,9 +210,113 @@ paper wording:
   combined point.
 ```
 
+Next research gate:
+
+```text
+LargeDirectHotColdCacheShadow-L2:
+  implemented as build-target shadow
+
+record:
+  bench_results/20260701T042501Z_large_direct_hotcold_shadow_l2/
+
+cross128_r90 shadow:
+  alloc:       2,000,234
+  shadow_hit:  1,999,289
+  raw_alloc:   945
+  exact_hit:   1,997,990
+  near_hit:    1,299
+  oversize:    20,182,078 bytes
+  hot_peak:    66,758,848 bytes
+  cold_peak:   30,696,320 bytes
+  demote:      270
+  release:     0
+
+cross128_r0 shadow:
+  alloc:       2,000,735
+  shadow_hit:  2,000,675
+  raw_alloc:   60
+  hot_peak:    6,172,416 bytes
+  cold_peak:   0
+
+read:
+  hot/cold cache shape has strong hit-rate evidence
+  current measurement is shadow-only; throughput includes shadow lock overhead
+  next behavior candidate should be opt-in, not default
+
+LargeDirectHotColdCache-L1:
+  implemented as opt-in behavior target
+  disposition: HOLD
+
+record:
+  bench_results/20260701T043525Z_large_direct_hotcold_cache_l1/
+
+cross128_r90 behavior:
+  largedirectdefault median: 3.294M
+  hotcoldcache median:       1.354M
+  ratio:                     0.411
+  post RSS:                  94.02MiB -> 27.88MiB
+  peak RSS:                  142.46MiB -> 202.42MiB
+  cache hit:                 1,952,706 / 2,000,234
+  raw alloc:                 47,528
+  demote/release:            47,667 / 46,481
+
+cross128_r0 behavior:
+  largedirectdefault median: 4.517M
+  hotcoldcache median:       2.372M
+  ratio:                     0.525
+  RSS:                       near parity
+
+read:
+  behavior confirms high reuse, but global lock + demote/purge/release churn
+  costs too much
+  post RSS improves in r90, but peak RSS and throughput fail default gates
+  HotColdCache-L1 is HOLD, not a promotion candidate
+
+counter follow-up:
+  bench_results/20260701T044331Z_large_direct_hotcold_counter_l2/
+
+  cross128_r90:
+    throughput median: 708.7k
+    lock_acquire:      5,874,298
+    lock_wait_ns:      55.508s
+    lock_hold_ns:      2.436s
+    miss_hot_empty:    73,823
+    miss_hot_small:    21,961
+    miss_cold_empty:   94,643
+    miss_cold_small:   66
+    demote:            95,256
+    release:           93,649
+    purge_ns:          0.642s
+    release_ns:        0.662s
+    raw_alloc_ns:      0.845s
+
+  read:
+    added timing counters are diagnostic and make this build slower
+    main blocker is global cache lock contention
+    secondary blocker is hot/cold churn: many demote+release events
+    cold reuse is tiny, so cold tier mostly adds purge/release cost
+
+next design:
+  do not tune this global-lock cache directly
+  if continuing, redesign around sharded hot cache first
+  make cold tier optional or much less eager
+
+LargeDirect default promotion:
+  HOLD until a measured Pareto point exists
+```
+
 ## Hold
 
 ```text
+LargeDirectHotColdCache-L1:
+  HOLD
+  evidence target only
+  global-lock shape is closed
+
+LargeDirect default promotion:
+  HOLD
+  no measured low-RSS/high-throughput Pareto point yet
+
 HZ9:
   keep as lab architecture lane
   do not start until HZ8 large/direct probe is resolved
