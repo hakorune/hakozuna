@@ -41,6 +41,8 @@ bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,
                                             uintptr_t addr);
+bool h9_segment_local_cache_debug_free_addr_fast(uint32_t class_id,
+                                                 uintptr_t addr);
 bool h9_segment_local_cache_debug_active_take_addr(uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_active_free_addr(uintptr_t addr);
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id);

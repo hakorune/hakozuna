@@ -150,6 +150,10 @@ known_addr mode:
   take/free_allocated with base + slot * slot_size address generation
   approximates the eventual local hot-path shape
 
+fast_addr mode:
+  take_addr/free_addr_fast
+  uses p2 shift/mask and non-p2 two-slot exact decode
+
 table_addr mode:
   known_addr plus debug table route lookup
   estimates classless route discovery overhead
@@ -285,48 +289,56 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_active_addr
+  20260703T_segment_api_sweep_fast_addr
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 341.7M ops/s
-  class1 339.2M ops/s
-  class2 354.0M ops/s
-  class3 331.9M ops/s
-  class4 328.8M ops/s
-  class5 346.1M ops/s
+  class0 356.0M ops/s
+  class1 351.5M ops/s
+  class2 364.0M ops/s
+  class3 362.6M ops/s
+  class4 338.9M ops/s
+  class5 318.7M ops/s
 
 known_addr mode:
-  class0 326.8M ops/s
-  class1 336.7M ops/s
-  class2 350.1M ops/s
-  class3 339.4M ops/s
-  class4 317.3M ops/s
-  class5 342.7M ops/s
+  class0 347.6M ops/s
+  class1 338.2M ops/s
+  class2 348.8M ops/s
+  class3 308.6M ops/s
+  class4 338.7M ops/s
+  class5 333.4M ops/s
+
+fast_addr mode:
+  class0 130.8M ops/s
+  class1 124.4M ops/s
+  class2 131.5M ops/s
+  class3 132.0M ops/s
+  class4 128.9M ops/s
+  class5 124.8M ops/s
 
 active_addr mode:
-  class0 123.4M ops/s
-  class1 121.9M ops/s
-  class2 123.7M ops/s
-  class3 122.2M ops/s
-  class4 119.9M ops/s
-  class5 124.2M ops/s
+  class0 117.1M ops/s
+  class1 95.2M ops/s
+  class2 117.7M ops/s
+  class3 117.3M ops/s
+  class4 108.1M ops/s
+  class5 116.4M ops/s
 
 table_addr mode:
   class0 101.8M ops/s
-  class1 85.5M ops/s
-  class2 98.9M ops/s
-  class3 95.7M ops/s
-  class4 92.9M ops/s
-  class5 90.3M ops/s
+  class1 97.7M ops/s
+  class2 95.0M ops/s
+  class3 92.5M ops/s
+  class4 88.9M ops/s
+  class5 89.9M ops/s
 
 bound_addr mode:
-  class0 131.3M ops/s
-  class1 130.9M ops/s
-  class2 132.1M ops/s
-  class3 131.2M ops/s
-  class4 128.4M ops/s
-  class5 131.4M ops/s
+  class0 126.7M ops/s
+  class1 127.0M ops/s
+  class2 123.5M ops/s
+  class3 127.3M ops/s
+  class4 113.7M ops/s
+  class5 124.8M ops/s
 ```
 
 Interpretation:
@@ -339,13 +351,19 @@ bits body:
 known_addr:
   remains close to bits mode and is the right hot-path target shape
 
+fast_addr proof:
+  p2 shift/mask and non-p2 two-slot exact decode beat active/table route
+  shapes and usually match or beat bound_addr, but still land around 37-43%
+  of known_addr mode
+  useful as a route-proof fallback, not enough for the local hit core
+
 bound_addr proof:
-  carries route/lifecycle overhead and lands around 37-44% of known_addr mode
+  carries route/lifecycle overhead and lands around 33-41% of known_addr mode
   useful as a boundary proof, not yet a final hot-path shape
 
 active_addr proof:
-  active class pointer avoids table discovery but still lands around 35% of
-  known_addr because free still decodes addr -> slot through the full helper
+  active class pointer avoids table discovery but still lands around 28-38% of
+  known_addr because free still decodes addr -> slot through the route helper
   active pointer alone is not enough
 
 table_addr proof:
@@ -359,8 +377,9 @@ rejected micro-optimization:
 
 next optimization target:
   keep the known-slot shape for the local hit path
-  avoid addr -> slot decode on the immediate local reuse path, or add a
-  specialized non-debug decode before behavior wiring
+  avoid addr -> slot decode on the immediate local reuse path
+  use fast_addr-style decode only as fallback/route proof, not as the primary
+  local hit core
 ```
 
 ## Decision Boundary

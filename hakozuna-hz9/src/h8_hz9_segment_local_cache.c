@@ -61,6 +61,50 @@ static H8RouteKind h9_segment_route_offset_to_slot(uint32_t class_id,
   return H8_ROUTE_VALID;
 }
 
+static H8RouteKind h9_segment_route_offset_to_slot_fast(uint32_t class_id,
+                                                        size_t offset,
+                                                        uint32_t* slot_out) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return H8_ROUTE_MISS;
+  }
+  size_t payload_bytes = (size_t)slot_size * (size_t)slot_count;
+  if (offset >= (size_t)run_size) {
+    return H8_ROUTE_MISS;
+  }
+  if (offset >= payload_bytes) {
+    return H8_ROUTE_INVALID;
+  }
+  if ((slot_size & (slot_size - 1u)) == 0u) {
+    if ((offset & ((size_t)slot_size - 1u)) != 0u) {
+      return H8_ROUTE_INVALID;
+    }
+    if (slot_out) {
+      *slot_out = (uint32_t)(offset >> __builtin_ctz(slot_size));
+    }
+    return H8_ROUTE_VALID;
+  }
+  if (slot_count == 2u) {
+    if (offset == 0u) {
+      if (slot_out) {
+        *slot_out = 0u;
+      }
+      return H8_ROUTE_VALID;
+    }
+    if (offset == (size_t)slot_size) {
+      if (slot_out) {
+        *slot_out = 1u;
+      }
+      return H8_ROUTE_VALID;
+    }
+    return H8_ROUTE_INVALID;
+  }
+  return h9_segment_route_offset_to_slot(class_id, offset, slot_out);
+}
+
 void h9_segment_local_cache_debug_reset(void) {
   memset(&h9_segment_tls, 0, sizeof(h9_segment_tls));
   h9_segment_tls.active_class = UINT32_MAX;
@@ -342,6 +386,22 @@ bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,
   uint32_t slot = 0u;
   uintptr_t offset = addr - cls->base_addr;
   if (h9_segment_route_offset_to_slot(class_id, (size_t)offset, &slot) !=
+      H8_ROUTE_VALID) {
+    return false;
+  }
+  return h9_segment_local_cache_debug_free_allocated(class_id, slot);
+}
+
+bool h9_segment_local_cache_debug_free_addr_fast(uint32_t class_id,
+                                                 uintptr_t addr) {
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->base_addr == 0u || addr < cls->base_addr ||
+      cls->state != H9_SEGMENT_LOCAL) {
+    return false;
+  }
+  uint32_t slot = 0u;
+  uintptr_t offset = addr - cls->base_addr;
+  if (h9_segment_route_offset_to_slot_fast(class_id, (size_t)offset, &slot) !=
       H8_ROUTE_VALID) {
     return false;
   }
