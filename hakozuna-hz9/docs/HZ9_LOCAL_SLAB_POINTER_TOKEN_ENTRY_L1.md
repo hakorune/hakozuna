@@ -240,6 +240,25 @@ Cold-splitting the existing route-boundary `lastentry` fallback is useful but
 not sufficient.  It improves the helper-shaped entry only modestly, so the
 remaining loss is still the helper/public-shaped boundary and segment debug
 substrate, not merely fallback placement.
+
+Rejected follow-up:
+
+```text
+route-capable wrapper co-located with IntegratedEntry:
+  integrated LIFO:
+    about 188M..247M ops/s
+
+  integrated non-LIFO, one cold VALID fallback per iteration:
+    about 94M..97M ops/s
+
+decision:
+  NO-GO
+```
+
+Even when the fallback is not executed, placing route-classification machinery
+in the same hot entry shape pollutes the LIFO path.  The next implementation
+must keep the fast entry body structurally separate and call route fallback from
+an outer miss block, not from a generic route-capable wrapper.
 ```
 
 ## Integrated Entry Candidate
