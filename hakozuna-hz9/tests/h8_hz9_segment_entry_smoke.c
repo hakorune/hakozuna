@@ -63,11 +63,18 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 9;
   }
+  if (!h9_segment_entry_debug_cycle_handle_checked_touch(handle, 13u, true,
+                                                         &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry handle checked touch failed: class=%u\n",
+            class_id);
+    return 10;
+  }
   if (!h9_segment_entry_debug_cycle_tls_handle(class_id, &b) ||
       h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
     fprintf(stderr, "segment entry tls handle cycle failed: class=%u\n",
             class_id);
-    return 10;
+    return 11;
   }
   if (!h9_segment_entry_debug_alloc_tls_handle(class_id, &b) ||
       h9_segment_entry_debug_route(b) != H8_ROUTE_VALID ||
@@ -75,7 +82,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
     fprintf(stderr, "segment entry tls route free failed: class=%u\n",
             class_id);
-    return 11;
+    return 12;
   }
   if (!h9_segment_entry_debug_alloc_tls_handle(class_id, &b) ||
       h9_segment_entry_debug_free_tls_handle(class_id, (char*)b + 1, &owned) ||
@@ -84,7 +91,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free_tls_handle(class_id, b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls local free failed: class=%u\n",
             class_id);
-    return 12;
+    return 13;
   }
   uint32_t slot = 0u;
   if (!h9_segment_entry_debug_alloc_tls_slot(class_id, &b, &slot) ||
@@ -92,20 +99,32 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free_tls_slot(class_id, slot, &owned) || !owned) {
     fprintf(stderr, "segment entry tls known-slot free failed: class=%u\n",
             class_id);
-    return 13;
+    return 14;
   }
   if (!h9_segment_entry_debug_cycle_tls_checked(class_id, &b) ||
       h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
     fprintf(stderr, "segment entry tls checked cycle failed: class=%u\n",
             class_id);
-    return 14;
+    return 15;
   }
   if (!h9_segment_entry_debug_cycle_tls_checked_touch(class_id, 17u, true,
                                                       &b) ||
       h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
     fprintf(stderr, "segment entry tls checked touch failed: class=%u\n",
             class_id);
-    return 15;
+    return 16;
+  }
+  if (!h9_segment_entry_debug_cycle_tls_epoch_body(class_id, 18u, true, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry tls epoch body failed: class=%u\n",
+            class_id);
+    return 17;
+  }
+  if (!h9_segment_entry_debug_cycle_tls_route64_body(class_id, 18u, true, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry tls route64 body failed: class=%u\n",
+            class_id);
+    return 18;
   }
   owned = false;
   if (!h9_segment_entry_debug_cycle_tls_cache(class_id, 19u, true, &b) ||
@@ -113,7 +132,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free(b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls cache cycle failed: class=%u\n",
             class_id);
-    return 16;
+    return 19;
   }
   owned = false;
   if (!h9_segment_entry_debug_cycle_tls_ledger(class_id, 23u, true, &b) ||
@@ -121,7 +140,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free(b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls ledger cycle failed: class=%u\n",
             class_id);
-    return 17;
+    return 20;
   }
   owned = false;
   if (!h9_segment_entry_debug_cycle_tls_ledger_body(class_id, 29u, true, &b) ||
@@ -129,7 +148,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free(b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls ledger body failed: class=%u\n",
             class_id);
-    return 18;
+    return 21;
   }
   return 0;
 }
