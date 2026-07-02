@@ -72,7 +72,7 @@ make -C hakozuna-hz9 bench-hz9segmententry
   SegmentEntry global-routeable page scaffold
   set MODE=route, MODE=fused, MODE=fast, MODE=page, MODE=handle, MODE=tls,
   MODE=tlsroute, MODE=tlslocal, MODE=tlsknown, MODE=tlschecked, or
-  MODE=tlscheckedtouch
+  MODE=tlscheckedtouch, or MODE=tlscache
 ```
 
 Active-run magazine evidence tests are still available as historical L0

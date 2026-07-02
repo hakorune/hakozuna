@@ -17,12 +17,16 @@ typedef struct H9SegmentEntryPage {
   uint16_t class_id;
   uint64_t free_bits;
   uint64_t alloc_bits;
+  uint64_t cache_bits;
 } H9SegmentEntryPage;
 
 static H9SegmentEntryPage h9_segment_entry_pages[H9_SEGMENT_ENTRY_PAGE_CAP];
 static uint32_t h9_segment_entry_page_count;
 static _Thread_local uint32_t h9_segment_entry_active[H8_MEDIUM_CLASS_COUNT];
 static _Thread_local uintptr_t h9_segment_entry_handle[H8_MEDIUM_CLASS_COUNT];
+static _Thread_local void* h9_segment_entry_cache_ptr[H8_MEDIUM_CLASS_COUNT];
+static _Thread_local uintptr_t h9_segment_entry_cache_page[H8_MEDIUM_CLASS_COUNT];
+static _Thread_local uint32_t h9_segment_entry_cache_slot[H8_MEDIUM_CLASS_COUNT];
 
 static bool h9_segment_entry_class_geometry(uint32_t class_id,
                                             uint32_t* slot_size_out,
@@ -195,7 +199,8 @@ static bool h9_segment_entry_free_page(H9SegmentEntryPage* page, void* ptr,
     return false;
   }
   uint64_t bit = UINT64_C(1) << slot;
-  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
     return false;
   }
   page->alloc_bits &= ~bit;
@@ -215,11 +220,60 @@ static bool h9_segment_entry_free_page_slot(H9SegmentEntryPage* page,
     *owned_out = true;
   }
   uint64_t bit = UINT64_C(1) << slot;
-  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
     return false;
   }
   page->alloc_bits &= ~bit;
   page->free_bits |= bit;
+  return true;
+}
+
+static bool h9_segment_entry_cache_pop(uint32_t class_id, void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT ||
+      !h9_segment_entry_cache_ptr[class_id]) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_cache_page[class_id];
+  uint32_t slot = h9_segment_entry_cache_slot[class_id];
+  if (!page || page->class_id != class_id || slot >= page->slot_count) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) == 0u) {
+    return false;
+  }
+  page->cache_bits &= ~bit;
+  if (ptr_out) {
+    *ptr_out = h9_segment_entry_cache_ptr[class_id];
+  }
+  h9_segment_entry_cache_ptr[class_id] = NULL;
+  h9_segment_entry_cache_page[class_id] = 0u;
+  h9_segment_entry_cache_slot[class_id] = UINT32_MAX;
+  return true;
+}
+
+static bool h9_segment_entry_cache_push(uint32_t class_id, void* ptr) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT ||
+      h9_segment_entry_cache_ptr[class_id] != NULL) {
+    return false;
+  }
+  uint32_t slot = UINT32_MAX;
+  H9SegmentEntryPage* page = h9_segment_entry_page_for_ptr(ptr, NULL, &slot);
+  if (!page || page->class_id != class_id || slot == UINT32_MAX) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
+    return false;
+  }
+  page->cache_bits |= bit;
+  h9_segment_entry_cache_ptr[class_id] = ptr;
+  h9_segment_entry_cache_page[class_id] = (uintptr_t)page;
+  h9_segment_entry_cache_slot[class_id] = slot;
   return true;
 }
 
@@ -269,6 +323,9 @@ void h9_segment_entry_debug_reset(void) {
   for (uint32_t i = 0u; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     h9_segment_entry_active[i] = UINT32_MAX;
     h9_segment_entry_handle[i] = 0u;
+    h9_segment_entry_cache_ptr[i] = NULL;
+    h9_segment_entry_cache_page[i] = 0u;
+    h9_segment_entry_cache_slot[i] = UINT32_MAX;
   }
 }
 
@@ -468,6 +525,31 @@ bool h9_segment_entry_debug_cycle_tls_checked_touch(uint32_t class_id,
                                                    ptr_out);
 }
 
+bool h9_segment_entry_debug_cycle_tls_cache(uint32_t class_id, uint64_t value,
+                                            bool touch, void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  void* ptr = NULL;
+  if (!h9_segment_entry_cache_pop(class_id, &ptr) &&
+      !h9_segment_entry_debug_alloc_tls_handle(class_id, &ptr)) {
+    return false;
+  }
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  if (touch) {
+    const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
+    if (!spec || spec->slot_size == 0u) {
+      return false;
+    }
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    p[0] = (unsigned char)value;
+    p[spec->slot_size - 1u] = (unsigned char)(value >> 8);
+  }
+  return h9_segment_entry_cache_push(class_id, ptr);
+}
+
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
@@ -496,7 +578,9 @@ H8RouteKind h9_segment_entry_debug_route(void* ptr) {
     return H8_ROUTE_INVALID;
   }
   uint64_t bit = UINT64_C(1) << slot;
-  return (page->alloc_bits & bit) != 0u ? H8_ROUTE_VALID : H8_ROUTE_INVALID;
+  return (page->alloc_bits & bit) != 0u && (page->cache_bits & bit) == 0u
+             ? H8_ROUTE_VALID
+             : H8_ROUTE_INVALID;
 }
 
 uint64_t h9_segment_entry_debug_free_bits(uint32_t page_id) {

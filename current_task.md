@@ -20,8 +20,8 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                SegmentEntry points to fused TLS local body; split alloc/free
-                shape is the large residual, not simple state validation.
+                SegmentEntry points to fused TLS local body. split alloc/free
+                and TLS-cache route-push shape are the large residuals.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
