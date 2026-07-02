@@ -83,6 +83,7 @@ current design:
   active exact no-fallback remains about 157-168M, so fallback is not primary
   sampled public-route proof reaches about 210-246M, still below direct body
   route-proof gate records sample64 at only about 0.55-0.70x active direct
+  slot-header proof reaches only about 206-219M, so header route is not enough
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

@@ -24,6 +24,31 @@ static double now_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
 }
 
+typedef struct H9SegmentBenchHeader {
+  uint32_t magic;
+  uint16_t class_id;
+  uint16_t slot;
+  uintptr_t base;
+} H9SegmentBenchHeader;
+
+#define H9_SEGMENT_BENCH_HEADER_MAGIC 0x48395348u
+
+static bool header_route(uintptr_t user_addr, uint32_t* class_out,
+                         uint32_t* slot_out) {
+  H9SegmentBenchHeader* header =
+      (H9SegmentBenchHeader*)(user_addr - sizeof(H9SegmentBenchHeader));
+  if (header->magic != H9_SEGMENT_BENCH_HEADER_MAGIC) {
+    return false;
+  }
+  if (class_out) {
+    *class_out = header->class_id;
+  }
+  if (slot_out) {
+    *slot_out = header->slot;
+  }
+  return true;
+}
+
 int main(void) {
   h8_init();
   uint32_t class_id = (uint32_t)env_u64("CLASS_ID", 5u);
@@ -64,6 +89,15 @@ int main(void) {
       h8_platform_release(payload, run_size);
       return 4;
     }
+    if (slot_size > sizeof(H9SegmentBenchHeader)) {
+      H9SegmentBenchHeader* header =
+          (H9SegmentBenchHeader*)((uintptr_t)payload +
+                                  (uintptr_t)slot * (uintptr_t)slot_size);
+      header->magic = H9_SEGMENT_BENCH_HEADER_MAGIC;
+      header->class_id = (uint16_t)class_id;
+      header->slot = (uint16_t)slot;
+      header->base = (uintptr_t)payload;
+    }
   }
   if ((active_cycle || active_route != 0u) &&
       !h9_segment_local_cache_debug_set_active_class(class_id)) {
@@ -82,7 +116,7 @@ int main(void) {
       uint32_t routed_class = UINT32_MAX;
       uint32_t routed_slot = UINT32_MAX;
       success = h9_segment_local_cache_debug_active_take_direct(&slot, &addr);
-      if (success && touch) {
+      if (success && touch && active_route != 7u) {
         volatile unsigned char* p = (volatile unsigned char*)addr;
         p[0] = (unsigned char)i;
         p[slot_size - 1u] = (unsigned char)(i >> 8);
@@ -105,6 +139,21 @@ int main(void) {
         } else {
           route_kind = h9_segment_local_cache_debug_route_table_slot_addr(
               addr, &routed_class, &routed_slot);
+        }
+      } else if (active_route == 7u) {
+        if (slot_size <= sizeof(H9SegmentBenchHeader)) {
+          success = false;
+        } else {
+          uintptr_t user_addr = addr + sizeof(H9SegmentBenchHeader);
+          if (touch) {
+            volatile unsigned char* p = (volatile unsigned char*)user_addr;
+            p[0] = (unsigned char)i;
+            p[slot_size - sizeof(H9SegmentBenchHeader) - 1u] =
+                (unsigned char)(i >> 8);
+          }
+          route_kind = header_route(user_addr, &routed_class, &routed_slot)
+                           ? H8_ROUTE_VALID
+                           : H8_ROUTE_INVALID;
         }
       } else if (active_route >= 2u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_addr(

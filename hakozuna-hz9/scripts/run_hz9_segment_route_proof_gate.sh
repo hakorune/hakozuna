@@ -31,6 +31,7 @@ run_mode() {
       active_route=6
       route_interval=64
       ;;
+    header) active_route=7 ;;
     *)
       echo "unknown mode: ${mode}" >&2
       return 2
@@ -60,7 +61,7 @@ run_mode() {
 for class_id in ${CLASSES}; do
   declare -A raw_by_mode=()
   declare -A ops_by_mode=()
-  for mode in direct active public exact sample8 sample64; do
+  for mode in direct active public exact sample8 sample64 header; do
     line="$(run_mode "${class_id}" "${mode}")"
     raw_by_mode["${mode}"]="${line}"
     ops="$(printf '%s\n' "${line}" |
@@ -69,7 +70,7 @@ for class_id in ${CLASSES}; do
     printf '%s\n' "${line}" >"${OUTDIR}/class_${class_id}_${mode}.txt"
   done
   active_ops="${ops_by_mode[active]}"
-  for mode in direct active public exact sample8 sample64; do
+  for mode in direct active public exact sample8 sample64 header; do
     ratio="$(awk -v a="${active_ops}" -v b="${ops_by_mode[$mode]}" \
       'BEGIN { if (a > 0) printf "%.3f", b / a; else printf "0.000" }')"
     ops_m="$(awk -v v="${ops_by_mode[$mode]}" \

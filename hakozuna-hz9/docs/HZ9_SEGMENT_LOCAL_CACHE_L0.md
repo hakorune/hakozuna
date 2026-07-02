@@ -662,6 +662,16 @@ route-proof gate:
   class, so route sampling is an evidence ceiling, not a sufficient behavior
   shape
 
+slot-header route proof:
+  active_header_probe stores a small header at the slot start and routes from
+  user_ptr - header_size before freeing by known slot
+  current R1 range is about 206-219M ops/s, or about 0.46-0.51x active direct
+  this is better than public/exact route, but does not beat sampled route and
+  does not recover the direct local body
+  implication: a simple per-object header is not enough; the common local
+  cycle still needs a direct local token/slot path, with public route kept as
+  the external boundary
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape
