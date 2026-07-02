@@ -12,8 +12,12 @@ HZ9_MEDIUM_TLS_OBJECT_CACHE_L0.md:
 HZ9_CURRENT_STATUS.md:
   active lane, next implementation order, and verification commands
 
+HZ9_SEGMENT_LOCAL_CACHE_L0.md:
+  current design-prep lane, standalone segment metadata scaffold, remote
+  drain/release boundaries, and local body API sweep
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
-  current 64K slab/page prototype, route boundary, counters, and blockers
+  held 64K slab/page prototype, route boundary, counters, and blockers
 
 HZ9_LOCAL_ARENA_L0.md:
   HZ9-owned LocalArena substrate, adaptive class cuts, and HOLD decision
@@ -35,7 +39,7 @@ HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md:
   post owner-page closure, closed lanes, and next-substrate requirements
 
 HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md:
-  current source-shape box for static TLS state and owner-local plain bits
+  held source-shape box for static TLS state and owner-local plain bits
 
 HZ9_DIRECT_SLAB_USE_PROOF_L0.md:
   completed proof for isolating SlabPage body cost from entry/route overhead;
@@ -73,9 +77,8 @@ LocalArena:
   collapse on medium_r50/main_r90
 
 next:
-  use HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md for the current gate
-  use HZ9_NEXT_SUBSTRATE.md as the SSOT before selecting a new behavior box
-  HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0 is the current no-behavior source-shape box
+  HZ9_SEGMENT_LOCAL_CACHE_L0 is the current no-behavior source-shape box
+  use HZ9_NEXT_SUBSTRATE.md as the next-behavior boundary before routing it
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
   owner-page PureLocal L1 is implemented and held as profile/evidence
@@ -90,6 +93,8 @@ Standalone commands:
 
 ```bash
 make -C hakozuna-hz9 hz9-standalone-check
+make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 RUN_PROBE=1 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 hakozuna-hz9/scripts/run_hz9_local_entry_cost_probe.sh

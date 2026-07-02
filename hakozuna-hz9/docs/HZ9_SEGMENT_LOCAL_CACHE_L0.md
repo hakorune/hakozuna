@@ -119,7 +119,7 @@ It also includes a TLS-wide release helper for thread/owner-exit scaffolding:
 release_all:
   return touched class mask
   clear all local/allocated/remote bits
-reset TLS segment state to empty
+  reset TLS segment state to empty
 ```
 
 The API microbench is not a promotion gate. It measures the standalone local

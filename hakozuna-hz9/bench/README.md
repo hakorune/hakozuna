@@ -37,7 +37,16 @@ Those helpers are convenience pointers for cross-tree comparison, not HZ9 build
 dependencies. HZ9 standalone checks and local-only bench runs must pass without
 them.
 
-Primary rows for the current slab route/slab page lane:
+Current SegmentLocalCache scaffold probes:
+
+```bash
+ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
+```
+
+These measure standalone segment local-body cost only. They are not allocator
+promotion gates.
+
+Primary rows for the next behavior lane:
 
 ```text
 fixed64_local0

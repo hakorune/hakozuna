@@ -178,31 +178,44 @@ HZ9:
 HZ9 is not intended to be a clone of HZ3, tcmalloc, or mimalloc. The target is
 an HZ8-derived allocator with a faster local tier and explicit safety/RSS gates.
 
-## First Standalone Design
+## Current Standalone Design
 
 ```text
 local:
-  TLS per-class medium object cache
-  malloc cache pop before HZ8 medium active path
+  TLS per-class medium segment cache scaffold
+  segment-backed local slots, not HZ8 medium-run objects
 
-free:
-  HZ8 route / directory / owner / slot_state / pending validation
-  same-owner valid medium slot may enter TLS cache
+state:
+  LOCAL segments support put/take/free_allocated
+  REMOTE_SEEN segments reject local allocation
+  RETIRED segments are not reused in L0
 
 remote:
-  keep HZ8 pending bitmap / qstate / owner queue
+  remote mark records pending bits and moves segment out of LOCAL
+  owner-drain retires remote-contaminated segments in L0
 
-slot validity:
-  keep slot_state authority
+lifecycle:
+  release_all clears touched TLS segment state before behavior integration
 
-owner lifecycle:
-  keep owner-exit hard drain
-
-RSS:
-  explicit cache cap, expected heavier than HZ8 only if measured
+non-goal:
+  no allocator routing yet
+  no H8OwnerRecord / H8ThreadCtx field additions in L0
 ```
 
 ## Active Design Lane
+
+```text
+HZ9SegmentLocalCache-L0:
+  current design-prep lane
+  segment-backed local slots, not HZ8 medium-run objects
+  scaffold/drain/release-all/API sweep are implemented
+  no allocator routing yet
+  no public entry branch
+  no H8OwnerRecord / H8ThreadCtx field additions in L0
+  remote pending/qstate remains HZ8-derived authority
+```
+
+## Held Evidence
 
 ```text
 HZ9OwnerLocalPagePoolPureLocal-L1:
@@ -211,12 +224,7 @@ HZ9OwnerLocalPagePoolPureLocal-L1:
   local alloc/free behavior is implemented
   route/state/API safety smoke is clean
   broad default is HOLD after local/remote perf gate
-  remote pending/qstate remains HZ8-derived authority
-```
 
-## Held Evidence
-
-```text
 HZ9MediumLocalSlabPage-Shadow-L1:
   completed coverage evidence and class-distribution counters
   medium-only local substrate design
@@ -254,6 +262,7 @@ do not ship HZ9 as a user-facing replacement before matrix evidence exists
 
 ```text
 docs/HZ9_CURRENT_STATUS.md
+docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
 docs/HZ9_MEDIUM_TLS_OBJECT_CACHE_L0.md
 docs/HZ9_LOCAL_SLAB_PAGE_L1.md
 docs/HZ9_STANDALONE_CLOSURE.md

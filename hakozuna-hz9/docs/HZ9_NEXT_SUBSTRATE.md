@@ -4,7 +4,22 @@ This is the active design gate for the next HZ9 local substrate. Historical
 measurements are archived in `HZ9_LANE_HISTORY.md` and the per-lane evidence
 docs.
 
-## Current Decision
+## Current Active Gate
+
+```text
+HZ9SegmentLocalCache-L0:
+  current no-behavior substrate scaffold
+  segment-backed local slots, not HZ8 medium-run objects
+  remote-contaminated segments leave LOCAL state
+  owner-drain retires remote-contaminated segments in L0
+  release_all clears touched TLS state before behavior integration
+  segment API sweep records local body cost by class
+  next step:
+    do not wire allocator routing until source-shape and local-body evidence
+    remain clean
+```
+
+## Closed Decision History
 
 ```text
 HZ9LocalArenaRemoteSafePage-L1:
@@ -202,7 +217,7 @@ ownerpage disabled-fast read:
   Stop OwnerPage fixed-cost retuning for default unless a new substrate shape
   changes the branch/body model.
 
-current scaffold:
+previous scaffold:
   HZ9StaticLocalPageScaffold-L0
   docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   behavior change: none
@@ -259,6 +274,9 @@ next substrate:
     design-prep and scaffold next
     segment-backed local slots, not HZ8 medium-run objects
     remote-contaminated segment leaves LOCAL state
+    owner-drain retires remote-contaminated segments in L0
+    release_all clears touched TLS state before behavior integration
+    segment API sweep records local body cost by class
   reason:
     prior lanes either pay too much local body cost or collapse under mixed
     local/remote mutation

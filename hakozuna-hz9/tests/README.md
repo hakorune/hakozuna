@@ -16,6 +16,10 @@ make -C hakozuna-hz9 smoke
 make -C hakozuna-hz9 preload-smoke
   local preload library sanity check
 
+make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+  HZ9 segment local cache put/take/free, remote contamination, drain, and
+  release-all scaffold smoke
+
 make -C hakozuna-hz9 smoke-hz9slabroute
   HZ9 slab route VALID / INVALID / MISS classification
 

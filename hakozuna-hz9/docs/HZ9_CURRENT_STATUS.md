@@ -72,6 +72,13 @@ current design:
   no public entry branch
   no H8OwnerRecord / H8ThreadCtx field additions in L0
   remote-contaminated segment must leave LOCAL state
+  owner-drain debug path retires remote-contaminated segments
+  release_all clears touched TLS segment state for exit scaffolding
+  API microbench and class sweep exist for local body cost evidence
+
+current segment commands:
+  make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+  ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 
 profile gate:
   scripts/run_hz9_profile_local_gate.sh
@@ -365,21 +372,18 @@ owner-page perf gate:
 Recommended next implementation order:
 
 ```text
-1. Freeze HZ9OwnerLocalPagePoolPureLocal-L1 as profile/evidence unless a new
-   design removes remote-row admission cost and local owner-page overhead.
+1. Keep OwnerPage / SlabPage / LocalArena / StaticLocalPage as evidence lanes.
 
-2. Do not continue OwnerPage by adding more fixed-cost flags:
-     ownerfast_bits
-     ownerfast_bits_low32
-     disabled_fast_reject
-     ownerfast_bits_reject
-   are attribution/proof lanes only.
+2. Continue HZ9SegmentLocalCache-L0 as the active no-behavior substrate lane:
+     smoke-hz9segmentlocalcache
+     bench-hz9segmentlocalcache-api
+     run_hz9_segment_api_sweep.sh
 
-3. Move back to HZ9 substrate design:
-     local page/cache path with no remote-row admission tax
-     no owner-page per-allocation state ensure tax
-     no local_free_bits RMW on the common local body
-     no no-use route/layout contamination
+3. Before behavior routing, keep source shape clean:
+     no H8OwnerRecord / H8ThreadCtx field additions
+     no public entry branch
+     no remote concurrent freelist
+     no new top-level Makefile blocks when a split mk file is sufficient
 ```
 
 Latest post-owner-page check:
@@ -412,6 +416,7 @@ README.md
 docs/README.md
 docs/HZ9_STANDALONE_CLOSURE.md
 docs/HZ9_DIFFERENTIATION.md
+docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
 docs/HZ9_NEXT_SUBSTRATE.md
 docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md
@@ -447,13 +452,8 @@ behavior lane:
 
 ```bash
 make -C hakozuna-hz9 hz9-standalone-check
-make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
-  smoke-hz9ownerpagepool-api \
-  bench-hz9ownerpagepool-purelocal-api \
-  bench-release-hz9ownerpagepool-purelocal-api
-
-RUNS=3 THREADS=2 ITERS=30000 \
-  hakozuna-hz9/scripts/run_hz9_owner_page_perf_gate.sh
+make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 
 cd hakozuna-hz9
 RUN_SMOKE=0 scripts/run_hz9_pre_substrate_recheck.sh
