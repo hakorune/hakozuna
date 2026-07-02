@@ -259,6 +259,7 @@ bench-hz9segmentlocalcache-local:
   put all slots
   cycle_known -> real pointer
   optional first/last byte touch
+  standard sweep compares direct / active / route2 modes
 ```
 
 ## Segment Model
@@ -479,6 +480,9 @@ next optimization target:
 
 ```text
 command:
+  ITERS=1000000 scripts/run_hz9_segment_local_payload_sweep.sh
+
+legacy manual shape:
   for touch in 1 0; do
     for class_id in 0 1 2 3 4 5; do
       TOUCH=$touch CLASS_ID=$class_id ITERS=1000000 \
@@ -519,12 +523,12 @@ route_free=2, touch=1:
   class5 137.1M ops/s
 
 active_cycle=1, touch=1:
-  class0 443.5M ops/s
-  class1 472.3M ops/s
-  class2 463.4M ops/s
-  class3 453.3M ops/s
-  class4 421.1M ops/s
-  class5 452.4M ops/s
+  class0 451.5M ops/s
+  class1 478.9M ops/s
+  class2 465.2M ops/s
+  class3 447.4M ops/s
+  class4 437.7M ops/s
+  class5 474.4M ops/s
 ```
 
 Interpretation:
