@@ -517,6 +517,14 @@ route_free=2, touch=1:
   class3 147.7M ops/s
   class4 136.5M ops/s
   class5 137.1M ops/s
+
+active_cycle=1, touch=1:
+  class0 443.5M ops/s
+  class1 472.3M ops/s
+  class2 463.4M ops/s
+  class3 453.3M ops/s
+  class4 421.1M ops/s
+  class5 452.4M ops/s
 ```
 
 Interpretation:
@@ -536,6 +544,12 @@ single-decode route-free probe:
   136-159M ops/s
   this proves duplicate decode mattered, but route classification is still far
   from the 500M+ direct local body
+
+active payload probe:
+  active segment pointer plus direct known-slot body remains about 421-472M
+  ops/s while touching real payload
+  this is the behavior-core target; public free route remains a separate
+  boundary path
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct

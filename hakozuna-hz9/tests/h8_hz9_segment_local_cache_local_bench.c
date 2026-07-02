@@ -30,6 +30,7 @@ int main(void) {
   uint64_t iters = env_u64("ITERS", 10000000u);
   bool touch = env_u64("TOUCH", 1u) != 0u;
   uint64_t route_free = env_u64("ROUTE_FREE", 0u);
+  bool active_cycle = env_u64("ACTIVE_CYCLE", 0u) != 0u;
 
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
@@ -62,6 +63,12 @@ int main(void) {
       return 4;
     }
   }
+  if (active_cycle &&
+      !h9_segment_local_cache_debug_set_active_class(class_id)) {
+    fprintf(stderr, "segment local bench active setup failed\n");
+    h8_platform_release(payload, run_size);
+    return 6;
+  }
 
   uint64_t ok = 0u;
   uint32_t slot = 0u;
@@ -69,7 +76,14 @@ int main(void) {
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
-    if (route_free == 1u) {
+    if (active_cycle) {
+      success = h9_segment_local_cache_debug_active_cycle_known(&addr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)addr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+    } else if (route_free == 1u) {
       uint32_t routed_class = UINT32_MAX;
       success = h9_segment_local_cache_debug_take_slot_addr(class_id, &slot,
                                                             &addr);
@@ -124,10 +138,11 @@ int main(void) {
   double cycles = (double)ok / elapsed;
   printf("hz9_segment_local_cache_local class=%u slot_size=%u run_size=%u "
          "slot_count=%u payload_bytes=%zu slack_bytes=%zu touch=%u "
-         "route_free=%u iters=%llu seconds=%.6f cycles_per_s=%.2f "
-         "ops_per_s=%.2f\n",
+         "route_free=%u active_cycle=%u iters=%llu seconds=%.6f "
+         "cycles_per_s=%.2f ops_per_s=%.2f\n",
          class_id, slot_size, run_size, (unsigned)slot_count, payload_bytes,
          slack_bytes, touch ? 1u : 0u, (unsigned)route_free,
+         active_cycle ? 1u : 0u,
          (unsigned long long)ok, elapsed, cycles, cycles * 2.0);
 
   h8_platform_release(payload, run_size);

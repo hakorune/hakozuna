@@ -44,6 +44,7 @@ make -C hakozuna-hz9 bench-hz9segmentlocalcache-local
   SegmentLocalCache direct known-slot cycle on a real one-run payload
   set ROUTE_FREE=1 to include table route + addr->slot free validation
   set ROUTE_FREE=2 to return class+slot from table route before free
+  set ACTIVE_CYCLE=1 to use active-segment direct known-slot cycling
 ```
 
 Active-run magazine evidence tests are still available as historical L0
