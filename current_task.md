@@ -20,8 +20,8 @@ Current direction:
                 Inline local slab body is fast; route-first public free is the
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
-                LastTokenIntegratedEntry-L1 clears local gate; route-capable
-                wrapper co-location is NO-GO and must stay structurally cold.
+                LastTokenIntegratedEntry-L1 clears local gate; inline second
+                tiers are NO-GO and must stay structurally cold.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

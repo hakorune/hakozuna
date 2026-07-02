@@ -256,9 +256,55 @@ decision:
 ```
 
 Even when the fallback is not executed, placing route-classification machinery
-in the same hot entry shape pollutes the LIFO path.  The next implementation
-must keep the fast entry body structurally separate and call route fallback from
-an outer miss block, not from a generic route-capable wrapper.
+in the same hot entry shape pollutes the LIFO path.  More precisely, the losing
+shape is the inline second-tier decision layer between the last-token hit and
+the cold route.  The next implementation must keep Layer0 as a pure leaf that
+returns HIT/MISS only; Layer1 owns the single cold edge; Layer2 contains ledger
+and route authority.
+
+Three-layer rule:
+
+```text
+Layer0 hot:
+  last-token only
+  no route header
+  no ledger probe
+  no cold call
+  returns HIT/MISS
+
+Layer1 public entry:
+  calls Layer0
+  HIT returns
+  MISS calls one noinline/cold fallback
+
+Layer2 cold:
+  optional ledger
+  direct-owned route
+  INVALID / MISS / remote classification
+```
+
+The failed wrapper does not disprove cold route fallback.  It proves the second
+tier must not be inline-expanded into Layer0.
+
+Rejected helper follow-up:
+
+```text
+fastleaf helper/mode in the same bench TU:
+  fastleaf:
+    about 256M..429M ops/s
+
+  integrated after adding that helper:
+    about 286M..450M ops/s
+
+decision:
+  NO-GO as a helper probe
+```
+
+The lesson is stricter than "return HIT/MISS": Layer0 must be the literal hot
+entry body or a mechanically isolated leaf.  Adding another helper/mode in the
+same benchmark TU changes layout/code shape enough to destroy the prior
+integrated ceiling.  Keep the fast probe minimal until the real entry body is
+split into separate TUs.
 ```
 
 ## Integrated Entry Candidate
