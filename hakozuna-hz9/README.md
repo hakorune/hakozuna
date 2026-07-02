@@ -159,6 +159,9 @@ MODE=tlsroutebody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
 MODE=tlsroute64body CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 
+# current public split-boundary route scaffold
+make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
+
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
   smoke-hz9ownerpagepool-api \

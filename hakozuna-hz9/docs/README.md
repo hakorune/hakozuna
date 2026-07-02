@@ -105,6 +105,7 @@ Standalone commands:
 ```bash
 make -C hakozuna-hz9 hz9-standalone-check
 make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh

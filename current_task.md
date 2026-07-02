@@ -21,7 +21,7 @@ Current direction:
                 split malloc/free and public route-push are the residuals.
                 Next substrate must make public free/usable/realloc share an
                 O(1) address-derived route authority instead of adding another
-                cache on top of HZ8 medium runs.
+                cache on top of HZ8 medium runs; L0 route smoke is wired.
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

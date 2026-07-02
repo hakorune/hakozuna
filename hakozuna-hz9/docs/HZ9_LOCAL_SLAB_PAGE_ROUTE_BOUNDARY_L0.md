@@ -4,7 +4,7 @@
 
 ```text
 state:
-  next HZ9 design box
+  first L0 route scaffold implemented
 
 goal:
   connect the fast fused local body evidence to a public allocator-shaped
@@ -236,11 +236,15 @@ RSS:
 ## Implementation Order
 
 ```text
-1. Add route result type and smoke-only O(1) segment route scaffold.
-2. Add split malloc/free microbench for same-owner local slots.
-3. Add shared usable_size/realloc route smoke.
-4. Add remote-publish stub counters only; do not design remote protocol yet.
-5. Compare against SegmentEntry split/token-cache probes.
+done:
+  route result type and smoke-only O(1) segment route scaffold
+  same-owner split malloc/free smoke
+  shared usable_size/realloc route smoke
+
+next:
+  split malloc/free microbench for same-owner local slots
+  remote-publish stub counters only; do not design remote protocol yet
+  compare against SegmentEntry split/token-cache probes
 ```
 
 Stop if correctness requires weakening owned INVALID, slot-state validity, or
