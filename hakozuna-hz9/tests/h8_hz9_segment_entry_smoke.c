@@ -1,5 +1,4 @@
-#include "../src/h8_internal.h"
-#include "../src/h8_hz9_segment_entry.h"
+#include "../src/h8_hz9_segment_entry_internal.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -201,12 +200,47 @@ static int check_generation_token(void) {
   return 0;
 }
 
+static int check_token_cache_body(void) {
+  void* p = NULL;
+  bool owned = false;
+  uint32_t cache_slot = UINT32_MAX;
+  void* cache_ptr = NULL;
+  H9SegmentEntryToken token = {0};
+  if (!h9_segment_entry_debug_acquire_token(0u, &token) ||
+      !h9_segment_entry_cycle_token_cache_inline(&token, &cache_slot,
+                                                 &cache_ptr, 41u, true, &p) ||
+      !p || cache_slot == UINT32_MAX || cache_ptr != p) {
+    fprintf(stderr, "segment entry token cache cycle failed\n");
+    h9_segment_entry_debug_reset();
+    return 26;
+  }
+  if (h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(p, &owned) || !owned) {
+    fprintf(stderr, "segment entry token cache fail-closed failed\n");
+    h9_segment_entry_debug_reset();
+    return 27;
+  }
+  if (!h9_segment_entry_cycle_token_cache_inline(&token, &cache_slot,
+                                                 &cache_ptr, 43u, true, &p) ||
+      !p || cache_slot == UINT32_MAX || cache_ptr != p ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry token cache reuse failed\n");
+    h9_segment_entry_debug_reset();
+    return 28;
+  }
+  h9_segment_entry_debug_reset();
+  return 0;
+}
+
 int main(void) {
   if (check_cold_multiclass_start() != 0) {
     return 9;
   }
   if (check_generation_token() != 0) {
     return 22;
+  }
+  if (check_token_cache_body() != 0) {
+    return 26;
   }
   h9_segment_entry_debug_reset();
   for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {

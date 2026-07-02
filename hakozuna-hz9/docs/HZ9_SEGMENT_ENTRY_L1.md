@@ -201,6 +201,8 @@ handlecheckedtouch mode:
   reading: LOCAL_CACHE-style pop/push is not inherently slow when driven by a
   prevalidated token. The current ledger/cache variants lose in the surrounding
   lookup/check/fallback shape, not in the local cached-slot state transition.
+  safety smoke: token cached slots route as owned INVALID and public free
+  rejects them while preserving ownership classification.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
