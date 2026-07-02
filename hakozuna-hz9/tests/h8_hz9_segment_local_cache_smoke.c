@@ -115,17 +115,24 @@ static int check_class_geometry(void) {
     uint32_t slot_size = 0u;
     uint32_t run_size = 0u;
     uint16_t slot_count = 0u;
+    size_t payload_bytes = 0u;
+    size_t slack_bytes = 0u;
     if (!h9_segment_local_cache_debug_class_geometry(
             class_id, &slot_size, &run_size, &slot_count) ||
+        !h9_segment_local_cache_debug_class_capacity(
+            class_id, &payload_bytes, &slack_bytes) ||
         slot_size == 0u || run_size == 0u || slot_count == 0u ||
         slot_count > 64u ||
-        (uint64_t)slot_size * (uint64_t)slot_count > (uint64_t)run_size) {
+        payload_bytes != (size_t)slot_size * (size_t)slot_count ||
+        payload_bytes + slack_bytes != (size_t)run_size) {
       fprintf(stderr, "segment class geometry invalid: %u\n", class_id);
       return 40;
     }
   }
   if (h9_segment_local_cache_debug_class_geometry(
-          H8_MEDIUM_CLASS_COUNT, NULL, NULL, NULL)) {
+          H8_MEDIUM_CLASS_COUNT, NULL, NULL, NULL) ||
+      h9_segment_local_cache_debug_class_capacity(
+          H8_MEDIUM_CLASS_COUNT, NULL, NULL)) {
     fprintf(stderr, "segment accepted invalid geometry class\n");
     return 41;
   }

@@ -175,6 +175,29 @@ bool h9_segment_local_cache_debug_class_geometry(uint32_t class_id,
   return true;
 }
 
+bool h9_segment_local_cache_debug_class_capacity(uint32_t class_id,
+                                                 size_t* payload_bytes_out,
+                                                 size_t* slack_bytes_out) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return false;
+  }
+  size_t payload = (size_t)slot_size * (size_t)slot_count;
+  if (payload > (size_t)run_size) {
+    return false;
+  }
+  if (payload_bytes_out) {
+    *payload_bytes_out = payload;
+  }
+  if (slack_bytes_out) {
+    *slack_bytes_out = (size_t)run_size - payload;
+  }
+  return true;
+}
+
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   return cls ? (uint32_t)cls->state : UINT32_MAX;

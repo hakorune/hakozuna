@@ -138,6 +138,11 @@ geometry check:
   run_size > 0
   0 < slot_count <= 64
   slot_size * slot_count <= run_size
+
+capacity check:
+  payload_bytes = slot_size * slot_count
+  slack_bytes = run_size - payload_bytes
+  payload_bytes + slack_bytes == run_size
 ```
 
 ## Segment Model
@@ -183,6 +188,7 @@ source-shape:
 
 smoke:
   class geometry is valid for every medium class
+  class payload/slack accounting is internally consistent
   put/take/free deterministic
   duplicate local free rejected
   remote mark moves segment out of LOCAL
