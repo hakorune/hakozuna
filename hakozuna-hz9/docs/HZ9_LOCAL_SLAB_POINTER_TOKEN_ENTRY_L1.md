@@ -130,6 +130,9 @@ ptrtoken, after inline-public split, ITERS=30000000:
 
 lastpublic, one-entry LIFO token ceiling, ITERS=30000000:
   861.877M ops/s
+
+lastledger, last-token first then 64-entry ledger, ITERS=30000000:
+  231.725M ops/s
 ```
 
 Read:
@@ -158,6 +161,11 @@ one-entry last-token LIFO ceiling:
 So the next concrete design should use a last-token first tier, then a bounded
 ledger, then route fallback.  The last-token result is a ceiling and not a
 general free-order solution.
+
+The first combined last+ledger probe improves over the 64-entry-only ledger but
+still misses the 350M gate.  Treat it as evidence that the last-token fast path
+is valuable, while general ledger spill must be cold-path enough to avoid
+taxing the local common case.
 ```
 
 ## Commands
@@ -169,6 +177,8 @@ MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastpublic CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastledger CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

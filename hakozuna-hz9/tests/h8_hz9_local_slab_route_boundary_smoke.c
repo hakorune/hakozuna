@@ -130,6 +130,27 @@ static int check_pointer_token(void) {
   }
   h9_lsp_ptr_ledger_clear_entry(h9_lsp_ptr_ledger_lookup(&ledger, ptr));
   (void)h9_lsp_inline_free_slot(&page, slot);
+
+  H9LspPtrTokenCache cache = {0};
+  page.generation = 1u;
+  void* a = NULL;
+  void* b = NULL;
+  uint32_t slot_a = UINT32_MAX;
+  uint32_t slot_b = UINT32_MAX;
+  if (!h9_lsp_inline_alloc_slot(&page, &slot_a, &a) ||
+      !h9_lsp_inline_alloc_slot(&page, &slot_b, &b)) {
+    free(payload);
+    return 27;
+  }
+  h9_lsp_ptr_cache_insert(&cache, a, &page, slot_a, 5u);
+  h9_lsp_ptr_cache_insert(&cache, b, &page, slot_b, 5u);
+  if (!h9_lsp_ptr_cache_free_hit(&cache, b) ||
+      !h9_lsp_ptr_cache_free_hit(&cache, a) ||
+      h9_lsp_ptr_cache_free_hit(&cache, a)) {
+    fprintf(stderr, "pointer-token cache last/ledger contract failed\n");
+    free(payload);
+    return 28;
+  }
   free(payload);
   return 0;
 }

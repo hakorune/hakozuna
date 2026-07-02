@@ -26,7 +26,8 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_PTR_ENTRY_USABLE = 9,
   H9_LSP_BENCH_PTR_ENTRY_REALLOC = 10,
   H9_LSP_BENCH_INLINE_PUBLIC = 11,
-  H9_LSP_BENCH_LAST_PUBLIC = 12
+  H9_LSP_BENCH_LAST_PUBLIC = 12,
+  H9_LSP_BENCH_LAST_LEDGER = 13
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -40,6 +41,12 @@ typedef struct H9LspLastPublic {
   H9LspPtrToken last;
   uint32_t class_id;
 } H9LspLastPublic;
+
+typedef struct H9LspLastLedgerPublic {
+  H9LspInlinePage page;
+  H9LspPtrTokenCache cache;
+  uint32_t class_id;
+} H9LspLastLedgerPublic;
 
 static inline bool h9_lsp_inline_public_alloc(H9LspInlinePublic* entry,
                                               void** ptr_out) {
@@ -96,6 +103,26 @@ static inline bool h9_lsp_last_public_free(H9LspLastPublic* entry,
   return ok;
 }
 
+static inline bool h9_lsp_last_ledger_alloc(H9LspLastLedgerPublic* entry,
+                                            void** ptr_out) {
+  uint32_t slot = UINT32_MAX;
+  void* ptr = NULL;
+  if (!h9_lsp_inline_alloc_slot(&entry->page, &slot, &ptr)) {
+    return false;
+  }
+  h9_lsp_ptr_cache_insert(&entry->cache, ptr, &entry->page, slot,
+                          entry->class_id);
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  return true;
+}
+
+static inline bool h9_lsp_last_ledger_free(H9LspLastLedgerPublic* entry,
+                                           void* ptr) {
+  return h9_lsp_ptr_cache_free_hit(&entry->cache, ptr);
+}
+
 static double now_seconds(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -147,6 +174,8 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_INLINE_PUBLIC;
   } else if (strcmp(mode, "lastpublic") == 0) {
     bench_mode = H9_LSP_BENCH_LAST_PUBLIC;
+  } else if (strcmp(mode, "lastledger") == 0) {
+    bench_mode = H9_LSP_BENCH_LAST_LEDGER;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -229,6 +258,53 @@ int main(void) {
       success = success && h9_lsp_last_public_free(&public_entry, ptr);
       if (!success) {
         fprintf(stderr, "lsp last public transition failed at iter %llu\n",
+                (unsigned long long)i);
+        free(payload);
+        return 3;
+      }
+      sink ^= (uintptr_t)ptr;
+      ++ok;
+    }
+    double elapsed = now_seconds() - start;
+    if (elapsed <= 0.0) {
+      elapsed = 1e-9;
+    }
+    printf("mode=%s class=%u iters=%llu touch=%u ops_per_s=%.2f "
+           "elapsed=%.6f route_valid=0 route_invalid=0 route_miss=0 "
+           "malloc_hit=0 segment_create=0 sink=%" PRIuPTR "\n",
+           mode, class_id, (unsigned long long)iters, touch ? 1u : 0u,
+           (double)ok / elapsed, elapsed, sink);
+    free(payload);
+    return 0;
+  }
+
+  if (bench_mode == H9_LSP_BENCH_LAST_LEDGER) {
+    size_t payload_bytes = (size_t)slot_size * 64u;
+    void* payload = malloc(payload_bytes);
+    if (!payload) {
+      fprintf(stderr, "lsp last ledger payload alloc failed\n");
+      return 2;
+    }
+    H9LspLastLedgerPublic public_entry = {
+        .class_id = class_id,
+    };
+    h9_lsp_inline_page_init(&public_entry.page, (uintptr_t)payload, slot_size,
+                            64u);
+    public_entry.page.class_id = class_id;
+    uint64_t ok = 0u;
+    uintptr_t sink = 0u;
+    double start = now_seconds();
+    for (uint64_t i = 0; i < iters; ++i) {
+      void* ptr = NULL;
+      bool success = h9_lsp_last_ledger_alloc(&public_entry, &ptr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)ptr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success = success && h9_lsp_last_ledger_free(&public_entry, ptr);
+      if (!success) {
+        fprintf(stderr, "lsp last ledger transition failed at iter %llu\n",
                 (unsigned long long)i);
         free(payload);
         return 3;
