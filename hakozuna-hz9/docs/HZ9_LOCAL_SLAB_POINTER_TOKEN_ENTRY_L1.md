@@ -133,6 +133,12 @@ lastpublic, one-entry LIFO token ceiling, ITERS=30000000:
 
 lastledger, last-token first then 64-entry ledger, ITERS=30000000:
   231.725M ops/s
+
+live-only clear + compact token, lastledger, ITERS=30000000:
+  314.480M ops/s
+
+hot/cold pointer split, ITERS=30000000:
+  271.814M ops/s
 ```
 
 Read:
@@ -166,6 +172,23 @@ The first combined last+ledger probe improves over the 64-entry-only ledger but
 still misses the 350M gate.  Treat it as evidence that the last-token fast path
 is valuable, while general ledger spill must be cold-path enough to avoid
 taxing the local common case.
+
+HotPathTrim result:
+
+```text
+live-only clear:
+  useful
+
+compact token:
+  useful
+
+hot/cold pointer split:
+  HOLD, pointer indirection is visible in this micro shape
+```
+
+After trimming, `lastledger` improves to about 314M but remains below the 350M
+gate.  The next candidate should avoid general ledger work on the common LIFO
+case rather than adding another pointer layer.
 ```
 
 ## Commands
@@ -179,6 +202,8 @@ MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastpublic CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastledger CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

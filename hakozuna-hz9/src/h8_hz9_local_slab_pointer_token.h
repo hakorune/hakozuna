@@ -16,8 +16,6 @@ typedef struct H9LspPtrToken {
   H9LspInlinePage* page;
   uint32_t slot;
   uint32_t generation;
-  uint32_t class_id;
-  uint32_t slot_size;
   uint8_t live;
 } H9LspPtrToken;
 
@@ -30,6 +28,11 @@ typedef struct H9LspPtrTokenCache {
   H9LspPtrLedger ledger;
 } H9LspPtrTokenCache;
 
+typedef struct H9LspPtrTokenHotCold {
+  H9LspPtrToken last;
+  H9LspPtrLedger* cold;
+} H9LspPtrTokenHotCold;
+
 static inline uint32_t h9_lsp_ptr_ledger_index(const void* ptr) {
   return (uint32_t)(((uintptr_t)ptr >> 6u) &
                     (uintptr_t)(H9_LSP_PTR_LEDGER_SIZE - 1u));
@@ -39,12 +42,6 @@ static inline void h9_lsp_ptr_ledger_clear_entry(H9LspPtrToken* token) {
   if (!token) {
     return;
   }
-  token->ptr = NULL;
-  token->page = NULL;
-  token->slot = 0u;
-  token->generation = 0u;
-  token->class_id = 0u;
-  token->slot_size = 0u;
   token->live = 0u;
 }
 
@@ -55,13 +52,12 @@ static inline void h9_lsp_ptr_ledger_insert(H9LspPtrLedger* ledger, void* ptr,
   if (!ledger || !ptr || !page) {
     return;
   }
+  (void)class_id;
   H9LspPtrToken* token = &ledger->entries[h9_lsp_ptr_ledger_index(ptr)];
   token->ptr = ptr;
   token->page = page;
   token->slot = slot;
   token->generation = page->generation;
-  token->class_id = class_id;
-  token->slot_size = page->slot_size;
   token->live = 1u;
 }
 
@@ -71,13 +67,12 @@ static inline void h9_lsp_ptr_token_fill(H9LspPtrToken* token, void* ptr,
   if (!token || !ptr || !page) {
     return;
   }
+  (void)class_id;
   *token = (H9LspPtrToken){
       .ptr = ptr,
       .page = page,
       .slot = slot,
       .generation = page->generation,
-      .class_id = class_id,
-      .slot_size = page->slot_size,
       .live = 1u,
   };
 }
@@ -114,7 +109,8 @@ static inline void h9_lsp_ptr_cache_insert(H9LspPtrTokenCache* cache,
   if (cache->last.live) {
     h9_lsp_ptr_ledger_insert(&cache->ledger, cache->last.ptr,
                              cache->last.page, cache->last.slot,
-                             cache->last.class_id);
+                             cache->last.page ? cache->last.page->class_id
+                                              : 0u);
   }
   h9_lsp_ptr_token_fill(&cache->last, ptr, page, slot, class_id);
 }
@@ -140,6 +136,33 @@ static inline bool h9_lsp_ptr_cache_free_hit(H9LspPtrTokenCache* cache,
     return true;
   }
   return h9_lsp_ptr_ledger_free_hit(&cache->ledger, ptr);
+}
+
+static inline void h9_lsp_ptr_hotcold_insert(H9LspPtrTokenHotCold* cache,
+                                             void* ptr, H9LspInlinePage* page,
+                                             uint32_t slot,
+                                             uint32_t class_id) {
+  if (!cache) {
+    return;
+  }
+  if (cache->last.live && cache->cold) {
+    h9_lsp_ptr_ledger_insert(cache->cold, cache->last.ptr, cache->last.page,
+                             cache->last.slot,
+                             cache->last.page ? cache->last.page->class_id
+                                              : 0u);
+  }
+  h9_lsp_ptr_token_fill(&cache->last, ptr, page, slot, class_id);
+}
+
+static inline bool h9_lsp_ptr_hotcold_free_hit(H9LspPtrTokenHotCold* cache,
+                                               void* ptr) {
+  if (!cache) {
+    return false;
+  }
+  if (h9_lsp_ptr_token_free_checked(&cache->last, ptr)) {
+    return true;
+  }
+  return cache->cold ? h9_lsp_ptr_ledger_free_hit(cache->cold, ptr) : false;
 }
 
 #endif
