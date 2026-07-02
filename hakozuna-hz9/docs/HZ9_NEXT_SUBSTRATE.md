@@ -154,6 +154,14 @@ debug read:
 next posture:
   do not continue LocalArena threshold tuning
   choose the next HZ9 substrate only after a source-shape/cost read
+
+source-shape read:
+  RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh
+  PASS
+  bench_results/20260702T121610Z_hz9_layout_audit
+  bench_results/20260702T121610Z_hz9_code_shape_audit
+  H8OwnerRecord/H8ThreadCtx layout and public entry code shape are controlled.
+  The next blocker is substrate body/local cost, not hidden layout growth.
 ```
 
 ## Active Constraints

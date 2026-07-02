@@ -26,35 +26,73 @@ Do not continue tuning TLS object cache admission on top of HZ8 medium runs.
 The next HZ9 substrate must avoid HZ8 medium-run local fixed cost rather than
 adding more admission checks around it.
 
-Owner-local page pool is the latest substrate evidence. It proves a clean
-owner-page API and fail-closed route boundary, but the current purelocal
-behavior is HOLD for broad HZ9 default. Directory-first free routing reduces
-remote-row route tax, but medium local still regresses in the latest short
-gate.
+OwnerLocalPagePool proves a clean owner-page API and fail-closed route
+boundary, but purelocal behavior is HOLD for broad HZ9 default.
+DirectSlabUse proves SlabPage is remote/profile evidence, not the broad local
+substrate. LocalPhaseAdmission proves LocalArena threshold gating is not enough:
+remote page creation can be blocked, but entry/body cost still regresses local
+and remote medium rows.
 ```
 
 ## Active Box
 
 ```text
-HZ9OwnerLocalPagePoolPureLocal-L1
+HZ9 source-shape / next-substrate read
 
 status:
-  scaffold/API/page-lifetime skeleton implemented
-  local allocation pop returns owner-page pointers
-  same-owner free pushes back to local_free_bits
-  remote free marks REMOTE_SEEN and claims pending bits
-  remote producer does not write local_free_bits
-  local_free_bits are atomic and same-owner local free routes through TLS
-  class is disabled after REMOTE_SEEN to reduce repeated remote admission
-  owner-page free route is checked only after HZ8 medium directory MISS
-  perf gate: HOLD as default, profile/evidence only
+  HZ8 remains the frozen balanced default
+  HZ9 remains a standalone throughput research tree
+  OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
+  do not open another threshold/admission retune without a new substrate shape
 
-source:
-  src/h8_hz9_owner_page_pool.c
-  mk/hz9_owner_page_pool_targets.mk
+latest source-shape gate:
+  RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh
+  PASS
 
-design SSOT:
-  docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md
+latest audit:
+  bench_results/20260702T121610Z_hz9_layout_audit
+  bench_results/20260702T121610Z_hz9_code_shape_audit
+
+layout:
+  H8OwnerRecord baseline/scaffold 440
+  H8ThreadCtx baseline/scaffold 144
+
+code shape:
+  h8_malloc_inner baseline/scaffold 743 bytes / 203 insn
+  h8_malloc_non_small_inner baseline/scaffold 131 bytes / 39 insn
+  h8_free_inner baseline/scaffold 69 bytes / 22 insn
+  h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
+```
+
+Latest behavior result:
+
+```text
+HZ9LocalPhaseAdmission-L0:
+  variant localarena_dense_ownerfast_phase8
+  R1 ratios:
+    medium_local0 0.816
+    main_local0   0.823
+    medium_r50    0.611
+    main_r90      0.622
+  decision:
+    NO-GO; do not tune the threshold wider without a new mechanism
+```
+
+Current profile/evidence lanes:
+
+```text
+OwnerPage:
+  HZ9OwnerLocalPagePoolPureLocal-L1
+  source: src/h8_hz9_owner_page_pool.c
+  detail: docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md
+
+SlabPage:
+  DirectSlabUse / integrated min4 / layout-neutral proofs
+  detail: docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
+
+LocalArena:
+  dense_ownerfast / remoteactive / phase8 proofs
+  detail: docs/HZ9_LOCAL_ARENA_L0.md
 ```
 
 Implemented so far:

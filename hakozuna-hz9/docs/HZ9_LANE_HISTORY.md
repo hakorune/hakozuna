@@ -133,6 +133,15 @@ admission after class remote history:
 fixed-count probation:
   still creates too many remote-contaminated pages.
   NO-GO; do not tune the count.
+
+local phase admission:
+  localarena_dense_ownerfast_phase8 delayed page creation until 8 local
+  allocation attempts and marked class remote history from HZ8 fallback remote
+  frees.
+  R1 ratios: medium_local0 0.816, main_local0 0.823, medium_r50 0.611,
+  main_r90 0.622.
+  NO-GO; remote page creation can be blocked, but LocalArena entry/body cost
+  still regresses broad rows.
 ```
 
 ## Latest LocalArena Read
@@ -157,11 +166,12 @@ read:
 ## Current Next Hypothesis
 
 ```text
-HZ9LocalArenaRemoteSafePage-L1:
-  owner-fast pages before class remote history.
-  remote-safe atomic LocalArena pages after class remote history.
-  avoid fallback to HZ8 medium for known remote-heavy classes.
-  keep pending/qstate/route/owner-exit authority intact.
+No active LocalArena page-mode hypothesis.
+
+Next HZ9 substrate work must start from source-shape/cost evidence:
+  keep pending/qstate/route/owner-exit authority intact
+  keep HZ9 standalone layout and public entry shape clean
+  avoid another threshold-only admission retune
 ```
 
 ## Remote-Safe Page Result
@@ -220,6 +230,7 @@ keep:
   pending/qstate remote authority
   class-pressure counters
   min0 / sidecar / LocalArena / remote-safe evidence
+  standalone source-shape gate
 
 next substrate must:
   cover 8K..32K for main rows
@@ -227,4 +238,22 @@ next substrate must:
   structurally isolate small-v0 hot rows
   avoid public-entry checks for small-owned pointers
   avoid large experimental arrays in H8ThreadCtx / H8OwnerRecord
+```
+
+## Latest Source-Shape Gate
+
+```text
+command:
+  RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh
+
+result:
+  PASS
+
+logs:
+  bench_results/20260702T121610Z_hz9_layout_audit
+  bench_results/20260702T121610Z_hz9_code_shape_audit
+
+read:
+  layout and public entry shape are controlled; the remaining blocker is the
+  substrate body/local cost, not hidden H8OwnerRecord/H8ThreadCtx growth.
 ```
