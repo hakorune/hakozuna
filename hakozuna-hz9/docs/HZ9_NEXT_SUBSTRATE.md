@@ -128,14 +128,15 @@ Before writing another allocator body:
     owner-page route/admission overhead on local rows
 
 Candidate shape:
-  HZ9PostOwnerPageSubstrateClosure-L1
-  behavior change: none
+  HZ9DirectSlabUseProof-L0
+  behavior change:
+    proof-only / opt-in
   purpose:
-    consolidate owner-page HOLD evidence and identify whether the next box is
-    a fresh local page/cache design or a smaller source-shape cleanup
+    isolate the SlabPage body from entry/route/admission overhead before
+    deciding whether to write a fresh allocator body
 
 SSOT:
-  docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
+  docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
 
 latest read:
   sidecar/slab release probes retain strong remote-heavy wins but still

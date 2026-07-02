@@ -34,6 +34,9 @@ HZ9_NEXT_SUBSTRATE.md:
 HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md:
   post owner-page closure, closed lanes, and next-substrate requirements
 
+HZ9_DIRECT_SLAB_USE_PROOF_L0.md:
+  next proof box for isolating SlabPage body cost from entry/route overhead
+
 HZ9_FRESH_LOCAL_PAGE_SUBSTRATE_L0.md:
   post-SlabPage design-prep box for entry/integrated proof results and the
   next page substrate
@@ -67,6 +70,7 @@ LocalArena:
 
 next:
   use HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md for the current gate
+  use HZ9_DIRECT_SLAB_USE_PROOF_L0.md for the next proof box
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
   owner-page PureLocal L1 is implemented and held as profile/evidence

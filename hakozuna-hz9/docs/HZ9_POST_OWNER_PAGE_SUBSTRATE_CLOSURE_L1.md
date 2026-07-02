@@ -190,6 +190,20 @@ source-shape cleanup only:
 If the next candidate cannot clearly avoid both remote admission and local
 owner-page overhead, do not implement it as behavior.
 
+Selected next proof:
+
+```text
+HZ9DirectSlabUseProof-L0
+
+reason:
+  Slab/sidecar rows show the page body can be fast, but entry/route/admission
+  overhead blocks default promotion. The next proof isolates the page body from
+  the selection path before any fresh allocator body is written.
+
+SSOT:
+  docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
+```
+
 ## Gate Before Behavior
 
 ```text

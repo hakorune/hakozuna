@@ -29,8 +29,10 @@ current follow-up:
   HZ9OwnerLocalPagePoolPureLocal-L1 is implemented as profile/evidence
   directory-first free routing reduced remote tax, but medium_local0 remains
   below baseline
-  next implementation step is not more owner-page tuning unless a new shape
-  removes both remote admission and local owner-page overhead
+  post-owner-page closure selects HZ9DirectSlabUseProof-L0 as the next
+  proof-only box
+  next behavior must not be more owner-page or SlabPage admission tuning unless
+  the proof shows the page body itself is a viable base
 ```
 
 ## Lessons To Preserve
