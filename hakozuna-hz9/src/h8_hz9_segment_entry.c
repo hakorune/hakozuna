@@ -508,6 +508,27 @@ bool h9_segment_entry_debug_cycle_tls_checked_touch(uint32_t class_id,
                                                    ptr_out);
 }
 
+bool h9_segment_entry_debug_cycle_tls_epoch_body(uint32_t class_id,
+                                                 uint64_t value, bool touch,
+                                                 void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+    page = (H9SegmentEntryPage*)handle;
+  }
+  uint32_t page_id = h9_segment_entry_active[class_id];
+  if (page_id >= h9_segment_entry_page_count ||
+      &h9_segment_entry_pages[page_id] != page) {
+    return false;
+  }
+  return h9_segment_entry_cycle_page_checked_touch(page, value, touch,
+                                                   ptr_out);
+}
+
 bool h9_segment_entry_debug_cycle_tls_route_body(uint32_t class_id,
                                                  uint64_t value, bool touch,
                                                  void** ptr_out) {

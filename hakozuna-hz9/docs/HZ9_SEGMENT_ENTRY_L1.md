@@ -201,6 +201,14 @@ tlscheckedtouch mode:
     tlscheckedtouch touch=1: about 399-464M ops/s
     tls cycle touch=1: about 609-613M ops/s
 
+tlsepochbody mode:
+  adds an active-page/epoch-style pointer check before the same checked-touch
+  body
+  class 64K, 5M-iteration R3:
+    tlscheckedtouch touch=1: about 435-443M ops/s
+    tlsepochbody touch=1: about 318-359M ops/s
+    tlsroute64body touch=1: about 289-294M ops/s
+
 tlsroutebody mode:
   fuses the TLS cached-page cycle, payload-touches, then performs exact
   global route lookup while the slot is still allocated before returning it
@@ -294,6 +302,9 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   64-cycle sampling body remains far below tlscheckedtouch; HZ9 should avoid
   per-allocation route sampling in the local hot body and instead attach route
   authority at coarser ownership/epoch boundaries
+  tlsepochbody shows that even cheap active-page/epoch checks are too expensive
+  if they are paid on every local reuse; validate the local segment at
+  acquisition/retirement boundaries and keep the local body fused
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push

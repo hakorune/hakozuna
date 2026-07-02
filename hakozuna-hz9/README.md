@@ -118,6 +118,8 @@ ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 make -C hakozuna-hz9 smoke-hz9segmententry
 MODE=tlscheckedtouch CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
+MODE=tlsepochbody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlsroutebody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlsroute64body CLASS_ID=5 ITERS=5000000 TOUCH=1 \

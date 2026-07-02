@@ -33,6 +33,10 @@ bool h9_segment_entry_debug_cycle_tls_checked_touch(uint32_t class_id,
                                                     uint64_t value,
                                                     bool touch,
                                                     void** ptr_out);
+bool h9_segment_entry_debug_cycle_tls_epoch_body(uint32_t class_id,
+                                                 uint64_t value,
+                                                 bool touch,
+                                                 void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_route_body(uint32_t class_id,
                                                  uint64_t value,
                                                  bool touch,

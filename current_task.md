@@ -22,7 +22,7 @@ Current direction:
                 segments leaving LOCAL state.
                 SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
-                tlsroutebody/sampling say route checks must stay out of hot body;
+                route/epoch checks must stay out of the local hot body;
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
