@@ -180,6 +180,14 @@ route_addr(class, addr):
   LOCAL interior/tail slack -> INVALID
   REMOTE_SEEN/RETIRED in-range -> INVALID
 
+take_addr(class):
+  consumes one local free slot
+  returns base + slot * slot_size
+
+free_addr(class, addr):
+  accepts exact allocated local slot only
+  rejects duplicate, interior, and remote-contaminated addresses
+
 not yet:
   pointer route integration
   malloc/free entry wiring

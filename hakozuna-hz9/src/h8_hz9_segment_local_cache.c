@@ -37,6 +37,29 @@ static H9SegmentLocalClass* h9_segment_class(uint32_t class_id) {
   return &h9_segment_tls.classes[class_id];
 }
 
+static H8RouteKind h9_segment_route_offset_to_slot(uint32_t class_id,
+                                                   size_t offset,
+                                                   uint32_t* slot_out) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return H8_ROUTE_MISS;
+  }
+  size_t payload_bytes = (size_t)slot_size * (size_t)slot_count;
+  if (offset >= (size_t)run_size) {
+    return H8_ROUTE_MISS;
+  }
+  if (offset >= payload_bytes || (offset % (size_t)slot_size) != 0u) {
+    return H8_ROUTE_INVALID;
+  }
+  if (slot_out) {
+    *slot_out = (uint32_t)(offset / (size_t)slot_size);
+  }
+  return H8_ROUTE_VALID;
+}
+
 void h9_segment_local_cache_debug_reset(void) {
   memset(&h9_segment_tls, 0, sizeof(h9_segment_tls));
 }
@@ -201,24 +224,7 @@ bool h9_segment_local_cache_debug_class_capacity(uint32_t class_id,
 
 H8RouteKind h9_segment_local_cache_debug_route_offset(uint32_t class_id,
                                                       size_t offset) {
-  uint32_t slot_size = 0u;
-  uint32_t run_size = 0u;
-  uint16_t slot_count = 0u;
-  if (!h9_segment_local_cache_debug_class_geometry(
-          class_id, &slot_size, &run_size, &slot_count)) {
-    return H8_ROUTE_MISS;
-  }
-  size_t payload_bytes = (size_t)slot_size * (size_t)slot_count;
-  if (offset >= (size_t)run_size) {
-    return H8_ROUTE_MISS;
-  }
-  if (offset >= payload_bytes) {
-    return H8_ROUTE_INVALID;
-  }
-  if ((offset % (size_t)slot_size) != 0u) {
-    return H8_ROUTE_INVALID;
-  }
-  return H8_ROUTE_VALID;
+  return h9_segment_route_offset_to_slot(class_id, offset, NULL);
 }
 
 bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
@@ -264,6 +270,45 @@ H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
     return H8_ROUTE_INVALID;
   }
   return h9_segment_local_cache_debug_route_offset(class_id, (size_t)offset);
+}
+
+bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
+                                            uintptr_t* addr_out) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return false;
+  }
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->base_addr == 0u) {
+    return false;
+  }
+  uint32_t slot = 0u;
+  if (!h9_segment_local_cache_debug_take(class_id, &slot)) {
+    return false;
+  }
+  if (addr_out) {
+    *addr_out = cls->base_addr + (uintptr_t)slot * (uintptr_t)slot_size;
+  }
+  return true;
+}
+
+bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,
+                                            uintptr_t addr) {
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->base_addr == 0u || addr < cls->base_addr ||
+      cls->state != H9_SEGMENT_LOCAL) {
+    return false;
+  }
+  uint32_t slot = 0u;
+  uintptr_t offset = addr - cls->base_addr;
+  if (h9_segment_route_offset_to_slot(class_id, (size_t)offset, &slot) !=
+      H8_ROUTE_VALID) {
+    return false;
+  }
+  return h9_segment_local_cache_debug_free_allocated(class_id, slot);
 }
 
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {

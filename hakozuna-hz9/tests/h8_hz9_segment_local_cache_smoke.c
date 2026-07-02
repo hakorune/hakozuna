@@ -260,6 +260,48 @@ static int check_bound_route(void) {
   return 0;
 }
 
+static int check_bound_alloc_free(void) {
+  const uint32_t class_id = 5u;
+  const uintptr_t base = (uintptr_t)0x20000000u;
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  h9_segment_local_cache_debug_reset();
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count) ||
+      !h9_segment_local_cache_debug_bind_base(class_id, base) ||
+      !h9_segment_local_cache_debug_put(class_id, 0u) ||
+      !h9_segment_local_cache_debug_put(class_id, 1u)) {
+    fprintf(stderr, "segment bound alloc/free setup failed\n");
+    return 70;
+  }
+  uintptr_t addr0 = 0u;
+  uintptr_t addr1 = 0u;
+  if (!h9_segment_local_cache_debug_take_addr(class_id, &addr0) ||
+      addr0 != base ||
+      !h9_segment_local_cache_debug_take_addr(class_id, &addr1) ||
+      addr1 != base + slot_size) {
+    fprintf(stderr, "segment bound take address failed\n");
+    return 71;
+  }
+  if (!h9_segment_local_cache_debug_free_addr(class_id, addr1) ||
+      h9_segment_local_cache_debug_free_addr(class_id, addr1) ||
+      h9_segment_local_cache_debug_free_addr(class_id, addr0 + 1u)) {
+    fprintf(stderr, "segment bound free address validation failed\n");
+    return 72;
+  }
+  if (!h9_segment_local_cache_debug_remote_mark(class_id, 0u) ||
+      h9_segment_local_cache_debug_free_addr(class_id, addr0) ||
+      h9_segment_local_cache_debug_route_addr(class_id, addr0) !=
+          H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment bound remote free rejection failed\n");
+    return 73;
+  }
+  (void)run_size;
+  (void)slot_count;
+  return 0;
+}
+
 int main(void) {
   h8_init();
   int rc = check_class_geometry();
@@ -271,6 +313,10 @@ int main(void) {
     return rc;
   }
   rc = check_bound_route();
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_bound_alloc_free();
   if (rc != 0) {
     return rc;
   }
