@@ -580,8 +580,9 @@ stop if:
 
 ```text
 HZ9SegmentLocalRouteProof-L0:
-  local-only route proof
-  connect a real segment payload to exact local allocation/free only
+  first behavior candidate after SegmentLocalCache evidence
+  connect a real segment payload to active direct known-slot local reuse
+  use route_table_slot for public free validation only
   keep remote mark -> RETIRED fallback behavior
   keep public entry and small path unchanged
   keep H8OwnerRecord / H8ThreadCtx layout unchanged
@@ -608,6 +609,20 @@ medium_r50 / main_r90:
 source shape:
   no baseline h8_malloc_inner / h8_free_inner growth
   no active file over 800 lines
+```
+
+Implementation rule:
+
+```text
+local hit core:
+  active segment pointer
+  direct known-slot take/free body
+  no route classification
+
+public free boundary:
+  route_table_slot
+  exact slot validation
+  owned INVALID remains fail-closed
 ```
 
 This is the next HZ9 substrate lane. OwnerPage, SlabPage, LocalArena, and

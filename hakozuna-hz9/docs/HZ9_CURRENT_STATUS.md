@@ -74,15 +74,20 @@ current design:
   remote-contaminated segment must leave LOCAL state
   owner-drain debug path retires remote-contaminated segments
   release_all clears touched TLS segment state for exit scaffolding
-  API microbench and class sweep exist for local body cost evidence
+  API and real-payload sweeps separate local direct body from public route cost
+  active direct body remains about 421M+ ops/s on real payload
+  route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:
   make -C hakozuna-hz9 smoke-hz9segmentlocalcache
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
+  ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
 
 next segment behavior:
   HZ9SegmentLocalRouteProof-L0
-  local-only exact route proof before remote reuse or default promotion
+  active segment pointer + direct known-slot body for local reuse
+  route_table_slot only for fail-closed public free validation
+  remote-contaminated segment retires instead of rejoining LOCAL
 
 profile gate:
   scripts/run_hz9_profile_local_gate.sh
