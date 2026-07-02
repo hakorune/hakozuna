@@ -87,15 +87,23 @@ int main(void) {
         p[slot_size - 1u] = (unsigned char)(i >> 8);
       }
       H8RouteKind route_kind =
-          active_route == 2u
+          active_route >= 2u
               ? h9_segment_local_cache_debug_route_active_slot_addr(
                     addr, &routed_class, &routed_slot)
               : h9_segment_local_cache_debug_route_table_slot_addr(
                     addr, &routed_class, &routed_slot);
       success = success && route_kind == H8_ROUTE_VALID &&
-                routed_class == class_id && routed_slot == slot &&
-                h9_segment_local_cache_debug_free_allocated(routed_class,
-                                                            routed_slot);
+                routed_class == class_id && routed_slot == slot;
+      if (active_route == 3u) {
+        success =
+            success &&
+            h9_segment_local_cache_debug_free_allocated(class_id, slot);
+      } else {
+        success =
+            success &&
+            h9_segment_local_cache_debug_free_allocated(routed_class,
+                                                        routed_slot);
+      }
     } else if (active_cycle) {
       success = h9_segment_local_cache_debug_active_cycle_known(&addr);
       if (success && touch) {

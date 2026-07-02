@@ -545,6 +545,14 @@ active_route=2, touch=1:
   class3 171.2M ops/s
   class4 168.7M ops/s
   class5 170.8M ops/s
+
+active_route=3, touch=1:
+  class0 171.9M ops/s
+  class1 167.5M ops/s
+  class2 165.7M ops/s
+  class3 170.7M ops/s
+  class4 160.2M ops/s
+  class5 160.4M ops/s
 ```
 
 Interpretation:
@@ -580,6 +588,12 @@ active-first route probe:
   trying the active segment before the table route lands around 147-174M ops/s
   it helps upper classes and is a plausible public free fast boundary
   however the gap to active direct local remains large
+
+route-only probe:
+  active_route=3 validates active-first route and then frees by known slot
+  it still lands around 160-172M ops/s
+  therefore route classification, not the final free mutation, is the main
+  public-cycle limiter in this scaffold
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
