@@ -14,6 +14,9 @@
   size_t h9_static_page_shadow_local_free_store_blocked;
   size_t h9_static_page_shadow_remote_seen;
   size_t h9_static_page_shadow_remote_after_local;
+  size_t h9_static_page_shadow_remote_class_disable;
+  size_t h9_static_page_shadow_alloc_disabled;
+  size_t h9_static_page_shadow_local_free_disabled;
   size_t h9_static_page_shadow_alloc_class[6];
   size_t h9_static_page_shadow_hit_class[6];
   size_t h9_static_page_shadow_free_class[6];

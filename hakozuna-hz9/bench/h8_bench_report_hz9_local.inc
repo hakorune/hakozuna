@@ -97,7 +97,7 @@
          debug.h9_owner_page_api_remote_class[5]);
 #endif
 #if defined(H9_STATIC_LOCAL_PAGE_SHADOW_L0)
-  printf("h9_static_page_shadow alloc_seen=%zu hit_possible=%zu local_free=%zu store_possible=%zu not_active=%zu store_blocked=%zu remote_seen=%zu remote_after_local=%zu hit_ratio=%.3f store_ratio=%.3f\n",
+  printf("h9_static_page_shadow alloc_seen=%zu hit_possible=%zu local_free=%zu store_possible=%zu not_active=%zu store_blocked=%zu remote_seen=%zu remote_after_local=%zu remote_disable=%zu alloc_disabled=%zu free_disabled=%zu hit_ratio=%.3f store_ratio=%.3f\n",
          debug.h9_static_page_shadow_alloc_seen,
          debug.h9_static_page_shadow_alloc_hit_possible,
          debug.h9_static_page_shadow_local_free_seen,
@@ -106,6 +106,9 @@
          debug.h9_static_page_shadow_local_free_store_blocked,
          debug.h9_static_page_shadow_remote_seen,
          debug.h9_static_page_shadow_remote_after_local,
+         debug.h9_static_page_shadow_remote_class_disable,
+         debug.h9_static_page_shadow_alloc_disabled,
+         debug.h9_static_page_shadow_local_free_disabled,
          debug.h9_static_page_shadow_alloc_seen
              ? (double)debug.h9_static_page_shadow_alloc_hit_possible /
                    (double)debug.h9_static_page_shadow_alloc_seen

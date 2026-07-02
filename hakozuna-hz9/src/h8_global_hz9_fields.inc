@@ -54,6 +54,9 @@
   atomic_size_t h9_static_page_shadow_local_free_store_blocked;
   atomic_size_t h9_static_page_shadow_remote_seen;
   atomic_size_t h9_static_page_shadow_remote_after_local;
+  atomic_size_t h9_static_page_shadow_remote_class_disable;
+  atomic_size_t h9_static_page_shadow_alloc_disabled;
+  atomic_size_t h9_static_page_shadow_local_free_disabled;
   atomic_size_t h9_static_page_shadow_alloc_class[6];
   atomic_size_t h9_static_page_shadow_hit_class[6];
   atomic_size_t h9_static_page_shadow_free_class[6];

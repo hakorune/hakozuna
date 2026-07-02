@@ -6,6 +6,9 @@
   H8_DEBUG_LOAD(h9_static_page_shadow_local_free_store_blocked);
   H8_DEBUG_LOAD(h9_static_page_shadow_remote_seen);
   H8_DEBUG_LOAD(h9_static_page_shadow_remote_after_local);
+  H8_DEBUG_LOAD(h9_static_page_shadow_remote_class_disable);
+  H8_DEBUG_LOAD(h9_static_page_shadow_alloc_disabled);
+  H8_DEBUG_LOAD(h9_static_page_shadow_local_free_disabled);
   for (size_t i = 0; i < 6u; ++i) {
     out->h9_static_page_shadow_alloc_class[i] = atomic_load_explicit(
         &h8g.h9_static_page_shadow_alloc_class[i], memory_order_acquire);

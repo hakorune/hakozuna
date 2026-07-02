@@ -13,12 +13,15 @@ Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ9 single-folder closure is complete enough for local development:
-                hz9-standalone-check passes from parent and hakozuna-hz9 root.
+  HZ9 single-folder closure is complete enough for local development.
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 read: HZ9SubstrateCostMatrix-L0.
+  Current HZ9 read: HZ9StaticLocalPageScaffold-L0.
+                Static TLS local page shadow shows strong local-only reuse and
+                r50 remote contamination; class-disable shadow is likely too
+                coarse, so behavior needs a narrower admission boundary.
+  Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
                 OwnerPage purelocal is closest local substrate so far, but
@@ -28,16 +31,14 @@ Current direction:
                 candidates; keep them as attribution only.
                 OwnerPage bits/shadow helpers are split out; keep active source
                 files under the 800-line rule before new experiments.
-  Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
-                matter; keep them as proof-only evidence.
-  HZ9 route-last / LocalArena remote-safe are closed as NO-GO evidence.
+  Prior route-off/layout and remote-safe variants are proof-only / NO-GO.
   Current HZ9 SlabPage variants are evidence/profile, not default.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
   HZ8 is the balanced default line.
   HZ6 narrow Windows baselines are frozen as reference evidence.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
-  HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
+  HZ9 cache/SlabPage/LocalArena lanes are evidence, not default.
   Next HZ9 behavior development should avoid per-allocation owner-page tax,
                 broad no-use route/layout contamination, and unsafe pure-local
                 mutation on mixed remote rows.

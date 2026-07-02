@@ -110,6 +110,12 @@ remote_seen:
 
 remote_after_local:
   remote pressure appeared while the class had local shadow state
+
+remote_class_disable:
+  first remote free disables the class in the admission-bound shadow model
+
+alloc_disabled / local_free_disabled:
+  work that would be skipped after class-level remote admission closes
 ```
 
 Class arrays are reported for alloc/hit/free/remote distribution.
@@ -163,6 +169,64 @@ remote contamination:
 next design implication:
   behavior must either be local/profile-only or add an explicit remote
   admission boundary before default consideration
+```
+
+## Remote Admission Shadow
+
+The second shadow model is intentionally coarse:
+
+```text
+first remote free in class:
+  disable static local page admission for that class
+
+subsequent allocation/free in that class:
+  counted as disabled and not stored/taken in the model
+```
+
+This does not change behavior. It answers one question before adding a real
+mechanism:
+
+```text
+Is class-level remote admission too coarse for r50/mixed rows?
+```
+
+Expected reads:
+
+```text
+local0:
+  remote_disable = 0
+  alloc_disabled = 0
+  free_disabled = 0
+
+r50:
+  if alloc_disabled/free_disabled dominate, class-level admission is too coarse
+  and any behavior must use a narrower phase/thread/profile boundary
+```
+
+Short debug read after adding the admission shadow:
+
+```text
+medium_local0:
+  remote_disable 0
+  alloc_disabled 0
+  free_disabled 0
+  hit_ratio 0.999
+
+medium_r50:
+  remote_disable 120
+  alloc_disabled 99720 / 100000
+  free_disabled 49662 / 49804
+  hit_ratio 0.001
+```
+
+Interpretation:
+
+```text
+class-level remote admission:
+  too coarse for mixed r50
+
+next viable boundary:
+  narrower phase/thread/profile admission, not global class disable
 ```
 
 ## Smoke Contract

@@ -12,6 +12,7 @@ typedef struct H9StaticLocalClass {
 typedef struct H9StaticLocalPageState {
   H9StaticLocalClass classes[H8_MEDIUM_CLASS_COUNT];
   uint64_t touched_class_bits;
+  uint64_t remote_disabled_class_bits;
 } H9StaticLocalPageState;
 
 static _Thread_local H9StaticLocalPageState h9_static_local_page_tls;
@@ -100,6 +101,25 @@ uint64_t h9_static_local_page_debug_touched_classes(void) {
 
 #if defined(H9_STATIC_LOCAL_PAGE_SHADOW_L0) && \
     defined(H8_ENABLE_DEBUG_STATS)
+static bool h9_static_page_shadow_class_disabled(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return true;
+  }
+  return (h9_static_local_page_tls.remote_disabled_class_bits &
+          (UINT64_C(1) << class_id)) != 0u;
+}
+
+static void h9_static_page_shadow_disable_class(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint64_t bit = UINT64_C(1) << class_id;
+  if ((h9_static_local_page_tls.remote_disabled_class_bits & bit) == 0u) {
+    h9_static_local_page_tls.remote_disabled_class_bits |= bit;
+    H8_DEBUG_INC(h9_static_page_shadow_remote_class_disable);
+  }
+}
+
 static void h9_static_page_shadow_class_inc(atomic_size_t counters[6],
                                             uint32_t class_id) {
   if (class_id < 6u) {
@@ -116,6 +136,10 @@ void h9_static_local_page_shadow_note_alloc(H8ThreadCtx* ctx,
   H8_DEBUG_INC(h9_static_page_shadow_alloc_seen);
   h9_static_page_shadow_class_inc(h8g.h9_static_page_shadow_alloc_class,
                                   class_id);
+  if (h9_static_page_shadow_class_disabled(class_id)) {
+    H8_DEBUG_INC(h9_static_page_shadow_alloc_disabled);
+    return;
+  }
   uint32_t slot = 0;
   if (h9_static_local_page_debug_take(class_id, &slot)) {
     (void)slot;
@@ -137,6 +161,10 @@ void h9_static_local_page_shadow_note_local_free(H8ThreadCtx* ctx,
                                   run->class_id);
   if (!ctx || !keep_empty_live) {
     H8_DEBUG_INC(h9_static_page_shadow_local_free_not_active);
+    return;
+  }
+  if (h9_static_page_shadow_class_disabled(run->class_id)) {
+    H8_DEBUG_INC(h9_static_page_shadow_local_free_disabled);
     return;
   }
   if (h9_static_local_page_debug_free_allocated(run->class_id,
@@ -161,6 +189,7 @@ void h9_static_local_page_shadow_note_remote_free(H8ThreadCtx* ctx,
       h9_static_local_page_debug_alloc_bits(run->class_id) != 0u) {
     H8_DEBUG_INC(h9_static_page_shadow_remote_after_local);
   }
+  h9_static_page_shadow_disable_class(run->class_id);
 }
 #endif
 
