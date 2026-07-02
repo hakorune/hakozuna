@@ -121,6 +121,7 @@ Focused repeat:
 ```text
 log:
   bench_results/20260702T122124Z_ownerpage_focus_r3
+  bench_results/20260702T122433Z_hz9_owner_page_perf_gate
 
 ownerpage_purelocal R3:
   medium_local0 0.823
@@ -128,6 +129,13 @@ ownerpage_purelocal R3:
   medium_r50    1.171
   main_r90      0.884
   small_r90     0.899
+
+ownerpage perf gate R3:
+  medium_local0 0.911
+  main_local0   0.819
+  medium_r50    0.984
+  main_r90      0.881
+  small_r90     1.053
 ```
 
 OwnerPage code-shape read:
@@ -146,6 +154,35 @@ read:
   OwnerPage small-row regression is not explained by public free/non-arena
   route growth. Treat it as purelocal build/body/cache-shape evidence until a
   stronger attribution points elsewhere.
+```
+
+OwnerPage debug read:
+
+```text
+medium_local0:
+  alloc_call=960000
+  alloc_hit=960000
+  free_call=960000
+  route_hit=960000
+  mode_block=0
+
+main_local0:
+  alloc_call=840948
+  alloc_hit=840948
+  free_call=840948
+  route_hit=840948
+  mode_block=0
+
+small_interleaved_remote90:
+  alloc_call=0
+  free_call=0
+  route_attempt=0
+
+read:
+  Local rows are not losing to fallback or remote mode. They are losing even
+  with 100% OwnerPage local hits. Small rows do not touch OwnerPage API in the
+  debug sample. The next target is the OwnerPage local hit body: atomic
+  local_free_bits mutation, route_thread scan/decode, or page allocation shape.
 ```
 
 ## Initial Decision
