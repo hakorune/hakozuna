@@ -91,6 +91,11 @@ storemut / freebits:
   removing owner-local CAS/RMW and scan/load costs helped some remote rows
   did not repair medium/main local default gates
 
+ownerpage ownerfast-bits:
+  pure local pages replaced local_free_bits CAS/fetch_or with load/store.
+  fixed64_local0 and medium_local0 recovered materially.
+  medium_r50 and main_r90 regressed, so the proof is attribution only.
+
 post-hygiene next-substrate probe:
   SlabPage remained profile/evidence
   next default candidate must avoid local blocked checks and must not depend on

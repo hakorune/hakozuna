@@ -185,6 +185,49 @@ read:
   local_free_bits mutation, route_thread scan/decode, or page allocation shape.
 ```
 
+## OwnerPage Body Attribution
+
+```text
+box:
+  HZ9OwnerPageOwnerFastBits-L1
+
+scope:
+  opt-in proof only
+  pure local owner pages replace local_free_bits CAS/fetch_or with
+  atomic load/store
+  REMOTE_SEEN / DETACHED paths keep the existing atomic fetch_or fallback
+  HZ8/HZ9 default behavior unchanged
+
+log:
+  bench_results/20260702T122959Z_hz9_candidate_gate
+
+R3 ratios:
+  fixed64_local0:
+    purelocal 0.548
+    ownerfast_bits 0.963
+  medium_local0:
+    purelocal 0.948
+    ownerfast_bits 0.996
+  main_local0:
+    purelocal 0.946
+    ownerfast_bits 0.967
+  medium_r50:
+    purelocal 0.984
+    ownerfast_bits 0.860
+  main_r90:
+    purelocal 0.939
+    ownerfast_bits 0.932
+  small_interleaved_remote90:
+    purelocal 1.027
+    ownerfast_bits 1.022
+
+read:
+  local_free_bits atomic RMW is a real local body cost. Removing it nearly
+  recovers fixed64/medium_local. The same proof is not a broad candidate:
+  medium_r50/main_r90 regress badly. Treat this as attribution for a future
+  substrate, not as a promotion path for OwnerPage.
+```
+
 ## Initial Decision
 
 ```text
@@ -199,6 +242,7 @@ LocalArena phase8:
 OwnerPage purelocal:
   closest local substrate shape so far
   still not default due to medium_local0, main_r90, and small_remote movement
-  next OwnerPage work must explain purelocal body/text cost before page-body
-  tuning
+  ownerfast-bits explains much of the local body cost but breaks mixed remote
+  rows
+  keep OwnerPage local mutation proofs as attribution only
 ```

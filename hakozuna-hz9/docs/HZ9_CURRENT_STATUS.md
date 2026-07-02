@@ -94,8 +94,9 @@ read:
     focused R3 wins medium_r50 but loses medium_local0/main_r90 and moves
     small_remote90
     code-shape audit shows public malloc/free/non-arena shapes unchanged
-    next useful work is purelocal body/text-cost attribution before page-body
-    tuning
+    ownerfast-bits proof recovers fixed64/medium_local but regresses
+    medium_r50/main_r90
+    decision: local_free_bits RMW is real body cost; proof is attribution only
 ```
 
 Current profile/evidence lanes:

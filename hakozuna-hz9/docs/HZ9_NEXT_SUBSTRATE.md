@@ -176,8 +176,16 @@ matrix read:
   OwnerPage is the closest local substrate shape, but still loses medium_local0
   and moves main_r90/small_remote90.
   OwnerPage purelocal does not grow h8_malloc_inner / h8_free_inner /
-  h8_free_non_arena_inner; next work must explain purelocal body/text cost
-  before page-body tuning.
+  h8_free_non_arena_inner.
+
+ownerpage body read:
+  bench_results/20260702T122959Z_hz9_candidate_gate
+  ownerfast-bits replaces purelocal local_free_bits CAS/fetch_or with
+  load/store on pure local pages.
+  It recovers fixed64_local0 from 0.548 to 0.963 and medium_local0 from 0.948
+  to 0.996, proving local_free_bits RMW is a major local body bucket.
+  It regresses medium_r50 to 0.860 and main_r90 to 0.932, so it is not a broad
+  default path.
 ```
 
 ## Active Constraints

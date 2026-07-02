@@ -310,6 +310,60 @@ static void h9_owner_page_collect_pending_locked(H9OwnerLocalPage* page) {
   }
 }
 
+static bool h9_owner_page_local_take(H9OwnerLocalPage* page,
+                                     uint64_t* bit_out) {
+  uint64_t bits =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
+  if (bits == 0) {
+    H8_DEBUG_INC(h9_owner_page_api_alloc_empty);
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(bits);
+  uint64_t bit = UINT64_C(1) << slot;
+#if defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_L1)
+  atomic_store_explicit(&page->local_free_bits, bits & ~bit,
+                        memory_order_release);
+#else
+  while (!atomic_compare_exchange_weak_explicit(
+      &page->local_free_bits, &bits, bits & ~bit, memory_order_acq_rel,
+      memory_order_acquire)) {
+    if (bits == 0) {
+      H8_DEBUG_INC(h9_owner_page_api_alloc_empty);
+      return false;
+    }
+    slot = (uint32_t)__builtin_ctzll(bits);
+    bit = UINT64_C(1) << slot;
+  }
+#endif
+  if (bit_out) {
+    *bit_out = bit;
+  }
+  return true;
+}
+
+static bool h9_owner_page_local_put(H9OwnerLocalPage* page, uint64_t bit) {
+#if defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_L1)
+  if (atomic_load_explicit(&page->mode, memory_order_acquire) !=
+      H9_OWNER_PAGE_PURE_LOCAL) {
+    uint64_t old = atomic_fetch_or_explicit(&page->local_free_bits, bit,
+                                            memory_order_acq_rel);
+    return (old & bit) == 0;
+  }
+  uint64_t old =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
+  if ((old & bit) != 0) {
+    return false;
+  }
+  atomic_store_explicit(&page->local_free_bits, old | bit,
+                        memory_order_release);
+  return true;
+#else
+  uint64_t old = atomic_fetch_or_explicit(&page->local_free_bits, bit,
+                                          memory_order_acq_rel);
+  return (old & bit) == 0;
+#endif
+}
+
 static void* h9_owner_page_try_pop(H9OwnerLocalPage* page) {
   if (!page || !page->base) {
     return NULL;
@@ -319,24 +373,14 @@ static void* h9_owner_page_try_pop(H9OwnerLocalPage* page) {
     H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
     return NULL;
   }
-  uint64_t bits =
-      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
-  uint32_t slot = 0;
   uint64_t bit = 0;
-  do {
-    if (bits == 0) {
-      H8_DEBUG_INC(h9_owner_page_api_alloc_empty);
-      return NULL;
-    }
-    slot = (uint32_t)__builtin_ctzll(bits);
-    bit = UINT64_C(1) << slot;
-  } while (!atomic_compare_exchange_weak_explicit(
-      &page->local_free_bits, &bits, bits & ~bit, memory_order_acq_rel,
-      memory_order_acquire));
+  if (!h9_owner_page_local_take(page, &bit)) {
+    return NULL;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(bit);
   const H8MediumClassSpec* spec = h8_medium_class_spec(page->class_id);
   if (!spec || spec->slot_size == 0u) {
-    atomic_fetch_or_explicit(&page->local_free_bits, bit,
-                             memory_order_acq_rel);
+    (void)h9_owner_page_local_put(page, bit);
     return NULL;
   }
   void* ptr = (void*)((uintptr_t)page->base +
@@ -517,9 +561,7 @@ bool h9_owner_page_try_free(H8ThreadCtx* ctx, void* ptr, bool* owned_out) {
         H8_DEBUG_INC(h9_owner_page_api_free_double);
         return false;
       }
-      uint64_t old = atomic_fetch_or_explicit(
-          &page->local_free_bits, bit, memory_order_acq_rel);
-      if ((old & bit) != 0) {
+      if (!h9_owner_page_local_put(page, bit)) {
         H8_DEBUG_INC(h9_owner_page_api_free_double);
         return false;
       }
@@ -554,8 +596,7 @@ bool h9_owner_page_try_free(H8ThreadCtx* ctx, void* ptr, bool* owned_out) {
       }
       if (same_owner || mode == H9_OWNER_PAGE_DETACHED) {
         h9_owner_page_collect_pending_locked(page);
-        atomic_fetch_or_explicit(&page->local_free_bits, bit,
-                                 memory_order_acq_rel);
+        (void)h9_owner_page_local_put(page, bit);
         H8_DEBUG_INC(h9_owner_page_api_free_push);
         if (mode == H9_OWNER_PAGE_DETACHED &&
             h9_owner_page_is_all_free(page)) {
@@ -733,48 +774,6 @@ bool h9_owner_page_route_smoke_run(void) {
   return h9_owner_page_tls_state == NULL;
 }
 #endif
-#endif
-
-#if defined(H9_OWNER_LOCAL_PAGE_POOL_SHADOW_L0) && \
-    defined(H8_ENABLE_DEBUG_STATS)
-void h9_owner_page_shadow_note_alloc(H8ThreadCtx* ctx, uint32_t class_id) {
-  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
-    return;
-  }
-  H8_DEBUG_INC(h9_owner_page_shadow_alloc_seen);
-  H8_DEBUG_INC(h9_owner_page_shadow_alloc_class[class_id]);
-
-  H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
-  if (!active || !h8_medium_run_owned_by_ctx(active, ctx)) {
-    return;
-  }
-  H8_DEBUG_INC(h9_owner_page_shadow_alloc_active_owner);
-  if (active->free_mask != 0) {
-    H8_DEBUG_INC(h9_owner_page_shadow_alloc_active_nonfull);
-  }
-}
-
-void h9_owner_page_shadow_note_local_free(H8ThreadCtx* ctx,
-                                          H8MediumRun* run) {
-  if (!run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
-    return;
-  }
-  H8_DEBUG_INC(h9_owner_page_shadow_local_free_seen);
-  H8_DEBUG_INC(h9_owner_page_shadow_local_free_class[run->class_id]);
-  if (ctx && ctx->active_medium_runs[run->class_id] == run) {
-    H8_DEBUG_INC(h9_owner_page_shadow_pure_local_candidate);
-  }
-}
-
-void h9_owner_page_shadow_note_remote_free(H8ThreadCtx* ctx,
-                                           H8MediumRun* run) {
-  (void)ctx;
-  if (!run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
-    return;
-  }
-  H8_DEBUG_INC(h9_owner_page_shadow_remote_free_seen);
-  H8_DEBUG_INC(h9_owner_page_shadow_remote_free_class[run->class_id]);
-}
 #endif
 
 #else

@@ -23,8 +23,9 @@ Current direction:
                 LocalArena phase8 is broad NO-GO.
                 OwnerPage purelocal is closest local substrate so far, but
                 still loses medium_local0 and small_remote90.
-                Next useful work is OwnerPage purelocal body/text-cost
-                attribution before page-body tuning.
+                OwnerPage ownerfast-bits proves local_free_bits RMW is a
+                major local body cost, but remote rows regress; keep it as
+                attribution only.
   Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
                 matter; keep them as proof-only evidence.
   HZ9 route-last / LocalArena remote-safe are closed as NO-GO evidence.
@@ -35,8 +36,9 @@ Current strength:
   HZ6 narrow Windows baselines are frozen as reference evidence.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
   HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
-  Next HZ9 behavior development should avoid per-allocation owner-page tax and
-                broad no-use route/layout contamination.
+  Next HZ9 behavior development should avoid per-allocation owner-page tax,
+                broad no-use route/layout contamination, and unsafe pure-local
+                mutation on mixed remote rows.
 ```
 
 ## Read First

@@ -84,6 +84,10 @@ bench-hz9ownerpagepool-purelocal-api: $(ROOT)/h8_bench_hz9ownerpagepool_pureloca
 
 bench-release-hz9ownerpagepool-purelocal-api: $(ROOT)/h8_bench_release_hz9ownerpagepool_purelocal_api
 
+bench-hz9ownerpagepool-ownerfast-bits: $(ROOT)/h8_bench_hz9ownerpagepool_ownerfast_bits
+
+bench-release-hz9ownerpagepool-ownerfast-bits: $(ROOT)/h8_bench_release_hz9ownerpagepool_ownerfast_bits
+
 bench-release-hz9localentry: $(ROOT)/h8_bench_release_hz9localentry
 
 bench-release-hz9localentry-tlscache: $(ROOT)/h8_bench_release_hz9localentry_tlscache

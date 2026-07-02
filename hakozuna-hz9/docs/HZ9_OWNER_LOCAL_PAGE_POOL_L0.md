@@ -25,6 +25,8 @@ current targets:
   smoke-hz9ownerpagepool-api
   bench-hz9ownerpagepool-purelocal-api
   bench-release-hz9ownerpagepool-purelocal-api
+  bench-hz9ownerpagepool-ownerfast-bits
+  bench-release-hz9ownerpagepool-ownerfast-bits
 
 historical targets:
   bench-hz9ownerpagepool-scaffold
@@ -134,7 +136,8 @@ hot offsets unchanged
 
 ```text
 PURE_LOCAL:
-  owner thread mutates local free bits with plain loads/stores
+  owner thread mutates local free bits with atomic RMW in the default
+  purelocal proof
   remote producer never mutates local bits
 
 REMOTE_SEEN:
@@ -431,6 +434,12 @@ purelocal-api target:
   local alloc/free/remote-pending counters, state/page lifetime, flushes, and
   local_bits_mutation anomaly
 
+ownerfast-bits target:
+  proof-only variant
+  replaces purelocal local_free_bits CAS/fetch_or with atomic load/store
+  keeps REMOTE_SEEN / DETACHED paths on the existing atomic fallback
+  intended to attribute owner-page local body cost, not to promote behavior
+
 current behavior:
   page registration is global so remote frees never fall through to platform
   allocation stops after REMOTE_SEEN
@@ -533,6 +542,19 @@ read:
   medium local is still below baseline. Do not promote this behavior without a
   new shape that removes local owner-page overhead as well as remote admission
   tax.
+
+ownerfast-bits attribution:
+  bench_results/20260702T122959Z_hz9_candidate_gate
+  fixed64_local0 improves from purelocal 0.548 to ownerfast_bits 0.963
+  medium_local0 improves from purelocal 0.948 to ownerfast_bits 0.996
+  medium_r50 regresses to 0.860
+  main_r90 regresses to 0.932
+
+decision:
+  local_free_bits atomic RMW is a real local body cost
+  ownerfast-bits is not a broad HZ9 default candidate
+  future substrate work should avoid this RMW on local rows without carrying
+  unsafe pure-local mutation into mixed remote rows
 ```
 
 ## Stop Conditions
