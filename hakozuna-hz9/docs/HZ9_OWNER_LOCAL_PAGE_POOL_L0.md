@@ -446,6 +446,11 @@ ownerfast-bits target:
   optional low32 target limits the replacement to classes <= 32K
   intended to attribute owner-page local body cost, not to promote behavior
 
+disabled-fast-reject target:
+  proof-only variant
+  checks TLS disabled_class_bits before h9_owner_page_ensure_thread_state
+  intended to attribute REMOTE_SEEN disabled-class tax
+
 current behavior:
   page registration is global so remote frees never fall through to platform
   allocation stops after REMOTE_SEEN
@@ -572,6 +577,14 @@ decision:
   ownerfast-bits and low32 class-cut are not broad HZ9 default candidates
   future substrate work should avoid this RMW on local rows without carrying
   unsafe pure-local mutation into mixed remote rows
+
+disabled-fast-reject:
+  bench_results/20260702T124529Z_hz9_candidate_gate
+  bench_results/20260702T124822Z_hz9_candidate_gate
+  medium_r50 debug state_ensure drops to hundreds, proving the targeted tax is
+  removed.
+  release rows remain unstable, and ownerfast_bits_reject is not a promotion
+  candidate.
 ```
 
 ## Stop Conditions

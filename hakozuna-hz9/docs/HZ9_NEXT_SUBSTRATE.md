@@ -192,6 +192,15 @@ ownerpage class-cut read:
   <=32K ownerfast_bits cut does not stabilize remote/main rows.
   Full ownerfast_bits is the better proof but still misses medium_r50.
   Stop OwnerPage local mutation class-cut tuning for default.
+
+ownerpage disabled-fast read:
+  bench_results/20260702T124529Z_hz9_candidate_gate
+  bench_results/20260702T124822Z_hz9_candidate_gate
+  disabled_fast_reject reduces medium_r50 state_ensure from per-allocation
+  scale to hundreds, but local/small/main movement remains unstable.
+  Combining it with ownerfast_bits does not produce a broad candidate.
+  Stop OwnerPage fixed-cost retuning for default unless a new substrate shape
+  changes the branch/body model.
 ```
 
 ## Active Constraints

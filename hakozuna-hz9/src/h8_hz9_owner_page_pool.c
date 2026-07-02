@@ -462,9 +462,19 @@ void h9_owner_page_pool_scaffold_flush_thread(void) {
 void* h9_owner_page_try_alloc(H8ThreadCtx* ctx, uint32_t class_id) {
   if (class_id < H8_MEDIUM_CLASS_COUNT) {
     H8_DEBUG_INC(h9_owner_page_api_alloc_call);
+#if defined(H9_OWNER_LOCAL_PAGE_POOL_DISABLED_FAST_REJECT_L1)
+    H9OwnerPageThreadState* cached = h9_owner_page_tls_state;
+    uint64_t class_bit = UINT64_C(1) << class_id;
+    if (cached && (cached->disabled_class_bits & class_bit) != 0) {
+      H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
+      return NULL;
+    }
+#endif
     H9OwnerPageThreadState* state = h9_owner_page_ensure_thread_state();
     if (state) {
+#if !defined(H9_OWNER_LOCAL_PAGE_POOL_DISABLED_FAST_REJECT_L1)
       uint64_t class_bit = UINT64_C(1) << class_id;
+#endif
       if ((state->disabled_class_bits & class_bit) != 0) {
         H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
         return NULL;

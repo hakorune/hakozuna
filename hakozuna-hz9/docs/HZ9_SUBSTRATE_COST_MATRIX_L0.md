@@ -249,6 +249,35 @@ follow-up:
     class-cut tuning for default.
 ```
 
+## OwnerPage Disabled Fast Reject
+
+```text
+box:
+  HZ9OwnerPageDisabledFastReject-L1
+
+scope:
+  opt-in proof only
+  when a TLS OwnerPage state already disabled a class after REMOTE_SEEN,
+  reject before h9_owner_page_ensure_thread_state()
+
+logs:
+  bench_results/20260702T124529Z_hz9_candidate_gate
+  bench_results/20260702T124822Z_hz9_candidate_gate
+
+debug read:
+  medium_r50 disabled_fast_reject:
+    alloc_call=960000
+    alloc_mode_block=959744
+    state_ensure=352
+
+read:
+  The mechanism removes the intended disabled-class ensure tax. Release gates
+  still do not stabilize: disabled_fast_reject helps some remote rows but can
+  hurt main/local/small, and combining it with ownerfast_bits is worse in the
+  mixed gate. The remaining OwnerPage problem is broader code/branch/body
+  shape, not only a single disabled-class call.
+```
+
 ## Initial Decision
 
 ```text
@@ -265,5 +294,7 @@ OwnerPage purelocal:
   still not default due to medium_local0, main_r90, and small_remote movement
   ownerfast-bits explains much of the local body cost but does not produce a
   stable broad gate
+  disabled-fast-reject removes state-ensure tax but also does not stabilize
+  the broad gate
   keep OwnerPage local mutation proofs as attribution only
 ```

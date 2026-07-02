@@ -98,6 +98,13 @@ ownerpage ownerfast-bits:
   <=32K class cut was worse than full ownerfast in the follow-up gate.
   Treat as local body attribution only.
 
+ownerpage disabled-fast-reject:
+  disabled-class fast reject removes the intended state_ensure tax after
+  REMOTE_SEEN.
+  release rows remain unstable and the ownerfast_bits combination is not a
+  broad candidate.
+  Treat as fixed-cost attribution only.
+
 post-hygiene next-substrate probe:
   SlabPage remained profile/evidence
   next default candidate must avoid local blocked checks and must not depend on

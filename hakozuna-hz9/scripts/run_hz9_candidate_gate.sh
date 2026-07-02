@@ -66,7 +66,9 @@ make -C "${ROOT}" \
   bench-release-hz9mediumslabpage-adaptive-entry-hotmask \
   bench-release-hz9ownerpagepool-purelocal-api \
   bench-release-hz9ownerpagepool-ownerfast-bits \
-  bench-release-hz9ownerpagepool-ownerfast-bits-low32 >/dev/null
+  bench-release-hz9ownerpagepool-ownerfast-bits-low32 \
+  bench-release-hz9ownerpagepool-disabled-fast-reject \
+  bench-release-hz9ownerpagepool-ownerfast-bits-reject >/dev/null
 
 row_args() {
   case "$1" in
@@ -204,6 +206,12 @@ variant_bin() {
       ;;
     ownerpage_ownerfast_bits_low32)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9ownerpagepool_ownerfast_bits_low32"
+      ;;
+    ownerpage_disabled_fast_reject)
+      printf '%s\n' "${ROOT}/h8_bench_release_hz9ownerpagepool_disabled_fast_reject"
+      ;;
+    ownerpage_ownerfast_bits_reject)
+      printf '%s\n' "${ROOT}/h8_bench_release_hz9ownerpagepool_ownerfast_bits_reject"
       ;;
     slablocalfast_adaptive_hot)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_classes_min0_localfast_adaptive_hot"

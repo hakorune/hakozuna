@@ -92,6 +92,14 @@ bench-hz9ownerpagepool-ownerfast-bits-low32: $(ROOT)/h8_bench_hz9ownerpagepool_o
 
 bench-release-hz9ownerpagepool-ownerfast-bits-low32: $(ROOT)/h8_bench_release_hz9ownerpagepool_ownerfast_bits_low32
 
+bench-hz9ownerpagepool-disabled-fast-reject: $(ROOT)/h8_bench_hz9ownerpagepool_disabled_fast_reject
+
+bench-release-hz9ownerpagepool-disabled-fast-reject: $(ROOT)/h8_bench_release_hz9ownerpagepool_disabled_fast_reject
+
+bench-hz9ownerpagepool-ownerfast-bits-reject: $(ROOT)/h8_bench_hz9ownerpagepool_ownerfast_bits_reject
+
+bench-release-hz9ownerpagepool-ownerfast-bits-reject: $(ROOT)/h8_bench_release_hz9ownerpagepool_ownerfast_bits_reject
+
 bench-release-hz9localentry: $(ROOT)/h8_bench_release_hz9localentry
 
 bench-release-hz9localentry-tlscache: $(ROOT)/h8_bench_release_hz9localentry_tlscache

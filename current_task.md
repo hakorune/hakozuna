@@ -23,9 +23,9 @@ Current direction:
                 LocalArena phase8 is broad NO-GO.
                 OwnerPage purelocal is closest local substrate so far, but
                 still loses medium_local0 and small_remote90.
-                OwnerPage ownerfast-bits proves local_free_bits RMW is a
-                major local body cost, but full/low32 variants are not stable
-                default candidates; keep them as attribution only.
+                OwnerPage ownerfast-bits / disabled-fast-reject prove local
+                RMW and disabled-class tax, but variants are not stable default
+                candidates; keep them as attribution only.
                 OwnerPage bits/shadow helpers are split out; keep active source
                 files under the 800-line rule before new experiments.
   Prior HZ9 route-off/layout proofs show no-use route/layout contamination can

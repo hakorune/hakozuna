@@ -97,7 +97,10 @@ read:
     ownerfast-bits proof recovers fixed64/medium_local but regresses
     or destabilizes remote/main rows depending on the gate
     low32 class cut does not stabilize the result
-    decision: local_free_bits RMW is real body cost; proofs are attribution only
+    disabled-fast-reject reduces state_ensure to hundreds in r50 but does not
+    stabilize the broad gate
+    decision: local_free_bits RMW and disabled-class tax are real, but proofs
+    are attribution only
 ```
 
 Current profile/evidence lanes:
