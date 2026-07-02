@@ -126,6 +126,20 @@ The API microbench is not a promotion gate. It measures the standalone local
 `take/free_allocated` cycle so the segment body can be compared against earlier
 OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 
+The scaffold also exposes class geometry for smoke and RSS/cap design:
+
+```text
+class0..5:
+  medium capacity classes
+  current v12 shape is 8K / 16K / 24K / 32K / 48K / 64K
+
+geometry check:
+  slot_size > 0
+  run_size > 0
+  0 < slot_count <= 64
+  slot_size * slot_count <= run_size
+```
+
 ## Segment Model
 
 ```text
@@ -168,6 +182,7 @@ source-shape:
   baseline H8OwnerRecord/H8ThreadCtx layout unchanged
 
 smoke:
+  class geometry is valid for every medium class
   put/take/free deterministic
   duplicate local free rejected
   remote mark moves segment out of LOCAL

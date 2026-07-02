@@ -155,6 +155,26 @@ uint64_t h9_segment_local_cache_debug_release_all(void) {
   return released;
 }
 
+bool h9_segment_local_cache_debug_class_geometry(uint32_t class_id,
+                                                 uint32_t* slot_size_out,
+                                                 uint32_t* run_size_out,
+                                                 uint16_t* slot_count_out) {
+  const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
+  if (!spec || spec->slot_count == 0u || spec->slot_count > 64u) {
+    return false;
+  }
+  if (slot_size_out) {
+    *slot_size_out = spec->slot_size;
+  }
+  if (run_size_out) {
+    *run_size_out = spec->run_size;
+  }
+  if (slot_count_out) {
+    *slot_count_out = spec->slot_count;
+  }
+  return true;
+}
+
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   return cls ? (uint32_t)cls->state : UINT32_MAX;

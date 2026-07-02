@@ -110,9 +110,35 @@ static int check_release_all(void) {
   return 0;
 }
 
+static int check_class_geometry(void) {
+  for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {
+    uint32_t slot_size = 0u;
+    uint32_t run_size = 0u;
+    uint16_t slot_count = 0u;
+    if (!h9_segment_local_cache_debug_class_geometry(
+            class_id, &slot_size, &run_size, &slot_count) ||
+        slot_size == 0u || run_size == 0u || slot_count == 0u ||
+        slot_count > 64u ||
+        (uint64_t)slot_size * (uint64_t)slot_count > (uint64_t)run_size) {
+      fprintf(stderr, "segment class geometry invalid: %u\n", class_id);
+      return 40;
+    }
+  }
+  if (h9_segment_local_cache_debug_class_geometry(
+          H8_MEDIUM_CLASS_COUNT, NULL, NULL, NULL)) {
+    fprintf(stderr, "segment accepted invalid geometry class\n");
+    return 41;
+  }
+  return 0;
+}
+
 int main(void) {
   h8_init();
-  int rc = check_local_flow(5u);
+  int rc = check_class_geometry();
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_local_flow(5u);
   if (rc != 0) {
     return rc;
   }
