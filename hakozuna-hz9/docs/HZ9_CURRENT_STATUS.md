@@ -311,14 +311,18 @@ Recommended next implementation order:
 1. Freeze HZ9OwnerLocalPagePoolPureLocal-L1 as profile/evidence unless a new
    design removes remote-row admission cost and local owner-page overhead.
 
-2. If continuing owner-page, open only:
-     HZ9OwnerLocalPagePoolAdmissionBypass-L2
-   goal:
-     no repeated owner-page try_alloc after remote evidence
-     no owner-page route attempt before HZ8 medium directory MISS
+2. Do not continue OwnerPage by adding more fixed-cost flags:
+     ownerfast_bits
+     ownerfast_bits_low32
+     disabled_fast_reject
+     ownerfast_bits_reject
+   are attribution/proof lanes only.
 
-3. Otherwise move back to HZ9 substrate design:
-     local-only page/cache path with no remote-row admission tax
+3. Move back to HZ9 substrate design:
+     local page/cache path with no remote-row admission tax
+     no owner-page per-allocation state ensure tax
+     no local_free_bits RMW on the common local body
+     no no-use route/layout contamination
 ```
 
 Latest post-owner-page check:
@@ -327,9 +331,12 @@ Latest post-owner-page check:
 docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 
 read:
-  Slab/sidecar variants still produce strong remote-heavy wins, but local rows
-  regress too much for default. The next behavior should not be another
-  SlabPage sidecar/entry tuning box.
+  Slab/sidecar and DirectSlabUse variants still produce strong remote-heavy
+  wins, but local rows regress too much for default.
+  OwnerPage ownerfast/disabled-fast proofs identify real fixed costs, but do
+  not produce a stable broad candidate.
+  The next behavior should be a new substrate shape or source-shape cleanup,
+  not another OwnerPage or SlabPage tuning box.
 ```
 
 Do not start with:

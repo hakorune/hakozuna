@@ -29,10 +29,13 @@ current follow-up:
   HZ9OwnerLocalPagePoolPureLocal-L1 is implemented as profile/evidence
   directory-first free routing reduced remote tax, but medium_local0 remains
   below baseline
-  post-owner-page closure selects HZ9DirectSlabUseProof-L0 as the next
-  proof-only box
+  HZ9DirectSlabUseProof-L0 is complete and remains profile/evidence:
+    remote-heavy rows win
+    medium/main local rows still regress
+  ownerfast_bits and disabled-fast-reject close OwnerPage fixed-cost tuning as
+  attribution only
   next behavior must not be more owner-page or SlabPage admission tuning unless
-  the proof shows the page body itself is a viable base
+  a new substrate shape changes the branch/body model
 ```
 
 ## Lessons To Preserve
@@ -378,6 +381,47 @@ entry:
   candidates
   integrate the first substrate decision into the existing non-small medium
   classification path when possible
+```
+
+## Post Owner-Page Closure
+
+```text
+status:
+  OwnerPage, SlabPage, LocalArena, TLS cache, and DirectSlabUse are now
+  evidence/profile lanes for default purposes.
+
+latest closure:
+  docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
+
+read:
+  OwnerPage purelocal gives a clean route/lifetime API but misses medium_local0.
+  ownerfast_bits proves local_free_bits RMW cost, but regresses mixed rows.
+  disabled_fast_reject removes disabled-class ensure tax, but release rows
+  remain unstable.
+  DirectSlabUse proves the page body can win remote-heavy rows, but loses local.
+```
+
+Default-facing work should not continue by adding another flag to these lanes:
+
+```text
+do not continue:
+  OwnerPage ownerfast/class-cut/reject tuning
+  SlabPage sidecar/entry/direct-use tuning
+  LocalArena threshold/page-mode tuning
+
+do next:
+  choose a new substrate shape that avoids:
+    HZ8 medium-run local fixed cost
+    owner-page per-allocation state ensure tax
+    owner-page local_free_bits RMW on the local body
+    no-use route/layout contamination
+    mixed local/remote page mutation collapse
+```
+
+Current SSOT for the next implementation decision:
+
+```text
+docs/HZ9_NEXT_SUBSTRATE.md
 ```
 
 ## Source Layout
