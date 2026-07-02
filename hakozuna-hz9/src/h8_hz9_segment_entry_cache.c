@@ -147,6 +147,31 @@ static bool h9_segment_entry_tls_token_cache_ensure(uint32_t class_id) {
   return h9_segment_entry_debug_acquire_token(class_id, &cache->token);
 }
 
+bool h9_segment_entry_debug_acquire_tls_token_cache(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryTokenCache* cache =
+      &h9_segment_entry_token_cache_state[class_id];
+  if (cache->cache_ptr &&
+      !h9_segment_entry_retire_token_cache_state_inline(cache)) {
+    return false;
+  }
+  h9_segment_entry_token_cache_reset(cache);
+  return h9_segment_entry_debug_acquire_token(class_id, &cache->token);
+}
+
+bool h9_segment_entry_debug_cycle_tls_token_cache_body(uint32_t class_id,
+                                                       uint64_t value,
+                                                       bool touch,
+                                                       void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  return h9_segment_entry_cycle_token_cache_state_inline(
+      &h9_segment_entry_token_cache_state[class_id], value, touch, ptr_out);
+}
+
 bool h9_segment_entry_debug_cycle_tls_token_cache(uint32_t class_id,
                                                   uint64_t value, bool touch,
                                                   void** ptr_out) {
@@ -155,6 +180,19 @@ bool h9_segment_entry_debug_cycle_tls_token_cache(uint32_t class_id,
   }
   return h9_segment_entry_cycle_token_cache_state_inline(
       &h9_segment_entry_token_cache_state[class_id], value, touch, ptr_out);
+}
+
+bool h9_segment_entry_debug_retire_tls_token_cache(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryTokenCache* cache =
+      &h9_segment_entry_token_cache_state[class_id];
+  bool ok = h9_segment_entry_retire_token_cache_state_inline(cache);
+  if (ok) {
+    h9_segment_entry_token_cache_reset(cache);
+  }
+  return ok;
 }
 
 bool h9_segment_entry_debug_cycle_tls_ledger(uint32_t class_id, uint64_t value,

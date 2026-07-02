@@ -8,7 +8,7 @@ ITERS="${ITERS:-3000000}"
 RUNS="${RUNS:-3}"
 TOUCH="${TOUCH:-1}"
 CLASSES="${CLASSES:-0 1 2 3 4 5}"
-MODES="${MODES:-handlebody tokenbody tokencachebody tokencachestate tlstokencachebody tlstokencache tokencacheretire handleguardbody tlsbody tlsguardbody tlsbodychecked handlecheckedtouch tlscheckedtouch tlsepochbody tlsroute64body}"
+MODES="${MODES:-handlebody tokenbody tokencachebody tokencachestate tlstokencachebody tlstokencacheapi tlstokencache tokencacheretire handleguardbody tlsbody tlsguardbody tlsbodychecked handlecheckedtouch tlscheckedtouch tlsepochbody tlsroute64body}"
 
 mkdir -p "${OUTDIR}"
 make -C "${ROOT}" bench-hz9segmententry >/dev/null

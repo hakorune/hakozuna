@@ -227,6 +227,15 @@ handlecheckedtouch mode:
     tlscache: about 180M ops/s
   reading: TLS state still beats ledger/cache shapes when the body is fused, but
   the ensure/current boundary is too expensive to pay per operation.
+  explicit acquire/body/retire API smoke, class 64K, 1M-iteration R2:
+    tokencachestate: about 814M ops/s
+    tlstokencachebody: about 524M ops/s
+    tlstokencacheapi: about 346M ops/s
+    tlstokencache: about 309M ops/s
+  reading: moving ensure out of the loop helps, but a per-operation debug API
+  boundary with class lookup still loses too much. A behavior candidate should
+  inline the token-cache body at the local entry, not call a generic debug cycle
+  wrapper.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -418,6 +427,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlstokencachebody vs tlstokencache separates the intended hot body from the
   debug ensure boundary; if ensure is material, behavior must acquire once and
   retire explicitly rather than call the public debug cycle every operation
+  tlstokencacheapi confirms that acquire/retire alone is not sufficient if the
+  per-operation body is still behind a generic class-indexed debug API boundary
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body
