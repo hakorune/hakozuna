@@ -34,14 +34,15 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9OwnerLocalPagePoolPureLocal-L1 is active
+  HZ9OwnerLocalPagePoolPureLocal-L1 is profile/evidence, not default
   owner-page scaffold / shadow / API / page lifetime are implemented
   local allocation pop and same-owner free push are implemented
   remote exact free marks REMOTE_SEEN and claims pending bits
+  perf gate shows local flat and remote regression
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  run local/remote perf gate for the owner-page global route/lock shape
+  continue only with a design that removes remote-row admission cost
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -192,11 +193,11 @@ RSS:
 
 ```text
 HZ9OwnerLocalPagePoolPureLocal-L1:
-  active owner-page substrate lane
+  owner-page substrate evidence lane
   scaffold/shadow/API/page lifetime are implemented
   local alloc/free behavior is implemented
   route/state/API safety smoke is clean
-  next implementation step is local/remote perf gate
+  broad default is HOLD after local/remote perf gate
   remote pending/qstate remains HZ8-derived authority
 ```
 

@@ -58,11 +58,13 @@ implemented:
   local allocation pop returning owner-page pointers
   same-owner free push back to local_free_bits
   remote exact free pending-bit claim with REMOTE_SEEN
+  atomic local_free_bits and TLS same-owner free fast route
+  REMOTE_SEEN class disable for faster HZ8 fallback
   focused API smoke for pop/free, double-free rejection, interior INVALID,
     remote pending duplicate rejection, and detached final-free release
 
 not implemented yet:
-  release perf gate for global route/lock cost
+  default-quality remote-row admission bypass
   owner-side remote policy beyond pending collection at flush/final free
   remote page retirement / owner sidecar behavior
 ```
@@ -432,12 +434,13 @@ purelocal-api target:
 current behavior:
   page registration is global so remote frees never fall through to platform
   allocation stops after REMOTE_SEEN
+  later allocations in a REMOTE_SEEN class are disabled in TLS state
   remote producer only claims pending_bits
   owner/local path is the only path that mutates local_free_bits
 
-next:
-  paired local/remote performance gate
-  owner-page remote policy after first REMOTE_SEEN
+decision:
+  HOLD as broad HZ9 default
+  profile/evidence only until remote-row admission cost is removed
 ```
 
 ## Gates
@@ -512,6 +515,20 @@ behavior gates for L1 only:
   medium_r50 >= baseline * 1.05
   main_r90 >= baseline * 0.98
   small_remote90 median/p25 >= baseline * 0.98
+
+latest perf gate:
+  bench_results/20260702T112813Z_hz9_owner_page_perf_gate
+  R3 THREADS=2 ITERS=30000
+  guard_local0 ratio 0.978
+  small_interleaved_remote90 ratio 0.985
+  medium_local0 ratio 1.006
+  main_local0 ratio 1.003
+  medium_r50 ratio 0.673
+  main_r90 ratio 0.832
+
+read:
+  local hit coverage is complete but the gain is flat, and remote rows regress
+  too much. Do not promote this behavior without a new admission-bypass shape.
 ```
 
 ## Stop Conditions

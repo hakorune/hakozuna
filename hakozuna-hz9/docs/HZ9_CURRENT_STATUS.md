@@ -26,9 +26,10 @@ Do not continue tuning TLS object cache admission on top of HZ8 medium runs.
 The next HZ9 substrate must avoid HZ8 medium-run local fixed cost rather than
 adding more admission checks around it.
 
-Owner-local page pool is the active substrate candidate.
-It must stay layout-neutral for H8OwnerRecord/H8ThreadCtx and must not add
-public all-medium entry tax.
+Owner-local page pool is the latest substrate evidence. It proves a clean
+owner-page API and fail-closed route boundary, but the current purelocal
+behavior is HOLD for broad HZ9 default because remote rows still pay an
+admission/mode-block tax.
 ```
 
 ## Active Box
@@ -42,6 +43,9 @@ status:
   same-owner free pushes back to local_free_bits
   remote free marks REMOTE_SEEN and claims pending bits
   remote producer does not write local_free_bits
+  local_free_bits are atomic and same-owner local free routes through TLS
+  class is disabled after REMOTE_SEEN to reduce repeated remote admission
+  perf gate: HOLD as default, profile/evidence only
 
 source:
   src/h8_hz9_owner_page_pool.c
@@ -197,8 +201,8 @@ pre-substrate recheck:
   PASS
 
 latest audits:
-  bench_results/20260702T112151Z_hz9_layout_audit
-  bench_results/20260702T112152Z_hz9_code_shape_audit
+  bench_results/20260702T113037Z_hz9_layout_audit
+  bench_results/20260702T113038Z_hz9_code_shape_audit
 
 layout:
   H8OwnerRecord baseline 440, scaffold 440
@@ -210,6 +214,22 @@ code shape:
   h8_free_inner baseline/scaffold 69 bytes / 22 insn
   h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
   ownerpagepool scaffold total text 86218 vs baseline 86082
+
+owner-page perf gate:
+  bench_results/20260702T112813Z_hz9_owner_page_perf_gate
+
+  R3 THREADS=2 ITERS=30000:
+    guard_local0 ratio 0.978
+    small_interleaved_remote90 ratio 0.985
+    medium_local0 ratio 1.006
+    main_local0 ratio 1.003
+    medium_r50 ratio 0.673
+    main_r90 ratio 0.832
+
+  read:
+    owner-page API is safe and local hit coverage is complete, but broad
+    behavior is not a default candidate. Local rows are flat while remote rows
+    still regress after REMOTE_SEEN/class-disable fallback.
 ```
 
 ## Next Work
@@ -217,17 +237,16 @@ code shape:
 Recommended next implementation order:
 
 ```text
-1. HZ9OwnerLocalPagePoolPerfGate-L1
-   compare baseline vs purelocal owner-page on medium/main local and remote
-   decide whether the global route lock is already too expensive
+1. Freeze HZ9OwnerLocalPagePoolPureLocal-L1 as profile/evidence unless a new
+   design removes remote-row admission cost before h8_medium allocation.
 
-2. HZ9OwnerLocalPagePoolRemoteCollect-L2
-   only if local wins and remote pressure can be contained
-   owner-side collect of pending owner-page frees
-   still no remote producer writes to local bits
+2. If continuing owner-page, open only:
+     HZ9OwnerLocalPagePoolAdmissionBypass-L2
+   goal:
+     no repeated owner-page try_alloc after remote evidence
 
-3. HZ9OwnerLocalPagePoolRouteShape-L2
-   only if perf gate shows local win but route/global-lock cost is dominant
+3. Otherwise move back to HZ9 substrate design:
+     local-only page/cache path with no remote-row admission tax
 ```
 
 Do not start with:
@@ -284,6 +303,9 @@ make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
   smoke-hz9ownerpagepool-api \
   bench-hz9ownerpagepool-purelocal-api \
   bench-release-hz9ownerpagepool-purelocal-api
+
+RUNS=3 THREADS=2 ITERS=30000 \
+  hakozuna-hz9/scripts/run_hz9_owner_page_perf_gate.sh
 
 cd hakozuna-hz9
 RUN_SMOKE=0 scripts/run_hz9_pre_substrate_recheck.sh

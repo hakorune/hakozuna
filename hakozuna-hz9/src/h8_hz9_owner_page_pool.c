@@ -22,7 +22,7 @@ typedef struct H9OwnerLocalPage {
   size_t page_bytes;
   uint16_t class_id;
   uint16_t slot_count;
-  uint64_t local_free_bits;
+  _Atomic uint64_t local_free_bits;
   _Atomic uint64_t pending_bits;
   _Atomic uint32_t mode;
   struct H9OwnerLocalPage* next_global;
@@ -30,6 +30,7 @@ typedef struct H9OwnerLocalPage {
 
 typedef struct H9OwnerPageThreadState {
   H9OwnerLocalPage* active[H8_MEDIUM_CLASS_COUNT];
+  uint64_t disabled_class_bits;
   size_t retained_bytes;
 } H9OwnerPageThreadState;
 
@@ -213,7 +214,8 @@ h9_owner_page_mark_remote_seen(H9OwnerLocalPage* page) {
     return false;
   }
   H8_DEBUG_INC(h9_owner_page_api_remote_mark);
-  uint64_t before_bits = page->local_free_bits;
+  uint64_t before_bits =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
   uint32_t expected = H9_OWNER_PAGE_PURE_LOCAL;
   bool first = atomic_compare_exchange_strong_explicit(
       &page->mode, &expected, H9_OWNER_PAGE_REMOTE_SEEN,
@@ -223,7 +225,8 @@ h9_owner_page_mark_remote_seen(H9OwnerLocalPage* page) {
   } else if (expected == H9_OWNER_PAGE_REMOTE_SEEN) {
     H8_DEBUG_INC(h9_owner_page_api_remote_mark_repeat);
   }
-  if (page->local_free_bits != before_bits) {
+  if (atomic_load_explicit(&page->local_free_bits, memory_order_acquire) !=
+      before_bits) {
     H8_DEBUG_INC(h9_owner_page_api_local_bits_mutation);
   }
   return first;
@@ -234,7 +237,8 @@ h9_owner_page_start_drain(H9OwnerLocalPage* page) {
   if (!page) {
     return false;
   }
-  uint64_t before_bits = page->local_free_bits;
+  uint64_t before_bits =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
   uint32_t mode = atomic_load_explicit(&page->mode, memory_order_acquire);
   for (;;) {
     if (mode == H9_OWNER_PAGE_DRAINING ||
@@ -245,7 +249,8 @@ h9_owner_page_start_drain(H9OwnerLocalPage* page) {
             &page->mode, &mode, H9_OWNER_PAGE_DRAINING,
             memory_order_acq_rel, memory_order_acquire)) {
       H8_DEBUG_INC(h9_owner_page_api_drain_start);
-      if (page->local_free_bits != before_bits) {
+      if (atomic_load_explicit(&page->local_free_bits, memory_order_acquire) !=
+          before_bits) {
         H8_DEBUG_INC(h9_owner_page_api_local_bits_mutation);
       }
       return true;
@@ -258,11 +263,13 @@ static bool __attribute__((unused)) h9_owner_page_detach(
   if (!page) {
     return false;
   }
-  uint64_t before_bits = page->local_free_bits;
+  uint64_t before_bits =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
   atomic_store_explicit(&page->mode, H9_OWNER_PAGE_DETACHED,
                         memory_order_release);
   H8_DEBUG_INC(h9_owner_page_api_detach);
-  if (page->local_free_bits != before_bits) {
+  if (atomic_load_explicit(&page->local_free_bits, memory_order_acquire) !=
+      before_bits) {
     H8_DEBUG_INC(h9_owner_page_api_local_bits_mutation);
   }
   return true;
@@ -283,7 +290,9 @@ static bool h9_owner_page_is_all_free(const H9OwnerLocalPage* page) {
   uint64_t full = h9_owner_page_slot_mask(page->slot_count);
   uint64_t pending =
       atomic_load_explicit(&page->pending_bits, memory_order_acquire) & full;
-  return full != 0 && (page->local_free_bits & full) == full && pending == 0;
+  uint64_t local =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
+  return full != 0 && (local & full) == full && pending == 0;
 }
 
 static void h9_owner_page_collect_pending_locked(H9OwnerLocalPage* page) {
@@ -295,7 +304,8 @@ static void h9_owner_page_collect_pending_locked(H9OwnerLocalPage* page) {
       atomic_exchange_explicit(&page->pending_bits, 0, memory_order_acq_rel);
   pending &= full;
   if (pending) {
-    page->local_free_bits |= pending;
+    atomic_fetch_or_explicit(&page->local_free_bits, pending,
+                             memory_order_acq_rel);
     H8_DEBUG_INC(h9_owner_page_api_page_pending_collect);
   }
 }
@@ -304,31 +314,33 @@ static void* h9_owner_page_try_pop(H9OwnerLocalPage* page) {
   if (!page || !page->base) {
     return NULL;
   }
-  h8_platform_mutex_lock(&h9_owner_page_global_lock);
   uint32_t mode = atomic_load_explicit(&page->mode, memory_order_acquire);
   if (mode != H9_OWNER_PAGE_PURE_LOCAL) {
     H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
-    h8_platform_mutex_unlock(&h9_owner_page_global_lock);
     return NULL;
   }
-  uint64_t bits = page->local_free_bits;
-  if (bits == 0) {
-    H8_DEBUG_INC(h9_owner_page_api_alloc_empty);
-    h8_platform_mutex_unlock(&h9_owner_page_global_lock);
-    return NULL;
-  }
-  uint32_t slot = (uint32_t)__builtin_ctzll(bits);
-  uint64_t bit = UINT64_C(1) << slot;
-  page->local_free_bits = bits & ~bit;
+  uint64_t bits =
+      atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
+  uint32_t slot = 0;
+  uint64_t bit = 0;
+  do {
+    if (bits == 0) {
+      H8_DEBUG_INC(h9_owner_page_api_alloc_empty);
+      return NULL;
+    }
+    slot = (uint32_t)__builtin_ctzll(bits);
+    bit = UINT64_C(1) << slot;
+  } while (!atomic_compare_exchange_weak_explicit(
+      &page->local_free_bits, &bits, bits & ~bit, memory_order_acq_rel,
+      memory_order_acquire));
   const H8MediumClassSpec* spec = h8_medium_class_spec(page->class_id);
   if (!spec || spec->slot_size == 0u) {
-    page->local_free_bits |= bit;
-    h8_platform_mutex_unlock(&h9_owner_page_global_lock);
+    atomic_fetch_or_explicit(&page->local_free_bits, bit,
+                             memory_order_acq_rel);
     return NULL;
   }
   void* ptr = (void*)((uintptr_t)page->base +
                       (uintptr_t)slot * (uintptr_t)spec->slot_size);
-  h8_platform_mutex_unlock(&h9_owner_page_global_lock);
   H8_DEBUG_INC(h9_owner_page_api_alloc_hit);
   return ptr;
 }
@@ -365,7 +377,9 @@ static H9OwnerLocalPage* h9_owner_page_create_active(
   page->page_bytes = spec->run_size;
   page->class_id = (uint16_t)class_id;
   page->slot_count = spec->slot_count;
-  page->local_free_bits = h9_owner_page_slot_mask(spec->slot_count);
+  atomic_store_explicit(&page->local_free_bits,
+                        h9_owner_page_slot_mask(spec->slot_count),
+                        memory_order_relaxed);
   atomic_store_explicit(&page->pending_bits, 0, memory_order_relaxed);
   atomic_store_explicit(&page->mode, H9_OWNER_PAGE_PURE_LOCAL,
                         memory_order_release);
@@ -453,9 +467,27 @@ void* h9_owner_page_try_alloc(H8ThreadCtx* ctx, uint32_t class_id) {
     H8_DEBUG_INC(h9_owner_page_api_alloc_call);
     H9OwnerPageThreadState* state = h9_owner_page_ensure_thread_state();
     if (state) {
-      H9OwnerLocalPage* page = h9_owner_page_create_active(
-          state, ctx ? ctx->owner : NULL, class_id);
-      return h9_owner_page_try_pop(page);
+      uint64_t class_bit = UINT64_C(1) << class_id;
+      if ((state->disabled_class_bits & class_bit) != 0) {
+        H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
+        return NULL;
+      }
+      H9OwnerLocalPage* page = state->active[class_id];
+      if (page && atomic_load_explicit(&page->mode, memory_order_acquire) !=
+                      H9_OWNER_PAGE_PURE_LOCAL) {
+        state->disabled_class_bits |= class_bit;
+        H8_DEBUG_INC(h9_owner_page_api_alloc_mode_block);
+        return NULL;
+      }
+      page = h9_owner_page_create_active(state, ctx ? ctx->owner : NULL,
+                                         class_id);
+      void* ptr = h9_owner_page_try_pop(page);
+      if (!ptr && page &&
+          atomic_load_explicit(&page->mode, memory_order_acquire) !=
+              H9_OWNER_PAGE_PURE_LOCAL) {
+        state->disabled_class_bits |= class_bit;
+      }
+      return ptr;
     }
   }
   return NULL;
@@ -470,6 +502,38 @@ bool h9_owner_page_try_free(H8ThreadCtx* ctx, void* ptr, bool* owned_out) {
     H8_DEBUG_INC(h9_owner_page_api_route_attempt);
     H9OwnerLocalPage* page = NULL;
     uint32_t slot = 0;
+    H9OwnerPageThreadState* state = h9_owner_page_tls_state;
+    H9OwnerPageRoute local_route =
+        h9_owner_page_route_thread(state, ptr, &page, &slot);
+    if (local_route == H9_OWNER_PAGE_ROUTE_VALID &&
+        h9_owner_page_owner_matches_ctx(page, ctx)) {
+      if (owned_out) {
+        *owned_out = true;
+      }
+      uint64_t bit = UINT64_C(1) << slot;
+      uint64_t pending =
+          atomic_load_explicit(&page->pending_bits, memory_order_acquire);
+      if ((pending & bit) != 0) {
+        H8_DEBUG_INC(h9_owner_page_api_free_double);
+        return false;
+      }
+      uint64_t old = atomic_fetch_or_explicit(
+          &page->local_free_bits, bit, memory_order_acq_rel);
+      if ((old & bit) != 0) {
+        H8_DEBUG_INC(h9_owner_page_api_free_double);
+        return false;
+      }
+      H8_DEBUG_INC(h9_owner_page_api_route_hit);
+      H8_DEBUG_INC(h9_owner_page_api_free_push);
+      return true;
+    }
+    if (local_route == H9_OWNER_PAGE_ROUTE_INVALID) {
+      H8_DEBUG_INC(h9_owner_page_api_route_invalid);
+      if (owned_out) {
+        *owned_out = true;
+      }
+      return false;
+    }
     h8_platform_mutex_lock(&h9_owner_page_global_lock);
     H9OwnerPageRoute route =
         h9_owner_page_route_global_locked(ptr, &page, &slot);
@@ -481,14 +545,17 @@ bool h9_owner_page_try_free(H8ThreadCtx* ctx, void* ptr, bool* owned_out) {
       uint64_t bit = UINT64_C(1) << slot;
       uint32_t mode = atomic_load_explicit(&page->mode, memory_order_acquire);
       bool same_owner = h9_owner_page_owner_matches_ctx(page, ctx);
-      if ((page->local_free_bits & bit) != 0) {
+      uint64_t local =
+          atomic_load_explicit(&page->local_free_bits, memory_order_acquire);
+      if ((local & bit) != 0) {
         H8_DEBUG_INC(h9_owner_page_api_free_double);
         h8_platform_mutex_unlock(&h9_owner_page_global_lock);
         return false;
       }
       if (same_owner || mode == H9_OWNER_PAGE_DETACHED) {
         h9_owner_page_collect_pending_locked(page);
-        page->local_free_bits |= bit;
+        atomic_fetch_or_explicit(&page->local_free_bits, bit,
+                                 memory_order_acq_rel);
         H8_DEBUG_INC(h9_owner_page_api_free_push);
         if (mode == H9_OWNER_PAGE_DETACHED &&
             h9_owner_page_is_all_free(page)) {
@@ -577,7 +644,7 @@ bool h9_owner_page_route_smoke_run(void) {
       .page_bytes = H8_MEDIUM_QUANTUM_BYTES,
       .class_id = 2u,
       .slot_count = 2u,
-      .local_free_bits = UINT64_C(3),
+      .local_free_bits = ATOMIC_VAR_INIT(UINT64_C(3)),
       .pending_bits = 0,
       .mode = H9_OWNER_PAGE_PURE_LOCAL,
   };
@@ -613,27 +680,32 @@ bool h9_owner_page_route_smoke_run(void) {
     return false;
   }
 
-  uint64_t before_bits = page.local_free_bits;
+  uint64_t before_bits =
+      atomic_load_explicit(&page.local_free_bits, memory_order_acquire);
   if (!h9_owner_page_mark_remote_seen(&page) ||
       atomic_load_explicit(&page.mode, memory_order_acquire) !=
           H9_OWNER_PAGE_REMOTE_SEEN ||
-      page.local_free_bits != before_bits) {
+      atomic_load_explicit(&page.local_free_bits, memory_order_acquire) !=
+          before_bits) {
     return false;
   }
   if (h9_owner_page_mark_remote_seen(&page) ||
-      page.local_free_bits != before_bits) {
+      atomic_load_explicit(&page.local_free_bits, memory_order_acquire) !=
+          before_bits) {
     return false;
   }
   if (!h9_owner_page_start_drain(&page) ||
       atomic_load_explicit(&page.mode, memory_order_acquire) !=
           H9_OWNER_PAGE_DRAINING ||
-      page.local_free_bits != before_bits) {
+      atomic_load_explicit(&page.local_free_bits, memory_order_acquire) !=
+          before_bits) {
     return false;
   }
   if (!h9_owner_page_detach(&page) ||
       atomic_load_explicit(&page.mode, memory_order_acquire) !=
           H9_OWNER_PAGE_DETACHED ||
-      page.local_free_bits != before_bits) {
+      atomic_load_explicit(&page.local_free_bits, memory_order_acquire) !=
+          before_bits) {
     return false;
   }
 
