@@ -120,6 +120,23 @@ bool h9_segment_local_cache_debug_remote_mark(uint32_t class_id,
   return true;
 }
 
+bool h9_segment_local_cache_debug_drain_remote(uint32_t class_id,
+                                               uint64_t* pending_out) {
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->state != H9_SEGMENT_REMOTE_SEEN ||
+      cls->remote_pending_bits == 0u) {
+    return false;
+  }
+  if (pending_out) {
+    *pending_out = cls->remote_pending_bits;
+  }
+  cls->local_free_bits = 0u;
+  cls->local_alloc_bits = 0u;
+  cls->remote_pending_bits = 0u;
+  cls->state = H9_SEGMENT_RETIRED;
+  return true;
+}
+
 bool h9_segment_local_cache_debug_retire(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   if (!cls) {

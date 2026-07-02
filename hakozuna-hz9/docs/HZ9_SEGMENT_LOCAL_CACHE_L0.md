@@ -101,6 +101,15 @@ flag:
 ```
 
 The scaffold is `_Thread_local` and not connected to allocator routing.
+It now includes an owner-drain debug transition:
+
+```text
+REMOTE_SEEN + remote_pending_bits
+  ->
+drain pending mask
+  ->
+RETIRED, with no local eligibility restored
+```
 
 ## Segment Model
 
@@ -123,7 +132,8 @@ remote free:
 
 owner drain:
   consume remote_pending_bits
-  decide whether segment becomes retired or reusable in a future behavior box
+  retire the contaminated segment in L0
+  reusable contaminated segments are out of scope until a future behavior box
 ```
 
 L0 only proves the bit/state body can exist without the previous dynamic state
@@ -141,6 +151,7 @@ smoke:
   put/take/free deterministic
   duplicate local free rejected
   remote mark moves segment out of LOCAL
+  owner drain consumes remote bits and retires the segment
   local allocation from REMOTE_SEEN rejected
   retire clears local eligibility
 

@@ -63,12 +63,20 @@ static int check_remote_transition(uint32_t class_id) {
     fprintf(stderr, "segment accepted operation after REMOTE_SEEN\n");
     return 12;
   }
-  if (!h9_segment_local_cache_debug_retire(class_id) ||
+  uint64_t drained = 0u;
+  if (!h9_segment_local_cache_debug_drain_remote(class_id, &drained) ||
+      drained != UINT64_C(1) ||
       h9_segment_local_cache_debug_state(class_id) != 2u ||
       h9_segment_local_cache_debug_remote_bits(class_id) != 0u ||
       h9_segment_local_cache_debug_put(class_id, 0u)) {
-    fprintf(stderr, "segment retire state mismatch\n");
+    fprintf(stderr, "segment remote drain state mismatch\n");
     return 13;
+  }
+  h9_segment_local_cache_debug_reset();
+  if (!h9_segment_local_cache_debug_retire(class_id) ||
+      h9_segment_local_cache_debug_state(class_id) != 2u) {
+    fprintf(stderr, "segment direct retire state mismatch\n");
+    return 14;
   }
   return 0;
 }
