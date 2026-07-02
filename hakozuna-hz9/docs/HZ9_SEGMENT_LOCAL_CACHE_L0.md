@@ -138,7 +138,16 @@ The API microbench is not a promotion gate. It measures the standalone local
 `take/free_allocated` cycle so the segment body can be compared against earlier
 OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 Its output includes class geometry and payload/slack bytes so speed and
-capacity are read from the same run.
+capacity are read from the same run. `BOUND_ADDR=1` switches the same bench to
+the bound-address lifecycle:
+
+```text
+bits mode:
+  take/free_allocated
+
+bound_addr mode:
+  take_addr/free_addr
+```
 
 The scaffold also exposes class geometry for smoke and RSS/cap design:
 
