@@ -115,6 +115,8 @@ MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastpublic CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh

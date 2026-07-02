@@ -121,6 +121,15 @@ ptrusable, ITERS=5000000:
 
 ptrrealloc, ITERS=5000000:
   46.926M ops/s
+
+inlinepublic, ITERS=30000000:
+  202.176M ops/s
+
+ptrtoken, after inline-public split, ITERS=30000000:
+  203.539M ops/s
+
+lastpublic, one-entry LIFO token ceiling, ITERS=30000000:
+  861.877M ops/s
 ```
 
 Read:
@@ -135,6 +144,20 @@ than route-first split.  The loss is the helper/TLS/public-shaped boundary, not
 the pointer-token idea itself.  The next implementation must keep pointer-token
 entry inline or TU-local in the public allocator body and use route only for
 miss/invalid/foreign fallback.
+
+The inline/TU-local split shows a sharper distinction:
+
+```text
+64-entry direct-mapped ledger:
+  about 200M ops/s
+
+one-entry last-token LIFO ceiling:
+  about 862M ops/s
+```
+
+So the next concrete design should use a last-token first tier, then a bounded
+ledger, then route fallback.  The last-token result is a ceiling and not a
+general free-order solution.
 ```
 
 ## Commands
@@ -144,6 +167,8 @@ make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
 MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastpublic CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
