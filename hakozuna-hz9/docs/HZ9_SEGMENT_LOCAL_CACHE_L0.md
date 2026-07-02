@@ -561,6 +561,14 @@ active_route=4, touch=1:
   class3 201.2M ops/s
   class4 191.8M ops/s
   class5 199.6M ops/s
+
+active_route=5, touch=1:
+  class0 163.0M ops/s
+  class1 166.9M ops/s
+  class2 164.3M ops/s
+  class3 168.1M ops/s
+  class4 160.7M ops/s
+  class5 157.0M ops/s
 ```
 
 Interpretation:
@@ -610,6 +618,13 @@ range-only probe:
   below the 421-494M active direct body
   this is attribution-only: it is not exact slot validation and cannot be used
   as a public fail-closed free boundary by itself
+
+active exact no-fallback probe:
+  active_route=5 validates exact active segment slot without table fallback
+  it lands around 157-168M ops/s, close to active_route=3 and below range-only
+  therefore table fallback is not the dominant cost in the hit case
+  exact slot validation plus route classification is the remaining boundary
+  tax
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct

@@ -49,10 +49,12 @@ make -C hakozuna-hz9 bench-hz9segmentlocalcache-local
   set ACTIVE_ROUTE=2 to try active segment before route_table_slot free
   set ACTIVE_ROUTE=3 to try active segment route then known-slot free
   set ACTIVE_ROUTE=4 to try active range check then known-slot free
+  set ACTIVE_ROUTE=5 to try active exact route without table fallback
 
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   SegmentLocalCache real-payload sweep for direct / active / active_route /
-  active_fast / active_route_probe / active_range_probe / route2 modes
+  active_fast / active_route_probe / active_range_probe /
+  active_exact_probe / route2 modes
 ```
 
 Active-run magazine evidence tests are still available as historical L0

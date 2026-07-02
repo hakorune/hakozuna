@@ -92,6 +92,9 @@ int main(void) {
             h9_segment_local_cache_debug_route_active_range_addr(
                 addr, &routed_class);
         routed_slot = slot;
+      } else if (active_route == 5u) {
+        route_kind = h9_segment_local_cache_debug_route_active_slot_only_addr(
+            addr, &routed_class, &routed_slot);
       } else if (active_route >= 2u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_addr(
             addr, &routed_class, &routed_slot);

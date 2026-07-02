@@ -17,7 +17,7 @@ make -C "${ROOT}" bench-hz9segmentlocalcache-local >/dev/null
   echo "iters: ${ITERS}"
   echo "touch: ${TOUCH}"
   echo "purpose: real-payload local core versus public free boundary"
-  echo "modes: direct=known-slot body, active=active segment known-slot body, active_route=active direct take + route_table_slot free, active_fast=active direct take + active-first route free, active_route_probe=active-first route then known-slot free, active_range_probe=active range check then known-slot free, route2=table route returns class+slot before free"
+  echo "modes: direct=known-slot body, active=active segment known-slot body, active_route=active direct take + route_table_slot free, active_fast=active direct take + active-first route free, active_route_probe=active-first route then known-slot free, active_range_probe=active range check then known-slot free, active_exact_probe=active exact no-fallback route then known-slot free, route2=table route returns class+slot before free"
   echo '```'
   echo
   echo "| class | mode | output |"
@@ -25,7 +25,7 @@ make -C "${ROOT}" bench-hz9segmentlocalcache-local >/dev/null
 } >"${OUTDIR}/summary.md"
 
 for class_id in 0 1 2 3 4 5; do
-  for mode in direct active active_route active_fast active_route_probe active_range_probe route2; do
+  for mode in direct active active_route active_fast active_route_probe active_range_probe active_exact_probe route2; do
     active_cycle=0
     active_route=0
     route_free=0
@@ -39,6 +39,8 @@ for class_id in 0 1 2 3 4 5; do
       active_route=3
     elif [[ "${mode}" == "active_range_probe" ]]; then
       active_route=4
+    elif [[ "${mode}" == "active_exact_probe" ]]; then
+      active_route=5
     elif [[ "${mode}" == "route2" ]]; then
       route_free=2
     fi

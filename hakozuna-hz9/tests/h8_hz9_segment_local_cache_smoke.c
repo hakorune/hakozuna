@@ -392,6 +392,16 @@ static int check_bound_alloc_free(void) {
     fprintf(stderr, "segment active route slot failed\n");
     return 80;
   }
+  routed_class = UINT32_MAX;
+  routed_slot = UINT32_MAX;
+  if (h9_segment_local_cache_debug_route_active_slot_only_addr(
+          base + slot_size, &routed_class, &routed_slot) != H8_ROUTE_VALID ||
+      routed_class != class_id || routed_slot != 1u ||
+      h9_segment_local_cache_debug_route_active_slot_only_addr(
+          base + run_size, NULL, NULL) != H8_ROUTE_MISS) {
+    fprintf(stderr, "segment active-only route slot failed\n");
+    return 81;
+  }
   if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
       !h9_segment_local_cache_debug_active_take_addr(&addr1) ||
       addr1 != base + slot_size ||
@@ -405,6 +415,8 @@ static int check_bound_alloc_free(void) {
       h9_segment_local_cache_debug_free_addr_fast(class_id, addr0) ||
       h9_segment_local_cache_debug_active_free_addr(addr0) ||
       h9_segment_local_cache_debug_route_active_slot_addr(
+          addr0, NULL, NULL) != H8_ROUTE_INVALID ||
+      h9_segment_local_cache_debug_route_active_slot_only_addr(
           addr0, NULL, NULL) != H8_ROUTE_INVALID ||
       h9_segment_local_cache_debug_route_addr(class_id, addr0) !=
           H8_ROUTE_INVALID) {

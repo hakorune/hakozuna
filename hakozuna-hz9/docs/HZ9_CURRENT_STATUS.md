@@ -80,6 +80,7 @@ current design:
   active-first route can lift upper classes to about 168-171M ops/s
   route-only proof still lands about 160M+, so classification is the limiter
   range-only attribution reaches about 185-202M but is not exact free proof
+  active exact no-fallback remains about 157-168M, so fallback is not primary
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

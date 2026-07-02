@@ -47,6 +47,10 @@ H8RouteKind h9_segment_local_cache_debug_route_active_slot_addr(
     uintptr_t addr,
     uint32_t* class_out,
     uint32_t* slot_out);
+H8RouteKind h9_segment_local_cache_debug_route_active_slot_only_addr(
+    uintptr_t addr,
+    uint32_t* class_out,
+    uint32_t* slot_out);
 H8RouteKind h9_segment_local_cache_debug_route_active_range_addr(
     uintptr_t addr,
     uint32_t* class_out);
