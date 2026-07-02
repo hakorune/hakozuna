@@ -17,7 +17,7 @@ This document is the handoff after `HZ9OwnerLocalPagePoolPureLocal-L1`.
 Owner-page proved a clean HZ9-owned page API and fail-closed route boundary, but
 it is not a broad default candidate.
 
-## Latest Evidence
+## Owner-Page Baseline Evidence
 
 ```text
 owner-page route/order improvement:
@@ -47,6 +47,91 @@ remaining blocker:
 decision:
   owner-page stays profile/evidence
   do not promote
+```
+
+## Owner-Page Body / Fixed-Cost Evidence
+
+```text
+ownerpage body read:
+  bench_results/20260702T122959Z_hz9_candidate_gate
+
+R3 THREADS=2 ITERS=30000:
+  ownerpage_ownerfast_bits:
+    fixed64_local0 0.963
+    medium_local0  0.996
+    medium_r50     0.860
+    main_r90       0.932
+
+read:
+  local_free_bits atomic RMW is real local body cost
+  removing it recovers fixed64/medium local proof rows
+  mixed remote rows regress too much for default
+```
+
+```text
+ownerpage class-cut read:
+  bench_results/20260702T123734Z_hz9_candidate_gate
+
+R5 THREADS=2 ITERS=30000:
+  ownerpage_ownerfast_bits:
+    medium_local0 1.083
+    main_local0   0.992
+    medium_r50    0.929
+    main_r90      0.987
+
+  ownerpage_ownerfast_bits_low32:
+    medium_local0 1.026
+    main_local0   0.998
+    medium_r50    0.910
+    main_r90      0.906
+
+read:
+  full ownerfast_bits is the better proof
+  <=32K class cut does not stabilize remote/main rows
+```
+
+```text
+ownerpage disabled-fast read:
+  bench_results/20260702T124529Z_hz9_candidate_gate
+  bench_results/20260702T124822Z_hz9_candidate_gate
+
+R3 THREADS=2 ITERS=30000:
+  disabled_fast_reject:
+    medium_r50     1.006
+    main_r90       0.968
+    medium_local0  0.959
+    main_local0    0.856
+    small_r90      1.001
+
+debug:
+  disabled_fast_reject medium_r50:
+    alloc_call  = 960000
+    alloc_block = 959744
+    state_ensure = 352
+
+  ownerfast_bits_reject medium_r50:
+    state_ensure = 557
+
+read:
+  disabled-class ensure tax is real and can be removed
+  release rows remain unstable
+  combining disabled-fast reject with ownerfast bits is not a broad candidate
+```
+
+Decision:
+
+```text
+OwnerPage fixed-cost retuning:
+  attribution only
+
+Do not continue as default work:
+  ownerfast local mutation
+  <=32K class-cut mutation
+  disabled-class fast reject tuning
+  ownerfast + reject combination tuning
+
+Reopen only if:
+  a new substrate shape changes the branch/body model
 ```
 
 ## Post-Closure Readiness Probe
@@ -148,7 +233,10 @@ SlabPage:
 Owner-page:
   clean API/lifetime/route evidence
   directory-first route fixes most remote tax
-  local owner-page overhead remains too high
+  ownerfast_bits proves atomic local_free_bits RMW cost
+  disabled_fast_reject proves disabled-class ensure tax
+  combined proof variants still miss broad default gates
+  local owner-page overhead remains too high for default
 ```
 
 ## Next Substrate Requirements
@@ -160,6 +248,8 @@ must avoid:
   broad free-side route checks before owned HZ9 pages exist
   H8OwnerRecord / H8ThreadCtx layout changes for no-use rows
   owner-page admission overhead on local rows
+  owner-page per-allocation state ensure tax
+  owner-page local_free_bits RMW on the common local body
 
 must preserve:
   owned INVALID fail-closed
@@ -190,18 +280,20 @@ source-shape cleanup only:
 If the next candidate cannot clearly avoid both remote admission and local
 owner-page overhead, do not implement it as behavior.
 
-Selected next proof:
+Current posture:
 
 ```text
-HZ9DirectSlabUseProof-L0
+no selected behavior proof
 
 reason:
-  Slab/sidecar rows show the page body can be fast, but entry/route/admission
-  overhead blocks default promotion. The next proof isolates the page body from
-  the selection path before any fresh allocator body is written.
+  DirectSlabUse, OwnerPage purelocal, ownerfast_bits, disabled-fast reject,
+  LocalArena phase admission, and SlabPage sidecar/entry probes are now
+  evidence/profile lanes.
+  The next behavior must be a new substrate shape or a source-shape cleanup,
+  not another OwnerPage fixed-cost flag.
 
-SSOT:
-  docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
+next SSOT:
+  docs/HZ9_NEXT_SUBSTRATE.md
 ```
 
 ## Gate Before Behavior
@@ -214,6 +306,7 @@ required:
 
 recommended if evidence is stale:
   scripts/run_hz9_post_owner_page_closure.sh
+  RUNS_OWNERPAGE=3 RUNS_SIDECAR=0 scripts/run_hz9_post_owner_page_closure.sh
   RUNS_READINESS=5 scripts/run_hz9_next_substrate_probe.sh
   RUNS=5 scripts/run_hz9_substrate_readiness.sh
 ```
