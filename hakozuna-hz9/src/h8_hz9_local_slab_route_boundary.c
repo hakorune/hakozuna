@@ -12,6 +12,12 @@
 #define H9_LSP_MAX_SEGMENTS 64u
 #define H9_LSP_HASH_CAP 128u
 
+#if defined(__GNUC__) || defined(__clang__)
+#define H9_LSP_COLD_NOINLINE __attribute__((noinline, cold))
+#else
+#define H9_LSP_COLD_NOINLINE
+#endif
+
 typedef struct H9LspSegment {
   uint32_t magic;
   uint32_t generation;
@@ -527,6 +533,12 @@ bool h9_lsp_debug_ptrtoken_free(void* ptr, bool* owned_out) {
   return h9_lsp_debug_free(ptr, owned_out);
 }
 
+static H9_LSP_COLD_NOINLINE bool h9_lsp_debug_lasttoken_free_fallback(
+    void* ptr, bool* owned_out) {
+  h9_lsp_stats.ptrtoken_free_fallback++;
+  return h9_lsp_debug_free(ptr, owned_out);
+}
+
 bool h9_lsp_debug_lasttoken_free(void* ptr, bool* owned_out) {
   H9LspSegment* segment = h9_lsp_last_segment;
   if (h9_lsp_last_live && h9_lsp_last_ptr == ptr && segment &&
@@ -550,8 +562,7 @@ bool h9_lsp_debug_lasttoken_free(void* ptr, bool* owned_out) {
     h9_lsp_last_live = 0u;
     h9_lsp_stats.ptrtoken_state_mismatch++;
   }
-  h9_lsp_stats.ptrtoken_free_fallback++;
-  return h9_lsp_debug_free(ptr, owned_out);
+  return h9_lsp_debug_lasttoken_free_fallback(ptr, owned_out);
 }
 
 bool h9_lsp_debug_free_direct_owned(void* ptr) {

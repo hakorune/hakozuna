@@ -145,6 +145,12 @@ lastonly generic helper, ITERS=30000000:
 
 lastentry route-boundary TU helper, ITERS=10000000:
   108.140M ops/s
+
+integrated entry, cold fallback present, ITERS=30000000:
+  646.511M..712.279M ops/s
+
+lastentry after cold fallback split, ITERS=10000000:
+  98.325M ops/s
 ```
 
 Read:
@@ -205,6 +211,72 @@ The route-boundary TU `lastentry` helper improves over `ptrentry` but is still
 far from the hand-shaped ceiling.  This confirms that another debug/helper API
 is not enough.  The next real candidate must integrate the last-token body into
 the allocator entry TU itself, with route only as a cold fallback.
+
+IntegratedEntry result:
+
+```text
+class64 touch=1:
+  integrated:
+    646.511M..712.279M ops/s
+
+  lastpublic:
+    671.041M ops/s
+
+  lastentry:
+    83.785M..98.325M ops/s
+
+  lastledger:
+    236.810M ops/s
+```
+
+This clears the 350M gate and confirms the GLM read: the winning shape is not a
+generic pointer-token helper, but a last-token body integrated into the entry
+code with fallback split cold.  The current integrated probe is still LIFO-only;
+route fallback remains the correctness authority for miss / invalid / foreign
+cases, and non-LIFO coverage must be added without reintroducing hot eviction
+tax.
+
+Cold-splitting the existing route-boundary `lastentry` fallback is useful but
+not sufficient.  It improves the helper-shaped entry only modestly, so the
+remaining loss is still the helper/public-shaped boundary and segment debug
+substrate, not merely fallback placement.
+```
+
+## Integrated Entry Candidate
+
+```text
+box:
+  HZ9LastTokenIntegratedEntry-L1
+
+shape:
+  inline local slab pop/free body in the entry TU
+  one live last-token only on the common LIFO path
+  no malloc-time eviction into the 64-entry ledger
+  no generic pointer-token helper call in the hit path
+  route fallback is noinline/cold
+
+stats:
+  keep cheap fast/fallback counters
+  do not make the fast path unobservable
+```
+
+This is deliberately narrower than a full public allocator entry.  The point is
+to verify that the `lastpublic` body shape survives when the fallback is present
+but cold.  A ledger tier may be reintroduced only if non-LIFO workloads need it
+and it can remain off the common path.
+
+Expected range:
+
+```text
+class64 touch=1:
+  >=350M:
+    GO
+
+  450M..600M:
+    realistic strong range
+
+  lastpublic 800M+:
+    ceiling, not product expectation
 ```
 
 ## Commands
@@ -224,6 +296,8 @@ MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

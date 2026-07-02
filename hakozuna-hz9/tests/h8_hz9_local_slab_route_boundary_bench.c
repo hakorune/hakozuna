@@ -1,4 +1,5 @@
 #include "../src/h8_internal.h"
+#include "../src/h8_hz9_last_token_integrated_entry.h"
 #include "../src/h8_hz9_local_slab_inline_body.h"
 #include "../src/h8_hz9_local_slab_pointer_token.h"
 #include "../src/h8_hz9_local_slab_route_boundary.h"
@@ -30,7 +31,8 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_LAST_LEDGER = 13,
   H9_LSP_BENCH_HOT_COLD = 14,
   H9_LSP_BENCH_LAST_ONLY = 15,
-  H9_LSP_BENCH_LAST_ENTRY = 16
+  H9_LSP_BENCH_LAST_ENTRY = 16,
+  H9_LSP_BENCH_INTEGRATED = 17
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -235,6 +237,8 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_LAST_ONLY;
   } else if (strcmp(mode, "lastentry") == 0) {
     bench_mode = H9_LSP_BENCH_LAST_ENTRY;
+  } else if (strcmp(mode, "integrated") == 0) {
+    bench_mode = H9_LSP_BENCH_INTEGRATED;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -333,6 +337,54 @@ int main(void) {
            "malloc_hit=0 segment_create=0 sink=%" PRIuPTR "\n",
            mode, class_id, (unsigned long long)iters, touch ? 1u : 0u,
            (double)ok / elapsed, elapsed, sink);
+    free(payload);
+    return 0;
+  }
+
+  if (bench_mode == H9_LSP_BENCH_INTEGRATED) {
+    size_t payload_bytes = (size_t)slot_size * 64u;
+    void* payload = malloc(payload_bytes);
+    if (!payload) {
+      fprintf(stderr, "lsp integrated payload alloc failed\n");
+      return 2;
+    }
+    H9LspIntegratedEntry entry;
+    h9_lsp_integrated_init(&entry, (uintptr_t)payload, slot_size, 64u,
+                           class_id);
+    uint64_t ok = 0u;
+    uintptr_t sink = 0u;
+    double start = now_seconds();
+    for (uint64_t i = 0; i < iters; ++i) {
+      void* ptr = NULL;
+      bool success = h9_lsp_integrated_alloc(&entry, &ptr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)ptr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success = success && h9_lsp_integrated_free(&entry, ptr);
+      if (!success) {
+        fprintf(stderr, "lsp integrated transition failed at iter %llu\n",
+                (unsigned long long)i);
+        free(payload);
+        return 3;
+      }
+      sink ^= (uintptr_t)ptr;
+      ++ok;
+    }
+    double elapsed = now_seconds() - start;
+    if (elapsed <= 0.0) {
+      elapsed = 1e-9;
+    }
+    printf("mode=%s class=%u iters=%llu touch=%u ops_per_s=%.2f "
+           "elapsed=%.6f route_valid=0 route_invalid=0 route_miss=0 "
+           "malloc_hit=0 ptr_fast=%llu ptr_fallback=%llu "
+           "state_mismatch=%llu segment_create=0 sink=%" PRIuPTR "\n",
+           mode, class_id, (unsigned long long)iters, touch ? 1u : 0u,
+           (double)ok / elapsed, elapsed,
+           (unsigned long long)entry.fast_hits,
+           (unsigned long long)entry.fallback_hits,
+           (unsigned long long)entry.state_mismatch, sink);
     free(payload);
     return 0;
   }

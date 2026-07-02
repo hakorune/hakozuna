@@ -21,7 +21,7 @@ Current direction:
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
                 First route-fallback debug entry is NO-GO shape; next must keep
-                LastEntry helper improves but still loses; true TU integration next.
+                LastTokenIntegratedEntry-L1: fast body in entry TU, cold route fallback.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

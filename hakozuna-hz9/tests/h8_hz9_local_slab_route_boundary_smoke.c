@@ -1,3 +1,4 @@
+#include "../src/h8_hz9_last_token_integrated_entry.h"
 #include "../src/h8_hz9_local_slab_inline_body.h"
 #include "../src/h8_hz9_local_slab_pointer_token.h"
 #include "../src/h8_hz9_local_slab_route_boundary.h"
@@ -266,6 +267,56 @@ static int check_last_token_entry(void) {
   return 0;
 }
 
+static int check_integrated_entry(void) {
+  void* payload = malloc(64u * 64u);
+  if (!payload) {
+    return 50;
+  }
+  H9LspIntegratedEntry entry;
+  h9_lsp_integrated_init(&entry, (uintptr_t)payload, 64u, 64u, 5u);
+
+  void* ptr = NULL;
+  if (!h9_lsp_integrated_alloc(&entry, &ptr) ||
+      !h9_lsp_integrated_free(&entry, ptr)) {
+    fprintf(stderr, "integrated exact free failed\n");
+    free(payload);
+    return 51;
+  }
+  if (h9_lsp_integrated_free(&entry, ptr)) {
+    fprintf(stderr, "integrated double free accepted\n");
+    free(payload);
+    return 52;
+  }
+
+  void* a = NULL;
+  void* b = NULL;
+  if (!h9_lsp_integrated_alloc(&entry, &a) ||
+      !h9_lsp_integrated_alloc(&entry, &b)) {
+    free(payload);
+    return 53;
+  }
+  if (h9_lsp_integrated_free(&entry, a) ||
+      !h9_lsp_integrated_free(&entry, b)) {
+    fprintf(stderr, "integrated non-last fallback contract failed\n");
+    free(payload);
+    return 54;
+  }
+  (void)h9_lsp_inline_free_slot(&entry.page, 0u);
+
+  if (entry.fast_hits == 0u || entry.fallback_hits == 0u ||
+      entry.state_mismatch != 0u) {
+    fprintf(stderr,
+            "integrated counters failed fast=%llu fallback=%llu mismatch=%llu\n",
+            (unsigned long long)entry.fast_hits,
+            (unsigned long long)entry.fallback_hits,
+            (unsigned long long)entry.state_mismatch);
+    free(payload);
+    return 55;
+  }
+  free(payload);
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -282,6 +333,11 @@ int main(void) {
   if (last_rc != 0) {
     h9_lsp_debug_reset();
     return last_rc;
+  }
+  int integrated_rc = check_integrated_entry();
+  if (integrated_rc != 0) {
+    h9_lsp_debug_reset();
+    return integrated_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);
