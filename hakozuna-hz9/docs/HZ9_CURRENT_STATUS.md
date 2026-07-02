@@ -28,8 +28,9 @@ adding more admission checks around it.
 
 Owner-local page pool is the latest substrate evidence. It proves a clean
 owner-page API and fail-closed route boundary, but the current purelocal
-behavior is HOLD for broad HZ9 default because remote rows still pay an
-admission/mode-block tax.
+behavior is HOLD for broad HZ9 default. Directory-first free routing reduces
+remote-row route tax, but medium local still regresses in the latest short
+gate.
 ```
 
 ## Active Box
@@ -45,6 +46,7 @@ status:
   remote producer does not write local_free_bits
   local_free_bits are atomic and same-owner local free routes through TLS
   class is disabled after REMOTE_SEEN to reduce repeated remote admission
+  owner-page free route is checked only after HZ8 medium directory MISS
   perf gate: HOLD as default, profile/evidence only
 
 source:
@@ -216,20 +218,21 @@ code shape:
   ownerpagepool scaffold total text 86218 vs baseline 86082
 
 owner-page perf gate:
-  bench_results/20260702T112813Z_hz9_owner_page_perf_gate
+  bench_results/20260702T113432Z_hz9_owner_page_perf_gate
 
   R3 THREADS=2 ITERS=30000:
-    guard_local0 ratio 0.978
-    small_interleaved_remote90 ratio 0.985
-    medium_local0 ratio 1.006
-    main_local0 ratio 1.003
-    medium_r50 ratio 0.673
-    main_r90 ratio 0.832
+    guard_local0 ratio 1.130
+    small_interleaved_remote90 ratio 1.001
+    medium_local0 ratio 0.954
+    main_local0 ratio 1.016
+    medium_r50 ratio 0.965
+    main_r90 ratio 0.977
 
   read:
-    owner-page API is safe and local hit coverage is complete, but broad
-    behavior is not a default candidate. Local rows are flat while remote rows
-    still regress after REMOTE_SEEN/class-disable fallback.
+    directory-first free routing removes most broad remote-row regression, but
+    owner-page remains non-promotable because medium_local0 is below baseline.
+    Keep this lane as profile/evidence until a design removes both remote
+    admission tax and local owner-page overhead.
 ```
 
 ## Next Work
@@ -238,12 +241,13 @@ Recommended next implementation order:
 
 ```text
 1. Freeze HZ9OwnerLocalPagePoolPureLocal-L1 as profile/evidence unless a new
-   design removes remote-row admission cost before h8_medium allocation.
+   design removes remote-row admission cost and local owner-page overhead.
 
 2. If continuing owner-page, open only:
      HZ9OwnerLocalPagePoolAdmissionBypass-L2
    goal:
      no repeated owner-page try_alloc after remote evidence
+     no owner-page route attempt before HZ8 medium directory MISS
 
 3. Otherwise move back to HZ9 substrate design:
      local-only page/cache path with no remote-row admission tax

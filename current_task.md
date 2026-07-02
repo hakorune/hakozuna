@@ -21,8 +21,9 @@ Current direction:
                 Local allocation pop, same-owner free push, global owner-page
                 route, remote pending mark, and detached final-free release
                 are implemented in hakozuna-hz9/.
-                Perf gate shows local rows are flat and remote rows regress;
-                keep it as profile/evidence unless admission cost is removed.
+                Directory-first free routing reduces remote-row route tax, but
+                medium local still regresses in the latest short gate; keep it
+                as profile/evidence, not default.
   Latest HZ9 evidence: OwnerLocalPagePoolShadow-L0 shows local rows are
                 pure-local, while remote rows require immediate HZ8 fallback.
   HZ9 route-off/layout proofs show no-use route cost can matter, but main_r90
@@ -42,8 +43,8 @@ Current strength:
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
   HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
   Next HZ9 behavior development should avoid per-allocation owner-page
-                admission on remote rows; otherwise freeze owner-page and move
-                to a new local-only substrate shape.
+                admission and also avoid owner-page overhead on local rows;
+                otherwise freeze owner-page and move to a new substrate shape.
 ```
 
 ## Read First

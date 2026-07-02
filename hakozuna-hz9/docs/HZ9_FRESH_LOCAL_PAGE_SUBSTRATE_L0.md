@@ -26,8 +26,11 @@ next:
 
 current follow-up:
   scaffold/layout/code-shape proof is complete enough for local development
-  HZ9OwnerLocalPagePoolPureLocal-L1 is active
-  next implementation step is owner-page local allocation pop
+  HZ9OwnerLocalPagePoolPureLocal-L1 is implemented as profile/evidence
+  directory-first free routing reduced remote tax, but medium_local0 remains
+  below baseline
+  next implementation step is not more owner-page tuning unless a new shape
+  removes both remote admission and local owner-page overhead
 ```
 
 ## Lessons To Preserve

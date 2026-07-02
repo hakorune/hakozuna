@@ -435,12 +435,14 @@ current behavior:
   page registration is global so remote frees never fall through to platform
   allocation stops after REMOTE_SEEN
   later allocations in a REMOTE_SEEN class are disabled in TLS state
+  owner-page free route is checked only after HZ8 medium directory MISS
   remote producer only claims pending_bits
   owner/local path is the only path that mutates local_free_bits
 
 decision:
   HOLD as broad HZ9 default
-  profile/evidence only until remote-row admission cost is removed
+  profile/evidence only until remote-row admission cost and local owner-page
+  overhead are both removed
 ```
 
 ## Gates
@@ -517,18 +519,20 @@ behavior gates for L1 only:
   small_remote90 median/p25 >= baseline * 0.98
 
 latest perf gate:
-  bench_results/20260702T112813Z_hz9_owner_page_perf_gate
+  bench_results/20260702T113432Z_hz9_owner_page_perf_gate
   R3 THREADS=2 ITERS=30000
-  guard_local0 ratio 0.978
-  small_interleaved_remote90 ratio 0.985
-  medium_local0 ratio 1.006
-  main_local0 ratio 1.003
-  medium_r50 ratio 0.673
-  main_r90 ratio 0.832
+  guard_local0 ratio 1.130
+  small_interleaved_remote90 ratio 1.001
+  medium_local0 ratio 0.954
+  main_local0 ratio 1.016
+  medium_r50 ratio 0.965
+  main_r90 ratio 0.977
 
 read:
-  local hit coverage is complete but the gain is flat, and remote rows regress
-  too much. Do not promote this behavior without a new admission-bypass shape.
+  directory-first free routing removes most broad remote-row regression, but
+  medium local is still below baseline. Do not promote this behavior without a
+  new shape that removes local owner-page overhead as well as remote admission
+  tax.
 ```
 
 ## Stop Conditions

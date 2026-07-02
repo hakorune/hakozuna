@@ -38,11 +38,13 @@ current direction:
   owner-page scaffold / shadow / API / page lifetime are implemented
   local allocation pop and same-owner free push are implemented
   remote exact free marks REMOTE_SEEN and claims pending bits
-  perf gate shows local flat and remote regression
+  directory-first free routing removes most broad remote regression
+  latest perf gate still blocks promotion on medium_local0
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  continue only with a design that removes remote-row admission cost
+  continue only with a design that removes both remote admission cost and
+  local owner-page overhead
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
