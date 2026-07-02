@@ -253,6 +253,17 @@ Recommended next implementation order:
      local-only page/cache path with no remote-row admission tax
 ```
 
+Latest post-owner-page check:
+
+```text
+docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
+
+read:
+  Slab/sidecar variants still produce strong remote-heavy wins, but local rows
+  regress too much for default. The next behavior should not be another
+  SlabPage sidecar/entry tuning box.
+```
+
 Do not start with:
 
 ```text

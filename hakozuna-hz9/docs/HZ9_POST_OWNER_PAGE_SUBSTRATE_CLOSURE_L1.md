@@ -49,6 +49,85 @@ decision:
   do not promote
 ```
 
+## Post-Closure Readiness Probe
+
+```text
+log:
+  bench_results/20260702T114237Z_hz9_next_substrate_probe
+
+short settings:
+  RUNS_SHADOW=1
+  RUNS_ROUTE=2
+  RUNS_MUTATION=1
+  RUNS_READINESS=3
+```
+
+Class/readiness read:
+
+```text
+main_local0:
+  8K/16K/24K/32K are entirely local-like
+  any default substrate must not add blocked checks to these classes
+
+main_r90:
+  8K/16K/24K/32K are about 90% remote
+  remote-heavy wins require coverage for these classes
+
+medium_local0:
+  all medium classes are local-like
+  48K/64K are large buckets and expose local overhead quickly
+
+medium_r50:
+  all medium classes are about 50% remote
+  remote-safe capacity is useful only if local overhead remains clean
+```
+
+Release readiness read:
+
+```text
+slabadaptive_entry_hotmask:
+  medium_local0 1.017
+  main_local0   0.926
+  medium_r50    1.351
+  main_r90      1.323
+
+decision:
+  strong remote/profile signal
+  still not default because main_local0 regresses
+```
+
+## Sidecar2 Focused Check
+
+```text
+log:
+  bench_results/20260702T114524Z_hz9_candidate_gate
+
+R3 THREADS=2 ITERS=30000:
+  slabclasses_min0_sidecar2:
+    guard_local0               1.014
+    small_interleaved_remote90 1.005
+    medium_local0              0.873
+    main_local0                0.940
+    medium_r50                 1.287
+    main_r90                   1.457
+
+  slabclasses_min0_entry_sidecar2:
+    guard_local0               1.070
+    small_interleaved_remote90 0.974
+    medium_local0              0.885
+    main_local0                0.918
+    medium_r50                 1.281
+    main_r90                   1.451
+```
+
+Read:
+
+```text
+Slab/sidecar remote-heavy improvement is real.
+Local rows are still not clean enough for a default.
+Do not continue SlabPage sidecar/entry tuning as the next default path.
+```
+
 ## Closed Lanes
 
 ```text
@@ -146,4 +225,3 @@ RSS:
   retained/page/cache overhead explicit
   owner exit drains all HZ9-owned retained state
 ```
-

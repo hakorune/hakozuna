@@ -136,6 +136,11 @@ Candidate shape:
 
 SSOT:
   docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
+
+latest read:
+  sidecar/slab release probes retain strong remote-heavy wins but still
+  regress medium_local0/main_local0. Do not continue SlabPage sidecar/entry
+  tuning as the next default path.
 ```
 
 ## Active Constraints
