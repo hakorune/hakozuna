@@ -89,6 +89,7 @@ do not implement in L0:
 ```text
 source:
   src/h8_hz9_segment_local_cache.c
+  src/h8_hz9_segment_local_cache.h
 
 test:
   tests/h8_hz9_segment_local_cache_smoke.c
@@ -100,6 +101,17 @@ build:
 
 flag:
   H9_SEGMENT_LOCAL_CACHE_L0
+```
+
+The public-to-internal boundary stays narrow:
+
+```text
+h8_internal.h:
+  includes the SegmentLocalCache header only
+
+h8_hz9_segment_local_cache.h:
+  owns SegmentLocalCache debug/proof declarations
+  is the only place future SegmentLocalRouteProof prototypes should grow
 ```
 
 The scaffold is `_Thread_local` and not connected to allocator routing.
