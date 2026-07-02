@@ -73,7 +73,7 @@ make -C hakozuna-hz9 bench-hz9segmententry
   set MODE=route, MODE=fused, MODE=fast, MODE=page, MODE=handle,
   MODE=handlecheckedtouch, MODE=handlebody, MODE=tls, MODE=tlsroute,
   MODE=tlslocal, MODE=tlsknown, MODE=tlschecked, MODE=tlscheckedtouch,
-  MODE=tlsepochbody, MODE=tlsroutebody,
+  MODE=tlsbody, MODE=tlsbodychecked, MODE=tlsepochbody, MODE=tlsroutebody,
   MODE=tlsrouteevery, MODE=tlsroute64body, MODE=tlscache, MODE=tlsledger,
   or MODE=tlsledgerbody
 

@@ -8,7 +8,7 @@ ITERS="${ITERS:-3000000}"
 RUNS="${RUNS:-3}"
 TOUCH="${TOUCH:-1}"
 CLASSES="${CLASSES:-0 1 2 3 4 5}"
-MODES="${MODES:-handlecheckedtouch tlscheckedtouch tlsepochbody tlsroute64body}"
+MODES="${MODES:-handlebody tlsbody tlsbodychecked handlecheckedtouch tlscheckedtouch tlsepochbody tlsroute64body}"
 
 mkdir -p "${OUTDIR}"
 make -C "${ROOT}" bench-hz9segmententry >/dev/null
@@ -47,10 +47,10 @@ median_csv() {
   echo "touch: ${TOUCH}"
   echo "classes: ${CLASSES}"
   echo "modes: ${MODES}"
-  echo "purpose: compare acquired-handle local body against TLS/epoch/route bodies"
+  echo "purpose: compare direct handle body against TLS acquisition/check bodies"
   echo '```'
   echo
-  echo "| class | mode | median ops/s | ratio_to_handle | n |"
+  echo "| class | mode | median ops/s | ratio_to_handlechecked | n |"
   echo "|---:|---|---:|---:|---:|"
 } >"${OUTDIR}/summary.md"
 

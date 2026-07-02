@@ -164,6 +164,16 @@ handlecheckedtouch mode:
   reading: removing the public debug wrapper boundary does not improve the
   acquired-handle body. The remaining large gap is the handle/TLS acquisition
   shape, not a wrapper-call artifact.
+  TLS acquisition split, class 64K, 5M-iteration R3:
+    handlebody: about 514-547M ops/s
+    tlsbody: about 506-522M ops/s
+    tlsbodychecked: about 451-467M ops/s
+    tlscheckedtouch: about 375-383M ops/s
+  reading: a raw TLS handle load is close to acquired-handle speed. The
+  material loss starts when the hot body also performs page/class/free checks,
+  and the public debug wrapper/fallback shape adds more loss. HZ9 local reuse
+  should receive a prevalidated handle or epoch token and keep route/class
+  checks at acquisition/retirement boundaries.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
