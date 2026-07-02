@@ -80,6 +80,10 @@ current segment commands:
   make -C hakozuna-hz9 smoke-hz9segmentlocalcache
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 
+next segment behavior:
+  HZ9SegmentLocalRouteProof-L0
+  local-only exact route proof before remote reuse or default promotion
+
 profile gate:
   scripts/run_hz9_profile_local_gate.sh
   purpose:

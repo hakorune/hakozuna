@@ -222,5 +222,39 @@ stop if:
   L0 reintroduces mixed local/remote page mutation
 ```
 
+## Next Behavior Box
+
+```text
+HZ9SegmentLocalRouteProof-L0:
+  local-only route proof
+  connect a real segment payload to exact local allocation/free only
+  keep remote mark -> RETIRED fallback behavior
+  keep public entry and small path unchanged
+  keep H8OwnerRecord / H8ThreadCtx layout unchanged
+
+not yet:
+  remote concurrent freelist
+  reusable remote-contaminated segments
+  global RSS policy
+  default promotion
+```
+
+Required first gates:
+
+```text
+fixed64_local0:
+  material local win over HZ9 baseline
+
+main_local0:
+  no regression
+
+medium_r50 / main_r90:
+  evidence only for L0, but no severe collapse
+
+source shape:
+  no baseline h8_malloc_inner / h8_free_inner growth
+  no active file over 800 lines
+```
+
 This is the next HZ9 substrate lane. OwnerPage, SlabPage, LocalArena, and
 StaticLocalPage remain evidence lanes unless a new hypothesis appears.

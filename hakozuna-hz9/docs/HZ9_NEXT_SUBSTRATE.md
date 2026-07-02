@@ -15,8 +15,10 @@ HZ9SegmentLocalCache-L0:
   release_all clears touched TLS state before behavior integration
   segment API sweep records local body cost by class
   next step:
-    do not wire allocator routing until source-shape and local-body evidence
-    remain clean
+    HZ9SegmentLocalRouteProof-L0
+    local-only exact route proof
+    do not open remote freelists, reusable contaminated segments, or default
+    promotion yet
 ```
 
 ## Closed Decision History
