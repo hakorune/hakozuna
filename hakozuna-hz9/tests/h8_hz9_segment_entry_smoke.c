@@ -228,6 +228,21 @@ static int check_token_cache_body(void) {
     h9_segment_entry_debug_reset();
     return 28;
   }
+  if (!h9_segment_entry_retire_token_cache_inline(&token, &cache_slot,
+                                                  &cache_ptr) ||
+      cache_slot != UINT32_MAX || cache_ptr != NULL ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(p, &owned) || !owned) {
+    fprintf(stderr, "segment entry token cache retire failed\n");
+    h9_segment_entry_debug_reset();
+    return 29;
+  }
+  if (!h9_segment_entry_debug_alloc(0u, &p) ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_VALID) {
+    fprintf(stderr, "segment entry token cache retire reuse failed\n");
+    h9_segment_entry_debug_reset();
+    return 30;
+  }
   h9_segment_entry_debug_reset();
   return 0;
 }

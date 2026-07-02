@@ -203,6 +203,14 @@ handlecheckedtouch mode:
   lookup/check/fallback shape, not in the local cached-slot state transition.
   safety smoke: token cached slots route as owned INVALID and public free
   rejects them while preserving ownership classification.
+  token cache retire boundary, class 64K, 5M-iteration R3:
+    tokencachebody: about 591-607M ops/s
+    tokencacheretire: about 535-607M ops/s
+    tokenbody: about 643-655M ops/s
+    tlsledgerbody: about 240-275M ops/s
+  reading: flushing cached slots back to normal free state at the retirement
+  boundary does not require putting route/class/generation checks back into the
+  reuse loop.
 
 tls-handle mode:
   caches the selected page handle in TLS by class

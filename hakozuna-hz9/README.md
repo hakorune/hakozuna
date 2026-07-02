@@ -126,6 +126,8 @@ MODE=tokenbody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tokencachebody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
+MODE=tokencacheretire CLASS_ID=5 ITERS=5000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlsguardbody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlsbodychecked CLASS_ID=5 ITERS=5000000 TOUCH=1 \

@@ -110,6 +110,33 @@ static inline bool h9_segment_entry_cycle_token_cache_inline(
   return true;
 }
 
+static inline bool h9_segment_entry_retire_token_cache_inline(
+    const H9SegmentEntryToken* token, uint32_t* cache_slot, void** cache_ptr) {
+  if (!token || token->handle == 0u || !cache_slot || !cache_ptr) {
+    return false;
+  }
+  if (!*cache_ptr) {
+    *cache_slot = UINT32_MAX;
+    return true;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)token->handle;
+  uint32_t slot = *cache_slot;
+  if (slot >= page->slot_count) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) == 0u) {
+    return false;
+  }
+  page->cache_bits &= ~bit;
+  page->alloc_bits &= ~bit;
+  page->free_bits |= bit;
+  *cache_ptr = NULL;
+  *cache_slot = UINT32_MAX;
+  return true;
+}
+
 H9SegmentEntryPage* h9_segment_entry_page_for_ptr(void* ptr,
                                                   uint32_t* page_out,
                                                   uint32_t* slot_out);
