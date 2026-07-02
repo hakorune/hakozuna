@@ -20,7 +20,7 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                next behavior is RouteProof: active direct local, route-slot free.
+                active_route proof shows public free boundary dominates next.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

@@ -76,6 +76,7 @@ current design:
   release_all clears touched TLS segment state for exit scaffolding
   API and real-payload sweeps separate local direct body from public route cost
   active direct body remains about 421M+ ops/s on real payload
+  active_route public cycle is about 149M+ ops/s and route-boundary dominated
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

@@ -416,6 +416,28 @@ bool h9_segment_local_cache_debug_take_slot_addr(uint32_t class_id,
   return true;
 }
 
+bool h9_segment_local_cache_debug_active_take_direct(uint32_t* slot_out,
+                                                     uintptr_t* addr_out) {
+  uint32_t class_id = h9_segment_tls.active_class;
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->state != H9_SEGMENT_LOCAL ||
+      cls->local_free_bits == 0u || cls->base_addr == 0u ||
+      cls->slot_size == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(cls->local_free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  cls->local_free_bits &= ~bit;
+  cls->local_alloc_bits |= bit;
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  if (addr_out) {
+    *addr_out = cls->base_addr + (uintptr_t)slot * (uintptr_t)cls->slot_size;
+  }
+  return true;
+}
+
 bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out) {
   return h9_segment_local_cache_debug_take_slot_addr(class_id, NULL, addr_out);

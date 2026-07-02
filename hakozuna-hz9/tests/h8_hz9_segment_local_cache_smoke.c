@@ -378,6 +378,12 @@ static int check_bound_alloc_free(void) {
     fprintf(stderr, "segment active known cycle failed\n");
     return 78;
   }
+  if (!h9_segment_local_cache_debug_active_take_direct(&slot, &addr1) ||
+      slot != 1u || addr1 != base + slot_size ||
+      !h9_segment_local_cache_debug_free_allocated(class_id, slot)) {
+    fprintf(stderr, "segment active direct take failed\n");
+    return 79;
+  }
   if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
       !h9_segment_local_cache_debug_active_take_addr(&addr1) ||
       addr1 != base + slot_size ||

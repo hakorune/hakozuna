@@ -529,6 +529,14 @@ active_cycle=1, touch=1:
   class3 447.4M ops/s
   class4 437.7M ops/s
   class5 474.4M ops/s
+
+active_route=1, touch=1:
+  class0 183.4M ops/s
+  class1 179.2M ops/s
+  class2 167.4M ops/s
+  class3 161.2M ops/s
+  class4 151.8M ops/s
+  class5 149.4M ops/s
 ```
 
 Interpretation:
@@ -554,6 +562,11 @@ active payload probe:
   ops/s while touching real payload
   this is the behavior-core target; public free route remains a separate
   boundary path
+
+active-route payload probe:
+  active direct take plus route_table_slot free lands around 149-183M ops/s
+  this is better than route2 alone, but free boundary classification dominates
+  a public malloc/free cycle
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
@@ -583,6 +596,7 @@ HZ9SegmentLocalRouteProof-L0:
   first behavior candidate after SegmentLocalCache evidence
   connect a real segment payload to active direct known-slot local reuse
   use route_table_slot for public free validation only
+  measure active_route as the realistic public malloc/free ceiling
   keep remote mark -> RETIRED fallback behavior
   keep public entry and small path unchanged
   keep H8OwnerRecord / H8ThreadCtx layout unchanged
