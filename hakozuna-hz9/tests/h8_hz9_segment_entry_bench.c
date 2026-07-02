@@ -23,7 +23,8 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 9,
   H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 10,
   H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 11,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 12
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 12,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 13
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -77,6 +78,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_CACHE;
   } else if (strcmp(mode, "tlsledger") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER;
+  } else if (strcmp(mode, "tlsledgerbody") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY;
   }
 
   uint32_t slot_size = 0u;
@@ -109,7 +112,8 @@ int main(void) {
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CACHE ||
-             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER) {
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
     page_handle = h9_segment_entry_debug_prepare_handle(class_id);
     if (page_handle == 0u) {
       fprintf(stderr, "segment entry bench failed to prepare handle\n");
@@ -122,7 +126,11 @@ int main(void) {
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
+      success =
+          h9_segment_entry_debug_cycle_tls_ledger_body(class_id, i, touch,
+                                                       &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER) {
       success =
           h9_segment_entry_debug_cycle_tls_ledger(class_id, i, touch, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CACHE) {
@@ -194,7 +202,8 @@ int main(void) {
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CACHE &&
-        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER) {
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
       volatile unsigned char* p = (volatile unsigned char*)ptr;
       p[0] = (unsigned char)i;
       p[slot_size - 1u] = (unsigned char)(i >> 8);

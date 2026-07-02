@@ -634,6 +634,57 @@ bool h9_segment_entry_debug_cycle_tls_ledger(uint32_t class_id, uint64_t value,
   return h9_segment_entry_cache_push_slot(class_id, page, slot, ptr);
 }
 
+bool h9_segment_entry_debug_cycle_tls_ledger_body(uint32_t class_id,
+                                                  uint64_t value, bool touch,
+                                                  void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_cache_page[class_id];
+  uint32_t slot = h9_segment_entry_cache_slot[class_id];
+  void* ptr = h9_segment_entry_cache_ptr[class_id];
+  if (ptr && page && page->class_id == class_id && slot < page->slot_count) {
+    uint64_t bit = UINT64_C(1) << slot;
+    if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+        (page->cache_bits & bit) == 0u) {
+      return false;
+    }
+    page->cache_bits &= ~bit;
+    h9_segment_entry_cache_ptr[class_id] = NULL;
+    h9_segment_entry_cache_page[class_id] = 0u;
+    h9_segment_entry_cache_slot[class_id] = UINT32_MAX;
+  } else {
+    page = (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+    if (!page || page->class_id != class_id || page->free_bits == 0u) {
+      uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+      page = (H9SegmentEntryPage*)handle;
+    }
+    if (!h9_segment_entry_alloc_page_slot(page, &ptr, &slot)) {
+      return false;
+    }
+  }
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  if (touch) {
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    p[0] = (unsigned char)value;
+    p[page->slot_size - 1u] = (unsigned char)(value >> 8);
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if (h9_segment_entry_cache_ptr[class_id] != NULL ||
+      (page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
+    return false;
+  }
+  page->cache_bits |= bit;
+  h9_segment_entry_cache_ptr[class_id] = ptr;
+  h9_segment_entry_cache_page[class_id] = (uintptr_t)page;
+  h9_segment_entry_cache_slot[class_id] = slot;
+  return true;
+}
+
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;

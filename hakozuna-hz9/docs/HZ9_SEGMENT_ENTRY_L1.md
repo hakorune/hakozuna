@@ -203,6 +203,18 @@ tlsledger mode:
     tlsledger touch=1: about 298-328M ops/s
     tlscache touch=1: about 198-211M ops/s
     tlscheckedtouch touch=1: about 423-430M ops/s
+
+tlsledgerbody mode:
+  fuses the one-entry ledger pop/push into one debug body to test whether
+  helper/API splitting is the primary cost
+  R1 class sweep:
+    touch=1: about 253-345M ops/s
+    tlsledger comparison: about 301-331M ops/s
+    tlscheckedtouch comparison: about 376-442M ops/s
+  class 64K, 5M-iteration repeat:
+    tlsledgerbody touch=1: about 300-312M ops/s
+    tlsledger touch=1: about 305-329M ops/s
+    tlscheckedtouch touch=1: about 400-431M ops/s
 ```
 
 Interpretation:
@@ -237,6 +249,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   cannot be just a TLS pop plus public route push
   tlsledger proves that removing route-push helps, but a one-entry ledger still
   pays enough bookkeeping that it does not recover the fused local body
+  tlsledgerbody shows helper splitting is not the main blocker; the ledger/cache
+  state shape itself is too heavy for the local hot body
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

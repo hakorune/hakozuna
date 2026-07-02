@@ -123,6 +123,14 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 17;
   }
+  owned = false;
+  if (!h9_segment_entry_debug_cycle_tls_ledger_body(class_id, 29u, true, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(b, &owned) || !owned) {
+    fprintf(stderr, "segment entry tls ledger body failed: class=%u\n",
+            class_id);
+    return 18;
+  }
   return 0;
 }
 
