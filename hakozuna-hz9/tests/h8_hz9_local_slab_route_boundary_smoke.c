@@ -225,6 +225,47 @@ static int check_pointer_token_entry(void) {
   return 0;
 }
 
+static int check_last_token_entry(void) {
+  bool owned = false;
+  void* ptr = h9_lsp_debug_lasttoken_alloc(5u);
+  if (!ptr) {
+    return 40;
+  }
+  if (h9_lsp_debug_lasttoken_free((char*)ptr + 1, &owned) || !owned) {
+    fprintf(stderr, "last-token entry interior accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 41;
+  }
+  if (!h9_lsp_debug_lasttoken_free(ptr, &owned) || !owned) {
+    fprintf(stderr, "last-token entry exact fallback free failed owned=%d\n",
+            owned ? 1 : 0);
+    return 42;
+  }
+  if (h9_lsp_debug_lasttoken_free(ptr, &owned) || !owned) {
+    fprintf(stderr, "last-token entry double free accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 43;
+  }
+
+  ptr = h9_lsp_debug_lasttoken_alloc(5u);
+  if (!ptr || !h9_lsp_debug_lasttoken_free(ptr, &owned) || !owned) {
+    fprintf(stderr, "last-token entry exact fast free failed owned=%d\n",
+            owned ? 1 : 0);
+    return 44;
+  }
+  H9LspStats stats = h9_lsp_debug_stats();
+  if (stats.ptrtoken_free_fast == 0u || stats.ptrtoken_free_fallback == 0u ||
+      stats.free_invalid_owned == 0u) {
+    fprintf(stderr,
+            "last-token entry counters failed fast=%zu fallback=%zu "
+            "invalid=%zu\n",
+            stats.ptrtoken_free_fast, stats.ptrtoken_free_fallback,
+            stats.free_invalid_owned);
+    return 45;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -236,6 +277,11 @@ int main(void) {
   if (entry_rc != 0) {
     h9_lsp_debug_reset();
     return entry_rc;
+  }
+  int last_rc = check_last_token_entry();
+  if (last_rc != 0) {
+    h9_lsp_debug_reset();
+    return last_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

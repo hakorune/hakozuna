@@ -142,6 +142,9 @@ hot/cold pointer split, ITERS=30000000:
 
 lastonly generic helper, ITERS=30000000:
   283.922M ops/s
+
+lastentry route-boundary TU helper, ITERS=10000000:
+  108.140M ops/s
 ```
 
 Read:
@@ -197,6 +200,11 @@ The generic `lastonly` helper is still far below the hand-shaped `lastpublic`
 ceiling.  That points to helper/code-shape overhead rather than the last-token
 idea.  The next candidate should carry the `lastpublic` body shape into the
 public allocator entry, not wrap it in a generic token helper.
+
+The route-boundary TU `lastentry` helper improves over `ptrentry` but is still
+far from the hand-shaped ceiling.  This confirms that another debug/helper API
+is not enough.  The next real candidate must integrate the last-token body into
+the allocator entry TU itself, with route only as a cold fallback.
 ```
 
 ## Commands
@@ -214,6 +222,8 @@ MODE=lastledger CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

@@ -29,7 +29,8 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_LAST_PUBLIC = 12,
   H9_LSP_BENCH_LAST_LEDGER = 13,
   H9_LSP_BENCH_HOT_COLD = 14,
-  H9_LSP_BENCH_LAST_ONLY = 15
+  H9_LSP_BENCH_LAST_ONLY = 15,
+  H9_LSP_BENCH_LAST_ENTRY = 16
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -232,6 +233,8 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_HOT_COLD;
   } else if (strcmp(mode, "lastonly") == 0) {
     bench_mode = H9_LSP_BENCH_LAST_ONLY;
+  } else if (strcmp(mode, "lastentry") == 0) {
+    bench_mode = H9_LSP_BENCH_LAST_ENTRY;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -540,6 +543,9 @@ int main(void) {
                             bench_mode == H9_LSP_BENCH_PTR_ENTRY_USABLE ||
                             bench_mode == H9_LSP_BENCH_PTR_ENTRY_REALLOC
                         ? (ptr = h9_lsp_debug_ptrtoken_alloc(class_id)) != NULL
+                    : bench_mode == H9_LSP_BENCH_LAST_ENTRY
+                        ? (ptr = h9_lsp_debug_lasttoken_alloc(class_id)) !=
+                              NULL
                     : bench_mode == H9_LSP_BENCH_KNOWN_SLOT ||
                             bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY
                         ? h9_lsp_debug_alloc_slot(class_id, &ptr, &slot)
@@ -589,6 +595,9 @@ int main(void) {
       sink += slot;
     } else if (bench_mode == H9_LSP_BENCH_PTR_ENTRY) {
       success = h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
+      sink ^= (uintptr_t)ptr;
+    } else if (bench_mode == H9_LSP_BENCH_LAST_ENTRY) {
+      success = h9_lsp_debug_lasttoken_free(ptr, &owned) && owned;
       sink ^= (uintptr_t)ptr;
     } else {
       success = h9_lsp_debug_free(ptr, &owned) && owned;
