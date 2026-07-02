@@ -15,7 +15,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_SPLIT = 0,
   H9_LSP_BENCH_USABLE = 1,
   H9_LSP_BENCH_REALLOC = 2,
-  H9_LSP_BENCH_SPLIT_DIRECT = 3
+  H9_LSP_BENCH_SPLIT_DIRECT = 3,
+  H9_LSP_BENCH_KNOWN_SLOT = 4,
+  H9_LSP_BENCH_ALLOC_SLOT_ONLY = 5
 } H9LspBenchMode;
 
 static double now_seconds(void) {
@@ -51,6 +53,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_REALLOC;
   } else if (strcmp(mode, "splitdirect") == 0) {
     bench_mode = H9_LSP_BENCH_SPLIT_DIRECT;
+  } else if (strcmp(mode, "knownslot") == 0) {
+    bench_mode = H9_LSP_BENCH_KNOWN_SLOT;
+  } else if (strcmp(mode, "allocslotonly") == 0) {
+    bench_mode = H9_LSP_BENCH_ALLOC_SLOT_ONLY;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -65,8 +71,13 @@ int main(void) {
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool owned = false;
-    void* ptr = h9_lsp_debug_alloc(class_id);
-    if (!ptr) {
+    uint32_t slot = UINT32_MAX;
+    void* ptr = NULL;
+    bool alloc_ok = bench_mode == H9_LSP_BENCH_KNOWN_SLOT ||
+                            bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY
+                        ? h9_lsp_debug_alloc_slot(class_id, &ptr, &slot)
+                        : (ptr = h9_lsp_debug_alloc(class_id)) != NULL;
+    if (!alloc_ok || !ptr) {
       fprintf(stderr, "lsp bench alloc failed at iter %llu\n",
               (unsigned long long)i);
       h9_lsp_debug_reset();
@@ -92,6 +103,12 @@ int main(void) {
     } else if (bench_mode == H9_LSP_BENCH_SPLIT_DIRECT) {
       success = h9_lsp_debug_free_direct_owned(ptr);
       sink ^= (uintptr_t)ptr;
+    } else if (bench_mode == H9_LSP_BENCH_KNOWN_SLOT) {
+      success = h9_lsp_debug_free_known_slot(class_id, slot);
+      sink ^= (uintptr_t)ptr;
+    } else if (bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY) {
+      success = h9_lsp_debug_free_known_slot(class_id, slot);
+      sink += slot;
     } else {
       success = h9_lsp_debug_free(ptr, &owned) && owned;
       sink ^= (uintptr_t)ptr;

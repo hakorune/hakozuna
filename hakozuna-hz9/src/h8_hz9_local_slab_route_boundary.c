@@ -300,6 +300,47 @@ void* h9_lsp_debug_alloc(uint32_t class_id) {
   return h9_lsp_slot_ptr(segment, slot);
 }
 
+bool h9_lsp_debug_alloc_slot(uint32_t class_id, void** ptr_out,
+                             uint32_t* slot_out) {
+  h9_lsp_init();
+  h9_lsp_stats.malloc_call++;
+  if (ptr_out) {
+    *ptr_out = NULL;
+  }
+  if (slot_out) {
+    *slot_out = UINT32_MAX;
+  }
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9LspSegment* segment = h9_lsp_active[class_id];
+  bool created = false;
+  if (!segment || segment->free_bits == 0u) {
+    segment = h9_lsp_create_segment(class_id);
+    h9_lsp_active[class_id] = segment;
+    created = segment != NULL;
+  } else {
+    h9_lsp_stats.malloc_tls_page_hit++;
+  }
+  if (!segment || segment->free_bits == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(segment->free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  segment->free_bits &= ~bit;
+  segment->alloc_bits |= bit;
+  if (created) {
+    h9_lsp_stats.malloc_page_create++;
+  }
+  if (ptr_out) {
+    *ptr_out = h9_lsp_slot_ptr(segment, slot);
+  }
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  return true;
+}
+
 bool h9_lsp_debug_free(void* ptr, bool* owned_out) {
   H9LspRouteResult route = h9_lsp_debug_route(ptr);
   if (owned_out) {
@@ -328,6 +369,25 @@ bool h9_lsp_debug_free_direct_owned(void* ptr) {
   }
   H9LspSegment* segment = (H9LspSegment*)route.segment;
   uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  h9_lsp_stats.free_same_owner_local++;
+  return true;
+}
+
+bool h9_lsp_debug_free_known_slot(uint32_t class_id, uint32_t slot) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9LspSegment* segment = h9_lsp_active[class_id];
+  if (!segment || slot >= segment->slot_count) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
+      (segment->cache_bits & bit) != 0u || (segment->pending_bits & bit) != 0u) {
+    return false;
+  }
   segment->alloc_bits &= ~bit;
   segment->free_bits |= bit;
   h9_lsp_stats.free_same_owner_local++;
