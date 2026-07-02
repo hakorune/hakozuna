@@ -60,6 +60,7 @@ bool h9_segment_local_cache_debug_take_slot_addr(uint32_t class_id,
                                                  uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_active_take_direct(uint32_t* slot_out,
                                                      uintptr_t* addr_out);
+bool h9_segment_local_cache_debug_active_free_direct(uint32_t slot);
 bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,

@@ -179,6 +179,10 @@ int main(void) {
         route_kind = H8_ROUTE_VALID;
         routed_class = class_id;
         routed_slot = slot;
+      } else if (active_route == 10u) {
+        route_kind = H8_ROUTE_VALID;
+        routed_class = class_id;
+        routed_slot = slot;
       } else if (active_route >= 2u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_addr(
             addr, &routed_class, &routed_slot);
@@ -188,7 +192,10 @@ int main(void) {
       }
       success = success && route_kind == H8_ROUTE_VALID &&
                 routed_class == class_id && routed_slot == slot;
-      if (active_route >= 3u) {
+      if (active_route == 10u) {
+        success =
+            success && h9_segment_local_cache_debug_active_free_direct(slot);
+      } else if (active_route >= 3u) {
         success =
             success &&
             h9_segment_local_cache_debug_free_allocated(class_id, slot);

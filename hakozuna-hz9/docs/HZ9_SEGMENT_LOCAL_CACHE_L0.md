@@ -685,6 +685,12 @@ Active pair proof:
   implication: route lookup is not the only tax; split public-shaped take/free
   control remains too expensive versus the combined active known-slot body
 
+Active pair-fast-free proof:
+  pairfast uses active direct take plus active-class direct free with no route
+  current R1 range is about 251-274M ops/s, or about 0.59-0.66x active direct
+  implication: free-side specialization helps, but the split malloc/free shape
+  is still not enough to recover the combined active known-slot body
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape
