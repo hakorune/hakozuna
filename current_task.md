@@ -21,14 +21,15 @@ Current direction:
   Current HZ9 box: HZ9DirectSlabUseProof-L0.
                 slabdirectuse is implemented as proof-only direct SlabPage use
                 before owner-page/TLS/HZ8 medium fallback.
-                Smoke R1: medium_local0 0.916, main_r90 1.348.
-                Continue with focused R3/R10 before deciding whether SlabPage
-                is remote/profile-only or a viable substrate body.
+                Focused R3: medium_local0 0.757, main_local0 0.913,
+                medium_r50 1.213, main_r90 1.629.
+                Treat SlabPage as remote/profile evidence, not the next broad
+                local substrate.
   Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
                 matter; keep them as proof-only evidence.
   HZ9 route-last is closed as NO-GO evidence inside hakozuna-hz9/, not HZ8.
   HZ9 LocalArena remote-safe page is closed as early NO-GO evidence.
-  Current HZ9 SlabPage L1 variants are evidence/profile, not default.
+  Current HZ9 SlabPage variants are evidence/profile, not default.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 
 Current strength:

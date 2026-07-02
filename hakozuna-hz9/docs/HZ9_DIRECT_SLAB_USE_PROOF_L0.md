@@ -130,13 +130,49 @@ blocked prior SlabPage default candidates.
 ## Command
 
 ```sh
-VARIANTS=baseline,slabdirectuse \
-ROWS=medium_local0,main_local0,medium_r50,main_r90 \
-RUNS=3 THREADS=16 ITERS=200000 \
-  hakozuna-hz9/scripts/run_hz9_candidate_gate.sh
+hakozuna-hz9/scripts/run_hz9_direct_slab_use_proof.sh
 ```
 
 Use `RUNS=10` before making a lane decision.
+
+## R3 Evidence
+
+```text
+source:
+  bench_results/20260702T115940Z_hz9_direct_slab_use_proof_r3
+
+medium_local0:
+  ratio 0.757
+  p25 ratio 0.696
+
+main_local0:
+  ratio 0.913
+  p25 ratio 0.908
+
+medium_r50:
+  ratio 1.213
+
+main_r90:
+  ratio 1.629
+  p25 ratio 1.434
+
+guard_local0:
+  ratio 0.985
+
+small_interleaved_remote90:
+  ratio 0.972
+```
+
+Read:
+
+```text
+SlabPage body:
+  useful remote/profile evidence
+
+local substrate:
+  fails current local gate
+  not the next broad HZ9 default substrate
+```
 
 ## Required Counters
 

@@ -53,6 +53,12 @@ current gate:
     directory-first free routing removes most broad remote-row route tax
     latest short gate still blocks promotion on medium_local0
     decision: HOLD, not default
+  HZ9DirectSlabUseProof-L0 is implemented as profile/evidence:
+    direct SlabPage use avoids owner-page/TLS/HZ8 fallback admission
+    focused R3 improves medium_r50 and main_r90 materially
+    focused R3 regresses medium_local0 and main_local0
+    decision: SlabPage body is remote/profile evidence, not the next broad
+    local substrate
 ```
 
 ## Current Implementation Posture
@@ -127,21 +133,12 @@ Before writing another allocator body:
     H8OwnerRecord/H8ThreadCtx layout changes
     owner-page route/admission overhead on local rows
 
-Candidate shape:
-  HZ9DirectSlabUseProof-L0
-  behavior change:
-    proof-only / opt-in
-  purpose:
-    isolate the SlabPage body from entry/route/admission overhead before
-    deciding whether to write a fresh allocator body
-
-SSOT:
-  docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
-
 latest read:
-  sidecar/slab release probes retain strong remote-heavy wins but still
-  regress medium_local0/main_local0. Do not continue SlabPage sidecar/entry
-  tuning as the next default path.
+  DirectSlabUse proof confirms the same split:
+    remote-heavy rows win
+    medium/main local rows lose
+  Do not continue SlabPage sidecar/entry/direct-use tuning as the next default
+  path. Treat SlabPage as a remote/profile component only.
 ```
 
 ## Active Constraints
