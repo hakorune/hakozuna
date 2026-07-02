@@ -96,6 +96,7 @@ test:
 build:
   smoke-hz9segmentlocalcache
   bench-hz9segmentlocalcache-api
+  scripts/run_hz9_segment_api_sweep.sh
 
 flag:
   H9_SEGMENT_LOCAL_CACHE_L0
@@ -180,6 +181,7 @@ smoke:
 before behavior:
   run pre-substrate recheck
   record bench-hz9segmentlocalcache-api output
+  run class sweep to catch class-specific slot-count effects
   compare source/code shape to baseline
 ```
 

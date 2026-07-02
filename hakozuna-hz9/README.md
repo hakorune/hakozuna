@@ -112,6 +112,7 @@ hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 # current segment-local-cache scaffold smoke
 make -C hakozuna-hz9 smoke-hz9segmentlocalcache
 ITERS=10000000 make -C hakozuna-hz9 bench-hz9segmentlocalcache-api
+ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
