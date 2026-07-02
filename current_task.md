@@ -22,7 +22,7 @@ Current direction:
                 segments leaving LOCAL state.
                 SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
-                raw TLS handle load is fine; hot checks are the blocker;
+                raw TLS handle load is fine; hot generation/checks are blockers;
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

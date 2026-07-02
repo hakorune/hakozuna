@@ -167,9 +167,34 @@ static int check_cold_multiclass_start(void) {
   return 0;
 }
 
+static int check_generation_token(void) {
+  void* p = NULL;
+  uintptr_t handle = h9_segment_entry_debug_prepare_handle(0u);
+  uint32_t generation = h9_segment_entry_debug_handle_generation(handle);
+  if (handle == 0u || generation == 0u ||
+      !h9_segment_entry_debug_cycle_handle_generation(handle, generation, 31u,
+                                                      true, &p)) {
+    fprintf(stderr, "segment entry generation token valid check failed\n");
+    h9_segment_entry_debug_reset();
+    return 22;
+  }
+  h9_segment_entry_debug_reset();
+  if (h9_segment_entry_debug_cycle_handle_generation(handle, generation, 37u,
+                                                     true, &p)) {
+    fprintf(stderr, "segment entry stale generation token accepted\n");
+    h9_segment_entry_debug_reset();
+    return 23;
+  }
+  h9_segment_entry_debug_reset();
+  return 0;
+}
+
 int main(void) {
   if (check_cold_multiclass_start() != 0) {
     return 9;
+  }
+  if (check_generation_token() != 0) {
+    return 22;
   }
   h9_segment_entry_debug_reset();
   for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {

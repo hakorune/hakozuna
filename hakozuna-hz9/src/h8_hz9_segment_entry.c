@@ -6,8 +6,11 @@
 
 H9SegmentEntryPage h9_segment_entry_pages[H9_SEGMENT_ENTRY_PAGE_CAP];
 uint32_t h9_segment_entry_page_count;
+static uint32_t h9_segment_entry_next_generation = 1u;
 _Thread_local uint32_t h9_segment_entry_active[H8_MEDIUM_CLASS_COUNT];
 _Thread_local uintptr_t h9_segment_entry_handle[H8_MEDIUM_CLASS_COUNT];
+_Thread_local uint32_t
+    h9_segment_entry_handle_generation[H8_MEDIUM_CLASS_COUNT];
 _Thread_local void* h9_segment_entry_cache_ptr[H8_MEDIUM_CLASS_COUNT];
 _Thread_local uintptr_t h9_segment_entry_cache_page[H8_MEDIUM_CLASS_COUNT];
 _Thread_local uint32_t h9_segment_entry_cache_slot[H8_MEDIUM_CLASS_COUNT];
@@ -99,12 +102,14 @@ static H9SegmentEntryPage* h9_segment_entry_create_page(uint32_t class_id) {
       .base = base,
       .slot_size = slot_size,
       .run_size = run_size,
+      .generation = h9_segment_entry_next_generation++,
       .slot_count = slot_count,
       .class_id = (uint16_t)class_id,
       .free_bits = full_bits,
   };
   h9_segment_entry_active[class_id] = page_id;
   h9_segment_entry_handle[class_id] = (uintptr_t)page;
+  h9_segment_entry_handle_generation[class_id] = page->generation;
   return page;
 }
 
@@ -285,6 +290,7 @@ void h9_segment_entry_debug_reset(void) {
   for (uint32_t i = 0u; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     h9_segment_entry_active[i] = UINT32_MAX;
     h9_segment_entry_handle[i] = 0u;
+    h9_segment_entry_handle_generation[i] = 0u;
     h9_segment_entry_cache_ptr[i] = NULL;
     h9_segment_entry_cache_page[i] = 0u;
     h9_segment_entry_cache_slot[i] = UINT32_MAX;
@@ -364,8 +370,14 @@ uintptr_t h9_segment_entry_debug_prepare_handle(uint32_t class_id) {
                          : 0u;
   if (class_id < H8_MEDIUM_CLASS_COUNT) {
     h9_segment_entry_handle[class_id] = handle;
+    h9_segment_entry_handle_generation[class_id] =
+        handle ? ((H9SegmentEntryPage*)handle)->generation : 0u;
   }
   return handle;
+}
+
+uint32_t h9_segment_entry_debug_handle_generation(uintptr_t handle) {
+  return handle ? ((H9SegmentEntryPage*)handle)->generation : 0u;
 }
 
 bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
@@ -373,6 +385,22 @@ bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
     return false;
   }
   return h9_segment_entry_cycle_page((H9SegmentEntryPage*)handle, ptr_out);
+}
+
+bool h9_segment_entry_debug_cycle_handle_generation(uintptr_t handle,
+                                                    uint32_t generation,
+                                                    uint64_t value,
+                                                    bool touch,
+                                                    void** ptr_out) {
+  if (handle == 0u) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)handle;
+  if (page->generation != generation) {
+    return false;
+  }
+  return h9_segment_entry_cycle_page_checked_touch(page, value, touch,
+                                                   ptr_out);
 }
 
 bool h9_segment_entry_debug_cycle_handle_checked_touch(uintptr_t handle,

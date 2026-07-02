@@ -16,7 +16,13 @@ bool h9_segment_entry_debug_cycle_active_fast(uint32_t class_id,
 uint32_t h9_segment_entry_debug_prepare_active(uint32_t class_id);
 bool h9_segment_entry_debug_cycle_page(uint32_t page_id, void** ptr_out);
 uintptr_t h9_segment_entry_debug_prepare_handle(uint32_t class_id);
+uint32_t h9_segment_entry_debug_handle_generation(uintptr_t handle);
 bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out);
+bool h9_segment_entry_debug_cycle_handle_generation(uintptr_t handle,
+                                                    uint32_t generation,
+                                                    uint64_t value,
+                                                    bool touch,
+                                                    void** ptr_out);
 bool h9_segment_entry_debug_cycle_handle_checked_touch(uintptr_t handle,
                                                        uint64_t value,
                                                        bool touch,

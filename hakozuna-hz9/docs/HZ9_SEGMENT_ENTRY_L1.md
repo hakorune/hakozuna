@@ -174,6 +174,15 @@ handlecheckedtouch mode:
   and the public debug wrapper/fallback shape adds more loss. HZ9 local reuse
   should receive a prevalidated handle or epoch token and keep route/class
   checks at acquisition/retirement boundaries.
+  generation guard check, class 64K, 5M-iteration R3:
+    handlebody: about 650-655M ops/s
+    handleguardbody: about 520-565M ops/s
+    tlsbody: about 598-610M ops/s
+    tlsguardbody: about 467-497M ops/s
+    tlsbodychecked: about 503-528M ops/s
+  reading: even a compact generation guard is too expensive for the local reuse
+  body. The generation/token check belongs at handle acquisition and retirement;
+  the hot loop should run on an already-validated page handle.
 
 tls-handle mode:
   caches the selected page handle in TLS by class

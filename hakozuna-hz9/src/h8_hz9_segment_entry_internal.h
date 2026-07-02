@@ -14,6 +14,7 @@ typedef struct H9SegmentEntryPage {
   void* base;
   uint32_t slot_size;
   uint32_t run_size;
+  uint32_t generation;
   uint16_t slot_count;
   uint16_t class_id;
   uint64_t free_bits;
@@ -27,6 +28,8 @@ extern _Thread_local uint32_t
     h9_segment_entry_active[H8_MEDIUM_CLASS_COUNT];
 extern _Thread_local uintptr_t
     h9_segment_entry_handle[H8_MEDIUM_CLASS_COUNT];
+extern _Thread_local uint32_t
+    h9_segment_entry_handle_generation[H8_MEDIUM_CLASS_COUNT];
 extern _Thread_local void*
     h9_segment_entry_cache_ptr[H8_MEDIUM_CLASS_COUNT];
 extern _Thread_local uintptr_t

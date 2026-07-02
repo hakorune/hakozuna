@@ -17,21 +17,23 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_HANDLE = 4,
   H9_SEGMENT_ENTRY_BENCH_HANDLE_CHECKED_TOUCH = 5,
   H9_SEGMENT_ENTRY_BENCH_HANDLE_BODY = 6,
-  H9_SEGMENT_ENTRY_BENCH_TLS = 7,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 8,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 9,
-  H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 10,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 11,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 12,
-  H9_SEGMENT_ENTRY_BENCH_TLS_BODY = 13,
-  H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED = 14,
-  H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY = 15,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY = 16,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY = 17,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE64_BODY = 18,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 19,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 20,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 21
+  H9_SEGMENT_ENTRY_BENCH_HANDLE_GUARD_BODY = 7,
+  H9_SEGMENT_ENTRY_BENCH_TLS = 8,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 9,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 10,
+  H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 11,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 12,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 13,
+  H9_SEGMENT_ENTRY_BENCH_TLS_BODY = 14,
+  H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED = 15,
+  H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY = 16,
+  H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY = 17,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY = 18,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY = 19,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE64_BODY = 20,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 21,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 22,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 23
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -74,6 +76,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_HANDLE_CHECKED_TOUCH;
   } else if (strcmp(mode, "handlebody") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_HANDLE_BODY;
+  } else if (strcmp(mode, "handleguardbody") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_HANDLE_GUARD_BODY;
   } else if (strcmp(mode, "tls") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS;
   } else if (strcmp(mode, "tlsroute") == 0) {
@@ -90,6 +94,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_BODY;
   } else if (strcmp(mode, "tlsbodychecked") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED;
+  } else if (strcmp(mode, "tlsguardbody") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY;
   } else if (strcmp(mode, "tlsepochbody") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY;
   } else if (strcmp(mode, "tlsroutebody") == 0) {
@@ -121,6 +127,7 @@ int main(void) {
   h9_segment_entry_debug_reset();
   uint32_t page_id = UINT32_MAX;
   uintptr_t page_handle = 0u;
+  uint32_t page_generation = 0u;
   if (bench_mode == H9_SEGMENT_ENTRY_BENCH_PAGE) {
     page_id = h9_segment_entry_debug_prepare_active(class_id);
     if (page_id == UINT32_MAX) {
@@ -131,6 +138,7 @@ int main(void) {
   } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE_CHECKED_TOUCH ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE_BODY ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE_GUARD_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL ||
@@ -139,6 +147,7 @@ int main(void) {
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY ||
@@ -152,6 +161,7 @@ int main(void) {
       h9_segment_entry_debug_reset();
       return 3;
     }
+    page_generation = h9_segment_entry_debug_handle_generation(page_handle);
   }
   uint64_t ok = 0u;
   double start = now_seconds();
@@ -197,6 +207,14 @@ int main(void) {
       success = page && page->class_id == class_id && page->free_bits != 0u &&
                 h9_segment_entry_cycle_page_checked_touch_inline(page, i,
                                                                  touch, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY) {
+      H9SegmentEntryPage* page =
+          (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+      success =
+          page &&
+          page->generation == h9_segment_entry_handle_generation[class_id] &&
+          h9_segment_entry_cycle_page_checked_touch_inline(page, i, touch,
+                                                           &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED) {
       success = h9_segment_entry_debug_cycle_tls_checked(class_id, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN) {
@@ -242,6 +260,11 @@ int main(void) {
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE_BODY) {
       success = h9_segment_entry_cycle_page_checked_touch_inline(
           (H9SegmentEntryPage*)page_handle, i, touch, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE_GUARD_BODY) {
+      H9SegmentEntryPage* page = (H9SegmentEntryPage*)page_handle;
+      success = page && page->generation == page_generation &&
+                h9_segment_entry_cycle_page_checked_touch_inline(page, i,
+                                                                 touch, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_PAGE) {
       success = h9_segment_entry_debug_cycle_page(page_id, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FAST) {
@@ -261,6 +284,7 @@ int main(void) {
     if (success && touch && bench_mode != H9_SEGMENT_ENTRY_BENCH_ROUTE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_HANDLE_CHECKED_TOUCH &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_HANDLE_BODY &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_HANDLE_GUARD_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN &&
@@ -268,6 +292,7 @@ int main(void) {
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY &&
