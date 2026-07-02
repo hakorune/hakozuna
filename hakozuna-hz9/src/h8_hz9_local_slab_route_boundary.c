@@ -229,6 +229,49 @@ H9LspRouteResult h9_lsp_debug_route(void* ptr) {
   return result;
 }
 
+H9LspRouteResult h9_lsp_debug_route_direct_owned(void* ptr) {
+  h9_lsp_stats.route_attempt++;
+  H9LspRouteResult result = {
+      .kind = H8_ROUTE_INVALID,
+      .reason = H9_LSP_ROUTE_REASON_INTERIOR,
+  };
+  uintptr_t addr = (uintptr_t)ptr;
+  uintptr_t base = addr & ~(uintptr_t)(H9_LSP_SEGMENT_BYTES - 1u);
+  H9LspSegment* segment = (H9LspSegment*)base;
+  if (!ptr || segment->magic != H9_LSP_SEGMENT_MAGIC) {
+    result.kind = H8_ROUTE_MISS;
+    result.reason = H9_LSP_ROUTE_REASON_MISS;
+    h9_lsp_stats.route_miss++;
+    return result;
+  }
+  result.segment = segment;
+  result.payload_base = (void*)(base + H9_LSP_PAYLOAD_OFFSET);
+  result.class_id = segment->class_id;
+  result.slot_size = segment->slot_size;
+  result.slot_count = segment->slot_count;
+  uintptr_t payload = base + H9_LSP_PAYLOAD_OFFSET;
+  uintptr_t offset = addr - payload;
+  if (addr < payload ||
+      offset >= (size_t)segment->slot_size * (size_t)segment->slot_count ||
+      (offset % (uintptr_t)segment->slot_size) != 0u) {
+    h9_lsp_stats.route_invalid++;
+    return result;
+  }
+  uint32_t slot = (uint32_t)(offset / (uintptr_t)segment->slot_size);
+  uint64_t bit = UINT64_C(1) << slot;
+  result.slot = slot;
+  if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
+      (segment->cache_bits & bit) != 0u || (segment->pending_bits & bit) != 0u) {
+    result.reason = H9_LSP_ROUTE_REASON_DOUBLE;
+    h9_lsp_stats.route_invalid++;
+    return result;
+  }
+  result.kind = H8_ROUTE_VALID;
+  result.reason = H9_LSP_ROUTE_REASON_NONE;
+  h9_lsp_stats.route_valid++;
+  return result;
+}
+
 void* h9_lsp_debug_alloc(uint32_t class_id) {
   h9_lsp_init();
   h9_lsp_stats.malloc_call++;
@@ -268,6 +311,19 @@ bool h9_lsp_debug_free(void* ptr, bool* owned_out) {
   }
   if (route.kind != H8_ROUTE_VALID) {
     h9_lsp_stats.free_invalid_owned++;
+    return false;
+  }
+  H9LspSegment* segment = (H9LspSegment*)route.segment;
+  uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  h9_lsp_stats.free_same_owner_local++;
+  return true;
+}
+
+bool h9_lsp_debug_free_direct_owned(void* ptr) {
+  H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
+  if (route.kind != H8_ROUTE_VALID) {
     return false;
   }
   H9LspSegment* segment = (H9LspSegment*)route.segment;

@@ -16,6 +16,12 @@ $(ROOT)/h8_hz9_local_slab_route_boundary_smoke: $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_
 smoke-hz9localslabrouteboundary: $(ROOT)/h8_hz9_local_slab_route_boundary_smoke
 	$(ROOT)/h8_hz9_local_slab_route_boundary_smoke
 
+$(ROOT)/h8_bench_hz9localslabrouteboundary: $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_BENCH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_CFLAGS) $(INC) -o $@ $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-hz9localslabrouteboundary: $(ROOT)/h8_bench_hz9localslabrouteboundary
+	$(ROOT)/h8_bench_hz9localslabrouteboundary
+
 $(ROOT)/h8_bench_hz9segmententry: $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ9_SEGMENT_ENTRY_CFLAGS) $(INC) -o $@ $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 

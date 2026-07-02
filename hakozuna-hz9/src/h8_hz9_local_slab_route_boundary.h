@@ -49,8 +49,10 @@ void h9_lsp_debug_reset(void);
 void* h9_lsp_debug_alloc(uint32_t class_id);
 bool h9_lsp_debug_free(void* ptr, bool* owned_out);
 H9LspRouteResult h9_lsp_debug_route(void* ptr);
+H9LspRouteResult h9_lsp_debug_route_direct_owned(void* ptr);
 bool h9_lsp_debug_usable_size(void* ptr, size_t* usable_out,
                               bool* owned_out);
+bool h9_lsp_debug_free_direct_owned(void* ptr);
 void* h9_lsp_debug_realloc_in_place(void* ptr, size_t size, bool* owned_out);
 H9LspStats h9_lsp_debug_stats(void);
 

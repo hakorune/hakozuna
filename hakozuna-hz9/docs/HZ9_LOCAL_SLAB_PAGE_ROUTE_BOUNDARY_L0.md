@@ -240,9 +240,20 @@ done:
   route result type and smoke-only O(1) segment route scaffold
   same-owner split malloc/free smoke
   shared usable_size/realloc route smoke
+  split malloc/free microbench for same-owner local slots
+
+latest short read:
+  class64 split touch=1: about 93M..97M ops/s
+  class64 splitdirect touch=1: about 109M ops/s
+  class64 usable/realloc touch=1: about 50M..53M ops/s
+
+reading:
+  safe registry route is not the only blocker
+  direct-owned address-derived route improves only modestly
+  the current public-shaped debug boundary is far below the 350M..430M HOLD/GO
+  band and needs a tighter inline/local body before broader integration
 
 next:
-  split malloc/free microbench for same-owner local slots
   remote-publish stub counters only; do not design remote protocol yet
   compare against SegmentEntry split/token-cache probes
 ```
