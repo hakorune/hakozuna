@@ -380,6 +380,34 @@ uint32_t h9_segment_entry_debug_handle_generation(uintptr_t handle) {
   return handle ? ((H9SegmentEntryPage*)handle)->generation : 0u;
 }
 
+bool h9_segment_entry_debug_acquire_token(uint32_t class_id,
+                                          H9SegmentEntryToken* token_out) {
+  if (!token_out || class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+  if (handle == 0u) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)handle;
+  *token_out = (H9SegmentEntryToken){
+      .handle = handle,
+      .generation = page->generation,
+      .class_id = class_id,
+  };
+  return true;
+}
+
+bool h9_segment_entry_debug_token_current(const H9SegmentEntryToken* token) {
+  if (!token || token->handle == 0u ||
+      token->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)token->handle;
+  return page->class_id == token->class_id &&
+         page->generation == token->generation;
+}
+
 bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
   if (handle == 0u) {
     return false;

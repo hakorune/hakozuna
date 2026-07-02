@@ -7,6 +7,12 @@
 #include <stdint.h>
 
 #if defined(H9_SEGMENT_ENTRY_L1)
+typedef struct H9SegmentEntryToken {
+  uintptr_t handle;
+  uint32_t generation;
+  uint32_t class_id;
+} H9SegmentEntryToken;
+
 void h9_segment_entry_debug_reset(void);
 bool h9_segment_entry_debug_alloc(uint32_t class_id, void** ptr_out);
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out);
@@ -17,6 +23,9 @@ uint32_t h9_segment_entry_debug_prepare_active(uint32_t class_id);
 bool h9_segment_entry_debug_cycle_page(uint32_t page_id, void** ptr_out);
 uintptr_t h9_segment_entry_debug_prepare_handle(uint32_t class_id);
 uint32_t h9_segment_entry_debug_handle_generation(uintptr_t handle);
+bool h9_segment_entry_debug_acquire_token(uint32_t class_id,
+                                          H9SegmentEntryToken* token_out);
+bool h9_segment_entry_debug_token_current(const H9SegmentEntryToken* token);
 bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out);
 bool h9_segment_entry_debug_cycle_handle_generation(uintptr_t handle,
                                                     uint32_t generation,

@@ -64,6 +64,14 @@ static inline bool h9_segment_entry_cycle_page_checked_touch_inline(
   return true;
 }
 
+static inline bool h9_segment_entry_cycle_token_hot_inline(
+    const H9SegmentEntryToken* token, uint64_t value, bool touch,
+    void** ptr_out) {
+  return token && token->handle != 0u &&
+         h9_segment_entry_cycle_page_checked_touch_inline(
+             (H9SegmentEntryPage*)token->handle, value, touch, ptr_out);
+}
+
 H9SegmentEntryPage* h9_segment_entry_page_for_ptr(void* ptr,
                                                   uint32_t* page_out,
                                                   uint32_t* slot_out);

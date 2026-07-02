@@ -72,7 +72,7 @@ make -C hakozuna-hz9 bench-hz9segmententry
   SegmentEntry global-routeable page scaffold
   set MODE=route, MODE=fused, MODE=fast, MODE=page, MODE=handle,
   MODE=handlecheckedtouch, MODE=handlebody, MODE=handleguardbody,
-  MODE=tls, MODE=tlsroute,
+  MODE=tokenbody, MODE=tls, MODE=tlsroute,
   MODE=tlslocal, MODE=tlsknown, MODE=tlschecked, MODE=tlscheckedtouch,
   MODE=tlsbody, MODE=tlsguardbody, MODE=tlsbodychecked, MODE=tlsepochbody,
   MODE=tlsroutebody,

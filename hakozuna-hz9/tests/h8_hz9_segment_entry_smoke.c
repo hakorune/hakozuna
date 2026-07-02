@@ -169,6 +169,7 @@ static int check_cold_multiclass_start(void) {
 
 static int check_generation_token(void) {
   void* p = NULL;
+  H9SegmentEntryToken token = {0};
   uintptr_t handle = h9_segment_entry_debug_prepare_handle(0u);
   uint32_t generation = h9_segment_entry_debug_handle_generation(handle);
   if (handle == 0u || generation == 0u ||
@@ -178,12 +179,23 @@ static int check_generation_token(void) {
     h9_segment_entry_debug_reset();
     return 22;
   }
+  if (!h9_segment_entry_debug_acquire_token(0u, &token) ||
+      !h9_segment_entry_debug_token_current(&token)) {
+    fprintf(stderr, "segment entry token acquire failed\n");
+    h9_segment_entry_debug_reset();
+    return 24;
+  }
   h9_segment_entry_debug_reset();
   if (h9_segment_entry_debug_cycle_handle_generation(handle, generation, 37u,
                                                      true, &p)) {
     fprintf(stderr, "segment entry stale generation token accepted\n");
     h9_segment_entry_debug_reset();
     return 23;
+  }
+  if (h9_segment_entry_debug_token_current(&token)) {
+    fprintf(stderr, "segment entry stale token remained current\n");
+    h9_segment_entry_debug_reset();
+    return 25;
   }
   h9_segment_entry_debug_reset();
   return 0;

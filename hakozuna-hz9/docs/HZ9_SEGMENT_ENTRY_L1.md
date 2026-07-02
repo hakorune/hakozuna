@@ -183,6 +183,15 @@ handlecheckedtouch mode:
   reading: even a compact generation guard is too expensive for the local reuse
   body. The generation/token check belongs at handle acquisition and retirement;
   the hot loop should run on an already-validated page handle.
+  token body check, class 64K, 5M-iteration R3:
+    handlebody: about 563-572M ops/s
+    tokenbody: about 662-669M ops/s
+    tlsbody: about 519-530M ops/s
+    tlsguardbody: about 441-444M ops/s
+  reading: prevalidated token acquisition is the right boundary shape. The hot
+  token body can run without route/class/generation checks; stale-token defense
+  is enforced by acquisition/current checks and smoke coverage, not by the local
+  reuse loop.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
