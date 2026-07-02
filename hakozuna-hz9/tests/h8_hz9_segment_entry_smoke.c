@@ -86,6 +86,14 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 12;
   }
+  uint32_t slot = 0u;
+  if (!h9_segment_entry_debug_alloc_tls_slot(class_id, &b, &slot) ||
+      !h9_segment_entry_debug_free_tls_slot(class_id, slot, &owned) || !owned ||
+      h9_segment_entry_debug_free_tls_slot(class_id, slot, &owned) || !owned) {
+    fprintf(stderr, "segment entry tls known-slot free failed: class=%u\n",
+            class_id);
+    return 13;
+  }
   return 0;
 }
 

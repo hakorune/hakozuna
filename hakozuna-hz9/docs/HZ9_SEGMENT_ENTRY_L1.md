@@ -141,6 +141,16 @@ tlslocal mode:
     tlsroute touch=1: about 238-243M ops/s
     tlslocal touch=1: about 295-307M ops/s
     tls cycle touch=1: about 568-570M ops/s
+
+tlsknown mode:
+  allocation returns the slot id, then local free uses the known slot
+  R1 class sweep:
+    touch=1: about 288-352M ops/s
+    touch=0: about 299-350M ops/s
+  class 64K, 5M-iteration repeat:
+    tlslocal touch=1: about 273-283M ops/s
+    tlsknown touch=1: about 307-345M ops/s
+    tls cycle touch=1: about 474-566M ops/s
 ```
 
 Interpretation:
@@ -162,4 +172,7 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   handle-cached allocation alone is not enough; the next residual is free route
   cached-page local free helps, but still pays pointer-to-slot decode and state
   validation; known-slot local free remains the upper-bound body
+  known-slot free helps, but split alloc/free debug API still leaves a large
+  gap to fused tls cycle; the next proof should fuse the entry body rather than
+  add another route shortcut
 ```

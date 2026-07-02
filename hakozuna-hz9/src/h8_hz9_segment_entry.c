@@ -154,6 +154,26 @@ static bool h9_segment_entry_alloc_page(H9SegmentEntryPage* page,
   return true;
 }
 
+static bool h9_segment_entry_alloc_page_slot(H9SegmentEntryPage* page,
+                                             void** ptr_out,
+                                             uint32_t* slot_out) {
+  if (!page || page->free_bits == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(page->free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  page->free_bits &= ~bit;
+  page->alloc_bits |= bit;
+  if (ptr_out) {
+    *ptr_out = (void*)((uintptr_t)page->base +
+                       (uintptr_t)slot * (uintptr_t)page->slot_size);
+  }
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  return true;
+}
+
 static bool h9_segment_entry_free_page(H9SegmentEntryPage* page, void* ptr,
                                        bool* owned_out) {
   if (owned_out) {
@@ -173,6 +193,26 @@ static bool h9_segment_entry_free_page(H9SegmentEntryPage* page, void* ptr,
   uint32_t slot = 0u;
   if (!h9_segment_entry_slot_from_addr(page, addr, &slot)) {
     return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
+    return false;
+  }
+  page->alloc_bits &= ~bit;
+  page->free_bits |= bit;
+  return true;
+}
+
+static bool h9_segment_entry_free_page_slot(H9SegmentEntryPage* page,
+                                            uint32_t slot, bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  if (!page || slot >= page->slot_count) {
+    return false;
+  }
+  if (owned_out) {
+    *owned_out = true;
   }
   uint64_t bit = UINT64_C(1) << slot;
   if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
@@ -334,6 +374,33 @@ bool h9_segment_entry_debug_free_tls_handle(uint32_t class_id, void* ptr,
     return false;
   }
   return h9_segment_entry_debug_free(ptr, owned_out);
+}
+
+bool h9_segment_entry_debug_alloc_tls_slot(uint32_t class_id, void** ptr_out,
+                                           uint32_t* slot_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+    page = (H9SegmentEntryPage*)handle;
+  }
+  return h9_segment_entry_alloc_page_slot(page, ptr_out, slot_out);
+}
+
+bool h9_segment_entry_debug_free_tls_slot(uint32_t class_id, uint32_t slot,
+                                          bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  return h9_segment_entry_free_page_slot(page, slot, owned_out);
 }
 
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {

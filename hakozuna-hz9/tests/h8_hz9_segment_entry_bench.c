@@ -18,7 +18,8 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_HANDLE = 4,
   H9_SEGMENT_ENTRY_BENCH_TLS = 5,
   H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 6,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 7
+  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 7,
+  H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 8
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -62,6 +63,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE;
   } else if (strcmp(mode, "tlslocal") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL;
+  } else if (strcmp(mode, "tlsknown") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN;
   }
 
   uint32_t slot_size = 0u;
@@ -89,7 +92,8 @@ int main(void) {
   } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE ||
-             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL) {
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN) {
     page_handle = h9_segment_entry_debug_prepare_handle(class_id);
     if (page_handle == 0u) {
       fprintf(stderr, "segment entry bench failed to prepare handle\n");
@@ -102,7 +106,19 @@ int main(void) {
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN) {
+      bool owned = false;
+      uint32_t slot = 0u;
+      success = h9_segment_entry_debug_alloc_tls_slot(class_id, &ptr, &slot);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)ptr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success = success &&
+                h9_segment_entry_debug_free_tls_slot(class_id, slot, &owned) &&
+                owned;
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL) {
       bool owned = false;
       success = h9_segment_entry_debug_alloc_tls_handle(class_id, &ptr);
       if (success && touch) {
@@ -145,7 +161,8 @@ int main(void) {
     }
     if (success && touch && bench_mode != H9_SEGMENT_ENTRY_BENCH_ROUTE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE &&
-        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL) {
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN) {
       volatile unsigned char* p = (volatile unsigned char*)ptr;
       p[0] = (unsigned char)i;
       p[slot_size - 1u] = (unsigned char)(i >> 8);
