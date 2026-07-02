@@ -115,6 +115,15 @@ opaque-handle mode:
   prepares an opaque page handle once and cycles by handle
   touch=1: about 643-771M ops/s
   touch=0: about 724-818M ops/s
+
+tls-handle mode:
+  caches the selected page handle in TLS by class
+  R1 class sweep:
+    touch=1: about 531-654M ops/s
+    touch=0: about 693-731M ops/s
+  class 64K, 5M-iteration repeat:
+    touch=1: about 692-710M ops/s
+    touch=0: about 711-721M ops/s
 ```
 
 Interpretation:
@@ -126,10 +135,11 @@ TLS-only SegmentLocalCache fused speed.
 The next optimization target is not an active-page lookup shortcut. The useful
 substrate remains the fused known-slot body. Direct-page mode shows that a
 routeable page body can still gain from keeping the page handle out of the
-inner loop. Opaque-handle mode strengthens that result:
+inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   keep exact routeable ownership
   keep public free route separate
   avoid adding active-fast branches unless a later bench proves a stable win
   prefer entry designs that cache the selected page handle at the local call
   site
+  treat TLS cached page handle as the next behavior integration shape
 ```

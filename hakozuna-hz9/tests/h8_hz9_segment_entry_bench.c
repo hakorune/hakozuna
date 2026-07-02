@@ -15,7 +15,8 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_FUSED = 1,
   H9_SEGMENT_ENTRY_BENCH_FAST = 2,
   H9_SEGMENT_ENTRY_BENCH_PAGE = 3,
-  H9_SEGMENT_ENTRY_BENCH_HANDLE = 4
+  H9_SEGMENT_ENTRY_BENCH_HANDLE = 4,
+  H9_SEGMENT_ENTRY_BENCH_TLS = 5
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -53,6 +54,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_PAGE;
   } else if (strcmp(mode, "handle") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_HANDLE;
+  } else if (strcmp(mode, "tls") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS;
   }
 
   uint32_t slot_size = 0u;
@@ -77,7 +80,8 @@ int main(void) {
       h9_segment_entry_debug_reset();
       return 3;
     }
-  } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE) {
+  } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS) {
     page_handle = h9_segment_entry_debug_prepare_handle(class_id);
     if (page_handle == 0u) {
       fprintf(stderr, "segment entry bench failed to prepare handle\n");
@@ -90,7 +94,9 @@ int main(void) {
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS) {
+      success = h9_segment_entry_debug_cycle_tls_handle(class_id, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE) {
       success = h9_segment_entry_debug_cycle_handle(page_handle, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_PAGE) {
       success = h9_segment_entry_debug_cycle_page(page_id, &ptr);

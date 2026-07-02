@@ -22,6 +22,7 @@ typedef struct H9SegmentEntryPage {
 static H9SegmentEntryPage h9_segment_entry_pages[H9_SEGMENT_ENTRY_PAGE_CAP];
 static uint32_t h9_segment_entry_page_count;
 static _Thread_local uint32_t h9_segment_entry_active[H8_MEDIUM_CLASS_COUNT];
+static _Thread_local uintptr_t h9_segment_entry_handle[H8_MEDIUM_CLASS_COUNT];
 
 static bool h9_segment_entry_class_geometry(uint32_t class_id,
                                             uint32_t* slot_size_out,
@@ -115,6 +116,7 @@ static H9SegmentEntryPage* h9_segment_entry_create_page(uint32_t class_id) {
       .free_bits = full_bits,
   };
   h9_segment_entry_active[class_id] = page_id;
+  h9_segment_entry_handle[class_id] = (uintptr_t)page;
   return page;
 }
 
@@ -147,6 +149,7 @@ void h9_segment_entry_debug_reset(void) {
   h9_segment_entry_page_count = 0u;
   for (uint32_t i = 0u; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     h9_segment_entry_active[i] = UINT32_MAX;
+    h9_segment_entry_handle[i] = 0u;
   }
 }
 
@@ -229,9 +232,13 @@ bool h9_segment_entry_debug_cycle_page(uint32_t page_id, void** ptr_out) {
 
 uintptr_t h9_segment_entry_debug_prepare_handle(uint32_t class_id) {
   uint32_t page_id = h9_segment_entry_debug_prepare_active(class_id);
-  return page_id < h9_segment_entry_page_count
-             ? (uintptr_t)&h9_segment_entry_pages[page_id]
-             : 0u;
+  uintptr_t handle = page_id < h9_segment_entry_page_count
+                         ? (uintptr_t)&h9_segment_entry_pages[page_id]
+                         : 0u;
+  if (class_id < H8_MEDIUM_CLASS_COUNT) {
+    h9_segment_entry_handle[class_id] = handle;
+  }
+  return handle;
 }
 
 bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
@@ -239,6 +246,20 @@ bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
     return false;
   }
   return h9_segment_entry_cycle_page((H9SegmentEntryPage*)handle, ptr_out);
+}
+
+bool h9_segment_entry_debug_cycle_tls_handle(uint32_t class_id,
+                                             void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+    page = (H9SegmentEntryPage*)handle;
+  }
+  return h9_segment_entry_cycle_page(page, ptr_out);
 }
 
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {

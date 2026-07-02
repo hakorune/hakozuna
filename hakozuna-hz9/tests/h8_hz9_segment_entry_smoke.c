@@ -63,6 +63,12 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 9;
   }
+  if (!h9_segment_entry_debug_cycle_tls_handle(class_id, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry tls handle cycle failed: class=%u\n",
+            class_id);
+    return 10;
+  }
   return 0;
 }
 
