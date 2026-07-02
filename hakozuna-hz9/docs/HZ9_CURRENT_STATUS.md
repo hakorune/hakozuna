@@ -37,15 +37,16 @@ and remote medium rows.
 ## Active Box
 
 ```text
-HZ9 source-shape / next-substrate read
+HZ9StaticLocalPageScaffold-L0
 
 status:
   HZ8 remains the frozen balanced default
   HZ9 remains a standalone throughput research tree
   OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
   do not open another threshold/admission retune without a new substrate shape
+  current work starts the next substrate source shape with no behavior change
 
-latest source-shape gate:
+source-shape gate:
   RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh
   PASS
 
@@ -62,6 +63,14 @@ code shape:
   h8_malloc_non_small_inner baseline/scaffold 131 bytes / 39 insn
   h8_free_inner baseline/scaffold 69 bytes / 22 insn
   h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
+
+current scaffold:
+  docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
+  static TLS state
+  owner-local plain bits
+  no dynamic TLS state ensure
+  no H8OwnerRecord / H8ThreadCtx field additions
+  not connected to allocator behavior yet
 ```
 
 Latest behavior result:

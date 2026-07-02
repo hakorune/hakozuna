@@ -486,6 +486,17 @@ static inline void h9_owner_page_shadow_note_remote_free(H8ThreadCtx* ctx,
   (void)run;
 }
 #endif
+#if defined(H9_STATIC_LOCAL_PAGE_SCAFFOLD_L0)
+void h9_static_local_page_debug_reset(void);
+size_t h9_static_local_page_debug_state_size(void);
+bool h9_static_local_page_debug_put(uint32_t class_id, uint32_t slot);
+bool h9_static_local_page_debug_take(uint32_t class_id, uint32_t* slot_out);
+bool h9_static_local_page_debug_free_allocated(uint32_t class_id,
+                                               uint32_t slot);
+uint64_t h9_static_local_page_debug_free_bits(uint32_t class_id);
+uint64_t h9_static_local_page_debug_alloc_bits(uint32_t class_id);
+uint64_t h9_static_local_page_debug_touched_classes(void);
+#endif
 typedef enum H9LocalEntryEvent {
   H9_LOCAL_ENTRY_MALLOC_MEDIUM = 0,
   H9_LOCAL_ENTRY_MALLOC_FALLBACK = 1,

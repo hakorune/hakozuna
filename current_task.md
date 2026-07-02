@@ -59,6 +59,7 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md
+  hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
   hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 

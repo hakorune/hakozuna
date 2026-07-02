@@ -1,7 +1,7 @@
 .PHONY: hz9-standalone-check
 .PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-activefulldefer8 bench-defer4mediumcapacity bench-defer8mediumcapacity bench-remoteactivefullbudget bench-mediumcapacitybudget bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-hz9mediumlocalmagshadow bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-hz9mediumlocalmagshadow bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy preload-mediumkeeprefillempty medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
 .PHONY: smoke-hz9mediumlocalmag smoke-hz9slabroute smoke-hz9slabpage smoke-hz9slabpage-sidecar smoke-hz9slabroute-adaptive-entry smoke-hz9slabpage-adaptive-entry safety-stress-hz9slabpage-adaptive-entry bench-hz9mediumlocalmag bench-hz9mediumtlscache bench-hz9mediumtlscache-gated bench-hz9mediumtlscache-remoteclass bench-hz9mediumslabshadow bench-hz9mediumslabpage bench-hz9mediumslabpage-classes bench-hz9mediumslabpage-classes-min0 bench-hz9mediumslabpage-classes-min0-midcap bench-hz9mediumslabpage-classes-min0-entry bench-hz9mediumslabpage-classes-min0-sidecar bench-hz9mediumslabpage-classes-min0-sidecar2 bench-hz9mediumslabpage-classes-min0-localfast bench-hz9mediumslabpage-direct-use-proof bench-hz9mediumslabpage-classes-min0-localfast-adaptive-hot bench-hz9mediumslabpage-classes-min0-localfast-adaptive-poll32 bench-hz9mediumslabpage-classes-min2-localfast-adaptive-poll32 bench-hz9mediumslabpage-classes-min4-localfast-adaptive-poll32 bench-hz9mediumslabpage-adaptive bench-hz9mediumslabpage-adaptive-entry bench-hz9mediumslabpage-adaptive-entry-hotmask bench-hz9mediumslabpage-cap6 bench-hz9mediumslabpage-cap8 bench-release-hz9localentry bench-release-hz9localarena bench-release-hz9localarena-adaptive bench-release-hz9localarena-adaptive-min4 bench-release-hz9localarena-adaptive-min5 bench-release-hz9localarena-adaptive-class4 bench-release-hz9localarena-adaptive-max3 bench-release-hz9localarena-adaptive-min2-max3 bench-release-hz9mediumtlscache bench-release-hz9mediumtlscache-gated bench-release-hz9mediumtlscache-remoteclass bench-release-hz9mediumslabshadow bench-release-hz9mediumslabpage bench-release-hz9mediumslabpage-classes bench-release-hz9mediumslabpage-classes-min0 bench-release-hz9mediumslabpage-classes-min0-midcap bench-release-hz9mediumslabpage-classes-min0-layout32 bench-release-hz9mediumslabpage-classes-min0-entry bench-release-hz9mediumslabpage-classes-min0-sidecar bench-release-hz9mediumslabpage-classes-min0-sidecar2 bench-release-hz9mediumslabpage-classes-min0-entry-sidecar2 bench-release-hz9mediumslabpage-classes-min0-localfast bench-release-hz9mediumslabpage-direct-use-proof bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-hot bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-poll32 bench-release-hz9mediumslabpage-classes-min2-localfast-adaptive-poll32 bench-release-hz9mediumslabpage-classes-min4-localfast-adaptive-poll32 bench-release-hz9mediumslabpage-classes-min3 bench-release-hz9mediumslabpage-classes-min4 bench-release-hz9mediumslabpage-adaptive bench-release-hz9mediumslabpage-adaptive-min5 bench-release-hz9mediumslabpage-adaptive-layout32 bench-release-hz9mediumslabpage-adaptive-entry bench-release-hz9mediumslabpage-adaptive-entry-hotmask bench-release-hz9mediumslabpage-cap6 bench-release-hz9mediumslabpage-cap8 bench-release-hz9mediumlocalmag bench-release-hz9mediumlocalmag-min2 bench-release-hz9mediumlocalmag-min5 bench-release-hz9mediumlocalmag-disabled bench-release-hz9mediumlocalmag-unsafe-tlsonly
-.PHONY: smoke-hz9localentry smoke-hz9localarena smoke-hz9ownerpagepool-route smoke-hz9ownerpagepool-api
+.PHONY: smoke-hz9localentry smoke-hz9localarena smoke-hz9ownerpagepool-route smoke-hz9ownerpagepool-api smoke-hz9staticlocalpage bench-release-hz9staticlocalpage-scaffold
 .PHONY: hz9-candidate-gate
 .PHONY: bench-release-hz9localarena-dense-adaptive bench-release-hz9localarena-dense-adaptive-min4
 .PHONY: bench-release-hz9localarena-dense-ownerfast
@@ -53,6 +53,7 @@ HZ9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_CFLAGS := $(HZ9_OWNER_LOCAL_PAGE_POOL_
 HZ9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_LOW32_CFLAGS := $(HZ9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_CFLAGS) -DH9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_MAX_CLASS_ID=3u
 HZ9_OWNER_LOCAL_PAGE_POOL_DISABLED_FAST_REJECT_CFLAGS := $(HZ9_OWNER_LOCAL_PAGE_POOL_PURE_LOCAL_API_CFLAGS) -DH9_OWNER_LOCAL_PAGE_POOL_DISABLED_FAST_REJECT_L1
 HZ9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_REJECT_CFLAGS := $(HZ9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_CFLAGS) -DH9_OWNER_LOCAL_PAGE_POOL_DISABLED_FAST_REJECT_L1
+HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_CFLAGS := $(HZ9_BASELINE_CFLAGS) -DH9_STATIC_LOCAL_PAGE_SCAFFOLD_L0
 HZ9_LOCAL_ENTRY_CFLAGS := $(HZ9_BASELINE_CFLAGS) -DH9_LOCAL_ENTRY_SPLIT_L1
 HZ9_LOCAL_ENTRY_TLS_CACHE_CFLAGS := $(HZ9_LOCAL_ENTRY_CFLAGS) -DH9_MEDIUM_TLS_OBJECT_CACHE
 HZ9_LOCAL_ARENA_CFLAGS := $(HZ9_LOCAL_ENTRY_CFLAGS) -DH9_LOCAL_ARENA_L0
@@ -115,6 +116,7 @@ HZ9_SLAB_ROUTE_SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_hz9_slab_route_smoke.c
 HZ9_SLAB_PAGE_SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_hz9_slab_page_smoke.c
 HZ9_OWNER_PAGE_ROUTE_SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_hz9_owner_page_route_smoke.c
 HZ9_OWNER_PAGE_API_SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_hz9_owner_page_api_smoke.c
+HZ9_STATIC_LOCAL_PAGE_SMOKE_SRC := $(SRC) $(ROOT)/tests/h8_hz9_static_local_page_smoke.c
 SAFETY_STRESS_SRC := $(SRC) $(ROOT)/tests/h8_safety_stress.c
 MEDIUM_LAZY_SATURATION_SRC := $(SRC) $(ROOT)/tests/h8_medium_lazy_saturation.c
 PRELOAD_SMOKE_SRC := $(ROOT)/tests/h8_preload_smoke.c
@@ -168,6 +170,9 @@ smoke-hz9ownerpagepool-route: $(ROOT)/h8_hz9_owner_page_route_smoke
 
 smoke-hz9ownerpagepool-api: $(ROOT)/h8_hz9_owner_page_api_smoke
 	$(ROOT)/h8_hz9_owner_page_api_smoke
+
+smoke-hz9staticlocalpage: $(ROOT)/h8_hz9_static_local_page_smoke
+	$(ROOT)/h8_hz9_static_local_page_smoke
 
 safety-stress: $(ROOT)/h8_safety_stress
 
@@ -621,6 +626,8 @@ include $(ROOT)/mk/hz9_local_arena_targets.mk
 include $(ROOT)/mk/hz9_slab_targets.mk
 
 include $(ROOT)/mk/hz9_owner_page_pool_targets.mk
+
+include $(ROOT)/mk/hz9_static_local_page_targets.mk
 
 $(ROOT)/h8_bench_release_hz9mediumlocalmag_min2: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ9_MEDIUM_LOCAL_MAG_MIN2_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)

@@ -34,6 +34,9 @@ HZ9_NEXT_SUBSTRATE.md:
 HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md:
   post owner-page closure, closed lanes, and next-substrate requirements
 
+HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md:
+  current source-shape box for static TLS state and owner-local plain bits
+
 HZ9_DIRECT_SLAB_USE_PROOF_L0.md:
   completed proof for isolating SlabPage body cost from entry/route overhead;
   remote/profile evidence, not the selected next behavior
@@ -72,6 +75,7 @@ LocalArena:
 next:
   use HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md for the current gate
   use HZ9_NEXT_SUBSTRATE.md as the SSOT before selecting a new behavior box
+  HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0 is the current no-behavior source-shape box
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
   owner-page PureLocal L1 is implemented and held as profile/evidence

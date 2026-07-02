@@ -201,6 +201,16 @@ ownerpage disabled-fast read:
   Combining it with ownerfast_bits does not produce a broad candidate.
   Stop OwnerPage fixed-cost retuning for default unless a new substrate shape
   changes the branch/body model.
+
+current scaffold:
+  HZ9StaticLocalPageScaffold-L0
+  docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
+  behavior change: none
+  purpose:
+    test the next substrate source shape before behavior
+    static TLS state, no dynamic state ensure
+    owner-local plain bits, no atomic local_free_bits RMW in the scaffold
+    no H8OwnerRecord / H8ThreadCtx field additions
 ```
 
 ## Active Constraints
