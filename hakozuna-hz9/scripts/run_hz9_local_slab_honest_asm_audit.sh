@@ -27,6 +27,7 @@ symbols = [
     ("routeleaf_segment", "h9_lsp_debug_routeleaf_bench"),
     ("routeleaf_compact", "h9_lsp_debug_routeleaf_compact_bench"),
     ("routeleaf_trim", "h9_lsp_debug_routeleaf_trim_bench"),
+    ("routeleaf_tight", "h9_lsp_debug_routeleaf_tight_bench"),
 ]
 
 def extract(symbol):

@@ -597,7 +597,7 @@ script:
   hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
 
 latest:
-  bench_results/20260702T225217Z_hz9_local_slab_honest_asm_audit
+  bench_results/20260702T230243Z_hz9_local_slab_honest_asm_audit
 
 classification:
   integrated_worker:
@@ -670,18 +670,84 @@ result:
     ptr_fallback = 100000000
     state_mismatch = 0
 
+  local ASLR OFF gate, CLASS_ID=5 ITERS=100000000 TOUCH=1 R5:
+    routeleafcompact median:
+      312.596M
+
+    routeleaftrim median:
+      278.665M
+
+    routeleaftight median:
+      287.998M
+
+    routeleaftightnonlifo median:
+      203.057M
+      route_valid = 100000000
+      ptr_fallback = 100000000
+      state_mismatch = 0
+
 asm:
   routeleaf_trim:
     honest-candidate
     slot_select = 1
 
+  routeleaf_tight:
+    honest-candidate
+    slot_select = 1
+
 read:
   the fast-hit-store removal keeps honest mutation and the cold route path
-  remains correct, but performance is bimodal and median is worse than compact.
+  remains correct, but local ASLR OFF measurement does not reproduce trim as
+  best.  Keep compact as the local honest baseline.
 
 decision:
-  HOLD / evidence only
-  do not promote this trim as the next base
+  routeleaftrim:
+    HOLD / evidence only on this host
+  routeleaftight:
+    HOLD / evidence only on this host
+  routeleafcompact:
+    current local honest baseline
+  require ASLR OFF or explicit ASLR status for local throughput gate data
+```
+
+## RouteLeaf TightFree L1
+
+```text
+box:
+  HZ9RouteLeafTightFree-L1
+
+goal:
+  remove one honest hot-path layer after the last-token checks by folding the
+  free-slot validation and mutation into the routeleaf fast body
+
+keep:
+  alloc_bits & bit check
+  free_bits & bit check
+  visible slot selection in asm
+  cold direct-owned route fallback for misses
+
+non-goal:
+  do not remove validity checks as an unsafe ceiling
+
+gate:
+  ASLR OFF routeleaftight >= routeleaftrim * 1.05
+  state_mismatch = 0
+  non-LIFO route_valid / ptr_fallback clean
+  honest asm audit slot_select = 1
+
+result:
+  local ASLR OFF routeleaftight median:
+    287.998M
+
+  local ASLR OFF routeleaftrim median:
+    278.665M
+
+  local ASLR OFF routeleafcompact median:
+    312.596M
+
+decision:
+  NO-GO as optimization
+  keep as honest evidence because it preserves slot_select and clean fallback
 ```
 
 ## Commands
@@ -689,6 +755,7 @@ decision:
 ```bash
 make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
 hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
+hakozuna-hz9/scripts/run_hz9_local_slab_aslr_off_gate.sh
 MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
@@ -718,6 +785,10 @@ MODE=routeleafcompactnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=routeleaftrim CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=routeleaftrimnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleaftight CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleaftightnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

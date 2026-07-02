@@ -94,14 +94,19 @@ routeleaf read:
   ceiling evidence unless asm shows real alloc/free bit mutation
 
 current evidence:
-  honest compact routeleaf R3: 302M..334M ops/s
-  hottrim fast-hit-store removal: HOLD, bimodal and median below compact
+  local ASLR-off gate keeps routeleafcompact as current honest best
+  compact median 312.596M, trim median 278.665M, tight median 287.998M
   phantom ceiling family: lastpublic / integrated / fastleaf / inlinebody
 
 asm audit:
   hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
   latest result classifies integrated/fastleaf as phantom-ceiling and
-  routeleaf segment/compact as honest-candidate
+  routeleaf segment/compact/trim/tight as honest-candidate
+
+measurement rule:
+  throughput gates require asm audit slot_select=1
+  local micro gates should run with ASLR OFF when available
+  ASLR ON bimodality is layout noise unless reproduced under ASLR OFF
 
 read:
   isolated leaf/helper shape is viable
