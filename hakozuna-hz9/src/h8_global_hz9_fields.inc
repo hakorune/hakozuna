@@ -61,6 +61,13 @@
   atomic_size_t h9_owner_page_api_route_hit;
   atomic_size_t h9_owner_page_api_route_miss;
   atomic_size_t h9_owner_page_api_route_invalid;
+  atomic_size_t h9_owner_page_api_alloc_hit;
+  atomic_size_t h9_owner_page_api_alloc_empty;
+  atomic_size_t h9_owner_page_api_alloc_mode_block;
+  atomic_size_t h9_owner_page_api_free_push;
+  atomic_size_t h9_owner_page_api_free_double;
+  atomic_size_t h9_owner_page_api_remote_pending_first;
+  atomic_size_t h9_owner_page_api_remote_pending_repeat;
   atomic_size_t h9_owner_page_api_remote_note_call;
   atomic_size_t h9_owner_page_api_remote_fallback;
   atomic_size_t h9_owner_page_api_remote_mark;
@@ -78,6 +85,8 @@
   atomic_size_t h9_owner_page_api_page_active_install;
   atomic_size_t h9_owner_page_api_page_bytes_create;
   atomic_size_t h9_owner_page_api_page_bytes_release;
+  atomic_size_t h9_owner_page_api_page_release_defer;
+  atomic_size_t h9_owner_page_api_page_pending_collect;
   atomic_size_t h9_owner_page_api_flush_thread;
   atomic_size_t h9_owner_page_api_flush_owner;
   atomic_size_t h9_owner_page_api_local_bits_mutation;

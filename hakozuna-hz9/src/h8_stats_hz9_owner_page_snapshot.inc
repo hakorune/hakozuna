@@ -32,6 +32,20 @@
       &h8g.h9_owner_page_api_route_miss, memory_order_acquire);
   out->h9_owner_page_api_route_invalid = atomic_load_explicit(
       &h8g.h9_owner_page_api_route_invalid, memory_order_acquire);
+  out->h9_owner_page_api_alloc_hit = atomic_load_explicit(
+      &h8g.h9_owner_page_api_alloc_hit, memory_order_acquire);
+  out->h9_owner_page_api_alloc_empty = atomic_load_explicit(
+      &h8g.h9_owner_page_api_alloc_empty, memory_order_acquire);
+  out->h9_owner_page_api_alloc_mode_block = atomic_load_explicit(
+      &h8g.h9_owner_page_api_alloc_mode_block, memory_order_acquire);
+  out->h9_owner_page_api_free_push = atomic_load_explicit(
+      &h8g.h9_owner_page_api_free_push, memory_order_acquire);
+  out->h9_owner_page_api_free_double = atomic_load_explicit(
+      &h8g.h9_owner_page_api_free_double, memory_order_acquire);
+  out->h9_owner_page_api_remote_pending_first = atomic_load_explicit(
+      &h8g.h9_owner_page_api_remote_pending_first, memory_order_acquire);
+  out->h9_owner_page_api_remote_pending_repeat = atomic_load_explicit(
+      &h8g.h9_owner_page_api_remote_pending_repeat, memory_order_acquire);
   out->h9_owner_page_api_remote_note_call = atomic_load_explicit(
       &h8g.h9_owner_page_api_remote_note_call, memory_order_acquire);
   out->h9_owner_page_api_remote_fallback = atomic_load_explicit(
@@ -66,6 +80,10 @@
       &h8g.h9_owner_page_api_page_bytes_create, memory_order_acquire);
   out->h9_owner_page_api_page_bytes_release = atomic_load_explicit(
       &h8g.h9_owner_page_api_page_bytes_release, memory_order_acquire);
+  out->h9_owner_page_api_page_release_defer = atomic_load_explicit(
+      &h8g.h9_owner_page_api_page_release_defer, memory_order_acquire);
+  out->h9_owner_page_api_page_pending_collect = atomic_load_explicit(
+      &h8g.h9_owner_page_api_page_pending_collect, memory_order_acquire);
   out->h9_owner_page_api_flush_thread = atomic_load_explicit(
       &h8g.h9_owner_page_api_flush_thread, memory_order_acquire);
   out->h9_owner_page_api_flush_owner = atomic_load_explicit(

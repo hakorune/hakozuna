@@ -38,9 +38,10 @@ HZ9OwnerLocalPagePoolPureLocal-L1
 
 status:
   scaffold/API/page-lifetime skeleton implemented
-  no user allocation is returned yet
-  no local free push behavior yet
-  no remote producer writes to local page freelists
+  local allocation pop returns owner-page pointers
+  same-owner free pushes back to local_free_bits
+  remote free marks REMOTE_SEEN and claims pending bits
+  remote producer does not write local_free_bits
 
 source:
   src/h8_hz9_owner_page_pool.c
@@ -78,8 +79,16 @@ state:
 page skeleton:
   one mapped owner page per thread/class
   page metadata registered in TLS active[class]
-  page released at thread flush
-  try_alloc still returns NULL so HZ8 fallback remains active
+  page registered in global owner-page route list
+  page released at thread flush when all slots are free
+  live detached pages remain globally routed until exact frees arrive
+
+purelocal behavior:
+  try_alloc pops local_free_bits only while page mode is PURE_LOCAL
+  try_free validates exact owner-page pointer through global route
+  same-owner free pushes local_free_bits
+  remote free sets a pending bit and marks REMOTE_SEEN
+  REMOTE_SEEN blocks further owner-page allocation for that page
 ```
 
 Latest short smoke:
@@ -87,11 +96,15 @@ Latest short smoke:
 ```text
 medium local0:
   alloc_call/free_call:
-    20000 / 20000
+    40000 / 40000
   route_attempt/hit/miss/invalid:
-    20000 / 0 / 20000 / 0
+    40000 / 40000 / 0 / 0
+  alloc_hit/free_push:
+    40000 / 40000
+  remote_pending_first:
+    0
   state ensure/create/oom/free:
-    20000 / 2 / 0 / 2
+    40000 / 2 / 0 / 2
   page create/fail/release/install:
     12 / 0 / 12 / 12
   page bytes create/release:
@@ -103,17 +116,23 @@ medium local0:
 
 medium r50:
   alloc_call/free_call:
-    20000 / 20000
+    40000 / 40000
   route_attempt/hit/miss/invalid:
-    20000 / 0 / 20000 / 0
+    40000 / 29 / 39971 / 0
+  alloc_hit/free_push:
+    29 / 16
+  alloc_mode_block:
+    39971
+  remote_pending_first:
+    13
   state ensure/create/oom/free:
-    20000 / 2 / 0 / 2
+    40000 / 2 / 0 / 2
   page create/fail/release/install:
     12 / 0 / 12 / 12
   page bytes create/release:
     1048576 / 1048576
   remote_note/remote_fallback:
-    9972 / 9972
+    20021 / 20021
   local_bits_mutation:
     0
 ```
@@ -176,22 +195,19 @@ code shape:
 Recommended next implementation order:
 
 ```text
-1. HZ9OwnerLocalPagePoolAllocPop-L1
-   pop one bit from local_free_bits
-   return exact slot pointer
-   keep free side on HZ8 fallback initially
-   prove route/owned boundary before local-free push
+1. HZ9OwnerLocalPagePoolReleaseAudit-L1
+   add focused tests for live object across thread/owner exit
+   prove detached owner-page exact frees remain routed
+   prove duplicate exact free fails closed
 
-2. HZ9OwnerLocalPagePoolLocalFreePush-L1
-   route HZ9 page pointer
-   exact slot validation
-   same-owner PURE_LOCAL push back to local_free_bits
-   invalid owned-looking pointer fails closed
+2. HZ9OwnerLocalPagePoolPerfGate-L1
+   compare baseline vs purelocal owner-page on medium/main local and remote
+   decide whether the global route lock is already too expensive
 
-3. HZ9OwnerLocalPagePoolRemoteSeen-L1
-   remote note marks page/class remote-seen
-   remote-owned path stays HZ8 pending/qstate authority
-   no remote producer writes to local bits
+3. HZ9OwnerLocalPagePoolRemoteCollect-L2
+   only if local wins and remote pressure can be contained
+   owner-side collect of pending owner-page frees
+   still no remote producer writes to local bits
 ```
 
 Do not start with:
@@ -199,7 +215,6 @@ Do not start with:
 ```text
 remote concurrent freelist
 owner sidecar mutation
-global page registry for all frees
 public all-medium entry split
 new fields in H8OwnerRecord / H8ThreadCtx
 ```

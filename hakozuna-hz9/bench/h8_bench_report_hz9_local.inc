@@ -66,6 +66,16 @@
          debug.h9_owner_page_api_flush_thread,
          debug.h9_owner_page_api_flush_owner,
          debug.h9_owner_page_api_local_bits_mutation);
+  printf("h9_owner_page_api_local alloc_hit=%zu alloc_empty=%zu alloc_mode_block=%zu free_push=%zu free_double=%zu remote_pending_first=%zu remote_pending_repeat=%zu release_defer=%zu pending_collect=%zu\n",
+         debug.h9_owner_page_api_alloc_hit,
+         debug.h9_owner_page_api_alloc_empty,
+         debug.h9_owner_page_api_alloc_mode_block,
+         debug.h9_owner_page_api_free_push,
+         debug.h9_owner_page_api_free_double,
+         debug.h9_owner_page_api_remote_pending_first,
+         debug.h9_owner_page_api_remote_pending_repeat,
+         debug.h9_owner_page_api_page_release_defer,
+         debug.h9_owner_page_api_page_pending_collect);
   printf("h9_owner_page_api_state ensure=%zu create=%zu oom=%zu free=%zu\n",
          debug.h9_owner_page_api_state_ensure,
          debug.h9_owner_page_api_state_create,

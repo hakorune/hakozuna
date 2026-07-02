@@ -21,6 +21,13 @@
   size_t h9_owner_page_api_route_hit;
   size_t h9_owner_page_api_route_miss;
   size_t h9_owner_page_api_route_invalid;
+  size_t h9_owner_page_api_alloc_hit;
+  size_t h9_owner_page_api_alloc_empty;
+  size_t h9_owner_page_api_alloc_mode_block;
+  size_t h9_owner_page_api_free_push;
+  size_t h9_owner_page_api_free_double;
+  size_t h9_owner_page_api_remote_pending_first;
+  size_t h9_owner_page_api_remote_pending_repeat;
   size_t h9_owner_page_api_remote_note_call;
   size_t h9_owner_page_api_remote_fallback;
   size_t h9_owner_page_api_remote_mark;
@@ -38,6 +45,8 @@
   size_t h9_owner_page_api_page_active_install;
   size_t h9_owner_page_api_page_bytes_create;
   size_t h9_owner_page_api_page_bytes_release;
+  size_t h9_owner_page_api_page_release_defer;
+  size_t h9_owner_page_api_page_pending_collect;
   size_t h9_owner_page_api_flush_thread;
   size_t h9_owner_page_api_flush_owner;
   size_t h9_owner_page_api_local_bits_mutation;

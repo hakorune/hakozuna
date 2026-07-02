@@ -56,8 +56,8 @@ current gate:
 ```text
 HZ9OwnerLocalPagePoolPureLocal-L1:
   behavior change:
-    local allocation behavior is still incomplete
-    current next step is owner-page local alloc pop
+    local allocation pop and same-owner free push are implemented
+    current next step is focused release/double-free audit
 
   purpose:
     turn the clean HZ9-owned owner-page substrate into a local-only allocator

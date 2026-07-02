@@ -36,11 +36,12 @@ held evidence:
 current direction:
   HZ9OwnerLocalPagePoolPureLocal-L1 is active
   owner-page scaffold / shadow / API / page lifetime are implemented
-  user allocations are not returned from owner pages yet
+  local allocation pop and same-owner free push are implemented
+  remote exact free marks REMOTE_SEEN and claims pending bits
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  implement owner-page local alloc pop before local-free push
+  add focused detach/double-free tests and run local/remote perf gate
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -192,8 +193,9 @@ RSS:
 HZ9OwnerLocalPagePoolPureLocal-L1:
   active owner-page substrate lane
   scaffold/shadow/API/page lifetime are implemented
+  local alloc/free behavior is implemented
   route/state smoke is clean
-  next implementation step is local allocation pop
+  next implementation step is release/double-free audit
   remote pending/qstate remains HZ8-derived authority
 ```
 

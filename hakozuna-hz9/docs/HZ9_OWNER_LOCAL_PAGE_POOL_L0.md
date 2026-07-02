@@ -54,10 +54,13 @@ implemented:
   exact route smoke for stack metadata and real mapped page
   REMOTE_SEEN / DRAINING / DETACHED state smoke
   thread flush releases page bytes and TLS state
+  local allocation pop returning owner-page pointers
+  same-owner free push back to local_free_bits
+  remote exact free pending-bit claim with REMOTE_SEEN
 
 not implemented yet:
-  allocation pop returning a user pointer
-  local free push back to local_free_bits
+  focused live-detach / double-free safety smoke
+  owner-side pending collection for owner-page remote frees
   remote page retirement / owner sidecar behavior
 ```
 
@@ -411,16 +414,24 @@ scaffold/shadow L0:
 
 purelocal-api target:
   compiles the hook definitions
-  still returns no allocations and accepts no frees
+  returns owner-page allocations for PURE_LOCAL pages
+  accepts same-owner exact frees into local_free_bits
+  accepts remote exact frees as pending bits and marks REMOTE_SEEN
   creates one mapped owner page per thread/class and releases it at flush
   exercises thread/owner flush hook placement
   reports alloc/free calls, route attempt/hit/miss/invalid, remote fallback,
-  state/page lifetime, flushes, and local_bits_mutation anomaly
+  local alloc/free/remote-pending counters, state/page lifetime, flushes, and
+  local_bits_mutation anomaly
 
-next before real pages:
-  page registration / first real page creation skeleton
-  keep owner-page admission gated by pure-local evidence
-  do not add remote producer writes to owner-page freelists
+current behavior:
+  page registration is global so remote frees never fall through to platform
+  allocation stops after REMOTE_SEEN
+  remote producer only claims pending_bits
+  owner/local path is the only path that mutates local_free_bits
+
+next:
+  focused detach/double-free safety tests
+  paired local/remote performance gate
 ```
 
 ## Gates
