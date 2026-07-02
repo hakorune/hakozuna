@@ -20,7 +20,7 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                route-only proof shows classification dominates public cycle.
+                range-only proof still leaves route classification dominant.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

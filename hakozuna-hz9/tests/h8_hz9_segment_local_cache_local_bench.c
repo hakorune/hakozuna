@@ -86,15 +86,22 @@ int main(void) {
         p[0] = (unsigned char)i;
         p[slot_size - 1u] = (unsigned char)(i >> 8);
       }
-      H8RouteKind route_kind =
-          active_route >= 2u
-              ? h9_segment_local_cache_debug_route_active_slot_addr(
-                    addr, &routed_class, &routed_slot)
-              : h9_segment_local_cache_debug_route_table_slot_addr(
-                    addr, &routed_class, &routed_slot);
+      H8RouteKind route_kind = H8_ROUTE_MISS;
+      if (active_route == 4u) {
+        route_kind =
+            h9_segment_local_cache_debug_route_active_range_addr(
+                addr, &routed_class);
+        routed_slot = slot;
+      } else if (active_route >= 2u) {
+        route_kind = h9_segment_local_cache_debug_route_active_slot_addr(
+            addr, &routed_class, &routed_slot);
+      } else {
+        route_kind = h9_segment_local_cache_debug_route_table_slot_addr(
+            addr, &routed_class, &routed_slot);
+      }
       success = success && route_kind == H8_ROUTE_VALID &&
                 routed_class == class_id && routed_slot == slot;
-      if (active_route == 3u) {
+      if (active_route >= 3u) {
         success =
             success &&
             h9_segment_local_cache_debug_free_allocated(class_id, slot);

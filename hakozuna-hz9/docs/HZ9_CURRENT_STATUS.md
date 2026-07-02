@@ -79,6 +79,7 @@ current design:
   active_route public cycle is about 149M+ ops/s and route-boundary dominated
   active-first route can lift upper classes to about 168-171M ops/s
   route-only proof still lands about 160M+, so classification is the limiter
+  range-only attribution reaches about 185-202M but is not exact free proof
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

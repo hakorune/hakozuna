@@ -553,6 +553,14 @@ active_route=3, touch=1:
   class3 170.7M ops/s
   class4 160.2M ops/s
   class5 160.4M ops/s
+
+active_route=4, touch=1:
+  class0 198.0M ops/s
+  class1 201.6M ops/s
+  class2 184.8M ops/s
+  class3 201.2M ops/s
+  class4 191.8M ops/s
+  class5 199.6M ops/s
 ```
 
 Interpretation:
@@ -594,6 +602,14 @@ route-only probe:
   it still lands around 160-172M ops/s
   therefore route classification, not the final free mutation, is the main
   public-cycle limiter in this scaffold
+
+range-only probe:
+  active_route=4 validates only active segment range/state and then frees by
+  known slot
+  it lands around 185-202M ops/s, above exact active-route proof but still far
+  below the 421-494M active direct body
+  this is attribution-only: it is not exact slot validation and cannot be used
+  as a public fail-closed free boundary by itself
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
