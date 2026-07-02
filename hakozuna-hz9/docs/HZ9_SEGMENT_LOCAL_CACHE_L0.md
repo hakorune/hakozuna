@@ -168,6 +168,10 @@ table_addr mode:
   known_addr plus debug table route lookup
   estimates classless route discovery overhead
 
+table_slot_addr mode:
+  table route returns class and slot, then frees that routed slot
+  estimates a single-decode external free boundary
+
 active_addr mode:
   active class pointer shape without table discovery
   estimates the next behavior-box local hit API cost
@@ -379,6 +383,14 @@ table_addr mode:
   class4 159.1M ops/s
   class5 155.4M ops/s
 
+table_slot_addr mode:
+  class0 209.5M ops/s
+  class1 209.8M ops/s
+  class2 185.2M ops/s
+  class3 179.1M ops/s
+  class4 168.4M ops/s
+  class5 175.6M ops/s
+
 bound_addr mode:
   class0 168.4M ops/s
   class1 169.1M ops/s
@@ -428,6 +440,12 @@ table_addr proof:
   cached geometry nearly doubles the earlier debug table route result, but
   linear class discovery remains below slot_addr and cycle_known
   a real behavior path needs an active segment pointer or compact route index
+
+table_slot_addr proof:
+  returning the slot from the same route pass removes duplicate addr->slot
+  decode and improves the external free boundary, but it still remains well
+  below direct known-slot cycle
+  use it for fail-closed public free validation, not for immediate local reuse
 
 rejected micro-optimization:
   replacing modulo/divide slot decode with slot_count linear exact-offset

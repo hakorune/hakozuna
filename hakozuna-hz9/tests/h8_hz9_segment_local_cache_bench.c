@@ -32,7 +32,8 @@ typedef enum SegmentBenchMode {
   SEGMENT_BENCH_ACTIVE_ADDR = 4,
   SEGMENT_BENCH_FAST_ADDR = 5,
   SEGMENT_BENCH_SLOT_ADDR = 6,
-  SEGMENT_BENCH_CYCLE_KNOWN = 7
+  SEGMENT_BENCH_CYCLE_KNOWN = 7,
+  SEGMENT_BENCH_TABLE_SLOT_ADDR = 8
 } SegmentBenchMode;
 
 int main(void) {
@@ -61,7 +62,8 @@ int main(void) {
                    mode == SEGMENT_BENCH_ACTIVE_ADDR ||
                    mode == SEGMENT_BENCH_FAST_ADDR ||
                    mode == SEGMENT_BENCH_SLOT_ADDR ||
-                   mode == SEGMENT_BENCH_CYCLE_KNOWN;
+                   mode == SEGMENT_BENCH_CYCLE_KNOWN ||
+                   mode == SEGMENT_BENCH_TABLE_SLOT_ADDR;
   uintptr_t base = (uintptr_t)0x40000000u;
   if (uses_base &&
       !h9_segment_local_cache_debug_bind_base(class_id,
@@ -117,6 +119,18 @@ int main(void) {
               H8_ROUTE_VALID &&
           routed_class == class_id &&
           h9_segment_local_cache_debug_free_allocated(class_id, slot);
+    } else if (mode == SEGMENT_BENCH_TABLE_SLOT_ADDR) {
+      success = h9_segment_local_cache_debug_take(class_id, &slot);
+      addr = base + (uintptr_t)slot * (uintptr_t)slot_size;
+      uint32_t routed_class = UINT32_MAX;
+      uint32_t routed_slot = UINT32_MAX;
+      success =
+          success &&
+          h9_segment_local_cache_debug_route_table_slot_addr(
+              addr, &routed_class, &routed_slot) == H8_ROUTE_VALID &&
+          routed_class == class_id && routed_slot == slot &&
+          h9_segment_local_cache_debug_free_allocated(routed_class,
+                                                      routed_slot);
     } else if (mode == SEGMENT_BENCH_ACTIVE_ADDR) {
       success = h9_segment_local_cache_debug_active_take_addr(&addr) &&
                 h9_segment_local_cache_debug_active_free_addr(addr);
@@ -149,6 +163,8 @@ int main(void) {
     mode_name = "known_addr";
   } else if (mode == SEGMENT_BENCH_TABLE_ADDR) {
     mode_name = "table_addr";
+  } else if (mode == SEGMENT_BENCH_TABLE_SLOT_ADDR) {
+    mode_name = "table_slot_addr";
   } else if (mode == SEGMENT_BENCH_ACTIVE_ADDR) {
     mode_name = "active_addr";
   }
