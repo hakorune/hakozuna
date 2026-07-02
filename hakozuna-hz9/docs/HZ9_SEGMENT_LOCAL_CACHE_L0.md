@@ -462,6 +462,14 @@ touch=0:
   class3 576.2M ops/s
   class4 560.1M ops/s
   class5 540.9M ops/s
+
+route_free=1, touch=1:
+  class0 123.8M ops/s
+  class1 117.2M ops/s
+  class2 114.2M ops/s
+  class3 115.5M ops/s
+  class4 84.2M ops/s
+  class5 100.7M ops/s
 ```
 
 Interpretation:
@@ -470,6 +478,11 @@ Interpretation:
 real payload local-only probe:
   direct known-slot SegmentLocalCache body remains around 500-580M ops/s even
   when touching real payload memory
+
+route-free probe:
+  external free validation through table route + addr->slot decode lands around
+  84-124M ops/s
+  this is a boundary cost, not the local reuse core speed
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
