@@ -117,6 +117,22 @@ int main(void) {
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
     if (active_route != 0u) {
+      if (active_route == 11u) {
+        success = h9_segment_local_cache_debug_active_pair_direct(&addr);
+        if (success && touch) {
+          volatile unsigned char* p = (volatile unsigned char*)addr;
+          p[0] = (unsigned char)i;
+          p[slot_size - 1u] = (unsigned char)(i >> 8);
+        }
+        if (!success) {
+          fprintf(stderr, "segment local bench cycle failed at iter %llu\n",
+                  (unsigned long long)i);
+          h8_platform_release(payload, run_size);
+          return 5;
+        }
+        ++ok;
+        continue;
+      }
       uint32_t routed_class = UINT32_MAX;
       uint32_t routed_slot = UINT32_MAX;
       success = h9_segment_local_cache_debug_active_take_direct(&slot, &addr);

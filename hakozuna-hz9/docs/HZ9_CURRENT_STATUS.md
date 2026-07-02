@@ -92,7 +92,7 @@ current segment commands:
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
-  includes public/exact/sample/header/token/pair/pairfast route proof modes
+  includes public/exact/sample/header/token/pair/pairfast/pairdirect modes
 
 next segment behavior:
   HZ9SegmentLocalRouteProof-L0

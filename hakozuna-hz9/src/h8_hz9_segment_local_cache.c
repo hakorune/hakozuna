@@ -523,6 +523,18 @@ bool h9_segment_local_cache_debug_active_free_direct(uint32_t slot) {
   return true;
 }
 
+bool h9_segment_local_cache_debug_active_pair_direct(uintptr_t* addr_out) {
+  uint32_t slot = 0u;
+  uintptr_t addr = 0u;
+  if (!h9_segment_local_cache_debug_active_take_direct(&slot, &addr)) {
+    return false;
+  }
+  if (addr_out) {
+    *addr_out = addr;
+  }
+  return h9_segment_local_cache_debug_active_free_direct(slot);
+}
+
 bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out) {
   return h9_segment_local_cache_debug_take_slot_addr(class_id, NULL, addr_out);

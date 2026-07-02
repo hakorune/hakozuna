@@ -691,6 +691,12 @@ Active pair-fast-free proof:
   implication: free-side specialization helps, but the split malloc/free shape
   is still not enough to recover the combined active known-slot body
 
+Active pair-direct proof:
+  pairdirect calls one active take/free helper and bypasses route validation
+  current R1 range is about 245-275M ops/s, or about 0.55-0.68x active direct
+  implication: benchmark branch routing is not the blocker; active_cycle wins
+  because the take/free mutation is fused into one compact body
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape
