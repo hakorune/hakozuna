@@ -117,8 +117,10 @@ int main(void) {
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
     if (active_route != 0u) {
-      if (active_route == 11u) {
-        success = h9_segment_local_cache_debug_active_pair_direct(&addr);
+      if (active_route == 11u || active_route == 12u) {
+        success = active_route == 11u
+                      ? h9_segment_local_cache_debug_active_pair_direct(&addr)
+                      : h9_segment_local_cache_debug_active_pair_fused(&addr);
         if (success && touch) {
           volatile unsigned char* p = (volatile unsigned char*)addr;
           p[0] = (unsigned char)i;

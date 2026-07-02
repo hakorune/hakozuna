@@ -697,6 +697,12 @@ Active pair-direct proof:
   implication: benchmark branch routing is not the blocker; active_cycle wins
   because the take/free mutation is fused into one compact body
 
+Active pair-fused proof:
+  pairfused uses one fused active take/free body and bypasses route validation
+  current R1 range is about 478-542M ops/s, or about 1.14-1.34x active direct
+  implication: the fast substrate exists, but only as a fused local-hit body;
+  public route and split helper shape must stay out of the local hit core
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape
