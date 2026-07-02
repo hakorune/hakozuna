@@ -30,7 +30,8 @@ typedef enum SegmentBenchMode {
   SEGMENT_BENCH_KNOWN_ADDR = 2,
   SEGMENT_BENCH_TABLE_ADDR = 3,
   SEGMENT_BENCH_ACTIVE_ADDR = 4,
-  SEGMENT_BENCH_FAST_ADDR = 5
+  SEGMENT_BENCH_FAST_ADDR = 5,
+  SEGMENT_BENCH_SLOT_ADDR = 6
 } SegmentBenchMode;
 
 int main(void) {
@@ -57,7 +58,8 @@ int main(void) {
                    mode == SEGMENT_BENCH_KNOWN_ADDR ||
                    mode == SEGMENT_BENCH_TABLE_ADDR ||
                    mode == SEGMENT_BENCH_ACTIVE_ADDR ||
-                   mode == SEGMENT_BENCH_FAST_ADDR;
+                   mode == SEGMENT_BENCH_FAST_ADDR ||
+                   mode == SEGMENT_BENCH_SLOT_ADDR;
   uintptr_t base = (uintptr_t)0x40000000u;
   if (uses_base &&
       !h9_segment_local_cache_debug_bind_base(class_id,
@@ -88,6 +90,12 @@ int main(void) {
     } else if (mode == SEGMENT_BENCH_FAST_ADDR) {
       success = h9_segment_local_cache_debug_take_addr(class_id, &addr) &&
                 h9_segment_local_cache_debug_free_addr_fast(class_id, addr);
+    } else if (mode == SEGMENT_BENCH_SLOT_ADDR) {
+      success = h9_segment_local_cache_debug_take_slot_addr(class_id, &slot,
+                                                            &addr);
+      success = success &&
+                addr == base + (uintptr_t)slot * (uintptr_t)slot_size &&
+                h9_segment_local_cache_debug_free_allocated(class_id, slot);
     } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
       success = h9_segment_local_cache_debug_take(class_id, &slot);
       addr = base + (uintptr_t)slot * (uintptr_t)slot_size;
@@ -128,6 +136,8 @@ int main(void) {
     mode_name = "bound_addr";
   } else if (mode == SEGMENT_BENCH_FAST_ADDR) {
     mode_name = "fast_addr";
+  } else if (mode == SEGMENT_BENCH_SLOT_ADDR) {
+    mode_name = "slot_addr";
   } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
     mode_name = "known_addr";
   } else if (mode == SEGMENT_BENCH_TABLE_ADDR) {

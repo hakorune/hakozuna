@@ -12,6 +12,7 @@ typedef enum H9SegmentState {
 
 typedef struct H9SegmentLocalClass {
   uintptr_t base_addr;
+  uint32_t slot_size;
   uint64_t local_free_bits;
   uint64_t local_alloc_bits;
   uint64_t remote_pending_bits;
@@ -291,6 +292,7 @@ bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
     return false;
   }
   cls->base_addr = base_addr;
+  cls->slot_size = slot_size;
   h9_segment_tls.touched_class_bits |= UINT64_C(1) << class_id;
   return true;
 }
@@ -353,27 +355,29 @@ bool h9_segment_local_cache_debug_set_active_class(uint32_t class_id) {
   return true;
 }
 
-bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
-                                            uintptr_t* addr_out) {
-  uint32_t slot_size = 0u;
-  uint32_t run_size = 0u;
-  uint16_t slot_count = 0u;
-  if (!h9_segment_local_cache_debug_class_geometry(
-          class_id, &slot_size, &run_size, &slot_count)) {
-    return false;
-  }
+bool h9_segment_local_cache_debug_take_slot_addr(uint32_t class_id,
+                                                 uint32_t* slot_out,
+                                                 uintptr_t* addr_out) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
-  if (!cls || cls->base_addr == 0u) {
+  if (!cls || cls->base_addr == 0u || cls->slot_size == 0u) {
     return false;
   }
   uint32_t slot = 0u;
   if (!h9_segment_local_cache_debug_take(class_id, &slot)) {
     return false;
   }
+  if (slot_out) {
+    *slot_out = slot;
+  }
   if (addr_out) {
-    *addr_out = cls->base_addr + (uintptr_t)slot * (uintptr_t)slot_size;
+    *addr_out = cls->base_addr + (uintptr_t)slot * (uintptr_t)cls->slot_size;
   }
   return true;
+}
+
+bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
+                                            uintptr_t* addr_out) {
+  return h9_segment_local_cache_debug_take_slot_addr(class_id, NULL, addr_out);
 }
 
 bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,

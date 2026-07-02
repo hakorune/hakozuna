@@ -1,7 +1,6 @@
 # Current Task
 
-This root file is the short project orientation ledger. Do not add chronological
-benchmark logs here.
+This root file is the short project orientation ledger. Do not add chronological logs here.
 
 ## Active Work
 
@@ -21,6 +20,7 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
+                slot_addr improved route shapes; known-slot inline remains target.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
