@@ -344,13 +344,18 @@ static int check_bound_alloc_free(void) {
     fprintf(stderr, "segment slot address lifecycle failed\n");
     return 74;
   }
+  if (!h9_segment_local_cache_debug_cycle_known(class_id, &addr1) ||
+      addr1 != base + slot_size) {
+    fprintf(stderr, "segment known cycle failed\n");
+    return 75;
+  }
   if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
       !h9_segment_local_cache_debug_active_take_addr(&addr1) ||
       addr1 != base + slot_size ||
       !h9_segment_local_cache_debug_active_free_addr(addr1) ||
       h9_segment_local_cache_debug_active_free_addr(addr1)) {
     fprintf(stderr, "segment active address lifecycle failed\n");
-    return 75;
+    return 76;
   }
   if (!h9_segment_local_cache_debug_remote_mark(class_id, 0u) ||
       h9_segment_local_cache_debug_free_addr(class_id, addr0) ||
@@ -359,7 +364,7 @@ static int check_bound_alloc_free(void) {
       h9_segment_local_cache_debug_route_addr(class_id, addr0) !=
           H8_ROUTE_INVALID) {
     fprintf(stderr, "segment bound remote free rejection failed\n");
-    return 76;
+    return 77;
   }
   (void)run_size;
   (void)slot_count;

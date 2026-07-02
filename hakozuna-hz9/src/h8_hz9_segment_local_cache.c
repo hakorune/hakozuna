@@ -171,6 +171,26 @@ bool h9_segment_local_cache_debug_free_allocated(uint32_t class_id,
   return true;
 }
 
+bool h9_segment_local_cache_debug_cycle_known(uint32_t class_id,
+                                              uintptr_t* addr_out) {
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->state != H9_SEGMENT_LOCAL ||
+      cls->local_free_bits == 0u || cls->base_addr == 0u ||
+      cls->slot_size == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(cls->local_free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  cls->local_free_bits &= ~bit;
+  cls->local_alloc_bits |= bit;
+  if (addr_out) {
+    *addr_out = cls->base_addr + (uintptr_t)slot * (uintptr_t)cls->slot_size;
+  }
+  cls->local_alloc_bits &= ~bit;
+  cls->local_free_bits |= bit;
+  return true;
+}
+
 bool h9_segment_local_cache_debug_remote_mark(uint32_t class_id,
                                               uint32_t slot) {
   if (!h9_segment_slot_valid(class_id, slot)) {

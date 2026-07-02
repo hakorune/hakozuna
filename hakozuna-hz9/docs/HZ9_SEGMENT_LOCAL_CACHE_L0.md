@@ -138,13 +138,16 @@ The API microbench is not a promotion gate. It measures the standalone local
 `take/free_allocated` cycle so the segment body can be compared against earlier
 OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 Its output includes class geometry and payload/slack bytes so speed and
-capacity are read from the same run. `BOUND_ADDR=1` switches the same bench to
-the bound-address lifecycle; `MODE=2` measures known-slot address generation
-without the debug route helper; `MODE=3` measures debug table route lookup:
+capacity are read from the same run. `MODE=7` measures the single-function
+known-slot cycle; `BOUND_ADDR=1` switches to the bound-address lifecycle:
 
 ```text
 bits mode:
   take/free_allocated
+
+cycle_known mode:
+  single-function known-slot take/address/free cycle
+  estimates the behavior-body ceiling without debug API layering
 
 known_addr mode:
   take/free_allocated with base + slot * slot_size address generation
@@ -294,64 +297,72 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_slot_size_cached
+  20260703T_segment_api_sweep_cycle_known
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 315.1M ops/s
-  class1 316.7M ops/s
-  class2 319.6M ops/s
-  class3 327.6M ops/s
-  class4 313.4M ops/s
-  class5 288.8M ops/s
+  class0 326.7M ops/s
+  class1 322.1M ops/s
+  class2 331.5M ops/s
+  class3 334.8M ops/s
+  class4 333.1M ops/s
+  class5 335.7M ops/s
+
+cycle_known mode:
+  class0 478.3M ops/s
+  class1 491.8M ops/s
+  class2 482.4M ops/s
+  class3 453.7M ops/s
+  class4 502.6M ops/s
+  class5 482.6M ops/s
 
 known_addr mode:
-  class0 309.4M ops/s
-  class1 318.2M ops/s
-  class2 319.4M ops/s
-  class3 300.8M ops/s
-  class4 316.5M ops/s
-  class5 297.9M ops/s
+  class0 308.0M ops/s
+  class1 331.0M ops/s
+  class2 323.5M ops/s
+  class3 315.2M ops/s
+  class4 324.8M ops/s
+  class5 323.1M ops/s
 
 slot_addr mode:
-  class0 202.3M ops/s
-  class1 209.3M ops/s
-  class2 216.4M ops/s
-  class3 215.2M ops/s
-  class4 214.9M ops/s
-  class5 204.6M ops/s
+  class0 173.6M ops/s
+  class1 216.5M ops/s
+  class2 213.9M ops/s
+  class3 190.4M ops/s
+  class4 216.7M ops/s
+  class5 217.4M ops/s
 
 fast_addr mode:
-  class0 134.7M ops/s
-  class1 137.5M ops/s
-  class2 139.1M ops/s
-  class3 137.6M ops/s
-  class4 138.7M ops/s
-  class5 135.7M ops/s
+  class0 105.7M ops/s
+  class1 137.4M ops/s
+  class2 131.8M ops/s
+  class3 137.3M ops/s
+  class4 140.4M ops/s
+  class5 140.9M ops/s
 
 active_addr mode:
-  class0 128.1M ops/s
-  class1 128.0M ops/s
-  class2 125.7M ops/s
-  class3 126.3M ops/s
-  class4 126.9M ops/s
-  class5 124.9M ops/s
+  class0 116.0M ops/s
+  class1 127.0M ops/s
+  class2 128.8M ops/s
+  class3 126.8M ops/s
+  class4 128.9M ops/s
+  class5 127.4M ops/s
 
 table_addr mode:
-  class0 98.4M ops/s
-  class1 94.6M ops/s
-  class2 91.3M ops/s
-  class3 90.2M ops/s
-  class4 86.3M ops/s
-  class5 85.7M ops/s
+  class0 99.3M ops/s
+  class1 102.0M ops/s
+  class2 98.7M ops/s
+  class3 91.9M ops/s
+  class4 93.3M ops/s
+  class5 92.7M ops/s
 
 bound_addr mode:
-  class0 121.2M ops/s
-  class1 135.8M ops/s
-  class2 136.1M ops/s
-  class3 134.9M ops/s
-  class4 121.3M ops/s
-  class5 135.7M ops/s
+  class0 132.1M ops/s
+  class1 111.9M ops/s
+  class2 134.2M ops/s
+  class3 135.2M ops/s
+  class4 135.1M ops/s
+  class5 136.2M ops/s
 ```
 
 Interpretation:
@@ -364,20 +375,26 @@ bits body:
 known_addr:
   remains close to bits mode and is the right hot-path target shape
 
+cycle_known:
+  single-function known-slot body reaches about 454-503M ops/s, well above
+  the split debug APIs
+  this proves the segment body is not the current blocker; API layering and
+  route wrappers are
+
 slot_addr proof:
   caching slot_size in the bound segment lifts the slot+address API above
-  route-based shapes, but it still lands around 56-68% of known_addr
+  route-based shapes, but it still lands around 56-67% of known_addr
   a behavior hot path should inline the known-slot body instead of stacking
   debug wrappers around take/free
 
 fast_addr proof:
   p2 shift/mask and non-p2 two-slot exact decode beat active/table route
-  shapes and often match or beat bound_addr, but still land around 42-46%
+  shapes and often match or beat bound_addr, but still land around 34-44%
   of known_addr mode
   useful as a route-proof fallback, not enough for the local hit core
 
 bound_addr proof:
-  carries route/lifecycle overhead and lands around 38-45% of known_addr mode
+  carries route/lifecycle overhead and lands around 34-43% of known_addr mode
   useful as a boundary proof, not yet a final hot-path shape
 
 active_addr proof:
@@ -395,10 +412,9 @@ rejected micro-optimization:
   modulo/divide form until behavior code can specialize a real hot path
 
 next optimization target:
-  keep the known-slot shape for the local hit path
-  avoid addr -> slot decode on the immediate local reuse path
-  use fast_addr-style decode only as fallback/route proof, not as the primary
-  local hit core
+  move behavior wiring toward a direct known-slot inline body
+  keep addr -> slot decode only for external free validation or fallback route
+  do not model the local hit core as stacked debug helper calls
 ```
 
 ## Decision Boundary
