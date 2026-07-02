@@ -41,8 +41,9 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_API = 28,
   H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY = 29,
   H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY = 30,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 31,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 32
+  H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY = 31,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 32,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 33
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -133,6 +134,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY;
   } else if (strcmp(mode, "tlstokencachesplitbody") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY;
+  } else if (strcmp(mode, "tlstokencachetrustbody") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY;
   } else if (strcmp(mode, "tlsledger") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER;
   } else if (strcmp(mode, "tlsledgerbody") == 0) {
@@ -190,6 +193,7 @@ int main(void) {
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_API ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
     page_handle = h9_segment_entry_debug_prepare_handle(class_id);
@@ -205,7 +209,8 @@ int main(void) {
          bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE ||
          bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_BODY ||
          bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY ||
-         bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY) &&
+         bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY ||
+         bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY) &&
         !h9_segment_entry_debug_acquire_token(class_id, &page_token)) {
       fprintf(stderr, "segment entry bench failed to acquire token\n");
       h9_segment_entry_debug_reset();
@@ -219,7 +224,8 @@ int main(void) {
   token_cache_state.token = page_token;
   if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_BODY ||
       bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY ||
-      bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY) {
+      bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY ||
+      bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY) {
     h9_segment_entry_token_cache_reset(
         &h9_segment_entry_token_cache_state[class_id]);
     h9_segment_entry_token_cache_state[class_id].token = page_token;
@@ -267,6 +273,20 @@ int main(void) {
       }
       success = success && h9_segment_entry_token_cache_push_slot_inline(
                                tls_token_cache, slot, ptr);
+    } else if (bench_mode ==
+               H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY) {
+      uint32_t slot = UINT32_MAX;
+      success =
+          h9_segment_entry_token_cache_pop_slot_inline(tls_token_cache, &slot,
+                                                       &ptr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)ptr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success = success &&
+                h9_segment_entry_token_cache_push_slot_trusted_inline(
+                    tls_token_cache, slot, ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY) {
       success =
           h9_segment_entry_debug_cycle_tls_epoch_body(class_id, i, touch,
@@ -414,6 +434,7 @@ int main(void) {
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_API &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_PTR_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_SPLIT_BODY &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
       volatile unsigned char* p = (volatile unsigned char*)ptr;
@@ -459,6 +480,13 @@ int main(void) {
       !h9_segment_entry_retire_token_cache_state_inline(tls_token_cache)) {
     fprintf(stderr,
             "segment entry bench failed to retire tls token cache split\n");
+    h9_segment_entry_debug_reset();
+    return 3;
+  }
+  if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_TOKEN_CACHE_TRUST_BODY &&
+      !h9_segment_entry_retire_token_cache_state_inline(tls_token_cache)) {
+    fprintf(stderr,
+            "segment entry bench failed to retire tls token cache trusted\n");
     h9_segment_entry_debug_reset();
     return 3;
   }

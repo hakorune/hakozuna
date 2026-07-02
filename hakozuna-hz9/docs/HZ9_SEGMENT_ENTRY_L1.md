@@ -254,6 +254,15 @@ handlecheckedtouch mode:
   reading: separating alloc-pop and free-push exposes a real cost. A public
   HZ9 entry cannot assume the fully fused cycle number; it needs a slot-known
   return path or another way to keep free-side identity out of route lookup.
+  trusted push attribution, class 64K, 1M-iteration R2:
+    tlstokencachebody: about 686M ops/s
+    tlstokencacheptrbody: about 729M ops/s
+    tlstokencachesplitbody: about 385M ops/s
+    tlstokencachetrustbody: about 436M ops/s
+    tlstokencacheapi: about 439M ops/s
+  reading: skipping push-side state revalidation helps only modestly. The major
+  loss is the split alloc/free boundary itself, not only validation inside
+  push_slot.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -453,6 +462,10 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlstokencachesplitbody lowers the expected public-entry ceiling: split
   malloc/free is materially slower than the fused cycle, so the next design
   must address free-side slot identity rather than only allocator-side caching
+  tlstokencachetrustbody shows that trusting the returned slot is not enough to
+  recover fused speed; the next probe should identify whether the remaining cost
+  is function/body splitting, store ordering, or the unavoidable public free
+  separation
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

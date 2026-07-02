@@ -175,6 +175,21 @@ static inline bool h9_segment_entry_token_cache_push_slot_inline(
   return true;
 }
 
+static inline bool h9_segment_entry_token_cache_push_slot_trusted_inline(
+    H9SegmentEntryTokenCache* cache, uint32_t slot, void* ptr) {
+  if (!cache || cache->token.handle == 0u || !ptr) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)cache->token.handle;
+  if (slot >= page->slot_count || cache->cache_ptr != NULL) {
+    return false;
+  }
+  page->cache_bits |= UINT64_C(1) << slot;
+  cache->cache_ptr = ptr;
+  cache->cache_slot = slot;
+  return true;
+}
+
 static inline void h9_segment_entry_token_cache_reset(
     H9SegmentEntryTokenCache* cache) {
   if (!cache) {

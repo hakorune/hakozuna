@@ -303,6 +303,19 @@ static int check_token_cache_body(void) {
     return 34;
   }
   h9_segment_entry_debug_reset();
+  h9_segment_entry_token_cache_reset(&cache_state);
+  if (!h9_segment_entry_debug_acquire_token(0u, &cache_state.token) ||
+      !h9_segment_entry_token_cache_pop_slot_inline(&cache_state, &slot, &p) ||
+      !h9_segment_entry_token_cache_push_slot_trusted_inline(&cache_state,
+                                                            slot, p) ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(p, &owned) || !owned ||
+      !h9_segment_entry_retire_token_cache_state_inline(&cache_state)) {
+    fprintf(stderr, "segment entry token cache trusted failed\n");
+    h9_segment_entry_debug_reset();
+    return 35;
+  }
+  h9_segment_entry_debug_reset();
   return 0;
 }
 
