@@ -191,16 +191,19 @@ fi
 if [[ "${MODE}" == "ownerpool" ]]; then
   make -C "${ROOT}" \
     bench-release \
-    bench-release-hz9ownerpagepool-scaffold >/dev/null
+    bench-release-hz9ownerpagepool-scaffold \
+    bench-release-hz9ownerpagepool-purelocal-api >/dev/null
 
   declare -A bins=(
     [baseline]="${ROOT}/h8_bench_release"
     [ownerpagepool_scaffold]="${ROOT}/h8_bench_release_hz9ownerpagepool_scaffold"
+    [ownerpagepool_purelocal]="${ROOT}/h8_bench_release_hz9ownerpagepool_purelocal_api"
   )
-  variants=(baseline ownerpagepool_scaffold)
+  variants=(baseline ownerpagepool_scaffold ownerpagepool_purelocal)
   symbols=(h8_malloc_inner h8_malloc_non_small_inner h8_free_inner
            h8_free_non_arena_inner h9_owner_page_pool_scaffold_enabled
-           h9_owner_page_pool_scaffold_layout_bytes)
+           h9_owner_page_pool_scaffold_layout_bytes h9_owner_page_try_alloc
+           h9_owner_page_try_free)
 
   for variant in "${variants[@]}"; do
     dump_bin "${variant}" "${bins[$variant]}"
@@ -248,8 +251,8 @@ lines = [
     "| variant | text bytes | malloc-inner bytes | malloc-inner insn | "
     "non-small bytes | non-small insn | free-inner bytes | "
     "free-inner insn | non-arena-free bytes | non-arena-free insn | "
-    "ownerpool scaffold bytes |",
-    "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
+    "ownerpool scaffold bytes | try_alloc bytes | try_free bytes |",
+    "|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|",
 ]
 for variant in variants:
     rows = (out / f"{variant}.size.txt").read_text().splitlines()
@@ -267,7 +270,9 @@ for variant in variants:
         f"{insn_count(variant, 'h8_free_inner')} | "
         f"{sizes.get('h8_free_non_arena_inner', 0)} | "
         f"{insn_count(variant, 'h8_free_non_arena_inner')} | "
-        f"{scaffold} |"
+        f"{scaffold} | "
+        f"{sizes.get('h9_owner_page_try_alloc', 0)} | "
+        f"{sizes.get('h9_owner_page_try_free', 0)} |"
     )
 (out / "summary.md").write_text("\n".join(lines) + "\n")
 print("\n".join(lines))

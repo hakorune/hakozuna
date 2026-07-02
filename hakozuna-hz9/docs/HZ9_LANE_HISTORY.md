@@ -257,3 +257,20 @@ read:
   layout and public entry shape are controlled; the remaining blocker is the
   substrate body/local cost, not hidden H8OwnerRecord/H8ThreadCtx growth.
 ```
+
+## Substrate Cost Matrix
+
+```text
+log:
+  bench_results/20260702T121943Z_hz9_substrate_cost_matrix
+  bench_results/20260702T122124Z_ownerpage_focus_r3
+  bench_results/20260702T122205Z_hz9_code_shape_audit
+
+read:
+  SlabDirectUse is remote/profile evidence.
+  LocalArena phase8 is broad NO-GO.
+  OwnerPage purelocal is closest but still not a default candidate:
+    medium_local0/main_r90/small_remote90 are not clean.
+  OwnerPage public malloc/free/non-arena code shape is unchanged, so the next
+  question is purelocal body/text cost, not public route growth.
+```

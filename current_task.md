@@ -18,21 +18,13 @@ Current direction:
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 box: HZ9DirectSlabUseProof-L0.
-                slabdirectuse is implemented as proof-only direct SlabPage use
-                before owner-page/TLS/HZ8 medium fallback.
-                Focused R3: medium_local0 0.757, main_local0 0.913,
-                medium_r50 1.213, main_r90 1.629.
-                Treat SlabPage as remote/profile evidence, not the next broad
-                local substrate.
-                Debug: local rows have alloc_fallback=0, so loss is SlabPage
-                local body/free path, not capacity fallback.
-  Latest HZ9 box: HZ9LocalPhaseAdmission-L0.
-                Implemented as localarena_dense_ownerfast_phase8.
-                R1: medium_local0 0.816, main_local0 0.823,
-                medium_r50 0.611, main_r90 0.622.
-                Treat as NO-GO evidence; it blocks page creation but does not
-                remove LocalArena entry/body cost.
+  Current HZ9 read: HZ9SubstrateCostMatrix-L0.
+                SlabDirectUse is remote/profile evidence.
+                LocalArena phase8 is broad NO-GO.
+                OwnerPage purelocal is closest local substrate so far, but
+                still loses medium_local0 and small_remote90.
+                Next useful work is OwnerPage purelocal body/text-cost
+                attribution before page-body tuning.
   Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
                 matter; keep them as proof-only evidence.
   HZ9 route-last / LocalArena remote-safe are closed as NO-GO evidence.
@@ -57,6 +49,7 @@ HZ8 active orientation:
 
 HZ9 experimental orientation:
   hakozuna-hz9/README.md
+  hakozuna-hz9/docs/HZ9_SUBSTRATE_COST_MATRIX_L0.md
   hakozuna-hz9/docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_PHASE_ADMISSION_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md

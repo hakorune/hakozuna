@@ -78,6 +78,26 @@ HZ9LocalPhaseAdmission-L0:
     NO-GO; do not tune the threshold wider without a new mechanism
 ```
 
+Latest substrate matrix:
+
+```text
+HZ9SubstrateCostMatrix-L0:
+  bench_results/20260702T121943Z_hz9_substrate_cost_matrix
+
+read:
+  SlabDirectUse:
+    remote/profile only; medium_r50 and main_r90 win, local/small fail
+  LocalArena phase8:
+    broad NO-GO
+  OwnerPage purelocal:
+    closest local substrate shape so far
+    focused R3 wins medium_r50 but loses medium_local0/main_r90 and moves
+    small_remote90
+    code-shape audit shows public malloc/free/non-arena shapes unchanged
+    next useful work is purelocal body/text-cost attribution before page-body
+    tuning
+```
+
 Current profile/evidence lanes:
 
 ```text

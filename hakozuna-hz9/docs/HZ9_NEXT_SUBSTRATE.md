@@ -162,6 +162,22 @@ source-shape read:
   bench_results/20260702T121610Z_hz9_code_shape_audit
   H8OwnerRecord/H8ThreadCtx layout and public entry code shape are controlled.
   The next blocker is substrate body/local cost, not hidden layout growth.
+
+next evidence box:
+  HZ9SubstrateCostMatrix-L0
+  docs/HZ9_SUBSTRATE_COST_MATRIX_L0.md
+  Compare baseline, SlabDirectUse, LocalArena phase admission, and OwnerPage
+  purelocal under one gate before choosing another substrate.
+
+matrix read:
+  bench_results/20260702T121943Z_hz9_substrate_cost_matrix
+  SlabDirectUse is strong remote/profile evidence but fails local/small gates.
+  LocalArena phase8 is broad NO-GO.
+  OwnerPage is the closest local substrate shape, but still loses medium_local0
+  and moves main_r90/small_remote90.
+  OwnerPage purelocal does not grow h8_malloc_inner / h8_free_inner /
+  h8_free_non_arena_inner; next work must explain purelocal body/text cost
+  before page-body tuning.
 ```
 
 ## Active Constraints
@@ -595,4 +611,7 @@ HZ9_STANDALONE_CLOSURE.md:
 
 HZ9_FRESH_LOCAL_PAGE_SUBSTRATE_L0.md:
   next substrate design-prep and entry-bypass proof gate
+
+HZ9_SUBSTRATE_COST_MATRIX_L0.md:
+  active direction-finding matrix for current substrate families
 ```

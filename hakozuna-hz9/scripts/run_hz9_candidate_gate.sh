@@ -63,7 +63,8 @@ make -C "${ROOT}" \
 make -C "${ROOT}" \
   bench-release-hz9mediumslabpage-adaptive-layout32 \
   bench-release-hz9mediumslabpage-adaptive-entry \
-  bench-release-hz9mediumslabpage-adaptive-entry-hotmask >/dev/null
+  bench-release-hz9mediumslabpage-adaptive-entry-hotmask \
+  bench-release-hz9ownerpagepool-purelocal-api >/dev/null
 
 row_args() {
   case "$1" in
@@ -192,6 +193,9 @@ variant_bin() {
       ;;
     slabdirectuse)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_direct_use_proof"
+      ;;
+    ownerpage_purelocal)
+      printf '%s\n' "${ROOT}/h8_bench_release_hz9ownerpagepool_purelocal_api"
       ;;
     slablocalfast_adaptive_hot)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_classes_min0_localfast_adaptive_hot"
