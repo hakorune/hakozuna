@@ -88,6 +88,56 @@ another sidecar lookup before deciding not to use slab
 another owner-page route/admission path
 ```
 
+## Implemented Variant
+
+```text
+variant:
+  slabdirectuse
+
+target:
+  h8_bench_release_hz9mediumslabpage_direct_use_proof
+
+flag:
+  H9_SLAB_DIRECT_USE_PROOF_L0
+```
+
+The implemented proof is an integrated proof path:
+
+```text
+medium malloc:
+  h9_slab_alloc(ctx, class_id)
+  before owner-page admission, TLS cache, and HZ8 medium fallback
+
+medium free:
+  existing HZ9 SlabPage route/free authority
+
+included slab mechanics:
+  class_min0
+  local_free_bits
+  local_store_mutation
+  alloc_free_first
+  no_page_fast_reject
+
+excluded:
+  entry split
+  thread/owner sidecar lookup
+  adaptive remote-hot policy
+```
+
+This keeps the proof opt-in while removing the main admission ambiguity that
+blocked prior SlabPage default candidates.
+
+## Command
+
+```sh
+VARIANTS=baseline,slabdirectuse \
+ROWS=medium_local0,main_local0,medium_r50,main_r90 \
+RUNS=3 THREADS=16 ITERS=200000 \
+  hakozuna-hz9/scripts/run_hz9_candidate_gate.sh
+```
+
+Use `RUNS=10` before making a lane decision.
+
 ## Required Counters
 
 ```text
@@ -153,4 +203,3 @@ direct proof loses local:
   SlabPage body is not the next HZ9 substrate.
   Move to a fresh page/cache design not based on this route/page body.
 ```
-

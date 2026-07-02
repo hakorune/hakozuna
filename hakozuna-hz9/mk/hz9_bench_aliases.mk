@@ -138,6 +138,8 @@ bench-release-hz9mediumslabpage-classes-min0-entry-sidecar2: $(ROOT)/h8_bench_re
 
 bench-release-hz9mediumslabpage-classes-min0-localfast: $(ROOT)/h8_bench_release_hz9mediumslabpage_classes_min0_localfast
 
+bench-release-hz9mediumslabpage-direct-use-proof: $(ROOT)/h8_bench_release_hz9mediumslabpage_direct_use_proof
+
 bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-hot: $(ROOT)/h8_bench_release_hz9mediumslabpage_classes_min0_localfast_adaptive_hot
 
 bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-poll32: $(ROOT)/h8_bench_release_hz9mediumslabpage_classes_min0_localfast_adaptive_poll32

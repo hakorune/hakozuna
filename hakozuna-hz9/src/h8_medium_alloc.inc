@@ -284,6 +284,12 @@ void* h8_medium_malloc_class_inner(uint32_t class_id) {
                                 &h8g.medium_malloc_class_48k);
 #endif
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
+#if defined(H9_SLAB_DIRECT_USE_PROOF_L0)
+  void* direct_slab_ptr = h9_slab_alloc(ctx, class_id);
+  if (direct_slab_ptr) {
+    return direct_slab_ptr;
+  }
+#endif
   h9_owner_page_shadow_note_alloc(ctx, class_id);
   void* owner_page_ptr = h9_owner_page_try_alloc(ctx, class_id);
   if (owner_page_ptr) {

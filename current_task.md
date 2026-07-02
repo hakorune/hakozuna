@@ -15,26 +15,20 @@ Current direction:
   HZ9 development must remain self-contained in hakozuna-hz9/.
   HZ9 single-folder closure is complete enough for local development:
                 hz9-standalone-check passes from parent and hakozuna-hz9 root.
-  Current proof direction: owner-local page substrate, not another public
-                all-medium entry split.
-  Current HZ9 box: HZ9OwnerLocalPagePoolPureLocal-L1.
-                Local allocation pop, same-owner free push, global owner-page
-                route, remote pending mark, and detached final-free release
-                are implemented in hakozuna-hz9/.
-                Directory-first free routing reduces remote-row route tax, but
-                medium local still regresses in the latest short gate; keep it
-                as profile/evidence, not default.
-  Latest HZ9 evidence: OwnerLocalPagePoolShadow-L0 shows local rows are
-                pure-local, while remote rows require immediate HZ8 fallback.
-  HZ9 route-off/layout proofs show no-use route cost can matter, but main_r90
-                is not solved without also avoiding owner/thread layout changes.
-  HZ9 layout-neutral proof restored no-use owner/thread layout and code shape;
-                keep it as proof-only and require future substrates to avoid
-                no-use route/layout contamination from the start.
+  OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
+                directory-first free routing reduces remote route tax, but
+                medium local remains below gate.
+  Current HZ9 box: HZ9DirectSlabUseProof-L0.
+                slabdirectuse is implemented as proof-only direct SlabPage use
+                before owner-page/TLS/HZ8 medium fallback.
+                Smoke R1: medium_local0 0.916, main_r90 1.348.
+                Continue with focused R3/R10 before deciding whether SlabPage
+                is remote/profile-only or a viable substrate body.
+  Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
+                matter; keep them as proof-only evidence.
   HZ9 route-last is closed as NO-GO evidence inside hakozuna-hz9/, not HZ8.
   HZ9 LocalArena remote-safe page is closed as early NO-GO evidence.
   Current HZ9 SlabPage L1 variants are evidence/profile, not default.
-  HZ9 LocalArena class/admission gates are closed as evidence, not default.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 
 Current strength:
@@ -42,9 +36,8 @@ Current strength:
   HZ6 narrow Windows baselines are frozen as reference evidence.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
   HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
-  Next HZ9 behavior development should avoid per-allocation owner-page
-                admission and also avoid owner-page overhead on local rows;
-                otherwise freeze owner-page and move to a new substrate shape.
+  Next HZ9 behavior development should avoid per-allocation owner-page tax and
+                broad no-use route/layout contamination.
 ```
 
 ## Read First
@@ -56,8 +49,8 @@ HZ8 active orientation:
   hakozuna-hz8/docs/HZ8_V2_HZ9_DESIGN.md
 
 HZ9 experimental orientation:
-  hakozuna-hz9/current_task.md
   hakozuna-hz9/README.md
+  hakozuna-hz9/docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md

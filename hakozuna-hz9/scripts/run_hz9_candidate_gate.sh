@@ -44,6 +44,7 @@ make -C "${ROOT}" \
   bench-release-hz9mediumslabpage-classes-min0-sidecar2 \
   bench-release-hz9mediumslabpage-classes-min0-entry-sidecar2 \
   bench-release-hz9mediumslabpage-classes-min0-localfast \
+  bench-release-hz9mediumslabpage-direct-use-proof \
   bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-hot \
   bench-release-hz9mediumslabpage-classes-min0-localfast-adaptive-poll32 \
   bench-release-hz9mediumslabpage-classes-min2-localfast-adaptive-poll32 \
@@ -184,6 +185,9 @@ variant_bin() {
       ;;
     slablocalfast)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_classes_min0_localfast"
+      ;;
+    slabdirectuse)
+      printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_direct_use_proof"
       ;;
     slablocalfast_adaptive_hot)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumslabpage_classes_min0_localfast_adaptive_hot"
