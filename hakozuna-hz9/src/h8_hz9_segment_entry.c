@@ -396,6 +396,17 @@ bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
   return h9_segment_entry_cycle_page((H9SegmentEntryPage*)handle, ptr_out);
 }
 
+bool h9_segment_entry_debug_cycle_handle_checked_touch(uintptr_t handle,
+                                                       uint64_t value,
+                                                       bool touch,
+                                                       void** ptr_out) {
+  if (handle == 0u) {
+    return false;
+  }
+  return h9_segment_entry_cycle_page_checked_touch((H9SegmentEntryPage*)handle,
+                                                   value, touch, ptr_out);
+}
+
 bool h9_segment_entry_debug_cycle_tls_handle(uint32_t class_id,
                                              void** ptr_out) {
   if (class_id >= H8_MEDIUM_CLASS_COUNT) {

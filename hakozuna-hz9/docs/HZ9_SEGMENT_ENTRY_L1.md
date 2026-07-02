@@ -138,6 +138,17 @@ opaque-handle mode:
   touch=1: about 643-771M ops/s
   touch=0: about 724-818M ops/s
 
+handlecheckedtouch mode:
+  prepares an opaque page handle once, then runs the checked-touch body without
+  per-iteration class/TLS lookup
+  class 64K, 5M-iteration R3:
+    handlecheckedtouch touch=1: about 523-570M ops/s
+    tlscheckedtouch touch=1: about 415-417M ops/s
+    tlsepochbody touch=1: about 350-361M ops/s
+  R1 class sweep, 3M iterations:
+    handlecheckedtouch touch=1: about 494-564M ops/s
+    tlscheckedtouch touch=1: about 410-416M ops/s
+
 tls-handle mode:
   caches the selected page handle in TLS by class
   R1 class sweep:
@@ -305,6 +316,11 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlsepochbody shows that even cheap active-page/epoch checks are too expensive
   if they are paid on every local reuse; validate the local segment at
   acquisition/retirement boundaries and keep the local body fused
+  handlecheckedtouch restores most of the fused body by passing an acquired
+  segment handle directly; this is the best next behavior shape:
+    acquisition validates route/owner/epoch
+    local reuse receives a stable segment handle
+    release/retire reattaches public routing authority
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push
