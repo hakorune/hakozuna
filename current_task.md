@@ -11,15 +11,34 @@ Primary family:
 
 Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
-  HZ8-v2 throughput work is the next research box.
-  Treat the narrow HZ6 Windows appcap-only baseline as frozen reference
-  evidence, not a current promotion target.
+  HZ9 is now the separate throughput research lane.
+  HZ9 development must remain self-contained in hakozuna-hz9/.
+  HZ9 single-folder closure is complete enough for local development:
+                hz9-standalone-check passes from parent and hakozuna-hz9 root.
+  Current proof direction: owner-local page substrate, not another public
+                all-medium entry split.
+  Current HZ9 box: HZ9OwnerLocalPagePoolPureLocal API scaffold, no page
+                allocation behavior yet.
+  Latest HZ9 evidence: OwnerLocalPagePoolShadow-L0 shows local rows are
+                pure-local, while remote rows require immediate HZ8 fallback.
+  HZ9 route-off/layout proofs show no-use route cost can matter, but main_r90
+                is not solved without also avoiding owner/thread layout changes.
+  HZ9 layout-neutral proof restored no-use owner/thread layout and code shape;
+                keep it as proof-only and require future substrates to avoid
+                no-use route/layout contamination from the start.
+  HZ9 route-last is closed as NO-GO evidence inside hakozuna-hz9/, not HZ8.
+  HZ9 LocalArena remote-safe page is closed as early NO-GO evidence.
+  Current HZ9 SlabPage L1 variants are evidence/profile, not default.
+  HZ9 LocalArena class/admission gates are closed as evidence, not default.
+  Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 
 Current strength:
   HZ8 is the balanced default line.
   HZ6 narrow Windows baselines are frozen as reference evidence.
-  The next value gain is expected from HZ8-v2 throughput work, not from
-  reopening HZ6 control rows.
+  HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
+  HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
+  Next HZ9 behavior development starts only after PureLocal API/code-shape
+  checks and explicit remote-disable/flush hooks are clean.
 ```
 
 ## Read First
@@ -28,12 +47,17 @@ Current strength:
 HZ8 active orientation:
   hakozuna-hz8/current_task.md
   hakozuna-hz8/README.md
-  hakozuna-hz8/README.ja.md
   hakozuna-hz8/docs/HZ8_V2_HZ9_DESIGN.md
-  hakozuna-hz8/docs/HZ8_BENCH_GATE.md
+
+HZ9 experimental orientation:
+  hakozuna-hz9/current_task.md
+  hakozuna-hz9/README.md
+  hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md
+  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
+  hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md
+  hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 
 Frozen HZ6 reference:
-  docs/benchmarks/windows/paper/20260629_045702_paper_larson_windows.md
   hakozuna-hz6/docs/current_task.md
 ```
 
@@ -42,18 +66,6 @@ Frozen HZ6 reference:
 ```text
 Root archive index:
   docs/archive/README.md
-
-HZ6 archive index:
-  hakozuna-hz6/docs/archive/README.md
-
-Detailed historical ledgers:
-  docs/archive/current_task_2026-06-hz6_linux_history.md
-  hakozuna-hz6/docs/archive/current_task_2026-06_history.md
-  hakozuna-hz6/docs/archive/current_task_2026-06-16_pre_compaction.md
-  hakozuna-hz6/docs/archive/current_task_2026-06-16_profile_quiescent_snapshot.md
-  hakozuna-hz6/docs/archive/current_task_2026-06-16_post_toytrusted_controls_snapshot.md
-  hakozuna-hz6/docs/archive/current_task_2026-06-16_adaptive_profile_snapshot.md
-  hakozuna-hz6/docs/archive/current_task_2026-06-16_calloc_profile_snapshot.md
 ```
 
 ## Rules
@@ -62,8 +74,6 @@ Detailed historical ledgers:
 Keep this file below 80 lines.
 Put HZ6 decisions in hakozuna-hz6/docs/current_task.md or stable HZ6 docs.
 Move long benchmark logs and chronological notes to archive/.
-Large archived ledgers may exceed 3000 lines; active current_task files should
-not.
-Do not promote profile-only lanes into selected/default without focused,
-fixed, stats/diagnostic, RSS, and cross-allocator guard evidence.
+Large archived ledgers may exceed 3000 lines; active current_task files should not.
+Do not promote profile-only lanes without focused stats/RSS/guard evidence.
 ```

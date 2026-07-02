@@ -1,0 +1,238 @@
+#include "h8_internal.h"
+#include "h8_used_count.h"
+
+static void h8_owner_lock_pair(H8OwnerRecord* a, H8OwnerRecord* b) {
+  if (a == b) {
+    h8_platform_mutex_lock(&a->owned_lock);
+    return;
+  }
+  if (a->slot < b->slot) {
+    h8_platform_mutex_lock(&a->owned_lock);
+    h8_platform_mutex_lock(&b->owned_lock);
+  } else {
+    h8_platform_mutex_lock(&b->owned_lock);
+    h8_platform_mutex_lock(&a->owned_lock);
+  }
+}
+
+static void h8_owner_unlock_pair(H8OwnerRecord* a, H8OwnerRecord* b) {
+  if (a == b) {
+    h8_platform_mutex_unlock(&a->owned_lock);
+    return;
+  }
+  h8_platform_mutex_unlock(&a->owned_lock);
+  h8_platform_mutex_unlock(&b->owned_lock);
+}
+
+static void h8_owner_add_owned_span_locked(H8OwnerRecord* owner, H8Span* span) {
+  span->next_owned = owner->owned_head;
+  owner->owned_head = span;
+  span->next_owned_class = owner->owned_by_class[span->class_id];
+  owner->owned_by_class[span->class_id] = span;
+}
+
+static void h8_owner_remove_orphan_span_locked(H8OwnerRecord* owner, H8Span* span) {
+  H8Span** cur = &owner->orphan_head;
+  while (*cur) {
+    if (*cur == span) {
+      *cur = span->next_orphan;
+      break;
+    }
+    cur = &(*cur)->next_orphan;
+  }
+  cur = &owner->orphan_by_class[span->class_id];
+  while (*cur) {
+    if (*cur == span) {
+      *cur = span->next_orphan_class;
+      break;
+    }
+    cur = &(*cur)->next_orphan_class;
+  }
+  span->next_orphan = NULL;
+  span->next_orphan_class = NULL;
+}
+
+static bool h8_span_quiescent_for_adoption(const H8Span* span) {
+  return atomic_load_explicit(&span->publish_refs, memory_order_acquire) == 0 &&
+         h8_span_pending_quiescent((H8Span*)span) &&
+         atomic_load_explicit(&span->publish_closed, memory_order_acquire) != 0;
+}
+
+static bool h8_span_has_free_slot(const H8Span* span) {
+  uint32_t head = atomic_load_explicit(&((H8Span*)span)->local_hot.local_free_head_word,
+                                       memory_order_acquire);
+  if (head != H8_SLOT_NONE) {
+    return true;
+  }
+  uint32_t bump = atomic_load_explicit(&((H8Span*)span)->local_hot.local_bump_index,
+                                       memory_order_acquire);
+  return bump < span->slot_count;
+}
+
+bool h8_orphan_adoption_dry_run(H8OwnerRecord* adopter, uint32_t class_id) {
+  H8OwnerRecord* orphan = h8_orphan_owner();
+  if (!adopter || adopter == orphan) {
+    return false;
+  }
+
+  H8CtlWord ctl = h8_ctl_unpack(atomic_load_explicit(&adopter->control, memory_order_acquire));
+  if (ctl.state != H8_OWNER_ALIVE || ctl.publish_closed) {
+    H8_DEBUG_INC(adoption_dry_run_target_closed_count);
+    return false;
+  }
+
+  bool saw_span = false;
+  bool saw_candidate = false;
+
+  h8_platform_mutex_lock(&orphan->owned_lock);
+  for (H8Span* span = orphan->orphan_by_class[class_id]; span;
+       span = span->next_orphan_class) {
+    if (!h8_span_has_free_slot(span)) {
+      continue;
+    }
+
+    saw_span = true;
+    H8_DEBUG_INC(adoption_dry_run_scan_count);
+
+    H8OwnerWord word = h8_span_owner_word_load(span);
+    H8SpanState state = (H8SpanState)word.state;
+    if (state == H8_SPAN_OWNED_ACTIVE || state == H8_SPAN_ORPHAN_READY) {
+      saw_candidate = true;
+      H8_DEBUG_INC(adoption_dry_run_candidate_count);
+      if (h8_span_quiescent_for_adoption(span)) {
+        H8_DEBUG_INC(adoption_dry_run_would_adopt_count);
+      } else {
+        H8_DEBUG_INC(adoption_dry_run_block_quiesce_count);
+      }
+      break;
+    }
+
+    H8_DEBUG_INC(adoption_dry_run_block_state_count);
+  }
+  h8_platform_mutex_unlock(&orphan->owned_lock);
+
+  if (!saw_span) {
+    H8_DEBUG_INC(adoption_dry_run_empty_count);
+  }
+
+  return saw_candidate;
+}
+
+H8Span* h8_orphan_adopt_span(H8OwnerRecord* adopter, uint32_t class_id) {
+  H8OwnerRecord* orphan = h8_orphan_owner();
+  if (!adopter || adopter == orphan) {
+    return NULL;
+  }
+  if (!h8_owner_lifecycle_enter(adopter, (uint16_t)adopter->generation)) {
+    H8_DEBUG_INC(adoption_target_closed_count);
+    return NULL;
+  }
+
+  for (;;) {
+    H8Span* candidate = NULL;
+    H8SpanState candidate_state = H8_SPAN_RETIRED;
+
+    h8_platform_mutex_lock(&orphan->owned_lock);
+    for (H8Span* span = orphan->orphan_by_class[class_id]; span;
+         span = span->next_orphan_class) {
+      if (!h8_span_has_free_slot(span)) {
+        H8_DEBUG_INC(adoption_block_quiesce_count);
+        continue;
+      }
+      H8_DEBUG_INC(adoption_scan_count);
+      H8OwnerWord candidate_word = h8_span_owner_word_load(span);
+      candidate_state = (H8SpanState)candidate_word.state;
+      if (candidate_state == H8_SPAN_OWNED_ACTIVE) {
+        H8_DEBUG_INC(adoption_candidate_count);
+        h8_span_mark_orphan_quiescing(span);
+        candidate = span;
+        break;
+      }
+      if (candidate_state == H8_SPAN_ORPHAN_READY) {
+        H8_DEBUG_INC(adoption_candidate_count);
+        candidate = span;
+        break;
+      }
+      if (candidate_state == H8_SPAN_ORPHAN_QUIESCING) {
+        H8_DEBUG_INC(adoption_block_state_count);
+        continue;
+      }
+      if (candidate_state == H8_SPAN_ADOPTING) {
+        H8_DEBUG_INC(adoption_block_state_count);
+        continue;
+      }
+      H8_DEBUG_INC(adoption_block_state_count);
+      candidate = span;
+      break;
+    }
+    h8_platform_mutex_unlock(&orphan->owned_lock);
+
+    if (!candidate) {
+      h8_owner_lifecycle_exit(adopter);
+      return NULL;
+    }
+
+    h8_span_wait_publishers_zero(candidate);
+    h8_collect_owner_pending(orphan);
+    if (h8_span_repair_pending_mask(orphan, candidate)) {
+      h8_collect_owner_pending(orphan);
+    }
+
+    size_t used = h8_used_count_load_adoption_locked(candidate);
+#if defined(H8_ENABLE_DEBUG_STATS)
+    size_t derived = h8_slot_allocated_count_quiescent(candidate);
+    if (derived != used) {
+      H8_DEBUG_INC(local_used_derived_mismatch);
+    }
+#endif
+    if (used == 0) {
+      H8_DEBUG_INC(adoption_empty_count);
+      h8_span_mark_orphan_ready(candidate);
+      atomic_store_explicit(&candidate->publish_closed, 0, memory_order_release);
+      h8_owner_lifecycle_exit(adopter);
+      return NULL;
+    }
+
+    if (candidate_state == H8_SPAN_OWNED_ACTIVE) {
+      if (!h8_span_quiescent_for_adoption(candidate)) {
+        H8_DEBUG_INC(adoption_block_quiesce_count);
+        continue;
+      }
+      h8_span_mark_orphan_ready(candidate);
+    } else if (!h8_span_quiescent_for_adoption(candidate)) {
+      H8_DEBUG_INC(adoption_block_quiesce_count);
+      continue;
+    }
+
+    h8_owner_lock_pair(orphan, adopter);
+    H8OwnerWord current = h8_span_owner_word_load(candidate);
+    if (current.slot != orphan->slot ||
+        current.generation != orphan->generation ||
+        (H8SpanState)current.state != H8_SPAN_ORPHAN_READY ||
+        !h8_span_quiescent_for_adoption(candidate)) {
+      h8_owner_unlock_pair(orphan, adopter);
+      continue;
+    }
+
+    h8_owner_remove_orphan_span_locked(orphan, candidate);
+    current.slot = (uint8_t)adopter->slot;
+    current.generation = (uint16_t)adopter->generation;
+    current.state = H8_SPAN_ADOPTING;
+    current.span_epoch = (uint32_t)(current.span_epoch + 1u);
+    h8_span_owner_word_store(candidate, current, memory_order_release);
+    h8_owner_add_owned_span_locked(adopter, candidate);
+    atomic_store_explicit(&candidate->publish_refs, 0, memory_order_release);
+    current.state = H8_SPAN_OWNED_ACTIVE;
+    h8_span_owner_word_store(candidate, current, memory_order_release);
+    atomic_store_explicit(&candidate->publish_closed, 0, memory_order_release);
+    if (atomic_load_explicit(&h8g.orphan_span_count, memory_order_relaxed) > 0) {
+      atomic_fetch_sub_explicit(&h8g.orphan_span_count, 1, memory_order_relaxed);
+    }
+    H8_DEBUG_INC(adoption_success_count);
+    H8_DEBUG_INC(orphan_handoff_count);
+    H8_DEBUG_INC(handoff_success_count);
+    h8_owner_unlock_pair(orphan, adopter);
+    h8_owner_lifecycle_exit(adopter);
+    return candidate;
+  }
+}

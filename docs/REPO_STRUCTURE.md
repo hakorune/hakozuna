@@ -18,6 +18,9 @@ Use this before adding new benchmark lanes, release assets, or third-party trees
 - Windows benchmark summaries may be published under [`docs/benchmarks/windows`](benchmarks/windows), while private raw assets and third-party recovery trees still stay outside git.
 - Public docs may describe Windows bring-up status, but private benchmark assets and raw local traces must stay outside git.
 - The first-stop platform entry docs are [`linux/README.md`](../linux/README.md), [`mac/README.md`](../mac/README.md), and [`win/README.md`](../win/README.md).
+- `hakozuna-hz9/` is a standalone experimental throughput line. HZ9 behavior
+  code, docs, scripts, tests, and build rules should stay inside that folder;
+  do not add new HZ9 behavior back into `hakozuna-hz8/`.
 
 ## Separation Rules
 
@@ -70,6 +73,8 @@ Recommended split:
 - `win/`: Windows build, run, hook, and bench entrypoints
 - `linux/`: Ubuntu/Linux build and run entrypoints (x86_64 and arm64 lanes)
 - `mac/`: macOS build and run entrypoints
+- `hakozuna-hz9/`: standalone HZ9 experimental source, tests, docs, and bench
+  wrappers
 - allocator core stays shared under [`hakozuna`](../hakozuna) and [`hakozuna-mt`](../hakozuna-mt)
 
 Rules:

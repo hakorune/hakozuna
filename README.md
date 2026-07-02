@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
@@ -27,6 +27,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
   `v2`, `v3`, and `v4`.
 - **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
   is HZ8-v2 / KeepRefill.
+- **HZ9 (hakozuna-hz9)**: standalone experimental throughput line. It keeps
+  HZ8 as the frozen balanced line and develops new HZ9 behavior only under
+  `hakozuna-hz9/`.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
@@ -42,6 +45,7 @@ metadata and ownership models:
 | HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | the active Windows/Linux successor line |
 | HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
 | HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | the current public allocator line |
+| HZ9 | standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | the experimental successor lane under `hakozuna-hz9/` |
 
 In short:
 
@@ -50,6 +54,7 @@ In short:
 - **HZ5 is ownership/policy-first.**
 - **HZ6 is contract-first with selected/default and profile-only lanes.**
 - **HZ8 is the recommended balanced allocator line.**
+- **HZ9 is the separate throughput research line; it is not the HZ8 default.**
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply
 depending on how `free(ptr)` recovers pointer identity and where ownership is

@@ -30,6 +30,21 @@ hakozuna-hz8/h8_remote_micro_release
 hakozuna-hz8/h8_bench_*
 hakozuna-hz8/h8_bench_release_*
 hakozuna-hz8/bench/out/
+
+# HZ9 local build outputs
+hakozuna-hz9/libhakozuna_hz8_preload*.so
+hakozuna-hz9/h8_smoke*
+hakozuna-hz9/h8_hz9_*
+hakozuna-hz9/h8_safety_stress
+hakozuna-hz9/h8_medium_lazy_saturation
+hakozuna-hz9/h8_preload_smoke
+hakozuna-hz9/h8_bench*
+hakozuna-hz9/h8_bench_hz9mediumtlscache
+hakozuna-hz9/h8_bench_release_hz9mediumtlscache
+hakozuna-hz9/h8_remote_micro*
+hakozuna-hz9/bench/out/
+hakozuna-hz9/bench/tmp/
+hakozuna-hz9/bench_results/
 *.o
 *.d
 *.a
