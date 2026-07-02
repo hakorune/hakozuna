@@ -95,6 +95,7 @@ test:
 
 build:
   smoke-hz9segmentlocalcache
+  bench-hz9segmentlocalcache-api
 
 flag:
   H9_SEGMENT_LOCAL_CACHE_L0
@@ -117,8 +118,12 @@ It also includes a TLS-wide release helper for thread/owner-exit scaffolding:
 release_all:
   return touched class mask
   clear all local/allocated/remote bits
-  reset TLS segment state to empty
+reset TLS segment state to empty
 ```
+
+The API microbench is not a promotion gate. It measures the standalone local
+`take/free_allocated` cycle so the segment body can be compared against earlier
+OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 
 ## Segment Model
 
@@ -174,6 +179,7 @@ smoke:
 
 before behavior:
   run pre-substrate recheck
+  record bench-hz9segmentlocalcache-api output
   compare source/code shape to baseline
 ```
 
