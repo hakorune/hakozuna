@@ -192,6 +192,15 @@ handlecheckedtouch mode:
   token body can run without route/class/generation checks; stale-token defense
   is enforced by acquisition/current checks and smoke coverage, not by the local
   reuse loop.
+  token cache body check, class 64K, 5M-iteration R3:
+    tokenbody: about 598-605M ops/s
+    tokencachebody: about 748-949M ops/s
+    tlsledgerbody: about 270-272M ops/s
+    tlsledger: about 234-240M ops/s
+    tlscache: about 126-182M ops/s
+  reading: LOCAL_CACHE-style pop/push is not inherently slow when driven by a
+  prevalidated token. The current ledger/cache variants lose in the surrounding
+  lookup/check/fallback shape, not in the local cached-slot state transition.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -374,6 +383,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   pays enough bookkeeping that it does not recover the fused local body
   tlsledgerbody shows helper splitting is not the main blocker; the ledger/cache
   state shape itself is too heavy for the local hot body
+  tokencachebody shows the next viable behavior shape: acquire/validate once,
+  then run a checkless token-local cached-slot pop/push body until retirement
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body
