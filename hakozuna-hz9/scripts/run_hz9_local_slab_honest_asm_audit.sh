@@ -28,6 +28,8 @@ symbols = [
     ("routeleaf_compact", "h9_lsp_debug_routeleaf_compact_bench"),
     ("routeleaf_trim", "h9_lsp_debug_routeleaf_trim_bench"),
     ("routeleaf_tight", "h9_lsp_debug_routeleaf_tight_bench"),
+    ("public_malloc", "h9_lsp_debug_public_malloc"),
+    ("public_free", "h9_lsp_debug_public_free"),
 ]
 
 def extract(symbol):
@@ -58,7 +60,10 @@ for label, symbol in symbols:
         if any(op in line for op in ("\tmov", "\tand", "\tor"))
         and ("(" in line or "%rsp" in line)
     )
-    verdict = "honest-candidate" if slot_select else "phantom-ceiling"
+    if label == "public_free":
+        verdict = "route-authority-candidate" if route_call or state_stores else "phantom-ceiling"
+    else:
+        verdict = "honest-candidate" if slot_select else "phantom-ceiling"
     if not asm:
         verdict = "missing"
     rows.append((label, symbol, count_insn(asm), slot_select, cold_call,

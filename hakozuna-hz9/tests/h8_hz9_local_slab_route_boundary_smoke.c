@@ -345,6 +345,31 @@ static int check_integrated_entry(void) {
   return 0;
 }
 
+static int check_public_entry(void) {
+  bool owned = false;
+  int stack_miss = 0;
+  void* p = h9_lsp_debug_public_malloc(65536u);
+  if (!p || expect_route(p, H8_ROUTE_VALID, "public exact")) {
+    return 60;
+  }
+  if (expect_route((char*)p + 1, H8_ROUTE_INVALID, "public interior")) {
+    return 61;
+  }
+  if (!h9_lsp_debug_public_free(p, &owned) || !owned ||
+      expect_route(p, H8_ROUTE_INVALID, "public after-free")) {
+    return 62;
+  }
+  if (h9_lsp_debug_public_free(p, &owned) || !owned) {
+    fprintf(stderr, "public double free accepted owned=%d\n", owned ? 1 : 0);
+    return 63;
+  }
+  if (h9_lsp_debug_public_free(&stack_miss, &owned) || owned) {
+    fprintf(stderr, "public miss free owned=%d\n", owned ? 1 : 0);
+    return 64;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -366,6 +391,11 @@ int main(void) {
   if (integrated_rc != 0) {
     h9_lsp_debug_reset();
     return integrated_rc;
+  }
+  int public_rc = check_public_entry();
+  if (public_rc != 0) {
+    h9_lsp_debug_reset();
+    return public_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

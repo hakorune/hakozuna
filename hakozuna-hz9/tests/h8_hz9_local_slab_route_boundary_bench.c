@@ -49,7 +49,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_ROUTE_LEAF_TRIM = 25,
   H9_LSP_BENCH_ROUTE_LEAF_TRIM_NON_LIFO = 26,
   H9_LSP_BENCH_ROUTE_LEAF_TIGHT = 27,
-  H9_LSP_BENCH_ROUTE_LEAF_TIGHT_NON_LIFO = 28
+  H9_LSP_BENCH_ROUTE_LEAF_TIGHT_NON_LIFO = 28,
+  H9_LSP_BENCH_PUBLIC_ENTRY = 29,
+  H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO = 30
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -217,6 +219,7 @@ static const char* env_str(const char* name, const char* fallback) {
 }
 
 #include "h8_hz9_local_slab_route_boundary_workers.inc"
+#include "h8_hz9_local_slab_public_entry_bench.inc"
 
 int main(void) {
   uint32_t class_id = (uint32_t)env_u64("CLASS_ID", 5u);
@@ -276,6 +279,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_ROUTE_LEAF_TIGHT;
   } else if (strcmp(mode, "routeleaftightnonlifo") == 0) {
     bench_mode = H9_LSP_BENCH_ROUTE_LEAF_TIGHT_NON_LIFO;
+  } else if (strcmp(mode, "publicentry") == 0) {
+    bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY;
+  } else if (strcmp(mode, "publicentrynonlifo") == 0) {
+    bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
   } else if (strcmp(mode, "fastleaf") == 0) {
@@ -308,16 +315,14 @@ int main(void) {
                     bench_mode == H9_LSP_BENCH_ROUTE_LEAF_TRIM_NON_LIFO ||
                     bench_mode == H9_LSP_BENCH_ROUTE_LEAF_TIGHT_NON_LIFO;
     double start = now_seconds();
-    bool ok = tight
-                  ? h9_lsp_debug_routeleaf_tight_bench(class_id, iters, touch,
-                                                       non_lifo, &result)
-              : trim
-                  ? h9_lsp_debug_routeleaf_trim_bench(class_id, iters, touch,
-                                                      non_lifo, &result)
-                  : (compact ? h9_lsp_debug_routeleaf_compact_bench(
-                                   class_id, iters, touch, non_lifo, &result)
-                             : h9_lsp_debug_routeleaf_bench(
-                                   class_id, iters, touch, non_lifo, &result));
+    bool ok = tight ? h9_lsp_debug_routeleaf_tight_bench(
+                          class_id, iters, touch, non_lifo, &result)
+              : trim ? h9_lsp_debug_routeleaf_trim_bench(
+                           class_id, iters, touch, non_lifo, &result)
+              : compact ? h9_lsp_debug_routeleaf_compact_bench(
+                              class_id, iters, touch, non_lifo, &result)
+                        : h9_lsp_debug_routeleaf_bench(
+                              class_id, iters, touch, non_lifo, &result);
     if (!ok) {
       fprintf(stderr, "lsp routeleaf bench failed\n");
       return 3;
@@ -340,6 +345,13 @@ int main(void) {
            result.sink);
     h9_lsp_debug_reset();
     return 0;
+  }
+
+  if (bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY ||
+      bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO) {
+    return h9_lsp_run_public_entry_mode(
+        mode, class_id, slot_size, iters, touch,
+        bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO);
   }
 
   if (bench_mode == H9_LSP_BENCH_INLINE_PUBLIC) {

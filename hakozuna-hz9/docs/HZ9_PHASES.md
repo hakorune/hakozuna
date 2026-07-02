@@ -96,6 +96,7 @@ routeleaf read:
 current evidence:
   local ASLR-off gate keeps routeleafcompact as current honest best
   compact median 312.596M, trim median 278.665M, tight median 287.998M
+  PublicEntry-L0 is correct but slow: publicentry median 103.979M ASLR OFF
   phantom ceiling family: lastpublic / integrated / fastleaf / inlinebody
 
 asm audit:

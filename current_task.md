@@ -20,8 +20,8 @@ Current direction:
                 Inline local slab body is fast; route-first public free is the
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
-                Local ASLR-off gate keeps routeleafcompact as honest best.
-                Trim/TightFree are honest but HOLD evidence on this host.
+                PublicEntry-L0 is correct but slow; route authority sync is
+                the current practical residual before preload integration.
                 ASM audit separates DCE phantom ceilings from gates.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
@@ -65,8 +65,8 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
+  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
-  hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 
 Frozen HZ6 reference:
   hakozuna-hz6/docs/current_task.md

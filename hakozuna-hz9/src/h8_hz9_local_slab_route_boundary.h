@@ -97,6 +97,11 @@ bool h9_lsp_debug_routeleaf_trim_bench(
 bool h9_lsp_debug_routeleaf_tight_bench(
     uint32_t class_id, uint64_t iters, bool touch, bool non_lifo,
     H9LspRouteLeafBenchResult* result_out);
+void* h9_lsp_debug_public_malloc(size_t size);
+bool h9_lsp_debug_public_free(void* ptr, bool* owned_out);
+bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
+                                    bool non_lifo,
+                                    H9LspRouteLeafBenchResult* result_out);
 
 #endif
 

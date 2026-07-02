@@ -471,3 +471,156 @@ bool h9_lsp_debug_routeleaf_tight_bench(
   }
   return true;
 }
+
+static _Thread_local H9LspCompactRouteLeafEntry
+    h9_lsp_public_entries[H8_MEDIUM_CLASS_COUNT];
+static _Thread_local uint32_t h9_lsp_public_last_class = UINT32_MAX;
+
+static bool h9_lsp_public_entry_init(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9LspSegment* segment = h9_lsp_create_segment(class_id);
+  if (!segment) {
+    return false;
+  }
+  H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
+  *entry = (H9LspCompactRouteLeafEntry){
+      .authority_segment = segment,
+  };
+  h9_lsp_inline_page_init(&entry->page, (uintptr_t)h9_lsp_slot_ptr(segment, 0u),
+                          segment->slot_size, segment->slot_count);
+  entry->page.class_id = segment->class_id;
+  entry->page.generation = segment->generation;
+  return true;
+}
+
+static bool h9_lsp_public_entry_ready(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  return h9_lsp_public_entries[class_id].authority_segment != NULL ||
+         h9_lsp_public_entry_init(class_id);
+}
+
+static void h9_lsp_public_sync_entry(H9LspCompactRouteLeafEntry* entry) {
+  H9LspSegment* segment = entry ? entry->authority_segment : NULL;
+  if (!segment) {
+    return;
+  }
+  segment->generation = entry->page.generation;
+  segment->free_bits = entry->page.free_bits;
+  segment->alloc_bits = entry->page.alloc_bits;
+  segment->cache_bits = 0u;
+  segment->pending_bits = 0u;
+}
+
+static void h9_lsp_public_sync_all(void) {
+  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    h9_lsp_public_sync_entry(&h9_lsp_public_entries[i]);
+  }
+}
+
+void* h9_lsp_debug_public_malloc(size_t size) {
+  if (!h8_medium_size_supported_fast(size)) {
+    return NULL;
+  }
+  uint32_t class_id = h8_medium_class_for_size_fast(size);
+  if (!h9_lsp_public_entry_ready(class_id)) {
+    return NULL;
+  }
+  H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
+  void* ptr = NULL;
+  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
+    if (!h9_lsp_public_entry_init(class_id)) {
+      return NULL;
+    }
+    entry = &h9_lsp_public_entries[class_id];
+    if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
+      return NULL;
+    }
+  }
+  h9_lsp_public_sync_entry(entry);
+  h9_lsp_public_last_class = class_id;
+  return ptr;
+}
+
+bool h9_lsp_debug_public_free(void* ptr, bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  uint32_t class_id = h9_lsp_public_last_class;
+  if (class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_compact_routeleaf_fast_free(&h9_lsp_public_entries[class_id],
+                                         ptr)) {
+    h9_lsp_public_sync_entry(&h9_lsp_public_entries[class_id]);
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+
+  h9_lsp_public_sync_all();
+  H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
+  if (route.kind == H8_ROUTE_MISS) {
+    return false;
+  }
+  if (owned_out) {
+    *owned_out = true;
+  }
+  if (route.kind != H8_ROUTE_VALID) {
+    return false;
+  }
+  H9LspSegment* segment = (H9LspSegment*)route.segment;
+  uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  if (route.class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_public_entries[route.class_id].authority_segment == segment) {
+    h9_lsp_public_entries[route.class_id].page.alloc_bits &= ~bit;
+    h9_lsp_public_entries[route.class_id].page.free_bits |= bit;
+  }
+  return true;
+}
+
+bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
+                                    bool non_lifo,
+                                    H9LspRouteLeafBenchResult* result_out) {
+  h9_lsp_debug_reset();
+  memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
+  h9_lsp_public_last_class = UINT32_MAX;
+  H9LspRouteLeafBenchResult result = {0};
+  for (uint64_t i = 0; i < iters; ++i) {
+    void* a = h9_lsp_debug_public_malloc(size);
+    if (!a) {
+      return false;
+    }
+    if (touch) {
+      volatile unsigned char* p = (volatile unsigned char*)a;
+      p[0] = (unsigned char)i;
+      p[size - 1u] = (unsigned char)(i >> 8);
+    }
+    if (non_lifo) {
+      void* b = h9_lsp_debug_public_malloc(size);
+      bool owned_a = false;
+      bool owned_b = false;
+      if (!b || !h9_lsp_debug_public_free(a, &owned_a) ||
+          !h9_lsp_debug_public_free(b, &owned_b) || !owned_a || !owned_b) {
+        return false;
+      }
+      result.sink ^= (uintptr_t)a ^ (uintptr_t)b;
+      result.ok += 2u;
+    } else {
+      bool owned = false;
+      if (!h9_lsp_debug_public_free(a, &owned) || !owned) {
+        return false;
+      }
+      result.sink ^= (uintptr_t)a;
+      result.ok++;
+    }
+  }
+  if (result_out) {
+    *result_out = result;
+  }
+  return true;
+}
