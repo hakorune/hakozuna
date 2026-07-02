@@ -76,6 +76,9 @@ make -C hakozuna-hz9 bench-hz9segmententry
   MODE=tlsroutebody,
   MODE=tlsrouteevery, MODE=tlsroute64body, MODE=tlscache, MODE=tlsledger,
   or MODE=tlsledgerbody
+
+RUNS=3 ITERS=3000000 hakozuna-hz9/scripts/run_hz9_segment_entry_handle_probe.sh
+  Focused SegmentEntry acquired-handle probe across all medium classes
 ```
 
 Active-run magazine evidence tests are still available as historical L0

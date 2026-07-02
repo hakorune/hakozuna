@@ -148,6 +148,13 @@ handlecheckedtouch mode:
   R1 class sweep, 3M iterations:
     handlecheckedtouch touch=1: about 494-564M ops/s
     tlscheckedtouch touch=1: about 410-416M ops/s
+  focused R3 sweep:
+    command: RUNS=3 ITERS=3000000
+             scripts/run_hz9_segment_entry_handle_probe.sh
+    handlecheckedtouch: about 521-572M ops/s
+    tlscheckedtouch: about 394-422M ops/s
+    tlsepochbody: about 349-360M ops/s
+    tlsroute64body: about 284-290M ops/s
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -321,6 +328,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
     acquisition validates route/owner/epoch
     local reuse receives a stable segment handle
     release/retire reattaches public routing authority
+  run_hz9_segment_entry_handle_probe.sh is the reproducible gate for this
+  decision; keep future handle-bound behavior candidates compared against it
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push
