@@ -31,9 +31,6 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
     *owned_out = false;
   }
   H8ThreadCtx* ctx = h8_tls_ctx;
-  if (h9_owner_page_try_free(ctx, ptr, owned_out)) {
-    return true;
-  }
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)
   if (h8_medium_try_cached_local_free(ctx, ptr, owned_out)) {
     return true;
@@ -44,6 +41,9 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
 
   H8_DEBUG_INC(medium_free_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);
+  if (!run && h9_owner_page_try_free(ctx, ptr, owned_out)) {
+    return true;
+  }
   if (run) {
     uint64_t owner_word =
         atomic_load_explicit(&run->owner_word, memory_order_acquire);
