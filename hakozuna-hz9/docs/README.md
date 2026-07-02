@@ -31,6 +31,9 @@ HZ9_STANDALONE_CLOSURE.md:
 HZ9_NEXT_SUBSTRATE.md:
   active freeze boundary and requirements for the next local substrate
 
+HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md:
+  post owner-page closure, closed lanes, and next-substrate requirements
+
 HZ9_FRESH_LOCAL_PAGE_SUBSTRATE_L0.md:
   post-SlabPage design-prep box for entry/integrated proof results and the
   next page substrate
@@ -63,11 +66,12 @@ LocalArena:
   collapse on medium_r50/main_r90
 
 next:
-  use HZ9_OWNER_LOCAL_PAGE_POOL_L0.md for the active owner-page lane
+  use HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md for the current gate
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
-  scaffold/layout/code-shape proof is complete enough for local development
-  next implementation step is owner-page local allocation pop
+  owner-page PureLocal L1 is implemented and held as profile/evidence
+  no active behavior box is selected until the next substrate avoids both
+  remote admission cost and local owner-page overhead
   require local/main/small no-regression before any behavior promotion
 ```
 

@@ -133,6 +133,9 @@ Candidate shape:
   purpose:
     consolidate owner-page HOLD evidence and identify whether the next box is
     a fresh local page/cache design or a smaller source-shape cleanup
+
+SSOT:
+  docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 ```
 
 ## Active Constraints
@@ -267,7 +270,7 @@ hakozuna-hz9/scripts/run_hz9_substrate_mechanism_probe.sh
 TARGET=remoteactive hakozuna-hz9/scripts/run_hz9_local_entry_cost_probe.sh
 ```
 
-## Closed Behavior Candidate
+## Closed TLS Behavior Candidate
 
 ```text
 HZ9MediumTLSCacheRemoteClassAdmission-L1:
@@ -340,10 +343,14 @@ Do not keep tuning TLS object-cache admission around HZ8 medium runs.
 The next HZ9 substrate must avoid the HZ8 medium-run local fixed cost itself.
 ```
 
-## Next Implementation Box
+## Archived SlabPage Combination Box
 
 ```text
 HZ9SlabLocalFastCombination-L1:
+  status:
+    closed as profile/evidence
+    not a current implementation box
+
   no new substrate body yet
   wire the existing SlabPage local/remote split parts into one target
 
@@ -401,7 +408,7 @@ read:
   entry/page fixed cost.
 ```
 
-Next narrow follow-up:
+Closed narrow follow-up:
 
 ```text
 HZ9SlabLocalFastAdaptiveHot-L1:
