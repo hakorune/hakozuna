@@ -86,6 +86,9 @@ profile gate:
   purpose:
     collect local/profile evidence without mixing it with broad default
     promotion gates
+  build:
+    builds only baseline, ownerpage_ownerfast_bits, and staticlocal_shadow
+    then calls the common candidate sampler with build skipping
   default rows:
     fixed64_local0, fixed48_local0, medium_local0, main_local0, guard_local0
   default variants:

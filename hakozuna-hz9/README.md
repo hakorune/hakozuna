@@ -135,6 +135,10 @@ RUNS=1 hakozuna-hz9/scripts/run_hz9_local_entry_probe.sh
 RUNS_READINESS=5 hakozuna-hz9/scripts/run_hz9_next_substrate_probe.sh
 ```
 
+The profile-local gate builds only its required release binaries, then reuses
+the common candidate-gate sampler with build skipping. Use the common candidate
+gate directly when comparing broad/mixed default candidates.
+
 `hz9-standalone-check` is a source-shape audit. It checks for symlinks,
 accidental `hakozuna-hz8` path references, executable bits on shell scripts,
 and ignored local build products. It does not replace the smoke/build commands

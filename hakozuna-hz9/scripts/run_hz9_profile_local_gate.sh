@@ -12,6 +12,12 @@ export ITERS="${ITERS:-60000}"
 export ROWS="${ROWS:-fixed64_local0,fixed48_local0,medium_local0,main_local0,guard_local0}"
 export VARIANTS="${VARIANTS:-baseline,ownerpage_ownerfast_bits,staticlocal_shadow}"
 
+make -C "${ROOT}" \
+  bench-release \
+  bench-release-hz9ownerpagepool-ownerfast-bits \
+  bench-release-hz9staticlocalpage-shadow >/dev/null
+
+export HZ9_CANDIDATE_SKIP_BUILD=1
 "${ROOT}/scripts/run_hz9_candidate_gate.sh" "${STAMP}"
 
 {
