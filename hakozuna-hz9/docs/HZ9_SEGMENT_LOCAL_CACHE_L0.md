@@ -263,6 +263,46 @@ before behavior:
   compare source/code shape to baseline
 ```
 
+## Current Measurement
+
+```text
+run:
+  20260703T_segment_api_sweep_bound_addr
+  ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
+
+bits mode:
+  class0 342.8M ops/s
+  class1 350.1M ops/s
+  class2 380.8M ops/s
+  class3 368.1M ops/s
+  class4 366.7M ops/s
+  class5 359.1M ops/s
+
+bound_addr mode:
+  class0 124.8M ops/s
+  class1 125.2M ops/s
+  class2 131.1M ops/s
+  class3 125.6M ops/s
+  class4 132.2M ops/s
+  class5 132.7M ops/s
+```
+
+Interpretation:
+
+```text
+bits body:
+  still cheap enough to justify keeping SegmentLocalCache as the active
+  substrate lane
+
+bound_addr proof:
+  carries route/lifecycle overhead and lands around 34-37% of bits mode
+  useful as a boundary proof, not yet a final hot-path shape
+
+next optimization target:
+  avoid calling full debug route helpers on the eventual hot local hit path
+  keep exact slot address generation but inline the slot decode/state body
+```
+
 ## Decision Boundary
 
 ```text
