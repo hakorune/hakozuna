@@ -43,7 +43,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_LAST_ENTRY_USABLE = 19,
   H9_LSP_BENCH_LAST_ENTRY_REALLOC = 20,
   H9_LSP_BENCH_ROUTE_LEAF = 21,
-  H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO = 22
+  H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO = 22,
+  H9_LSP_BENCH_ROUTE_LEAF_COMPACT = 23,
+  H9_LSP_BENCH_ROUTE_LEAF_COMPACT_NON_LIFO = 24
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -258,6 +260,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_ROUTE_LEAF;
   } else if (strcmp(mode, "routeleafnonlifo") == 0) {
     bench_mode = H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO;
+  } else if (strcmp(mode, "routeleafcompact") == 0) {
+    bench_mode = H9_LSP_BENCH_ROUTE_LEAF_COMPACT;
+  } else if (strcmp(mode, "routeleafcompactnonlifo") == 0) {
+    bench_mode = H9_LSP_BENCH_ROUTE_LEAF_COMPACT_NON_LIFO;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
   } else if (strcmp(mode, "fastleaf") == 0) {
@@ -271,12 +277,20 @@ int main(void) {
   uint32_t slot_size = spec->slot_size;
 
   if (bench_mode == H9_LSP_BENCH_ROUTE_LEAF ||
-      bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO) {
+      bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO ||
+      bench_mode == H9_LSP_BENCH_ROUTE_LEAF_COMPACT ||
+      bench_mode == H9_LSP_BENCH_ROUTE_LEAF_COMPACT_NON_LIFO) {
     H9LspRouteLeafBenchResult result = {0};
-    bool non_lifo = bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO;
+    bool compact = bench_mode == H9_LSP_BENCH_ROUTE_LEAF_COMPACT ||
+                   bench_mode == H9_LSP_BENCH_ROUTE_LEAF_COMPACT_NON_LIFO;
+    bool non_lifo = bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO ||
+                    bench_mode == H9_LSP_BENCH_ROUTE_LEAF_COMPACT_NON_LIFO;
     double start = now_seconds();
-    if (!h9_lsp_debug_routeleaf_bench(class_id, iters, touch, non_lifo,
-                                      &result)) {
+    bool ok = compact ? h9_lsp_debug_routeleaf_compact_bench(
+                            class_id, iters, touch, non_lifo, &result)
+                      : h9_lsp_debug_routeleaf_bench(class_id, iters, touch,
+                                                     non_lifo, &result);
+    if (!ok) {
       fprintf(stderr, "lsp routeleaf bench failed\n");
       return 3;
     }

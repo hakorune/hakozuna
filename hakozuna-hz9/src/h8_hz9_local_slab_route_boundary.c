@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_hz9_local_slab_inline_body.h"
 #include "h8_hz9_local_slab_route_boundary.h"
 
 #if defined(H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0)

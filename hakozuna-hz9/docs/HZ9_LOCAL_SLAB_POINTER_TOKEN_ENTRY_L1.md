@@ -494,6 +494,67 @@ read:
     directly on the hot local body
 ```
 
+## Compact RouteLeaf Probe
+
+```text
+box:
+  HZ9CompactRouteLeafProbe-L1
+
+shape:
+  hot path:
+    H9LspInlinePage bits embedded in the entry
+    last-token exact free checks entry-local state
+
+  cold path:
+    authority segment pointer lives at the entry tail
+    cold fallback syncs entry-local bits into the routeable segment before
+    direct-owned route classification
+
+result:
+  routeleafcompact CLASS_ID=5 ITERS=30000000 TOUCH=1 R3:
+    314.142M
+    302.418M
+    334.129M
+
+  routeleafcompactnonlifo CLASS_ID=5 ITERS=30000000 TOUCH=1 R3:
+    200.751M
+    202.339M
+    203.968M
+    route_valid = 30000000
+    ptr_fast = 30000000
+    ptr_fallback = 30000000
+    state_mismatch = 0
+
+  routeleafcompact CLASS_ID=5 ITERS=100000000 TOUCH=0:
+    330.798M ops/s
+
+  routeleafcompact CLASS_ID=5 ITERS=100000000 TOUCH=1:
+    248.459M ops/s
+
+comparison:
+  routeleaf segment-backed TOUCH=1 in the same build:
+    218.846M ops/s
+
+  inlinebody TOUCH=0:
+    412.369M ops/s
+
+  knownslot / allocslotonly TOUCH=0:
+    about 97M / 98M ops/s
+
+read:
+  entry-local bits are better than segment-backed mutable bits, but they do
+  not restore the lastpublic / fastleaf ceiling.
+
+  disassembly shows fastleaf/lastpublic can collapse to a same-pointer touch
+  loop in LIFO mode. Treat 800M+ as a ceiling artifact, not as the product
+  state-mutation target.
+
+  next realistic target:
+    beat segment-backed routeleaf
+    approach inlinebody with real bit mutation
+    keep cold route out of Layer0
+```
+
 Expected range:
 
 ```text
@@ -533,6 +594,10 @@ MODE=lastrealloc CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=routeleaf CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=routeleafnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleafcompact CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleafcompactnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

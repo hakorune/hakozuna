@@ -87,9 +87,11 @@ next probe:
   measure LIFO ceiling and intentional non-LIFO route VALID fallback
 
 routeleaf read:
-  cold route edge is correct, but routeable segment-backed LIFO is only
-  about 248M..279M ops/s
-  keep as HOLD evidence; the next hot body needs compact entry-local state
+  cold route edge is correct, but segment-backed hot state is only about
+  218M..279M ops/s
+  compact entry-local bits improve this to 302M..334M touch=1 R3
+  lastpublic / fastleaf 800M+ is state-elided ceiling evidence, not the
+  product-state mutation target
 
 current evidence:
   lastpublic R3: 837M..876M ops/s
