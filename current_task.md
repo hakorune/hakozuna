@@ -22,6 +22,7 @@ Current direction:
                 exact free may skip route, but route fallback stays authority.
                 LastTokenIntegratedEntry-L1 clears local gate; isolated
                 integrated/fastleaf workers keep the high local ceiling.
+                Phase 3 is active; Phase 2 substrate lanes are evidence-only.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
@@ -53,7 +54,7 @@ HZ8 active orientation:
 
 HZ9 experimental orientation:
   hakozuna-hz9/README.md
-  hakozuna-hz9/docs/HZ9_SUBSTRATE_COST_MATRIX_L0.md
+  hakozuna-hz9/docs/HZ9_PHASES.md
   hakozuna-hz9/docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_PHASE_ADMISSION_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md

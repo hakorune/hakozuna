@@ -12,6 +12,10 @@ HZ9_MEDIUM_TLS_OBJECT_CACHE_L0.md:
 HZ9_CURRENT_STATUS.md:
   active lane, next implementation order, and verification commands
 
+HZ9_PHASES.md:
+  compact phase boundary: HZ8 freeze, HZ9 standalone closure, closed substrate
+  exploration, active pointer-token public-entry phase, and future integration
+
 HZ9_SEGMENT_LOCAL_CACHE_L0.md:
   current design-prep lane, standalone segment metadata scaffold, remote
   drain/release boundaries, and local body API sweep
@@ -77,6 +81,10 @@ HZ9_LANE_HISTORY.md:
 Current lane:
 
 ```text
+phase:
+  Phase 3 Pointer-Token Public Entry is active
+  Phase 2 substrate exploration is closed/evidence-only
+
 TLS object cache:
   HOLD evidence
 
@@ -92,6 +100,7 @@ LocalArena:
 
 next:
   HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1 is the current design box
+  HZ9_PHASES.md is the first read for phase boundaries
   stop adding fused-only cache probes unless they answer a public-entry
   question
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are

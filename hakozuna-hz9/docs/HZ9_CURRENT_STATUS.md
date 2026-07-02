@@ -37,14 +37,32 @@ and remote medium rows.
 ## Active Box
 
 ```text
-HZ9SegmentLocalCache-L0
+HZ9LocalSlabPointerTokenEntry-L1
 
 status:
   HZ8 remains the frozen balanced default
   HZ9 remains a standalone throughput research tree
   OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
-  StaticLocalPage is profile/local evidence, not mixed default behavior
-  current work starts the next substrate design-prep with no behavior change
+  Phase 2 substrate lanes are closed/evidence-only
+  Phase 3 Pointer-Token Public Entry is active
+
+current design:
+  docs/HZ9_PHASES.md
+  docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
+  same-thread exact free may use pointer-token positive proof before route
+  route remains canonical fallback authority for miss / foreign / invalid
+  integrated/fastleaf workers are isolated to avoid harness artifacts
+
+phase gate:
+  hot loops live in per-mode noinline workers
+  Layer0 stays pure leaf / entry-local
+  Layer1/Layer2 route and ledger fallback stay out of the hot loop
+```
+
+## Archived Segment Scaffold Read
+
+```text
+HZ9SegmentLocalCache-L0
 
 source-shape gate:
   RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh

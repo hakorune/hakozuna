@@ -34,6 +34,8 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
+  Phase 3 Pointer-Token Public Entry is active
+  Phase 2 substrate exploration is closed/evidence-only
   HZ9LocalSlabPointerTokenEntry-L1 is the current design box
   SegmentEntry and inlinebody proved fast local slab bodies, but route-first
   public free remains the blocker
@@ -46,6 +48,7 @@ current direction:
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
+  read docs/HZ9_PHASES.md before opening another lane
   stop treating fused-only microbenchmarks as behavior evidence
   measure whether pointer-token entry can reconnect the inline body to a
   public-shaped split malloc/free path
