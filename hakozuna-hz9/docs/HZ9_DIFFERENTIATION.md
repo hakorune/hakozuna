@@ -82,3 +82,24 @@ full safety zero gates
 Linux and Windows story
 cross-allocator matrix evidence
 ```
+
+## Current HZ9 Design Constraint
+
+The SegmentEntry evidence narrows the next viable design shape:
+
+```text
+works as a proof:
+  fused TLS local body
+  routeable segment pages
+  cached page handle at local call site
+
+does not work as the main shape:
+  TLS object pop + public route/free push
+  one-entry allocation ledger + separate free body
+  adding more route shortcuts inside a split alloc/free path
+```
+
+Therefore HZ9 should not become a thin cache bolted onto HZ8's medium free
+path. The next behavior candidate must keep the local body fused, then reattach
+public route/free and remote authority at a boundary that does not run on every
+local reuse.

@@ -34,16 +34,16 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9SegmentLocalCache-L0 is the current design-prep box
-  segment-backed local slots are the next substrate hypothesis
+  HZ9SegmentEntry-L1 is the current design-prep box
+  segment-backed routeable slots are the next substrate hypothesis
+  current evidence favors a fused TLS local body, not a split alloc/free cache
   StaticLocalPage is held as profile/local evidence
   OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  keep profile/local evidence separate from mixed default gates
-  continue only with a substrate that survives frequent remote traffic or is
-  explicitly profile-local
+  preserve the fused local body while reattaching public route/free boundaries
+  avoid TLS-cache pop plus route-push shapes; they collapse to route-free speed
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -113,6 +113,11 @@ hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 make -C hakozuna-hz9 smoke-hz9segmentlocalcache
 ITERS=10000000 make -C hakozuna-hz9 bench-hz9segmentlocalcache-api
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
+
+# current routeable segment entry scaffold
+make -C hakozuna-hz9 smoke-hz9segmententry
+MODE=tlsledger CLASS_ID=5 ITERS=5000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9segmententry
 
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
