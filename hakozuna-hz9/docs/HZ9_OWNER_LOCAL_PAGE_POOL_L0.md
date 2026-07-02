@@ -20,6 +20,11 @@ status doc:
 implementation macro:
   H9_OWNER_LOCAL_PAGE_POOL_PURE_LOCAL_L1
 
+source split:
+  src/h8_hz9_owner_page_pool.c
+  src/h8_hz9_owner_page_bits.inc
+  src/h8_hz9_owner_page_shadow.c
+
 current targets:
   smoke-hz9ownerpagepool-route
   smoke-hz9ownerpagepool-api

@@ -149,6 +149,11 @@ page skeleton:
   page released at thread flush when all slots are free
   live detached pages remain globally routed until exact frees arrive
 
+source hygiene:
+  owner-page shadow counters live in src/h8_hz9_owner_page_shadow.c
+  owner-page local bit helpers live in src/h8_hz9_owner_page_bits.inc
+  src/h8_hz9_owner_page_pool.c is kept below the active 800-line limit
+
 purelocal behavior:
   try_alloc pops local_free_bits only while page mode is PURE_LOCAL
   try_free validates exact owner-page pointer through global route
