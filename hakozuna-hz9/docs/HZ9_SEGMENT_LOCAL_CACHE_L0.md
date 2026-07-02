@@ -159,8 +159,9 @@ capacity check:
   payload_bytes + slack_bytes == run_size
 ```
 
-The first route-proof scaffold is offset-only and still has no allocator
-payload:
+The first route-proof scaffold is debug-only and still has no allocator
+payload. It can prove both class-relative offsets and a bound fake segment
+base:
 
 ```text
 route_offset(class, offset):
@@ -169,8 +170,17 @@ route_offset(class, offset):
   tail slack inside run -> INVALID
   offset outside run -> MISS
 
+bind_base(class, base):
+  records a local segment base for debug route proof only
+  requires empty LOCAL state
+
+route_addr(class, addr):
+  unbound or outside run -> MISS
+  LOCAL exact slot start -> VALID
+  LOCAL interior/tail slack -> INVALID
+  REMOTE_SEEN/RETIRED in-range -> INVALID
+
 not yet:
-  real segment base registration
   pointer route integration
   malloc/free entry wiring
 ```

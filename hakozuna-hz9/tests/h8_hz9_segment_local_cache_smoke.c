@@ -189,6 +189,77 @@ static int check_route_offsets(void) {
   return 0;
 }
 
+static int check_bound_route(void) {
+  const uint32_t class_id = 4u;
+  const uintptr_t base = (uintptr_t)0x10000000u;
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  size_t payload_bytes = 0u;
+  size_t slack_bytes = 0u;
+  h9_segment_local_cache_debug_reset();
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count) ||
+      !h9_segment_local_cache_debug_class_capacity(
+          class_id, &payload_bytes, &slack_bytes)) {
+    fprintf(stderr, "segment bound route geometry failed\n");
+    return 60;
+  }
+  if (h9_segment_local_cache_debug_route_addr(class_id, base) !=
+          H8_ROUTE_MISS ||
+      h9_segment_local_cache_debug_bind_base(class_id, 0u) ||
+      h9_segment_local_cache_debug_bind_base(H8_MEDIUM_CLASS_COUNT, base) ||
+      !h9_segment_local_cache_debug_bind_base(class_id, base)) {
+    fprintf(stderr, "segment bind precondition failed\n");
+    return 61;
+  }
+  if (h9_segment_local_cache_debug_route_addr(class_id, base) !=
+          H8_ROUTE_VALID ||
+      h9_segment_local_cache_debug_route_addr(class_id, base + 1u) !=
+          H8_ROUTE_INVALID ||
+      h9_segment_local_cache_debug_route_addr(class_id, base - 1u) !=
+          H8_ROUTE_MISS ||
+      h9_segment_local_cache_debug_route_addr(class_id, base + run_size) !=
+          H8_ROUTE_MISS) {
+    fprintf(stderr, "segment bound route base boundary failed\n");
+    return 62;
+  }
+  if (slot_count > 1u &&
+      h9_segment_local_cache_debug_route_addr(class_id, base + slot_size) !=
+          H8_ROUTE_VALID) {
+    fprintf(stderr, "segment bound route slot1 failed\n");
+    return 63;
+  }
+  if (slack_bytes != 0u &&
+      h9_segment_local_cache_debug_route_addr(class_id,
+                                              base + payload_bytes) !=
+          H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment bound route slack failed\n");
+    return 64;
+  }
+  if (!h9_segment_local_cache_debug_remote_mark(class_id, 0u) ||
+      h9_segment_local_cache_debug_route_addr(class_id, base) !=
+          H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment remote route invalidation failed\n");
+    return 65;
+  }
+  uint64_t drained = 0u;
+  if (!h9_segment_local_cache_debug_drain_remote(class_id, &drained) ||
+      drained != UINT64_C(1) ||
+      h9_segment_local_cache_debug_route_addr(class_id, base) !=
+          H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment retired route invalidation failed\n");
+    return 66;
+  }
+  h9_segment_local_cache_debug_release_all();
+  if (h9_segment_local_cache_debug_route_addr(class_id, base) !=
+      H8_ROUTE_MISS) {
+    fprintf(stderr, "segment release route miss failed\n");
+    return 67;
+  }
+  return 0;
+}
+
 int main(void) {
   h8_init();
   int rc = check_class_geometry();
@@ -196,6 +267,10 @@ int main(void) {
     return rc;
   }
   rc = check_route_offsets();
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_bound_route();
   if (rc != 0) {
     return rc;
   }

@@ -30,6 +30,10 @@ bool h9_segment_local_cache_debug_class_capacity(uint32_t class_id,
                                                  size_t* slack_bytes_out);
 H8RouteKind h9_segment_local_cache_debug_route_offset(uint32_t class_id,
                                                       size_t offset);
+bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
+                                            uintptr_t base_addr);
+H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
+                                                    uintptr_t addr);
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id);
 uint64_t h9_segment_local_cache_debug_free_bits(uint32_t class_id);
 uint64_t h9_segment_local_cache_debug_alloc_bits(uint32_t class_id);

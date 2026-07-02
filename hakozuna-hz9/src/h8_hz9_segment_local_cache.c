@@ -11,6 +11,7 @@ typedef enum H9SegmentState {
 } H9SegmentState;
 
 typedef struct H9SegmentLocalClass {
+  uintptr_t base_addr;
   uint64_t local_free_bits;
   uint64_t local_alloc_bits;
   uint64_t remote_pending_bits;
@@ -218,6 +219,51 @@ H8RouteKind h9_segment_local_cache_debug_route_offset(uint32_t class_id,
     return H8_ROUTE_INVALID;
   }
   return H8_ROUTE_VALID;
+}
+
+bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
+                                            uintptr_t base_addr) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (base_addr == 0u ||
+      !h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count) ||
+      base_addr > UINTPTR_MAX - (uintptr_t)run_size) {
+    return false;
+  }
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->state != H9_SEGMENT_LOCAL ||
+      cls->local_free_bits != 0u || cls->local_alloc_bits != 0u ||
+      cls->remote_pending_bits != 0u) {
+    return false;
+  }
+  cls->base_addr = base_addr;
+  h9_segment_tls.touched_class_bits |= UINT64_C(1) << class_id;
+  return true;
+}
+
+H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
+                                                    uintptr_t addr) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return H8_ROUTE_MISS;
+  }
+  H9SegmentLocalClass* cls = h9_segment_class(class_id);
+  if (!cls || cls->base_addr == 0u || addr < cls->base_addr) {
+    return H8_ROUTE_MISS;
+  }
+  uintptr_t offset = addr - cls->base_addr;
+  if (offset >= (uintptr_t)run_size) {
+    return H8_ROUTE_MISS;
+  }
+  if (cls->state != H9_SEGMENT_LOCAL) {
+    return H8_ROUTE_INVALID;
+  }
+  return h9_segment_local_cache_debug_route_offset(class_id, (size_t)offset);
 }
 
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {
