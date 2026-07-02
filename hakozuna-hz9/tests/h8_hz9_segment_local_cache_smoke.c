@@ -63,20 +63,29 @@ static int check_remote_transition(uint32_t class_id) {
     fprintf(stderr, "segment accepted operation after REMOTE_SEEN\n");
     return 12;
   }
-  uint64_t drained = 0u;
-  if (!h9_segment_local_cache_debug_drain_remote(class_id, &drained) ||
-      drained != UINT64_C(1) ||
-      h9_segment_local_cache_debug_state(class_id) != 2u ||
-      h9_segment_local_cache_debug_remote_bits(class_id) != 0u ||
-      h9_segment_local_cache_debug_put(class_id, 0u)) {
-    fprintf(stderr, "segment remote drain state mismatch\n");
+  if (!h9_segment_local_cache_debug_remote_mark(class_id, 1u)) {
+    fprintf(stderr, "segment rejected second remote pending slot\n");
     return 13;
   }
+  uint64_t drained = 0u;
+  if (!h9_segment_local_cache_debug_drain_remote(class_id, &drained) ||
+      drained != UINT64_C(3) ||
+      h9_segment_local_cache_debug_state(class_id) != 2u ||
+      h9_segment_local_cache_debug_remote_bits(class_id) != 0u ||
+      h9_segment_local_cache_debug_drain_remote(class_id, NULL) ||
+      h9_segment_local_cache_debug_put(class_id, 0u)) {
+    fprintf(stderr, "segment remote drain state mismatch\n");
+    return 14;
+  }
   h9_segment_local_cache_debug_reset();
+  if (h9_segment_local_cache_debug_drain_remote(class_id, NULL)) {
+    fprintf(stderr, "segment drained LOCAL state\n");
+    return 15;
+  }
   if (!h9_segment_local_cache_debug_retire(class_id) ||
       h9_segment_local_cache_debug_state(class_id) != 2u) {
     fprintf(stderr, "segment direct retire state mismatch\n");
-    return 14;
+    return 16;
   }
   return 0;
 }

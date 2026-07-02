@@ -129,6 +129,7 @@ local free:
 remote free:
   mark remote_pending_bits
   move segment out of LOCAL
+  additional remote slots may accumulate while REMOTE_SEEN
 
 owner drain:
   consume remote_pending_bits
@@ -151,7 +152,9 @@ smoke:
   put/take/free deterministic
   duplicate local free rejected
   remote mark moves segment out of LOCAL
+  second remote mark can accumulate pending bits
   owner drain consumes remote bits and retires the segment
+  drain is rejected from LOCAL or already-retired states
   local allocation from REMOTE_SEEN rejected
   retire clears local eligibility
 
