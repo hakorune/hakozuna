@@ -94,14 +94,28 @@ fused body, touch=0:
   about 349-374M ops/s
 ```
 
+After moving bench mode selection out of the inner loop, the fused body is
+confirmed as the useful local proof:
+
+```text
+fused body:
+  touch=1: about 522-628M ops/s
+  touch=0: about 553-614M ops/s
+
+active-fast mode:
+  does not beat fused consistently
+  class sweep showed about 352-617M ops/s with a 24K touch=1 outlier
+```
+
 Interpretation:
 
 ```text
 global routeable SegmentEntry is safe enough to benchmark, but not yet at
 TLS-only SegmentLocalCache fused speed.
 
-The next optimization target is the global routeable fused body shape:
+The next optimization target is not an active-page lookup shortcut. The useful
+substrate remains the fused known-slot body:
   keep exact routeable ownership
-  reduce active-page/class checks on local hit
   keep public free route separate
+  avoid adding active-fast branches unless a later bench proves a stable win
 ```

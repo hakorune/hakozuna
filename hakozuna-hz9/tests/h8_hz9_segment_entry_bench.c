@@ -10,6 +10,12 @@
 #error "segment entry bench requires H9_SEGMENT_ENTRY_L1"
 #endif
 
+typedef enum H9SegmentEntryBenchMode {
+  H9_SEGMENT_ENTRY_BENCH_ROUTE = 0,
+  H9_SEGMENT_ENTRY_BENCH_FUSED = 1,
+  H9_SEGMENT_ENTRY_BENCH_FAST = 2
+} H9SegmentEntryBenchMode;
+
 static double now_seconds(void) {
   struct timespec ts;
   clock_gettime(CLOCK_MONOTONIC, &ts);
@@ -36,6 +42,12 @@ int main(void) {
   uint64_t iters = env_u64("ITERS", 10000000u);
   bool touch = env_u64("TOUCH", 1u) != 0u;
   const char* mode = env_str("MODE", "route");
+  H9SegmentEntryBenchMode bench_mode = H9_SEGMENT_ENTRY_BENCH_ROUTE;
+  if (strcmp(mode, "fused") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_FUSED;
+  } else if (strcmp(mode, "fast") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_FAST;
+  }
 
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
@@ -55,7 +67,9 @@ int main(void) {
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (strcmp(mode, "fused") == 0) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FAST) {
+      success = h9_segment_entry_debug_cycle_active_fast(class_id, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FUSED) {
       success = h9_segment_entry_debug_cycle_fused(class_id, &ptr);
     } else {
       bool owned = false;
@@ -67,7 +81,7 @@ int main(void) {
       }
       success = success && h9_segment_entry_debug_free(ptr, &owned) && owned;
     }
-    if (success && touch && strcmp(mode, "fused") == 0) {
+    if (success && touch && bench_mode != H9_SEGMENT_ENTRY_BENCH_ROUTE) {
       volatile unsigned char* p = (volatile unsigned char*)ptr;
       p[0] = (unsigned char)i;
       p[slot_size - 1u] = (unsigned char)(i >> 8);

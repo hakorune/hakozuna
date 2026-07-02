@@ -184,6 +184,31 @@ bool h9_segment_entry_debug_cycle_fused(uint32_t class_id, void** ptr_out) {
   return true;
 }
 
+bool h9_segment_entry_debug_cycle_active_fast(uint32_t class_id,
+                                              void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  uint32_t page_id = h9_segment_entry_active[class_id];
+  H9SegmentEntryPage* page =
+      page_id < h9_segment_entry_page_count ? &h9_segment_entry_pages[page_id]
+                                            : NULL;
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    return h9_segment_entry_debug_cycle_fused(class_id, ptr_out);
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(page->free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  page->free_bits &= ~bit;
+  page->alloc_bits |= bit;
+  if (ptr_out) {
+    *ptr_out = (void*)((uintptr_t)page->base +
+                       (uintptr_t)slot * (uintptr_t)page->slot_size);
+  }
+  page->alloc_bits &= ~bit;
+  page->free_bits |= bit;
+  return true;
+}
+
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
