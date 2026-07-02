@@ -35,6 +35,28 @@ not implemented:
   default promotion
 ```
 
+## Source Layout
+
+```text
+h8_hz9_segment_entry.c:
+  core routeable page scaffold
+  exact pointer route/free
+  fused and checked page bodies
+
+h8_hz9_segment_entry_cache.c:
+  TLS cache / ledger debug bodies
+  one-entry cache state experiments
+  ledger-body attribution
+
+h8_hz9_segment_entry_internal.h:
+  private shared page state
+  internal helper declarations only
+```
+
+The split is behavior-preserving. Its purpose is to keep the active
+SegmentEntry source files below the 800-line rule before adding the next
+fused-body experiment.
+
 ## Smoke Gate
 
 ```bash

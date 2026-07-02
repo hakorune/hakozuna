@@ -20,8 +20,9 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                SegmentEntry points to fused TLS local body. split alloc/free
+                SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
+                route/core and cache/ledger TUs are split for the 800-line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -37,7 +38,6 @@ Current direction:
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
   HZ8 is the balanced default line.
-  HZ6 narrow Windows baselines are frozen as reference evidence.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
   HZ9 cache/SlabPage/LocalArena lanes are evidence, not default.
   Next HZ9 behavior development should avoid per-allocation owner-page tax,
