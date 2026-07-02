@@ -34,6 +34,8 @@ bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
                                             uintptr_t base_addr);
 H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
                                                     uintptr_t addr);
+H8RouteKind h9_segment_local_cache_debug_route_table_addr(uintptr_t addr,
+                                                          uint32_t* class_out);
 bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,

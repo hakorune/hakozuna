@@ -272,6 +272,32 @@ H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
   return h9_segment_local_cache_debug_route_offset(class_id, (size_t)offset);
 }
 
+H8RouteKind h9_segment_local_cache_debug_route_table_addr(uintptr_t addr,
+                                                          uint32_t* class_out) {
+  for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {
+    H9SegmentLocalClass* cls = h9_segment_class(class_id);
+    if (!cls || cls->base_addr == 0u || addr < cls->base_addr) {
+      continue;
+    }
+    uint32_t slot_size = 0u;
+    uint32_t run_size = 0u;
+    uint16_t slot_count = 0u;
+    if (!h9_segment_local_cache_debug_class_geometry(
+            class_id, &slot_size, &run_size, &slot_count)) {
+      continue;
+    }
+    uintptr_t offset = addr - cls->base_addr;
+    if (offset >= (uintptr_t)run_size) {
+      continue;
+    }
+    if (class_out) {
+      *class_out = class_id;
+    }
+    return h9_segment_local_cache_debug_route_addr(class_id, addr);
+  }
+  return H8_ROUTE_MISS;
+}
+
 bool h9_segment_local_cache_debug_take_addr(uint32_t class_id,
                                             uintptr_t* addr_out) {
   uint32_t slot_size = 0u;

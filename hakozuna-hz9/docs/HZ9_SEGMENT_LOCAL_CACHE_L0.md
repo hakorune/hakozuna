@@ -140,7 +140,7 @@ OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 Its output includes class geometry and payload/slack bytes so speed and
 capacity are read from the same run. `BOUND_ADDR=1` switches the same bench to
 the bound-address lifecycle; `MODE=2` measures known-slot address generation
-without the debug route helper:
+without the debug route helper; `MODE=3` measures debug table route lookup:
 
 ```text
 bits mode:
@@ -149,6 +149,10 @@ bits mode:
 known_addr mode:
   take/free_allocated with base + slot * slot_size address generation
   approximates the eventual local hot-path shape
+
+table_addr mode:
+  known_addr plus debug table route lookup
+  estimates classless route discovery overhead
 
 bound_addr mode:
   take_addr/free_addr
@@ -194,6 +198,10 @@ route_addr(class, addr):
   LOCAL exact slot start -> VALID
   LOCAL interior/tail slack -> INVALID
   REMOTE_SEEN/RETIRED in-range -> INVALID
+
+route_table_addr(addr):
+  debug-only class/base discovery over bound TLS segment classes
+  proves classless route semantics before a real route table exists
 
 take_addr(class):
   consumes one local free slot
@@ -273,32 +281,40 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_known_addr
+  20260703T_segment_api_sweep_table_addr
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 365.4M ops/s
-  class1 331.8M ops/s
-  class2 357.0M ops/s
-  class3 365.0M ops/s
-  class4 325.8M ops/s
-  class5 307.5M ops/s
+  class0 350.0M ops/s
+  class1 347.1M ops/s
+  class2 364.4M ops/s
+  class3 359.3M ops/s
+  class4 364.1M ops/s
+  class5 370.1M ops/s
 
 known_addr mode:
-  class0 341.1M ops/s
-  class1 347.5M ops/s
+  class0 322.7M ops/s
+  class1 328.7M ops/s
   class2 338.4M ops/s
-  class3 349.0M ops/s
-  class4 336.0M ops/s
-  class5 337.7M ops/s
+  class3 349.5M ops/s
+  class4 326.9M ops/s
+  class5 333.6M ops/s
+
+table_addr mode:
+  class0 103.6M ops/s
+  class1 104.5M ops/s
+  class2 101.1M ops/s
+  class3 99.4M ops/s
+  class4 97.7M ops/s
+  class5 93.6M ops/s
 
 bound_addr mode:
-  class0 132.9M ops/s
-  class1 132.9M ops/s
-  class2 138.1M ops/s
-  class3 136.7M ops/s
-  class4 136.7M ops/s
-  class5 136.2M ops/s
+  class0 133.4M ops/s
+  class1 132.1M ops/s
+  class2 136.3M ops/s
+  class3 112.8M ops/s
+  class4 134.3M ops/s
+  class5 125.8M ops/s
 ```
 
 Interpretation:
@@ -315,9 +331,14 @@ bound_addr proof:
   carries route/lifecycle overhead and lands around 37-44% of known_addr mode
   useful as a boundary proof, not yet a final hot-path shape
 
+table_addr proof:
+  debug linear class discovery lands around 28-32% of known_addr mode
+  a real behavior path needs an active segment pointer or compact route index
+
 next optimization target:
   keep the exact slot address generation shape
-  do not put full debug route helpers on the eventual local hit path
+  do not put full debug route helpers or linear table discovery on the local
+  hit path
 ```
 
 ## Decision Boundary

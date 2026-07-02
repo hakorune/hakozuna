@@ -260,6 +260,46 @@ static int check_bound_route(void) {
   return 0;
 }
 
+static int check_route_table(void) {
+  const uint32_t class_id = 2u;
+  const uintptr_t base = (uintptr_t)0x30000000u;
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint32_t found_class = UINT32_MAX;
+  h9_segment_local_cache_debug_reset();
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, NULL) ||
+      !h9_segment_local_cache_debug_bind_base(class_id, base)) {
+    fprintf(stderr, "segment route table setup failed\n");
+    return 80;
+  }
+  if (h9_segment_local_cache_debug_route_table_addr(base, &found_class) !=
+          H8_ROUTE_VALID ||
+      found_class != class_id ||
+      h9_segment_local_cache_debug_route_table_addr(base + 1u, NULL) !=
+          H8_ROUTE_INVALID ||
+      h9_segment_local_cache_debug_route_table_addr(base + run_size, NULL) !=
+          H8_ROUTE_MISS) {
+    fprintf(stderr, "segment route table boundary failed\n");
+    return 81;
+  }
+  if (!h9_segment_local_cache_debug_remote_mark(class_id, 0u) ||
+      h9_segment_local_cache_debug_route_table_addr(base, &found_class) !=
+          H8_ROUTE_INVALID ||
+      found_class != class_id) {
+    fprintf(stderr, "segment route table remote invalid failed\n");
+    return 82;
+  }
+  h9_segment_local_cache_debug_release_all();
+  if (h9_segment_local_cache_debug_route_table_addr(base, NULL) !=
+      H8_ROUTE_MISS) {
+    fprintf(stderr, "segment route table release miss failed\n");
+    return 83;
+  }
+  (void)slot_size;
+  return 0;
+}
+
 static int check_bound_alloc_free(void) {
   const uint32_t class_id = 5u;
   const uintptr_t base = (uintptr_t)0x20000000u;
@@ -313,6 +353,10 @@ int main(void) {
     return rc;
   }
   rc = check_bound_route();
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_route_table();
   if (rc != 0) {
     return rc;
   }
