@@ -52,6 +52,14 @@ typedef struct H9LspStats {
   size_t segment_release;
 } H9LspStats;
 
+typedef struct H9LspRouteLeafBenchResult {
+  uint64_t ok;
+  uintptr_t sink;
+  uint64_t fast_hits;
+  uint64_t fallback_hits;
+  uint64_t state_mismatch;
+} H9LspRouteLeafBenchResult;
+
 void h9_lsp_debug_reset(void);
 void* h9_lsp_debug_alloc(uint32_t class_id);
 bool h9_lsp_debug_alloc_slot(uint32_t class_id, void** ptr_out,
@@ -77,6 +85,9 @@ bool h9_lsp_debug_free_direct_owned(void* ptr);
 bool h9_lsp_debug_free_known_slot(uint32_t class_id, uint32_t slot);
 void* h9_lsp_debug_realloc_in_place(void* ptr, size_t size, bool* owned_out);
 H9LspStats h9_lsp_debug_stats(void);
+bool h9_lsp_debug_routeleaf_bench(uint32_t class_id, uint64_t iters,
+                                  bool touch, bool non_lifo,
+                                  H9LspRouteLeafBenchResult* result_out);
 
 #endif
 

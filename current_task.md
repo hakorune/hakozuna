@@ -22,7 +22,7 @@ Current direction:
                 exact free may skip route, but route fallback stays authority.
                 LastTokenIntegratedEntry-L1 clears local gate; isolated
                 integrated/fastleaf workers keep the high local ceiling.
-                Phase 3 active; lasttoken API trio is correctness evidence.
+                Routeleaf cold edge works, but routeable hot state is HOLD.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

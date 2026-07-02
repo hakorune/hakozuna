@@ -433,6 +433,67 @@ read:
   not the debug route-boundary functions
 ```
 
+## RouteLeaf Cold Fallback Probe
+
+```text
+box:
+  HZ9RouteLeafColdFallbackProbe-L1
+
+purpose:
+  prove the clean Layer0/Layer1/Layer2 split without using debug public
+  route-boundary functions as the hot body
+
+shape:
+  Layer0:
+    routeable segment-local last-token helper
+    no route call on exact LIFO hit
+
+  Layer1:
+    dispatch calls one cold fallback only on miss
+
+  Layer2:
+    noinline/cold direct-owned route
+    handles intentional non-LIFO VALID fallback
+
+bench modes:
+  routeleaf:
+    LIFO hit path
+
+  routeleafnonlifo:
+    alloc A, alloc B, free A through cold route VALID fallback, free B fast
+
+result, CLASS_ID=5 ITERS=30000000:
+  routeleaf touch=1 R3:
+    279.212M
+    247.680M
+    248.926M
+
+  routeleafnonlifo touch=1 R3:
+    188.355M
+    200.843M
+    206.108M
+
+  routeleaf touch=0:
+    286.999M
+
+  routeleafnonlifo touch=0:
+    186.634M
+
+read:
+  cold edge works:
+    route_valid == fallback count on non-LIFO
+    state_mismatch == 0
+
+  LIFO ceiling is not preserved:
+    routeable segment-backed hot state is far below lastpublic / fastleaf
+    payload touch is not the main cause
+
+  decision:
+    HOLD as design input
+    keep Layer0 helper freedom, but do not put full routeable segment state
+    directly on the hot local body
+```
+
 Expected range:
 
 ```text
@@ -468,6 +529,10 @@ MODE=lastentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastusable CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastrealloc CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleaf CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleafnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

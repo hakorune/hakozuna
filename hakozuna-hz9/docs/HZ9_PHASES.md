@@ -81,6 +81,16 @@ latest read:
   debug public boundary remains slow and is correctness evidence only
   the next performance body must keep the API trio entry-local
 
+next probe:
+  HZ9RouteLeafColdFallbackProbe-L1
+  worker-isolated Layer0 helper plus one Layer2 cold direct-owned route edge
+  measure LIFO ceiling and intentional non-LIFO route VALID fallback
+
+routeleaf read:
+  cold route edge is correct, but routeable segment-backed LIFO is only
+  about 248M..279M ops/s
+  keep as HOLD evidence; the next hot body needs compact entry-local state
+
 current evidence:
   lastpublic R3: 837M..876M ops/s
   integrated R3: 743M..757M ops/s

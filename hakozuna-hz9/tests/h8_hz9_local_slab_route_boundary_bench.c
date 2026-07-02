@@ -41,7 +41,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_INTEGRATED = 17,
   H9_LSP_BENCH_FAST_LEAF = 18,
   H9_LSP_BENCH_LAST_ENTRY_USABLE = 19,
-  H9_LSP_BENCH_LAST_ENTRY_REALLOC = 20
+  H9_LSP_BENCH_LAST_ENTRY_REALLOC = 20,
+  H9_LSP_BENCH_ROUTE_LEAF = 21,
+  H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO = 22
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -252,6 +254,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_LAST_ENTRY_USABLE;
   } else if (strcmp(mode, "lastrealloc") == 0) {
     bench_mode = H9_LSP_BENCH_LAST_ENTRY_REALLOC;
+  } else if (strcmp(mode, "routeleaf") == 0) {
+    bench_mode = H9_LSP_BENCH_ROUTE_LEAF;
+  } else if (strcmp(mode, "routeleafnonlifo") == 0) {
+    bench_mode = H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
   } else if (strcmp(mode, "fastleaf") == 0) {
@@ -263,6 +269,36 @@ int main(void) {
     return 1;
   }
   uint32_t slot_size = spec->slot_size;
+
+  if (bench_mode == H9_LSP_BENCH_ROUTE_LEAF ||
+      bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO) {
+    H9LspRouteLeafBenchResult result = {0};
+    bool non_lifo = bench_mode == H9_LSP_BENCH_ROUTE_LEAF_NON_LIFO;
+    double start = now_seconds();
+    if (!h9_lsp_debug_routeleaf_bench(class_id, iters, touch, non_lifo,
+                                      &result)) {
+      fprintf(stderr, "lsp routeleaf bench failed\n");
+      return 3;
+    }
+    double elapsed = now_seconds() - start;
+    if (elapsed <= 0.0) {
+      elapsed = 1e-9;
+    }
+    H9LspStats stats = h9_lsp_debug_stats();
+    printf("mode=%s class=%u iters=%llu touch=%u ops_per_s=%.2f "
+           "elapsed=%.6f route_valid=%zu route_invalid=%zu route_miss=%zu "
+           "malloc_hit=0 ptr_fast=%llu ptr_fallback=%llu "
+           "state_mismatch=%llu segment_create=%zu sink=%" PRIuPTR "\n",
+           mode, class_id, (unsigned long long)iters, touch ? 1u : 0u,
+           (double)result.ok / elapsed, elapsed, stats.route_valid,
+           stats.route_invalid, stats.route_miss,
+           (unsigned long long)result.fast_hits,
+           (unsigned long long)result.fallback_hits,
+           (unsigned long long)result.state_mismatch, stats.segment_create,
+           result.sink);
+    h9_lsp_debug_reset();
+    return 0;
+  }
 
   if (bench_mode == H9_LSP_BENCH_INLINE_PUBLIC) {
     size_t payload_bytes = (size_t)slot_size * 64u;
