@@ -67,7 +67,9 @@ code shape:
 current design:
   docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
   docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
+  docs/HZ9_SEGMENT_ENTRY_L1.md
   per-thread medium segment cache scaffold
+  global routeable SegmentEntry scaffold
   segment-backed slots, not HZ8 medium-run objects
   no allocator routing yet
   no public entry branch
@@ -90,6 +92,7 @@ current design:
 
 current segment commands:
   make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+  make -C hakozuna-hz9 smoke-hz9segmententry
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
@@ -439,6 +442,7 @@ docs/HZ9_STANDALONE_CLOSURE.md
 docs/HZ9_DIFFERENTIATION.md
 docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
 docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
+docs/HZ9_SEGMENT_ENTRY_L1.md
 docs/HZ9_NEXT_SUBSTRATE.md
 docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md

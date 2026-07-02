@@ -19,6 +19,9 @@ HZ9_SEGMENT_LOCAL_CACHE_L0.md:
 HZ9_SEGMENT_ROUTE_PROOFS_L0.md:
   route/free-shape evidence for SegmentLocalCache and fused local-hit decision
 
+HZ9_SEGMENT_ENTRY_L1.md:
+  global routeable segment page scaffold before public allocator integration
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
   held 64K slab/page prototype, route boundary, counters, and blockers
 
