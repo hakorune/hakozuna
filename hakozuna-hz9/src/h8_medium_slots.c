@@ -162,6 +162,8 @@ static bool h8_medium_run_free_local_known_slot_timed(H8MediumRun* run,
     h8_hz9_local_mag_shadow_note_free(run, slot, keep_empty_live);
   }
 #endif
+  h9_static_local_page_shadow_note_local_free(h8_tls_ctx, run, slot,
+                                              keep_empty_live);
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FAST_TIER)
   if (keep_empty_live &&
       h8_medium_local_fast_store_active_free(run, slot, bit)) {

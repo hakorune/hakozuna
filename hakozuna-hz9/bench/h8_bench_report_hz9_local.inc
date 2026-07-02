@@ -96,6 +96,50 @@
          debug.h9_owner_page_api_remote_class[4],
          debug.h9_owner_page_api_remote_class[5]);
 #endif
+#if defined(H9_STATIC_LOCAL_PAGE_SHADOW_L0)
+  printf("h9_static_page_shadow alloc_seen=%zu hit_possible=%zu local_free=%zu store_possible=%zu not_active=%zu store_blocked=%zu remote_seen=%zu remote_after_local=%zu hit_ratio=%.3f store_ratio=%.3f\n",
+         debug.h9_static_page_shadow_alloc_seen,
+         debug.h9_static_page_shadow_alloc_hit_possible,
+         debug.h9_static_page_shadow_local_free_seen,
+         debug.h9_static_page_shadow_local_free_store_possible,
+         debug.h9_static_page_shadow_local_free_not_active,
+         debug.h9_static_page_shadow_local_free_store_blocked,
+         debug.h9_static_page_shadow_remote_seen,
+         debug.h9_static_page_shadow_remote_after_local,
+         debug.h9_static_page_shadow_alloc_seen
+             ? (double)debug.h9_static_page_shadow_alloc_hit_possible /
+                   (double)debug.h9_static_page_shadow_alloc_seen
+             : 0.0,
+         debug.h9_static_page_shadow_local_free_seen
+             ? (double)debug.h9_static_page_shadow_local_free_store_possible /
+                   (double)debug.h9_static_page_shadow_local_free_seen
+             : 0.0);
+  printf("h9_static_page_shadow_class alloc=[%zu,%zu,%zu,%zu,%zu,%zu] hit=[%zu,%zu,%zu,%zu,%zu,%zu] free=[%zu,%zu,%zu,%zu,%zu,%zu] remote=[%zu,%zu,%zu,%zu,%zu,%zu]\n",
+         debug.h9_static_page_shadow_alloc_class[0],
+         debug.h9_static_page_shadow_alloc_class[1],
+         debug.h9_static_page_shadow_alloc_class[2],
+         debug.h9_static_page_shadow_alloc_class[3],
+         debug.h9_static_page_shadow_alloc_class[4],
+         debug.h9_static_page_shadow_alloc_class[5],
+         debug.h9_static_page_shadow_hit_class[0],
+         debug.h9_static_page_shadow_hit_class[1],
+         debug.h9_static_page_shadow_hit_class[2],
+         debug.h9_static_page_shadow_hit_class[3],
+         debug.h9_static_page_shadow_hit_class[4],
+         debug.h9_static_page_shadow_hit_class[5],
+         debug.h9_static_page_shadow_free_class[0],
+         debug.h9_static_page_shadow_free_class[1],
+         debug.h9_static_page_shadow_free_class[2],
+         debug.h9_static_page_shadow_free_class[3],
+         debug.h9_static_page_shadow_free_class[4],
+         debug.h9_static_page_shadow_free_class[5],
+         debug.h9_static_page_shadow_remote_class[0],
+         debug.h9_static_page_shadow_remote_class[1],
+         debug.h9_static_page_shadow_remote_class[2],
+         debug.h9_static_page_shadow_remote_class[3],
+         debug.h9_static_page_shadow_remote_class[4],
+         debug.h9_static_page_shadow_remote_class[5]);
+#endif
 #if defined(H9_MEDIUM_LOCAL_SLAB_SHADOW)
   printf("h9_slab_shadow alloc_eligible=%zu hit_possible=%zu free_eligible=%zu remote_escape=%zu page_switch=%zu page_full=%zu page_empty=%zu cap_fallback=%zu retained=%zu retained_peak=%zu invalid_owned=%zu interior_required=%zu pending_required=%zu hit_ratio=%.3f\n",
          debug.h9_slab_shadow_alloc_eligible,

@@ -423,6 +423,34 @@ void h8_hz9_local_mag_shadow_flush_owner(H8ThreadCtx* ctx, bool owner_exit);
     (void)(owner_exit);                                     \
   } while (0)
 #endif
+#if defined(H9_STATIC_LOCAL_PAGE_SHADOW_L0) && defined(H8_ENABLE_DEBUG_STATS)
+void h9_static_local_page_shadow_note_alloc(H8ThreadCtx* ctx,
+                                            uint32_t class_id);
+void h9_static_local_page_shadow_note_local_free(H8ThreadCtx* ctx,
+                                                 H8MediumRun* run,
+                                                 size_t slot,
+                                                 bool keep_empty_live);
+void h9_static_local_page_shadow_note_remote_free(H8ThreadCtx* ctx,
+                                                  H8MediumRun* run);
+#else
+static inline void h9_static_local_page_shadow_note_alloc(H8ThreadCtx* ctx,
+                                                          uint32_t class_id) {
+  (void)ctx;
+  (void)class_id;
+}
+static inline void h9_static_local_page_shadow_note_local_free(
+    H8ThreadCtx* ctx, H8MediumRun* run, size_t slot, bool keep_empty_live) {
+  (void)ctx;
+  (void)run;
+  (void)slot;
+  (void)keep_empty_live;
+}
+static inline void h9_static_local_page_shadow_note_remote_free(
+    H8ThreadCtx* ctx, H8MediumRun* run) {
+  (void)ctx;
+  (void)run;
+}
+#endif
 #if defined(H9_MEDIUM_TLS_OBJECT_CACHE)
 void* h9_medium_cache_pop(H8ThreadCtx* ctx, uint32_t class_id);
 bool h9_medium_cache_try_push(H8ThreadCtx* ctx, H8MediumRun* run, void* ptr,

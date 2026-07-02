@@ -6,6 +6,18 @@
   size_t h9_medium_cache_remote_mark;
   size_t h9_medium_cache_remote_pop_block;
   size_t h9_medium_cache_remote_push_block;
+  size_t h9_static_page_shadow_alloc_seen;
+  size_t h9_static_page_shadow_alloc_hit_possible;
+  size_t h9_static_page_shadow_local_free_seen;
+  size_t h9_static_page_shadow_local_free_store_possible;
+  size_t h9_static_page_shadow_local_free_not_active;
+  size_t h9_static_page_shadow_local_free_store_blocked;
+  size_t h9_static_page_shadow_remote_seen;
+  size_t h9_static_page_shadow_remote_after_local;
+  size_t h9_static_page_shadow_alloc_class[6];
+  size_t h9_static_page_shadow_hit_class[6];
+  size_t h9_static_page_shadow_free_class[6];
+  size_t h9_static_page_shadow_remote_class[6];
   size_t h9_owner_page_shadow_alloc_seen;
   size_t h9_owner_page_shadow_alloc_active_owner;
   size_t h9_owner_page_shadow_alloc_active_nonfull;

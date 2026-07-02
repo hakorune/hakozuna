@@ -11,6 +11,7 @@ void h8_debug_stats_snapshot(H8DebugStats* out) {
   out->field = atomic_load_explicit(&h8g.field, memory_order_acquire)
 #include "h8_stats_impl_part1_body.inc"
 #include "h8_stats_impl_part2_body.inc"
+#include "h8_stats_hz9_static_page_snapshot.inc"
 #undef H8_DEBUG_LOAD
 #endif
 }

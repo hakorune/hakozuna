@@ -71,6 +71,9 @@ current scaffold:
   no dynamic TLS state ensure
   no H8OwnerRecord / H8ThreadCtx field additions
   not connected to allocator behavior yet
+  shadow counters are wired:
+    medium_local0 debug hit_ratio 0.999
+    medium_r50 debug hit_ratio 0.497 with remote_after_local high
 ```
 
 Latest behavior result:

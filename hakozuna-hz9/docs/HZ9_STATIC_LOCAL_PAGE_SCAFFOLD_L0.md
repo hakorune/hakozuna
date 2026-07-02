@@ -61,9 +61,12 @@ test:
 build:
   smoke-hz9staticlocalpage
   h8_bench_release_hz9staticlocalpage_scaffold
+  h8_bench_hz9staticlocalpage_shadow
+  h8_bench_release_hz9staticlocalpage_shadow
 
 flag:
   H9_STATIC_LOCAL_PAGE_SCAFFOLD_L0
+  H9_STATIC_LOCAL_PAGE_SHADOW_L0
 ```
 
 The L0 state is `_Thread_local` and static:
@@ -77,6 +80,90 @@ H9StaticLocalPageState:
 
 No allocator entry point calls it yet. This is intentional: the first gate is
 source shape and deterministic scaffold invariants, not performance.
+
+## Shadow Counters
+
+`H9_STATIC_LOCAL_PAGE_SHADOW_L0` observes the existing medium path without
+changing allocation behavior:
+
+```text
+alloc_seen:
+  medium class allocation reached the shadow hook
+
+alloc_hit_possible:
+  a prior same-thread local free in the same class would have supplied a slot
+
+local_free_seen:
+  an exact medium local free reached the shadow hook
+
+local_free_store_possible:
+  the free could be stored into the static TLS page model
+
+local_free_not_active:
+  the free was not on the current active run shape used for the L0 estimate
+
+local_free_store_blocked:
+  duplicate/full shadow bit state blocked the store
+
+remote_seen:
+  remote free pressure reached the class
+
+remote_after_local:
+  remote pressure appeared while the class had local shadow state
+```
+
+Class arrays are reported for alloc/hit/free/remote distribution.
+
+## Initial Debug Sanity Read
+
+Command shape:
+
+```bash
+hakozuna-hz9/h8_bench_hz9staticlocalpage_shadow \
+  --threads 2 --iters 5000 --min-size 4097 --max-size 65536 \
+  --remote-pct 0 --interleaved 0
+
+hakozuna-hz9/h8_bench_hz9staticlocalpage_shadow \
+  --threads 2 --iters 5000 --min-size 4097 --max-size 65536 \
+  --remote-pct 50 --interleaved 1
+```
+
+Read:
+
+```text
+medium_local0 debug:
+  alloc_seen      100000
+  hit_possible     99880
+  local_free      100000
+  store_possible  100000
+  remote_seen          0
+  hit_ratio        0.999
+  store_ratio      1.000
+
+medium_r50 debug:
+  alloc_seen      100000
+  hit_possible     49743
+  local_free       49804
+  store_possible   49804
+  remote_seen      50196
+  remote_after_local 50071
+  hit_ratio        0.497
+  store_ratio      1.000
+```
+
+Interpretation:
+
+```text
+local-only reuse potential:
+  strong
+
+remote contamination:
+  immediate and class-wide in r50
+
+next design implication:
+  behavior must either be local/profile-only or add an explicit remote
+  admission boundary before default consideration
+```
 
 ## Smoke Contract
 
@@ -114,3 +201,19 @@ then consider behavior:
 
 Do not connect this to allocation/free behavior until the shadow read identifies
 a class/row where the local body can repay the entry cost.
+
+Suggested short read:
+
+```bash
+make -C hakozuna-hz9 bench-hz9staticlocalpage-shadow
+hakozuna-hz9/h8_bench_hz9staticlocalpage_shadow \
+  --threads 2 --iters 30000 \
+  --min-size 4097 --max-size 65536 --remote-pct 0 --interleaved 0
+
+RUNS=1 VARIANTS=baseline,staticlocal_shadow \
+  ROWS=medium_local0,main_local0,medium_r50,main_r90 \
+  scripts/run_hz9_candidate_gate.sh
+```
+
+The first command reads debug counters. The second checks release source-shape
+movement; it is not expected to show a behavior win.
