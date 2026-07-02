@@ -1,6 +1,8 @@
 #ifndef H8_HZ9_SEGMENT_LOCAL_CACHE_H
 #define H8_HZ9_SEGMENT_LOCAL_CACHE_H
 
+#include "../include/h8.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -26,6 +28,8 @@ bool h9_segment_local_cache_debug_class_geometry(uint32_t class_id,
 bool h9_segment_local_cache_debug_class_capacity(uint32_t class_id,
                                                  size_t* payload_bytes_out,
                                                  size_t* slack_bytes_out);
+H8RouteKind h9_segment_local_cache_debug_route_offset(uint32_t class_id,
+                                                      size_t offset);
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id);
 uint64_t h9_segment_local_cache_debug_free_bits(uint32_t class_id);
 uint64_t h9_segment_local_cache_debug_alloc_bits(uint32_t class_id);

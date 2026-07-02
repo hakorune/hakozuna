@@ -159,6 +159,22 @@ capacity check:
   payload_bytes + slack_bytes == run_size
 ```
 
+The first route-proof scaffold is offset-only and still has no allocator
+payload:
+
+```text
+route_offset(class, offset):
+  exact slot starts inside payload -> VALID
+  interior offsets inside payload -> INVALID
+  tail slack inside run -> INVALID
+  offset outside run -> MISS
+
+not yet:
+  real segment base registration
+  pointer route integration
+  malloc/free entry wiring
+```
+
 ## Segment Model
 
 ```text

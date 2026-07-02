@@ -139,9 +139,63 @@ static int check_class_geometry(void) {
   return 0;
 }
 
+static int check_route_offsets(void) {
+  for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {
+    uint32_t slot_size = 0u;
+    uint32_t run_size = 0u;
+    uint16_t slot_count = 0u;
+    size_t payload_bytes = 0u;
+    size_t slack_bytes = 0u;
+    if (!h9_segment_local_cache_debug_class_geometry(
+            class_id, &slot_size, &run_size, &slot_count) ||
+        !h9_segment_local_cache_debug_class_capacity(
+            class_id, &payload_bytes, &slack_bytes)) {
+      fprintf(stderr, "segment route geometry failed: %u\n", class_id);
+      return 50;
+    }
+    if (h9_segment_local_cache_debug_route_offset(class_id, 0u) !=
+        H8_ROUTE_VALID) {
+      fprintf(stderr, "segment route slot0 failed: %u\n", class_id);
+      return 51;
+    }
+    if (slot_count > 1u &&
+        h9_segment_local_cache_debug_route_offset(class_id, slot_size) !=
+            H8_ROUTE_VALID) {
+      fprintf(stderr, "segment route slot1 failed: %u\n", class_id);
+      return 52;
+    }
+    if (h9_segment_local_cache_debug_route_offset(class_id, 1u) !=
+        H8_ROUTE_INVALID) {
+      fprintf(stderr, "segment route interior failed: %u\n", class_id);
+      return 53;
+    }
+    if (slack_bytes != 0u &&
+        h9_segment_local_cache_debug_route_offset(class_id, payload_bytes) !=
+            H8_ROUTE_INVALID) {
+      fprintf(stderr, "segment route tail failed: %u\n", class_id);
+      return 54;
+    }
+    if (h9_segment_local_cache_debug_route_offset(class_id, run_size) !=
+        H8_ROUTE_MISS) {
+      fprintf(stderr, "segment route outside failed: %u\n", class_id);
+      return 55;
+    }
+  }
+  if (h9_segment_local_cache_debug_route_offset(H8_MEDIUM_CLASS_COUNT, 0u) !=
+      H8_ROUTE_MISS) {
+    fprintf(stderr, "segment route accepted invalid class\n");
+    return 56;
+  }
+  return 0;
+}
+
 int main(void) {
   h8_init();
   int rc = check_class_geometry();
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_route_offsets();
   if (rc != 0) {
     return rc;
   }

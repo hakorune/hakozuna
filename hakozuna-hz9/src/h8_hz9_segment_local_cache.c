@@ -198,6 +198,28 @@ bool h9_segment_local_cache_debug_class_capacity(uint32_t class_id,
   return true;
 }
 
+H8RouteKind h9_segment_local_cache_debug_route_offset(uint32_t class_id,
+                                                      size_t offset) {
+  uint32_t slot_size = 0u;
+  uint32_t run_size = 0u;
+  uint16_t slot_count = 0u;
+  if (!h9_segment_local_cache_debug_class_geometry(
+          class_id, &slot_size, &run_size, &slot_count)) {
+    return H8_ROUTE_MISS;
+  }
+  size_t payload_bytes = (size_t)slot_size * (size_t)slot_count;
+  if (offset >= (size_t)run_size) {
+    return H8_ROUTE_MISS;
+  }
+  if (offset >= payload_bytes) {
+    return H8_ROUTE_INVALID;
+  }
+  if ((offset % (size_t)slot_size) != 0u) {
+    return H8_ROUTE_INVALID;
+  }
+  return H8_ROUTE_VALID;
+}
+
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   return cls ? (uint32_t)cls->state : UINT32_MAX;
