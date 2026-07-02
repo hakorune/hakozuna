@@ -22,6 +22,7 @@ implementation macro:
 
 current targets:
   smoke-hz9ownerpagepool-route
+  smoke-hz9ownerpagepool-api
   bench-hz9ownerpagepool-purelocal-api
   bench-release-hz9ownerpagepool-purelocal-api
 
@@ -57,10 +58,12 @@ implemented:
   local allocation pop returning owner-page pointers
   same-owner free push back to local_free_bits
   remote exact free pending-bit claim with REMOTE_SEEN
+  focused API smoke for pop/free, double-free rejection, interior INVALID,
+    remote pending duplicate rejection, and detached final-free release
 
 not implemented yet:
-  focused live-detach / double-free safety smoke
-  owner-side pending collection for owner-page remote frees
+  release perf gate for global route/lock cost
+  owner-side remote policy beyond pending collection at flush/final free
   remote page retirement / owner sidecar behavior
 ```
 
@@ -418,6 +421,9 @@ purelocal-api target:
   accepts same-owner exact frees into local_free_bits
   accepts remote exact frees as pending bits and marks REMOTE_SEEN
   creates one mapped owner page per thread/class and releases it at flush
+  rejects same-owner double free and owned interior pointers
+  rejects duplicate remote pending publication
+  releases detached live pages on final exact free
   exercises thread/owner flush hook placement
   reports alloc/free calls, route attempt/hit/miss/invalid, remote fallback,
   local alloc/free/remote-pending counters, state/page lifetime, flushes, and
@@ -430,8 +436,8 @@ current behavior:
   owner/local path is the only path that mutates local_free_bits
 
 next:
-  focused detach/double-free safety tests
   paired local/remote performance gate
+  owner-page remote policy after first REMOTE_SEEN
 ```
 
 ## Gates
@@ -477,6 +483,17 @@ route smoke:
     DETACHED transition
     local_free_bits unchanged by remote/drain/detach
     real mapped page route VALID and page-end MISS
+
+api smoke:
+  make -C hakozuna-hz9 smoke-hz9ownerpagepool-api
+  covers:
+    local alloc pop
+    same-owner free push
+    double-free rejection
+    interior owned INVALID
+    remote pending first/repeat split
+    REMOTE_SEEN allocation mode block
+    detached final-free release
 
 shadow:
   RUNS=3 scripts/run_hz9_owner_page_shadow_probe.sh

@@ -41,7 +41,7 @@ current direction:
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  add focused detach/double-free tests and run local/remote perf gate
+  run local/remote perf gate for the owner-page global route/lock shape
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -109,6 +109,7 @@ hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
+  smoke-hz9ownerpagepool-api \
   bench-hz9ownerpagepool-purelocal-api \
   bench-release-hz9ownerpagepool-purelocal-api
 
@@ -194,8 +195,8 @@ HZ9OwnerLocalPagePoolPureLocal-L1:
   active owner-page substrate lane
   scaffold/shadow/API/page lifetime are implemented
   local alloc/free behavior is implemented
-  route/state smoke is clean
-  next implementation step is release/double-free audit
+  route/state/API safety smoke is clean
+  next implementation step is local/remote perf gate
   remote pending/qstate remains HZ8-derived authority
 ```
 

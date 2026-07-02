@@ -21,6 +21,13 @@ make -C hakozuna-hz9 smoke-hz9slabroute
 
 make -C hakozuna-hz9 smoke-hz9slabpage
   HZ9 slab page local, remote, owner-exit, and final-free behavior
+
+make -C hakozuna-hz9 smoke-hz9ownerpagepool-route
+  HZ9 owner-page exact route / INVALID / MISS and state transition smoke
+
+make -C hakozuna-hz9 smoke-hz9ownerpagepool-api
+  HZ9 owner-page API local pop/free, double-free rejection, interior INVALID,
+  remote pending repeat rejection, and detached final-free release
 ```
 
 Active-run magazine evidence tests are still available as historical L0

@@ -17,8 +17,10 @@ Current direction:
                 hz9-standalone-check passes from parent and hakozuna-hz9 root.
   Current proof direction: owner-local page substrate, not another public
                 all-medium entry split.
-  Current HZ9 box: HZ9OwnerLocalPagePoolPureLocal API scaffold, no page
-                allocation behavior yet.
+  Current HZ9 box: HZ9OwnerLocalPagePoolPureLocal-L1.
+                Local allocation pop, same-owner free push, global owner-page
+                route, remote pending mark, and detached final-free release
+                are implemented in hakozuna-hz9/.
   Latest HZ9 evidence: OwnerLocalPagePoolShadow-L0 shows local rows are
                 pure-local, while remote rows require immediate HZ8 fallback.
   HZ9 route-off/layout proofs show no-use route cost can matter, but main_r90
@@ -37,8 +39,9 @@ Current strength:
   HZ6 narrow Windows baselines are frozen as reference evidence.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
   HZ9 cache/SlabPage/LocalArena lanes are useful evidence, not default.
-  Next HZ9 behavior development starts only after PureLocal API/code-shape
-  checks and explicit remote-disable/flush hooks are clean.
+  Next HZ9 behavior development is HZ9OwnerLocalPagePoolPerfGate-L1:
+                measure whether the current global route/lock shape preserves
+                enough local win before adding owner-side remote policy.
 ```
 
 ## Read First

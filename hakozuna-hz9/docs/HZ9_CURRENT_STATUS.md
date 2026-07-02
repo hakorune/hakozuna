@@ -157,6 +157,27 @@ real mapped page:
   thread state released
 ```
 
+API smoke covers:
+
+```text
+same-owner path:
+  owner-page local allocation pop
+  same-owner free push
+  double-free rejection
+  interior owned INVALID
+
+remote-like path:
+  pending first claim
+  duplicate pending rejection
+  REMOTE_SEEN allocation mode block
+  detached final-free release
+
+latest output:
+  hit=5 push=4 double=1 invalid=1 remote_first=1 remote_repeat=1
+  mode_block=1 pending_collect=1 release=2
+  local_bits_mutation=0
+```
+
 ## Latest Gates
 
 ```text
@@ -166,6 +187,7 @@ standalone:
 
 owner-page build/smoke:
   make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
+    smoke-hz9ownerpagepool-api \
     bench-hz9ownerpagepool-purelocal-api \
     bench-release-hz9ownerpagepool-purelocal-api
   PASS
@@ -175,8 +197,8 @@ pre-substrate recheck:
   PASS
 
 latest audits:
-  bench_results/20260702T105431Z_hz9_layout_audit
-  bench_results/20260702T105431Z_hz9_code_shape_audit
+  bench_results/20260702T112151Z_hz9_layout_audit
+  bench_results/20260702T112152Z_hz9_code_shape_audit
 
 layout:
   H8OwnerRecord baseline 440, scaffold 440
@@ -195,19 +217,17 @@ code shape:
 Recommended next implementation order:
 
 ```text
-1. HZ9OwnerLocalPagePoolReleaseAudit-L1
-   add focused tests for live object across thread/owner exit
-   prove detached owner-page exact frees remain routed
-   prove duplicate exact free fails closed
-
-2. HZ9OwnerLocalPagePoolPerfGate-L1
+1. HZ9OwnerLocalPagePoolPerfGate-L1
    compare baseline vs purelocal owner-page on medium/main local and remote
    decide whether the global route lock is already too expensive
 
-3. HZ9OwnerLocalPagePoolRemoteCollect-L2
+2. HZ9OwnerLocalPagePoolRemoteCollect-L2
    only if local wins and remote pressure can be contained
    owner-side collect of pending owner-page frees
    still no remote producer writes to local bits
+
+3. HZ9OwnerLocalPagePoolRouteShape-L2
+   only if perf gate shows local win but route/global-lock cost is dominant
 ```
 
 Do not start with:
@@ -261,6 +281,7 @@ behavior lane:
 ```bash
 make -C hakozuna-hz9 hz9-standalone-check
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
+  smoke-hz9ownerpagepool-api \
   bench-hz9ownerpagepool-purelocal-api \
   bench-release-hz9ownerpagepool-purelocal-api
 
