@@ -199,6 +199,7 @@ required:
   line-limit check for source/docs/scripts/mk files
 
 recommended if evidence is stale:
+  scripts/run_hz9_post_owner_page_closure.sh
   RUNS_READINESS=5 scripts/run_hz9_next_substrate_probe.sh
   RUNS=5 scripts/run_hz9_substrate_readiness.sh
 ```
