@@ -226,6 +226,27 @@ read:
   recovers fixed64/medium_local. The same proof is not a broad candidate:
   medium_r50/main_r90 regress badly. Treat this as attribution for a future
   substrate, not as a promotion path for OwnerPage.
+
+follow-up:
+  bench_results/20260702T123734Z_hz9_candidate_gate
+
+  ownerfast_bits R5:
+    medium_r50 0.929
+    main_r90   0.987
+    medium_local0 1.083
+    main_local0   0.992
+
+  ownerfast_bits_low32 R5:
+    medium_r50 0.910
+    main_r90   0.906
+    medium_local0 1.026
+    main_local0   0.998
+
+  read:
+    class-cutting the fast mutation to <=32K does not stabilize the shape.
+    Full ownerfast_bits remains the better attribution proof, but still misses
+    medium_r50 and has noisy local/main movement. Do not continue OwnerPage
+    class-cut tuning for default.
 ```
 
 ## Initial Decision
@@ -242,7 +263,7 @@ LocalArena phase8:
 OwnerPage purelocal:
   closest local substrate shape so far
   still not default due to medium_local0, main_r90, and small_remote movement
-  ownerfast-bits explains much of the local body cost but breaks mixed remote
-  rows
+  ownerfast-bits explains much of the local body cost but does not produce a
+  stable broad gate
   keep OwnerPage local mutation proofs as attribution only
 ```

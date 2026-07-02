@@ -24,8 +24,8 @@ Current direction:
                 OwnerPage purelocal is closest local substrate so far, but
                 still loses medium_local0 and small_remote90.
                 OwnerPage ownerfast-bits proves local_free_bits RMW is a
-                major local body cost, but remote rows regress; keep it as
-                attribution only.
+                major local body cost, but full/low32 variants are not stable
+                default candidates; keep them as attribution only.
   Prior HZ9 route-off/layout proofs show no-use route/layout contamination can
                 matter; keep them as proof-only evidence.
   HZ9 route-last / LocalArena remote-safe are closed as NO-GO evidence.

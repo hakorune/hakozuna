@@ -95,8 +95,9 @@ read:
     small_remote90
     code-shape audit shows public malloc/free/non-arena shapes unchanged
     ownerfast-bits proof recovers fixed64/medium_local but regresses
-    medium_r50/main_r90
-    decision: local_free_bits RMW is real body cost; proof is attribution only
+    or destabilizes remote/main rows depending on the gate
+    low32 class cut does not stabilize the result
+    decision: local_free_bits RMW is real body cost; proofs are attribution only
 ```
 
 Current profile/evidence lanes:

@@ -94,7 +94,9 @@ storemut / freebits:
 ownerpage ownerfast-bits:
   pure local pages replaced local_free_bits CAS/fetch_or with load/store.
   fixed64_local0 and medium_local0 recovered materially.
-  medium_r50 and main_r90 regressed, so the proof is attribution only.
+  medium_r50/main_r90 did not produce a stable broad gate.
+  <=32K class cut was worse than full ownerfast in the follow-up gate.
+  Treat as local body attribution only.
 
 post-hygiene next-substrate probe:
   SlabPage remained profile/evidence

@@ -438,6 +438,7 @@ ownerfast-bits target:
   proof-only variant
   replaces purelocal local_free_bits CAS/fetch_or with atomic load/store
   keeps REMOTE_SEEN / DETACHED paths on the existing atomic fallback
+  optional low32 target limits the replacement to classes <= 32K
   intended to attribute owner-page local body cost, not to promote behavior
 
 current behavior:
@@ -550,9 +551,20 @@ ownerfast-bits attribution:
   medium_r50 regresses to 0.860
   main_r90 regresses to 0.932
 
+ownerfast-bits class-cut:
+  bench_results/20260702T123734Z_hz9_candidate_gate
+  full ownerfast_bits:
+    medium_r50 0.929
+    main_r90   0.987
+    medium_local0 1.083
+  low32 ownerfast_bits:
+    medium_r50 0.910
+    main_r90   0.906
+    medium_local0 1.026
+
 decision:
   local_free_bits atomic RMW is a real local body cost
-  ownerfast-bits is not a broad HZ9 default candidate
+  ownerfast-bits and low32 class-cut are not broad HZ9 default candidates
   future substrate work should avoid this RMW on local rows without carrying
   unsafe pure-local mutation into mixed remote rows
 ```

@@ -45,6 +45,11 @@ static _Thread_local H9OwnerPageThreadState* h9_owner_page_tls_state;
 static h8_platform_mutex_t h9_owner_page_global_lock = H8_PLATFORM_MUTEX_INIT;
 static H9OwnerLocalPage* h9_owner_page_global_head;
 
+#if defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_L1) && \
+    !defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_MAX_CLASS_ID)
+#define H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_MAX_CLASS_ID 5u
+#endif
+
 static void h9_owner_page_release_thread_pages(H9OwnerPageThreadState* state);
 
 static uint64_t h9_owner_page_owner_word_for(const H8OwnerRecord* owner) {
@@ -321,9 +326,12 @@ static bool h9_owner_page_local_take(H9OwnerLocalPage* page,
   uint32_t slot = (uint32_t)__builtin_ctzll(bits);
   uint64_t bit = UINT64_C(1) << slot;
 #if defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_L1)
-  atomic_store_explicit(&page->local_free_bits, bits & ~bit,
-                        memory_order_release);
-#else
+  if (page->class_id <= H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_MAX_CLASS_ID) {
+    atomic_store_explicit(&page->local_free_bits, bits & ~bit,
+                          memory_order_release);
+  } else
+#endif
+  {
   while (!atomic_compare_exchange_weak_explicit(
       &page->local_free_bits, &bits, bits & ~bit, memory_order_acq_rel,
       memory_order_acquire)) {
@@ -334,7 +342,7 @@ static bool h9_owner_page_local_take(H9OwnerLocalPage* page,
     slot = (uint32_t)__builtin_ctzll(bits);
     bit = UINT64_C(1) << slot;
   }
-#endif
+  }
   if (bit_out) {
     *bit_out = bit;
   }
@@ -343,8 +351,9 @@ static bool h9_owner_page_local_take(H9OwnerLocalPage* page,
 
 static bool h9_owner_page_local_put(H9OwnerLocalPage* page, uint64_t bit) {
 #if defined(H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_L1)
-  if (atomic_load_explicit(&page->mode, memory_order_acquire) !=
-      H9_OWNER_PAGE_PURE_LOCAL) {
+  if (page->class_id > H9_OWNER_LOCAL_PAGE_POOL_OWNER_FAST_BITS_MAX_CLASS_ID ||
+      atomic_load_explicit(&page->mode, memory_order_acquire) !=
+          H9_OWNER_PAGE_PURE_LOCAL) {
     uint64_t old = atomic_fetch_or_explicit(&page->local_free_bits, bit,
                                             memory_order_acq_rel);
     return (old & bit) == 0;

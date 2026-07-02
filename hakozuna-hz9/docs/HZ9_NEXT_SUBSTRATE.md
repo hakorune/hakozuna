@@ -186,6 +186,12 @@ ownerpage body read:
   to 0.996, proving local_free_bits RMW is a major local body bucket.
   It regresses medium_r50 to 0.860 and main_r90 to 0.932, so it is not a broad
   default path.
+
+ownerpage class-cut read:
+  bench_results/20260702T123734Z_hz9_candidate_gate
+  <=32K ownerfast_bits cut does not stabilize remote/main rows.
+  Full ownerfast_bits is the better proof but still misses medium_r50.
+  Stop OwnerPage local mutation class-cut tuning for default.
 ```
 
 ## Active Constraints
