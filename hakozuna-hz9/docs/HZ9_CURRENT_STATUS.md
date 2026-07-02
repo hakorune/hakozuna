@@ -37,14 +37,14 @@ and remote medium rows.
 ## Active Box
 
 ```text
-HZ9StaticLocalPageScaffold-L0
+HZ9SegmentLocalCache-L0
 
 status:
   HZ8 remains the frozen balanced default
   HZ9 remains a standalone throughput research tree
   OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
-  do not open another threshold/admission retune without a new substrate shape
-  current work starts the next substrate source shape with no behavior change
+  StaticLocalPage is profile/local evidence, not mixed default behavior
+  current work starts the next substrate design-prep with no behavior change
 
 source-shape gate:
   RUN_SMOKE=0 RUN_PROBE=0 scripts/run_hz9_pre_substrate_recheck.sh
@@ -64,22 +64,14 @@ code shape:
   h8_free_inner baseline/scaffold 69 bytes / 22 insn
   h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
 
-current scaffold:
-  docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
-  static TLS state
-  owner-local plain bits
-  no dynamic TLS state ensure
-  no H8OwnerRecord / H8ThreadCtx field additions
-  not connected to allocator behavior yet
-  shadow counters are wired:
-    medium_local0 debug hit_ratio 0.999
-    medium_r50 debug class-disable hit_ratio 0.001
-    medium_r50 debug local-streak phase hit_ratio 0.043
-  decision:
-    HOLD for mixed default behavior
-    local-only/profile evidence remains useful
-    next mixed-default substrate needs a narrower boundary than class-disable
-    and a stronger shape than local-streak phase admission
+current design:
+  docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+  per-thread medium segment cache scaffold
+  segment-backed slots, not HZ8 medium-run objects
+  no allocator routing yet
+  no public entry branch
+  no H8OwnerRecord / H8ThreadCtx field additions in L0
+  remote-contaminated segment must leave LOCAL state
 
 profile gate:
   scripts/run_hz9_profile_local_gate.sh

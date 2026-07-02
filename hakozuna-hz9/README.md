@@ -34,9 +34,9 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9StaticLocalPageScaffold-L0 is the current source-shape read
-  static TLS bits preserve local-only reuse
-  class-disable and local-streak admission are too weak for mixed r50
+  HZ9SegmentLocalCache-L0 is the current design-prep box
+  segment-backed local slots are the next substrate hypothesis
+  StaticLocalPage is held as profile/local evidence
   OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
 

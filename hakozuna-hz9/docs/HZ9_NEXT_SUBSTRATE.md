@@ -251,6 +251,17 @@ profile-local evidence gate:
     both lose medium_local0 or guard_local0
     decision: close profile-local build selection for these two variants
     without a new class-specific hypothesis
+
+next substrate:
+  HZ9SegmentLocalCache-L0
+  docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+  scope:
+    design-prep and scaffold next
+    segment-backed local slots, not HZ8 medium-run objects
+    remote-contaminated segment leaves LOCAL state
+  reason:
+    prior lanes either pay too much local body cost or collapse under mixed
+    local/remote mutation
 ```
 
 ## Active Constraints

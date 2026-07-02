@@ -17,11 +17,10 @@ Current direction:
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 read: HZ9StaticLocalPageScaffold-L0.
-                Static TLS local page shadow shows strong local-only reuse and
-                r50 remote contamination; class-disable shadow is likely too
-                coarse; local-streak phase and profile-local R5 both still
-                leave row tradeoffs, so default needs another substrate.
+  Current HZ9 read: HZ9SegmentLocalCache-L0.
+                StaticLocalPage/profile-local R5 left row tradeoffs; next
+                substrate is segment-backed local slots with remote-contaminated
+                segments leaving LOCAL state.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -62,6 +61,7 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md
   hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
+  hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
   hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 
