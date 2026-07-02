@@ -191,6 +191,18 @@ tlscache mode:
     tlscache touch=1: about 224-234M ops/s
     tlsroute touch=1: about 237-255M ops/s
     tlscheckedtouch touch=1: about 486-495M ops/s
+
+tlsledger mode:
+  models a same-thread allocation ledger: alloc records page/slot, and free
+  pushes back to the local cache without exact pointer route
+  R1 class sweep:
+    touch=1: about 300-330M ops/s
+    tlscache comparison: about 214-226M ops/s
+    tlscheckedtouch comparison: about 443-472M ops/s
+  class 64K, 5M-iteration repeat:
+    tlsledger touch=1: about 298-328M ops/s
+    tlscache touch=1: about 198-211M ops/s
+    tlscheckedtouch touch=1: about 423-430M ops/s
 ```
 
 Interpretation:
@@ -223,6 +235,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push
+  tlsledger proves that removing route-push helps, but a one-entry ledger still
+  pays enough bookkeeping that it does not recover the fused local body
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

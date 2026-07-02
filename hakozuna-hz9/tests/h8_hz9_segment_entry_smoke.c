@@ -115,6 +115,14 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 16;
   }
+  owned = false;
+  if (!h9_segment_entry_debug_cycle_tls_ledger(class_id, 23u, true, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(b, &owned) || !owned) {
+    fprintf(stderr, "segment entry tls ledger cycle failed: class=%u\n",
+            class_id);
+    return 17;
+  }
   return 0;
 }
 
