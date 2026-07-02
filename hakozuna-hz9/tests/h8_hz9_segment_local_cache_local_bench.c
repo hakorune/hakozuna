@@ -31,7 +31,7 @@ int main(void) {
   bool touch = env_u64("TOUCH", 1u) != 0u;
   uint64_t route_free = env_u64("ROUTE_FREE", 0u);
   bool active_cycle = env_u64("ACTIVE_CYCLE", 0u) != 0u;
-  bool active_route = env_u64("ACTIVE_ROUTE", 0u) != 0u;
+  uint64_t active_route = env_u64("ACTIVE_ROUTE", 0u);
 
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
@@ -64,7 +64,7 @@ int main(void) {
       return 4;
     }
   }
-  if ((active_cycle || active_route) &&
+  if ((active_cycle || active_route != 0u) &&
       !h9_segment_local_cache_debug_set_active_class(class_id)) {
     fprintf(stderr, "segment local bench active setup failed\n");
     h8_platform_release(payload, run_size);
@@ -77,7 +77,7 @@ int main(void) {
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
-    if (active_route) {
+    if (active_route != 0u) {
       uint32_t routed_class = UINT32_MAX;
       uint32_t routed_slot = UINT32_MAX;
       success = h9_segment_local_cache_debug_active_take_direct(&slot, &addr);
@@ -86,13 +86,16 @@ int main(void) {
         p[0] = (unsigned char)i;
         p[slot_size - 1u] = (unsigned char)(i >> 8);
       }
-      success =
-          success &&
-          h9_segment_local_cache_debug_route_table_slot_addr(
-              addr, &routed_class, &routed_slot) == H8_ROUTE_VALID &&
-          routed_class == class_id && routed_slot == slot &&
-          h9_segment_local_cache_debug_free_allocated(routed_class,
-                                                      routed_slot);
+      H8RouteKind route_kind =
+          active_route == 2u
+              ? h9_segment_local_cache_debug_route_active_slot_addr(
+                    addr, &routed_class, &routed_slot)
+              : h9_segment_local_cache_debug_route_table_slot_addr(
+                    addr, &routed_class, &routed_slot);
+      success = success && route_kind == H8_ROUTE_VALID &&
+                routed_class == class_id && routed_slot == slot &&
+                h9_segment_local_cache_debug_free_allocated(routed_class,
+                                                            routed_slot);
     } else if (active_cycle) {
       success = h9_segment_local_cache_debug_active_cycle_known(&addr);
       if (success && touch) {
@@ -159,7 +162,7 @@ int main(void) {
          "seconds=%.6f cycles_per_s=%.2f ops_per_s=%.2f\n",
          class_id, slot_size, run_size, (unsigned)slot_count, payload_bytes,
          slack_bytes, touch ? 1u : 0u, (unsigned)route_free,
-         active_cycle ? 1u : 0u, active_route ? 1u : 0u,
+         active_cycle ? 1u : 0u, (unsigned)active_route,
          (unsigned long long)ok, elapsed, cycles, cycles * 2.0);
 
   h8_platform_release(payload, run_size);

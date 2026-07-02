@@ -46,10 +46,11 @@ make -C hakozuna-hz9 bench-hz9segmentlocalcache-local
   set ROUTE_FREE=2 to return class+slot from table route before free
   set ACTIVE_CYCLE=1 to use active-segment direct known-slot cycling
   set ACTIVE_ROUTE=1 to use active direct take + route_table_slot free
+  set ACTIVE_ROUTE=2 to try active segment before route_table_slot free
 
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
-  SegmentLocalCache real-payload sweep for direct / active / active_route / route2
-  modes
+  SegmentLocalCache real-payload sweep for direct / active / active_route /
+  active_fast / route2 modes
 ```
 
 Active-run magazine evidence tests are still available as historical L0

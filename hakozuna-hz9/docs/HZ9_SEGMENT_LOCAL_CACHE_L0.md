@@ -537,6 +537,14 @@ active_route=1, touch=1:
   class3 161.2M ops/s
   class4 151.8M ops/s
   class5 149.4M ops/s
+
+active_route=2, touch=1:
+  class0 174.5M ops/s
+  class1 147.5M ops/s
+  class2 171.3M ops/s
+  class3 171.2M ops/s
+  class4 168.7M ops/s
+  class5 170.8M ops/s
 ```
 
 Interpretation:
@@ -567,6 +575,11 @@ active-route payload probe:
   active direct take plus route_table_slot free lands around 149-183M ops/s
   this is better than route2 alone, but free boundary classification dominates
   a public malloc/free cycle
+
+active-first route probe:
+  trying the active segment before the table route lands around 147-174M ops/s
+  it helps upper classes and is a plausible public free fast boundary
+  however the gap to active direct local remains large
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
@@ -634,7 +647,7 @@ local hit core:
   no route classification
 
 public free boundary:
-  route_table_slot
+  active-first route, then route_table_slot fallback
   exact slot validation
   owned INVALID remains fail-closed
 ```

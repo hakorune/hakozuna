@@ -77,6 +77,7 @@ current design:
   API and real-payload sweeps separate local direct body from public route cost
   active direct body remains about 421M+ ops/s on real payload
   active_route public cycle is about 149M+ ops/s and route-boundary dominated
+  active-first route can lift upper classes to about 168-171M ops/s
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

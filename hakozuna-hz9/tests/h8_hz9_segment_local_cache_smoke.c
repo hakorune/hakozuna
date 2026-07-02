@@ -384,6 +384,14 @@ static int check_bound_alloc_free(void) {
     fprintf(stderr, "segment active direct take failed\n");
     return 79;
   }
+  uint32_t routed_class = UINT32_MAX;
+  uint32_t routed_slot = UINT32_MAX;
+  if (h9_segment_local_cache_debug_route_active_slot_addr(
+          base + slot_size, &routed_class, &routed_slot) != H8_ROUTE_VALID ||
+      routed_class != class_id || routed_slot != 1u) {
+    fprintf(stderr, "segment active route slot failed\n");
+    return 80;
+  }
   if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
       !h9_segment_local_cache_debug_active_take_addr(&addr1) ||
       addr1 != base + slot_size ||
@@ -396,6 +404,8 @@ static int check_bound_alloc_free(void) {
       h9_segment_local_cache_debug_free_addr(class_id, addr0) ||
       h9_segment_local_cache_debug_free_addr_fast(class_id, addr0) ||
       h9_segment_local_cache_debug_active_free_addr(addr0) ||
+      h9_segment_local_cache_debug_route_active_slot_addr(
+          addr0, NULL, NULL) != H8_ROUTE_INVALID ||
       h9_segment_local_cache_debug_route_addr(class_id, addr0) !=
           H8_ROUTE_INVALID) {
     fprintf(stderr, "segment bound remote free rejection failed\n");
