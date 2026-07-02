@@ -109,6 +109,9 @@ make -C hakozuna-hz9 hz9-standalone-check
 # current pre-substrate closure gate
 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh
 
+# current segment-local-cache scaffold smoke
+make -C hakozuna-hz9 smoke-hz9segmentlocalcache
+
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
   smoke-hz9ownerpagepool-api \

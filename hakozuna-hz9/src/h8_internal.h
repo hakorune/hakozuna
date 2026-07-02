@@ -497,6 +497,22 @@ uint64_t h9_static_local_page_debug_free_bits(uint32_t class_id);
 uint64_t h9_static_local_page_debug_alloc_bits(uint32_t class_id);
 uint64_t h9_static_local_page_debug_touched_classes(void);
 #endif
+#if defined(H9_SEGMENT_LOCAL_CACHE_L0)
+void h9_segment_local_cache_debug_reset(void);
+size_t h9_segment_local_cache_debug_state_size(void);
+bool h9_segment_local_cache_debug_put(uint32_t class_id, uint32_t slot);
+bool h9_segment_local_cache_debug_take(uint32_t class_id, uint32_t* slot_out);
+bool h9_segment_local_cache_debug_free_allocated(uint32_t class_id,
+                                                 uint32_t slot);
+bool h9_segment_local_cache_debug_remote_mark(uint32_t class_id,
+                                              uint32_t slot);
+bool h9_segment_local_cache_debug_retire(uint32_t class_id);
+uint32_t h9_segment_local_cache_debug_state(uint32_t class_id);
+uint64_t h9_segment_local_cache_debug_free_bits(uint32_t class_id);
+uint64_t h9_segment_local_cache_debug_alloc_bits(uint32_t class_id);
+uint64_t h9_segment_local_cache_debug_remote_bits(uint32_t class_id);
+uint64_t h9_segment_local_cache_debug_touched_classes(void);
+#endif
 typedef enum H9LocalEntryEvent {
   H9_LOCAL_ENTRY_MALLOC_MEDIUM = 0,
   H9_LOCAL_ENTRY_MALLOC_FALLBACK = 1,

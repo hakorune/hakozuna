@@ -84,6 +84,24 @@ do not implement in L0:
   RSS policy
 ```
 
+## Implemented Scaffold
+
+```text
+source:
+  src/h8_hz9_segment_local_cache.c
+
+test:
+  tests/h8_hz9_segment_local_cache_smoke.c
+
+build:
+  smoke-hz9segmentlocalcache
+
+flag:
+  H9_SEGMENT_LOCAL_CACHE_L0
+```
+
+The scaffold is `_Thread_local` and not connected to allocator routing.
+
 ## Segment Model
 
 ```text
