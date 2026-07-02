@@ -124,6 +124,12 @@ tls-handle mode:
   class 64K, 5M-iteration repeat:
     touch=1: about 692-710M ops/s
     touch=0: about 711-721M ops/s
+
+tlsroute mode:
+  allocates through the TLS cached handle, then frees through route/free
+  touch=1: about 244-255M ops/s
+  touch=0: about 251-265M ops/s
+  compared with route at about 182-207M touch=1 and 199-226M touch=0
 ```
 
 Interpretation:
@@ -142,4 +148,5 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   prefer entry designs that cache the selected page handle at the local call
   site
   treat TLS cached page handle as the next behavior integration shape
+  handle-cached allocation alone is not enough; the next residual is free route
 ```

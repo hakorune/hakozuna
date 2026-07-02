@@ -69,6 +69,14 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 10;
   }
+  if (!h9_segment_entry_debug_alloc_tls_handle(class_id, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_VALID ||
+      !h9_segment_entry_debug_free(b, &owned) || !owned ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry tls route free failed: class=%u\n",
+            class_id);
+    return 11;
+  }
   return 0;
 }
 

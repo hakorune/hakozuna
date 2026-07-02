@@ -16,7 +16,8 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_FAST = 2,
   H9_SEGMENT_ENTRY_BENCH_PAGE = 3,
   H9_SEGMENT_ENTRY_BENCH_HANDLE = 4,
-  H9_SEGMENT_ENTRY_BENCH_TLS = 5
+  H9_SEGMENT_ENTRY_BENCH_TLS = 5,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 6
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -56,6 +57,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_HANDLE;
   } else if (strcmp(mode, "tls") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS;
+  } else if (strcmp(mode, "tlsroute") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE;
   }
 
   uint32_t slot_size = 0u;
@@ -81,7 +84,8 @@ int main(void) {
       return 3;
     }
   } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE ||
-             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS) {
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE) {
     page_handle = h9_segment_entry_debug_prepare_handle(class_id);
     if (page_handle == 0u) {
       fprintf(stderr, "segment entry bench failed to prepare handle\n");
@@ -94,7 +98,16 @@ int main(void) {
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE) {
+      bool owned = false;
+      success = h9_segment_entry_debug_alloc_tls_handle(class_id, &ptr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)ptr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success = success && h9_segment_entry_debug_free(ptr, &owned) && owned;
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS) {
       success = h9_segment_entry_debug_cycle_tls_handle(class_id, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_HANDLE) {
       success = h9_segment_entry_debug_cycle_handle(page_handle, &ptr);
@@ -114,7 +127,8 @@ int main(void) {
       }
       success = success && h9_segment_entry_debug_free(ptr, &owned) && owned;
     }
-    if (success && touch && bench_mode != H9_SEGMENT_ENTRY_BENCH_ROUTE) {
+    if (success && touch && bench_mode != H9_SEGMENT_ENTRY_BENCH_ROUTE &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE) {
       volatile unsigned char* p = (volatile unsigned char*)ptr;
       p[0] = (unsigned char)i;
       p[slot_size - 1u] = (unsigned char)(i >> 8);
