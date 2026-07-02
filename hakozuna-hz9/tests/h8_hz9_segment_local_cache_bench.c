@@ -33,7 +33,8 @@ typedef enum SegmentBenchMode {
   SEGMENT_BENCH_FAST_ADDR = 5,
   SEGMENT_BENCH_SLOT_ADDR = 6,
   SEGMENT_BENCH_CYCLE_KNOWN = 7,
-  SEGMENT_BENCH_TABLE_SLOT_ADDR = 8
+  SEGMENT_BENCH_TABLE_SLOT_ADDR = 8,
+  SEGMENT_BENCH_ACTIVE_CYCLE_KNOWN = 9
 } SegmentBenchMode;
 
 int main(void) {
@@ -63,7 +64,8 @@ int main(void) {
                    mode == SEGMENT_BENCH_FAST_ADDR ||
                    mode == SEGMENT_BENCH_SLOT_ADDR ||
                    mode == SEGMENT_BENCH_CYCLE_KNOWN ||
-                   mode == SEGMENT_BENCH_TABLE_SLOT_ADDR;
+                   mode == SEGMENT_BENCH_TABLE_SLOT_ADDR ||
+                   mode == SEGMENT_BENCH_ACTIVE_CYCLE_KNOWN;
   uintptr_t base = (uintptr_t)0x40000000u;
   if (uses_base &&
       !h9_segment_local_cache_debug_bind_base(class_id,
@@ -75,7 +77,8 @@ int main(void) {
     fprintf(stderr, "segment bench setup failed for class %u\n", class_id);
     return 3;
   }
-  if (mode == SEGMENT_BENCH_ACTIVE_ADDR &&
+  if ((mode == SEGMENT_BENCH_ACTIVE_ADDR ||
+       mode == SEGMENT_BENCH_ACTIVE_CYCLE_KNOWN) &&
       !h9_segment_local_cache_debug_set_active_class(class_id)) {
     fprintf(stderr, "segment bench active setup failed for class %u\n",
             class_id);
@@ -102,6 +105,9 @@ int main(void) {
                 h9_segment_local_cache_debug_free_allocated(class_id, slot);
     } else if (mode == SEGMENT_BENCH_CYCLE_KNOWN) {
       success = h9_segment_local_cache_debug_cycle_known(class_id, &addr);
+      success = success && addr >= base;
+    } else if (mode == SEGMENT_BENCH_ACTIVE_CYCLE_KNOWN) {
+      success = h9_segment_local_cache_debug_active_cycle_known(&addr);
       success = success && addr >= base;
     } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
       success = h9_segment_local_cache_debug_take(class_id, &slot);
@@ -159,6 +165,8 @@ int main(void) {
     mode_name = "slot_addr";
   } else if (mode == SEGMENT_BENCH_CYCLE_KNOWN) {
     mode_name = "cycle_known";
+  } else if (mode == SEGMENT_BENCH_ACTIVE_CYCLE_KNOWN) {
+    mode_name = "active_cycle_known";
   } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
     mode_name = "known_addr";
   } else if (mode == SEGMENT_BENCH_TABLE_ADDR) {

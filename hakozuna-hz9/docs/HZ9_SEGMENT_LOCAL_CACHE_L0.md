@@ -151,6 +151,10 @@ cycle_known mode:
   single-function known-slot take/address/free cycle
   estimates the behavior-body ceiling without debug API layering
 
+active_cycle_known mode:
+  active-class known-slot take/address/free cycle
+  estimates the next local hit core with an active segment pointer
+
 known_addr mode:
   take/free_allocated with base + slot * slot_size address generation
   approximates the eventual local hot-path shape
@@ -343,6 +347,14 @@ cycle_known mode:
   class4 458.8M ops/s
   class5 503.6M ops/s
 
+active_cycle_known mode:
+  class0 453.4M ops/s
+  class1 459.0M ops/s
+  class2 473.9M ops/s
+  class3 458.9M ops/s
+  class4 445.5M ops/s
+  class5 468.4M ops/s
+
 known_addr mode:
   class0 325.7M ops/s
   class1 338.5M ops/s
@@ -415,6 +427,11 @@ cycle_known:
   the split debug APIs
   this proves the segment body is not the current blocker; API layering and
   route wrappers are
+
+active_cycle_known:
+  active-class pointer plus direct known-slot body remains about 445-474M ops/s
+  this is the right behavior-core target for local reuse
+  route_table_slot remains the public free boundary, not the local hit body
 
 slot_addr proof:
   caching slot_size in the bound segment lifts the slot+address API above

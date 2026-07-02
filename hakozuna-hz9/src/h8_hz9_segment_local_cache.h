@@ -17,6 +17,7 @@ bool h9_segment_local_cache_debug_free_allocated(uint32_t class_id,
                                                  uint32_t slot);
 bool h9_segment_local_cache_debug_cycle_known(uint32_t class_id,
                                               uintptr_t* addr_out);
+bool h9_segment_local_cache_debug_active_cycle_known(uintptr_t* addr_out);
 bool h9_segment_local_cache_debug_remote_mark(uint32_t class_id,
                                               uint32_t slot);
 bool h9_segment_local_cache_debug_drain_remote(uint32_t class_id,

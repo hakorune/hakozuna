@@ -189,6 +189,14 @@ bool h9_segment_local_cache_debug_cycle_known(uint32_t class_id,
   return true;
 }
 
+bool h9_segment_local_cache_debug_active_cycle_known(uintptr_t* addr_out) {
+  if (h9_segment_tls.active_class >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  return h9_segment_local_cache_debug_cycle_known(h9_segment_tls.active_class,
+                                                  addr_out);
+}
+
 bool h9_segment_local_cache_debug_remote_mark(uint32_t class_id,
                                               uint32_t slot) {
   if (!h9_segment_slot_valid(class_id, slot)) {

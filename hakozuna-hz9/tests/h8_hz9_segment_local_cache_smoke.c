@@ -373,6 +373,12 @@ static int check_bound_alloc_free(void) {
     return 75;
   }
   if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
+      !h9_segment_local_cache_debug_active_cycle_known(&addr1) ||
+      addr1 != base + slot_size) {
+    fprintf(stderr, "segment active known cycle failed\n");
+    return 78;
+  }
+  if (!h9_segment_local_cache_debug_set_active_class(class_id) ||
       !h9_segment_local_cache_debug_active_take_addr(&addr1) ||
       addr1 != base + slot_size ||
       !h9_segment_local_cache_debug_active_free_addr(addr1) ||
