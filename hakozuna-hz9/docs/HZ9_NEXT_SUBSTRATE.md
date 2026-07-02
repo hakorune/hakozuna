@@ -232,6 +232,11 @@ profile-local evidence gate:
   rule:
     results can justify profile documentation or a profile build, not broad
     mixed default promotion
+  first smoke:
+    RUNS=1 THREADS=2 ITERS=10000
+    ownerpage_ownerfast_bits wins medium/main local but regresses guard_local0
+    staticlocal_shadow wins fixed48/main/guard but regresses medium_local0
+    next read needs RUNS>=3 before making any profile build decision
 ```
 
 ## Active Constraints

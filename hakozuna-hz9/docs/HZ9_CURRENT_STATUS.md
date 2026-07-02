@@ -90,6 +90,16 @@ profile gate:
     fixed64_local0, fixed48_local0, medium_local0, main_local0, guard_local0
   default variants:
     baseline, ownerpage_ownerfast_bits, staticlocal_shadow
+  smoke read:
+    bench_results/20260702T_profile_local_smoke_hz9_profile_local_gate
+    RUNS=1 THREADS=2 ITERS=10000
+    ownerpage_ownerfast_bits:
+      medium_local0 1.118, main_local0 1.169, guard_local0 0.945
+    staticlocal_shadow:
+      fixed48_local0 1.091, main_local0 1.055, medium_local0 0.965
+    interpretation:
+      gate works; R1 is not promotion evidence
+      profile candidates still have row-specific tradeoffs
 ```
 
 Latest behavior result:
