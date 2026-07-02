@@ -141,6 +141,9 @@ opaque-handle mode:
 handlecheckedtouch mode:
   prepares an opaque page handle once, then runs the checked-touch body without
   per-iteration class/TLS lookup
+  handlebody is the same checked-touch body called through the internal inline
+  helper from the bench TU; it tests whether the public debug wrapper boundary
+  is the next bottleneck.
   class 64K, 5M-iteration R3:
     handlecheckedtouch touch=1: about 523-570M ops/s
     tlscheckedtouch touch=1: about 415-417M ops/s
@@ -155,6 +158,12 @@ handlecheckedtouch mode:
     tlscheckedtouch: about 394-422M ops/s
     tlsepochbody: about 349-360M ops/s
     tlsroute64body: about 284-290M ops/s
+  direct body check, class 64K, 10M-iteration R3:
+    handlebody: about 548-562M ops/s
+    handlecheckedtouch: about 562-575M ops/s
+  reading: removing the public debug wrapper boundary does not improve the
+  acquired-handle body. The remaining large gap is the handle/TLS acquisition
+  shape, not a wrapper-call artifact.
 
 tls-handle mode:
   caches the selected page handle in TLS by class

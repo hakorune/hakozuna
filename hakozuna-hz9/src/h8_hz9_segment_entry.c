@@ -213,33 +213,12 @@ static bool h9_segment_entry_free_page_slot(H9SegmentEntryPage* page,
   return true;
 }
 
-static bool h9_segment_entry_cycle_page_checked_touch(H9SegmentEntryPage* page,
-                                                      uint64_t value,
-                                                      bool touch,
-                                                      void** ptr_out) {
-  if (!page || page->free_bits == 0u) {
-    return false;
-  }
-  uint32_t slot = (uint32_t)__builtin_ctzll(page->free_bits);
-  uint64_t bit = UINT64_C(1) << slot;
-  page->free_bits &= ~bit;
-  page->alloc_bits |= bit;
-  void* ptr = (void*)((uintptr_t)page->base +
-                      (uintptr_t)slot * (uintptr_t)page->slot_size);
-  if (ptr_out) {
-    *ptr_out = ptr;
-  }
-  if (touch) {
-    volatile unsigned char* p = (volatile unsigned char*)ptr;
-    p[0] = (unsigned char)value;
-    p[page->slot_size - 1u] = (unsigned char)(value >> 8);
-  }
-  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
-    return false;
-  }
-  page->alloc_bits &= ~bit;
-  page->free_bits |= bit;
-  return true;
+bool h9_segment_entry_cycle_page_checked_touch(H9SegmentEntryPage* page,
+                                               uint64_t value,
+                                               bool touch,
+                                               void** ptr_out) {
+  return h9_segment_entry_cycle_page_checked_touch_inline(page, value, touch,
+                                                          ptr_out);
 }
 
 static bool h9_segment_entry_cycle_page_checked(H9SegmentEntryPage* page,

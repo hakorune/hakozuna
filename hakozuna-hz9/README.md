@@ -120,6 +120,8 @@ RUNS=3 ITERS=3000000 \
   hakozuna-hz9/scripts/run_hz9_segment_entry_handle_probe.sh
 MODE=handlecheckedtouch CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
+MODE=handlebody CLASS_ID=5 ITERS=10000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlscheckedtouch CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlsepochbody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
