@@ -10,6 +10,8 @@ typedef struct H9LspInlinePage {
   uintptr_t base;
   uint32_t slot_size;
   uint32_t slot_count;
+  uint32_t generation;
+  uint32_t class_id;
   uint64_t free_bits;
   uint64_t alloc_bits;
 } H9LspInlinePage;
@@ -21,6 +23,8 @@ static inline void h9_lsp_inline_page_init(H9LspInlinePage* page,
   page->base = base;
   page->slot_size = slot_size;
   page->slot_count = slot_count;
+  page->generation = 1u;
+  page->class_id = UINT32_MAX;
   page->free_bits = slot_count == 64u ? UINT64_MAX
                                       : ((UINT64_C(1) << slot_count) - 1u);
   page->alloc_bits = 0u;

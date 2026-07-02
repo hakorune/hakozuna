@@ -16,12 +16,12 @@ Current direction:
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 read: HZ9LocalSlabInlineBody-L0.
-                SegmentEntry proved fused token-local bodies are fast, but
-                split malloc/free and public route-push are the residuals.
-                Inline local slab body is fast; the weak part is the current
-                public-shaped debug boundary, not local bit mutation itself.
-                route/core and cache/ledger TUs are split for the line rule.
+  Current HZ9 read: HZ9LocalSlabPointerTokenEntry-L1.
+                Inline local slab body is fast; route-first public free is the
+                residual.  Next shape is a TLS pointer-token positive cache:
+                same-thread exact free may skip route, but miss/foreign/invalid
+                usable_size/realloc still fall to route authority.
+                Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -62,6 +62,7 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md
+  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
   hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 

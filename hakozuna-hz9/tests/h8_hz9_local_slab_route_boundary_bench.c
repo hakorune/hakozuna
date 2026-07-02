@@ -1,5 +1,6 @@
 #include "../src/h8_internal.h"
 #include "../src/h8_hz9_local_slab_inline_body.h"
+#include "../src/h8_hz9_local_slab_pointer_token.h"
 #include "../src/h8_hz9_local_slab_route_boundary.h"
 
 #include <inttypes.h>
@@ -19,7 +20,8 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_SPLIT_DIRECT = 3,
   H9_LSP_BENCH_KNOWN_SLOT = 4,
   H9_LSP_BENCH_ALLOC_SLOT_ONLY = 5,
-  H9_LSP_BENCH_INLINE_BODY = 6
+  H9_LSP_BENCH_INLINE_BODY = 6,
+  H9_LSP_BENCH_PTR_TOKEN = 7
 } H9LspBenchMode;
 
 static double now_seconds(void) {
@@ -61,6 +63,8 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_ALLOC_SLOT_ONLY;
   } else if (strcmp(mode, "inlinebody") == 0) {
     bench_mode = H9_LSP_BENCH_INLINE_BODY;
+  } else if (strcmp(mode, "ptrtoken") == 0) {
+    bench_mode = H9_LSP_BENCH_PTR_TOKEN;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -69,7 +73,8 @@ int main(void) {
   }
   uint32_t slot_size = spec->slot_size;
 
-  if (bench_mode == H9_LSP_BENCH_INLINE_BODY) {
+  if (bench_mode == H9_LSP_BENCH_INLINE_BODY ||
+      bench_mode == H9_LSP_BENCH_PTR_TOKEN) {
     size_t payload_bytes = (size_t)slot_size * 64u;
     void* payload = malloc(payload_bytes);
     if (!payload) {
@@ -78,6 +83,8 @@ int main(void) {
     }
     H9LspInlinePage page;
     h9_lsp_inline_page_init(&page, (uintptr_t)payload, slot_size, 64u);
+    page.class_id = class_id;
+    H9LspPtrLedger ledger = {0};
     uint64_t ok = 0u;
     uintptr_t sink = 0u;
     double start = now_seconds();
@@ -90,7 +97,12 @@ int main(void) {
         p[0] = (unsigned char)i;
         p[slot_size - 1u] = (unsigned char)(i >> 8);
       }
-      success = success && h9_lsp_inline_free_slot(&page, slot);
+      if (success && bench_mode == H9_LSP_BENCH_PTR_TOKEN) {
+        h9_lsp_ptr_ledger_insert(&ledger, ptr, &page, slot, class_id);
+        success = h9_lsp_ptr_ledger_free_hit(&ledger, ptr);
+      } else {
+        success = success && h9_lsp_inline_free_slot(&page, slot);
+      }
       if (!success) {
         fprintf(stderr, "lsp inline transition failed at iter %llu\n",
                 (unsigned long long)i);

@@ -26,6 +26,10 @@ HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md:
   next public split-boundary design: O(1) address-derived route authority shared
   by free, usable_size, and realloc
 
+HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md:
+  active entry probe: TLS pointer-token positive cache before route for
+  same-thread exact free, with route retained as fallback authority
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
   held 64K slab/page prototype, route boundary, counters, and blockers
 
@@ -87,16 +91,16 @@ LocalArena:
   collapse on medium_r50/main_r90
 
 next:
-  HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0 is the current design box
-  stop adding fused-only cache probes unless they answer a route-boundary
+  HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1 is the current design box
+  stop adding fused-only cache probes unless they answer a public-entry
   question
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
   owner-page PureLocal L1 is implemented and held as profile/evidence
   owner-page ownerfast/disabled-fast variants are attribution only
   DirectSlabUse is complete and remains remote/profile evidence
-  the next behavior must make public free/usable/realloc share one O(1)
-  fail-closed route authority
+  the next behavior must keep route as fail-closed fallback authority while
+  same-thread exact free may use a pointer-token positive cache before route
   require local/main/small no-regression before any behavior promotion
 ```
 
@@ -107,6 +111,8 @@ make -C hakozuna-hz9 hz9-standalone-check
 make -C hakozuna-hz9 smoke-hz9segmentlocalcache
 make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
 make -C hakozuna-hz9 bench-hz9localslabrouteboundary
+MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
 hakozuna-hz9/scripts/run_hz9_pre_substrate_recheck.sh

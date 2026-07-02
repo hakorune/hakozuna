@@ -34,20 +34,20 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9LocalSlabPageRouteBoundary-L0 is the current design box
-  SegmentEntry proved fast fused/token-local bodies, but public split
-  malloc/free and route-push remain the blocker
-  the next substrate must make free/usable_size/realloc share one O(1)
-  address-derived fail-closed route authority
+  HZ9LocalSlabPointerTokenEntry-L1 is the current design box
+  SegmentEntry and inlinebody proved fast local slab bodies, but route-first
+  public free remains the blocker
+  same-thread exact free should try a TLS pointer-token positive cache before
+  route; all misses/foreign/invalid pointers still fall back to route authority
   StaticLocalPage is held as profile/local evidence
   OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
   stop treating fused-only microbenchmarks as behavior evidence
-  build the public split-boundary route scaffold before more local-cache tuning
-  avoid TLS-cache pop plus public route-push shapes; they collapse to route-free
-  speed
+  measure whether pointer-token entry can reconnect the inline body to a
+  public-shaped split malloc/free path
+  avoid ledger-miss-to-platform shortcuts; route remains the fallback authority
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -166,6 +166,8 @@ MODE=split CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=knownslot CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 
 # current owner-page scaffold/API checks

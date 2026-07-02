@@ -1,6 +1,9 @@
+#include "../src/h8_hz9_local_slab_inline_body.h"
+#include "../src/h8_hz9_local_slab_pointer_token.h"
 #include "../src/h8_hz9_local_slab_route_boundary.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #if !defined(H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0)
@@ -81,8 +84,63 @@ static int check_class(uint32_t class_id) {
   return 0;
 }
 
+static int check_pointer_token(void) {
+  void* payload = malloc(64u * 64u);
+  if (!payload) {
+    return 20;
+  }
+  H9LspInlinePage page;
+  h9_lsp_inline_page_init(&page, (uintptr_t)payload, 64u, 64u);
+  page.class_id = 5u;
+  H9LspPtrLedger ledger = {0};
+
+  uint32_t slot = UINT32_MAX;
+  void* ptr = NULL;
+  if (!h9_lsp_inline_alloc_slot(&page, &slot, &ptr) || !ptr) {
+    free(payload);
+    return 21;
+  }
+  h9_lsp_ptr_ledger_insert(&ledger, ptr, &page, slot, 5u);
+  if (h9_lsp_ptr_ledger_lookup(&ledger, (char*)ptr + 1) != NULL) {
+    fprintf(stderr, "pointer-token accepted interior pointer\n");
+    free(payload);
+    return 22;
+  }
+  if (!h9_lsp_ptr_ledger_free_hit(&ledger, ptr)) {
+    fprintf(stderr, "pointer-token exact free missed\n");
+    free(payload);
+    return 23;
+  }
+  if (h9_lsp_ptr_ledger_free_hit(&ledger, ptr)) {
+    fprintf(stderr, "pointer-token double free accepted\n");
+    free(payload);
+    return 24;
+  }
+
+  if (!h9_lsp_inline_alloc_slot(&page, &slot, &ptr) || !ptr) {
+    free(payload);
+    return 25;
+  }
+  h9_lsp_ptr_ledger_insert(&ledger, ptr, &page, slot, 5u);
+  ++page.generation;
+  if (h9_lsp_ptr_ledger_free_hit(&ledger, ptr)) {
+    fprintf(stderr, "pointer-token stale generation accepted\n");
+    free(payload);
+    return 26;
+  }
+  h9_lsp_ptr_ledger_clear_entry(h9_lsp_ptr_ledger_lookup(&ledger, ptr));
+  (void)h9_lsp_inline_free_slot(&page, slot);
+  free(payload);
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
+  int token_rc = check_pointer_token();
+  if (token_rc != 0) {
+    h9_lsp_debug_reset();
+    return token_rc;
+  }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);
     if (rc != 0) {

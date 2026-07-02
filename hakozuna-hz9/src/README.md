@@ -39,6 +39,8 @@ Local slab/page route-boundary work:
   split core page allocation, route/free authority, and remote stubs into
   separate translation units
   make free, usable_size, and realloc share one route authority
+  allow same-thread exact free to use a TLS pointer-token positive cache before
+  route, but route remains the fallback authority for every miss
   do not route public HZ9 free through the HZ8 medium directory as the primary
   local substrate
 ```
