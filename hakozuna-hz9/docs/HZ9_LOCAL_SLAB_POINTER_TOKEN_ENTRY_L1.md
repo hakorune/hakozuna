@@ -286,7 +286,7 @@ Layer2 cold:
 The failed wrapper does not disprove cold route fallback.  It proves the second
 tier must not be inline-expanded into Layer0.
 
-Rejected helper follow-up:
+Unisolated helper follow-up:
 
 ```text
 fastleaf helper/mode in the same bench TU:
@@ -297,14 +297,54 @@ fastleaf helper/mode in the same bench TU:
     about 286M..450M ops/s
 
 decision:
-  NO-GO as a helper probe
+  NO-GO as an unisolated helper probe
 ```
 
-The lesson is stricter than "return HIT/MISS": Layer0 must be the literal hot
-entry body or a mechanically isolated leaf.  Adding another helper/mode in the
-same benchmark TU changes layout/code shape enough to destroy the prior
-integrated ceiling.  Keep the fast probe minimal until the real entry body is
-split into separate TUs.
+The lesson is not that helper abstraction is inherently bad.  It is that the
+benchmark must keep each hot loop mechanically isolated before judging helper
+shape.  Adding another loop/mode inside the same large `main()` can change
+register allocation and destroy the prior integrated ceiling.
+
+Harness correction:
+
+```text
+problem:
+  multi-mode main() can change register allocation for unrelated hot loops
+
+fix:
+  move integrated / fastleaf hot loops into noinline workers
+  keep main() as dispatch/report only for these probes
+
+purpose:
+  decide whether helper shape is really slow, or whether prior drops were
+  benchmark harness artifacts
+```
+
+Worker-isolated result:
+
+```text
+command:
+  MODE=<mode> CLASS_ID=5 ITERS=30000000 TOUCH=1
+
+integrated R3:
+  757.303M
+  754.960M
+  743.951M
+
+fastleaf R3:
+  835.766M
+  791.037M
+  866.959M
+
+lastpublic R3:
+  870.273M
+  837.740M
+  875.807M
+
+read:
+  helper/leaf shape is viable when isolated
+  keep Layer0 as a pure leaf or entry-local body
+  keep Layer1/Layer2 fallback logic out of the hot worker
 ```
 
 ## Integrated Entry Candidate
@@ -363,6 +403,8 @@ MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=fastleaf CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

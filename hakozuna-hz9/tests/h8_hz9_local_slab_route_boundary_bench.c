@@ -14,6 +14,12 @@
 #error "local slab route boundary bench requires L0 flag"
 #endif
 
+#if defined(__GNUC__) || defined(__clang__)
+#define H9_BENCH_NOINLINE __attribute__((noinline))
+#else
+#define H9_BENCH_NOINLINE
+#endif
+
 typedef enum H9LspBenchMode {
   H9_LSP_BENCH_SPLIT = 0,
   H9_LSP_BENCH_USABLE = 1,
@@ -32,8 +38,19 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_HOT_COLD = 14,
   H9_LSP_BENCH_LAST_ONLY = 15,
   H9_LSP_BENCH_LAST_ENTRY = 16,
-  H9_LSP_BENCH_INTEGRATED = 17
+  H9_LSP_BENCH_INTEGRATED = 17,
+  H9_LSP_BENCH_FAST_LEAF = 18
 } H9LspBenchMode;
+
+typedef struct H9LspLoopResult {
+  uint64_t ok;
+  uintptr_t sink;
+  double elapsed;
+  uint64_t fast_hits;
+  uint64_t fallback_hits;
+  uint64_t state_mismatch;
+  int rc;
+} H9LspLoopResult;
 
 typedef struct H9LspInlinePublic {
   H9LspInlinePage page;
@@ -199,6 +216,101 @@ static const char* env_str(const char* name, const char* fallback) {
   return value && *value ? value : fallback;
 }
 
+static inline bool h9_lsp_bench_fastleaf_free(H9LspIntegratedEntry* entry,
+                                              void* ptr) {
+  if (entry->last_live && entry->last_ptr == ptr &&
+      entry->last_generation == entry->page.generation &&
+      entry->last_slot < entry->page.slot_count) {
+    uint32_t slot = entry->last_slot;
+    uint64_t bit = UINT64_C(1) << slot;
+    if ((entry->page.alloc_bits & bit) != 0u &&
+        (entry->page.free_bits & bit) == 0u) {
+      entry->page.alloc_bits &= ~bit;
+      entry->page.free_bits |= bit;
+      entry->last_live = 0u;
+      entry->fast_hits++;
+      return true;
+    }
+    entry->last_live = 0u;
+    entry->state_mismatch++;
+  }
+  return false;
+}
+
+static H9_BENCH_NOINLINE H9LspLoopResult h9_lsp_run_integrated_worker(
+    uint32_t class_id, uint32_t slot_size, uint64_t iters, bool touch) {
+  H9LspLoopResult result = {0};
+  size_t payload_bytes = (size_t)slot_size * 64u;
+  void* payload = malloc(payload_bytes);
+  if (!payload) {
+    result.rc = 2;
+    return result;
+  }
+  H9LspIntegratedEntry entry;
+  h9_lsp_integrated_init(&entry, (uintptr_t)payload, slot_size, 64u, class_id);
+  double start = now_seconds();
+  for (uint64_t i = 0; i < iters; ++i) {
+    void* ptr = NULL;
+    bool success = h9_lsp_integrated_alloc(&entry, &ptr);
+    if (success && touch) {
+      volatile unsigned char* p = (volatile unsigned char*)ptr;
+      p[0] = (unsigned char)i;
+      p[slot_size - 1u] = (unsigned char)(i >> 8);
+    }
+    success = success && h9_lsp_integrated_free(&entry, ptr);
+    if (!success) {
+      result.rc = 3;
+      free(payload);
+      return result;
+    }
+    result.sink ^= (uintptr_t)ptr;
+    ++result.ok;
+  }
+  result.elapsed = now_seconds() - start;
+  result.fast_hits = entry.fast_hits;
+  result.fallback_hits = entry.fallback_hits;
+  result.state_mismatch = entry.state_mismatch;
+  free(payload);
+  return result;
+}
+
+static H9_BENCH_NOINLINE H9LspLoopResult h9_lsp_run_fastleaf_worker(
+    uint32_t class_id, uint32_t slot_size, uint64_t iters, bool touch) {
+  H9LspLoopResult result = {0};
+  size_t payload_bytes = (size_t)slot_size * 64u;
+  void* payload = malloc(payload_bytes);
+  if (!payload) {
+    result.rc = 2;
+    return result;
+  }
+  H9LspIntegratedEntry entry;
+  h9_lsp_integrated_init(&entry, (uintptr_t)payload, slot_size, 64u, class_id);
+  double start = now_seconds();
+  for (uint64_t i = 0; i < iters; ++i) {
+    void* ptr = NULL;
+    bool success = h9_lsp_integrated_alloc(&entry, &ptr);
+    if (success && touch) {
+      volatile unsigned char* p = (volatile unsigned char*)ptr;
+      p[0] = (unsigned char)i;
+      p[slot_size - 1u] = (unsigned char)(i >> 8);
+    }
+    success = success && h9_lsp_bench_fastleaf_free(&entry, ptr);
+    if (!success) {
+      result.rc = 3;
+      free(payload);
+      return result;
+    }
+    result.sink ^= (uintptr_t)ptr;
+    ++result.ok;
+  }
+  result.elapsed = now_seconds() - start;
+  result.fast_hits = entry.fast_hits;
+  result.fallback_hits = entry.fallback_hits;
+  result.state_mismatch = entry.state_mismatch;
+  free(payload);
+  return result;
+}
+
 int main(void) {
   uint32_t class_id = (uint32_t)env_u64("CLASS_ID", 5u);
   uint64_t iters = env_u64("ITERS", 10000000u);
@@ -239,6 +351,8 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_LAST_ENTRY;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
+  } else if (strcmp(mode, "fastleaf") == 0) {
+    bench_mode = H9_LSP_BENCH_FAST_LEAF;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -341,38 +455,17 @@ int main(void) {
     return 0;
   }
 
-  if (bench_mode == H9_LSP_BENCH_INTEGRATED) {
-    size_t payload_bytes = (size_t)slot_size * 64u;
-    void* payload = malloc(payload_bytes);
-    if (!payload) {
-      fprintf(stderr, "lsp integrated payload alloc failed\n");
-      return 2;
+  if (bench_mode == H9_LSP_BENCH_INTEGRATED ||
+      bench_mode == H9_LSP_BENCH_FAST_LEAF) {
+    H9LspLoopResult result =
+        bench_mode == H9_LSP_BENCH_FAST_LEAF
+            ? h9_lsp_run_fastleaf_worker(class_id, slot_size, iters, touch)
+            : h9_lsp_run_integrated_worker(class_id, slot_size, iters, touch);
+    if (result.rc != 0) {
+      fprintf(stderr, "lsp %s transition failed rc=%d\n", mode, result.rc);
+      return result.rc;
     }
-    H9LspIntegratedEntry entry;
-    h9_lsp_integrated_init(&entry, (uintptr_t)payload, slot_size, 64u,
-                           class_id);
-    uint64_t ok = 0u;
-    uintptr_t sink = 0u;
-    double start = now_seconds();
-    for (uint64_t i = 0; i < iters; ++i) {
-      void* ptr = NULL;
-      bool success = h9_lsp_integrated_alloc(&entry, &ptr);
-      if (success && touch) {
-        volatile unsigned char* p = (volatile unsigned char*)ptr;
-        p[0] = (unsigned char)i;
-        p[slot_size - 1u] = (unsigned char)(i >> 8);
-      }
-      success = success && h9_lsp_integrated_free(&entry, ptr);
-      if (!success) {
-        fprintf(stderr, "lsp integrated transition failed at iter %llu\n",
-                (unsigned long long)i);
-        free(payload);
-        return 3;
-      }
-      sink ^= (uintptr_t)ptr;
-      ++ok;
-    }
-    double elapsed = now_seconds() - start;
+    double elapsed = result.elapsed;
     if (elapsed <= 0.0) {
       elapsed = 1e-9;
     }
@@ -381,11 +474,10 @@ int main(void) {
            "malloc_hit=0 ptr_fast=%llu ptr_fallback=%llu "
            "state_mismatch=%llu segment_create=0 sink=%" PRIuPTR "\n",
            mode, class_id, (unsigned long long)iters, touch ? 1u : 0u,
-           (double)ok / elapsed, elapsed,
-           (unsigned long long)entry.fast_hits,
-           (unsigned long long)entry.fallback_hits,
-           (unsigned long long)entry.state_mismatch, sink);
-    free(payload);
+           (double)result.ok / elapsed, elapsed,
+           (unsigned long long)result.fast_hits,
+           (unsigned long long)result.fallback_hits,
+           (unsigned long long)result.state_mismatch, result.sink);
     return 0;
   }
 
@@ -680,3 +772,5 @@ int main(void) {
   h9_lsp_debug_reset();
   return 0;
 }
+
+#undef H9_BENCH_NOINLINE
