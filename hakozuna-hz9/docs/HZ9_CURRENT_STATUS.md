@@ -64,7 +64,7 @@ code shape:
   h8_free_inner baseline/scaffold 69 bytes / 22 insn
   h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
 
-current scaffold:
+  current scaffold:
   docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   static TLS state
   owner-local plain bits
@@ -73,7 +73,13 @@ current scaffold:
   not connected to allocator behavior yet
   shadow counters are wired:
     medium_local0 debug hit_ratio 0.999
-    medium_r50 debug hit_ratio 0.497 with remote_after_local high
+    medium_r50 debug class-disable hit_ratio 0.001
+    medium_r50 debug local-streak phase hit_ratio 0.043
+  decision:
+    HOLD for mixed default behavior
+    local-only/profile evidence remains useful
+    next mixed-default substrate needs a narrower boundary than class-disable
+    and a stronger shape than local-streak phase admission
 ```
 
 Latest behavior result:

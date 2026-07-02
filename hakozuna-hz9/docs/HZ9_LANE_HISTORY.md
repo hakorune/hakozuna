@@ -156,6 +156,14 @@ local phase admission:
   main_r90 0.622.
   NO-GO; remote page creation can be blocked, but LocalArena entry/body cost
   still regresses broad rows.
+
+static local page shadow:
+  static TLS bits avoid dynamic state ensure and preserve local-only reuse.
+  medium_local0 shadow hit_ratio is about 0.999.
+  class-disable admission is too coarse for r50: hit_ratio about 0.001.
+  local-streak phase admission preserves local0 but only reaches about 0.043
+  hit_ratio in medium_r50.
+  HOLD for mixed default behavior; keep as profile/local evidence only.
 ```
 
 ## Latest LocalArena Read

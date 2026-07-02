@@ -211,6 +211,19 @@ current scaffold:
     static TLS state, no dynamic state ensure
     owner-local plain bits, no atomic local_free_bits RMW in the scaffold
     no H8OwnerRecord / H8ThreadCtx field additions
+
+static local page shadow read:
+  local-only:
+    medium_local0 hit_ratio 0.999
+    local-streak phase hit_ratio 0.995
+  mixed r50:
+    class-disable admission hit_ratio 0.001
+    local-streak phase hit_ratio 0.043
+  decision:
+    bit-only static TLS scaffold is useful profile/local evidence
+    do not wire it as a mixed-row default mechanism
+    next behavior must either be profile-only or use a different page backing /
+    ownership shape that does not collapse under frequent remote frees
 ```
 
 ## Active Constraints
