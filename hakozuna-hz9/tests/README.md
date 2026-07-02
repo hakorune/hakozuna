@@ -56,6 +56,9 @@ ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   SegmentLocalCache real-payload sweep for direct / active / active_route /
   active_fast / active_route_probe / active_range_probe /
   active_exact_probe / active_sample8 / active_sample64 / route2 modes
+
+ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
+  Focused SegmentLocalCache direct/public/sample route-proof gate
 ```
 
 Active-run magazine evidence tests are still available as historical L0

@@ -82,12 +82,14 @@ current design:
   range-only attribution reaches about 185-202M but is not exact free proof
   active exact no-fallback remains about 157-168M, so fallback is not primary
   sampled public-route proof reaches about 210-246M, still below direct body
+  route-proof gate records sample64 at only about 0.55-0.70x active direct
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:
   make -C hakozuna-hz9 smoke-hz9segmentlocalcache
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
+  ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
 
 next segment behavior:
   HZ9SegmentLocalRouteProof-L0

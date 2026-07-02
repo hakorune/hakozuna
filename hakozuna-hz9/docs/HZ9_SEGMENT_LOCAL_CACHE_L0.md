@@ -651,6 +651,17 @@ sampled public-route proof:
   the behavior path must make the common local cycle direct and keep public
   route validation off that cycle
 
+route-proof gate:
+  scripts/run_hz9_segment_route_proof_gate.sh compares direct, active, public,
+  exact, sample8, and sample64 under the same local payload setup
+  current R1 ranges:
+    public route proof: 118-176M ops/s
+    exact active proof: 160-169M ops/s
+    sampled proof: 218-245M ops/s
+  sampled proof reaches only about 0.55-0.70x of active direct depending on
+  class, so route sampling is an evidence ceiling, not a sufficient behavior
+  shape
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape
@@ -706,6 +717,11 @@ medium_r50 / main_r90:
 source shape:
   no baseline h8_malloc_inner / h8_free_inner growth
   no active file over 800 lines
+
+route-proof gate:
+  sample64 should move materially toward active direct
+  if sample64 remains below 0.75x active, do not rely on periodic route proof
+  as the final local-cycle design
 ```
 
 Implementation rule:
