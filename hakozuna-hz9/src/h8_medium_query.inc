@@ -53,6 +53,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       h9_owner_page_shadow_note_remote_free(ctx, run);
       h9_owner_page_note_remote_medium_free(ctx, run);
       h9_slab_shadow_note_remote_escape(ctx, run);
+      h9_local_note_medium_remote_free(run->class_id);
       if (owned_out) { *owned_out = true; }
       for (;;) {
         H8PublishResult res = h8_medium_remote_publish(run, ptr);
@@ -122,6 +123,7 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       h9_owner_page_shadow_note_remote_free(ctx, run);
       h9_owner_page_note_remote_medium_free(ctx, run);
       h9_slab_shadow_note_remote_escape(ctx, run);
+      h9_local_note_medium_remote_free(run->class_id);
       if (owned_out) { *owned_out = true; }
       for (;;) {
         H8PublishResult res = h8_medium_remote_publish(run, ptr);

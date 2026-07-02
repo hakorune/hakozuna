@@ -14,6 +14,9 @@
 #ifndef H9_LOCAL_ARENA_REMOTE_PROBATION_ALLOCS
 #define H9_LOCAL_ARENA_REMOTE_PROBATION_ALLOCS 8u
 #endif
+#ifndef H9_LOCAL_ARENA_LOCAL_PHASE_ALLOCS
+#define H9_LOCAL_ARENA_LOCAL_PHASE_ALLOCS 8u
+#endif
 
 typedef struct H9LocalArenaPage {
   uint32_t class_id;
@@ -51,6 +54,10 @@ static _Thread_local uint8_t h9_local_arena_disabled[H8_MEDIUM_CLASS_COUNT];
 #if defined(H9_LOCAL_ARENA_REMOTE_PROBATION_L1)
 static _Thread_local uint8_t
     h9_local_arena_remote_probation[H8_MEDIUM_CLASS_COUNT];
+#endif
+#if defined(H9_LOCAL_ARENA_LOCAL_PHASE_ADMISSION_L1)
+static _Thread_local uint8_t
+    h9_local_arena_local_phase[H8_MEDIUM_CLASS_COUNT];
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS)
 static _Thread_local uint32_t
@@ -228,6 +235,22 @@ static uint32_t h9_local_arena_note_remote_free(H9LocalArenaPage* page) {
   return 0u;
 }
 #endif
+
+static void h9_local_arena_note_remote_class(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT ||
+      !h9_local_arena_class_enabled(class_id)) {
+    return;
+  }
+  bool was_remote = atomic_exchange_explicit(
+      &h9_local_arena_remote_class_seen[class_id], true,
+      memory_order_acq_rel);
+  if (!was_remote) {
+    H8_DEBUG_INC(h9_local_arena_admit_remote_class_first[class_id]);
+  }
+#if defined(H9_LOCAL_ARENA_LOCAL_PHASE_ADMISSION_L1)
+  h9_local_arena_local_phase[class_id] = 0u;
+#endif
+}
 
 #if defined(H8_ENABLE_DEBUG_STATS)
 static void h9_local_arena_note_admission_shadow(H8ThreadCtx* ctx,
@@ -481,6 +504,21 @@ static void* h9_local_arena_malloc(uint32_t class_id) {
     H8_DEBUG_INC(h9_local_arena_remote_probation_allow_class[class_id]);
   }
 #endif
+#if defined(H9_LOCAL_ARENA_LOCAL_PHASE_ADMISSION_L1)
+  if (atomic_load_explicit(&h9_local_arena_remote_class_seen[class_id],
+                           memory_order_acquire)) {
+    H8_DEBUG_INC(h9_local_arena_remote_admit_block_class[class_id]);
+    H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_ARENA_ALLOC_FALLBACK]);
+    h9_local_arena_local_phase[class_id] = 0u;
+    return NULL;
+  }
+  if (h9_local_arena_local_phase[class_id] <
+      (uint8_t)H9_LOCAL_ARENA_LOCAL_PHASE_ALLOCS) {
+    ++h9_local_arena_local_phase[class_id];
+    H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_ARENA_ALLOC_FALLBACK]);
+    return NULL;
+  }
+#endif
   page = h9_local_create_page(ctx, class_id);
   if (!page) {
     H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_ARENA_ALLOC_FALLBACK]);
@@ -576,12 +614,7 @@ static bool h9_local_arena_free(void* ptr, bool* owned_out) {
                            page->creator_alloc_history)]);
 #endif
     }
-    bool was_class_remote = atomic_exchange_explicit(
-        &h9_local_arena_remote_class_seen[page->class_id], true,
-        memory_order_acq_rel);
-    if (!was_class_remote) {
-      H8_DEBUG_INC(h9_local_arena_admit_remote_class_first[page->class_id]);
-    }
+    h9_local_arena_note_remote_class(page->class_id);
 #if defined(H9_LOCAL_ARENA_REMOTE_DISABLE_L1) || \
     defined(H9_LOCAL_ARENA_REMOTE_RETIRE_L1) ||   \
     defined(H9_LOCAL_ARENA_REMOTE_SAFE_AFTER_CLASS_L1)

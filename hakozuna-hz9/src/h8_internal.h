@@ -411,11 +411,16 @@ void h8_free_inner(void* ptr);
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
 void* h9_local_malloc_medium_inner(size_t size);
 void h9_local_free_outer(void* ptr);
+void h9_local_note_medium_remote_free(uint32_t class_id);
 bool h9_local_maybe_contains_hot(const void* ptr);
 bool h9_local_usable_size_inner(void* ptr, size_t* usable_out,
                                 bool* owned_out);
 H8RouteKind h9_local_route_inner(void* ptr);
 void h9_local_flush_owner(H8OwnerRecord* owner);
+#else
+static inline void h9_local_note_medium_remote_free(uint32_t class_id) {
+  (void)class_id;
+}
 #endif
 void* h9_slab_malloc_medium_inner(size_t size);
 void h9_slab_free_outer(void* ptr);

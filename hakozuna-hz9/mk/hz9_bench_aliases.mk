@@ -16,6 +16,8 @@ bench-hz9mediumslabpage-classes: $(ROOT)/h8_bench_hz9mediumslabpage_classes
 
 bench-hz9mediumslabpage-classes-min0: $(ROOT)/h8_bench_hz9mediumslabpage_classes_min0
 
+bench-hz9mediumslabpage-direct-use-proof: $(ROOT)/h8_bench_hz9mediumslabpage_direct_use_proof
+
 bench-hz9mediumslabpage-classes-min0-midcap: $(ROOT)/h8_bench_hz9mediumslabpage_classes_min0_midcap
 
 bench-hz9mediumslabpage-classes-min0-entry: $(ROOT)/h8_bench_hz9mediumslabpage_classes_min0_entry
@@ -55,6 +57,8 @@ bench-hz9mediumslabpage-cap6: $(ROOT)/h8_bench_hz9mediumslabpage_cap6
 bench-hz9mediumslabpage-cap8: $(ROOT)/h8_bench_hz9mediumslabpage_cap8
 
 bench-hz9localarena-dense-ownerfast-remotesafe: $(ROOT)/h8_bench_hz9localarena_dense_ownerfast_remotesafe
+
+bench-hz9localarena-dense-ownerfast-phase8: $(ROOT)/h8_bench_hz9localarena_dense_ownerfast_phase8
 
 bench-hz9localarena-dense-ownerfast-remoteactive: $(ROOT)/h8_bench_hz9localarena_dense_ownerfast_remoteactive
 
@@ -103,6 +107,8 @@ bench-release-hz9localarena-dense-adaptive: $(ROOT)/h8_bench_release_hz9localare
 bench-release-hz9localarena-dense-adaptive-min4: $(ROOT)/h8_bench_release_hz9localarena_dense_adaptive_min4
 
 bench-release-hz9localarena-dense-ownerfast: $(ROOT)/h8_bench_release_hz9localarena_dense_ownerfast
+
+bench-release-hz9localarena-dense-ownerfast-phase8: $(ROOT)/h8_bench_release_hz9localarena_dense_ownerfast_phase8
 
 bench-release-hz9localarena-dense-ownerfast-retire: $(ROOT)/h8_bench_release_hz9localarena_dense_ownerfast_retire
 

@@ -22,6 +22,14 @@ void* h9_local_malloc_medium_inner(size_t size) {
   return h8_medium_malloc_class_inner(class_id);
 }
 
+void h9_local_note_medium_remote_free(uint32_t class_id) {
+#if defined(H9_LOCAL_ARENA_L0)
+  h9_local_arena_note_remote_class(class_id);
+#else
+  (void)class_id;
+#endif
+}
+
 void h9_local_free_outer(void* ptr) {
 #if defined(H9_LOCAL_ARENA_L0)
   bool owned = false;

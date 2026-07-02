@@ -30,6 +30,7 @@ make -C "${ROOT}" \
   bench-release-hz9localarena-dense-adaptive \
   bench-release-hz9localarena-dense-adaptive-min4 \
   bench-release-hz9localarena-dense-ownerfast \
+  bench-release-hz9localarena-dense-ownerfast-phase8 \
   bench-release-hz9localarena-dense-ownerfast-retire \
   bench-release-hz9localarena-dense-ownerfast-retire-prob8 \
   bench-release-hz9localarena-dense-ownerfast-admit \
@@ -142,6 +143,9 @@ variant_bin() {
       ;;
     localarena_dense_ownerfast)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9localarena_dense_ownerfast"
+      ;;
+    localarena_dense_ownerfast_phase8)
+      printf '%s\n' "${ROOT}/h8_bench_release_hz9localarena_dense_ownerfast_phase8"
       ;;
     localarena_dense_ownerfast_retire)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9localarena_dense_ownerfast_retire"

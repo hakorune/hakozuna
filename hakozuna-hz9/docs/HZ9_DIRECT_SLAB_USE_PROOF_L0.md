@@ -174,6 +174,80 @@ local substrate:
   not the next broad HZ9 default substrate
 ```
 
+## Debug Attribution
+
+Release builds do not expose `h9_slab_*` counters. Use the debug probe only to
+verify mechanism shape, not throughput:
+
+```sh
+hakozuna-hz9/scripts/run_hz9_direct_slab_debug_probe.sh
+```
+
+Required read:
+
+```text
+alloc_hit:
+  proves direct proof is actually using SlabPage pages
+
+alloc_fallback / thread_cap_fallback:
+  indicates SlabPage capacity misses still fall back to HZ8 medium
+
+free_local / free_remote / remote_claim:
+  separates local body cost from remote profile benefit
+
+find_hash_hit / route_valid:
+  shows free-side route work paid by slab-owned pointers
+```
+
+Debug smoke read:
+
+```text
+source:
+  bench_results/smoke_hz9_direct_slab_debug_probe
+  bench_results/smoke_hz9_direct_slab_debug_probe_main
+
+medium_local0:
+  alloc_hit=8000
+  free_local=8000
+  alloc_fallback=0
+  active_hit=8000
+  hash_hit=0
+
+main_local0:
+  alloc_hit=7006
+  free_local=7006
+  alloc_fallback=0
+  active_hit=7006
+  hash_hit=0
+
+medium_r50:
+  alloc_hit=8000
+  free_remote=4034
+  alloc_fallback=464
+  pending_retry_hit=1677
+  hash_hit=4034
+
+main_r90:
+  alloc_hit=7027
+  free_remote=6322
+  alloc_fallback=1167
+  pending_retry_hit=1662
+  hash_hit=6322
+```
+
+Interpretation:
+
+```text
+local rows:
+  not blocked by capacity fallback
+  not paying hash route
+  local loss is inside the SlabPage local body/free path
+
+remote rows:
+  win because pending retry and direct pending collection recover capacity
+  hash route is paid primarily by remote frees
+```
+
 ## Required Counters
 
 ```text

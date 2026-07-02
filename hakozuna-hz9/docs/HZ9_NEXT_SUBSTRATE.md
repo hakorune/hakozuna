@@ -59,6 +59,9 @@ current gate:
     focused R3 regresses medium_local0 and main_local0
     decision: SlabPage body is remote/profile evidence, not the next broad
     local substrate
+  HZ9LocalPhaseAdmission-L0 is implemented as localarena_dense_ownerfast_phase8:
+    R1 blocks promotion on medium/main local and remote rows
+    decision: NO-GO evidence, do not tune threshold without a new mechanism
 ```
 
 ## Current Implementation Posture
@@ -123,15 +126,17 @@ HZ9OwnerLocalPagePoolPureLocal-L1:
 ## Next Implementation Box
 
 ```text
-No active behavior box is selected.
+Latest behavior box:
+  HZ9LocalPhaseAdmission-L0
 
-Before writing another allocator body:
-  rerun readiness probes if the evidence is stale
-  choose a substrate that avoids:
-    HZ8 medium-run local fixed cost
-    public all-medium entry split
-    H8OwnerRecord/H8ThreadCtx layout changes
-    owner-page route/admission overhead on local rows
+SSOT / result:
+  docs/HZ9_LOCAL_PHASE_ADMISSION_L0.md
+  bench_results/20260702T121109Z_localarena_phase8_r1
+
+read:
+  LocalArena phase admission blocks some bad page creation, but still regresses
+  medium_local0/main_local0 and medium_r50/main_r90. The problem is not only
+  remote contamination timing; the substrate entry/body cost remains too high.
 
 latest read:
   DirectSlabUse proof confirms the same split:
@@ -139,6 +144,16 @@ latest read:
     medium/main local rows lose
   Do not continue SlabPage sidecar/entry/direct-use tuning as the next default
   path. Treat SlabPage as a remote/profile component only.
+
+debug read:
+  HZ9DirectSlabDebugProbe-L0 confirms local rows have alloc_fallback=0 and
+  active-thread free routing, yet still regress.
+  The local loss is in the SlabPage local body/free path, not in capacity
+  fallback. Remote wins come from pending retry/direct pending collection.
+
+next posture:
+  do not continue LocalArena threshold tuning
+  choose the next HZ9 substrate only after a source-shape/cost read
 ```
 
 ## Active Constraints
@@ -172,6 +187,11 @@ SlabPage sidecar/freebits/storemut:
   isolates route/scan/CAS costs
   remote/profile wins remain real
   local default gates remain unclean
+
+DirectSlabUse:
+  removes owner-page/TLS/HZ8 fallback admission from malloc
+  still loses medium/main local with all-local slab hits
+  confirms SlabPage is not the next broad local substrate
 
 LocalArena:
   HZ9-owned pages can improve medium_local0
