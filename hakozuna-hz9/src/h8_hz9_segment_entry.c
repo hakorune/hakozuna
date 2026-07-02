@@ -461,6 +461,48 @@ bool h9_segment_entry_debug_cycle_tls_checked_touch(uint32_t class_id,
                                                    ptr_out);
 }
 
+bool h9_segment_entry_debug_cycle_tls_route_body(uint32_t class_id,
+                                                 uint64_t value, bool touch,
+                                                 void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+    page = (H9SegmentEntryPage*)handle;
+  }
+  if (!page || page->free_bits == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(page->free_bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  page->free_bits &= ~bit;
+  page->alloc_bits |= bit;
+  void* ptr = (void*)((uintptr_t)page->base +
+                      (uintptr_t)slot * (uintptr_t)page->slot_size);
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  if (touch) {
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    p[0] = (unsigned char)value;
+    p[page->slot_size - 1u] = (unsigned char)(value >> 8);
+  }
+  uint32_t route_slot = UINT32_MAX;
+  H9SegmentEntryPage* route_page =
+      h9_segment_entry_page_for_ptr(ptr, NULL, &route_slot);
+  if (route_page != page || route_slot != slot ||
+      (page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
+    return false;
+  }
+  page->alloc_bits &= ~bit;
+  page->free_bits |= bit;
+  return true;
+}
+
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;

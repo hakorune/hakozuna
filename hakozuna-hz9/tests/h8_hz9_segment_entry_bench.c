@@ -22,9 +22,10 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 8,
   H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 9,
   H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 10,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 11,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 12,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 13
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY = 11,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 12,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 13,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 14
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -74,6 +75,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED;
   } else if (strcmp(mode, "tlscheckedtouch") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH;
+  } else if (strcmp(mode, "tlsroutebody") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY;
   } else if (strcmp(mode, "tlscache") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS_CACHE;
   } else if (strcmp(mode, "tlsledger") == 0) {
@@ -111,6 +114,7 @@ int main(void) {
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CACHE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {
@@ -130,6 +134,10 @@ int main(void) {
       success =
           h9_segment_entry_debug_cycle_tls_ledger_body(class_id, i, touch,
                                                        &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY) {
+      success =
+          h9_segment_entry_debug_cycle_tls_route_body(class_id, i, touch,
+                                                      &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER) {
       success =
           h9_segment_entry_debug_cycle_tls_ledger(class_id, i, touch, &ptr);
@@ -201,6 +209,7 @@ int main(void) {
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_CACHE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY) {

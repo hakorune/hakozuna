@@ -22,7 +22,8 @@ Current direction:
                 segments leaving LOCAL state.
                 SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
-                route/core and cache/ledger TUs are split for the 800-line rule.
+                tlsroutebody says exact route checks must stay out of hot body;
+                route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -33,8 +34,7 @@ Current direction:
                 candidates; keep them as attribution only.
                 OwnerPage bits/shadow helpers are split out; keep active source
                 files under the 800-line rule before new experiments.
-  Prior route-off/layout and remote-safe variants are proof-only / NO-GO.
-  Current HZ9 SlabPage variants are evidence/profile, not default.
+  Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
   HZ8 is the balanced default line.

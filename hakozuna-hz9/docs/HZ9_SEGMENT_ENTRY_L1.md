@@ -201,6 +201,16 @@ tlscheckedtouch mode:
     tlscheckedtouch touch=1: about 399-464M ops/s
     tls cycle touch=1: about 609-613M ops/s
 
+tlsroutebody mode:
+  fuses the TLS cached-page cycle, payload-touches, then performs exact
+  global route lookup while the slot is still allocated before returning it
+  to the local free mask
+  class 64K, 5M-iteration R3:
+    tlscheckedtouch touch=1: about 436-444M ops/s
+    tlsroutebody touch=1: about 257-261M ops/s
+    tlsroute touch=1: about 249-251M ops/s
+    route touch=1: about 216-236M ops/s
+
 tlscache mode:
   models a one-slot TLS object cache with `LOCAL_CACHE`-like state:
     cached slot is not route-VALID
@@ -266,6 +276,9 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   cost once the touch happens before the fused free
   removing duplicate slot decode from route/free cleans up the boundary, but it
   does not close the fused-body gap
+  tlsroutebody shows that even a fused helper cannot keep speed if exact global
+  route lookup is in the local hot body; route must be a boundary operation, not
+  a per-local-reuse operation
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push
