@@ -52,12 +52,13 @@ make -C hakozuna-hz9 bench-hz9segmentlocalcache-local
   set ACTIVE_ROUTE=5 to try active exact route without table fallback
   set ACTIVE_ROUTE=6 to sample route_table_slot proof every ROUTE_PROOF_INTERVAL
   set ACTIVE_ROUTE=7 to try slot-header route then known-slot free
+  set ACTIVE_ROUTE=8 to try TLS last-token route then known-slot free
 
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   SegmentLocalCache real-payload sweep for direct / active / active_route /
   active_fast / active_route_probe / active_range_probe /
   active_exact_probe / active_sample8 / active_sample64 /
-  active_header_probe / route2 modes
+  active_header_probe / active_token_probe / route2 modes
 
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
   Focused SegmentLocalCache direct/public/sample route-proof gate

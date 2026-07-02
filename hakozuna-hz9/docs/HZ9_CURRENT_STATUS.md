@@ -84,6 +84,7 @@ current design:
   sampled public-route proof reaches about 210-246M, still below direct body
   route-proof gate records sample64 at only about 0.55-0.70x active direct
   slot-header proof reaches only about 206-219M, so header route is not enough
+  TLS last-token proof reaches only about 204-216M, so branch shape still costs
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

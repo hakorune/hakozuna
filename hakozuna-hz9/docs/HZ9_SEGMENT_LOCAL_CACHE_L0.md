@@ -672,6 +672,13 @@ slot-header route proof:
   cycle still needs a direct local token/slot path, with public route kept as
   the external boundary
 
+TLS last-token proof:
+  active_token_probe compares against the immediately returned local pointer
+  and falls back to route_table_slot only on token miss
+  current R1 range is about 204-216M ops/s, or about 0.47-0.57x active direct
+  implication: a token check alone is not enough; the local free body must be
+  shaped like the direct known-slot path, not a public-free-shaped branch
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape

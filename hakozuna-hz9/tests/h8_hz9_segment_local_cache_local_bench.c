@@ -109,6 +109,10 @@ int main(void) {
   uint64_t ok = 0u;
   uint32_t slot = 0u;
   uintptr_t addr = 0u;
+  uintptr_t last_addr = 0u;
+  uint32_t last_class = UINT32_MAX;
+  uint32_t last_slot = UINT32_MAX;
+  bool last_valid = false;
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
@@ -116,6 +120,12 @@ int main(void) {
       uint32_t routed_class = UINT32_MAX;
       uint32_t routed_slot = UINT32_MAX;
       success = h9_segment_local_cache_debug_active_take_direct(&slot, &addr);
+      if (success) {
+        last_addr = addr;
+        last_class = class_id;
+        last_slot = slot;
+        last_valid = true;
+      }
       if (success && touch && active_route != 7u) {
         volatile unsigned char* p = (volatile unsigned char*)addr;
         p[0] = (unsigned char)i;
@@ -154,6 +164,16 @@ int main(void) {
           route_kind = header_route(user_addr, &routed_class, &routed_slot)
                            ? H8_ROUTE_VALID
                            : H8_ROUTE_INVALID;
+        }
+      } else if (active_route == 8u) {
+        if (last_valid && addr == last_addr) {
+          route_kind = H8_ROUTE_VALID;
+          routed_class = last_class;
+          routed_slot = last_slot;
+          last_valid = false;
+        } else {
+          route_kind = h9_segment_local_cache_debug_route_table_slot_addr(
+              addr, &routed_class, &routed_slot);
         }
       } else if (active_route >= 2u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_addr(
