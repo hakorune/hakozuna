@@ -597,7 +597,7 @@ script:
   hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
 
 latest:
-  bench_results/20260702T224632Z_hz9_local_slab_honest_asm_audit
+  bench_results/20260702T225217Z_hz9_local_slab_honest_asm_audit
 
 classification:
   integrated_worker:
@@ -616,9 +616,72 @@ classification:
     honest-candidate
     slot_select = 1
 
+  routeleaf_trim:
+    honest-candidate
+    slot_select = 1
+
 read:
   gate candidates must keep visible slot selection and bit mutation in asm.
   fused cyclic loops without visible slot selection are code-shape ceilings only.
+```
+
+## Compact RouteLeaf HotTrim L1
+
+```text
+box:
+  HZ9CompactRouteLeafHotTrim-L1
+
+goal:
+  improve the honest routeleafcompact path without turning it into a phantom
+  cyclic loop
+
+first trim:
+  remove the hot fast_hits store
+
+reason:
+  fast_hits is observational only
+  LIFO and non-LIFO fast count can be derived as:
+    fast_hits = ok - fallback_hits
+
+hard rule:
+  slot selection and free_bits/alloc_bits mutation must remain visible in asm
+
+result:
+  routeleafcompact CLASS_ID=5 ITERS=100000000 TOUCH=1 R5:
+    309.282M
+    314.363M
+    324.512M
+    311.853M
+    302.036M
+
+  routeleaftrim CLASS_ID=5 ITERS=100000000 TOUCH=1 R5:
+    364.867M
+    278.427M
+    268.849M
+    275.208M
+    362.893M
+
+  routeleaftrimnonlifo CLASS_ID=5 ITERS=100000000 TOUCH=1 R3:
+    204.355M
+    205.133M
+    195.470M
+    route_valid = 100000000
+    ptr_fast = 100000000
+    ptr_fallback = 100000000
+    state_mismatch = 0
+
+asm:
+  routeleaf_trim:
+    honest-candidate
+    slot_select = 1
+
+read:
+  the fast-hit-store removal keeps honest mutation and the cold route path
+  remains correct, but performance is bimodal and median is worse than compact.
+
+decision:
+  HOLD / evidence only
+  do not promote this trim as the next base
 ```
 
 ## Commands
@@ -651,6 +714,10 @@ MODE=routeleafnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=routeleafcompact CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=routeleafcompactnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleaftrim CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=routeleaftrimnonlifo CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

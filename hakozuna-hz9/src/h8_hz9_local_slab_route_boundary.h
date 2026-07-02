@@ -91,6 +91,9 @@ bool h9_lsp_debug_routeleaf_bench(uint32_t class_id, uint64_t iters,
 bool h9_lsp_debug_routeleaf_compact_bench(
     uint32_t class_id, uint64_t iters, bool touch, bool non_lifo,
     H9LspRouteLeafBenchResult* result_out);
+bool h9_lsp_debug_routeleaf_trim_bench(
+    uint32_t class_id, uint64_t iters, bool touch, bool non_lifo,
+    H9LspRouteLeafBenchResult* result_out);
 
 #endif
 

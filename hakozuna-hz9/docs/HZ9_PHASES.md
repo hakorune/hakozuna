@@ -95,6 +95,7 @@ routeleaf read:
 
 current evidence:
   honest compact routeleaf R3: 302M..334M ops/s
+  hottrim fast-hit-store removal: HOLD, bimodal and median below compact
   phantom ceiling family: lastpublic / integrated / fastleaf / inlinebody
 
 asm audit:
