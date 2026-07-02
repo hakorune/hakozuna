@@ -100,6 +100,18 @@ profile gate:
     interpretation:
       gate works; R1 is not promotion evidence
       profile candidates still have row-specific tradeoffs
+  R3 read:
+    bench_results/20260702T_profile_local_r3_hz9_profile_local_gate
+    RUNS=3 THREADS=4 ITERS=20000
+    ownerpage_ownerfast_bits:
+      medium_local0 1.065, main_local0 1.124
+      fixed64_local0 0.913, guard_local0 0.941
+    staticlocal_shadow:
+      medium_local0 1.159
+      fixed48_local0 0.940, guard_local0 p25 0.802
+    interpretation:
+      profile gate is useful, but neither candidate is clean enough to freeze
+      as the profile-local build without further narrowing
 ```
 
 Latest behavior result:

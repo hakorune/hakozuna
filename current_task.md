@@ -20,8 +20,8 @@ Current direction:
   Current HZ9 read: HZ9StaticLocalPageScaffold-L0.
                 Static TLS local page shadow shows strong local-only reuse and
                 r50 remote contamination; class-disable shadow is likely too
-                coarse; local-streak phase preserves local0 but remains weak
-                on r50, so mixed default needs another substrate/boundary.
+                coarse; local-streak phase and profile-local R3 both still
+                leave row tradeoffs, so default needs another substrate.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

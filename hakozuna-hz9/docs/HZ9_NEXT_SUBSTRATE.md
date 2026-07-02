@@ -237,6 +237,13 @@ profile-local evidence gate:
     ownerpage_ownerfast_bits wins medium/main local but regresses guard_local0
     staticlocal_shadow wins fixed48/main/guard but regresses medium_local0
     next read needs RUNS>=3 before making any profile build decision
+  R3 read:
+    RUNS=3 THREADS=4 ITERS=20000
+    ownerpage_ownerfast_bits keeps medium/main local gains but loses fixed64
+    and guard
+    staticlocal_shadow wins medium local but loses fixed48 and has weak guard
+    p25
+    decision: HOLD both as profile evidence; do not freeze a profile build yet
 ```
 
 ## Active Constraints
