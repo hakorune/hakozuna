@@ -211,6 +211,17 @@ tlsroutebody mode:
     tlsroute touch=1: about 249-251M ops/s
     route touch=1: about 216-236M ops/s
 
+tlsrouteevery / tlsroute64body modes:
+  keep the fused page body but sample exact global route instead of checking on
+  every local reuse
+  class 64K, 5M-iteration R3:
+    tlscheckedtouch touch=1: about 435-445M ops/s
+    tlsrouteevery period=4: about 266-271M ops/s
+    tlsrouteevery period=16: about 286-288M ops/s
+    tlsrouteevery period=64: about 284-300M ops/s
+    tlsrouteevery period=0: about 318-347M ops/s
+    tlsroute64body constant-period: about 286-316M ops/s
+
 tlscache mode:
   models a one-slot TLS object cache with `LOCAL_CACHE`-like state:
     cached slot is not route-VALID
@@ -279,6 +290,10 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlsroutebody shows that even a fused helper cannot keep speed if exact global
   route lookup is in the local hot body; route must be a boundary operation, not
   a per-local-reuse operation
+  route sampling improves over checking every iteration, but even a constant
+  64-cycle sampling body remains far below tlscheckedtouch; HZ9 should avoid
+  per-allocation route sampling in the local hot body and instead attach route
+  authority at coarser ownership/epoch boundaries
   tlscache keeps fail-closed cached-slot semantics, but tying every local free
   back through exact pointer route collapses to route-free speed; a HZ9 cache
   cannot be just a TLS pop plus public route push

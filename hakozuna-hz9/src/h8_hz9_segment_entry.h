@@ -37,6 +37,15 @@ bool h9_segment_entry_debug_cycle_tls_route_body(uint32_t class_id,
                                                  uint64_t value,
                                                  bool touch,
                                                  void** ptr_out);
+bool h9_segment_entry_debug_cycle_tls_route_every(uint32_t class_id,
+                                                  uint64_t value,
+                                                  bool touch,
+                                                  uint32_t route_period,
+                                                  void** ptr_out);
+bool h9_segment_entry_debug_cycle_tls_route64_body(uint32_t class_id,
+                                                   uint64_t value,
+                                                   bool touch,
+                                                   void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_cache(uint32_t class_id, uint64_t value,
                                             bool touch, void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_ledger(uint32_t class_id, uint64_t value,
