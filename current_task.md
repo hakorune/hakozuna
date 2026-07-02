@@ -16,13 +16,11 @@ Current direction:
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 read: HZ9LocalSlabPageRouteBoundary-L0.
+  Current HZ9 read: HZ9LocalSlabInlineBody-L0.
                 SegmentEntry proved fused token-local bodies are fast, but
                 split malloc/free and public route-push are the residuals.
-                Next substrate must make public free/usable/realloc share an
-                O(1) address-derived route authority instead of adding another
-                cache on top of HZ8 medium runs; L0 route smoke/bench is wired
-                but below gate; split cost before expanding the design.
+                Inline local slab body is fast; the weak part is the current
+                public-shaped debug boundary, not local bit mutation itself.
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

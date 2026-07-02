@@ -248,15 +248,21 @@ latest short read:
   class64 usable/realloc touch=1: about 50M..53M ops/s
   class64 knownslot touch=1: about 113M ops/s
   class64 allocslotonly touch=1: about 102M ops/s
+  class64 inlinebody touch=1: about 770M ops/s
+  class64 inlinebody touch=0: about 1.79B ops/s
 
 reading:
   safe registry route is not the only blocker
   direct-owned address-derived route improves only modestly
   known-slot split without route still remains low
+  the minimal inline local slab body is fast enough
   the current public-shaped debug boundary is far below the 350M..430M HOLD/GO
-  band and needs a tighter inline/local body before broader integration
+  band because the scaffold/API shape around the body is wrong, not because
+  local slab bit mutation is inherently weak
 
 next:
+  design a public boundary that preserves the inline body shape
+  do not route through the current debug scaffold on each local reuse
   remote-publish stub counters only; do not design remote protocol yet
   compare against SegmentEntry split/token-cache probes
 ```
