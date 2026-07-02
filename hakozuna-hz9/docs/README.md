@@ -36,8 +36,8 @@ HZ9_FRESH_LOCAL_PAGE_SUBSTRATE_L0.md:
   next page substrate
 
 HZ9_OWNER_LOCAL_PAGE_POOL_L0.md:
-  active owner-page substrate: scaffold/shadow/API/page-lifetime proof and the
-  PureLocal L1 implementation contract
+  owner-page substrate evidence: scaffold/shadow/API/page-lifetime proof,
+  PureLocal L1 implementation contract, and HOLD decision
 
 HZ9_LANE_HISTORY.md:
   compact archive of closed HZ9 boxes and detailed evidence reads

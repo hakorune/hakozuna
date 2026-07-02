@@ -49,24 +49,33 @@ current gate:
   TLS remote-class admission is implemented and held as NO-GO evidence
   owner-local page-pool scaffold / shadow / API / page lifetime are
   implemented without H8OwnerRecord/H8ThreadCtx layout changes
+  owner-local page-pool PureLocal L1 is implemented as profile/evidence:
+    directory-first free routing removes most broad remote-row route tax
+    latest short gate still blocks promotion on medium_local0
+    decision: HOLD, not default
 ```
 
-## Next Implementation Box
+## Current Implementation Posture
 
 ```text
 HZ9OwnerLocalPagePoolPureLocal-L1:
-  behavior change:
-    local allocation pop and same-owner free push are implemented
-    current next step is focused release/double-free audit
+  status:
+    implemented
+    profile/evidence only
+    do not promote as broad HZ9 default
 
-  purpose:
-    turn the clean HZ9-owned owner-page substrate into a local-only allocator
-    path without changing remote pending/qstate authority
+  mechanism:
+    local allocation pop returns owner-page pointers
+    same-owner free pushes back into atomic local_free_bits
+    remote exact free marks REMOTE_SEEN and claims pending bits
+    directory-first free routing tries HZ8 medium directory before owner-page
+    global route
+    classes are disabled after REMOTE_SEEN in TLS state
 
   detail:
     docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md
 
-  latest proof:
+  proof:
     HZ9OwnerLocalPagePoolScaffold-L0 is clean:
       no H8OwnerRecord/H8ThreadCtx size change
       no h8_malloc_inner / h8_free_inner code-shape growth
@@ -84,17 +93,46 @@ HZ9OwnerLocalPagePoolPureLocal-L1:
     HZ9SlabLayoutNeutralProof-L0 restored no-use code shape and hot struct
       layout, but remains proof-only
 
-  must explain:
-    how HZ9-owned TLS/sidecar state avoids HZ8 hot struct layout changes
-    how cheap page-range identity avoids broad no-use free-side route tax
-    how PURE_LOCAL and REMOTE_SEEN page modes avoid LocalArena mixed mutation
-    how pending/qstate remains the remote duplicate-free authority
-    how owner/thread exit drains HZ9-owned retained pages
+  latest release gate:
+    bench_results/20260702T113432Z_hz9_owner_page_perf_gate
+    guard_local0 1.130
+    small_interleaved_remote90 1.001
+    medium_local0 0.954
+    main_local0 1.016
+    medium_r50 0.965
+    main_r90 0.977
+
+  read:
+    remote regression is mostly removed
+    medium local is still below baseline
+    further owner-page work must remove local owner-page overhead, not only
+    remote admission cost
 
   source-shape rule:
     do not grow h8_hz9_local_entry.c into a substrate body
     do not add build target blocks back into the top-level Makefile
     new target families go into mk/*.mk
+```
+
+## Next Implementation Box
+
+```text
+No active behavior box is selected.
+
+Before writing another allocator body:
+  rerun readiness probes if the evidence is stale
+  choose a substrate that avoids:
+    HZ8 medium-run local fixed cost
+    public all-medium entry split
+    H8OwnerRecord/H8ThreadCtx layout changes
+    owner-page route/admission overhead on local rows
+
+Candidate shape:
+  HZ9PostOwnerPageSubstrateClosure-L1
+  behavior change: none
+  purpose:
+    consolidate owner-page HOLD evidence and identify whether the next box is
+    a fresh local page/cache design or a smaller source-shape cleanup
 ```
 
 ## Active Constraints
@@ -207,7 +245,7 @@ RSS:
 If a candidate only wins a subset such as `medium_local0` or remote-heavy rows
 while losing local/small/main stability, it stays profile evidence.
 
-## Current Observation Box
+## Completed Observation Box
 
 ```text
 HZ9SubstrateMechanismCompare-L1:
@@ -222,14 +260,14 @@ reason:
   avoid adding another page-mode branch from stale assumptions
 ```
 
-Reproduce the current read:
+Reproduce the archived read:
 
 ```bash
 hakozuna-hz9/scripts/run_hz9_substrate_mechanism_probe.sh
 TARGET=remoteactive hakozuna-hz9/scripts/run_hz9_local_entry_cost_probe.sh
 ```
 
-## Active Behavior Candidate
+## Closed Behavior Candidate
 
 ```text
 HZ9MediumTLSCacheRemoteClassAdmission-L1:
