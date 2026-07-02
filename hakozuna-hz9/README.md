@@ -39,6 +39,7 @@ current direction:
   public free remains the blocker
   same-thread exact free should try a TLS pointer-token positive cache before
   route; all misses/foreign/invalid pointers still fall back to route authority
+  the first route-fallback debug entry is evidence only and not the final shape
   StaticLocalPage is held as profile/local evidence
   OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
@@ -168,6 +169,8 @@ MODE=knownslot CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 
 # current owner-page scaffold/API checks

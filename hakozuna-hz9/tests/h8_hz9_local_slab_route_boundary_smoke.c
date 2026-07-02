@@ -134,12 +134,67 @@ static int check_pointer_token(void) {
   return 0;
 }
 
+static int check_pointer_token_entry(void) {
+  bool owned = false;
+  size_t usable = 0u;
+  void* ptr = h9_lsp_debug_ptrtoken_alloc(5u);
+  if (!ptr || !h9_lsp_debug_ptrtoken_usable_size(ptr, &usable, &owned) ||
+      !owned || usable == 0u) {
+    fprintf(stderr, "ptrtoken entry usable fast failed\n");
+    return 30;
+  }
+  if (!h9_lsp_debug_ptrtoken_realloc_in_place(ptr, usable, &owned) || !owned) {
+    fprintf(stderr, "ptrtoken entry realloc fast failed\n");
+    return 31;
+  }
+  if (h9_lsp_debug_ptrtoken_free((char*)ptr + 1, &owned) || !owned) {
+    fprintf(stderr, "ptrtoken entry interior accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 32;
+  }
+  if (!h9_lsp_debug_ptrtoken_free(ptr, &owned) || !owned) {
+    fprintf(stderr, "ptrtoken entry exact free failed owned=%d\n",
+            owned ? 1 : 0);
+    return 33;
+  }
+  if (h9_lsp_debug_ptrtoken_free(ptr, &owned) || !owned) {
+    fprintf(stderr, "ptrtoken entry double free accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 34;
+  }
+
+  int stack_miss = 0;
+  if (h9_lsp_debug_ptrtoken_free(&stack_miss, &owned) || owned) {
+    fprintf(stderr, "ptrtoken entry miss accepted owned=%d\n", owned ? 1 : 0);
+    return 35;
+  }
+
+  H9LspStats stats = h9_lsp_debug_stats();
+  if (stats.ptrtoken_free_fast == 0u || stats.ptrtoken_free_fallback == 0u ||
+      stats.ptrtoken_usable_fast == 0u || stats.ptrtoken_realloc_fast == 0u ||
+      stats.free_invalid_owned == 0u || stats.free_miss == 0u) {
+    fprintf(stderr,
+            "ptrtoken entry counters failed fast=%zu fallback=%zu usable=%zu "
+            "realloc=%zu invalid=%zu miss=%zu\n",
+            stats.ptrtoken_free_fast, stats.ptrtoken_free_fallback,
+            stats.ptrtoken_usable_fast, stats.ptrtoken_realloc_fast,
+            stats.free_invalid_owned, stats.free_miss);
+    return 36;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
   if (token_rc != 0) {
     h9_lsp_debug_reset();
     return token_rc;
+  }
+  int entry_rc = check_pointer_token_entry();
+  if (entry_rc != 0) {
+    h9_lsp_debug_reset();
+    return entry_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

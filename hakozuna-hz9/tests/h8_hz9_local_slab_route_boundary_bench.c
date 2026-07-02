@@ -21,7 +21,10 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_KNOWN_SLOT = 4,
   H9_LSP_BENCH_ALLOC_SLOT_ONLY = 5,
   H9_LSP_BENCH_INLINE_BODY = 6,
-  H9_LSP_BENCH_PTR_TOKEN = 7
+  H9_LSP_BENCH_PTR_TOKEN = 7,
+  H9_LSP_BENCH_PTR_ENTRY = 8,
+  H9_LSP_BENCH_PTR_ENTRY_USABLE = 9,
+  H9_LSP_BENCH_PTR_ENTRY_REALLOC = 10
 } H9LspBenchMode;
 
 static double now_seconds(void) {
@@ -65,6 +68,12 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_INLINE_BODY;
   } else if (strcmp(mode, "ptrtoken") == 0) {
     bench_mode = H9_LSP_BENCH_PTR_TOKEN;
+  } else if (strcmp(mode, "ptrentry") == 0) {
+    bench_mode = H9_LSP_BENCH_PTR_ENTRY;
+  } else if (strcmp(mode, "ptrusable") == 0) {
+    bench_mode = H9_LSP_BENCH_PTR_ENTRY_USABLE;
+  } else if (strcmp(mode, "ptrrealloc") == 0) {
+    bench_mode = H9_LSP_BENCH_PTR_ENTRY_REALLOC;
   }
   const H8MediumClassSpec* spec = h8_medium_class_spec(class_id);
   if (!spec || spec->slot_size == 0u) {
@@ -133,7 +142,11 @@ int main(void) {
     bool owned = false;
     uint32_t slot = UINT32_MAX;
     void* ptr = NULL;
-    bool alloc_ok = bench_mode == H9_LSP_BENCH_KNOWN_SLOT ||
+    bool alloc_ok = bench_mode == H9_LSP_BENCH_PTR_ENTRY ||
+                            bench_mode == H9_LSP_BENCH_PTR_ENTRY_USABLE ||
+                            bench_mode == H9_LSP_BENCH_PTR_ENTRY_REALLOC
+                        ? (ptr = h9_lsp_debug_ptrtoken_alloc(class_id)) != NULL
+                    : bench_mode == H9_LSP_BENCH_KNOWN_SLOT ||
                             bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY
                         ? h9_lsp_debug_alloc_slot(class_id, &ptr, &slot)
                         : (ptr = h9_lsp_debug_alloc(class_id)) != NULL;
@@ -155,10 +168,21 @@ int main(void) {
       success = h9_lsp_debug_usable_size(ptr, &usable, &owned) && owned &&
                 usable != 0u && h9_lsp_debug_free(ptr, &owned) && owned;
       sink += usable;
+    } else if (bench_mode == H9_LSP_BENCH_PTR_ENTRY_USABLE) {
+      size_t usable = 0u;
+      success = h9_lsp_debug_ptrtoken_usable_size(ptr, &usable, &owned) &&
+                owned && usable != 0u &&
+                h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
+      sink += usable;
     } else if (bench_mode == H9_LSP_BENCH_REALLOC) {
       void* same = h9_lsp_debug_realloc_in_place(ptr, 1u, &owned);
       success = same == ptr && owned && h9_lsp_debug_free(ptr, &owned) &&
                 owned;
+      sink ^= (uintptr_t)same;
+    } else if (bench_mode == H9_LSP_BENCH_PTR_ENTRY_REALLOC) {
+      void* same = h9_lsp_debug_ptrtoken_realloc_in_place(ptr, 1u, &owned);
+      success = same == ptr && owned &&
+                h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
       sink ^= (uintptr_t)same;
     } else if (bench_mode == H9_LSP_BENCH_SPLIT_DIRECT) {
       success = h9_lsp_debug_free_direct_owned(ptr);
@@ -169,6 +193,9 @@ int main(void) {
     } else if (bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY) {
       success = h9_lsp_debug_free_known_slot(class_id, slot);
       sink += slot;
+    } else if (bench_mode == H9_LSP_BENCH_PTR_ENTRY) {
+      success = h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
+      sink ^= (uintptr_t)ptr;
     } else {
       success = h9_lsp_debug_free(ptr, &owned) && owned;
       sink ^= (uintptr_t)ptr;
@@ -189,10 +216,12 @@ int main(void) {
   double ops = (double)ok / elapsed;
   printf("mode=%s class=%u iters=%llu touch=%u ops_per_s=%.2f "
          "elapsed=%.6f route_valid=%zu route_invalid=%zu route_miss=%zu "
-         "malloc_hit=%zu segment_create=%zu sink=%" PRIuPTR "\n",
+         "malloc_hit=%zu ptr_fast=%zu ptr_fallback=%zu segment_create=%zu "
+         "sink=%" PRIuPTR "\n",
          mode, class_id, (unsigned long long)iters, touch ? 1u : 0u, ops,
          elapsed, stats.route_valid, stats.route_invalid, stats.route_miss,
-         stats.malloc_tls_page_hit, stats.segment_create, sink);
+         stats.malloc_tls_page_hit, stats.ptrtoken_free_fast,
+         stats.ptrtoken_free_fallback, stats.segment_create, sink);
   h9_lsp_debug_reset();
   return 0;
 }

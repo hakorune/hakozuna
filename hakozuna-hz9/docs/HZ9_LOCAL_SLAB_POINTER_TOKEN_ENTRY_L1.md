@@ -112,6 +112,15 @@ inlinebody, ITERS=30000000:
 
 ptrtoken, ITERS=30000000:
   508.575M ops/s
+
+ptrentry, ITERS=10000000:
+  66.377M ops/s
+
+ptrusable, ITERS=5000000:
+  43.714M ops/s
+
+ptrrealloc, ITERS=5000000:
+  46.926M ops/s
 ```
 
 Read:
@@ -120,6 +129,12 @@ Read:
 ptrtoken clears the 350M L1 gate and exceeds the 430M stretch target.
 It preserves almost all measured inlinebody throughput while avoiding the
 route-first public-free tax for same-thread exact frees.
+
+The first route-fallback debug entry API is not acceptable: ptrentry is slower
+than route-first split.  The loss is the helper/TLS/public-shaped boundary, not
+the pointer-token idea itself.  The next implementation must keep pointer-token
+entry inline or TU-local in the public allocator body and use route only for
+miss/invalid/foreign fallback.
 ```
 
 ## Commands
@@ -127,6 +142,8 @@ route-first public-free tax for same-thread exact frees.
 ```bash
 make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
 MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

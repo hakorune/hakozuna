@@ -18,9 +18,10 @@ Current direction:
                 medium local remains below gate.
   Current HZ9 read: HZ9LocalSlabPointerTokenEntry-L1.
                 Inline local slab body is fast; route-first public free is the
-                residual.  Next shape is a TLS pointer-token positive cache:
-                same-thread exact free may skip route, but miss/foreign/invalid
-                usable_size/realloc still fall to route authority.
+                residual.  Ptrtoken is now the main HZ9 stem:
+                exact free may skip route, but route fallback stays authority.
+                First route-fallback debug entry is NO-GO shape; next must keep
+                pointer-token entry inline/TU-local instead of helper-shaped.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

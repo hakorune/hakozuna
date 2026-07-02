@@ -41,6 +41,13 @@ typedef struct H9LspStats {
   size_t free_miss;
   size_t usable_route_valid;
   size_t realloc_route_valid;
+  size_t ptrtoken_free_fast;
+  size_t ptrtoken_free_fallback;
+  size_t ptrtoken_usable_fast;
+  size_t ptrtoken_usable_fallback;
+  size_t ptrtoken_realloc_fast;
+  size_t ptrtoken_realloc_fallback;
+  size_t ptrtoken_state_mismatch;
   size_t segment_create;
   size_t segment_release;
 } H9LspStats;
@@ -54,6 +61,12 @@ H9LspRouteResult h9_lsp_debug_route(void* ptr);
 H9LspRouteResult h9_lsp_debug_route_direct_owned(void* ptr);
 bool h9_lsp_debug_usable_size(void* ptr, size_t* usable_out,
                               bool* owned_out);
+void* h9_lsp_debug_ptrtoken_alloc(uint32_t class_id);
+bool h9_lsp_debug_ptrtoken_free(void* ptr, bool* owned_out);
+bool h9_lsp_debug_ptrtoken_usable_size(void* ptr, size_t* usable_out,
+                                       bool* owned_out);
+void* h9_lsp_debug_ptrtoken_realloc_in_place(void* ptr, size_t size,
+                                             bool* owned_out);
 bool h9_lsp_debug_free_direct_owned(void* ptr);
 bool h9_lsp_debug_free_known_slot(uint32_t class_id, uint32_t slot);
 void* h9_lsp_debug_realloc_in_place(void* ptr, size_t size, bool* owned_out);
