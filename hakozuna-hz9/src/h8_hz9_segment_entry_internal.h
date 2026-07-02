@@ -118,6 +118,63 @@ static inline bool h9_segment_entry_cycle_token_cache_inline(
   return true;
 }
 
+static inline bool h9_segment_entry_token_cache_pop_slot_inline(
+    H9SegmentEntryTokenCache* cache, uint32_t* slot_out, void** ptr_out) {
+  if (!cache || cache->token.handle == 0u) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)cache->token.handle;
+  uint32_t slot = cache->cache_slot;
+  void* ptr = cache->cache_ptr;
+  if (ptr && slot < page->slot_count) {
+    uint64_t bit = UINT64_C(1) << slot;
+    if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+        (page->cache_bits & bit) == 0u) {
+      return false;
+    }
+    page->cache_bits &= ~bit;
+    cache->cache_ptr = NULL;
+    cache->cache_slot = UINT32_MAX;
+  } else {
+    if (page->free_bits == 0u) {
+      return false;
+    }
+    slot = (uint32_t)__builtin_ctzll(page->free_bits);
+    uint64_t bit = UINT64_C(1) << slot;
+    page->free_bits &= ~bit;
+    page->alloc_bits |= bit;
+    ptr = (void*)((uintptr_t)page->base +
+                  (uintptr_t)slot * (uintptr_t)page->slot_size);
+  }
+  if (slot_out) {
+    *slot_out = slot;
+  }
+  if (ptr_out) {
+    *ptr_out = ptr;
+  }
+  return true;
+}
+
+static inline bool h9_segment_entry_token_cache_push_slot_inline(
+    H9SegmentEntryTokenCache* cache, uint32_t slot, void* ptr) {
+  if (!cache || cache->token.handle == 0u || !ptr) {
+    return false;
+  }
+  H9SegmentEntryPage* page = (H9SegmentEntryPage*)cache->token.handle;
+  if (slot >= page->slot_count || cache->cache_ptr != NULL) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u ||
+      (page->cache_bits & bit) != 0u) {
+    return false;
+  }
+  page->cache_bits |= bit;
+  cache->cache_ptr = ptr;
+  cache->cache_slot = slot;
+  return true;
+}
+
 static inline void h9_segment_entry_token_cache_reset(
     H9SegmentEntryTokenCache* cache) {
   if (!cache) {

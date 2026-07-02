@@ -245,6 +245,15 @@ handlecheckedtouch mode:
   reading: hoisting the TLS cache-state pointer is in the same range as the TLS
   body. The loss remains the generic per-operation API boundary, not the cache
   pointer shape itself.
+  split pop/push body smoke, class 64K, 1M-iteration R2:
+    tlstokencachebody: about 715M ops/s
+    tlstokencacheptrbody: about 642M ops/s
+    tlstokencachesplitbody: about 457M ops/s
+    tlstokencacheapi: about 473M ops/s
+    tlstokencache: about 366M ops/s
+  reading: separating alloc-pop and free-push exposes a real cost. A public
+  HZ9 entry cannot assume the fully fused cycle number; it needs a slot-known
+  return path or another way to keep free-side identity out of route lookup.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -441,6 +450,9 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   tlstokencacheptrbody confirms the next implementation should keep a local
   cache-state pointer in the entry body and call the inline fused token-cache
   body directly
+  tlstokencachesplitbody lowers the expected public-entry ceiling: split
+  malloc/free is materially slower than the fused cycle, so the next design
+  must address free-side slot identity rather than only allocator-side caching
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

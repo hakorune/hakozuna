@@ -285,6 +285,24 @@ static int check_token_cache_body(void) {
     return 32;
   }
   h9_segment_entry_debug_reset();
+  h9_segment_entry_token_cache_reset(&cache_state);
+  if (!h9_segment_entry_debug_acquire_token(0u, &cache_state.token)) {
+    fprintf(stderr, "segment entry token cache split acquire failed\n");
+    h9_segment_entry_debug_reset();
+    return 33;
+  }
+  uint32_t slot = UINT32_MAX;
+  if (!h9_segment_entry_token_cache_pop_slot_inline(&cache_state, &slot, &p) ||
+      slot == UINT32_MAX ||
+      !h9_segment_entry_token_cache_push_slot_inline(&cache_state, slot, p) ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(p, &owned) || !owned ||
+      !h9_segment_entry_retire_token_cache_state_inline(&cache_state)) {
+    fprintf(stderr, "segment entry token cache split failed\n");
+    h9_segment_entry_debug_reset();
+    return 34;
+  }
+  h9_segment_entry_debug_reset();
   return 0;
 }
 
