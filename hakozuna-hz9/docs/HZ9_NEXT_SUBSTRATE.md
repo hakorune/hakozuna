@@ -244,6 +244,13 @@ profile-local evidence gate:
     staticlocal_shadow wins medium local but loses fixed48 and has weak guard
     p25
     decision: HOLD both as profile evidence; do not freeze a profile build yet
+  R5 read:
+    RUNS=5 THREADS=4 ITERS=20000
+    ownerpage_ownerfast_bits only keeps a small main_local0 win
+    staticlocal_shadow only keeps a small main_local0 win
+    both lose medium_local0 or guard_local0
+    decision: close profile-local build selection for these two variants
+    without a new class-specific hypothesis
 ```
 
 ## Active Constraints

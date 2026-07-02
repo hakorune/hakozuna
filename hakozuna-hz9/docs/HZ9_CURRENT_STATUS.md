@@ -115,6 +115,18 @@ profile gate:
     interpretation:
       profile gate is useful, but neither candidate is clean enough to freeze
       as the profile-local build without further narrowing
+  R5 read:
+    bench_results/20260702T_profile_local_r5_hz9_profile_local_gate
+    RUNS=5 THREADS=4 ITERS=20000
+    ownerpage_ownerfast_bits:
+      main_local0 1.034
+      medium_local0 0.973, guard_local0 0.979
+    staticlocal_shadow:
+      main_local0 1.040
+      medium_local0 0.926, guard_local0 0.940
+    interpretation:
+      profile-local candidates are not stable enough to freeze
+      stop narrowing these two unless a new class-specific hypothesis appears
 ```
 
 Latest behavior result:
