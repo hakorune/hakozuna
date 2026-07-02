@@ -90,13 +90,17 @@ routeleaf read:
   cold route edge is correct, but segment-backed hot state is only about
   218M..279M ops/s
   compact entry-local bits improve this to 302M..334M touch=1 R3
-  lastpublic / fastleaf 800M+ is state-elided ceiling evidence, not the
-  product-state mutation target
+  lastpublic / fastleaf / inlinebody 800M+ class results are DCE phantom
+  ceiling evidence unless asm shows real alloc/free bit mutation
 
 current evidence:
-  lastpublic R3: 837M..876M ops/s
-  integrated R3: 743M..757M ops/s
-  fastleaf R3: 791M..867M ops/s
+  honest compact routeleaf R3: 302M..334M ops/s
+  phantom ceiling family: lastpublic / integrated / fastleaf / inlinebody
+
+asm audit:
+  hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
+  latest result classifies integrated/fastleaf as phantom-ceiling and
+  routeleaf segment/compact as honest-candidate
 
 read:
   isolated leaf/helper shape is viable

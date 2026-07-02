@@ -20,9 +20,9 @@ Current direction:
                 Inline local slab body is fast; route-first public free is the
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
-                LastTokenIntegratedEntry-L1 clears local gate as a ceiling.
+                LastTokenIntegratedEntry-L1 is ceiling evidence only.
                 Routeleaf compact proves entry-local bits beat segment-backed
-                hot state, but 800M fastleaf is state-elided ceiling evidence.
+                hot state; ASM audit separates DCE phantom ceilings from gates.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

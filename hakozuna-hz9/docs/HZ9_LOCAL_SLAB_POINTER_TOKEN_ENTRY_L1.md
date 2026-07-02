@@ -16,9 +16,10 @@ default:
   HZ8 unchanged
 ```
 
-`HZ9LocalSlabPageRouteBoundary-L0` showed that local bit mutation is not the
-primary blocker.  The route-boundary and known-slot split scaffolds stayed near
-100M ops/s, while `inlinebody` reached about 750M ops/s with touch enabled.
+`HZ9LocalSlabPageRouteBoundary-L0` showed that route-first public free is too
+expensive, but later disassembly also showed that several fused/local body
+microbenchmarks were optimized into phantom loops.  Only probes that retain
+real bit load/store mutation are valid gate candidates.
 
 This box tests the smallest public-entry bridge toward that body:
 
@@ -93,8 +94,22 @@ class64 touch=1 same-thread split malloc/free:
     NO-GO for this entry shape
 ```
 
-Stretch target is 430M ops/s, comparable to prior trusted token-cache API
-evidence.
+Assembly gate:
+
+```text
+hot loop must retain real allocation-state mutation:
+  ctz / slot selection
+  free_bits update
+  alloc_bits update
+  last-token check
+
+if alloc/free mutation is optimized away:
+  classify the number as phantom ceiling evidence
+  do not use it as a GO gate
+```
+
+Honest target band for current same-thread class64 probes is 300M..400M ops/s.
+Numbers above that are useful only after asm confirms state mutation remains.
 
 ## Initial Observation
 
@@ -156,9 +171,10 @@ lastentry after cold fallback split, ITERS=10000000:
 Read:
 
 ```text
-ptrtoken clears the 350M L1 gate and exceeds the 430M stretch target.
-It preserves almost all measured inlinebody throughput while avoiding the
-route-first public-free tax for same-thread exact frees.
+The early ptrtoken / inlinebody / lastpublic numbers are no longer accepted as
+GO evidence by themselves.  They are useful for code-shape exploration, but asm
+must prove the hot loop still mutates allocation state before they can define a
+gate.
 
 The first route-fallback debug entry API is not acceptable: ptrentry is slower
 than route-first split.  The loss is the helper/TLS/public-shaped boundary, not
@@ -172,13 +188,14 @@ The inline/TU-local split shows a sharper distinction:
 64-entry direct-mapped ledger:
   about 200M ops/s
 
-one-entry last-token LIFO ceiling:
+one-entry last-token LIFO phantom ceiling:
   about 862M ops/s
 ```
 
 So the next concrete design should use a last-token first tier, then a bounded
 ledger, then route fallback.  The last-token result is a ceiling and not a
-general free-order solution.
+general free-order solution; without visible alloc/free mutation it is not a
+performance gate.
 
 The first combined last+ledger probe improves over the 64-entry-only ledger but
 still misses the 350M gate.  Treat it as evidence that the last-token fast path
@@ -203,14 +220,14 @@ gate.  The next candidate should avoid general ledger work on the common LIFO
 case rather than adding another pointer layer.
 
 The generic `lastonly` helper is still far below the hand-shaped `lastpublic`
-ceiling.  That points to helper/code-shape overhead rather than the last-token
-idea.  The next candidate should carry the `lastpublic` body shape into the
-public allocator entry, not wrap it in a generic token helper.
+ceiling.  Earlier this was read as helper/code-shape overhead.  After asm
+inspection, the safer read is that `lastpublic` is also a phantom ceiling unless
+real bit mutation is visible.
 
 The route-boundary TU `lastentry` helper improves over `ptrentry` but is still
-far from the hand-shaped ceiling.  This confirms that another debug/helper API
-is not enough.  The next real candidate must integrate the last-token body into
-the allocator entry TU itself, with route only as a cold fallback.
+far from the phantom ceiling.  This confirms that another debug/helper API is
+not enough.  The next real candidate must keep route only as cold fallback and
+must be judged by honest mutation asm, not by DCE-friendly fused loops.
 
 IntegratedEntry result:
 
@@ -538,41 +555,77 @@ comparison:
   inlinebody TOUCH=0:
     412.369M ops/s
 
+  fastleaf / lastpublic 800M+ family:
+    DCE phantom unless asm proves alloc/free bit mutation remains
+
   knownslot / allocslotonly TOUCH=0:
     about 97M / 98M ops/s
 
 read:
   entry-local bits are better than segment-backed mutable bits, but they do
-  not restore the lastpublic / fastleaf ceiling.
+  not restore the lastpublic / fastleaf phantom ceiling.
 
-  disassembly shows fastleaf/lastpublic can collapse to a same-pointer touch
-  loop in LIFO mode. Treat 800M+ as a ceiling artifact, not as the product
-  state-mutation target.
+  disassembly shows fastleaf/lastpublic/inlinebody-style cyclic loops can
+  collapse to same-pointer touch or counter loops in LIFO mode. Treat 800M+
+  numbers as phantom ceiling artifacts, not as product-state mutation targets.
 
-  next realistic target:
+  next honest target:
     beat segment-backed routeleaf
-    approach inlinebody with real bit mutation
+    keep real bit mutation visible in asm
+    move from the 300M floor toward 400M by removing only genuine checks
     keep cold route out of Layer0
 ```
 
-Expected range:
+Honest expected range:
 
 ```text
 class64 touch=1:
-  >=350M:
+  300M..400M with visible bit mutation:
     GO
 
-  450M..600M:
-    realistic strong range
+  250M..300M:
+    HOLD and inspect remaining hot loads/checks
 
-  lastpublic 800M+:
-    ceiling, not product expectation
+  800M+:
+    assume phantom until asm proves real alloc/free mutation remains
+```
+
+## Honest ASM Audit
+
+```text
+script:
+  hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
+
+latest:
+  bench_results/20260702T224632Z_hz9_local_slab_honest_asm_audit
+
+classification:
+  integrated_worker:
+    phantom-ceiling
+    slot_select = 0
+
+  fastleaf_worker:
+    phantom-ceiling
+    slot_select = 0
+
+  routeleaf_segment:
+    honest-candidate
+    slot_select = 1
+
+  routeleaf_compact:
+    honest-candidate
+    slot_select = 1
+
+read:
+  gate candidates must keep visible slot selection and bit mutation in asm.
+  fused cyclic loops without visible slot selection are code-shape ceilings only.
 ```
 
 ## Commands
 
 ```bash
 make -C hakozuna-hz9 smoke-hz9localslabrouteboundary
+hakozuna-hz9/scripts/run_hz9_local_slab_honest_asm_audit.sh
 MODE=ptrtoken CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=ptrentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
