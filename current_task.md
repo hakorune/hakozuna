@@ -20,7 +20,8 @@ Current direction:
   Current HZ9 read: HZ9StaticLocalPageScaffold-L0.
                 Static TLS local page shadow shows strong local-only reuse and
                 r50 remote contamination; class-disable shadow is likely too
-                coarse, so behavior needs a narrower admission boundary.
+                coarse; local-streak phase preserves local0 but remains weak
+                on r50, so mixed default needs another substrate/boundary.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -71,8 +72,7 @@ Frozen HZ6 reference:
 ## Rules
 
 ```text
-Keep this file below 80 lines.
-Put HZ6 decisions in hakozuna-hz6/docs/current_task.md or stable HZ6 docs.
+Keep this file below 80 lines; put HZ6 decisions in HZ6 docs.
 Move long benchmark logs and chronological notes to docs/archive/.
 Large archived ledgers may exceed 3000 lines; active current_task files should not.
 Do not promote profile-only lanes without focused stats/RSS/guard evidence.

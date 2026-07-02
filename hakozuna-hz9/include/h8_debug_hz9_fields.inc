@@ -17,6 +17,12 @@
   size_t h9_static_page_shadow_remote_class_disable;
   size_t h9_static_page_shadow_alloc_disabled;
   size_t h9_static_page_shadow_local_free_disabled;
+  size_t h9_static_page_shadow_phase_open;
+  size_t h9_static_page_shadow_phase_remote_close;
+  size_t h9_static_page_shadow_phase_alloc_closed;
+  size_t h9_static_page_shadow_phase_free_closed;
+  size_t h9_static_page_shadow_phase_hit_possible;
+  size_t h9_static_page_shadow_phase_store_possible;
   size_t h9_static_page_shadow_alloc_class[6];
   size_t h9_static_page_shadow_hit_class[6];
   size_t h9_static_page_shadow_free_class[6];

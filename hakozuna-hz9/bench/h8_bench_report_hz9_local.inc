@@ -117,6 +117,21 @@
              ? (double)debug.h9_static_page_shadow_local_free_store_possible /
                    (double)debug.h9_static_page_shadow_local_free_seen
              : 0.0);
+  printf("h9_static_page_phase_shadow open=%zu remote_close=%zu alloc_closed=%zu free_closed=%zu hit_possible=%zu store_possible=%zu hit_ratio=%.3f store_ratio=%.3f\n",
+         debug.h9_static_page_shadow_phase_open,
+         debug.h9_static_page_shadow_phase_remote_close,
+         debug.h9_static_page_shadow_phase_alloc_closed,
+         debug.h9_static_page_shadow_phase_free_closed,
+         debug.h9_static_page_shadow_phase_hit_possible,
+         debug.h9_static_page_shadow_phase_store_possible,
+         debug.h9_static_page_shadow_alloc_seen
+             ? (double)debug.h9_static_page_shadow_phase_hit_possible /
+                   (double)debug.h9_static_page_shadow_alloc_seen
+             : 0.0,
+         debug.h9_static_page_shadow_local_free_seen
+             ? (double)debug.h9_static_page_shadow_phase_store_possible /
+                   (double)debug.h9_static_page_shadow_local_free_seen
+             : 0.0);
   printf("h9_static_page_shadow_class alloc=[%zu,%zu,%zu,%zu,%zu,%zu] hit=[%zu,%zu,%zu,%zu,%zu,%zu] free=[%zu,%zu,%zu,%zu,%zu,%zu] remote=[%zu,%zu,%zu,%zu,%zu,%zu]\n",
          debug.h9_static_page_shadow_alloc_class[0],
          debug.h9_static_page_shadow_alloc_class[1],

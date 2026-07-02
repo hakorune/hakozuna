@@ -229,6 +229,55 @@ next viable boundary:
   narrower phase/thread/profile admission, not global class disable
 ```
 
+## Local-Streak Phase Shadow
+
+A narrower phase model was added next:
+
+```text
+remote free:
+  close the class phase and clear phase shadow bits
+
+local free:
+  reopen the class after 4 consecutive local frees
+
+allocation:
+  only consumes phase shadow bits while the class phase is open
+```
+
+This also changes no allocator behavior. It asks whether a simple local streak
+can preserve local-only reuse while avoiding remote-heavy contamination.
+
+Short debug read:
+
+```text
+medium_local0:
+  phase_open 120
+  phase_remote_close 0
+  phase_hit_possible 99520 / 100000
+  phase_store_possible 99640 / 100000
+  phase_hit_ratio 0.995
+
+medium_r50:
+  phase_open 3075
+  phase_remote_close 3026
+  phase_hit_possible 4270 / 100000
+  phase_store_possible 6396 / 49804
+  phase_hit_ratio 0.043
+```
+
+Interpretation:
+
+```text
+local-streak phase:
+  preserves local0
+  still too weak for mixed r50
+
+next behavior implication:
+  static local page should not be promoted as a mixed-row default mechanism
+  from this evidence alone; it needs profile-only admission or a different
+  substrate that does not collapse under frequent remote traffic
+```
+
 ## Smoke Contract
 
 ```text

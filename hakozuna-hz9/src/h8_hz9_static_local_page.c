@@ -11,8 +11,11 @@ typedef struct H9StaticLocalClass {
 
 typedef struct H9StaticLocalPageState {
   H9StaticLocalClass classes[H8_MEDIUM_CLASS_COUNT];
+  H9StaticLocalClass phase_classes[H8_MEDIUM_CLASS_COUNT];
   uint64_t touched_class_bits;
   uint64_t remote_disabled_class_bits;
+  uint64_t phase_open_class_bits;
+  uint8_t phase_local_streak[H8_MEDIUM_CLASS_COUNT];
 } H9StaticLocalPageState;
 
 static _Thread_local H9StaticLocalPageState h9_static_local_page_tls;
@@ -101,6 +104,8 @@ uint64_t h9_static_local_page_debug_touched_classes(void) {
 
 #if defined(H9_STATIC_LOCAL_PAGE_SHADOW_L0) && \
     defined(H8_ENABLE_DEBUG_STATS)
+#define H9_STATIC_PAGE_PHASE_LOCAL_STREAK 4u
+
 static bool h9_static_page_shadow_class_disabled(uint32_t class_id) {
   if (class_id >= H8_MEDIUM_CLASS_COUNT) {
     return true;
@@ -120,6 +125,97 @@ static void h9_static_page_shadow_disable_class(uint32_t class_id) {
   }
 }
 
+static bool h9_static_page_shadow_phase_open(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  return (h9_static_local_page_tls.phase_open_class_bits &
+          (UINT64_C(1) << class_id)) != 0u;
+}
+
+static void h9_static_page_shadow_phase_note_local(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint8_t* streak = &h9_static_local_page_tls.phase_local_streak[class_id];
+  if (*streak < H9_STATIC_PAGE_PHASE_LOCAL_STREAK) {
+    ++*streak;
+  }
+  uint64_t bit = UINT64_C(1) << class_id;
+  if (*streak >= H9_STATIC_PAGE_PHASE_LOCAL_STREAK &&
+      (h9_static_local_page_tls.phase_open_class_bits & bit) == 0u) {
+    h9_static_local_page_tls.phase_open_class_bits |= bit;
+    H8_DEBUG_INC(h9_static_page_shadow_phase_open);
+  }
+}
+
+static void h9_static_page_shadow_phase_close(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return;
+  }
+  uint64_t bit = UINT64_C(1) << class_id;
+  if ((h9_static_local_page_tls.phase_open_class_bits & bit) != 0u ||
+      h9_static_local_page_tls.phase_classes[class_id].local_free_bits != 0u ||
+      h9_static_local_page_tls.phase_classes[class_id].local_alloc_bits !=
+          0u) {
+    H8_DEBUG_INC(h9_static_page_shadow_phase_remote_close);
+  }
+  h9_static_local_page_tls.phase_open_class_bits &= ~bit;
+  h9_static_local_page_tls.phase_local_streak[class_id] = 0u;
+  h9_static_local_page_tls.phase_classes[class_id].local_free_bits = 0u;
+  h9_static_local_page_tls.phase_classes[class_id].local_alloc_bits = 0u;
+}
+
+static bool h9_static_page_shadow_phase_put(uint32_t class_id,
+                                            uint32_t slot) {
+  if (!h9_static_local_page_class_slot_valid(class_id, slot)) {
+    return false;
+  }
+  H9StaticLocalClass* cls =
+      &h9_static_local_page_tls.phase_classes[class_id];
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((cls->local_free_bits & bit) != 0u ||
+      (cls->local_alloc_bits & bit) != 0u) {
+    return false;
+  }
+  cls->local_free_bits |= bit;
+  return true;
+}
+
+static bool h9_static_page_shadow_phase_take(uint32_t class_id) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9StaticLocalClass* cls =
+      &h9_static_local_page_tls.phase_classes[class_id];
+  uint64_t bits = cls->local_free_bits;
+  if (bits == 0u) {
+    return false;
+  }
+  uint32_t slot = (uint32_t)__builtin_ctzll(bits);
+  uint64_t bit = UINT64_C(1) << slot;
+  cls->local_free_bits &= ~bit;
+  cls->local_alloc_bits |= bit;
+  return true;
+}
+
+static bool h9_static_page_shadow_phase_free_allocated(uint32_t class_id,
+                                                       uint32_t slot) {
+  if (!h9_static_local_page_class_slot_valid(class_id, slot)) {
+    return false;
+  }
+  H9StaticLocalClass* cls =
+      &h9_static_local_page_tls.phase_classes[class_id];
+  uint64_t bit = UINT64_C(1) << slot;
+  if ((cls->local_alloc_bits & bit) == 0u ||
+      (cls->local_free_bits & bit) != 0u) {
+    return false;
+  }
+  cls->local_alloc_bits &= ~bit;
+  cls->local_free_bits |= bit;
+  return true;
+}
+
 static void h9_static_page_shadow_class_inc(atomic_size_t counters[6],
                                             uint32_t class_id) {
   if (class_id < 6u) {
@@ -136,6 +232,13 @@ void h9_static_local_page_shadow_note_alloc(H8ThreadCtx* ctx,
   H8_DEBUG_INC(h9_static_page_shadow_alloc_seen);
   h9_static_page_shadow_class_inc(h8g.h9_static_page_shadow_alloc_class,
                                   class_id);
+  if (h9_static_page_shadow_phase_open(class_id)) {
+    if (h9_static_page_shadow_phase_take(class_id)) {
+      H8_DEBUG_INC(h9_static_page_shadow_phase_hit_possible);
+    }
+  } else {
+    H8_DEBUG_INC(h9_static_page_shadow_phase_alloc_closed);
+  }
   if (h9_static_page_shadow_class_disabled(class_id)) {
     H8_DEBUG_INC(h9_static_page_shadow_alloc_disabled);
     return;
@@ -163,6 +266,16 @@ void h9_static_local_page_shadow_note_local_free(H8ThreadCtx* ctx,
     H8_DEBUG_INC(h9_static_page_shadow_local_free_not_active);
     return;
   }
+  h9_static_page_shadow_phase_note_local(run->class_id);
+  if (h9_static_page_shadow_phase_open(run->class_id)) {
+    if (h9_static_page_shadow_phase_free_allocated(run->class_id,
+                                                   (uint32_t)slot) ||
+        h9_static_page_shadow_phase_put(run->class_id, (uint32_t)slot)) {
+      H8_DEBUG_INC(h9_static_page_shadow_phase_store_possible);
+    }
+  } else {
+    H8_DEBUG_INC(h9_static_page_shadow_phase_free_closed);
+  }
   if (h9_static_page_shadow_class_disabled(run->class_id)) {
     H8_DEBUG_INC(h9_static_page_shadow_local_free_disabled);
     return;
@@ -189,6 +302,7 @@ void h9_static_local_page_shadow_note_remote_free(H8ThreadCtx* ctx,
       h9_static_local_page_debug_alloc_bits(run->class_id) != 0u) {
     H8_DEBUG_INC(h9_static_page_shadow_remote_after_local);
   }
+  h9_static_page_shadow_phase_close(run->class_id);
   h9_static_page_shadow_disable_class(run->class_id);
 }
 #endif
