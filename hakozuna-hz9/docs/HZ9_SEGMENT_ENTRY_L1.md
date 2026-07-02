@@ -236,6 +236,15 @@ handlecheckedtouch mode:
   boundary with class lookup still loses too much. A behavior candidate should
   inline the token-cache body at the local entry, not call a generic debug cycle
   wrapper.
+  local cache pointer body smoke, class 64K, 1M-iteration R2:
+    tokencachestate: about 644M ops/s
+    tlstokencachebody: about 692M ops/s
+    tlstokencacheptrbody: about 637M ops/s
+    tlstokencacheapi: about 416M ops/s
+    tlstokencache: about 298M ops/s
+  reading: hoisting the TLS cache-state pointer is in the same range as the TLS
+  body. The loss remains the generic per-operation API boundary, not the cache
+  pointer shape itself.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -429,6 +438,9 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   retire explicitly rather than call the public debug cycle every operation
   tlstokencacheapi confirms that acquire/retire alone is not sufficient if the
   per-operation body is still behind a generic class-indexed debug API boundary
+  tlstokencacheptrbody confirms the next implementation should keep a local
+  cache-state pointer in the entry body and call the inline fused token-cache
+  body directly
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

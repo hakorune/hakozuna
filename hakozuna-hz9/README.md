@@ -130,6 +130,8 @@ MODE=tokencachestate CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlstokencachebody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
+MODE=tlstokencacheptrbody CLASS_ID=5 ITERS=5000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlstokencacheapi CLASS_ID=5 ITERS=5000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9segmententry
 MODE=tlstokencache CLASS_ID=5 ITERS=5000000 TOUCH=1 \
