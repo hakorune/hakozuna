@@ -32,6 +32,7 @@ int main(void) {
   uint64_t route_free = env_u64("ROUTE_FREE", 0u);
   bool active_cycle = env_u64("ACTIVE_CYCLE", 0u) != 0u;
   uint64_t active_route = env_u64("ACTIVE_ROUTE", 0u);
+  uint64_t route_proof_interval = env_u64("ROUTE_PROOF_INTERVAL", 64u);
 
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
@@ -95,6 +96,16 @@ int main(void) {
       } else if (active_route == 5u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_only_addr(
             addr, &routed_class, &routed_slot);
+      } else if (active_route == 6u) {
+        if (route_proof_interval != 0u &&
+            (i % route_proof_interval) != 0u) {
+          route_kind = H8_ROUTE_VALID;
+          routed_class = class_id;
+          routed_slot = slot;
+        } else {
+          route_kind = h9_segment_local_cache_debug_route_table_slot_addr(
+              addr, &routed_class, &routed_slot);
+        }
       } else if (active_route >= 2u) {
         route_kind = h9_segment_local_cache_debug_route_active_slot_addr(
             addr, &routed_class, &routed_slot);
@@ -176,11 +187,13 @@ int main(void) {
   double cycles = (double)ok / elapsed;
   printf("hz9_segment_local_cache_local class=%u slot_size=%u run_size=%u "
          "slot_count=%u payload_bytes=%zu slack_bytes=%zu touch=%u "
-         "route_free=%u active_cycle=%u active_route=%u iters=%llu "
+         "route_free=%u active_cycle=%u active_route=%u route_interval=%llu "
+         "iters=%llu "
          "seconds=%.6f cycles_per_s=%.2f ops_per_s=%.2f\n",
          class_id, slot_size, run_size, (unsigned)slot_count, payload_bytes,
          slack_bytes, touch ? 1u : 0u, (unsigned)route_free,
          active_cycle ? 1u : 0u, (unsigned)active_route,
+         (unsigned long long)route_proof_interval,
          (unsigned long long)ok, elapsed, cycles, cycles * 2.0);
 
   h8_platform_release(payload, run_size);

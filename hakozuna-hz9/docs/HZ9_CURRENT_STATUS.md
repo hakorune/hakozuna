@@ -81,6 +81,7 @@ current design:
   route-only proof still lands about 160M+, so classification is the limiter
   range-only attribution reaches about 185-202M but is not exact free proof
   active exact no-fallback remains about 157-168M, so fallback is not primary
+  sampled public-route proof reaches about 210-246M, still below direct body
   route_table_slot is the public free boundary, not the local reuse core
 
 current segment commands:

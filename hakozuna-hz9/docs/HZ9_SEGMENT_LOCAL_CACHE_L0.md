@@ -569,6 +569,22 @@ active_route=5, touch=1:
   class3 168.1M ops/s
   class4 160.7M ops/s
   class5 157.0M ops/s
+
+active_sample8, touch=1:
+  class0 231.0M ops/s
+  class1 235.8M ops/s
+  class2 217.6M ops/s
+  class3 226.7M ops/s
+  class4 219.2M ops/s
+  class5 210.4M ops/s
+
+active_sample64, touch=1:
+  class0 238.7M ops/s
+  class1 245.6M ops/s
+  class2 226.3M ops/s
+  class3 241.6M ops/s
+  class4 231.3M ops/s
+  class5 221.8M ops/s
 ```
 
 Interpretation:
@@ -625,6 +641,15 @@ active exact no-fallback probe:
   therefore table fallback is not the dominant cost in the hit case
   exact slot validation plus route classification is the remaining boundary
   tax
+
+sampled public-route proof:
+  active_sample8/64 calls route_table_slot only every 8 or 64 local cycles
+  while all other iterations use direct known-slot reuse
+  sampled proof improves to about 210-246M ops/s, but still remains far below
+  the active direct body
+  this supports route separation as necessary, but not sufficient by itself;
+  the behavior path must make the common local cycle direct and keep public
+  route validation off that cycle
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
