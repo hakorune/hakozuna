@@ -470,6 +470,14 @@ route_free=1, touch=1:
   class3 115.5M ops/s
   class4 84.2M ops/s
   class5 100.7M ops/s
+
+route_free=2, touch=1:
+  class0 159.2M ops/s
+  class1 154.9M ops/s
+  class2 150.3M ops/s
+  class3 147.7M ops/s
+  class4 136.5M ops/s
+  class5 137.1M ops/s
 ```
 
 Interpretation:
@@ -483,6 +491,12 @@ route-free probe:
   external free validation through table route + addr->slot decode lands around
   84-124M ops/s
   this is a boundary cost, not the local reuse core speed
+
+single-decode route-free probe:
+  returning class and slot from the table route lifts the boundary to about
+  136-159M ops/s
+  this proves duplicate decode mattered, but route classification is still far
+  from the 500M+ direct local body
 
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct

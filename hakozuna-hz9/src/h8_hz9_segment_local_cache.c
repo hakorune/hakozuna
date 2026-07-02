@@ -354,6 +354,31 @@ H8RouteKind h9_segment_local_cache_debug_route_table_addr(uintptr_t addr,
   return H8_ROUTE_MISS;
 }
 
+H8RouteKind h9_segment_local_cache_debug_route_table_slot_addr(
+    uintptr_t addr,
+    uint32_t* class_out,
+    uint32_t* slot_out) {
+  for (uint32_t class_id = 0u; class_id < H8_MEDIUM_CLASS_COUNT; ++class_id) {
+    H9SegmentLocalClass* cls = h9_segment_class(class_id);
+    if (!cls || cls->base_addr == 0u || addr < cls->base_addr) {
+      continue;
+    }
+    uintptr_t offset = addr - cls->base_addr;
+    if (offset >= (uintptr_t)cls->run_size) {
+      continue;
+    }
+    if (class_out) {
+      *class_out = class_id;
+    }
+    if (cls->state != H9_SEGMENT_LOCAL) {
+      return H8_ROUTE_INVALID;
+    }
+    return h9_segment_route_cached_offset_to_slot(cls, (size_t)offset, true,
+                                                  slot_out);
+  }
+  return H8_ROUTE_MISS;
+}
+
 bool h9_segment_local_cache_debug_set_active_class(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   if (!cls || cls->base_addr == 0u || cls->state != H9_SEGMENT_LOCAL) {

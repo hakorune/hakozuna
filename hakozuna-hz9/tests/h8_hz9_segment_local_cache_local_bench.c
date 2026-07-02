@@ -29,7 +29,7 @@ int main(void) {
   uint32_t class_id = (uint32_t)env_u64("CLASS_ID", 5u);
   uint64_t iters = env_u64("ITERS", 10000000u);
   bool touch = env_u64("TOUCH", 1u) != 0u;
-  bool route_free = env_u64("ROUTE_FREE", 0u) != 0u;
+  uint64_t route_free = env_u64("ROUTE_FREE", 0u);
 
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
@@ -69,7 +69,7 @@ int main(void) {
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
-    if (route_free) {
+    if (route_free == 1u) {
       uint32_t routed_class = UINT32_MAX;
       success = h9_segment_local_cache_debug_take_slot_addr(class_id, &slot,
                                                             &addr);
@@ -84,6 +84,23 @@ int main(void) {
               H8_ROUTE_VALID &&
           routed_class == class_id &&
           h9_segment_local_cache_debug_free_addr_fast(routed_class, addr);
+    } else if (route_free == 2u) {
+      uint32_t routed_class = UINT32_MAX;
+      uint32_t routed_slot = UINT32_MAX;
+      success = h9_segment_local_cache_debug_take_slot_addr(class_id, &slot,
+                                                            &addr);
+      if (success && touch) {
+        volatile unsigned char* p = (volatile unsigned char*)addr;
+        p[0] = (unsigned char)i;
+        p[slot_size - 1u] = (unsigned char)(i >> 8);
+      }
+      success =
+          success &&
+          h9_segment_local_cache_debug_route_table_slot_addr(
+              addr, &routed_class, &routed_slot) == H8_ROUTE_VALID &&
+          routed_class == class_id && routed_slot == slot &&
+          h9_segment_local_cache_debug_free_allocated(routed_class,
+                                                      routed_slot);
     } else {
       success = h9_segment_local_cache_debug_cycle_known(class_id, &addr);
       if (success && touch) {
@@ -110,7 +127,7 @@ int main(void) {
          "route_free=%u iters=%llu seconds=%.6f cycles_per_s=%.2f "
          "ops_per_s=%.2f\n",
          class_id, slot_size, run_size, (unsigned)slot_count, payload_bytes,
-         slack_bytes, touch ? 1u : 0u, route_free ? 1u : 0u,
+         slack_bytes, touch ? 1u : 0u, (unsigned)route_free,
          (unsigned long long)ok, elapsed, cycles, cycles * 2.0);
 
   h8_platform_release(payload, run_size);
