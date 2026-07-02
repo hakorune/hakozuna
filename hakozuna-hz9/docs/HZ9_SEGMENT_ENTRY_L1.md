@@ -130,6 +130,17 @@ tlsroute mode:
   touch=1: about 244-255M ops/s
   touch=0: about 251-265M ops/s
   compared with route at about 182-207M touch=1 and 199-226M touch=0
+
+tlslocal mode:
+  allocates through the TLS cached handle, then frees through cached-page local
+  free
+  R1 class sweep:
+    touch=1: about 283-311M ops/s
+    touch=0: about 261-296M ops/s
+  class 64K, 5M-iteration repeat:
+    tlsroute touch=1: about 238-243M ops/s
+    tlslocal touch=1: about 295-307M ops/s
+    tls cycle touch=1: about 568-570M ops/s
 ```
 
 Interpretation:
@@ -149,4 +160,6 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   site
   treat TLS cached page handle as the next behavior integration shape
   handle-cached allocation alone is not enough; the next residual is free route
+  cached-page local free helps, but still pays pointer-to-slot decode and state
+  validation; known-slot local free remains the upper-bound body
 ```

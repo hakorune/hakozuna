@@ -77,6 +77,15 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 11;
   }
+  if (!h9_segment_entry_debug_alloc_tls_handle(class_id, &b) ||
+      h9_segment_entry_debug_free_tls_handle(class_id, (char*)b + 1, &owned) ||
+      !owned ||
+      !h9_segment_entry_debug_free_tls_handle(class_id, b, &owned) || !owned ||
+      h9_segment_entry_debug_free_tls_handle(class_id, b, &owned) || !owned) {
+    fprintf(stderr, "segment entry tls local free failed: class=%u\n",
+            class_id);
+    return 12;
+  }
   return 0;
 }
 
