@@ -67,6 +67,10 @@ ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
 
 ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
   Focused SegmentLocalCache direct/public/sample route-proof gate
+
+make -C hakozuna-hz9 bench-hz9segmententry
+  SegmentEntry global-routeable page scaffold
+  set MODE=route or MODE=fused
 ```
 
 Active-run magazine evidence tests are still available as historical L0

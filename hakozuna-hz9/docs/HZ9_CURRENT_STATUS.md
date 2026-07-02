@@ -93,6 +93,7 @@ current design:
 current segment commands:
   make -C hakozuna-hz9 smoke-hz9segmentlocalcache
   make -C hakozuna-hz9 smoke-hz9segmententry
+  make -C hakozuna-hz9 bench-hz9segmententry
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_api_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_local_payload_sweep.sh
   ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh

@@ -71,3 +71,37 @@ reuse:
 
 Do not wire public entry before route ownership and owner-drain semantics are
 explicit.
+
+## Initial Bench Read
+
+```bash
+make -C hakozuna-hz9 bench-hz9segmententry
+```
+
+R1 class sweep:
+
+```text
+route free, touch=1:
+  about 161-181M ops/s
+
+fused body, touch=1:
+  about 239-275M ops/s
+
+route free, touch=0:
+  about 197-211M ops/s
+
+fused body, touch=0:
+  about 349-374M ops/s
+```
+
+Interpretation:
+
+```text
+global routeable SegmentEntry is safe enough to benchmark, but not yet at
+TLS-only SegmentLocalCache fused speed.
+
+The next optimization target is the global routeable fused body shape:
+  keep exact routeable ownership
+  reduce active-page/class checks on local hit
+  keep public free route separate
+```
