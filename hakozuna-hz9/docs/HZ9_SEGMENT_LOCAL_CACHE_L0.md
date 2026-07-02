@@ -679,6 +679,12 @@ TLS last-token proof:
   implication: a token check alone is not enough; the local free body must be
   shaped like the direct known-slot path, not a public-free-shaped branch
 
+Active pair proof:
+  active_pair_probe uses active direct take plus known-slot free with no route
+  current R1 range is about 220-241M ops/s, or about 0.52-0.59x active direct
+  implication: route lookup is not the only tax; split public-shaped take/free
+  control remains too expensive versus the combined active known-slot body
+
 behavior implication:
   the next behavior box should wire a local hit path that calls the direct
   known-slot body shape

@@ -20,7 +20,7 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                token/header proofs still stay far below direct local body.
+                token/header/pair proofs still stay far below direct body.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
