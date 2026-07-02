@@ -93,10 +93,12 @@ source:
 
 test:
   tests/h8_hz9_segment_local_cache_smoke.c
+  tests/h8_hz9_segment_local_cache_local_bench.c
 
 build:
   smoke-hz9segmentlocalcache
   bench-hz9segmentlocalcache-api
+  bench-hz9segmentlocalcache-local
   scripts/run_hz9_segment_api_sweep.sh
 
 flag:
@@ -233,6 +235,20 @@ not yet:
   malloc/free entry wiring
 ```
 
+The local-only bench binds a real one-run payload to the TLS segment scaffold
+and uses the direct known-slot body against real pointers. It is still not
+public allocator behavior, but it proves that the substrate can return and
+touch real memory without HZ8 medium-run metadata:
+
+```text
+bench-hz9segmentlocalcache-local:
+  h8_platform_reserve_rw(run_size)
+  bind_base(class, payload)
+  put all slots
+  cycle_known -> real pointer
+  optional first/last byte touch
+```
+
 ## Segment Model
 
 ```text
@@ -295,6 +311,8 @@ before behavior:
 ```
 
 ## Current Measurement
+
+### API Sweep
 
 ```text
 run:
@@ -416,6 +434,48 @@ next optimization target:
   move behavior wiring toward a direct known-slot inline body
   keep addr -> slot decode only for external free validation or fallback route
   do not model the local hit core as stacked debug helper calls
+```
+
+### Local Payload Probe
+
+```text
+command:
+  for touch in 1 0; do
+    for class_id in 0 1 2 3 4 5; do
+      TOUCH=$touch CLASS_ID=$class_id ITERS=1000000 \
+        h8_bench_hz9segmentlocalcache_local
+    done
+  done
+
+touch=1:
+  class0 573.8M ops/s
+  class1 573.2M ops/s
+  class2 546.4M ops/s
+  class3 581.2M ops/s
+  class4 576.2M ops/s
+  class5 507.0M ops/s
+
+touch=0:
+  class0 576.2M ops/s
+  class1 575.0M ops/s
+  class2 495.5M ops/s
+  class3 576.2M ops/s
+  class4 560.1M ops/s
+  class5 540.9M ops/s
+```
+
+Interpretation:
+
+```text
+real payload local-only probe:
+  direct known-slot SegmentLocalCache body remains around 500-580M ops/s even
+  when touching real payload memory
+
+behavior implication:
+  the next behavior box should wire a local hit path that calls the direct
+  known-slot body shape
+  public free routing must remain separate and fail-closed; it should not be
+  in the immediate local reuse core
 ```
 
 ## Decision Boundary

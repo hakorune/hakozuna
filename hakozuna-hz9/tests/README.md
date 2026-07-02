@@ -34,6 +34,16 @@ make -C hakozuna-hz9 smoke-hz9ownerpagepool-api
   remote pending repeat rejection, and detached final-free release
 ```
 
+Current standalone probe benches:
+
+```text
+make -C hakozuna-hz9 bench-hz9segmentlocalcache-api
+  SegmentLocalCache API shape sweep
+
+make -C hakozuna-hz9 bench-hz9segmentlocalcache-local
+  SegmentLocalCache direct known-slot cycle on a real one-run payload
+```
+
 Active-run magazine evidence tests are still available as historical L0
 coverage:
 

@@ -9,3 +9,9 @@ $(ROOT)/h8_bench_hz9segmentlocalcache_api: $(HZ9_SEGMENT_LOCAL_CACHE_BENCH_SRC) 
 
 bench-hz9segmentlocalcache-api: $(ROOT)/h8_bench_hz9segmentlocalcache_api
 	$(ROOT)/h8_bench_hz9segmentlocalcache_api
+
+$(ROOT)/h8_bench_hz9segmentlocalcache_local: $(HZ9_SEGMENT_LOCAL_CACHE_LOCAL_BENCH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ9_SEGMENT_LOCAL_CACHE_CFLAGS) $(INC) -o $@ $(HZ9_SEGMENT_LOCAL_CACHE_LOCAL_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-hz9segmentlocalcache-local: $(ROOT)/h8_bench_hz9segmentlocalcache_local
+	$(ROOT)/h8_bench_hz9segmentlocalcache_local
