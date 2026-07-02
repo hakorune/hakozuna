@@ -14,6 +14,8 @@ _Thread_local uint32_t
 _Thread_local void* h9_segment_entry_cache_ptr[H8_MEDIUM_CLASS_COUNT];
 _Thread_local uintptr_t h9_segment_entry_cache_page[H8_MEDIUM_CLASS_COUNT];
 _Thread_local uint32_t h9_segment_entry_cache_slot[H8_MEDIUM_CLASS_COUNT];
+_Thread_local H9SegmentEntryTokenCache
+    h9_segment_entry_token_cache_state[H8_MEDIUM_CLASS_COUNT];
 
 static bool h9_segment_entry_class_geometry(uint32_t class_id,
                                             uint32_t* slot_size_out,
@@ -294,6 +296,7 @@ void h9_segment_entry_debug_reset(void) {
     h9_segment_entry_cache_ptr[i] = NULL;
     h9_segment_entry_cache_page[i] = 0u;
     h9_segment_entry_cache_slot[i] = UINT32_MAX;
+    h9_segment_entry_token_cache_reset(&h9_segment_entry_token_cache_state[i]);
   }
 }
 

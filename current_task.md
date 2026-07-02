@@ -23,7 +23,7 @@ Current direction:
                 SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
                 token-local cache body/retire is the next HZ9 behavior boundary;
-                H9SegmentEntryTokenCache now packages that reusable state shape;
+                H9SegmentEntryTokenCache/TLS modes show acquire-once is needed;
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

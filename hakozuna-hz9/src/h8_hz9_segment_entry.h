@@ -71,6 +71,9 @@ bool h9_segment_entry_debug_cycle_tls_route64_body(uint32_t class_id,
                                                    void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_cache(uint32_t class_id, uint64_t value,
                                             bool touch, void** ptr_out);
+bool h9_segment_entry_debug_cycle_tls_token_cache(uint32_t class_id,
+                                                  uint64_t value, bool touch,
+                                                  void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_ledger(uint32_t class_id, uint64_t value,
                                              bool touch, void** ptr_out);
 bool h9_segment_entry_debug_cycle_tls_ledger_body(uint32_t class_id,

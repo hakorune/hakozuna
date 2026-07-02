@@ -215,6 +215,18 @@ handlecheckedtouch mode:
     H9SegmentEntryTokenCache packages the prevalidated token plus one cached
     slot. tokencachestate measures the same hot shape through the reusable state
     object that a behavior candidate would carry across local reuse.
+  TLS token cache boundary:
+    tlstokencachebody measures that same state from TLS after acquisition.
+    tlstokencache keeps an ensure/current check in the debug API and is expected
+    to show the cost of paying the boundary check every operation.
+  short boundary smoke, class 64K, 1M-iteration R2:
+    tokencachestate: about 913M ops/s
+    tlstokencachebody: about 619M ops/s
+    tlstokencache: about 305M ops/s
+    tlsledgerbody: about 261M ops/s
+    tlscache: about 180M ops/s
+  reading: TLS state still beats ledger/cache shapes when the body is fused, but
+  the ensure/current boundary is too expensive to pay per operation.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -403,6 +415,9 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
     acquisition fills token
     local reuse only mutates cached pointer/slot and page cache bits
     retirement returns LOCAL_CACHE state to normal free/public routing
+  tlstokencachebody vs tlstokencache separates the intended hot body from the
+  debug ensure boundary; if ensure is material, behavior must acquire once and
+  retire explicitly rather than call the public debug cycle every operation
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body

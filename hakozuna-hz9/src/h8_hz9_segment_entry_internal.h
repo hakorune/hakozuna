@@ -42,6 +42,8 @@ extern _Thread_local uintptr_t
     h9_segment_entry_cache_page[H8_MEDIUM_CLASS_COUNT];
 extern _Thread_local uint32_t
     h9_segment_entry_cache_slot[H8_MEDIUM_CLASS_COUNT];
+extern _Thread_local H9SegmentEntryTokenCache
+    h9_segment_entry_token_cache_state[H8_MEDIUM_CLASS_COUNT];
 
 static inline bool h9_segment_entry_cycle_page_checked_touch_inline(
     H9SegmentEntryPage* page, uint64_t value, bool touch, void** ptr_out) {

@@ -134,12 +134,20 @@ static int check_class(uint32_t class_id) {
     return 19;
   }
   owned = false;
+  if (!h9_segment_entry_debug_cycle_tls_token_cache(class_id, 21u, true, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID ||
+      h9_segment_entry_debug_free(b, &owned) || !owned) {
+    fprintf(stderr, "segment entry tls token cache cycle failed: class=%u\n",
+            class_id);
+    return 20;
+  }
+  owned = false;
   if (!h9_segment_entry_debug_cycle_tls_ledger(class_id, 23u, true, &b) ||
       h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID ||
       h9_segment_entry_debug_free(b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls ledger cycle failed: class=%u\n",
             class_id);
-    return 20;
+    return 21;
   }
   owned = false;
   if (!h9_segment_entry_debug_cycle_tls_ledger_body(class_id, 29u, true, &b) ||
@@ -147,7 +155,7 @@ static int check_class(uint32_t class_id) {
       h9_segment_entry_debug_free(b, &owned) || !owned) {
     fprintf(stderr, "segment entry tls ledger body failed: class=%u\n",
             class_id);
-    return 21;
+    return 22;
   }
   return 0;
 }
@@ -272,7 +280,7 @@ int main(void) {
     return 9;
   }
   if (check_generation_token() != 0) {
-    return 22;
+    return 23;
   }
   if (check_token_cache_body() != 0) {
     return 26;
