@@ -370,6 +370,69 @@ to verify that the `lastpublic` body shape survives when the fallback is present
 but cold.  A ledger tier may be reintroduced only if non-LIFO workloads need it
 and it can remain off the common path.
 
+## Last-Token Authority Entry
+
+```text
+box:
+  HZ9LastTokenAuthorityEntry-L1
+
+purpose:
+  extend the fast last-token entry from free-only to the public local API trio
+
+entry API:
+  free:
+    last-token exact hit -> inline free slot
+    miss/stale/interior/double -> route fallback
+
+  usable_size:
+    last-token exact allocated hit -> token slot_size
+    miss/stale/interior/freed -> route fallback
+
+  realloc in place:
+    last-token exact allocated hit and size <= slot_size -> ptr
+    miss/stale/interior/freed/oversize -> route fallback
+
+gate:
+  last-token fast counters for free / usable / realloc are nonzero
+  fallback counters are nonzero for invalid probes
+  owned invalid is not forwarded as MISS
+```
+
+This is still single-thread local evidence.  Multi-thread and remote rows stay
+closed until the public single-thread authority shape is clean.
+
+Implementation read:
+
+```text
+added:
+  h9_lsp_debug_lasttoken_usable_size()
+  h9_lsp_debug_lasttoken_realloc_in_place()
+  MODE=lastusable
+  MODE=lastrealloc
+
+smoke:
+  exact usable/realloc fast path
+  interior usable fallback
+  oversize realloc fallback
+  exact free
+  double/invalid classification
+
+result, CLASS_ID=5 ITERS=30000000 TOUCH=1:
+  lastentry:   71.461M
+  lastusable:  49.650M
+  lastrealloc: 52.078M
+  ptrentry:    73.887M
+  ptrusable:   55.989M
+  lastpublic: 814.455M
+  fastleaf:   617.899M
+
+read:
+  authority trio is wired for correctness
+  out-of-line debug/public boundary remains too expensive
+  next performance candidate must be entry-local free/usable/realloc trio,
+  not the debug route-boundary functions
+```
+
 Expected range:
 
 ```text
@@ -401,6 +464,10 @@ MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=lastentry CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastusable CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastrealloc CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=integrated CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

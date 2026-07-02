@@ -22,7 +22,7 @@ Current direction:
                 exact free may skip route, but route fallback stays authority.
                 LastTokenIntegratedEntry-L1 clears local gate; isolated
                 integrated/fastleaf workers keep the high local ceiling.
-                Phase 3 is active; Phase 2 substrate lanes are evidence-only.
+                Phase 3 active; lasttoken API trio is correctness evidence.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.

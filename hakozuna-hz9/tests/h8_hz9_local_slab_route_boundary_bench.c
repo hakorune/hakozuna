@@ -39,7 +39,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_LAST_ONLY = 15,
   H9_LSP_BENCH_LAST_ENTRY = 16,
   H9_LSP_BENCH_INTEGRATED = 17,
-  H9_LSP_BENCH_FAST_LEAF = 18
+  H9_LSP_BENCH_FAST_LEAF = 18,
+  H9_LSP_BENCH_LAST_ENTRY_USABLE = 19,
+  H9_LSP_BENCH_LAST_ENTRY_REALLOC = 20
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -246,6 +248,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_LAST_ONLY;
   } else if (strcmp(mode, "lastentry") == 0) {
     bench_mode = H9_LSP_BENCH_LAST_ENTRY;
+  } else if (strcmp(mode, "lastusable") == 0) {
+    bench_mode = H9_LSP_BENCH_LAST_ENTRY_USABLE;
+  } else if (strcmp(mode, "lastrealloc") == 0) {
+    bench_mode = H9_LSP_BENCH_LAST_ENTRY_REALLOC;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
   } else if (strcmp(mode, "fastleaf") == 0) {
@@ -587,6 +593,10 @@ int main(void) {
                     : bench_mode == H9_LSP_BENCH_LAST_ENTRY
                         ? (ptr = h9_lsp_debug_lasttoken_alloc(class_id)) !=
                               NULL
+                    : bench_mode == H9_LSP_BENCH_LAST_ENTRY_USABLE ||
+                            bench_mode == H9_LSP_BENCH_LAST_ENTRY_REALLOC
+                        ? (ptr = h9_lsp_debug_lasttoken_alloc(class_id)) !=
+                              NULL
                     : bench_mode == H9_LSP_BENCH_KNOWN_SLOT ||
                             bench_mode == H9_LSP_BENCH_ALLOC_SLOT_ONLY
                         ? h9_lsp_debug_alloc_slot(class_id, &ptr, &slot)
@@ -615,6 +625,12 @@ int main(void) {
                 owned && usable != 0u &&
                 h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
       sink += usable;
+    } else if (bench_mode == H9_LSP_BENCH_LAST_ENTRY_USABLE) {
+      size_t usable = 0u;
+      success = h9_lsp_debug_lasttoken_usable_size(ptr, &usable, &owned) &&
+                owned && usable != 0u &&
+                h9_lsp_debug_lasttoken_free(ptr, &owned) && owned;
+      sink += usable;
     } else if (bench_mode == H9_LSP_BENCH_REALLOC) {
       void* same = h9_lsp_debug_realloc_in_place(ptr, 1u, &owned);
       success = same == ptr && owned && h9_lsp_debug_free(ptr, &owned) &&
@@ -624,6 +640,11 @@ int main(void) {
       void* same = h9_lsp_debug_ptrtoken_realloc_in_place(ptr, 1u, &owned);
       success = same == ptr && owned &&
                 h9_lsp_debug_ptrtoken_free(ptr, &owned) && owned;
+      sink ^= (uintptr_t)same;
+    } else if (bench_mode == H9_LSP_BENCH_LAST_ENTRY_REALLOC) {
+      void* same = h9_lsp_debug_lasttoken_realloc_in_place(ptr, 1u, &owned);
+      success = same == ptr && owned &&
+                h9_lsp_debug_lasttoken_free(ptr, &owned) && owned;
       sink ^= (uintptr_t)same;
     } else if (bench_mode == H9_LSP_BENCH_SPLIT_DIRECT) {
       success = h9_lsp_debug_free_direct_owned(ptr);

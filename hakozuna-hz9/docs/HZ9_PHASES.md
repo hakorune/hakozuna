@@ -71,6 +71,16 @@ goal:
   allow same-thread exact free to use pointer-token positive proof before route
   keep route as canonical fallback authority for miss / foreign / invalid
 
+next box:
+  HZ9LastTokenAuthorityEntry-L1
+  add last-token usable_size / realloc probes beside fast free
+  keep miss / stale / invalid classification in cold route fallback
+
+latest read:
+  last-token free / usable_size / realloc authority is wired in debug form
+  debug public boundary remains slow and is correctness evidence only
+  the next performance body must keep the API trio entry-local
+
 current evidence:
   lastpublic R3: 837M..876M ops/s
   integrated R3: 743M..757M ops/s

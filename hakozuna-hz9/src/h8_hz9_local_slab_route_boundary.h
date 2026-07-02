@@ -65,6 +65,10 @@ void* h9_lsp_debug_ptrtoken_alloc(uint32_t class_id);
 bool h9_lsp_debug_ptrtoken_free(void* ptr, bool* owned_out);
 void* h9_lsp_debug_lasttoken_alloc(uint32_t class_id);
 bool h9_lsp_debug_lasttoken_free(void* ptr, bool* owned_out);
+bool h9_lsp_debug_lasttoken_usable_size(void* ptr, size_t* usable_out,
+                                        bool* owned_out);
+void* h9_lsp_debug_lasttoken_realloc_in_place(void* ptr, size_t size,
+                                              bool* owned_out);
 bool h9_lsp_debug_ptrtoken_usable_size(void* ptr, size_t* usable_out,
                                        bool* owned_out);
 void* h9_lsp_debug_ptrtoken_realloc_in_place(void* ptr, size_t size,

@@ -539,30 +539,89 @@ static H9_LSP_COLD_NOINLINE bool h9_lsp_debug_lasttoken_free_fallback(
   return h9_lsp_debug_free(ptr, owned_out);
 }
 
-bool h9_lsp_debug_lasttoken_free(void* ptr, bool* owned_out) {
+static bool h9_lsp_lasttoken_allocated_hit(void* ptr, H9LspSegment** seg_out,
+                                           uint32_t* slot_out) {
   H9LspSegment* segment = h9_lsp_last_segment;
-  if (h9_lsp_last_live && h9_lsp_last_ptr == ptr && segment &&
-      h9_lsp_last_generation == segment->generation &&
-      h9_lsp_last_slot < segment->slot_count) {
-    uint64_t bit = UINT64_C(1) << h9_lsp_last_slot;
-    if ((segment->alloc_bits & bit) != 0u &&
-        (segment->free_bits & bit) == 0u &&
-        (segment->cache_bits & bit) == 0u &&
-        (segment->pending_bits & bit) == 0u) {
-      segment->alloc_bits &= ~bit;
-      segment->free_bits |= bit;
-      h9_lsp_last_live = 0u;
-      if (owned_out) {
-        *owned_out = true;
-      }
-      h9_lsp_stats.ptrtoken_free_fast++;
-      h9_lsp_stats.free_same_owner_local++;
-      return true;
-    }
+  if (!h9_lsp_last_live || h9_lsp_last_ptr != ptr || !segment ||
+      h9_lsp_last_generation != segment->generation ||
+      h9_lsp_last_slot >= segment->slot_count) {
+    return false;
+  }
+  uint64_t bit = UINT64_C(1) << h9_lsp_last_slot;
+  if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
+      (segment->cache_bits & bit) != 0u ||
+      (segment->pending_bits & bit) != 0u) {
     h9_lsp_last_live = 0u;
     h9_lsp_stats.ptrtoken_state_mismatch++;
+    return false;
+  }
+  if (seg_out) {
+    *seg_out = segment;
+  }
+  if (slot_out) {
+    *slot_out = h9_lsp_last_slot;
+  }
+  return true;
+}
+
+bool h9_lsp_debug_lasttoken_free(void* ptr, bool* owned_out) {
+  H9LspSegment* segment = NULL;
+  uint32_t slot = 0u;
+  if (h9_lsp_lasttoken_allocated_hit(ptr, &segment, &slot)) {
+    uint64_t bit = UINT64_C(1) << slot;
+    segment->alloc_bits &= ~bit;
+    segment->free_bits |= bit;
+    h9_lsp_last_live = 0u;
+    if (owned_out) {
+      *owned_out = true;
+    }
+    h9_lsp_stats.ptrtoken_free_fast++;
+    h9_lsp_stats.free_same_owner_local++;
+    return true;
   }
   return h9_lsp_debug_lasttoken_free_fallback(ptr, owned_out);
+}
+
+static H9_LSP_COLD_NOINLINE bool h9_lsp_debug_lasttoken_usable_fallback(
+    void* ptr, size_t* usable_out, bool* owned_out) {
+  h9_lsp_stats.ptrtoken_usable_fallback++;
+  return h9_lsp_debug_usable_size(ptr, usable_out, owned_out);
+}
+
+bool h9_lsp_debug_lasttoken_usable_size(void* ptr, size_t* usable_out,
+                                        bool* owned_out) {
+  H9LspSegment* segment = NULL;
+  if (h9_lsp_lasttoken_allocated_hit(ptr, &segment, NULL)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    if (usable_out) {
+      *usable_out = segment->slot_size;
+    }
+    h9_lsp_stats.ptrtoken_usable_fast++;
+    return true;
+  }
+  return h9_lsp_debug_lasttoken_usable_fallback(ptr, usable_out, owned_out);
+}
+
+static H9_LSP_COLD_NOINLINE void* h9_lsp_debug_lasttoken_realloc_fallback(
+    void* ptr, size_t size, bool* owned_out) {
+  h9_lsp_stats.ptrtoken_realloc_fallback++;
+  return h9_lsp_debug_realloc_in_place(ptr, size, owned_out);
+}
+
+void* h9_lsp_debug_lasttoken_realloc_in_place(void* ptr, size_t size,
+                                              bool* owned_out) {
+  H9LspSegment* segment = NULL;
+  if (h9_lsp_lasttoken_allocated_hit(ptr, &segment, NULL) &&
+      size <= segment->slot_size) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    h9_lsp_stats.ptrtoken_realloc_fast++;
+    return ptr;
+  }
+  return h9_lsp_debug_lasttoken_realloc_fallback(ptr, size, owned_out);
 }
 
 bool h9_lsp_debug_free_direct_owned(void* ptr) {

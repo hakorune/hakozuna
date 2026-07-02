@@ -228,9 +228,32 @@ static int check_pointer_token_entry(void) {
 
 static int check_last_token_entry(void) {
   bool owned = false;
+  size_t usable = 0u;
   void* ptr = h9_lsp_debug_lasttoken_alloc(5u);
   if (!ptr) {
     return 40;
+  }
+  if (!h9_lsp_debug_lasttoken_usable_size(ptr, &usable, &owned) || !owned ||
+      usable == 0u) {
+    fprintf(stderr, "last-token entry usable fast failed\n");
+    return 46;
+  }
+  if (!h9_lsp_debug_lasttoken_realloc_in_place(ptr, usable, &owned) ||
+      !owned) {
+    fprintf(stderr, "last-token entry realloc fast failed\n");
+    return 47;
+  }
+  if (h9_lsp_debug_lasttoken_realloc_in_place(ptr, usable + 1u, &owned) ||
+      !owned) {
+    fprintf(stderr, "last-token entry oversize realloc accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 48;
+  }
+  if (h9_lsp_debug_lasttoken_usable_size((char*)ptr + 1, &usable, &owned) ||
+      !owned) {
+    fprintf(stderr, "last-token entry interior usable accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 49;
   }
   if (h9_lsp_debug_lasttoken_free((char*)ptr + 1, &owned) || !owned) {
     fprintf(stderr, "last-token entry interior accepted owned=%d\n",
@@ -256,11 +279,16 @@ static int check_last_token_entry(void) {
   }
   H9LspStats stats = h9_lsp_debug_stats();
   if (stats.ptrtoken_free_fast == 0u || stats.ptrtoken_free_fallback == 0u ||
-      stats.free_invalid_owned == 0u) {
+      stats.ptrtoken_usable_fast == 0u ||
+      stats.ptrtoken_usable_fallback == 0u ||
+      stats.ptrtoken_realloc_fast == 0u ||
+      stats.ptrtoken_realloc_fallback == 0u || stats.free_invalid_owned == 0u) {
     fprintf(stderr,
-            "last-token entry counters failed fast=%zu fallback=%zu "
-            "invalid=%zu\n",
+            "last-token entry counters failed free=%zu fallback=%zu usable=%zu "
+            "usable_fb=%zu realloc=%zu realloc_fb=%zu invalid=%zu\n",
             stats.ptrtoken_free_fast, stats.ptrtoken_free_fallback,
+            stats.ptrtoken_usable_fast, stats.ptrtoken_usable_fallback,
+            stats.ptrtoken_realloc_fast, stats.ptrtoken_realloc_fallback,
             stats.free_invalid_owned);
     return 45;
   }
