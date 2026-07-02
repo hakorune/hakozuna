@@ -335,6 +335,11 @@ table_addr proof:
   debug linear class discovery lands around 28-32% of known_addr mode
   a real behavior path needs an active segment pointer or compact route index
 
+rejected micro-optimization:
+  replacing modulo/divide slot decode with slot_count linear exact-offset
+  compares was slower for class5 route probes, so the helper remains on the
+  modulo/divide form until behavior code can specialize a real hot path
+
 next optimization target:
   keep the exact slot address generation shape
   do not put full debug route helpers or linear table discovery on the local
