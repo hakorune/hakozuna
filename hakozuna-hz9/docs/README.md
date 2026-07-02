@@ -16,6 +16,9 @@ HZ9_SEGMENT_LOCAL_CACHE_L0.md:
   current design-prep lane, standalone segment metadata scaffold, remote
   drain/release boundaries, and local body API sweep
 
+HZ9_SEGMENT_ROUTE_PROOFS_L0.md:
+  route/free-shape evidence for SegmentLocalCache and fused local-hit decision
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
   held 64K slab/page prototype, route boundary, counters, and blockers
 

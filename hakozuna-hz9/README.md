@@ -263,6 +263,7 @@ do not ship HZ9 as a user-facing replacement before matrix evidence exists
 ```text
 docs/HZ9_CURRENT_STATUS.md
 docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
 docs/HZ9_MEDIUM_TLS_OBJECT_CACHE_L0.md
 docs/HZ9_LOCAL_SLAB_PAGE_L1.md
 docs/HZ9_STANDALONE_CLOSURE.md

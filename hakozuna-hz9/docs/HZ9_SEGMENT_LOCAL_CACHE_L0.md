@@ -476,238 +476,35 @@ next optimization target:
   do not model the local hit core as stacked debug helper calls
 ```
 
-### Local Payload Probe
+### Local Payload And Route Proofs
+
+Detailed route/free-shape evidence moved to:
 
 ```text
-command:
-  ITERS=1000000 scripts/run_hz9_segment_local_payload_sweep.sh
-
-legacy manual shape:
-  for touch in 1 0; do
-    for class_id in 0 1 2 3 4 5; do
-      TOUCH=$touch CLASS_ID=$class_id ITERS=1000000 \
-        h8_bench_hz9segmentlocalcache_local
-    done
-  done
-
-touch=1:
-  class0 573.8M ops/s
-  class1 573.2M ops/s
-  class2 546.4M ops/s
-  class3 581.2M ops/s
-  class4 576.2M ops/s
-  class5 507.0M ops/s
-
-touch=0:
-  class0 576.2M ops/s
-  class1 575.0M ops/s
-  class2 495.5M ops/s
-  class3 576.2M ops/s
-  class4 560.1M ops/s
-  class5 540.9M ops/s
-
-route_free=1, touch=1:
-  class0 123.8M ops/s
-  class1 117.2M ops/s
-  class2 114.2M ops/s
-  class3 115.5M ops/s
-  class4 84.2M ops/s
-  class5 100.7M ops/s
-
-route_free=2, touch=1:
-  class0 159.2M ops/s
-  class1 154.9M ops/s
-  class2 150.3M ops/s
-  class3 147.7M ops/s
-  class4 136.5M ops/s
-  class5 137.1M ops/s
-
-active_cycle=1, touch=1:
-  class0 451.5M ops/s
-  class1 478.9M ops/s
-  class2 465.2M ops/s
-  class3 447.4M ops/s
-  class4 437.7M ops/s
-  class5 474.4M ops/s
-
-active_route=1, touch=1:
-  class0 183.4M ops/s
-  class1 179.2M ops/s
-  class2 167.4M ops/s
-  class3 161.2M ops/s
-  class4 151.8M ops/s
-  class5 149.4M ops/s
-
-active_route=2, touch=1:
-  class0 174.5M ops/s
-  class1 147.5M ops/s
-  class2 171.3M ops/s
-  class3 171.2M ops/s
-  class4 168.7M ops/s
-  class5 170.8M ops/s
-
-active_route=3, touch=1:
-  class0 171.9M ops/s
-  class1 167.5M ops/s
-  class2 165.7M ops/s
-  class3 170.7M ops/s
-  class4 160.2M ops/s
-  class5 160.4M ops/s
-
-active_route=4, touch=1:
-  class0 198.0M ops/s
-  class1 201.6M ops/s
-  class2 184.8M ops/s
-  class3 201.2M ops/s
-  class4 191.8M ops/s
-  class5 199.6M ops/s
-
-active_route=5, touch=1:
-  class0 163.0M ops/s
-  class1 166.9M ops/s
-  class2 164.3M ops/s
-  class3 168.1M ops/s
-  class4 160.7M ops/s
-  class5 157.0M ops/s
-
-active_sample8, touch=1:
-  class0 231.0M ops/s
-  class1 235.8M ops/s
-  class2 217.6M ops/s
-  class3 226.7M ops/s
-  class4 219.2M ops/s
-  class5 210.4M ops/s
-
-active_sample64, touch=1:
-  class0 238.7M ops/s
-  class1 245.6M ops/s
-  class2 226.3M ops/s
-  class3 241.6M ops/s
-  class4 231.3M ops/s
-  class5 221.8M ops/s
+docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
 ```
 
-Interpretation:
+Current summary:
 
 ```text
-real payload local-only probe:
-  direct known-slot SegmentLocalCache body remains around 500-580M ops/s even
-  when touching real payload memory
+direct known-slot local body:
+  about 500-580M ops/s
 
-route-free probe:
-  external free validation through table route + addr->slot decode lands around
-  84-124M ops/s
-  this is a boundary cost, not the local reuse core speed
+public route/free boundary:
+  about 84-176M ops/s depending on route shape
 
-single-decode route-free probe:
-  returning class and slot from the table route lifts the boundary to about
-  136-159M ops/s
-  this proves duplicate decode mattered, but route classification is still far
-  from the 500M+ direct local body
+sample/header/token route proofs:
+  improve over public route but remain far below active direct
 
-active payload probe:
-  active segment pointer plus direct known-slot body remains about 421-472M
-  ops/s while touching real payload
-  this is the behavior-core target; public free route remains a separate
-  boundary path
+split active take/free proofs:
+  pair / pairfast / pairdirect remain below about 0.7x active direct
 
-active-route payload probe:
-  active direct take plus route_table_slot free lands around 149-183M ops/s
-  this is better than route2 alone, but free boundary classification dominates
-  a public malloc/free cycle
-
-active-first route probe:
-  trying the active segment before the table route lands around 147-174M ops/s
-  it helps upper classes and is a plausible public free fast boundary
-  however the gap to active direct local remains large
-
-route-only probe:
-  active_route=3 validates active-first route and then frees by known slot
-  it still lands around 160-172M ops/s
-  therefore route classification, not the final free mutation, is the main
-  public-cycle limiter in this scaffold
-
-range-only probe:
-  active_route=4 validates only active segment range/state and then frees by
-  known slot
-  it lands around 185-202M ops/s, above exact active-route proof but still far
-  below the 421-494M active direct body
-  this is attribution-only: it is not exact slot validation and cannot be used
-  as a public fail-closed free boundary by itself
-
-active exact no-fallback probe:
-  active_route=5 validates exact active segment slot without table fallback
-  it lands around 157-168M ops/s, close to active_route=3 and below range-only
-  therefore table fallback is not the dominant cost in the hit case
-  exact slot validation plus route classification is the remaining boundary
-  tax
-
-sampled public-route proof:
-  active_sample8/64 calls route_table_slot only every 8 or 64 local cycles
-  while all other iterations use direct known-slot reuse
-  sampled proof improves to about 210-246M ops/s, but still remains far below
-  the active direct body
-  this supports route separation as necessary, but not sufficient by itself;
-  the behavior path must make the common local cycle direct and keep public
-  route validation off that cycle
-
-route-proof gate:
-  scripts/run_hz9_segment_route_proof_gate.sh compares direct, active, public,
-  exact, sample8, and sample64 under the same local payload setup
-  current R1 ranges:
-    public route proof: 118-176M ops/s
-    exact active proof: 160-169M ops/s
-    sampled proof: 218-245M ops/s
-  sampled proof reaches only about 0.55-0.70x of active direct depending on
-  class, so route sampling is an evidence ceiling, not a sufficient behavior
-  shape
-
-slot-header route proof:
-  active_header_probe stores a small header at the slot start and routes from
-  user_ptr - header_size before freeing by known slot
-  current R1 range is about 206-219M ops/s, or about 0.46-0.51x active direct
-  this is better than public/exact route, but does not beat sampled route and
-  does not recover the direct local body
-  implication: a simple per-object header is not enough; the common local
-  cycle still needs a direct local token/slot path, with public route kept as
-  the external boundary
-
-TLS last-token proof:
-  active_token_probe compares against the immediately returned local pointer
-  and falls back to route_table_slot only on token miss
-  current R1 range is about 204-216M ops/s, or about 0.47-0.57x active direct
-  implication: a token check alone is not enough; the local free body must be
-  shaped like the direct known-slot path, not a public-free-shaped branch
-
-Active pair proof:
-  active_pair_probe uses active direct take plus known-slot free with no route
-  current R1 range is about 220-241M ops/s, or about 0.52-0.59x active direct
-  implication: route lookup is not the only tax; split public-shaped take/free
-  control remains too expensive versus the combined active known-slot body
-
-Active pair-fast-free proof:
-  pairfast uses active direct take plus active-class direct free with no route
-  current R1 range is about 251-274M ops/s, or about 0.59-0.66x active direct
-  implication: free-side specialization helps, but the split malloc/free shape
-  is still not enough to recover the combined active known-slot body
-
-Active pair-direct proof:
-  pairdirect calls one active take/free helper and bypasses route validation
-  current R1 range is about 245-275M ops/s, or about 0.55-0.68x active direct
-  implication: benchmark branch routing is not the blocker; active_cycle wins
-  because the take/free mutation is fused into one compact body
-
-Active pair-fused proof:
-  pairfused uses one fused active take/free body and bypasses route validation
-  current R1 range is about 478-542M ops/s, or about 1.14-1.34x active direct
-  implication: the fast substrate exists, but only as a fused local-hit body;
-  public route and split helper shape must stay out of the local hit core
+fused active take/free proof:
+  about 478-542M ops/s, or about 1.14-1.34x active direct
 
 behavior implication:
-  the next behavior box should wire a local hit path that calls the direct
-  known-slot body shape
-  public free routing must remain separate and fail-closed; it should not be
-  in the immediate local reuse core
+  local hit core must use fused known-slot body
+  public route validation must stay out of immediate local reuse
 ```
 
 ## Decision Boundary

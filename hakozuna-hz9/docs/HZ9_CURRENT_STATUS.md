@@ -66,6 +66,7 @@ code shape:
 
 current design:
   docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+  docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
   per-thread medium segment cache scaffold
   segment-backed slots, not HZ8 medium-run objects
   no allocator routing yet
@@ -437,6 +438,7 @@ docs/README.md
 docs/HZ9_STANDALONE_CLOSURE.md
 docs/HZ9_DIFFERENTIATION.md
 docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+docs/HZ9_SEGMENT_ROUTE_PROOFS_L0.md
 docs/HZ9_NEXT_SUBSTRATE.md
 docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md
