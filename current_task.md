@@ -23,6 +23,7 @@ Current direction:
                 SegmentEntry points to fused TLS local body; split alloc/free
                 and TLS-cache route-push shape are the large residuals.
                 token-local cache body/retire is the next HZ9 behavior boundary;
+                H9SegmentEntryTokenCache now packages that reusable state shape;
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
@@ -39,7 +40,6 @@ Current direction:
 Current strength:
   HZ8 is the balanced default line.
   HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
-  HZ9 cache/SlabPage/LocalArena lanes are evidence, not default.
   Next HZ9 behavior development should avoid per-allocation owner-page tax,
                 broad no-use route/layout contamination, and unsafe pure-local
                 mutation on mixed remote rows.

@@ -22,6 +22,12 @@ typedef struct H9SegmentEntryPage {
   uint64_t cache_bits;
 } H9SegmentEntryPage;
 
+typedef struct H9SegmentEntryTokenCache {
+  H9SegmentEntryToken token;
+  uint32_t cache_slot;
+  void* cache_ptr;
+} H9SegmentEntryTokenCache;
+
 extern H9SegmentEntryPage h9_segment_entry_pages[H9_SEGMENT_ENTRY_PAGE_CAP];
 extern uint32_t h9_segment_entry_page_count;
 extern _Thread_local uint32_t
@@ -110,6 +116,27 @@ static inline bool h9_segment_entry_cycle_token_cache_inline(
   return true;
 }
 
+static inline void h9_segment_entry_token_cache_reset(
+    H9SegmentEntryTokenCache* cache) {
+  if (!cache) {
+    return;
+  }
+  cache->token = (H9SegmentEntryToken){0};
+  cache->cache_slot = UINT32_MAX;
+  cache->cache_ptr = NULL;
+}
+
+static inline bool h9_segment_entry_cycle_token_cache_state_inline(
+    H9SegmentEntryTokenCache* cache, uint64_t value, bool touch,
+    void** ptr_out) {
+  if (!cache) {
+    return false;
+  }
+  return h9_segment_entry_cycle_token_cache_inline(
+      &cache->token, &cache->cache_slot, &cache->cache_ptr, value, touch,
+      ptr_out);
+}
+
 static inline bool h9_segment_entry_retire_token_cache_inline(
     const H9SegmentEntryToken* token, uint32_t* cache_slot, void** cache_ptr) {
   if (!token || token->handle == 0u || !cache_slot || !cache_ptr) {
@@ -135,6 +162,15 @@ static inline bool h9_segment_entry_retire_token_cache_inline(
   *cache_ptr = NULL;
   *cache_slot = UINT32_MAX;
   return true;
+}
+
+static inline bool h9_segment_entry_retire_token_cache_state_inline(
+    H9SegmentEntryTokenCache* cache) {
+  if (!cache) {
+    return false;
+  }
+  return h9_segment_entry_retire_token_cache_inline(
+      &cache->token, &cache->cache_slot, &cache->cache_ptr);
 }
 
 H9SegmentEntryPage* h9_segment_entry_page_for_ptr(void* ptr,

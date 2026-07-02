@@ -21,22 +21,23 @@ typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_TOKEN_BODY = 8,
   H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_BODY = 9,
   H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE = 10,
-  H9_SEGMENT_ENTRY_BENCH_TLS = 11,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 12,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 13,
-  H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 14,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 15,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 16,
-  H9_SEGMENT_ENTRY_BENCH_TLS_BODY = 17,
-  H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED = 18,
-  H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY = 19,
-  H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY = 20,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY = 21,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY = 22,
-  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE64_BODY = 23,
-  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 24,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 25,
-  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 26
+  H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE = 11,
+  H9_SEGMENT_ENTRY_BENCH_TLS = 12,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE = 13,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL = 14,
+  H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN = 15,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED = 16,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED_TOUCH = 17,
+  H9_SEGMENT_ENTRY_BENCH_TLS_BODY = 18,
+  H9_SEGMENT_ENTRY_BENCH_TLS_BODY_CHECKED = 19,
+  H9_SEGMENT_ENTRY_BENCH_TLS_GUARD_BODY = 20,
+  H9_SEGMENT_ENTRY_BENCH_TLS_EPOCH_BODY = 21,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_BODY = 22,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE_EVERY = 23,
+  H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE64_BODY = 24,
+  H9_SEGMENT_ENTRY_BENCH_TLS_CACHE = 25,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER = 26,
+  H9_SEGMENT_ENTRY_BENCH_TLS_LEDGER_BODY = 27
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -87,6 +88,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_BODY;
   } else if (strcmp(mode, "tokencacheretire") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE;
+  } else if (strcmp(mode, "tokencachestate") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE;
   } else if (strcmp(mode, "tls") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_TLS;
   } else if (strcmp(mode, "tlsroute") == 0) {
@@ -152,6 +155,7 @@ int main(void) {
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_BODY ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE ||
+             bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE ||
              bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL ||
@@ -177,7 +181,8 @@ int main(void) {
     page_generation = h9_segment_entry_debug_handle_generation(page_handle);
     if ((bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_BODY ||
          bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_BODY ||
-         bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE) &&
+         bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE ||
+         bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE) &&
         !h9_segment_entry_debug_acquire_token(class_id, &page_token)) {
       fprintf(stderr, "segment entry bench failed to acquire token\n");
       h9_segment_entry_debug_reset();
@@ -186,6 +191,9 @@ int main(void) {
   }
   uint32_t token_cache_slot = UINT32_MAX;
   void* token_cache_ptr = NULL;
+  H9SegmentEntryTokenCache token_cache_state;
+  h9_segment_entry_token_cache_reset(&token_cache_state);
+  token_cache_state.token = page_token;
   uint64_t ok = 0u;
   double start = now_seconds();
   for (uint64_t i = 0u; i < iters; ++i) {
@@ -247,6 +255,9 @@ int main(void) {
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE) {
       success = h9_segment_entry_cycle_token_cache_inline(
           &page_token, &token_cache_slot, &token_cache_ptr, i, touch, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE) {
+      success = h9_segment_entry_cycle_token_cache_state_inline(
+          &token_cache_state, i, touch, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_CHECKED) {
       success = h9_segment_entry_debug_cycle_tls_checked(class_id, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN) {
@@ -320,6 +331,7 @@ int main(void) {
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TOKEN_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_BODY &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_RETIRE &&
+        bench_mode != H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_ROUTE &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_LOCAL &&
         bench_mode != H9_SEGMENT_ENTRY_BENCH_TLS_KNOWN &&
@@ -352,6 +364,12 @@ int main(void) {
                                                   &token_cache_slot,
                                                   &token_cache_ptr)) {
     fprintf(stderr, "segment entry bench failed to retire token cache\n");
+    h9_segment_entry_debug_reset();
+    return 3;
+  }
+  if (bench_mode == H9_SEGMENT_ENTRY_BENCH_TOKEN_CACHE_STATE &&
+      !h9_segment_entry_retire_token_cache_state_inline(&token_cache_state)) {
+    fprintf(stderr, "segment entry bench failed to retire token cache state\n");
     h9_segment_entry_debug_reset();
     return 3;
   }

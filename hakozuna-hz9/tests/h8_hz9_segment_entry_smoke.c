@@ -206,6 +206,8 @@ static int check_token_cache_body(void) {
   uint32_t cache_slot = UINT32_MAX;
   void* cache_ptr = NULL;
   H9SegmentEntryToken token = {0};
+  H9SegmentEntryTokenCache cache_state;
+  h9_segment_entry_token_cache_reset(&cache_state);
   if (!h9_segment_entry_debug_acquire_token(0u, &token) ||
       !h9_segment_entry_cycle_token_cache_inline(&token, &cache_slot,
                                                  &cache_ptr, 41u, true, &p) ||
@@ -242,6 +244,24 @@ static int check_token_cache_body(void) {
     fprintf(stderr, "segment entry token cache retire reuse failed\n");
     h9_segment_entry_debug_reset();
     return 30;
+  }
+  h9_segment_entry_debug_reset();
+  if (!h9_segment_entry_debug_acquire_token(0u, &cache_state.token) ||
+      !h9_segment_entry_cycle_token_cache_state_inline(&cache_state, 47u, true,
+                                                       &p) ||
+      !p || cache_state.cache_slot == UINT32_MAX ||
+      cache_state.cache_ptr != p ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry token cache state cycle failed\n");
+    h9_segment_entry_debug_reset();
+    return 31;
+  }
+  if (h9_segment_entry_debug_free(p, &owned) || !owned ||
+      !h9_segment_entry_retire_token_cache_state_inline(&cache_state) ||
+      h9_segment_entry_debug_route(p) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry token cache state retire failed\n");
+    h9_segment_entry_debug_reset();
+    return 32;
   }
   h9_segment_entry_debug_reset();
   return 0;

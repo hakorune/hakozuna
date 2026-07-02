@@ -211,6 +211,10 @@ handlecheckedtouch mode:
   reading: flushing cached slots back to normal free state at the retirement
   boundary does not require putting route/class/generation checks back into the
   reuse loop.
+  token cache state object:
+    H9SegmentEntryTokenCache packages the prevalidated token plus one cached
+    slot. tokencachestate measures the same hot shape through the reusable state
+    object that a behavior candidate would carry across local reuse.
 
 tls-handle mode:
   caches the selected page handle in TLS by class
@@ -395,6 +399,10 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   state shape itself is too heavy for the local hot body
   tokencachebody shows the next viable behavior shape: acquire/validate once,
   then run a checkless token-local cached-slot pop/push body until retirement
+  H9SegmentEntryTokenCache is the reusable state boundary for that shape:
+    acquisition fills token
+    local reuse only mutates cached pointer/slot and page cache bits
+    retirement returns LOCAL_CACHE state to normal free/public routing
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body
