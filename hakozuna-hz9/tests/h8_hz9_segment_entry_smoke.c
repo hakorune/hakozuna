@@ -56,6 +56,13 @@ static int check_class(uint32_t class_id) {
             class_id);
     return 8;
   }
+  uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+  if (handle == 0u || !h9_segment_entry_debug_cycle_handle(handle, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry handle cycle failed: class=%u\n",
+            class_id);
+    return 9;
+  }
   return 0;
 }
 

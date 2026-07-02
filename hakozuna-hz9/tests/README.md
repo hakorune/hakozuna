@@ -70,7 +70,7 @@ ITERS=1000000 hakozuna-hz9/scripts/run_hz9_segment_route_proof_gate.sh
 
 make -C hakozuna-hz9 bench-hz9segmententry
   SegmentEntry global-routeable page scaffold
-  set MODE=route, MODE=fused, MODE=fast, or MODE=page
+  set MODE=route, MODE=fused, MODE=fast, MODE=page, or MODE=handle
 ```
 
 Active-run magazine evidence tests are still available as historical L0

@@ -227,6 +227,20 @@ bool h9_segment_entry_debug_cycle_page(uint32_t page_id, void** ptr_out) {
                                      ptr_out);
 }
 
+uintptr_t h9_segment_entry_debug_prepare_handle(uint32_t class_id) {
+  uint32_t page_id = h9_segment_entry_debug_prepare_active(class_id);
+  return page_id < h9_segment_entry_page_count
+             ? (uintptr_t)&h9_segment_entry_pages[page_id]
+             : 0u;
+}
+
+bool h9_segment_entry_debug_cycle_handle(uintptr_t handle, void** ptr_out) {
+  if (handle == 0u) {
+    return false;
+  }
+  return h9_segment_entry_cycle_page((H9SegmentEntryPage*)handle, ptr_out);
+}
+
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;

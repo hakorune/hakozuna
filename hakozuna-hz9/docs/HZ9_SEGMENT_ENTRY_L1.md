@@ -110,6 +110,11 @@ direct-page mode:
   prepares the active page once and cycles by page id
   touch=1: about 566-674M ops/s
   touch=0: about 584-631M ops/s
+
+opaque-handle mode:
+  prepares an opaque page handle once and cycles by handle
+  touch=1: about 643-771M ops/s
+  touch=0: about 724-818M ops/s
 ```
 
 Interpretation:
@@ -121,9 +126,10 @@ TLS-only SegmentLocalCache fused speed.
 The next optimization target is not an active-page lookup shortcut. The useful
 substrate remains the fused known-slot body. Direct-page mode shows that a
 routeable page body can still gain from keeping the page handle out of the
-inner loop:
+inner loop. Opaque-handle mode strengthens that result:
   keep exact routeable ownership
   keep public free route separate
   avoid adding active-fast branches unless a later bench proves a stable win
-  prefer entry designs that cache the selected page at the local call site
+  prefer entry designs that cache the selected page handle at the local call
+  site
 ```
