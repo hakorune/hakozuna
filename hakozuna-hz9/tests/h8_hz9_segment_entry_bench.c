@@ -13,7 +13,8 @@
 typedef enum H9SegmentEntryBenchMode {
   H9_SEGMENT_ENTRY_BENCH_ROUTE = 0,
   H9_SEGMENT_ENTRY_BENCH_FUSED = 1,
-  H9_SEGMENT_ENTRY_BENCH_FAST = 2
+  H9_SEGMENT_ENTRY_BENCH_FAST = 2,
+  H9_SEGMENT_ENTRY_BENCH_PAGE = 3
 } H9SegmentEntryBenchMode;
 
 static double now_seconds(void) {
@@ -47,6 +48,8 @@ int main(void) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_FUSED;
   } else if (strcmp(mode, "fast") == 0) {
     bench_mode = H9_SEGMENT_ENTRY_BENCH_FAST;
+  } else if (strcmp(mode, "page") == 0) {
+    bench_mode = H9_SEGMENT_ENTRY_BENCH_PAGE;
   }
 
   uint32_t slot_size = 0u;
@@ -62,12 +65,23 @@ int main(void) {
   slot_count = spec->slot_count;
 
   h9_segment_entry_debug_reset();
+  uint32_t page_id = UINT32_MAX;
+  if (bench_mode == H9_SEGMENT_ENTRY_BENCH_PAGE) {
+    page_id = h9_segment_entry_debug_prepare_active(class_id);
+    if (page_id == UINT32_MAX) {
+      fprintf(stderr, "segment entry bench failed to prepare page\n");
+      h9_segment_entry_debug_reset();
+      return 3;
+    }
+  }
   uint64_t ok = 0u;
   double start = now_seconds();
   for (uint64_t i = 0u; i < iters; ++i) {
     void* ptr = NULL;
     bool success = false;
-    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FAST) {
+    if (bench_mode == H9_SEGMENT_ENTRY_BENCH_PAGE) {
+      success = h9_segment_entry_debug_cycle_page(page_id, &ptr);
+    } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FAST) {
       success = h9_segment_entry_debug_cycle_active_fast(class_id, &ptr);
     } else if (bench_mode == H9_SEGMENT_ENTRY_BENCH_FUSED) {
       success = h9_segment_entry_debug_cycle_fused(class_id, &ptr);

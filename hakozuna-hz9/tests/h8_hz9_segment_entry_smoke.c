@@ -48,6 +48,14 @@ static int check_class(uint32_t class_id) {
     fprintf(stderr, "segment entry final free failed: class=%u\n", class_id);
     return 7;
   }
+  uint32_t page_id = h9_segment_entry_debug_prepare_active(class_id);
+  if (page_id == UINT32_MAX ||
+      !h9_segment_entry_debug_cycle_page(page_id, &b) ||
+      h9_segment_entry_debug_route(b) != H8_ROUTE_INVALID) {
+    fprintf(stderr, "segment entry direct page cycle failed: class=%u\n",
+            class_id);
+    return 8;
+  }
   return 0;
 }
 
@@ -81,7 +89,7 @@ int main(void) {
     fprintf(stderr, "segment entry page count mismatch: %u\n",
             h9_segment_entry_debug_page_count());
     h9_segment_entry_debug_reset();
-    return 8;
+    return 10;
   }
   h9_segment_entry_debug_reset();
   puts("hz9_segment_entry_smoke ok");

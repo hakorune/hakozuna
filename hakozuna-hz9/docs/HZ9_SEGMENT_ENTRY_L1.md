@@ -105,6 +105,11 @@ fused body:
 active-fast mode:
   does not beat fused consistently
   class sweep showed about 352-617M ops/s with a 24K touch=1 outlier
+
+direct-page mode:
+  prepares the active page once and cycles by page id
+  touch=1: about 566-674M ops/s
+  touch=0: about 584-631M ops/s
 ```
 
 Interpretation:
@@ -114,8 +119,11 @@ global routeable SegmentEntry is safe enough to benchmark, but not yet at
 TLS-only SegmentLocalCache fused speed.
 
 The next optimization target is not an active-page lookup shortcut. The useful
-substrate remains the fused known-slot body:
+substrate remains the fused known-slot body. Direct-page mode shows that a
+routeable page body can still gain from keeping the page handle out of the
+inner loop:
   keep exact routeable ownership
   keep public free route separate
   avoid adding active-fast branches unless a later bench proves a stable win
+  prefer entry designs that cache the selected page at the local call site
 ```
