@@ -13,6 +13,9 @@ typedef enum H9SegmentState {
 typedef struct H9SegmentLocalClass {
   uintptr_t base_addr;
   uint32_t slot_size;
+  uint32_t run_size;
+  size_t payload_bytes;
+  uint16_t slot_count;
   uint64_t local_free_bits;
   uint64_t local_alloc_bits;
   uint64_t remote_pending_bits;
@@ -39,6 +42,45 @@ static H9SegmentLocalClass* h9_segment_class(uint32_t class_id) {
   return &h9_segment_tls.classes[class_id];
 }
 
+static H8RouteKind h9_segment_route_cached_offset_to_slot(
+    const H9SegmentLocalClass* cls, size_t offset, bool fast,
+    uint32_t* slot_out) {
+  if (!cls || cls->slot_size == 0u || cls->slot_count == 0u) {
+    return H8_ROUTE_MISS;
+  }
+  if (offset >= (size_t)cls->run_size) {
+    return H8_ROUTE_MISS;
+  }
+  if (offset >= cls->payload_bytes) {
+    return H8_ROUTE_INVALID;
+  }
+  if (fast && (cls->slot_size & (cls->slot_size - 1u)) == 0u) {
+    if ((offset & ((size_t)cls->slot_size - 1u)) != 0u) {
+      return H8_ROUTE_INVALID;
+    }
+    if (slot_out) {
+      *slot_out = (uint32_t)(offset >> __builtin_ctz(cls->slot_size));
+    }
+    return H8_ROUTE_VALID;
+  }
+  if (fast && cls->slot_count == 2u) {
+    if (offset == 0u || offset == (size_t)cls->slot_size) {
+      if (slot_out) {
+        *slot_out = offset == 0u ? 0u : 1u;
+      }
+      return H8_ROUTE_VALID;
+    }
+    return H8_ROUTE_INVALID;
+  }
+  if ((offset % (size_t)cls->slot_size) != 0u) {
+    return H8_ROUTE_INVALID;
+  }
+  if (slot_out) {
+    *slot_out = (uint32_t)(offset / (size_t)cls->slot_size);
+  }
+  return H8_ROUTE_VALID;
+}
+
 static H8RouteKind h9_segment_route_offset_to_slot(uint32_t class_id,
                                                    size_t offset,
                                                    uint32_t* slot_out) {
@@ -60,50 +102,6 @@ static H8RouteKind h9_segment_route_offset_to_slot(uint32_t class_id,
     *slot_out = (uint32_t)(offset / (size_t)slot_size);
   }
   return H8_ROUTE_VALID;
-}
-
-static H8RouteKind h9_segment_route_offset_to_slot_fast(uint32_t class_id,
-                                                        size_t offset,
-                                                        uint32_t* slot_out) {
-  uint32_t slot_size = 0u;
-  uint32_t run_size = 0u;
-  uint16_t slot_count = 0u;
-  if (!h9_segment_local_cache_debug_class_geometry(
-          class_id, &slot_size, &run_size, &slot_count)) {
-    return H8_ROUTE_MISS;
-  }
-  size_t payload_bytes = (size_t)slot_size * (size_t)slot_count;
-  if (offset >= (size_t)run_size) {
-    return H8_ROUTE_MISS;
-  }
-  if (offset >= payload_bytes) {
-    return H8_ROUTE_INVALID;
-  }
-  if ((slot_size & (slot_size - 1u)) == 0u) {
-    if ((offset & ((size_t)slot_size - 1u)) != 0u) {
-      return H8_ROUTE_INVALID;
-    }
-    if (slot_out) {
-      *slot_out = (uint32_t)(offset >> __builtin_ctz(slot_size));
-    }
-    return H8_ROUTE_VALID;
-  }
-  if (slot_count == 2u) {
-    if (offset == 0u) {
-      if (slot_out) {
-        *slot_out = 0u;
-      }
-      return H8_ROUTE_VALID;
-    }
-    if (offset == (size_t)slot_size) {
-      if (slot_out) {
-        *slot_out = 1u;
-      }
-      return H8_ROUTE_VALID;
-    }
-    return H8_ROUTE_INVALID;
-  }
-  return h9_segment_route_offset_to_slot(class_id, offset, slot_out);
 }
 
 void h9_segment_local_cache_debug_reset(void) {
@@ -313,31 +311,28 @@ bool h9_segment_local_cache_debug_bind_base(uint32_t class_id,
   }
   cls->base_addr = base_addr;
   cls->slot_size = slot_size;
+  cls->run_size = run_size;
+  cls->slot_count = slot_count;
+  cls->payload_bytes = (size_t)slot_size * (size_t)slot_count;
   h9_segment_tls.touched_class_bits |= UINT64_C(1) << class_id;
   return true;
 }
 
 H8RouteKind h9_segment_local_cache_debug_route_addr(uint32_t class_id,
                                                     uintptr_t addr) {
-  uint32_t slot_size = 0u;
-  uint32_t run_size = 0u;
-  uint16_t slot_count = 0u;
-  if (!h9_segment_local_cache_debug_class_geometry(
-          class_id, &slot_size, &run_size, &slot_count)) {
-    return H8_ROUTE_MISS;
-  }
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   if (!cls || cls->base_addr == 0u || addr < cls->base_addr) {
     return H8_ROUTE_MISS;
   }
   uintptr_t offset = addr - cls->base_addr;
-  if (offset >= (uintptr_t)run_size) {
+  if (offset >= (uintptr_t)cls->run_size) {
     return H8_ROUTE_MISS;
   }
   if (cls->state != H9_SEGMENT_LOCAL) {
     return H8_ROUTE_INVALID;
   }
-  return h9_segment_local_cache_debug_route_offset(class_id, (size_t)offset);
+  return h9_segment_route_cached_offset_to_slot(cls, (size_t)offset, false,
+                                                NULL);
 }
 
 H8RouteKind h9_segment_local_cache_debug_route_table_addr(uintptr_t addr,
@@ -347,15 +342,8 @@ H8RouteKind h9_segment_local_cache_debug_route_table_addr(uintptr_t addr,
     if (!cls || cls->base_addr == 0u || addr < cls->base_addr) {
       continue;
     }
-    uint32_t slot_size = 0u;
-    uint32_t run_size = 0u;
-    uint16_t slot_count = 0u;
-    if (!h9_segment_local_cache_debug_class_geometry(
-            class_id, &slot_size, &run_size, &slot_count)) {
-      continue;
-    }
     uintptr_t offset = addr - cls->base_addr;
-    if (offset >= (uintptr_t)run_size) {
+    if (offset >= (uintptr_t)cls->run_size) {
       continue;
     }
     if (class_out) {
@@ -409,8 +397,8 @@ bool h9_segment_local_cache_debug_free_addr(uint32_t class_id,
   }
   uint32_t slot = 0u;
   uintptr_t offset = addr - cls->base_addr;
-  if (h9_segment_route_offset_to_slot(class_id, (size_t)offset, &slot) !=
-      H8_ROUTE_VALID) {
+  if (h9_segment_route_cached_offset_to_slot(cls, (size_t)offset, false,
+                                             &slot) != H8_ROUTE_VALID) {
     return false;
   }
   return h9_segment_local_cache_debug_free_allocated(class_id, slot);
@@ -425,8 +413,8 @@ bool h9_segment_local_cache_debug_free_addr_fast(uint32_t class_id,
   }
   uint32_t slot = 0u;
   uintptr_t offset = addr - cls->base_addr;
-  if (h9_segment_route_offset_to_slot_fast(class_id, (size_t)offset, &slot) !=
-      H8_ROUTE_VALID) {
+  if (h9_segment_route_cached_offset_to_slot(cls, (size_t)offset, true,
+                                             &slot) != H8_ROUTE_VALID) {
     return false;
   }
   return h9_segment_local_cache_debug_free_allocated(class_id, slot);

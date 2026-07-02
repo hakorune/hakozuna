@@ -20,7 +20,7 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                cycle_known proves direct known-slot body is the local target.
+                cycle_known is target; cached route is fallback, not hit core.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

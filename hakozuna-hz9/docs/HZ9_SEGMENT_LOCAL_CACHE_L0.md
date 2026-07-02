@@ -218,6 +218,7 @@ route_addr(class, addr):
 route_table_addr(addr):
   debug-only class/base discovery over bound TLS segment classes
   proves classless route semantics before a real route table exists
+  uses cached segment geometry after bind_base
 
 take_addr(class):
   consumes one local free slot
@@ -297,72 +298,72 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_cycle_known
+  20260703T_segment_api_sweep_cached_route_r2
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 326.7M ops/s
-  class1 322.1M ops/s
-  class2 331.5M ops/s
-  class3 334.8M ops/s
-  class4 333.1M ops/s
-  class5 335.7M ops/s
+  class0 332.1M ops/s
+  class1 340.5M ops/s
+  class2 336.9M ops/s
+  class3 342.6M ops/s
+  class4 350.7M ops/s
+  class5 348.7M ops/s
 
 cycle_known mode:
-  class0 478.3M ops/s
-  class1 491.8M ops/s
-  class2 482.4M ops/s
-  class3 453.7M ops/s
-  class4 502.6M ops/s
-  class5 482.6M ops/s
+  class0 499.3M ops/s
+  class1 453.3M ops/s
+  class2 464.5M ops/s
+  class3 497.9M ops/s
+  class4 458.8M ops/s
+  class5 503.6M ops/s
 
 known_addr mode:
-  class0 308.0M ops/s
-  class1 331.0M ops/s
-  class2 323.5M ops/s
-  class3 315.2M ops/s
-  class4 324.8M ops/s
-  class5 323.1M ops/s
+  class0 325.7M ops/s
+  class1 338.5M ops/s
+  class2 349.6M ops/s
+  class3 335.4M ops/s
+  class4 317.3M ops/s
+  class5 349.1M ops/s
 
 slot_addr mode:
-  class0 173.6M ops/s
-  class1 216.5M ops/s
-  class2 213.9M ops/s
-  class3 190.4M ops/s
-  class4 216.7M ops/s
-  class5 217.4M ops/s
+  class0 225.5M ops/s
+  class1 225.4M ops/s
+  class2 223.1M ops/s
+  class3 232.9M ops/s
+  class4 230.0M ops/s
+  class5 229.7M ops/s
 
 fast_addr mode:
-  class0 105.7M ops/s
-  class1 137.4M ops/s
-  class2 131.8M ops/s
-  class3 137.3M ops/s
-  class4 140.4M ops/s
-  class5 140.9M ops/s
+  class0 167.5M ops/s
+  class1 166.4M ops/s
+  class2 125.7M ops/s
+  class3 168.2M ops/s
+  class4 160.9M ops/s
+  class5 168.8M ops/s
 
 active_addr mode:
-  class0 116.0M ops/s
-  class1 127.0M ops/s
-  class2 128.8M ops/s
-  class3 126.8M ops/s
-  class4 128.9M ops/s
-  class5 127.4M ops/s
+  class0 157.5M ops/s
+  class1 161.1M ops/s
+  class2 151.8M ops/s
+  class3 150.7M ops/s
+  class4 158.3M ops/s
+  class5 155.8M ops/s
 
 table_addr mode:
-  class0 99.3M ops/s
-  class1 102.0M ops/s
-  class2 98.7M ops/s
-  class3 91.9M ops/s
-  class4 93.3M ops/s
-  class5 92.7M ops/s
+  class0 192.0M ops/s
+  class1 186.7M ops/s
+  class2 171.8M ops/s
+  class3 167.1M ops/s
+  class4 159.1M ops/s
+  class5 155.4M ops/s
 
 bound_addr mode:
-  class0 132.1M ops/s
-  class1 111.9M ops/s
-  class2 134.2M ops/s
-  class3 135.2M ops/s
-  class4 135.1M ops/s
-  class5 136.2M ops/s
+  class0 168.4M ops/s
+  class1 169.1M ops/s
+  class2 169.4M ops/s
+  class3 168.0M ops/s
+  class4 171.2M ops/s
+  class5 169.0M ops/s
 ```
 
 Interpretation:
@@ -376,34 +377,34 @@ known_addr:
   remains close to bits mode and is the right hot-path target shape
 
 cycle_known:
-  single-function known-slot body reaches about 454-503M ops/s, well above
+  single-function known-slot body reaches about 453-504M ops/s, well above
   the split debug APIs
   this proves the segment body is not the current blocker; API layering and
   route wrappers are
 
 slot_addr proof:
   caching slot_size in the bound segment lifts the slot+address API above
-  route-based shapes, but it still lands around 56-67% of known_addr
+  route-based shapes, but it still lands around 64-73% of known_addr
   a behavior hot path should inline the known-slot body instead of stacking
   debug wrappers around take/free
 
 fast_addr proof:
-  p2 shift/mask and non-p2 two-slot exact decode beat active/table route
-  shapes and often match or beat bound_addr, but still land around 34-44%
-  of known_addr mode
+  cached geometry lifts the fast/bound path to roughly 160-170M ops/s in most
+  classes, but it remains far below cycle_known
   useful as a route-proof fallback, not enough for the local hit core
 
 bound_addr proof:
-  carries route/lifecycle overhead and lands around 34-43% of known_addr mode
+  cached geometry raises bound_addr to about 168-171M ops/s across classes
   useful as a boundary proof, not yet a final hot-path shape
 
 active_addr proof:
-  active class pointer avoids table discovery but still lands around 39-43% of
+  active class pointer avoids table discovery but still lands around 43-50% of
   known_addr because free still decodes addr -> slot through the route helper
   active pointer alone is not enough
 
 table_addr proof:
-  debug linear class discovery lands around 25-31% of known_addr mode
+  cached geometry nearly doubles the earlier debug table route result, but
+  linear class discovery remains below slot_addr and cycle_known
   a real behavior path needs an active segment pointer or compact route index
 
 rejected micro-optimization:
