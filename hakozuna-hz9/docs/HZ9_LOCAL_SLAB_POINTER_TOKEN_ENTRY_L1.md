@@ -139,6 +139,9 @@ live-only clear + compact token, lastledger, ITERS=30000000:
 
 hot/cold pointer split, ITERS=30000000:
   271.814M ops/s
+
+lastonly generic helper, ITERS=30000000:
+  283.922M ops/s
 ```
 
 Read:
@@ -189,6 +192,11 @@ hot/cold pointer split:
 After trimming, `lastledger` improves to about 314M but remains below the 350M
 gate.  The next candidate should avoid general ledger work on the common LIFO
 case rather than adding another pointer layer.
+
+The generic `lastonly` helper is still far below the hand-shaped `lastpublic`
+ceiling.  That points to helper/code-shape overhead rather than the last-token
+idea.  The next candidate should carry the `lastpublic` body shape into the
+public allocator entry, not wrap it in a generic token helper.
 ```
 
 ## Commands
@@ -204,6 +212,8 @@ MODE=lastpublic CLASS_ID=5 ITERS=3000000 TOUCH=1 \
 MODE=lastledger CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=inlinebody CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary

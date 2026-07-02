@@ -151,6 +151,26 @@ static int check_pointer_token(void) {
     free(payload);
     return 28;
   }
+
+  H9LspPtrLastOnly last_only = {0};
+  void* c = NULL;
+  void* d = NULL;
+  uint32_t slot_c = UINT32_MAX;
+  uint32_t slot_d = UINT32_MAX;
+  if (!h9_lsp_inline_alloc_slot(&page, &slot_c, &c) ||
+      !h9_lsp_inline_alloc_slot(&page, &slot_d, &d)) {
+    free(payload);
+    return 29;
+  }
+  h9_lsp_ptr_last_insert(&last_only, c, &page, slot_c, 5u);
+  h9_lsp_ptr_last_insert(&last_only, d, &page, slot_d, 5u);
+  if (h9_lsp_ptr_last_free_hit(&last_only, c) ||
+      !h9_lsp_ptr_last_free_hit(&last_only, d)) {
+    fprintf(stderr, "pointer-token last-only contract failed\n");
+    free(payload);
+    return 30;
+  }
+  (void)h9_lsp_inline_free_slot(&page, slot_c);
   free(payload);
   return 0;
 }

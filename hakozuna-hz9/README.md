@@ -179,6 +179,8 @@ MODE=lastledger CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 MODE=hotcold CLASS_ID=5 ITERS=3000000 TOUCH=1 \
   hakozuna-hz9/h8_bench_hz9localslabrouteboundary
+MODE=lastonly CLASS_ID=5 ITERS=3000000 TOUCH=1 \
+  hakozuna-hz9/h8_bench_hz9localslabrouteboundary
 
 # current owner-page scaffold/API checks
 make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \

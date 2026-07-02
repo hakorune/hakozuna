@@ -28,6 +28,10 @@ typedef struct H9LspPtrTokenCache {
   H9LspPtrLedger ledger;
 } H9LspPtrTokenCache;
 
+typedef struct H9LspPtrLastOnly {
+  H9LspPtrToken last;
+} H9LspPtrLastOnly;
+
 typedef struct H9LspPtrTokenHotCold {
   H9LspPtrToken last;
   H9LspPtrLedger* cold;
@@ -136,6 +140,20 @@ static inline bool h9_lsp_ptr_cache_free_hit(H9LspPtrTokenCache* cache,
     return true;
   }
   return h9_lsp_ptr_ledger_free_hit(&cache->ledger, ptr);
+}
+
+static inline void h9_lsp_ptr_last_insert(H9LspPtrLastOnly* cache, void* ptr,
+                                          H9LspInlinePage* page,
+                                          uint32_t slot, uint32_t class_id) {
+  if (!cache) {
+    return;
+  }
+  h9_lsp_ptr_token_fill(&cache->last, ptr, page, slot, class_id);
+}
+
+static inline bool h9_lsp_ptr_last_free_hit(H9LspPtrLastOnly* cache,
+                                            void* ptr) {
+  return cache ? h9_lsp_ptr_token_free_checked(&cache->last, ptr) : false;
 }
 
 static inline void h9_lsp_ptr_hotcold_insert(H9LspPtrTokenHotCold* cache,
