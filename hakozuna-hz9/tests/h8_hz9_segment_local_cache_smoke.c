@@ -266,6 +266,7 @@ static int check_route_table(void) {
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
   uint32_t found_class = UINT32_MAX;
+  uint32_t found_slot = UINT32_MAX;
   h9_segment_local_cache_debug_reset();
   if (!h9_segment_local_cache_debug_class_geometry(
           class_id, &slot_size, &run_size, NULL) ||
@@ -283,6 +284,18 @@ static int check_route_table(void) {
     fprintf(stderr, "segment route table boundary failed\n");
     return 81;
   }
+  found_class = UINT32_MAX;
+  found_slot = UINT32_MAX;
+  if (h9_segment_local_cache_debug_route_table_slot_addr(
+          base + slot_size, &found_class, &found_slot) != H8_ROUTE_VALID ||
+      found_class != class_id || found_slot != 1u ||
+      h9_segment_local_cache_debug_route_table_slot_addr(
+          base + 1u, NULL, NULL) != H8_ROUTE_INVALID ||
+      h9_segment_local_cache_debug_route_table_slot_addr(
+          base + run_size, NULL, NULL) != H8_ROUTE_MISS) {
+    fprintf(stderr, "segment route table slot boundary failed\n");
+    return 84;
+  }
   if (!h9_segment_local_cache_debug_remote_mark(class_id, 0u) ||
       h9_segment_local_cache_debug_route_table_addr(base, &found_class) !=
           H8_ROUTE_INVALID ||
@@ -290,9 +303,19 @@ static int check_route_table(void) {
     fprintf(stderr, "segment route table remote invalid failed\n");
     return 82;
   }
+  found_class = UINT32_MAX;
+  found_slot = UINT32_MAX;
+  if (h9_segment_local_cache_debug_route_table_slot_addr(
+          base, &found_class, &found_slot) != H8_ROUTE_INVALID ||
+      found_class != class_id || found_slot != UINT32_MAX) {
+    fprintf(stderr, "segment route table slot remote invalid failed\n");
+    return 85;
+  }
   h9_segment_local_cache_debug_release_all();
   if (h9_segment_local_cache_debug_route_table_addr(base, NULL) !=
-      H8_ROUTE_MISS) {
+          H8_ROUTE_MISS ||
+      h9_segment_local_cache_debug_route_table_slot_addr(base, NULL, NULL) !=
+          H8_ROUTE_MISS) {
     fprintf(stderr, "segment route table release miss failed\n");
     return 83;
   }

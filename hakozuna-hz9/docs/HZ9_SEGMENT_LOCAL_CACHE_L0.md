@@ -222,6 +222,10 @@ route_table_addr(addr):
   proves classless route semantics before a real route table exists
   uses cached segment geometry after bind_base
 
+route_table_slot_addr(addr):
+  returns class and slot from the same table route pass
+  models external free validation without a second addr->slot decode
+
 take_addr(class):
   consumes one local free slot
   returns base + slot * slot_size
