@@ -223,8 +223,10 @@ static bool h9_segment_entry_free_page_slot(H9SegmentEntryPage* page,
   return true;
 }
 
-static bool h9_segment_entry_cycle_page_checked(H9SegmentEntryPage* page,
-                                                void** ptr_out) {
+static bool h9_segment_entry_cycle_page_checked_touch(H9SegmentEntryPage* page,
+                                                      uint64_t value,
+                                                      bool touch,
+                                                      void** ptr_out) {
   if (!page || page->free_bits == 0u) {
     return false;
   }
@@ -232,9 +234,15 @@ static bool h9_segment_entry_cycle_page_checked(H9SegmentEntryPage* page,
   uint64_t bit = UINT64_C(1) << slot;
   page->free_bits &= ~bit;
   page->alloc_bits |= bit;
+  void* ptr = (void*)((uintptr_t)page->base +
+                      (uintptr_t)slot * (uintptr_t)page->slot_size);
   if (ptr_out) {
-    *ptr_out = (void*)((uintptr_t)page->base +
-                       (uintptr_t)slot * (uintptr_t)page->slot_size);
+    *ptr_out = ptr;
+  }
+  if (touch) {
+    volatile unsigned char* p = (volatile unsigned char*)ptr;
+    p[0] = (unsigned char)value;
+    p[page->slot_size - 1u] = (unsigned char)(value >> 8);
   }
   if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
     return false;
@@ -242,6 +250,11 @@ static bool h9_segment_entry_cycle_page_checked(H9SegmentEntryPage* page,
   page->alloc_bits &= ~bit;
   page->free_bits |= bit;
   return true;
+}
+
+static bool h9_segment_entry_cycle_page_checked(H9SegmentEntryPage* page,
+                                                void** ptr_out) {
+  return h9_segment_entry_cycle_page_checked_touch(page, 0u, false, ptr_out);
 }
 
 void h9_segment_entry_debug_reset(void) {
@@ -436,6 +449,23 @@ bool h9_segment_entry_debug_cycle_tls_checked(uint32_t class_id,
     page = (H9SegmentEntryPage*)handle;
   }
   return h9_segment_entry_cycle_page_checked(page, ptr_out);
+}
+
+bool h9_segment_entry_debug_cycle_tls_checked_touch(uint32_t class_id,
+                                                    uint64_t value,
+                                                    bool touch,
+                                                    void** ptr_out) {
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return false;
+  }
+  H9SegmentEntryPage* page =
+      (H9SegmentEntryPage*)h9_segment_entry_handle[class_id];
+  if (!page || page->class_id != class_id || page->free_bits == 0u) {
+    uintptr_t handle = h9_segment_entry_debug_prepare_handle(class_id);
+    page = (H9SegmentEntryPage*)handle;
+  }
+  return h9_segment_entry_cycle_page_checked_touch(page, value, touch,
+                                                   ptr_out);
 }
 
 bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {

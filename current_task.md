@@ -20,7 +20,8 @@ Current direction:
                 StaticLocalPage/profile-local R5 left row tradeoffs; next
                 substrate is segment-backed local slots with remote-contaminated
                 segments leaving LOCAL state.
-                SegmentEntry adds routeable scaffold for fused local body.
+                SegmentEntry points to fused TLS local body; split alloc/free
+                shape is the large residual, not simple state validation.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -62,6 +63,7 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md
   hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
+  hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
   hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 
@@ -73,7 +75,5 @@ Frozen HZ6 reference:
 
 ```text
 Keep this file below 80 lines; put HZ6 decisions in HZ6 docs.
-Move long benchmark logs and chronological notes to docs/archive/.
-Large archived ledgers may exceed 3000 lines; active current_task files should not.
 Do not promote profile-only lanes without focused stats/RSS/guard evidence.
 ```
