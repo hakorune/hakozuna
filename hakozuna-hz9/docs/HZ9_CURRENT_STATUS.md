@@ -64,7 +64,7 @@ code shape:
   h8_free_inner baseline/scaffold 69 bytes / 22 insn
   h8_free_non_arena_inner baseline/scaffold 95 bytes / 28 insn
 
-  current scaffold:
+current scaffold:
   docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   static TLS state
   owner-local plain bits
@@ -80,6 +80,16 @@ code shape:
     local-only/profile evidence remains useful
     next mixed-default substrate needs a narrower boundary than class-disable
     and a stronger shape than local-streak phase admission
+
+profile gate:
+  scripts/run_hz9_profile_local_gate.sh
+  purpose:
+    collect local/profile evidence without mixing it with broad default
+    promotion gates
+  default rows:
+    fixed64_local0, fixed48_local0, medium_local0, main_local0, guard_local0
+  default variants:
+    baseline, ownerpage_ownerfast_bits, staticlocal_shadow
 ```
 
 Latest behavior result:

@@ -34,17 +34,16 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9OwnerLocalPagePoolPureLocal-L1 is profile/evidence, not default
-  owner-page scaffold / shadow / API / page lifetime are implemented
-  local allocation pop and same-owner free push are implemented
-  remote exact free marks REMOTE_SEEN and claims pending bits
-  directory-first free routing removes most broad remote regression
-  latest perf gate still blocks promotion on medium_local0
+  HZ9StaticLocalPageScaffold-L0 is the current source-shape read
+  static TLS bits preserve local-only reuse
+  class-disable and local-streak admission are too weak for mixed r50
+  OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  continue only with a design that removes both remote admission cost and
-  local owner-page overhead
+  keep profile/local evidence separate from mixed default gates
+  continue only with a substrate that survives frequent remote traffic or is
+  explicitly profile-local
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
@@ -118,6 +117,9 @@ make -C hakozuna-hz9 smoke-hz9ownerpagepool-route \
 
 # owner-local page-pool shadow distribution
 RUNS=3 hakozuna-hz9/scripts/run_hz9_owner_page_shadow_probe.sh
+
+# profile/local-only evidence gate, not a mixed default promotion gate
+RUNS=3 hakozuna-hz9/scripts/run_hz9_profile_local_gate.sh
 
 # optional baseline/preload smoke
 make -C hakozuna-hz9 smoke preload-smoke smoke-hz9localentry

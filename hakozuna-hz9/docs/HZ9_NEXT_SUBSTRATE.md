@@ -224,6 +224,14 @@ static local page shadow read:
     do not wire it as a mixed-row default mechanism
     next behavior must either be profile-only or use a different page backing /
     ownership shape that does not collapse under frequent remote frees
+
+profile-local evidence gate:
+  scripts/run_hz9_profile_local_gate.sh
+  scope:
+    local-only rows and profile/evidence variants
+  rule:
+    results can justify profile documentation or a profile build, not broad
+    mixed default promotion
 ```
 
 ## Active Constraints
