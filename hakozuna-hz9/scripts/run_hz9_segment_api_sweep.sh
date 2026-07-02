@@ -15,7 +15,7 @@ make -C "${ROOT}" bench-hz9segmentlocalcache-api >/dev/null
   echo '```text'
   echo "iters: ${ITERS}"
   echo "purpose: standalone segment substrate cost"
-  echo "modes: bits=take/free_allocated, bound_addr=take_addr/free_addr"
+  echo "modes: bits=take/free_allocated, known_addr=slot API + address generation, bound_addr=take_addr/free_addr"
   echo '```'
   echo
   echo "| class | mode | output |"
@@ -23,12 +23,14 @@ make -C "${ROOT}" bench-hz9segmentlocalcache-api >/dev/null
 } >"${OUTDIR}/summary.md"
 
 for class_id in 0 1 2 3 4 5; do
-  for mode in bits bound_addr; do
-    bound=0
-    if [[ "${mode}" == "bound_addr" ]]; then
-      bound=1
+  for mode_id in 0 2 1; do
+    mode="bits"
+    if [[ "${mode_id}" == "1" ]]; then
+      mode="bound_addr"
+    elif [[ "${mode_id}" == "2" ]]; then
+      mode="known_addr"
     fi
-    line="$(CLASS_ID="${class_id}" ITERS="${ITERS}" BOUND_ADDR="${bound}" \
+    line="$(CLASS_ID="${class_id}" ITERS="${ITERS}" MODE="${mode_id}" \
       "${ROOT}/h8_bench_hz9segmentlocalcache_api")"
     printf '%s\n' "${line}" >"${OUTDIR}/class_${class_id}_${mode}.txt"
     printf '| %s | %s | `%s` |\n' "${class_id}" "${mode}" "${line}" \

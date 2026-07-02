@@ -24,11 +24,20 @@ static double now_seconds(void) {
   return (double)ts.tv_sec + (double)ts.tv_nsec / 1000000000.0;
 }
 
+typedef enum SegmentBenchMode {
+  SEGMENT_BENCH_BITS = 0,
+  SEGMENT_BENCH_BOUND_ADDR = 1,
+  SEGMENT_BENCH_KNOWN_ADDR = 2
+} SegmentBenchMode;
+
 int main(void) {
   h8_init();
   uint32_t class_id = (uint32_t)env_u64("CLASS_ID", 5u);
   uint64_t iters = env_u64("ITERS", 10000000u);
-  bool bound_addr = env_u64("BOUND_ADDR", 0u) != 0u;
+  SegmentBenchMode mode = (SegmentBenchMode)env_u64("MODE", 0u);
+  if (env_u64("BOUND_ADDR", 0u) != 0u) {
+    mode = SEGMENT_BENCH_BOUND_ADDR;
+  }
   uint32_t slot_size = 0u;
   uint32_t run_size = 0u;
   uint16_t slot_count = 0u;
@@ -41,9 +50,12 @@ int main(void) {
     fprintf(stderr, "segment bench invalid class %u\n", class_id);
     return 1;
   }
-  if (bound_addr &&
+  bool uses_base = mode == SEGMENT_BENCH_BOUND_ADDR ||
+                   mode == SEGMENT_BENCH_KNOWN_ADDR;
+  uintptr_t base = (uintptr_t)0x40000000u;
+  if (uses_base &&
       !h9_segment_local_cache_debug_bind_base(class_id,
-                                              (uintptr_t)0x40000000u)) {
+                                              base)) {
     fprintf(stderr, "segment bench bind failed for class %u\n", class_id);
     return 2;
   }
@@ -58,9 +70,15 @@ int main(void) {
   double start = now_seconds();
   for (uint64_t i = 0; i < iters; ++i) {
     bool success = false;
-    if (bound_addr) {
+    if (mode == SEGMENT_BENCH_BOUND_ADDR) {
       success = h9_segment_local_cache_debug_take_addr(class_id, &addr) &&
                 h9_segment_local_cache_debug_free_addr(class_id, addr);
+    } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
+      success = h9_segment_local_cache_debug_take(class_id, &slot);
+      addr = base + (uintptr_t)slot * (uintptr_t)slot_size;
+      success = success &&
+                addr >= base &&
+                h9_segment_local_cache_debug_free_allocated(class_id, slot);
     } else {
       success = h9_segment_local_cache_debug_take(class_id, &slot) &&
                 h9_segment_local_cache_debug_free_allocated(class_id, slot);
@@ -77,11 +95,17 @@ int main(void) {
     elapsed = 1e-9;
   }
   double cycles = (double)ok / elapsed;
+  const char* mode_name = "bits";
+  if (mode == SEGMENT_BENCH_BOUND_ADDR) {
+    mode_name = "bound_addr";
+  } else if (mode == SEGMENT_BENCH_KNOWN_ADDR) {
+    mode_name = "known_addr";
+  }
   printf("hz9_segment_local_cache_api mode=%s class=%u slot_size=%u run_size=%u "
          "slot_count=%u payload_bytes=%zu slack_bytes=%zu iters=%llu "
          "seconds=%.6f cycles_per_s=%.2f ops_per_s=%.2f\n",
-         bound_addr ? "bound_addr" : "bits", class_id, slot_size, run_size,
-         (unsigned)slot_count, payload_bytes, slack_bytes,
-         (unsigned long long)ok, elapsed, cycles, cycles * 2.0);
+         mode_name, class_id, slot_size, run_size, (unsigned)slot_count,
+         payload_bytes, slack_bytes, (unsigned long long)ok, elapsed, cycles,
+         cycles * 2.0);
   return 0;
 }

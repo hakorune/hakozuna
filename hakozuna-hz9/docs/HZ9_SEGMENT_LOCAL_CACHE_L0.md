@@ -139,14 +139,20 @@ The API microbench is not a promotion gate. It measures the standalone local
 OwnerPage/StaticLocalPage substrate costs before allocator routing is opened.
 Its output includes class geometry and payload/slack bytes so speed and
 capacity are read from the same run. `BOUND_ADDR=1` switches the same bench to
-the bound-address lifecycle:
+the bound-address lifecycle; `MODE=2` measures known-slot address generation
+without the debug route helper:
 
 ```text
 bits mode:
   take/free_allocated
 
+known_addr mode:
+  take/free_allocated with base + slot * slot_size address generation
+  approximates the eventual local hot-path shape
+
 bound_addr mode:
   take_addr/free_addr
+  route/lifecycle boundary proof, not the intended hot path
 ```
 
 The scaffold also exposes class geometry for smoke and RSS/cap design:
@@ -267,24 +273,32 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_bound_addr
+  20260703T_segment_api_sweep_known_addr
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 342.8M ops/s
-  class1 350.1M ops/s
-  class2 380.8M ops/s
-  class3 368.1M ops/s
-  class4 366.7M ops/s
-  class5 359.1M ops/s
+  class0 365.4M ops/s
+  class1 331.8M ops/s
+  class2 357.0M ops/s
+  class3 365.0M ops/s
+  class4 325.8M ops/s
+  class5 307.5M ops/s
+
+known_addr mode:
+  class0 341.1M ops/s
+  class1 347.5M ops/s
+  class2 338.4M ops/s
+  class3 349.0M ops/s
+  class4 336.0M ops/s
+  class5 337.7M ops/s
 
 bound_addr mode:
-  class0 124.8M ops/s
-  class1 125.2M ops/s
-  class2 131.1M ops/s
-  class3 125.6M ops/s
-  class4 132.2M ops/s
-  class5 132.7M ops/s
+  class0 132.9M ops/s
+  class1 132.9M ops/s
+  class2 138.1M ops/s
+  class3 136.7M ops/s
+  class4 136.7M ops/s
+  class5 136.2M ops/s
 ```
 
 Interpretation:
@@ -294,13 +308,16 @@ bits body:
   still cheap enough to justify keeping SegmentLocalCache as the active
   substrate lane
 
+known_addr:
+  remains close to bits mode and is the right hot-path target shape
+
 bound_addr proof:
-  carries route/lifecycle overhead and lands around 34-37% of bits mode
+  carries route/lifecycle overhead and lands around 37-44% of known_addr mode
   useful as a boundary proof, not yet a final hot-path shape
 
 next optimization target:
-  avoid calling full debug route helpers on the eventual hot local hit path
-  keep exact slot address generation but inline the slot decode/state body
+  keep the exact slot address generation shape
+  do not put full debug route helpers on the eventual local hit path
 ```
 
 ## Decision Boundary
