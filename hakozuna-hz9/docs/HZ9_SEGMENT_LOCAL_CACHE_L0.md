@@ -154,6 +154,10 @@ table_addr mode:
   known_addr plus debug table route lookup
   estimates classless route discovery overhead
 
+active_addr mode:
+  active class pointer shape without table discovery
+  estimates the next behavior-box local hit API cost
+
 bound_addr mode:
   take_addr/free_addr
   route/lifecycle boundary proof, not the intended hot path
@@ -281,40 +285,48 @@ before behavior:
 
 ```text
 run:
-  20260703T_segment_api_sweep_table_addr
+  20260703T_segment_api_sweep_active_addr
   ITERS=1000000 scripts/run_hz9_segment_api_sweep.sh
 
 bits mode:
-  class0 350.0M ops/s
-  class1 347.1M ops/s
-  class2 364.4M ops/s
-  class3 359.3M ops/s
-  class4 364.1M ops/s
-  class5 370.1M ops/s
+  class0 341.7M ops/s
+  class1 339.2M ops/s
+  class2 354.0M ops/s
+  class3 331.9M ops/s
+  class4 328.8M ops/s
+  class5 346.1M ops/s
 
 known_addr mode:
-  class0 322.7M ops/s
-  class1 328.7M ops/s
-  class2 338.4M ops/s
-  class3 349.5M ops/s
-  class4 326.9M ops/s
-  class5 333.6M ops/s
+  class0 326.8M ops/s
+  class1 336.7M ops/s
+  class2 350.1M ops/s
+  class3 339.4M ops/s
+  class4 317.3M ops/s
+  class5 342.7M ops/s
+
+active_addr mode:
+  class0 123.4M ops/s
+  class1 121.9M ops/s
+  class2 123.7M ops/s
+  class3 122.2M ops/s
+  class4 119.9M ops/s
+  class5 124.2M ops/s
 
 table_addr mode:
-  class0 103.6M ops/s
-  class1 104.5M ops/s
-  class2 101.1M ops/s
-  class3 99.4M ops/s
-  class4 97.7M ops/s
-  class5 93.6M ops/s
+  class0 101.8M ops/s
+  class1 85.5M ops/s
+  class2 98.9M ops/s
+  class3 95.7M ops/s
+  class4 92.9M ops/s
+  class5 90.3M ops/s
 
 bound_addr mode:
-  class0 133.4M ops/s
-  class1 132.1M ops/s
-  class2 136.3M ops/s
-  class3 112.8M ops/s
-  class4 134.3M ops/s
-  class5 125.8M ops/s
+  class0 131.3M ops/s
+  class1 130.9M ops/s
+  class2 132.1M ops/s
+  class3 131.2M ops/s
+  class4 128.4M ops/s
+  class5 131.4M ops/s
 ```
 
 Interpretation:
@@ -331,8 +343,13 @@ bound_addr proof:
   carries route/lifecycle overhead and lands around 37-44% of known_addr mode
   useful as a boundary proof, not yet a final hot-path shape
 
+active_addr proof:
+  active class pointer avoids table discovery but still lands around 35% of
+  known_addr because free still decodes addr -> slot through the full helper
+  active pointer alone is not enough
+
 table_addr proof:
-  debug linear class discovery lands around 28-32% of known_addr mode
+  debug linear class discovery lands around 25-31% of known_addr mode
   a real behavior path needs an active segment pointer or compact route index
 
 rejected micro-optimization:
@@ -341,9 +358,9 @@ rejected micro-optimization:
   modulo/divide form until behavior code can specialize a real hot path
 
 next optimization target:
-  keep the exact slot address generation shape
-  do not put full debug route helpers or linear table discovery on the local
-  hit path
+  keep the known-slot shape for the local hit path
+  avoid addr -> slot decode on the immediate local reuse path, or add a
+  specialized non-debug decode before behavior wiring
 ```
 
 ## Decision Boundary
