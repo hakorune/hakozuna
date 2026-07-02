@@ -111,6 +111,15 @@ drain pending mask
 RETIRED, with no local eligibility restored
 ```
 
+It also includes a TLS-wide release helper for thread/owner-exit scaffolding:
+
+```text
+release_all:
+  return touched class mask
+  clear all local/allocated/remote bits
+  reset TLS segment state to empty
+```
+
 ## Segment Model
 
 ```text
@@ -135,6 +144,10 @@ owner drain:
   consume remote_pending_bits
   retire the contaminated segment in L0
   reusable contaminated segments are out of scope until a future behavior box
+
+thread/owner exit:
+  release all touched TLS segment state
+  no local or remote bits may remain after release_all
 ```
 
 L0 only proves the bit/state body can exist without the previous dynamic state
@@ -155,6 +168,7 @@ smoke:
   second remote mark can accumulate pending bits
   owner drain consumes remote bits and retires the segment
   drain is rejected from LOCAL or already-retired states
+  release_all clears touched local and remote segment state
   local allocation from REMOTE_SEEN rejected
   retire clears local eligibility
 

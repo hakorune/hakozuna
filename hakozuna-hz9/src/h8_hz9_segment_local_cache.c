@@ -149,6 +149,12 @@ bool h9_segment_local_cache_debug_retire(uint32_t class_id) {
   return true;
 }
 
+uint64_t h9_segment_local_cache_debug_release_all(void) {
+  uint64_t released = h9_segment_tls.touched_class_bits;
+  memset(&h9_segment_tls, 0, sizeof(h9_segment_tls));
+  return released;
+}
+
 uint32_t h9_segment_local_cache_debug_state(uint32_t class_id) {
   H9SegmentLocalClass* cls = h9_segment_class(class_id);
   return cls ? (uint32_t)cls->state : UINT32_MAX;

@@ -90,6 +90,26 @@ static int check_remote_transition(uint32_t class_id) {
   return 0;
 }
 
+static int check_release_all(void) {
+  h9_segment_local_cache_debug_reset();
+  if (!h9_segment_local_cache_debug_put(4u, 0u) ||
+      !h9_segment_local_cache_debug_put(5u, 0u) ||
+      !h9_segment_local_cache_debug_remote_mark(5u, 0u)) {
+    fprintf(stderr, "segment release-all setup failed\n");
+    return 30;
+  }
+  uint64_t released = h9_segment_local_cache_debug_release_all();
+  if (released != ((UINT64_C(1) << 4u) | (UINT64_C(1) << 5u)) ||
+      h9_segment_local_cache_debug_touched_classes() != 0u ||
+      h9_segment_local_cache_debug_free_bits(4u) != 0u ||
+      h9_segment_local_cache_debug_remote_bits(5u) != 0u ||
+      h9_segment_local_cache_debug_state(5u) != 0u) {
+    fprintf(stderr, "segment release-all state mismatch\n");
+    return 31;
+  }
+  return 0;
+}
+
 int main(void) {
   h8_init();
   int rc = check_local_flow(5u);
@@ -97,6 +117,10 @@ int main(void) {
     return rc;
   }
   rc = check_remote_transition(5u);
+  if (rc != 0) {
+    return rc;
+  }
+  rc = check_release_all();
   if (rc != 0) {
     return rc;
   }
