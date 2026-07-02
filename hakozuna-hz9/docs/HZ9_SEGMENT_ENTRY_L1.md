@@ -151,6 +151,17 @@ tlsknown mode:
     tlslocal touch=1: about 273-283M ops/s
     tlsknown touch=1: about 307-345M ops/s
     tls cycle touch=1: about 474-566M ops/s
+
+tlschecked mode:
+  fuses the TLS cached-page cycle while retaining simple post-allocation state
+  validation in the body
+  R1 class sweep:
+    touch=1: about 562-590M ops/s
+    touch=0: about 573-620M ops/s
+  class 64K, 5M-iteration repeat:
+    tlsknown touch=1: about 315-336M ops/s
+    tlschecked touch=1: about 611-621M ops/s
+    tls cycle touch=1: about 524-529M ops/s
 ```
 
 Interpretation:
@@ -173,6 +184,10 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   cached-page local free helps, but still pays pointer-to-slot decode and state
   validation; known-slot local free remains the upper-bound body
   known-slot free helps, but split alloc/free debug API still leaves a large
-  gap to fused tls cycle; the next proof should fuse the entry body rather than
-  add another route shortcut
+  gap to fused tls cycle
+  tlschecked shows that simple state validation is not the blocker when it is
+  fused into the local entry body; the blocker is the split alloc/free API shape
+  the next behavior design should preserve a fused local body and then reattach
+  public free routing at the boundary, not insert another route shortcut inside
+  the hot body
 ```
