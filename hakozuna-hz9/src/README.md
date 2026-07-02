@@ -33,6 +33,14 @@ h8_hz9_local_arena.inc:
 new substrates:
   use new HZ9-owned files or small includes
   do not grow h8_hz9_local_entry.c back into a substrate implementation file
+
+Local slab/page route-boundary work:
+  put route result types and shared declarations in a small HZ9-owned header
+  split core page allocation, route/free authority, and remote stubs into
+  separate translation units
+  make free, usable_size, and realloc share one route authority
+  do not route public HZ9 free through the HZ8 medium directory as the primary
+  local substrate
 ```
 
 Do not perform a broad `h8_*` to `h9_*` symbol rename in L0. The first HZ9

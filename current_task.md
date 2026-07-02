@@ -16,14 +16,12 @@ Current direction:
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
                 medium local remains below gate.
-  Current HZ9 read: HZ9SegmentLocalCache-L0.
-                StaticLocalPage/profile-local R5 left row tradeoffs; next
-                substrate is segment-backed local slots with remote-contaminated
-                segments leaving LOCAL state.
-                SegmentEntry points to fused TLS local body; split alloc/free
-                and TLS-cache route-push shape are the large residuals.
-                token-local cache body/retire is the next HZ9 behavior boundary;
-                trusted push shows split alloc/free boundary is the blocker;
+  Current HZ9 read: HZ9LocalSlabPageRouteBoundary-L0.
+                SegmentEntry proved fused token-local bodies are fast, but
+                split malloc/free and public route-push are the residuals.
+                Next substrate must make public free/usable/realloc share an
+                O(1) address-derived route authority instead of adding another
+                cache on top of HZ8 medium runs.
                 route/core and cache/ledger TUs are split for the line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
@@ -64,6 +62,7 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
+  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md
   hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
   hakozuna-hz9/docs/HZ9_DIFFERENTIATION.md
 

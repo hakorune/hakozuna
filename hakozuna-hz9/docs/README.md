@@ -22,6 +22,10 @@ HZ9_SEGMENT_ROUTE_PROOFS_L0.md:
 HZ9_SEGMENT_ENTRY_L1.md:
   global routeable segment page scaffold before public allocator integration
 
+HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md:
+  next public split-boundary design: O(1) address-derived route authority shared
+  by free, usable_size, and realloc
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
   held 64K slab/page prototype, route boundary, counters, and blockers
 
@@ -83,15 +87,16 @@ LocalArena:
   collapse on medium_r50/main_r90
 
 next:
-  HZ9_SEGMENT_LOCAL_CACHE_L0 is the current no-behavior source-shape box
-  use HZ9_NEXT_SUBSTRATE.md as the next-behavior boundary before routing it
+  HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0 is the current design box
+  stop adding fused-only cache probes unless they answer a route-boundary
+  question
   entry-bypass, integrated SlabPage, route-off, and layout-neutral proofs are
   closed as evidence
   owner-page PureLocal L1 is implemented and held as profile/evidence
   owner-page ownerfast/disabled-fast variants are attribution only
   DirectSlabUse is complete and remains remote/profile evidence
-  no active behavior box is selected until the next substrate avoids both
-  remote admission cost and local owner-page overhead
+  the next behavior must make public free/usable/realloc share one O(1)
+  fail-closed route authority
   require local/main/small no-regression before any behavior promotion
 ```
 

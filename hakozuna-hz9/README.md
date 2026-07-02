@@ -34,16 +34,20 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  HZ9SegmentEntry-L1 is the current design-prep box
-  segment-backed routeable slots are the next substrate hypothesis
-  current evidence favors a fused TLS local body, not a split alloc/free cache
+  HZ9LocalSlabPageRouteBoundary-L0 is the current design box
+  SegmentEntry proved fast fused/token-local bodies, but public split
+  malloc/free and route-push remain the blocker
+  the next substrate must make free/usable_size/realloc share one O(1)
+  address-derived fail-closed route authority
   StaticLocalPage is held as profile/local evidence
   OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
   HZ8 pending/qstate remains the remote authority
 
 next evidence work:
-  preserve the fused local body while reattaching public route/free boundaries
-  avoid TLS-cache pop plus route-push shapes; they collapse to route-free speed
+  stop treating fused-only microbenchmarks as behavior evidence
+  build the public split-boundary route scaffold before more local-cache tuning
+  avoid TLS-cache pop plus public route-push shapes; they collapse to route-free
+  speed
   keep H8OwnerRecord/H8ThreadCtx layout unchanged
   keep source/docs/scripts under the 800-line active-file limit
 ```
