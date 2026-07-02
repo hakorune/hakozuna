@@ -472,7 +472,7 @@ bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
   }
-  uint32_t slot = 0u;
+  uint32_t slot = UINT32_MAX;
   H9SegmentEntryPage* page = h9_segment_entry_page_for_ptr(ptr, NULL, &slot);
   if (!page) {
     return false;
@@ -480,25 +480,19 @@ bool h9_segment_entry_debug_free(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = true;
   }
-  if (!h9_segment_entry_slot_from_addr(page, (uintptr_t)ptr, &slot)) {
+  if (slot == UINT32_MAX) {
     return false;
   }
-  uint64_t bit = UINT64_C(1) << slot;
-  if ((page->alloc_bits & bit) == 0u || (page->free_bits & bit) != 0u) {
-    return false;
-  }
-  page->alloc_bits &= ~bit;
-  page->free_bits |= bit;
-  return true;
+  return h9_segment_entry_free_page_slot(page, slot, NULL);
 }
 
 H8RouteKind h9_segment_entry_debug_route(void* ptr) {
-  uint32_t slot = 0u;
+  uint32_t slot = UINT32_MAX;
   H9SegmentEntryPage* page = h9_segment_entry_page_for_ptr(ptr, NULL, &slot);
   if (!page) {
     return H8_ROUTE_MISS;
   }
-  if (!h9_segment_entry_slot_from_addr(page, (uintptr_t)ptr, &slot)) {
+  if (slot == UINT32_MAX) {
     return H8_ROUTE_INVALID;
   }
   uint64_t bit = UINT64_C(1) << slot;

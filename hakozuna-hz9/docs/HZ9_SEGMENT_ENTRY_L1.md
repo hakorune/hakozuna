@@ -130,6 +130,9 @@ tlsroute mode:
   touch=1: about 244-255M ops/s
   touch=0: about 251-265M ops/s
   compared with route at about 182-207M touch=1 and 199-226M touch=0
+  after removing duplicate slot decode in route/free, class 64K 5M repeat:
+    route touch=1: about 253-259M ops/s
+    tlsroute touch=1: about 248-267M ops/s
 
 tlslocal mode:
   allocates through the TLS cached handle, then frees through cached-page local
@@ -141,6 +144,8 @@ tlslocal mode:
     tlsroute touch=1: about 238-243M ops/s
     tlslocal touch=1: about 295-307M ops/s
     tls cycle touch=1: about 568-570M ops/s
+  after route/free duplicate-decode cleanup, class 64K 5M repeat:
+    tlslocal touch=1: about 271-278M ops/s
 
 tlsknown mode:
   allocation returns the slot id, then local free uses the known slot
@@ -200,6 +205,8 @@ inner loop. Opaque-handle and TLS-handle modes strengthen that result:
   fused into the local entry body; the blocker is the split alloc/free API shape
   tlscheckedtouch is the fairer payload-touch body and shows the remaining body
   cost once the touch happens before the fused free
+  removing duplicate slot decode from route/free cleans up the boundary, but it
+  does not close the fused-body gap
   the next behavior design should preserve a fused local body and then reattach
   public free routing at the boundary, not insert another route shortcut inside
   the hot body
