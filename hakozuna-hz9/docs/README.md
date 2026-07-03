@@ -34,6 +34,13 @@ HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md:
   active entry probe: TLS pointer-token positive cache before route for
   same-thread exact free, with route retained as fallback authority
 
+HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md:
+  ProductEntry integration, owner-drain, lifecycle, and public-boundary evidence
+
+HZ9_PRELOAD_BOUNDARY_THIN_L1.md:
+  ProductEntry hot-path NO-GO, boundary attribution, PreloadBoundaryThin-L1,
+  and product preload TLS/visibility cleanup evidence
+
 HZ9_LOCAL_SLAB_PAGE_L1.md:
   held 64K slab/page prototype, route boundary, counters, and blockers
 

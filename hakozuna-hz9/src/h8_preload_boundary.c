@@ -38,14 +38,97 @@ static bool h9_slab_public_size_maybe_candidate(size_t size) {
 }
 #endif
 
+static void* h8_public_malloc_dispatch(size_t size);
+static void h8_public_free_dispatch(void* ptr);
+static void* h8_public_realloc_dispatch(void* ptr, size_t size);
+
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+static bool h8_public_malloc_dispatch_hz9_product(size_t size, void** out) {
+  if (size > H8_MAX_SMALL_SIZE && size <= H8_MEDIUM_MAX_SIZE &&
+      h8_thread_ctx_fast()) {
+    void* ptr = h9_lsp_public_malloc(size);
+    if (ptr) {
+      *out = ptr;
+      return true;
+    }
+  }
+  return false;
+}
+
+static bool h8_public_free_dispatch_hz9_product(void* ptr) {
+  if (!ptr || !atomic_load_explicit(&h8g.ready, memory_order_acquire)) {
+    return false;
+  }
+  if (h8_arena_contains(ptr)) {
+    h8_free_arena_inner(ptr);
+    return true;
+  }
+  if (h9_lsp_public_maybe_active()) {
+    bool owned = false;
+    if (h9_lsp_public_free(ptr, &owned)) {
+      return true;
+    }
+    if (owned) {
+      H8_DEBUG_INC(invalid_count);
+      return true;
+    }
+  }
+  h8_free_non_arena_inner(ptr);
+  return true;
+}
+
+static bool h8_public_realloc_dispatch_hz9_product(void* ptr, size_t size,
+                                                   void** out) {
+  if (!ptr) {
+    void* next = h8_public_malloc_dispatch(size);
+    if (next) {
+      *out = next;
+      return true;
+    }
+    return false;
+  }
+  if (size == 0) {
+    h8_public_free_dispatch(ptr);
+    *out = NULL;
+    return true;
+  }
+  if (!h9_lsp_public_maybe_active()) {
+    return false;
+  }
+
+  size_t old_size = 0;
+  bool lsp_owned = false;
+  if (h9_lsp_public_usable_size(ptr, &old_size, &lsp_owned)) {
+    if (size <= old_size) {
+      *out = ptr;
+      return true;
+    }
+    void* next = h8_public_malloc_dispatch(size);
+    if (next) {
+      memcpy(next, ptr, old_size);
+      h8_public_free_dispatch(ptr);
+      *out = next;
+      return true;
+    }
+    errno = ENOMEM;
+    *out = NULL;
+    return true;
+  }
+  if (lsp_owned) {
+    errno = EINVAL;
+    *out = NULL;
+    return true;
+  }
+  return false;
+}
+#endif
+
 static void* h8_public_malloc_dispatch(size_t size) {
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
-  if (size > H8_MAX_SMALL_SIZE && size <= H8_MEDIUM_MAX_SIZE) {
-    if (h8_thread_ctx_fast()) {
-      void* ptr = h9_lsp_public_malloc(size);
-      if (ptr) {
-        return ptr;
-      }
+  {
+    void* ptr = NULL;
+    if (h8_public_malloc_dispatch_hz9_product(size, &ptr)) {
+      return ptr;
     }
   }
 #endif
@@ -73,9 +156,7 @@ static void* h8_public_malloc_dispatch(size_t size) {
 
 static void h8_public_free_dispatch(void* ptr) {
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
-  if (ptr && atomic_load_explicit(&h8g.ready, memory_order_acquire) &&
-      h8_arena_contains(ptr)) {
-    h8_free_arena_inner(ptr);
+  if (h8_public_free_dispatch_hz9_product(ptr)) {
     return;
   }
 #endif
@@ -118,31 +199,10 @@ static void h8_public_free_dispatch(void* ptr) {
 
 static void* h8_public_realloc_dispatch(void* ptr, size_t size) {
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
-  if (!ptr) {
-    return h8_public_malloc_dispatch(size);
-  }
-  if (size == 0) {
-    h8_public_free_dispatch(ptr);
-    return NULL;
-  }
-  if (h9_lsp_public_maybe_active()) {
-    size_t old_size = 0;
-    bool lsp_owned = false;
-    if (h9_lsp_public_usable_size(ptr, &old_size, &lsp_owned)) {
-      if (size <= old_size) {
-        return ptr;
-      }
-      void* next = h8_public_malloc_dispatch(size);
-      if (!next) {
-        return NULL;
-      }
-      memcpy(next, ptr, old_size);
-      h8_public_free_dispatch(ptr);
+  {
+    void* next = NULL;
+    if (h8_public_realloc_dispatch_hz9_product(ptr, size, &next)) {
       return next;
-    }
-    if (lsp_owned) {
-      errno = EINVAL;
-      return NULL;
     }
   }
 #endif

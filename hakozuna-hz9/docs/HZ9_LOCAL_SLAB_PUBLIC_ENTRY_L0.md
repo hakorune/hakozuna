@@ -778,6 +778,10 @@ read:
   remains the explicit HZ9 throughput-vs-retention tradeoff, not a hidden
   low-RSS default claim.
 ```
+
+## Product Boundary / Preload Cleanup
+Detail: `docs/HZ9_PRELOAD_BOUNDARY_THIN_L1.md`. Summary: hot-path counter
+probe is NO-GO; PreloadBoundaryThin-L1 is remote-positive build hygiene only.
 ## Contract Split
 
 ```text

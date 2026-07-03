@@ -408,6 +408,7 @@ H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void* h8_realloc_inner(void* ptr, size_t size);
 void h8_free_arena_inner(void* ptr);
+void h8_free_non_arena_inner(void* ptr);
 void h8_free_inner(void* ptr);
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
 void* h9_lsp_debug_public_nosync_malloc(size_t size);

@@ -458,7 +458,7 @@ void h8_free_arena_inner(void* ptr) {
   h8_fail_invalid_free();
 }
 
-static H8_NOINLINE void h8_free_non_arena_inner(void* ptr) {
+H8_NOINLINE void h8_free_non_arena_inner(void* ptr) {
 #if !defined(H9_SLAB_ENTRY_SPLIT_L1) && \
     !defined(H9_SLAB_FREE_ROUTE_OFF_PROOF_L1)
   bool slab_owned = false;
