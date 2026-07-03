@@ -6,8 +6,8 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  scaffold only
-  no allocator behavior implemented yet
+  Box 1 implemented and verified, uncommitted
+  Box 2 (HZ10ThreadLocalFreelistPage-L0) is the active next box
 
 design:
   thread-local intrusive freelist pages
@@ -15,8 +15,41 @@ design:
   remote stack + owner drain
   bounded RSS page pool
 
-first box:
-  HZ10PageMapRoute-L0
+box 1 done (HZ10PageMapRoute-L0):
+  2-level radix pagemap: root 2048 entries always resident (16KiB), leaf
+  2^20 entries lazily mmap'd per touched range (~24MiB, kernel-demand-paged)
+  smoke green: exact/interior/misaligned/generation/miss + tail-slack bonus
+  standalone check green (hz10-standalone-check)
+  route-cost bench: pagemap beats an in-process hash-probe baseline by
+  ~20-23% across PAGES=1024..7500, once bench is built with -flto
+  earlier measurement without -flto showed pagemap ~3% SLOWER -- root
+  cause was a cross-TU inlining asymmetry (hash baseline is a static
+  function in the same TU as the hot loop, hz10_pagemap_route() is a real
+  call across TUs without LTO), not a flaw in the radix design; fixed via
+  Makefile BENCH_CFLAGS += -flto
+  files: src/hz10_pagemap.{h,c}, src/hz10_platform.{h,c} (renamed copy of
+  HZ9's platform wrappers, no HZ8/HZ9 entanglement), tests/hz10_pagemap_route_smoke.c,
+  bench/hz10_pagemap_route_bench.c
+
+box 2 next (HZ10ThreadLocalFreelistPage-L0):
+  one-class intrusive local freelist page (Layer 0)
+  same-thread malloc/free: plain loads/stores only, no atomics, no
+  shared-struct sync on every op -- this exact mistake is why HZ9
+  ProductEntry never closed the tcmalloc gap, see
+  docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md "Forbidden fast-path shapes"
+  wires into Box 1's hz10_pagemap_register/route only at page
+  publish/release time, never per-op
+  honest public-shaped malloc/free microbench (no fused-loop, no
+  DCE-prone numbers, per bench/README.md)
+
+box 3 (HZ10RemoteStackDrain-L0):
+  foreign free stack (single-CAS Treiber push)
+  owner drain batches remote frees into the local freelist
+  duplicate/stale/pending counters and smokes
+
+box 4 (HZ10BoundedPagePool-L0):
+  page cache caps, release pressure, local/remote/RSS matrix
+  this box is what the first GO / good target gates below are judged on
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
@@ -39,4 +72,3 @@ Do not weaken fail-closed route without writing the contract first.
 README.md
 docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
 ```
-
