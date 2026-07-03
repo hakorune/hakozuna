@@ -419,6 +419,36 @@ static int check_public_entry_current(void) {
   return 0;
 }
 
+static int check_public_remote_pending(void) {
+  bool owned = false;
+  void* p = h9_lsp_debug_alloc(5u);
+  if (!p || !h9_lsp_debug_public_product_free(p, &owned) || !owned) {
+    fprintf(stderr, "public remote pending first claim failed owned=%d\n",
+            owned ? 1 : 0);
+    return 74;
+  }
+  if (h9_lsp_debug_public_product_free(p, &owned) || !owned) {
+    fprintf(stderr, "public remote pending duplicate accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 75;
+  }
+  if (h9_lsp_debug_public_product_free((char*)p + 1, &owned) || !owned) {
+    fprintf(stderr, "public remote pending interior accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 76;
+  }
+  H9LspStats stats = h9_lsp_debug_stats();
+  if (stats.remote_pending_claim == 0u ||
+      stats.remote_pending_duplicate == 0u ||
+      stats.remote_pending_invalid == 0u) {
+    fprintf(stderr, "remote pending counters claim=%zu dup=%zu invalid=%zu\n",
+            stats.remote_pending_claim, stats.remote_pending_duplicate,
+            stats.remote_pending_invalid);
+    return 77;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -455,6 +485,11 @@ int main(void) {
   if (public_current_rc != 0) {
     h9_lsp_debug_reset();
     return public_current_rc;
+  }
+  int public_remote_rc = check_public_remote_pending();
+  if (public_remote_rc != 0) {
+    h9_lsp_debug_reset();
+    return public_remote_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

@@ -24,7 +24,7 @@ static H9LspSegment* h9_lsp_cache_pop(uint32_t class_id, uint32_t slot_size,
     segment->free_bits = h9_lsp_full_bits(slot_count);
     segment->alloc_bits = 0u;
     segment->cache_bits = 0u;
-    segment->pending_bits = 0u;
+    h9_lsp_pending_clear(segment);
     h9_lsp_stats.segment_cache_hit++;
     h9_lsp_stats.segment_cache_live--;
     h9_lsp_stats.segment_cache_bytes -= H9_LSP_SEGMENT_BYTES;
@@ -37,7 +37,7 @@ static H9LspSegment* h9_lsp_cache_pop(uint32_t class_id, uint32_t slot_size,
 
 static bool h9_lsp_cache_store_locked(H9LspSegment* segment) {
   if (!segment || segment->alloc_bits || segment->cache_bits ||
-      segment->pending_bits ||
+      h9_lsp_pending_load(segment) ||
       h9_lsp_segment_cache_count >= H9_LSP_SEGMENT_CACHE_CAP) {
     h9_lsp_stats.segment_cache_drop++;
     return false;

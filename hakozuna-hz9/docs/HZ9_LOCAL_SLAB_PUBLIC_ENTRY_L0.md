@@ -629,6 +629,119 @@ read:
   ProductEntry entirely while medium non-arena frees still reach ProductEntry
   when a segment has been created.
 
+## ProductEntry Remote Pending L0
+
+```text
+goal:
+  open the first MT-safe ProductEntry remote boundary without optimizing MT
+  throughput yet
+
+design:
+  same-thread exact free:
+    current pointer-token/local entry fast path remains owner-local
+
+  foreign/exact ProductEntry free:
+    route to segment/slot
+    atomic pending_bits fetch_or claims the slot
+    first claim is accepted as remote pending
+    duplicate claim is rejected as owned invalid
+    remote producer does not mutate local free_bits or alloc_bits
+
+  owner drain:
+    pending_bits is not a dirty-segment marker
+    owner uses atomic_exchange(pending_bits, 0)
+    claimed slots are merged into entry-local alloc_bits/free_bits
+    remote producer never mutates entry-local bits
+    same-thread allocation keeps using the same segment after drain
+
+non-goal:
+  no owner queue cadence
+  no remote freelist
+  no remote performance claim
+
+hard gates:
+  duplicate remote claim accepted = 0
+  remote publish lost = 0
+  remote mutated local bits = 0
+  load/store clear of pending_bits = 0
+  owned invalid forwarded to platform = 0
+```
+
+Prior dirty-drop read:
+
+```text
+dirty-drop guard:
+  safe but weak
+  medium_r50 17.916M vs HZ8 23.056M
+  main_r90 14.674M vs HZ8 15.000M
+  reason: pending was treated as segment contamination instead of capacity
+```
+
+Rejected dirty-switch probe:
+
+```text
+bench_results/20260703T_hz9_product_remote_dirty_switch_l0_r3_aslroff
+
+attempt:
+  when pending_bits != 0, sync the current entry and switch the class to a
+  fresh segment while keeping the dirty segment route-visible.
+
+result:
+  medium_interleaved_remote50:
+    HZ8 23.886M
+    HZ9 1.016M
+    create/release/live=1108/116/992
+    cap_reject=716339
+
+  main_interleaved_remote90:
+    HZ8 16.009M
+    HZ9 1.161M
+    create/release/live=1081/78/1003
+    cap_reject=628218
+
+decision:
+  NO-GO. Switching to fresh segments without owner drain creates a segment
+  storm and exhausts the segment cap. The L0 default remains dirty-drop /
+  no-reuse until there is a real owner drain or bounded retired-segment policy.
+```
+
+OwnerDrain-L0 result:
+
+```text
+bench_results/20260703T_hz9_product_owner_drain_single_segment_l0_retry2
+
+shape:
+  one active ProductEntry segment per class/thread
+  remote free only fetch_or claims pending_bits
+  owner drains pending_bits with atomic_exchange into entry-local bits
+  if the active segment is full after drain, ProductEntry returns NULL and
+  the public path falls back to HZ8 instead of creating a replacement segment
+
+main_interleaved_remote90, R3 ASLR-off:
+  HZ8 prior same-lane reference: about 15.2M..16.0M
+  HZ9 19.014M
+  post RSS 5.02 MiB
+  peak RSS 13.50 MiB
+  create/release/live = 90 / 87 / 3
+  remote_claim / drain / drain_slots / drain_invalid = 442665 / 156058 / 490209 / 0
+  cap_reject = 0
+
+medium_interleaved_remote50, R3 ASLR-off:
+  HZ8 24.499M reference in retry run
+  HZ9 24.499M
+  post RSS 5.08 MiB
+  peak RSS 9.73 MiB
+  create/release/live = 111 / 98 / 13
+  remote_claim / drain / drain_slots / drain_invalid = 325025 / 203365 / 346034 / 0
+  cap_reject = 0
+
+decision:
+  GO as L0 evidence. Owner drain fixes the dirty-drop/switch failure mode:
+  remote rows no longer crash, no segment storm, cap_reject remains zero, and
+  remote throughput is near or above HZ8 while local rows still retain the
+  ProductEntry advantage.
+```
+
 ## Contract Split
 
 ```text

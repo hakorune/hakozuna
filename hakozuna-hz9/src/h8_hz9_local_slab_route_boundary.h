@@ -62,6 +62,12 @@ typedef struct H9LspStats {
   size_t segment_cache_live;
   size_t segment_cache_bytes;
   size_t segment_cache_peak_bytes;
+  size_t remote_pending_claim;
+  size_t remote_pending_duplicate;
+  size_t remote_pending_invalid;
+  size_t remote_pending_drain;
+  size_t remote_pending_drain_slots;
+  size_t remote_pending_drain_invalid;
 } H9LspStats;
 
 typedef struct H9LspRouteLeafBenchResult {

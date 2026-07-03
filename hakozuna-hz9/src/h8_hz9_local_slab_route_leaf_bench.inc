@@ -40,7 +40,7 @@ static inline bool h9_lsp_routeleaf_fast_free(H9LspRouteLeafEntry* entry,
     if ((segment->alloc_bits & bit) != 0u &&
         (segment->free_bits & bit) == 0u &&
         (segment->cache_bits & bit) == 0u &&
-        (segment->pending_bits & bit) == 0u) {
+        (h9_lsp_pending_load(segment) & bit) == 0u) {
       segment->alloc_bits &= ~bit;
       segment->free_bits |= bit;
       entry->last_live = 0u;
@@ -136,7 +136,7 @@ typedef struct H9LspCompactRouteLeafEntry {
   uint64_t state_mismatch;
   H9LspSegment* authority_segment;
 } H9LspCompactRouteLeafEntry;
-
+#include "h8_hz9_local_slab_owner_drain.inc"
 static inline bool h9_lsp_compact_routeleaf_alloc(
     H9LspCompactRouteLeafEntry* entry, void** ptr_out) {
   uint32_t slot = UINT32_MAX;
@@ -180,7 +180,7 @@ static H9_LSP_COLD_NOINLINE bool h9_lsp_compact_routeleaf_cold_free(
   segment->free_bits = entry->page.free_bits;
   segment->alloc_bits = entry->page.alloc_bits;
   segment->cache_bits = 0u;
-  segment->pending_bits = 0u;
+  h9_lsp_pending_clear(segment);
 
   H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
   if (route.kind != H8_ROUTE_VALID) {
@@ -311,7 +311,7 @@ static H9_LSP_COLD_NOINLINE bool h9_lsp_trim_routeleaf_cold_free(
   segment->free_bits = entry->page.free_bits;
   segment->alloc_bits = entry->page.alloc_bits;
   segment->cache_bits = 0u;
-  segment->pending_bits = 0u;
+  h9_lsp_pending_clear(segment);
 
   H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
   if (route.kind != H8_ROUTE_VALID) {
@@ -497,11 +497,10 @@ static bool h9_lsp_public_entry_init(uint32_t class_id) {
 }
 
 static bool h9_lsp_public_entry_ready(uint32_t class_id) {
-  if (class_id >= H8_MEDIUM_CLASS_COUNT) {
-    return false;
-  }
-  return h9_lsp_public_entries[class_id].authority_segment != NULL ||
-         h9_lsp_public_entry_init(class_id);
+  if (class_id >= H8_MEDIUM_CLASS_COUNT) return false;
+  H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
+  if (entry->authority_segment) return true;
+  return h9_lsp_public_entry_init(class_id);
 }
 
 static void h9_lsp_public_sync_entry(H9LspCompactRouteLeafEntry* entry) {
@@ -513,29 +512,28 @@ static void h9_lsp_public_sync_entry(H9LspCompactRouteLeafEntry* entry) {
   segment->free_bits = entry->page.free_bits;
   segment->alloc_bits = entry->page.alloc_bits;
   segment->cache_bits = 0u;
-  segment->pending_bits = 0u;
 }
-
 static void h9_lsp_public_sync_all(void) {
   for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i)
     h9_lsp_public_sync_entry(&h9_lsp_public_entries[i]);
 }
 static H9LspSegment* h9_lsp_public_segment_for_ptr(void* ptr) {
-  if (!ptr)
-    return NULL;
+  if (!ptr) return NULL;
   uintptr_t base =
       (uintptr_t)ptr & ~(uintptr_t)(H9_LSP_SEGMENT_BYTES - 1u);
   return h9_lsp_hash_find(base);
 }
 
-static void h9_lsp_public_sync_segment(H9LspSegment* segment) {
+static bool h9_lsp_public_sync_segment(H9LspSegment* segment) {
   for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
     H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[i];
     if (entry->authority_segment == segment) {
+      h9_lsp_public_drain_pending(entry);
       h9_lsp_public_sync_entry(entry);
-      break;
+      return true;
     }
   }
+  return false;
 }
 
 void h9_lsp_debug_public_thread_shutdown(void) {
@@ -548,8 +546,7 @@ void h9_lsp_debug_public_thread_shutdown(void) {
 void h9_lsp_debug_public_entry_reset(void) {
   h9_lsp_debug_reset();
   memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
-  h9_lsp_public_last_class = UINT32_MAX;
-  h9_lsp_public_current_entry = NULL;
+  h9_lsp_public_last_class = UINT32_MAX, h9_lsp_public_current_entry = NULL;
 }
 
 void* h9_lsp_debug_public_malloc(size_t size) {
@@ -562,14 +559,10 @@ void* h9_lsp_debug_public_malloc(size_t size) {
   }
   H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
   void* ptr = NULL;
-  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
-    if (!h9_lsp_public_entry_init(class_id)) {
-      return NULL;
-    }
-    entry = &h9_lsp_public_entries[class_id];
-    if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
-      return NULL;
-    }
+  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr) &&
+      (h9_lsp_public_drain_pending(entry),
+       !h9_lsp_compact_routeleaf_alloc(entry, &ptr))) {
+    return NULL;
   }
   h9_lsp_public_sync_entry(entry);
   h9_lsp_public_last_class = class_id;
@@ -625,14 +618,10 @@ void* h9_lsp_debug_public_nosync_malloc(size_t size) {
   }
   H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
   void* ptr = NULL;
-  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
-    if (!h9_lsp_public_entry_init(class_id)) {
-      return NULL;
-    }
-    entry = &h9_lsp_public_entries[class_id];
-    if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
-      return NULL;
-    }
+  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr) &&
+      (h9_lsp_public_drain_pending(entry),
+       !h9_lsp_compact_routeleaf_alloc(entry, &ptr))) {
+    return NULL;
   }
   h9_lsp_public_last_class = class_id;
   h9_lsp_public_current_entry = entry;
@@ -663,14 +652,11 @@ bool h9_lsp_debug_public_current_free(void* ptr) {
 }
 
 bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out) {
-  if (owned_out) {
-    *owned_out = false;
-  }
+  if (owned_out) *owned_out = false;
   H9LspCompactRouteLeafEntry* entry = h9_lsp_public_current_entry;
+  if (entry) h9_lsp_public_drain_pending(entry);
   if (entry && h9_lsp_compact_routeleaf_fast_free(entry, ptr)) {
-    if (owned_out) {
-      *owned_out = true;
-    }
+    if (owned_out) *owned_out = true;
     return true;
   }
 
@@ -678,7 +664,9 @@ bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out) {
   if (!segment_hint) {
     return false;
   }
-  h9_lsp_public_sync_segment(segment_hint);
+  if (!h9_lsp_public_sync_segment(segment_hint)) {
+    return h9_lsp_remote_pending_claim(ptr, owned_out);
+  }
   H9LspRouteResult route = h9_lsp_debug_route(ptr);
   if (route.kind == H8_ROUTE_MISS) {
     return false;

@@ -28,7 +28,7 @@ typedef struct H9LspSegment {
   uint64_t free_bits;
   uint64_t alloc_bits;
   uint64_t cache_bits;
-  uint64_t pending_bits;
+  _Atomic uint64_t pending_bits;
   void* raw_base;
   size_t raw_bytes;
 } H9LspSegment;
@@ -119,7 +119,8 @@ static bool h9_lsp_entry_token_valid(const H9LspEntryToken* token) {
   return (token->segment->alloc_bits & bit) != 0u &&
          (token->segment->free_bits & bit) == 0u &&
          (token->segment->cache_bits & bit) == 0u &&
-         (token->segment->pending_bits & bit) == 0u;
+         (atomic_load_explicit(&token->segment->pending_bits,
+                               memory_order_acquire) & bit) == 0u;
 }
 
 static size_t h9_lsp_hash_pos(uintptr_t base) {
@@ -163,6 +164,7 @@ static uint32_t h9_lsp_slot_count_for(uint32_t slot_size) {
   return (uint32_t)slots;
 }
 
+#include "h8_hz9_local_slab_remote_pending.inc"
 #include "h8_hz9_local_slab_segment_cache.inc"
 
 static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
@@ -357,7 +359,8 @@ H9LspRouteResult h9_lsp_debug_route(void* ptr) {
   uint64_t bit = UINT64_C(1) << slot;
   result.slot = slot;
   if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
-      (segment->cache_bits & bit) != 0u || (segment->pending_bits & bit) != 0u) {
+      (segment->cache_bits & bit) != 0u ||
+      (h9_lsp_pending_load(segment) & bit) != 0u) {
     result.reason = H9_LSP_ROUTE_REASON_DOUBLE;
     h9_lsp_stats.route_invalid++;
     return result;
@@ -401,7 +404,8 @@ H9LspRouteResult h9_lsp_debug_route_direct_owned(void* ptr) {
   uint64_t bit = UINT64_C(1) << slot;
   result.slot = slot;
   if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
-      (segment->cache_bits & bit) != 0u || (segment->pending_bits & bit) != 0u) {
+      (segment->cache_bits & bit) != 0u ||
+      (h9_lsp_pending_load(segment) & bit) != 0u) {
     result.reason = H9_LSP_ROUTE_REASON_DOUBLE;
     h9_lsp_stats.route_invalid++;
     return result;
@@ -606,7 +610,7 @@ static bool h9_lsp_lasttoken_allocated_hit(void* ptr, H9LspSegment** seg_out,
   uint64_t bit = UINT64_C(1) << h9_lsp_last_slot;
   if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
       (segment->cache_bits & bit) != 0u ||
-      (segment->pending_bits & bit) != 0u) {
+      (h9_lsp_pending_load(segment) & bit) != 0u) {
     h9_lsp_last_live = 0u;
     h9_lsp_stats.ptrtoken_state_mismatch++;
     return false;
@@ -703,7 +707,8 @@ bool h9_lsp_debug_free_known_slot(uint32_t class_id, uint32_t slot) {
   }
   uint64_t bit = UINT64_C(1) << slot;
   if ((segment->alloc_bits & bit) == 0u || (segment->free_bits & bit) != 0u ||
-      (segment->cache_bits & bit) != 0u || (segment->pending_bits & bit) != 0u) {
+      (segment->cache_bits & bit) != 0u ||
+      (h9_lsp_pending_load(segment) & bit) != 0u) {
     return false;
   }
   segment->alloc_bits &= ~bit;

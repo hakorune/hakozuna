@@ -24,6 +24,8 @@ Current direction:
                 segment metadata is static on fast path, per-slot state stays
                 entry-local, HZ8 small arena is skipped before HZ9 route, and
                 segment cap was widened for matrix-like repeated runs.
+                ProductEntry RemotePending-L0 now drains pending bits into
+                owner entry-local free bits instead of dropping dirty segments.
                 ASM audit separates DCE phantom ceilings from gates.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
@@ -60,11 +62,9 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_LOCAL_PHASE_ADMISSION_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
-  hakozuna-hz9/docs/HZ9_LOCAL_MAGAZINE_L0.md
   hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
   hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
-  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
 
