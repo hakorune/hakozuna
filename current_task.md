@@ -26,8 +26,8 @@ Current direction:
                 segment cap was widened for matrix-like repeated runs.
                 ProductEntry RemotePending-L0 now drains pending bits into
                 owner entry-local free bits instead of dropping dirty segments.
-                GuardBypass-L1 closes the small-only footing regression;
-                focused same-run gates now beat HZ8.
+                GuardBypass-L1 closes the small-only footing regression.
+                Next: automate ProductEntry gate summaries from raw logs.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

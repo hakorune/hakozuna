@@ -421,18 +421,19 @@ command shape:
   RUNS=10 THREADS=8 ITERS=30000
   baseline: h8_bench_release
   candidate: h8_bench_release_hz9localslabpublicentry
+  summarized by scripts/summarize_hz9_product_entry_gate.py
 
 fixed64_local0:
   base 148.081M, cand 295.428M, ratio 1.995
-  cand post/peak RSS 2.93 / 3.01 MiB, create/live=8/8
+  cand post/peak RSS 2.79 / 2.88 MiB, create/release/live=8/0/8
 
 medium_local0:
   base 129.409M, cand 240.024M, ratio 1.855
-  cand post/peak RSS 3.39 / 3.54 MiB, create/live=48/48
+  cand post/peak RSS 3.23 / 3.38 MiB, create/release/live=48/0/48
 
 main_local0:
   base 148.741M, cand 238.694M, ratio 1.605
-  cand post/peak RSS 3.99 / 4.06 MiB, create/live=32/32
+  cand post/peak RSS 3.80 / 3.88 MiB, create/release/live=32/0/32
 
 medium_interleaved_remote50:
   base 23.159M, cand 27.222M, ratio 1.175
@@ -738,19 +739,19 @@ Lifecycle check:
 ```text
 bench_results/20260703T_hz9_product_lifecycle_l0_r10
 medium_local0, R10 ASLR-off:
-  throughput 192.982M, post/peak RSS 3.40 / 3.44 MiB
+  throughput 192.982M, post/peak RSS 3.25 / 3.28 MiB
   create/release/live=48/0/48, cap_reject=0
 main_local0:
-  throughput 162.495M, post/peak RSS 3.69 / 3.71 MiB
+  throughput 162.495M, post/peak RSS 3.52 / 3.54 MiB
   create/release/live=32/0/32, cap_reject=0
 medium_interleaved_remote50:
-  throughput 27.486M, post/peak RSS 9.03 / 10.49 MiB
+  throughput 27.486M, post/peak RSS 8.61 / 10.00 MiB
   remote_claim/drain/drain_slots/drain_invalid=1070193/674462/1141338/0
 main_interleaved_remote90:
-  throughput 22.045M, post/peak RSS 10.52 / 14.11 MiB
+  throughput 22.045M, post/peak RSS 10.04 / 13.45 MiB
   remote_claim/drain/drain_slots/drain_invalid=1531470/533162/1677467/0
 release pressure, T16 R5:
-  medium_local0 create/release/live=288/240/48, post/peak 5.62/5.77 MiB
+  medium_local0 create/release/live=288/240/48, post/peak 5.36/5.50 MiB
   medium_r50 create/release/live=288/240/48, drain_invalid=0
   main_r90 create/release/live=128/80/48, drain_invalid=0
 steady RSS, T16 ITERS=300000 R3:
