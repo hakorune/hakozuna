@@ -13,8 +13,9 @@ Current direction:
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
   HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-5 done (uncommitted).
-                Box5 public entry: local rows beat system malloc 1.2-1.9x,
-                remote rows 15-17x SLOWER (page churn); fix before HZ8/HZ9.
+                Local rows measured ~40-50% of real tcmalloc (LD_PRELOAD
+                trick, in the good-target band); remote rows 15-17x
+                SLOWER than glibc (page churn) -- fix that next.
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry

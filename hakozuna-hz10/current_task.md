@@ -13,6 +13,15 @@ status:
   plus this module's own double pagemap registration -- see box 5 notes,
   this is the priority before any HZ8/HZ9 same-run comparison means
   anything
+  real tcmalloc comparison (ad hoc, LD_PRELOAD on hz10_public_entry_bench's
+  existing MODE=1 system_malloc path -- it just calls libc malloc/free, so
+  LD_PRELOAD=libtcmalloc.so transparently swaps in the real thing, no new
+  code needed): local rows already land in the documented "good balanced
+  target" band. main_local0-style 3 runs: 38.6-49.7% of tcmalloc; a single
+  medium_local0-style run: 48.2%. post RSS is 3.6-8x lower than tcmalloc's
+  in the same runs, consistent with the "closer to HZ8 than tcmalloc" RSS
+  goal. Not yet a formal script (see next box); remote rows were not
+  re-measured against tcmalloc since they are still 15-17x behind glibc
 
 design:
   thread-local intrusive freelist pages
@@ -193,15 +202,20 @@ box 5 done (multi-class public entry, name TBD):
   files: src/hz10_size_class.{h,c}, src/hz10_public_entry.{h,c},
   tests/hz10_public_entry_smoke.c, bench/hz10_public_entry_bench.c
 
-next box not yet named:
-  fix the remote-row regression before any HZ8/HZ9 same-run comparison
-  is meaningful -- likely needs: (a) per-class free-page tracking so an
-  exhausted page's capacity is recovered instead of abandoned, (b) a
-  cheaper (or skippable) owner-tag registration path, (c) revisiting the
-  box 3 O(N^2) drain cost once (a) changes how often large-slot_count
-  classes actually drain
-  then: same-run HZ8/HZ9/tcmalloc/mimalloc comparison via HZ10_EXT_ROOT,
-  matching Box 1's scripts/run_hz10_pagemap_vs_hz9_same_run.sh pattern
+next box not yet named (HZ10PerClassPageList-L0, working name):
+  fix the remote-row regression before any broader comparison is
+  meaningful -- likely needs: (a) per-class free-page tracking (an
+  owner-side list of this thread's own pages for a class, scanned before
+  abandoning one, mirroring HZ8/HZ9's owner-scan-list-then-detached-list
+  cascade) so an exhausted page's capacity is recovered instead of
+  abandoned, (b) a cheaper (or skippable) owner-tag registration path,
+  (c) revisiting the box 3 O(N^2) drain cost once (a) changes how often
+  large-slot_count classes actually drain
+  then: formalize the ad hoc LD_PRELOAD tcmalloc comparison (see status
+  above) into a real script, HZ10_EXT_ROOT-gated same as Box 1's
+  scripts/run_hz10_pagemap_vs_hz9_same_run.sh, covering remote rows once
+  (a)-(c) land -- local rows are already worth locking in as a repeatable
+  measurement even before that
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
