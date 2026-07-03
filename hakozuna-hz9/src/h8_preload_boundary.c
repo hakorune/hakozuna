@@ -117,6 +117,35 @@ static void h8_public_free_dispatch(void* ptr) {
 }
 
 static void* h8_public_realloc_dispatch(void* ptr, size_t size) {
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  if (!ptr) {
+    return h8_public_malloc_dispatch(size);
+  }
+  if (size == 0) {
+    h8_public_free_dispatch(ptr);
+    return NULL;
+  }
+  if (h9_lsp_public_maybe_active()) {
+    size_t old_size = 0;
+    bool lsp_owned = false;
+    if (h9_lsp_public_usable_size(ptr, &old_size, &lsp_owned)) {
+      if (size <= old_size) {
+        return ptr;
+      }
+      void* next = h8_public_malloc_dispatch(size);
+      if (!next) {
+        return NULL;
+      }
+      memcpy(next, ptr, old_size);
+      h8_public_free_dispatch(ptr);
+      return next;
+    }
+    if (lsp_owned) {
+      errno = EINVAL;
+      return NULL;
+    }
+  }
+#endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
   if (!ptr) {
     return h8_public_malloc_dispatch(size);
@@ -203,7 +232,11 @@ void* h8_calloc(size_t count, size_t size) {
     return NULL;
   }
   size_t total = count * size;
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  void* ptr = h8_malloc_inner(total);
+#else
   void* ptr = h8_public_malloc_dispatch(total);
+#endif
   if (ptr) {
     memset(ptr, 0, total);
   }

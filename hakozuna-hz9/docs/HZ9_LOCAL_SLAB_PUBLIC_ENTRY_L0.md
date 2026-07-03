@@ -457,22 +457,14 @@ read:
 
 ```text
 promotion-quality remaining work:
-  full public matrix R3 is HOLD, not promotion evidence yet
-  bench_results/20260703T_hz9_product_entry_public_matrix_r3_hz9_product_entry_public_matrix
-  hz9_product vs hz8_ref:
-    wins guard 1.034, fixed64 1.015, main_r50 1.031, main_r90 1.012
-    loses small_r90 0.990, medium_local0 0.958, medium_r50 0.956, main_local0 0.992
-  next work: attribute LD_PRELOAD public-entry overhead before R10 promotion
-
-direct API matrix probe:
-  scripts/run_hz9_product_entry_matrix_api_probe.sh
-  direct h8_malloc/h8_free payload path, no LD_PRELOAD
-  R3: fixed64 1.542, medium_local0 1.185, medium_r50 1.111,
-      main_local0 1.178, main_r50 1.171, main_r90 1.235
-  R3 small/guard: small_r90 0.978, guard 0.912
-  verdict: medium/main matrix shape is not the culprit; preload/interpose or
-           public-dispatch tax explains the public-matrix flip.  Small/guard
-           dispatch tax remains separate and needs hit-rate/dispatch counters.
+  fixed ProductEntry preload R3:
+    bench_results/20260703T_hz9_product_entry_public_matrix_product_fixed_r3_hz9_product_entry_public_matrix
+    guard 1.004, small_r90 0.999, fixed64 1.188, medium_local0 1.018
+    medium_r50 1.152, main_local0 1.085, main_r50 1.160, main_r90 1.076
+  stats:
+    small/guard segment_create=0, so ProductEntry bypass is clean there
+    medium/main route_attempt=0 on local rows; remote drain clean
+  next work: R10 RSS/lifecycle gate and promotion decision
 
 matrix wrapper:
   scripts/run_hz9_product_entry_public_matrix.sh

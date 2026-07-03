@@ -18,9 +18,11 @@ MATRIX_TITLE="${MATRIX_TITLE:-HZ9 Same-Run Allocator Matrix}"
 
 mkdir -p "${OUTDIR}" "$(dirname "${MATRIX_BIN}")"
 
-make -C "${ROOT}" preload preload-medium64k2 preload-mediumkeeprefillempty >/dev/null
+make -C "${ROOT}" preload preload-hz9productentry preload-medium64k2 \
+  preload-mediumkeeprefillempty >/dev/null
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
-  -pthread -o "${MATRIX_BIN}" "${ROOT}/bench/bench_matrix_malloc.c"
+  ${MATRIX_CFLAGS:-} -pthread -o "${MATRIX_BIN}" \
+  "${ROOT}/bench/bench_matrix_malloc.c" ${MATRIX_LDLIBS:-}
 
 local_head() {
   if [[ -e "${ROOT}/.git" ]]; then
@@ -40,8 +42,11 @@ find_lib() {
     return 0
   fi
   case "${name}" in
-    hz9|hz9_product)
+    hz9)
       printf '%s\n' "${ROOT}/libhakozuna_hz8_preload.so"
+      ;;
+    hz9_product)
+      printf '%s\n' "${ROOT}/libhakozuna_hz9_product_entry_preload.so"
       ;;
     hz8_ref)
       printf '%s\n' "${HZ8_REF_SO:-${HZ9_EXT_ROOT}/hakozuna-hz8/libhakozuna_hz8_preload.so}"

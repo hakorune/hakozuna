@@ -791,6 +791,7 @@ void* h9_lsp_debug_ptrtoken_realloc_in_place(void* ptr, size_t size,
 }
 
 #include "h8_hz9_local_slab_route_leaf_bench.inc"
+#include "h8_hz9_local_slab_public_entry.inc"
 
 H9LspStats h9_lsp_debug_stats(void) {
   return h9_lsp_stats;

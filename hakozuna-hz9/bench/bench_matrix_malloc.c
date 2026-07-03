@@ -1,4 +1,9 @@
 #include <errno.h>
+#if defined(H8_MATRIX_HZ9_STATS)
+#include <dlfcn.h>
+#define H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0
+#include "../src/h8_hz9_local_slab_route_boundary.h"
+#endif
 #include <pthread.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -174,6 +179,25 @@ static void owner_collect_tick(size_t size) {
     bench_payload_free(p);
   }
 }
+
+#if defined(H8_MATRIX_HZ9_STATS)
+static void print_hz9_stats_if_available(void) {
+  typedef H9LspStats (*H9LspStatsFn)(void);
+  H9LspStatsFn fn = (H9LspStatsFn)dlsym(RTLD_DEFAULT, "h9_lsp_debug_stats");
+  if (!fn) {
+    return;
+  }
+  H9LspStats s = fn();
+  printf("hz9_lsp route_attempt=%zu route_valid=%zu route_invalid=%zu route_miss=%zu "
+         "segment_create=%zu segment_release=%zu segment_live=%zu cap_reject=%zu "
+         "remote_claim=%zu remote_dup=%zu drain=%zu drain_slots=%zu drain_invalid=%zu\n",
+         s.route_attempt, s.route_valid, s.route_invalid, s.route_miss,
+         s.segment_create, s.segment_release, s.segment_live,
+         s.segment_cap_reject, s.remote_pending_claim,
+         s.remote_pending_duplicate, s.remote_pending_drain,
+         s.remote_pending_drain_slots, s.remote_pending_drain_invalid);
+}
+#endif
 
 static void* worker(void* argp) {
   ThreadArg* arg = (ThreadArg*)argp;
@@ -392,5 +416,8 @@ int main(int argc, char** argv) {
          pick(faults, opt.runs, 0.5), pick(faults, opt.runs, 1.0));
   printf("phase_ms work_median=%.3f tail_median=%.3f\n",
          pick(work_ms, opt.runs, 0.5), pick(tail_ms, opt.runs, 0.5));
+#if defined(H8_MATRIX_HZ9_STATS)
+  print_hz9_stats_if_available();
+#endif
   return 0;
 }
