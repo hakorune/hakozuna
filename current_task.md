@@ -12,22 +12,16 @@ Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ9 single-folder closure is complete enough for local development.
-  OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
-                directory-first free routing reduces remote route tax, but
-                medium-local promotion gate was not met.
-  Current HZ9 read: HZ9ProductEntry GuardBypass/Lifecycle evidence.
-                Inline local slab body is fast; route-first public free is the
-                residual.  Ptrtoken is now the main HZ9 stem:
-                exact free may skip route, but route fallback stays authority.
-                ProductEntry-L0 is now wired into the real medium public path:
-                segment metadata is static on fast path, per-slot state stays
-                entry-local, HZ8 small arena is skipped before HZ9 route, and
-                segment cap was widened for matrix-like repeated runs.
-                ProductEntry RemotePending-L0 now drains pending bits into
-                owner entry-local free bits instead of dropping dirty segments.
-                ProductEntry preload artifact is now real ProductEntry.
-                Public R3 wins medium/main/remote; next close R10 gates.
+  Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
+                Segment metadata is static on fast path, per-slot state stays
+                entry-local, small/guard/control allocations bypass ProductEntry
+                where required, and remote pending bits drain into owner
+                entry-local free bits instead of dropping dirty segments.
+                Public R3 wins medium/main/remote; now close final gates.
+  Active HZ9 order:
+                1. same-run R10 matrix: hz8_ref vs hz9_product, RSS/counters.
+                2. release-pressure/lifecycle evidence with segment_release.
+                3. promotion-ready docs: throughput-first, bounded-RSS tradeoff.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

@@ -456,15 +456,18 @@ read:
 ## Next Decision
 
 ```text
-promotion-quality remaining work:
-  fixed ProductEntry preload R3:
-    bench_results/20260703T_hz9_product_entry_public_matrix_product_fixed_r3_hz9_product_entry_public_matrix
-    guard 1.004, small_r90 0.999, fixed64 1.188, medium_local0 1.018
-    medium_r50 1.152, main_local0 1.085, main_r50 1.160, main_r90 1.076
+promotion-quality read:
+  public preload same-run R10:
+    bench_results/20260703T_hz9_product_entry_final_r10_hz9_product_entry_public_matrix
+    guard 1.026, small_r90 0.991, fixed64 1.326, medium_local0 1.046
+    medium_r50 1.189, main_local0 1.033, main_r50 1.182, main_r90 1.217
+  RSS:
+    local rows stay near HZ8 (+/-0.25 MiB post RSS)
+    remote rows retain about +7 MiB post RSS from cached ProductEntry segments
   stats:
     small/guard segment_create=0, so ProductEntry bypass is clean there
-    medium/main route_attempt=0 on local rows; remote drain clean
-  next work: R10 RSS/lifecycle gate and promotion decision
+    cap_reject=0, remote_dup=0, remote_invalid=0, drain_invalid=0
+    segment_release total=1440, so release path is exercised in R10
 
 matrix wrapper:
   scripts/run_hz9_product_entry_public_matrix.sh
@@ -769,9 +772,11 @@ steady RSS, T16 ITERS=300000 R3:
   main_r90 create/release/live=96/48/48, post/peak 47.89/69.05 MiB
 
 read:
-  R10 keeps local/remote throughput strong, cap_reject zero, and drain_invalid
-  zero. Cached live segments intentionally raise retained RSS versus HZ8; this
-  remains the explicit HZ9 throughput-vs-retention tradeoff.
+  R10 and release-pressure gates keep local/remote throughput positive,
+  cap_reject zero, drain_invalid zero, and segment_release exercised.
+  Cached live segments intentionally raise retained RSS versus HZ8; this
+  remains the explicit HZ9 throughput-vs-retention tradeoff, not a hidden
+  low-RSS default claim.
 ```
 ## Contract Split
 

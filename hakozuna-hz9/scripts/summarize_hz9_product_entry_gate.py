@@ -87,6 +87,8 @@ def parse_log(path: Path) -> dict[str, object]:
             data["minor_faults"] = to_float(kv.get("minor_median"))
         elif line.startswith("h9_lsp_segments "):
             data["segments"] = parse_key_values(line)
+        elif line.startswith("hz9_lsp "):
+            data["segments"] = parse_key_values(line)
     return data
 
 
@@ -122,7 +124,10 @@ def segment_int(data: dict[str, object], key: str) -> int:
     segments = data.get("segments", {})
     if not isinstance(segments, dict):
         return 0
-    return to_int(segments.get(key))
+    value = segments.get(key)
+    if value is None:
+        value = segments.get(f"segment_{key}")
+    return to_int(value)
 
 
 def segment_triplet(data: dict[str, object]) -> str:
