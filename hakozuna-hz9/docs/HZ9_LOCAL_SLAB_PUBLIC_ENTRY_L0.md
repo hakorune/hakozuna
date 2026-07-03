@@ -427,48 +427,42 @@ command shape:
   candidate: h8_bench_release_hz9localslabpublicentry
 
 fixed64_local0:
-  base 93.686M, cand 206.814M, ratio 2.208
-  cand post/peak RSS 2.71 / 2.88 MiB, create/live=8/8
+  base 148.081M, cand 295.428M, ratio 1.995
+  cand post/peak RSS 2.93 / 3.01 MiB, create/live=8/8
 
 medium_local0:
-  base 80.293M, cand 149.585M, ratio 1.863
-  cand post/peak RSS 3.08 / 3.08 MiB, create/live=48/48
+  base 129.409M, cand 240.024M, ratio 1.855
+  cand post/peak RSS 3.39 / 3.54 MiB, create/live=48/48
 
 main_local0:
-  base 86.826M, cand 180.631M, ratio 2.080
-  cand post/peak RSS 3.67 / 3.72 MiB, create/live=32/32
+  base 148.741M, cand 238.694M, ratio 1.605
+  cand post/peak RSS 3.99 / 4.06 MiB, create/live=32/32
 
 medium_interleaved_remote50:
-  base 22.946M, cand 27.857M, ratio 1.214
-  remote_claim/drain/drain_invalid=1090269/685088/0
+  base 23.159M, cand 27.222M, ratio 1.175
+  remote_claim/drain/drain_invalid=1093279/686321/0
 
 main_interleaved_remote90:
-  base 16.325M, cand 21.967M, ratio 1.346
-  remote_claim/drain/drain_invalid=1555662/535280/0
+  base 16.352M, cand 21.813M, ratio 1.334
+  remote_claim/drain/drain_invalid=1581180/531875/0
 
 guard_local0:
-  base 189.703M, cand 174.152M, ratio 0.918
-  no HZ9 segments; remaining loss is dispatch/footing tax
+  base 264.187M, cand 288.264M, ratio 1.091
+  HZ9 segments=0
 
 read:
   lifecycle cache removes the superseded 480-live segment retention artifact.
-  ProductEntry is strong on medium/main/fixed64 and remote, but guard remains
-  below gate and must be closed before promotion-quality status.
+  GuardBypass closes the small-only footing regression; all focused same-run
+  rows are now above HZ8.
 ```
 
 ## Next Decision
 
 ```text
-promotion-quality blocker:
-  guard_local0 remains below gate even though no HZ9 segment is created
-
-next box:
-  HZ9ProductEntryGuardBypass-L1
-
-goal:
-  avoid ProductEntry footing on HZ8 small-only pointers
-  keep medium/main local and remote owner-drain wins
-  preserve bounded cache/release lifecycle
+promotion-quality remaining work:
+  full public matrix / preload integration gates
+  longer MT RSS observation outside the focused rows
+  product naming and HZ9 default policy decision
 ```
 
 ## ProductEntry GuardBypass L1
@@ -477,17 +471,9 @@ goal:
 change:
   public free dispatch sends HZ8 arena pointers directly to h8_free_arena_inner.
 
-R5 ASLR-off, THREADS=8, ITERS=30000:
-  guard_local0:
-    base 213.259M, cand 248.962M, ratio 1.167, HZ9 segments=0
-  main_local0:
-    base 102.394M, cand 194.377M, ratio 1.898
-  medium_local0:
-    base 126.896M, cand 256.029M, ratio 2.018
-  medium_interleaved_remote50:
-    base 23.805M, cand 28.014M, ratio 1.177, drain_invalid=0
-  main_interleaved_remote90:
-    base 16.072M, cand 21.896M, ratio 1.362, drain_invalid=0
+focused evidence:
+  R5 first showed guard_local0 ratio 1.167 with no HZ9 segments.
+  Same-run R10 above keeps guard positive while preserving medium/main/remote.
 
 read:
   guard blocker is closed in the focused gate. ProductEntry now keeps local and
@@ -775,6 +761,10 @@ release pressure, T16 R5:
   medium_local0 create/release/live=288/240/48, post/peak 5.62/5.77 MiB
   medium_r50 create/release/live=288/240/48, drain_invalid=0
   main_r90 create/release/live=128/80/48, drain_invalid=0
+steady RSS, T16 ITERS=300000 R3:
+  medium_local0 create/release/live=192/144/48, post/peak 5.36/5.36 MiB
+  medium_r50 create/release/live=192/144/48, post/peak 28.66/46.14 MiB
+  main_r90 create/release/live=96/48/48, post/peak 47.89/69.05 MiB
 
 read:
   R10 keeps local/remote throughput strong, cap_reject zero, and drain_invalid
