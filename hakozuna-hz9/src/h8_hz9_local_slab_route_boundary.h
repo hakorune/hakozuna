@@ -50,6 +50,12 @@ typedef struct H9LspStats {
   size_t ptrtoken_state_mismatch;
   size_t segment_create;
   size_t segment_release;
+  size_t segment_live;
+  size_t segment_committed_bytes;
+  size_t segment_committed_peak_bytes;
+  size_t segment_reserved_bytes;
+  size_t segment_reserved_peak_bytes;
+  size_t segment_cap_reject;
 } H9LspStats;
 
 typedef struct H9LspRouteLeafBenchResult {

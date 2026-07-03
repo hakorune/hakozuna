@@ -363,6 +363,60 @@ read:
   release are not implemented yet.
 ```
 
+### RSS Read
+
+```text
+R5 ASLR OFF post RSS median:
+  fixed64_local0:
+    base 2.83 MiB
+    cand 2.75 MiB
+
+  medium_local0:
+    base 3.29 MiB
+    cand 4.65 MiB
+
+  main_local0:
+    base 3.41 MiB
+    cand 4.80 MiB
+
+  guard_local0:
+    base 2.77 MiB
+    cand 2.91 MiB
+
+read:
+  absolute RSS is still small, but medium/main already show about +40%.
+  ProductEntry-L0 must track segment retention from here onward.
+```
+
+## RSS / Segment Gate
+
+```text
+required in every ProductEntry matrix:
+  throughput median / p25
+  post RSS median
+  peak RSS median
+  minor faults median
+  HZ9 segment_create
+  HZ9 segment_live
+  HZ9 segment_committed_bytes / committed_peak
+  HZ9 segment_reserved_bytes / reserved_peak
+  HZ9 segment_cap_reject
+
+decision rule:
+  local throughput win is not sufficient by itself
+  if medium/main RSS grows without an explicit segment cap/release story,
+  ProductEntry remains evidence-only
+
+next implementation:
+  expose HZ9 local slab segment counters in bench summary
+  use them to explain R10 RSS before MT remote work
+
+note:
+  RSS remains the canonical resident-memory metric.
+  segment committed/reserved counters explain the retention substrate and may
+  exceed resident RSS when pages are reserved/committed but sparsely touched.
+```
+
 ## Contract Split
 
 ```text

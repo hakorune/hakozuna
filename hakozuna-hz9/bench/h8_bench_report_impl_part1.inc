@@ -1,6 +1,9 @@
 #include "h8_bench_support.h"
 
 #include "../include/h8.h"
+#if defined(H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0)
+#include "h8_hz9_local_slab_route_boundary.h"
+#endif
 
 #include <inttypes.h>
 #include <stdio.h>
@@ -44,6 +47,17 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          stats.pending_dequeue_count, stats.orphan_handoff_count,
          stats.handoff_success_count, stats.local_alloc_count,
          stats.remote_collect_count);
+#if defined(H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0)
+  H9LspStats h9_lsp = h9_lsp_debug_stats();
+  printf("h9_lsp_segments create=%zu release=%zu live=%zu committed_bytes=%zu committed_peak=%zu reserved_bytes=%zu reserved_peak=%zu cap_reject=%zu route_attempt=%zu route_valid=%zu route_invalid=%zu route_miss=%zu\n",
+         h9_lsp.segment_create, h9_lsp.segment_release,
+         h9_lsp.segment_live, h9_lsp.segment_committed_bytes,
+         h9_lsp.segment_committed_peak_bytes,
+         h9_lsp.segment_reserved_bytes, h9_lsp.segment_reserved_peak_bytes,
+         h9_lsp.segment_cap_reject,
+         h9_lsp.route_attempt, h9_lsp.route_valid, h9_lsp.route_invalid,
+         h9_lsp.route_miss);
+#endif
   printf("direct_large_shadow alloc=%zu free=%zu alloc_bytes=%zu free_bytes=%zu live_bytes=%zu live_peak=%zu alloc_bucket=[%zu,%zu,%zu,%zu] free_bucket=[%zu,%zu,%zu,%zu] reuse_distance=[%zu,%zu,%zu,%zu] cache_hit=%zu cache_store=%zu cache_bytes=%zu\n",
          stats.direct_large_alloc_count, stats.direct_large_free_count,
          stats.direct_large_alloc_bytes, stats.direct_large_free_bytes,

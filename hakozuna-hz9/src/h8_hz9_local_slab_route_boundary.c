@@ -185,6 +185,7 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   }
   h8_platform_mutex_unlock(&h9_lsp_lock);
   if (!has_slot) {
+    h9_lsp_stats.segment_cap_reject++;
     return NULL;
   }
 
@@ -211,6 +212,7 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   if (index == H9_LSP_MAX_SEGMENTS) {
     h8_platform_mutex_unlock(&h9_lsp_lock);
     h8_platform_release(raw, raw_bytes);
+    h9_lsp_stats.segment_cap_reject++;
     return NULL;
   }
 
@@ -231,6 +233,19 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   h9_lsp_segments[index] = segment;
   h9_lsp_hash_insert(base, segment);
   h9_lsp_stats.segment_create++;
+  h9_lsp_stats.segment_live++;
+  h9_lsp_stats.segment_committed_bytes += H9_LSP_SEGMENT_BYTES;
+  h9_lsp_stats.segment_reserved_bytes += raw_bytes;
+  if (h9_lsp_stats.segment_committed_bytes >
+      h9_lsp_stats.segment_committed_peak_bytes) {
+    h9_lsp_stats.segment_committed_peak_bytes =
+        h9_lsp_stats.segment_committed_bytes;
+  }
+  if (h9_lsp_stats.segment_reserved_bytes >
+      h9_lsp_stats.segment_reserved_peak_bytes) {
+    h9_lsp_stats.segment_reserved_peak_bytes =
+        h9_lsp_stats.segment_reserved_bytes;
+  }
   h8_platform_mutex_unlock(&h9_lsp_lock);
   return segment;
 }
@@ -253,6 +268,19 @@ void h9_lsp_debug_reset(void) {
     segment->magic = H9_LSP_SEGMENT_DEAD;
     h9_lsp_segments[i] = NULL;
     h9_lsp_stats.segment_release++;
+    if (h9_lsp_stats.segment_live > 0u) {
+      h9_lsp_stats.segment_live--;
+    }
+    if (h9_lsp_stats.segment_committed_bytes >= H9_LSP_SEGMENT_BYTES) {
+      h9_lsp_stats.segment_committed_bytes -= H9_LSP_SEGMENT_BYTES;
+    } else {
+      h9_lsp_stats.segment_committed_bytes = 0u;
+    }
+    if (h9_lsp_stats.segment_reserved_bytes >= raw_bytes) {
+      h9_lsp_stats.segment_reserved_bytes -= raw_bytes;
+    } else {
+      h9_lsp_stats.segment_reserved_bytes = 0u;
+    }
     h8_platform_release(raw, raw_bytes);
   }
   memset(h9_lsp_hash, 0, sizeof(h9_lsp_hash));
