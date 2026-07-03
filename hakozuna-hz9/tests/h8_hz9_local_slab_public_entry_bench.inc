@@ -1,10 +1,13 @@
 static int h9_lsp_run_public_entry_mode(const char* mode, uint32_t class_id,
                                         uint32_t slot_size, uint64_t iters,
-                                        bool touch, bool non_lifo) {
+                                        bool touch, bool non_lifo,
+                                        bool nosync) {
   H9LspRouteLeafBenchResult result = {0};
   double start = now_seconds();
-  bool ok = h9_lsp_debug_publicentry_bench(slot_size, iters, touch, non_lifo,
-                                           &result);
+  bool ok = nosync ? h9_lsp_debug_publicentry_nosync_bench(
+                         slot_size, iters, touch, non_lifo, &result)
+                   : h9_lsp_debug_publicentry_bench(
+                         slot_size, iters, touch, non_lifo, &result);
   double elapsed = now_seconds() - start;
   if (!ok) {
     fprintf(stderr, "lsp public entry bench failed\n");

@@ -30,6 +30,8 @@ symbols = [
     ("routeleaf_tight", "h9_lsp_debug_routeleaf_tight_bench"),
     ("public_malloc", "h9_lsp_debug_public_malloc"),
     ("public_free", "h9_lsp_debug_public_free"),
+    ("public_nosync_malloc", "h9_lsp_debug_public_nosync_malloc"),
+    ("public_nosync_free", "h9_lsp_debug_public_nosync_free"),
 ]
 
 def extract(symbol):
@@ -60,7 +62,7 @@ for label, symbol in symbols:
         if any(op in line for op in ("\tmov", "\tand", "\tor"))
         and ("(" in line or "%rsp" in line)
     )
-    if label == "public_free":
+    if label in ("public_free", "public_nosync_free"):
         verdict = "route-authority-candidate" if route_call or state_stores else "phantom-ceiling"
     else:
         verdict = "honest-candidate" if slot_select else "phantom-ceiling"

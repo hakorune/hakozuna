@@ -22,6 +22,12 @@ $(ROOT)/h8_bench_hz9localslabrouteboundary: $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_BENC
 bench-hz9localslabrouteboundary: $(ROOT)/h8_bench_hz9localslabrouteboundary
 	$(ROOT)/h8_bench_hz9localslabrouteboundary
 
+$(ROOT)/h8_bench_hz9publicapi_baseline: $(HZ9_PUBLIC_API_BASELINE_BENCH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ9_LOCAL_SLAB_ROUTE_BOUNDARY_CFLAGS) $(INC) -o $@ $(HZ9_PUBLIC_API_BASELINE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-hz9publicapi-baseline: $(ROOT)/h8_bench_hz9publicapi_baseline
+	$(ROOT)/h8_bench_hz9publicapi_baseline
+
 $(ROOT)/h8_bench_hz9segmententry: $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ9_SEGMENT_ENTRY_CFLAGS) $(INC) -o $@ $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 

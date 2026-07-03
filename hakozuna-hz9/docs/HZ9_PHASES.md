@@ -97,6 +97,9 @@ current evidence:
   local ASLR-off gate keeps routeleafcompact as current honest best
   compact median 312.596M, trim median 278.665M, tight median 287.998M
   PublicEntry-L0 is correct but slow: publicentry median 103.979M ASLR OFF
+  StaticSegmentEntry probe is next: segment stays static route metadata and
+  same-thread per-slot state stays entry-local until cold fallback sync;
+  current-entry pure free reaches 121.061M, about 2.48x HZ8 public API
   phantom ceiling family: lastpublic / integrated / fastleaf / inlinebody
 
 asm audit:

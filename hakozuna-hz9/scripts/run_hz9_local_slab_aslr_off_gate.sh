@@ -9,7 +9,7 @@ RUNS="${RUNS:-5}"
 ITERS="${ITERS:-100000000}"
 CLASS_ID="${CLASS_ID:-5}"
 TOUCH="${TOUCH:-1}"
-MODES="${MODES:-routeleafcompact routeleaftrim routeleaftight publicentry publicentrynonlifo}"
+MODES="${MODES:-routeleafcompact routeleaftrim routeleaftight publicentry publicentrynonlifo publicentrynosync publicentrynosyncnonlifo}"
 
 mkdir -p "${OUTDIR}"
 make -C "${ROOT}" bench-hz9localslabrouteboundary >/dev/null

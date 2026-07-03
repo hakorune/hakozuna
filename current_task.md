@@ -22,6 +22,8 @@ Current direction:
                 exact free may skip route, but route fallback stays authority.
                 PublicEntry-L0 is correct but slow; route authority sync is
                 the current practical residual before preload integration.
+                Next probe keeps segment as static route metadata and leaves
+                per-slot state entry-local; compare nosync to HZ8 public API.
                 ASM audit separates DCE phantom ceilings from gates.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
@@ -47,10 +49,9 @@ Current strength:
 ## Read First
 
 ```text
-HZ8 active orientation:
+  HZ8 active orientation:
   hakozuna-hz8/current_task.md
   hakozuna-hz8/README.md
-  hakozuna-hz8/docs/HZ8_V2_HZ9_DESIGN.md
 
 HZ9 experimental orientation:
   hakozuna-hz9/README.md
@@ -66,7 +67,6 @@ HZ9 experimental orientation:
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
-  hakozuna-hz9/docs/HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md
 
 Frozen HZ6 reference:
   hakozuna-hz6/docs/current_task.md

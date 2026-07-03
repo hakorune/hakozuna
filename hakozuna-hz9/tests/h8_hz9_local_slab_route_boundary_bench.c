@@ -51,7 +51,9 @@ typedef enum H9LspBenchMode {
   H9_LSP_BENCH_ROUTE_LEAF_TIGHT = 27,
   H9_LSP_BENCH_ROUTE_LEAF_TIGHT_NON_LIFO = 28,
   H9_LSP_BENCH_PUBLIC_ENTRY = 29,
-  H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO = 30
+  H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO = 30,
+  H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC = 31,
+  H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC_NON_LIFO = 32
 } H9LspBenchMode;
 
 typedef struct H9LspInlinePublic {
@@ -283,6 +285,10 @@ int main(void) {
     bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY;
   } else if (strcmp(mode, "publicentrynonlifo") == 0) {
     bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO;
+  } else if (strcmp(mode, "publicentrynosync") == 0) {
+    bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC;
+  } else if (strcmp(mode, "publicentrynosyncnonlifo") == 0) {
+    bench_mode = H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC_NON_LIFO;
   } else if (strcmp(mode, "integrated") == 0) {
     bench_mode = H9_LSP_BENCH_INTEGRATED;
   } else if (strcmp(mode, "fastleaf") == 0) {
@@ -348,10 +354,15 @@ int main(void) {
   }
 
   if (bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY ||
-      bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO) {
+      bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO ||
+      bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC ||
+      bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC_NON_LIFO) {
+    bool non_lifo = bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO ||
+                    bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC_NON_LIFO;
+    bool nosync = bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC ||
+                  bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NOSYNC_NON_LIFO;
     return h9_lsp_run_public_entry_mode(
-        mode, class_id, slot_size, iters, touch,
-        bench_mode == H9_LSP_BENCH_PUBLIC_ENTRY_NON_LIFO);
+        mode, class_id, slot_size, iters, touch, non_lifo, nosync);
   }
 
   if (bench_mode == H9_LSP_BENCH_INLINE_PUBLIC) {

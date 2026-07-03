@@ -370,6 +370,55 @@ static int check_public_entry(void) {
   return 0;
 }
 
+static int check_public_entry_nosync(void) {
+  bool owned = false;
+  int stack_miss = 0;
+  void* p = h9_lsp_debug_public_nosync_malloc(65536u);
+  if (!p || !h9_lsp_debug_public_nosync_free(p, &owned) || !owned) {
+    return 65;
+  }
+  if (h9_lsp_debug_public_nosync_free(p, &owned) || !owned) {
+    fprintf(stderr, "public nosync double free accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 66;
+  }
+  void* q = h9_lsp_debug_public_nosync_malloc(65536u);
+  if (!q) {
+    return 67;
+  }
+  if (h9_lsp_debug_public_nosync_free((char*)q + 1, &owned) || !owned) {
+    fprintf(stderr, "public nosync interior accepted owned=%d\n",
+            owned ? 1 : 0);
+    return 68;
+  }
+  if (!h9_lsp_debug_public_nosync_free(q, &owned) || !owned) {
+    return 69;
+  }
+  if (h9_lsp_debug_public_nosync_free(&stack_miss, &owned) || owned) {
+    fprintf(stderr, "public nosync miss free owned=%d\n", owned ? 1 : 0);
+    return 70;
+  }
+  return 0;
+}
+
+static int check_public_entry_current(void) {
+  h9_lsp_debug_public_entry_reset();
+  void* p = h9_lsp_debug_public_nosync_malloc(65536u);
+  if (!p || !h9_lsp_debug_public_current_free(p)) {
+    return 71;
+  }
+  if (h9_lsp_debug_public_current_free(p)) {
+    fprintf(stderr, "public current double free accepted\n");
+    return 72;
+  }
+  void* q = h9_lsp_debug_public_nosync_malloc(65536u);
+  if (!q || h9_lsp_debug_public_current_free((char*)q + 1) ||
+      !h9_lsp_debug_public_current_free(q)) {
+    return 73;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -396,6 +445,16 @@ int main(void) {
   if (public_rc != 0) {
     h9_lsp_debug_reset();
     return public_rc;
+  }
+  int public_nosync_rc = check_public_entry_nosync();
+  if (public_nosync_rc != 0) {
+    h9_lsp_debug_reset();
+    return public_nosync_rc;
+  }
+  int public_current_rc = check_public_entry_current();
+  if (public_current_rc != 0) {
+    h9_lsp_debug_reset();
+    return public_current_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

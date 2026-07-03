@@ -475,6 +475,7 @@ bool h9_lsp_debug_routeleaf_tight_bench(
 static _Thread_local H9LspCompactRouteLeafEntry
     h9_lsp_public_entries[H8_MEDIUM_CLASS_COUNT];
 static _Thread_local uint32_t h9_lsp_public_last_class = UINT32_MAX;
+static _Thread_local H9LspCompactRouteLeafEntry* h9_lsp_public_current_entry;
 
 static bool h9_lsp_public_entry_init(uint32_t class_id) {
   if (class_id >= H8_MEDIUM_CLASS_COUNT) {
@@ -521,6 +522,13 @@ static void h9_lsp_public_sync_all(void) {
   }
 }
 
+void h9_lsp_debug_public_entry_reset(void) {
+  h9_lsp_debug_reset();
+  memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
+  h9_lsp_public_last_class = UINT32_MAX;
+  h9_lsp_public_current_entry = NULL;
+}
+
 void* h9_lsp_debug_public_malloc(size_t size) {
   if (!h8_medium_size_supported_fast(size)) {
     return NULL;
@@ -542,6 +550,7 @@ void* h9_lsp_debug_public_malloc(size_t size) {
   }
   h9_lsp_public_sync_entry(entry);
   h9_lsp_public_last_class = class_id;
+  h9_lsp_public_current_entry = entry;
   return ptr;
 }
 
@@ -583,15 +592,98 @@ bool h9_lsp_debug_public_free(void* ptr, bool* owned_out) {
   return true;
 }
 
-bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
-                                    bool non_lifo,
-                                    H9LspRouteLeafBenchResult* result_out) {
-  h9_lsp_debug_reset();
-  memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
-  h9_lsp_public_last_class = UINT32_MAX;
+void* h9_lsp_debug_public_nosync_malloc(size_t size) {
+  if (!h8_medium_size_supported_fast(size)) {
+    return NULL;
+  }
+  uint32_t class_id = h8_medium_class_for_size_fast(size);
+  if (!h9_lsp_public_entry_ready(class_id)) {
+    return NULL;
+  }
+  H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[class_id];
+  void* ptr = NULL;
+  if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
+    if (!h9_lsp_public_entry_init(class_id)) {
+      return NULL;
+    }
+    entry = &h9_lsp_public_entries[class_id];
+    if (!h9_lsp_compact_routeleaf_alloc(entry, &ptr)) {
+      return NULL;
+    }
+  }
+  h9_lsp_public_last_class = class_id;
+  h9_lsp_public_current_entry = entry;
+  return ptr;
+}
+
+bool h9_lsp_debug_public_current_free(void* ptr) {
+  H9LspCompactRouteLeafEntry* entry = h9_lsp_public_current_entry;
+  if (entry && h9_lsp_compact_routeleaf_fast_free(entry, ptr)) {
+    return true;
+  }
+
+  h9_lsp_public_sync_all();
+  H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
+  if (route.kind != H8_ROUTE_VALID) {
+    return false;
+  }
+  H9LspSegment* segment = (H9LspSegment*)route.segment;
+  uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  if (route.class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_public_entries[route.class_id].authority_segment == segment) {
+    h9_lsp_public_entries[route.class_id].page.alloc_bits &= ~bit;
+    h9_lsp_public_entries[route.class_id].page.free_bits |= bit;
+  }
+  return true;
+}
+
+bool h9_lsp_debug_public_nosync_free(void* ptr, bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  uint32_t class_id = h9_lsp_public_last_class;
+  if (class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_compact_routeleaf_fast_free(&h9_lsp_public_entries[class_id],
+                                         ptr)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+
+  h9_lsp_public_sync_all();
+  H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
+  if (route.kind == H8_ROUTE_MISS) {
+    return false;
+  }
+  if (owned_out) {
+    *owned_out = true;
+  }
+  if (route.kind != H8_ROUTE_VALID) {
+    return false;
+  }
+  H9LspSegment* segment = (H9LspSegment*)route.segment;
+  uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  if (route.class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_public_entries[route.class_id].authority_segment == segment) {
+    h9_lsp_public_entries[route.class_id].page.alloc_bits &= ~bit;
+    h9_lsp_public_entries[route.class_id].page.free_bits |= bit;
+  }
+  return true;
+}
+
+static bool h9_lsp_debug_publicentry_bench_impl(
+    size_t size, uint64_t iters, bool touch, bool non_lifo, bool nosync,
+    H9LspRouteLeafBenchResult* result_out) {
+  h9_lsp_debug_public_entry_reset();
   H9LspRouteLeafBenchResult result = {0};
   for (uint64_t i = 0; i < iters; ++i) {
-    void* a = h9_lsp_debug_public_malloc(size);
+    void* a = nosync ? h9_lsp_debug_public_nosync_malloc(size)
+                     : h9_lsp_debug_public_malloc(size);
     if (!a) {
       return false;
     }
@@ -601,18 +693,24 @@ bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
       p[size - 1u] = (unsigned char)(i >> 8);
     }
     if (non_lifo) {
-      void* b = h9_lsp_debug_public_malloc(size);
+      void* b = nosync ? h9_lsp_debug_public_nosync_malloc(size)
+                       : h9_lsp_debug_public_malloc(size);
       bool owned_a = false;
       bool owned_b = false;
-      if (!b || !h9_lsp_debug_public_free(a, &owned_a) ||
-          !h9_lsp_debug_public_free(b, &owned_b) || !owned_a || !owned_b) {
+      bool ok_a = nosync ? h9_lsp_debug_public_nosync_free(a, &owned_a)
+                         : h9_lsp_debug_public_free(a, &owned_a);
+      bool ok_b = nosync ? h9_lsp_debug_public_nosync_free(b, &owned_b)
+                         : h9_lsp_debug_public_free(b, &owned_b);
+      if (!b || !ok_a || !ok_b || !owned_a || !owned_b) {
         return false;
       }
       result.sink ^= (uintptr_t)a ^ (uintptr_t)b;
       result.ok += 2u;
     } else {
       bool owned = false;
-      if (!h9_lsp_debug_public_free(a, &owned) || !owned) {
+      bool ok = nosync ? h9_lsp_debug_public_nosync_free(a, &owned)
+                       : h9_lsp_debug_public_free(a, &owned);
+      if (!ok || !owned) {
         return false;
       }
       result.sink ^= (uintptr_t)a;
@@ -623,4 +721,18 @@ bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
     *result_out = result;
   }
   return true;
+}
+
+bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
+                                    bool non_lifo,
+                                    H9LspRouteLeafBenchResult* result_out) {
+  return h9_lsp_debug_publicentry_bench_impl(size, iters, touch, non_lifo,
+                                             false, result_out);
+}
+
+bool h9_lsp_debug_publicentry_nosync_bench(
+    size_t size, uint64_t iters, bool touch, bool non_lifo,
+    H9LspRouteLeafBenchResult* result_out) {
+  return h9_lsp_debug_publicentry_bench_impl(size, iters, touch, non_lifo,
+                                             true, result_out);
 }
