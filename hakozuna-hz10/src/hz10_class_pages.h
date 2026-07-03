@@ -18,12 +18,33 @@
  * cascade (h8_medium_alloc.inc's h8_medium_malloc_class_inner), scoped
  * down to what a single thread's own single-class page set needs.
  *
- * Known, accepted L0 gap: the list only grows, it is never pruned or
- * capped. A thread that creates many pages for one class under sustained
- * churn keeps all of them findable (correct), but a future box should add
- * a cap and return genuinely-idle pages to Box 4's pool instead of
- * holding them here forever.
+ * Known, accepted L0 gap: the list itself is never pruned -- a thread
+ * that creates many pages for one class under sustained churn keeps all
+ * of them allocated (RSS-wise) for as long as any of their slots are
+ * still outstanding, which this module cannot safely second-guess (see
+ * hz10_public_entry.h). What IS bounded, below, is the search cost paid
+ * per hz10_malloc call, which is a separate concern from list length.
+ *
+ * Measured, not assumed: an unbounded scan (the original Box 6 shape)
+ * degrades badly on a realistic "allocate a lot, free rarely or never"
+ * workload -- a single-threaded probe doing nothing but hz10_malloc(64)
+ * in a loop, never freeing, went from ~26M ops/s in the first million
+ * calls to ~8.5M ops/s by 30 million calls (list length growing roughly
+ * linearly with call count, each failed scan walking the whole thing --
+ * textbook O(n^2) over the run). HZ10_CLASS_PAGES_SCAN_LIMIT bounds the
+ * scan so per-call cost stays O(1) regardless of how large the list has
+ * grown, at a real, accepted cost: a page whose capacity would only be
+ * discovered past the scan window (e.g. an old page that receives a
+ * remote free long after newer pages pushed it deep into the list) is
+ * never found by hz10_malloc again, and its slots' capacity is
+ * permanently invisible to future allocations of that class. This does
+ * NOT affect correctness of freeing that page's pointers -- list
+ * membership here is purely an hz10_malloc-side search structure, never
+ * consulted by hz10_free (which routes through Box 1's pagemap and its
+ * owner tag directly, independent of this list).
  */
+
+#define HZ10_CLASS_PAGES_SCAN_LIMIT 128u
 
 typedef struct Hz10ClassPageList {
   Hz10FreelistPage* head;
@@ -35,13 +56,14 @@ typedef struct Hz10ClassPageList {
 void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
 
 /*
- * Scans the list looking for a page with capacity, draining each
- * candidate's remote stack first (a page with no local capacity but a
- * pending remote free is exactly the case Box 5's old abandon-on-
- * exhaustion policy lost). Returns the first page found with capacity
- * (including the page just drained into having some), or NULL if every
- * page in the list is genuinely full. O(list length) -- see the module
- * comment's known gap about an unbounded list.
+ * Scans up to HZ10_CLASS_PAGES_SCAN_LIMIT pages from the (most-recently-
+ * created-first) head of the list looking for one with capacity,
+ * draining each candidate's remote stack first (a page with no local
+ * capacity but a pending remote free is exactly the case Box 5's old
+ * abandon-on-exhaustion policy lost). Returns the first page found with
+ * capacity (including one just drained into having some), or NULL if
+ * every page within the scan window is genuinely full -- see the module
+ * comment above for the bounded-scan tradeoff this implies.
  */
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
 

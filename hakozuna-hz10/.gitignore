@@ -8,6 +8,7 @@
 /hz10_bounded_page_pool_bench
 /hz10_public_entry_smoke
 /hz10_public_entry_bench
+/hz10_class_pages_scan_bench
 bench_results/
 .external-disabled/
 

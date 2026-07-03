@@ -2,7 +2,8 @@
 	smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain \
 	smoke-bounded-page-pool bench-bounded-page-pool \
-	smoke-public-entry bench-public-entry hz10-standalone-check
+	smoke-public-entry bench-public-entry bench-class-pages-scan \
+	hz10-standalone-check
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -44,7 +45,7 @@ BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY
 all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain \
 	smoke-bounded-page-pool bench-bounded-page-pool \
-	smoke-public-entry bench-public-entry
+	smoke-public-entry bench-public-entry bench-class-pages-scan
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -106,6 +107,14 @@ $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
 
+CLASS_PAGES_SCAN_BENCH_SRC := $(ROOT)/bench/hz10_class_pages_scan_bench.c $(PUBLIC_ENTRY_SRC)
+
+$(ROOT)/hz10_class_pages_scan_bench: $(CLASS_PAGES_SCAN_BENCH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(CLASS_PAGES_SCAN_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-class-pages-scan: $(ROOT)/hz10_class_pages_scan_bench
+	$(ROOT)/hz10_class_pages_scan_bench
+
 hz10-standalone-check:
 	$(ROOT)/scripts/check_hz10_standalone.sh
 
@@ -114,4 +123,5 @@ clean:
 		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench \
 		$(ROOT)/hz10_remote_stack_drain_smoke $(ROOT)/hz10_remote_stack_drain_bench \
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
-		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench
+		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
+		$(ROOT)/hz10_class_pages_scan_bench

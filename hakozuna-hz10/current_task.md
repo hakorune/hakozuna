@@ -266,17 +266,47 @@ box 6 follow-up done (drain-empty peek fast path):
   green
   files: src/hz10_remote_stack.c only
 
+box 6 follow-up done (class_pages bounded scan):
+  investigated item (1) from the prior follow-up list ("cap/bound the
+  per-class list") with a targeted, realistic probe first: a single
+  thread doing nothing but hz10_malloc(64) in a loop, never freeing (a
+  growing cache or long-lived arena, not adversarial). Confirmed real,
+  not hypothetical: throughput degraded from ~26M ops/s in the first
+  million calls to ~8.5M ops/s by 30 million -- textbook O(n^2), since
+  every failed scan walks the entire, ever-growing list (nothing to
+  find, nothing to drain, so the unbounded scan never short-circuits)
+  fixed with HZ10_CLASS_PAGES_SCAN_LIMIT (128 pages,
+  src/hz10_class_pages.h): bounds search cost per hz10_malloc call to
+  O(1) regardless of total list length. Accepted, explicit tradeoff: a
+  page whose capacity would only be found past the scan window is never
+  found again by hz10_malloc (permanently invisible to reuse), though it
+  remains correctly freeable via Box 1's route either way -- list
+  membership here is purely an allocation-side search structure, hz10_free
+  never consults it. Did NOT implement "return idle pages to Box 4's
+  pool" from the original follow-up wording -- on inspection a fully
+  idle page (free_count == slot_count) is already found and reused by
+  the existing local_free_head check before ever needing eviction, so
+  there was no real problem there to fix; proactively trimming an idle
+  class's RSS is a different feature (allocator "trim"/release), out of
+  scope here, not silently implemented
+  same 30M-call never-free run stays flat ~26-28M ops/s after the fix
+  (last_over_first=1.036, see bench/hz10_class_pages_scan_bench.c,
+  `make bench-class-pages-scan` -- checked into the repo as a permanent
+  regression bench, not left as a throwaway probe). Re-ran main_r50/
+  main_r90 and the slot_count=1 isolating case afterward: both
+  consistent with pre-fix numbers, no regression from the added bound.
+  All smokes/ASan/UBSan/TSan/standalone check green
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.h (doc only),
+  bench/hz10_class_pages_scan_bench.c, Makefile, .gitignore
+
 next box not yet named:
-  remaining gaps, in priority order: (1) cap/bound box 6's per-class
-  page list and return genuinely-idle pages to Box 4's pool instead of
-  holding them forever -- an accepted gap, not yet observed to matter at
-  tested scales but still unbounded by construction, (2) close the
-  remaining ~24% gap on the slot_count=1 isolation case (the peek fast
-  path above did not close this at the full-bench level; the real driver
-  is still unclear given measurement noise -- would need a quieter
-  machine or a longer, steadier-state bench to pin down), (3) the box 3
-  O(N^2) owner-drain duplicate-check cost (deprioritized: not clearly
-  the isolating case's bottleneck per the investigation above)
+  remaining gaps, in priority order: (1) close the remaining ~24% gap
+  on the slot_count=1 isolation case (neither the drain-empty peek nor
+  the bounded scan closed this at the full-bench level; the real driver
+  is still unclear given measurement noise on this machine -- would need
+  a quieter machine or a longer, steadier-state bench to pin down), (2)
+  the box 3 O(N^2) owner-drain duplicate-check cost (deprioritized: not
+  clearly the isolating case's bottleneck per earlier investigation)
   then: formalize the ad hoc LD_PRELOAD tcmalloc comparison (see status
   above) into a real script, HZ10_EXT_ROOT-gated same as Box 1's
   scripts/run_hz10_pagemap_vs_hz9_same_run.sh -- both local and remote

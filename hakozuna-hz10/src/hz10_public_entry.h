@@ -20,11 +20,16 @@
  *   - a page that becomes fully exhausted (even after an exhaustion-time
  *     drain) is no longer abandoned: src/hz10_class_pages.h tracks every
  *     page this thread has ever created for a class and scans (draining
- *     each candidate) before paying for a fresh one. That list is never
- *     pruned or capped, though -- a thread under sustained per-class
- *     churn keeps every page it ever made findable (correct) but growing
- *     without bound (not yet addressed; a future box should cap it and
- *     return genuinely-idle pages to Box 4's pool)
+ *     each candidate, bounded to HZ10_CLASS_PAGES_SCAN_LIMIT pages) before
+ *     paying for a fresh one. The list itself still only grows -- a
+ *     thread under sustained per-class churn keeps every page it ever
+ *     made resident for as long as any of its slots are outstanding, and
+ *     this module cannot safely second-guess that -- but the *search*
+ *     cost per hz10_malloc call is now bounded regardless of list length,
+ *     see hz10_class_pages.h for the measured before/after and the
+ *     accepted tradeoff (very old pages' capacity can become permanently
+ *     invisible to future allocations, though they remain correctly
+ *     freeable via the pagemap route either way)
  *   - free() takes no generation from the caller (real free() can't carry
  *     one), so it always routes with HZ10_GENERATION_ANY; the
  *     generation-mismatch contract that Box 1-4's own smokes exercise

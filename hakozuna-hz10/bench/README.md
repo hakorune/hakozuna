@@ -103,5 +103,27 @@ drain-empty peek fast path (src/hz10_remote_stack.c, see current_task.md):
   this moves the noisy full-bench isolating-case number is not
   established either way -- reported honestly as "real at the
   micro level, not confirmed at the macro level" rather than assumed.
+
+class_pages bounded scan (src/hz10_class_pages.{h,c}, bench/hz10_class_pages_scan_bench.c):
+  investigated whether Box 6's per-class page list actually grows
+  unbounded (item (1) from the box-6 follow-up list) with a targeted,
+  realistic workload: a single thread doing nothing but hz10_malloc(64)
+  in a loop, never freeing (a growing cache or long-lived arena, not an
+  adversarial pattern). Confirmed real, not hypothetical: before a scan
+  bound existed, throughput degraded from ~26M ops/s in the first
+  million calls to ~8.5M ops/s by 30 million -- a clear O(n^2) shape
+  (each failed scan walks the entire, ever-growing list). Fixed with
+  HZ10_CLASS_PAGES_SCAN_LIMIT (128 pages) bounding the search per
+  hz10_malloc call regardless of total list length. After the fix, the
+  same 30M-call run stays flat at ~26-28M ops/s throughout
+  (bench/hz10_class_pages_scan_bench.c, run with `make
+  bench-class-pages-scan`, reports first-segment-vs-last-segment ratio
+  so a future regression here is directly visible: last_over_first
+  should stay near 1.0, not shrink toward 0). Re-ran the established
+  main_r50/main_r90 rows and the slot_count=1 isolating case afterward
+  to confirm no regression from the added bound -- both stayed
+  consistent with the pre-fix numbers above (main_r50/r90 still clearly
+  beat system_malloc; the isolating case's run-to-run noise on this
+  machine is unchanged, no new signal either way).
 ```
 

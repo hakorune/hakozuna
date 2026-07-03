@@ -8,8 +8,10 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
 
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(
     Hz10ClassPageList* list) {
-  for (Hz10FreelistPage* page = list->head; page;
-       page = page->next_in_owner_list) {
+  uint32_t scanned = 0u;
+  for (Hz10FreelistPage* page = list->head;
+       page && scanned < HZ10_CLASS_PAGES_SCAN_LIMIT;
+       page = page->next_in_owner_list, ++scanned) {
     if (page->local_free_head) {
       return page;
     }

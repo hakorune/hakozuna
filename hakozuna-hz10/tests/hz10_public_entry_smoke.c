@@ -1,3 +1,4 @@
+#include "../src/hz10_class_pages.h"
 #include "../src/hz10_pagemap.h"
 #include "../src/hz10_public_entry.h"
 #include "../src/hz10_size_class.h"
@@ -178,6 +179,50 @@ static int check_exhausted_page_recovered_via_remote_free(void) {
   return failed;
 }
 
+/* Case 3c: locks in the accepted scan-limit tradeoff documented in
+ * src/hz10_class_pages.h directly -- a page freed while buried deeper
+ * than HZ10_CLASS_PAGES_SCAN_LIMIT other pages from the list head has
+ * real capacity, but hz10_malloc must not find it (the scan gives up
+ * before reaching it), so the next allocation gets a genuinely fresh
+ * page instead. */
+static int check_scan_limit_tradeoff(void) {
+  void* buried = hz10_malloc(65536); /* slot_count==1 for this class */
+  if (!buried) {
+    fprintf(stderr, "scan_limit: setup malloc failed\n");
+    return 1;
+  }
+  if (!hz10_free(buried)) {
+    fprintf(stderr, "scan_limit: free of buried pointer rejected\n");
+    return 1;
+  }
+
+  /* Bury it under enough fresh, never-freed pages (each its own
+   * slot_count==1 page, added at the list head) to push it past the
+   * scan window. */
+  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT + 8u; ++i) {
+    void* p = hz10_malloc(65536);
+    if (!p) {
+      fprintf(stderr, "scan_limit: fresh malloc %u failed\n", i);
+      return 1;
+    }
+  }
+
+  void* next = hz10_malloc(65536);
+  if (!next) {
+    fprintf(stderr, "scan_limit: malloc after burying failed\n");
+    return 1;
+  }
+  if (next == buried) {
+    fprintf(stderr,
+            "scan_limit: expected the buried page's capacity to stay "
+            "invisible past the scan window (got it back anyway -- "
+            "HZ10_CLASS_PAGES_SCAN_LIMIT may have changed without "
+            "updating this test)\n");
+    return 1;
+  }
+  return 0;
+}
+
 /* Case 4: cross-thread free. A pointer allocated on this thread, freed on
  * a different thread, must route through Box 3's remote path (accepted,
  * but not yet visible to this thread's allocator) and eventually come
@@ -238,8 +283,11 @@ int main(void) {
   if (check_exhausted_page_recovered_via_remote_free()) {
     return 5;
   }
-  if (check_cross_thread_free()) {
+  if (check_scan_limit_tradeoff()) {
     return 6;
+  }
+  if (check_cross_thread_free()) {
+    return 7;
   }
 
   puts("hz10_public_entry_smoke ok");

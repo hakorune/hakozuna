@@ -109,6 +109,13 @@ exhausted page recovered via remote free: a page exhausted locally, then
   This is the regression test for the fix described in src/hz10_class_pages.h
   and current_task.md (Box 5's original abandon-on-exhaustion policy
   measured 15-17x slower than system malloc on remote-heavy rows)
+scan-limit tradeoff: locks in the accepted cost of
+  HZ10_CLASS_PAGES_SCAN_LIMIT (src/hz10_class_pages.h) directly -- a page
+  freed while buried deeper than the scan limit's worth of never-freed
+  fresh pages has real capacity, but the next malloc must NOT find it
+  (proven by getting a genuinely different pointer back); documents the
+  bounded-scan/permanently-invisible-capacity tradeoff rather than
+  merely asserting it in a comment
 cross-thread free: allocate on one thread, free on another -- must route
   through Box 3's remote path (accepted, not yet visible locally), then
   actually come back once the allocating thread's own traffic drains
