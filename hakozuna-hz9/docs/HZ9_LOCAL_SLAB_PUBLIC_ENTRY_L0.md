@@ -762,24 +762,24 @@ hard gates:
 ```
 Lifecycle check:
 ```text
-bench_results/20260703T_hz9_product_lifecycle_l0_remote_check
-
-main_interleaved_remote90, R3 ASLR-off:
-  throughput 21.802M
-  post/peak RSS 9.82 / 15.00 MiB
-  create/release/live=32/0/32, cap_reject=0
-  remote_claim/drain/drain_slots/drain_invalid=457256/152098/498894/0
-
-medium_interleaved_remote50, R3 ASLR-off:
-  throughput 27.361M
-  post/peak RSS 8.38 / 9.13 MiB
+bench_results/20260703T_hz9_product_lifecycle_l0_r10
+medium_local0, R10 ASLR-off:
+  throughput 192.982M, post/peak RSS 3.40 / 3.44 MiB
   create/release/live=48/0/48, cap_reject=0
-  remote_claim/drain/drain_slots/drain_invalid=327547/204387/346113/0
+main_local0:
+  throughput 162.495M, post/peak RSS 3.69 / 3.71 MiB
+  create/release/live=32/0/32, cap_reject=0
+medium_interleaved_remote50:
+  throughput 27.486M, post/peak RSS 9.03 / 10.49 MiB
+  remote_claim/drain/drain_slots/drain_invalid=1070193/674462/1141338/0
+main_interleaved_remote90:
+  throughput 22.045M, post/peak RSS 10.52 / 14.11 MiB
+  remote_claim/drain/drain_slots/drain_invalid=1531470/533162/1677467/0
 
 read:
-  lifecycle/hash changes keep owner-drain rows stable and above HZ8-like
-  remote baselines, but cached live segments raise retained RSS. R10 must judge
-  this as an explicit HZ9 throughput-vs-retention tradeoff.
+  R10 keeps local/remote throughput strong, cap_reject zero, and drain_invalid
+  zero. Cached live segments intentionally raise retained RSS versus HZ8; this
+  remains the explicit HZ9 throughput-vs-retention tradeoff.
 ```
 
 ## Contract Split
