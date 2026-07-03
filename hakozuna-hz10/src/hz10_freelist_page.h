@@ -1,6 +1,7 @@
 #ifndef HZ10_FREELIST_PAGE_H
 #define HZ10_FREELIST_PAGE_H
 
+#include <stdatomic.h>
 #include <stddef.h>
 #include <stdint.h>
 
@@ -28,6 +29,27 @@ typedef struct Hz10FreelistPage {
   uint32_t slot_count;
   uint32_t free_count;
   uint32_t generation;    /* returned by hz10_pagemap_register() at create */
+
+  /*
+   * HZ10RemoteStackDrain-L0 (Box 3, src/hz10_remote_stack.{h,c}): a
+   * foreign thread cannot touch local_free_head directly without breaking
+   * Box 2's "owner thread only, plain load/store" guarantee, so a remote
+   * free instead pushes onto remote_free_head (a Treiber stack, single
+   * CAS) and the owner drains it into local_free_head at its own pace.
+   * pending_bits (one bit per slot) is set by a successful remote push and
+   * cleared at drain, so a second remote free of the same slot before it
+   * drains is rejected as a duplicate instead of corrupting the freelist.
+   * These fields are owned by hz10_remote_stack.c; hz10_freelist_page.c
+   * only initializes/tears them down and drains once at destroy time.
+   */
+  _Atomic(void*) remote_free_head;
+  _Atomic(uint64_t)* pending_bits;
+  uint32_t pending_words;   /* (slot_count + 63) / 64 */
+  _Atomic(uint64_t) remote_push_count;
+  _Atomic(uint64_t) remote_duplicate_count;
+  _Atomic(uint64_t) remote_invalid_count;
+  uint64_t drain_count;      /* owner-only, plain: incremented at drain */
+  uint64_t drain_slot_count; /* owner-only, plain: total slots ever drained */
 } Hz10FreelistPage;
 
 /*

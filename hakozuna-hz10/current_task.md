@@ -6,8 +6,8 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1 and Box 2 implemented and verified, uncommitted
-  Box 3 (HZ10RemoteStackDrain-L0) is the active next box
+  Box 1, Box 2, and Box 3 implemented and verified, uncommitted
+  Box 4 (HZ10BoundedPagePool-L0) is the active next box
 
 design:
   thread-local intrusive freelist pages
@@ -53,12 +53,35 @@ box 2 done (HZ10ThreadLocalFreelistPage-L0):
   files: src/hz10_freelist_page.{h,c}, tests/hz10_freelist_page_smoke.c,
   bench/hz10_freelist_page_bench.c
 
-box 3 next (HZ10RemoteStackDrain-L0):
-  foreign free stack (single-CAS Treiber push)
-  owner drain batches remote frees into the local freelist
-  duplicate/stale/pending counters and smokes
+box 3 done (HZ10RemoteStackDrain-L0):
+  separate module (src/hz10_remote_stack.{h,c}) operating on Box 2's
+  Hz10FreelistPage; deliberately one-directional dependency (remote_stack
+  depends on freelist_page's struct, freelist_page depends on nothing from
+  remote_stack) -- destroy() does NOT auto-drain, the caller must drain
+  before destroy if the page was ever exposed to remote_free, see
+  tests/README.md
+  remote_free_head is a Treiber stack (single CAS push); a per-slot
+  pending-bit array (atomic fetch_or claim / fetch_and clear) rejects a
+  duplicate remote free of the same slot before it drains, so a slot is
+  never merged into local_free_head twice
+  classification pipeline (tail-slack/misaligned/interior/generation) is
+  the same as Box 1's, scoped to a page the caller already resolved
+  smoke green: basic push/drain, duplicate rejection, stale-generation/
+  invalid-pointer rejection with counters, and an 8-thread concurrent
+  stress case (disjoint slots per thread) proving no lost pushes under
+  real CAS contention -- not just single-threaded API shape
+  standalone check green; ASan/UBSan and TSan both clean (TSan needed
+  ASLR off in this environment -- `setarch $(uname -m) -R`, an env
+  quirk, not a code issue)
+  bench: genuinely multi-threaded (first box that is). 4 producer threads
+  remote-freeing concurrently costs ~25x a single-threaded local free
+  (CAS contention on one shared stack head, as expected -- same
+  local-vs-remote asymmetry HZ8/HZ9 always showed); owner_drain itself is
+  cheap (single-threaded O(n) walk)
+  files: src/hz10_remote_stack.{h,c}, tests/hz10_remote_stack_drain_smoke.c,
+  bench/hz10_remote_stack_drain_bench.c
 
-box 4 (HZ10BoundedPagePool-L0):
+box 4 next (HZ10BoundedPagePool-L0):
   page cache caps, release pressure, local/remote/RSS matrix
   this box is what the first GO / good target gates below are judged on
 

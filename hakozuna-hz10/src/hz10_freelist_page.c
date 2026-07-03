@@ -70,10 +70,21 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
     return NULL;
   }
 
+  uint32_t pending_words = (slot_count + 63u) / 64u;
+  _Atomic(uint64_t)* pending_bits = calloc(pending_words, sizeof(*pending_bits));
+  if (!pending_bits) {
+    hz10_pagemap_release(base);
+    hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    free(page);
+    return NULL;
+  }
+
   page->base = base;
   page->slot_size = slot_size;
   page->slot_count = slot_count;
   page->generation = generation;
+  page->pending_bits = pending_bits;
+  page->pending_words = pending_words;
   hz10_freelist_page_init_chain(page);
   return page;
 }
@@ -82,7 +93,15 @@ void hz10_freelist_page_destroy(Hz10FreelistPage* page) {
   if (!page) {
     return;
   }
+  /* Deliberately does not drain the remote stack (src/hz10_remote_stack.h)
+   * itself -- Box 2 has no dependency on Box 3's module, only the reverse
+   * (hz10_remote_stack.c includes this header for the struct). A caller
+   * that has exposed this page to hz10_page_remote_free() must call
+   * hz10_page_drain_remote(page) itself before destroy(), or any
+   * already-pushed-but-undrained remote free is silently lost. See
+   * tests/README.md's HZ10RemoteStackDrain-L0 notes. */
   hz10_pagemap_release(page->base);
   hz10_platform_release(page->base, HZ10_PAGE_QUANTUM);
+  free(page->pending_bits);
   free(page);
 }

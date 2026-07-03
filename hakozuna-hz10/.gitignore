@@ -2,6 +2,8 @@
 /hz10_pagemap_route_bench
 /hz10_freelist_page_smoke
 /hz10_freelist_page_bench
+/hz10_remote_stack_drain_smoke
+/hz10_remote_stack_drain_bench
 bench_results/
 .external-disabled/
 

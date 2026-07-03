@@ -1,5 +1,6 @@
 .PHONY: all clean smoke-pagemap-route bench-pagemap-route \
-	smoke-freelist-page bench-freelist-page hz10-standalone-check
+	smoke-freelist-page bench-freelist-page \
+	smoke-remote-stack-drain bench-remote-stack-drain hz10-standalone-check
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -26,7 +27,12 @@ FREELIST_SRC := $(ROOT)/src/hz10_freelist_page.c $(PAGEMAP_SRC)
 SMOKE_FREELIST_SRC := $(ROOT)/tests/hz10_freelist_page_smoke.c $(FREELIST_SRC)
 BENCH_FREELIST_SRC := $(ROOT)/bench/hz10_freelist_page_bench.c $(FREELIST_SRC)
 
-all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page
+REMOTE_STACK_SRC := $(ROOT)/src/hz10_remote_stack.c $(FREELIST_SRC)
+SMOKE_REMOTE_STACK_SRC := $(ROOT)/tests/hz10_remote_stack_drain_smoke.c $(REMOTE_STACK_SRC)
+BENCH_REMOTE_STACK_SRC := $(ROOT)/bench/hz10_remote_stack_drain_bench.c $(REMOTE_STACK_SRC)
+
+all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page \
+	smoke-remote-stack-drain bench-remote-stack-drain
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -52,9 +58,22 @@ $(ROOT)/hz10_freelist_page_bench: $(BENCH_FREELIST_SRC) $(HEADERS)
 bench-freelist-page: $(ROOT)/hz10_freelist_page_bench
 	$(ROOT)/hz10_freelist_page_bench
 
+$(ROOT)/hz10_remote_stack_drain_smoke: $(SMOKE_REMOTE_STACK_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_REMOTE_STACK_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-remote-stack-drain: $(ROOT)/hz10_remote_stack_drain_smoke
+	$(ROOT)/hz10_remote_stack_drain_smoke
+
+$(ROOT)/hz10_remote_stack_drain_bench: $(BENCH_REMOTE_STACK_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_STACK_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-remote-stack-drain: $(ROOT)/hz10_remote_stack_drain_bench
+	$(ROOT)/hz10_remote_stack_drain_bench
+
 hz10-standalone-check:
 	$(ROOT)/scripts/check_hz10_standalone.sh
 
 clean:
 	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \
-		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench
+		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench \
+		$(ROOT)/hz10_remote_stack_drain_smoke $(ROOT)/hz10_remote_stack_drain_bench
