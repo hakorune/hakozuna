@@ -23,6 +23,20 @@ static void hz10_page_pending_clear(Hz10FreelistPage* page,
                             memory_order_acq_rel);
 }
 
+static int hz10_page_local_freelist_contains(const Hz10FreelistPage* page,
+                                             const void* ptr) {
+  const void* node = page->local_free_head;
+  uint32_t steps = 0u;
+  while (node && steps < page->slot_count) {
+    if (node == ptr) {
+      return 1;
+    }
+    node = *(void* const*)node;
+    steps += 1u;
+  }
+  return 0;
+}
+
 /* Same classification pipeline as HZ10PageMapRoute-L0 (Box 1), scoped to a
  * page the caller already resolved: tail-slack, then misaligned, then
  * interior, then generation. Returns 1 and fills *slot_index_out on VALID,
@@ -97,6 +111,14 @@ uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
     uint64_t offset = (uint64_t)((char*)head - (char*)page->base);
     uint32_t slot_index = (uint32_t)(offset / page->slot_size);
     hz10_page_pending_clear(page, slot_index);
+
+    if (hz10_page_local_freelist_contains(page, head)) {
+      page->drain_invalid_count += 1u;
+      atomic_fetch_add_explicit(&page->remote_invalid_count, 1u,
+                                memory_order_relaxed);
+      head = next;
+      continue;
+    }
 
     *(void**)head = page->local_free_head;
     page->local_free_head = head;

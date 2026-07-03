@@ -10,6 +10,12 @@
  * over-allocate-then-trim shape HZ9's segment allocator uses. */
 static void* hz10_freelist_reserve_aligned_quantum(void) {
   size_t bytes = HZ10_PAGE_QUANTUM;
+#if defined(_WIN32)
+  /* VirtualAlloc returns allocation-granularity aligned regions. With the
+   * current 64KiB quantum that is already sufficient, and Windows cannot
+   * MEM_RELEASE arbitrary head/tail slices from a larger reservation. */
+  return hz10_platform_reserve_rw(bytes);
+#else
   size_t raw_bytes = bytes * 2u;
   void* raw = hz10_platform_reserve_rw(raw_bytes);
   if (!raw) {
@@ -26,6 +32,7 @@ static void* hz10_freelist_reserve_aligned_quantum(void) {
     hz10_platform_release((void*)(aligned_addr + bytes), tail_trim);
   }
   return (void*)aligned_addr;
+#endif
 }
 
 /* Lays down the intrusive chain: slot i's first sizeof(void*) bytes hold a

@@ -68,15 +68,21 @@ box 3 done (HZ10RemoteStackDrain-L0):
   pending-bit array (atomic fetch_or claim / fetch_and clear) rejects a
   duplicate remote free of the same slot before it drains, so a slot is
   never merged into local_free_head twice
+  remote-free of a slot already returned to the owner's local freelist is
+  rejected at owner-drain time (drain_invalid_count); this preserves the
+  planned delayed foreign double-free contract without putting validation on
+  the same-thread fast path
   classification pipeline (tail-slack/misaligned/interior/generation) is
   the same as Box 1's, scoped to a page the caller already resolved
   smoke green: basic push/drain, duplicate rejection, stale-generation/
-  invalid-pointer rejection with counters, and an 8-thread concurrent
-  stress case (disjoint slots per thread) proving no lost pushes under
-  real CAS contention -- not just single-threaded API shape
-  standalone check green; ASan/UBSan and TSan both clean (TSan needed
-  ASLR off in this environment -- `setarch $(uname -m) -R`, an env
-  quirk, not a code issue)
+  invalid-pointer rejection with counters, delayed foreign double-free
+  rejection at drain, and an 8-thread concurrent stress case (disjoint slots
+  per thread) proving no lost pushes under real CAS contention -- not just
+  single-threaded API shape
+  standalone check green; ASan/UBSan clean. TSan is not concluded in this
+  environment: the TSan runtime aborts with "unexpected memory mapping"
+  before the smoke body runs, so it is an environment/toolchain blocker, not
+  a passing result
   bench: genuinely multi-threaded (first box that is). 4 producer threads
   remote-freeing concurrently costs ~25x a single-threaded local free
   (CAS contention on one shared stack head, as expected -- same
@@ -106,7 +112,8 @@ box 4 done (HZ10BoundedPagePool-L0):
   the cache" case (more pages created+kept-alive than the cap, then all
   destroyed, forcing real releases for the excess) -- counter-based proof
   of release pressure, since a raw OS RSS sample is too noisy run to run
-  standalone check green; ASan/UBSan and TSan clean
+  standalone check green; ASan/UBSan clean. TSan is not concluded in this
+  environment for the same runtime mapping reason noted above
   bench (local/remote/RSS matrix): pooled_local vs. unpooled_local (same
   code path, only the cap differs: CAP vs. 0) shows pooling is ~55-60x
   faster per create/destroy cycle -- avoiding mmap+munmap+pagemap

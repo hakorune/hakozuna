@@ -28,6 +28,9 @@ void* hz10_page_pool_try_acquire(void) {
 }
 
 int hz10_page_pool_release(void* base) {
+  if (!base) {
+    return 0;
+  }
   hz10_platform_mutex_lock(&hz10_pool_lock);
   int cached = hz10_pool_count < hz10_pool_cap;
   if (cached) {

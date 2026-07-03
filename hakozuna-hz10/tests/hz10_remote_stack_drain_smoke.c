@@ -177,6 +177,49 @@ static int check_stale_and_invalid_rejected(void) {
   return failed;
 }
 
+/* Case 4: a foreign free of a slot that is already on the owner local
+ * freelist is not immediately visible to the remote publisher, but owner
+ * drain must reject it instead of inserting a duplicate freelist node. */
+static int check_remote_double_free_detected_at_drain(void) {
+  Hz10FreelistPage* page =
+      hz10_freelist_page_create(HZ10_SMOKE_SLOT_SIZE, 4u);
+  if (!page) {
+    fprintf(stderr, "drain-dup: create failed\n");
+    return 1;
+  }
+  void* p = hz10_freelist_page_alloc(page);
+  if (!p) {
+    fprintf(stderr, "drain-dup: setup alloc failed\n");
+    hz10_freelist_page_destroy(page);
+    return 1;
+  }
+  hz10_freelist_page_free(page, p);
+
+  int failed = 0;
+  if (!hz10_page_remote_free(page, p, page->generation)) {
+    fprintf(stderr, "drain-dup: remote publish should be delayed to drain\n");
+    failed = 1;
+  }
+  uint32_t before = page->free_count;
+  uint32_t merged = hz10_page_drain_remote(page);
+  if (merged != 0u) {
+    fprintf(stderr, "drain-dup: merged duplicate local-free slot\n");
+    failed = 1;
+  }
+  if (page->free_count != before) {
+    fprintf(stderr, "drain-dup: free_count changed on duplicate rejection\n");
+    failed = 1;
+  }
+  if (page->drain_invalid_count != 1u) {
+    fprintf(stderr, "drain-dup: drain_invalid_count=%llu, expected 1\n",
+            (unsigned long long)page->drain_invalid_count);
+    failed = 1;
+  }
+
+  hz10_freelist_page_destroy(page);
+  return failed;
+}
+
 typedef struct StressArg {
   Hz10FreelistPage* page;
   void** slots;
@@ -196,7 +239,7 @@ static void* stress_worker(void* raw) {
   return NULL;
 }
 
-/* Case 4: concurrent stress. HZ10_SMOKE_STRESS_THREADS threads each remote
+/* Case 5: concurrent stress. HZ10_SMOKE_STRESS_THREADS threads each remote
  * free a disjoint slice of already-allocated slots. This is the actual
  * proof that the Treiber stack never loses a push under contention -- the
  * duplicate case above already covers the pending-bit dedup logic
@@ -304,8 +347,11 @@ int main(void) {
   if (check_stale_and_invalid_rejected()) {
     return 4;
   }
-  if (check_concurrent_stress()) {
+  if (check_remote_double_free_detected_at_drain()) {
     return 5;
+  }
+  if (check_concurrent_stress()) {
+    return 6;
   }
 
   puts("hz10_remote_stack_drain_smoke ok");

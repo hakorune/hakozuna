@@ -50,6 +50,7 @@ typedef struct Hz10FreelistPage {
   _Atomic(uint64_t) remote_invalid_count;
   uint64_t drain_count;      /* owner-only, plain: incremented at drain */
   uint64_t drain_slot_count; /* owner-only, plain: total slots ever drained */
+  uint64_t drain_invalid_count; /* owner-only: remote frees rejected at drain */
 } Hz10FreelistPage;
 
 /*

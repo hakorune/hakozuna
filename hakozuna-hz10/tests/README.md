@@ -38,6 +38,10 @@ basic push/drain: a remote free is not visible in local_free_head until
 duplicate rejected: a second remote free of an already-pending pointer is
   rejected before it drains, so the slot is recovered exactly once, not
   twice, after drain
+foreign double-free rejected at drain: if a foreign thread remote-frees a
+  slot that the owner has already returned to local_free_head, owner drain
+  detects the duplicate against the local freelist, counts drain_invalid, and
+  does not merge that slot again
 stale generation / invalid pointer rejected: a remote free using a stale
   (pre-recreate) generation, or a misaligned/interior/out-of-range
   pointer, is rejected immediately and counted, never pushed
@@ -84,4 +88,3 @@ in this line has kept. It does not add multi-class size dispatch or a
 public malloc()/free() entry point comparable to HZ8/HZ9's medium_local0/
 main_local0/medium_r50/main_r90 bench rows -- that wiring is future work,
 not something this box claims to deliver.
-
