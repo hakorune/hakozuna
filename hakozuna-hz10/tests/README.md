@@ -89,6 +89,21 @@ public malloc()/free() entry point comparable to HZ8/HZ9's medium_local0/
 main_local0/medium_r50/main_r90 bench rows -- that wiring is future work,
 not something this box claims to deliver.
 
+Size-class table (src/hz10_size_class.{h,c}) tests:
+
+```text
+table shape: every class's slot_size matches the documented table
+  exactly, strictly increasing, a multiple of HZ10_MIN_ALIGN, and fits
+  within one HZ10_PAGE_QUANTUM; class_id >= HZ10_CLASS_COUNT returns 0
+exhaustive classification: for every one of the 65536 possible byte
+  sizes (not sampled), hz10_size_class_for() matches a from-the-table
+  linear-scan oracle -- this closed-form, bit-twiddling classify
+  function is exactly the kind of code that hides off-by-one bugs at
+  octave boundaries, so every boundary is checked directly, not spot-checked
+rejected inputs: size 0 and size > HZ10_PAGE_QUANTUM are invalid; size
+  == HZ10_PAGE_QUANTUM is the last valid class
+```
+
 Multi-class public entry (src/hz10_public_entry.{h,c}) tests:
 
 ```text

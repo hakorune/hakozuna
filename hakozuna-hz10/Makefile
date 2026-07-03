@@ -2,6 +2,7 @@
 	smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain \
 	smoke-bounded-page-pool bench-bounded-page-pool \
+	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan \
 	hz10-standalone-check
 
@@ -45,6 +46,7 @@ BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY
 all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain \
 	smoke-bounded-page-pool bench-bounded-page-pool \
+	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
@@ -95,6 +97,15 @@ $(ROOT)/hz10_bounded_page_pool_bench: $(BENCH_POOLED_PAGE_SRC) $(HEADERS)
 bench-bounded-page-pool: $(ROOT)/hz10_bounded_page_pool_bench
 	$(ROOT)/hz10_bounded_page_pool_bench
 
+SIZE_CLASS_SRC := $(ROOT)/src/hz10_size_class.c $(PAGEMAP_SRC)
+SMOKE_SIZE_CLASS_SRC := $(ROOT)/tests/hz10_size_class_smoke.c $(SIZE_CLASS_SRC)
+
+$(ROOT)/hz10_size_class_smoke: $(SMOKE_SIZE_CLASS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_SIZE_CLASS_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-size-class: $(ROOT)/hz10_size_class_smoke
+	$(ROOT)/hz10_size_class_smoke
+
 $(ROOT)/hz10_public_entry_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -124,4 +135,4 @@ clean:
 		$(ROOT)/hz10_remote_stack_drain_smoke $(ROOT)/hz10_remote_stack_drain_bench \
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
-		$(ROOT)/hz10_class_pages_scan_bench
+		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke

@@ -449,12 +449,48 @@ see reasoning below):
   files: src/hz10_freelist_page.h (struct field, HZ10_REMOTE_STRIPE_COUNT),
   src/hz10_remote_stack.c (stripe picker, push/drain loop over stripes)
 
+finer size-class table done (src/hz10_size_class.{h,c}):
+  24 classes instead of 13: 16, 32, then a (1.5x, 2x) pair per doubling
+  from 32 up to 65536 (48/64, 96/128, ... 24576/32768, 49152/65536),
+  jemalloc-style. The very first doubling (16..32) keeps no 1.5x member
+  since 1.5*16=24 is not a multiple of HZ10_MIN_ALIGN (16) -- Box 1
+  requires every slot offset on a 16-byte boundary, so slot_size itself
+  must stay a 16-multiple; every 1.5x class from 48 up is naturally a
+  16-multiple (1.5*2^e for 2^e>=32)
+  classify function is still closed-form O(1), no table scan: same
+  "how many bits does size-1 need" trick as before to find the octave,
+  then one comparison against the octave's 1.5x midpoint to pick which
+  of its 2 classes. Verified exhaustively (not sampled) against a
+  from-the-table linear-scan oracle for every one of the 65536 possible
+  byte sizes -- new tests/hz10_size_class_smoke.c, `make
+  smoke-size-class`, checked into the repo as a permanent regression
+  test for this notoriously off-by-one-prone kind of code
+  measured the actual fragmentation improvement directly (a Python
+  script simulating 2M uniform-random sizes against both tables, not
+  assumed): average rounding waste roughly halved (33.4% of requested
+  bytes wasted with the old 13-class table vs 16.7% with the new
+  24-class one). Does not help the very smallest requests (1-32 bytes,
+  the un-splittable first doubling) -- benefit is real for everything
+  from 33 bytes up
+  known, accepted tradeoff: 1.5x classes do not evenly divide
+  HZ10_PAGE_QUANTUM, so their pages waste a little tail space (negligible
+  for small classes like 48 -- 16 of 65536 bytes; up to 16384 of 65536
+  bytes, 25%, for the largest 1.5x class, 49152, whose page holds only
+  1 slot anyway) -- still a net win for the requesting application
+  (see hz10_size_class.h for the full writeup), and Box 1's route
+  already rejects any pointer in that tail slack as out-of-range, so
+  it's a space cost, not a correctness one
+  re-verified all existing smokes, ASan/UBSan/TSan, main/medium local
+  and remote rows: no regression (class boundaries for existing tests'
+  fixed sizes -- 32768, 65536 -- are unchanged, both still exact classes)
+  files: src/hz10_size_class.{h,c}, tests/hz10_size_class_smoke.c, Makefile
+
 next:
   rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
   final table. The slot_count=1 gap still needs one of its three
   bigger-surgery options (see above), not another small parameter tweak
-  then proceed to task #43 (finer size-class table), #44 (large-object
-  path), #45 (decommit/aging policy), in that order per the agreed plan
+  then proceed to task #44 (large-object path), #45 (decommit/aging
+  policy), in that order per the agreed plan
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
