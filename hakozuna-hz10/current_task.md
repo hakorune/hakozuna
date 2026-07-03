@@ -6,22 +6,20 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1-5 implemented and verified, uncommitted
-  Box 5 (multi-class public entry) local rows genuinely beat system
-  malloc (~1.2-1.9x); remote rows are 15-17x SLOWER, root-caused to
-  small-slot_count classes churning fresh pages under remote pressure
-  plus this module's own double pagemap registration -- see box 5 notes,
-  this is the priority before any HZ8/HZ9 same-run comparison means
-  anything
+  Box 1-6 implemented and verified, uncommitted
+  Box 6 (src/hz10_class_pages.{h,c}) fixed Box 5's remote-row regression:
+  remote rows flipped from 15-17x SLOWER than system malloc to ~1.5-1.7x
+  FASTER, and now land in the same tcmalloc "good balanced target" band
+  (~43-45%) as local rows -- see box 6 notes
   real tcmalloc comparison (ad hoc, LD_PRELOAD on hz10_public_entry_bench's
   existing MODE=1 system_malloc path -- it just calls libc malloc/free, so
   LD_PRELOAD=libtcmalloc.so transparently swaps in the real thing, no new
-  code needed): local rows already land in the documented "good balanced
-  target" band. main_local0-style 3 runs: 38.6-49.7% of tcmalloc; a single
-  medium_local0-style run: 48.2%. post RSS is 3.6-8x lower than tcmalloc's
-  in the same runs, consistent with the "closer to HZ8 than tcmalloc" RSS
-  goal. Not yet a formal script (see next box); remote rows were not
-  re-measured against tcmalloc since they are still 15-17x behind glibc
+  code needed): local rows land in the documented "good balanced target"
+  band. main_local0-style 3 runs: 38.6-49.7% of tcmalloc; a single
+  medium_local0-style run: 48.2%. Remote rows (post-Box-6 fix): main_r50
+  ~43%, main_r90 ~45% -- same band. post RSS is consistently lower than
+  tcmalloc's in these runs, consistent with the "closer to HZ8 than
+  tcmalloc" RSS goal. Not yet a formal script (see next box)
 
 design:
   thread-local intrusive freelist pages
@@ -188,34 +186,69 @@ box 5 done (multi-class public entry, name TBD):
   main_local0-style row (16-32768), ~1.9x at a medium_local0-style row
   (4097-65536), THREADS=4 ITERS=50000 -- a real, positive, first
   same-shape signal
-  remote rows (REMOTE_PCT=50/90) are 15-17x SLOWER than system malloc.
-  Isolated by testing fixed sizes: a 65536-byte class (slot_count=1)
-  craters to ~99K ops/s under REMOTE_PCT=90, while a 16-byte class
-  (slot_count=4096) under the identical REMOTE_PCT=90 stays at ~7M
-  ops/s. Root cause: small-slot_count classes exhaust almost every
-  allocation under remote pressure, and each exhaustion a drain can't
-  satisfy pays a fresh page acquisition (plus this module's own double
-  registration) instead of a cheap freelist pop -- NOT confirmed to be
-  the box 3 O(N^2) drain regression specifically (that would show up
-  worse for LARGE slot_count, the opposite pattern measured here); both
-  costs are real and layered, but this one dominates at current scale
+  remote rows (REMOTE_PCT=50/90) were 15-17x SLOWER than system malloc
+  before the Box 6 fix below -- see box 6 notes for the fixed numbers
   files: src/hz10_size_class.{h,c}, src/hz10_public_entry.{h,c},
   tests/hz10_public_entry_smoke.c, bench/hz10_public_entry_bench.c
 
-next box not yet named (HZ10PerClassPageList-L0, working name):
-  fix the remote-row regression before any broader comparison is
-  meaningful -- likely needs: (a) per-class free-page tracking (an
-  owner-side list of this thread's own pages for a class, scanned before
-  abandoning one, mirroring HZ8/HZ9's owner-scan-list-then-detached-list
-  cascade) so an exhausted page's capacity is recovered instead of
-  abandoned, (b) a cheaper (or skippable) owner-tag registration path,
-  (c) revisiting the box 3 O(N^2) drain cost once (a) changes how often
-  large-slot_count classes actually drain
+box 6 done (HZ10PerClassPageList-L0):
+  src/hz10_class_pages.{h,c}: per-class linked list of every page a
+  thread has ever created (Hz10FreelistPage.next_in_owner_list, an inert
+  storage field Box 2 itself never reads/writes -- mirrors the
+  owner-tag-field pattern from Box 5); hz10_class_pages_find_with_capacity()
+  scans the list, draining each candidate's remote stack before giving
+  up on it, so a page that looked exhausted but has since received a
+  remote free is recovered instead of abandoned forever. Mirrors the
+  shape of HZ8/HZ9's owner-scan-list-then-detached-list cascade
+  (h8_medium_alloc.inc's h8_medium_malloc_class_inner), scoped to one
+  thread's one-class page set
+  also eliminated the double pagemap registration Box 5 paid for the
+  owner tag on every fresh page: hz10_freelist_page_create_with_base_and_owner()
+  (Box 2, via a shared hz10_freelist_page_create_common() helper -- the
+  struct/pending_bits are now allocated before registration so the
+  self-referential owner=page tag has a valid pointer) and
+  hz10_pooled_page_create_with_owner() (Box 4 glue) register the owner
+  tag in the same call a fresh page already needed, additive only (the
+  owner-less _with_base/_create paths are unchanged)
+  known, accepted L0 gap: the per-class list only grows, never pruned or
+  capped -- a thread under sustained per-class churn keeps every page it
+  ever made findable (correct) but growing without bound (not yet
+  addressed; a future box should cap it and return genuinely-idle pages
+  to Box 4's pool)
+  smoke green (new case: an exhausted page remote-freed from a foreign
+  thread comes back as the *exact same address* on the next malloc for
+  that class, not merely a fresh page -- the actual regression test for
+  this fix), all prior Box 1-5 smokes still pass unchanged, standalone
+  check green, ASan/UBSan clean, TSan clean in this environment (ASLR off)
+  bench, THREADS=4 ITERS=500000 MIN_SIZE=16 MAX_SIZE=32768: REMOTE_PCT=50
+  went from system-malloc-relative SLOWER to hz10 10.9M ops/s vs
+  system_malloc 6.3M (~1.7x FASTER); REMOTE_PCT=90 hz10 7.8M vs 4.8M
+  (~1.5x FASTER). Against real tcmalloc (LD_PRELOAD, same technique as
+  the local-row comparison): REMOTE_PCT=50 ~43% of tcmalloc, REMOTE_PCT=90
+  ~45% -- both now in the same "good balanced target" band as local rows,
+  down from 15-17x off. The isolating fixed-size=65536/slot_count=1 case
+  (the worst case from root-causing Box 5's regression) improved from
+  15-17x slower than system_malloc to ~24% slower (4.6M vs 6.1M ops/s) --
+  much closer, not fully closed. post_rss_kb stayed lower than
+  tcmalloc's on every remote row measured
+  files: src/hz10_class_pages.{h,c}; also touched
+  src/hz10_freelist_page.{h,c} (new field + _with_base_and_owner),
+  src/hz10_pooled_page.{h,c} (_with_owner), src/hz10_public_entry.{h,c}
+  (rewritten to use the per-class list instead of a single active page)
+
+next box not yet named:
+  remaining gaps, in priority order: (1) revisit the box 3 O(N^2)
+  owner-drain duplicate-check cost now that box 6 changes how often
+  pages actually reach drain (likely more often now, since exhausted
+  pages are revisited instead of abandoned -- re-measure before deciding
+  whether this now matters more), (2) cap/bound box 6's per-class page
+  list and return genuinely-idle pages to Box 4's pool instead of holding
+  them forever, (3) close the remaining ~24% gap on the slot_count=1
+  isolation case
   then: formalize the ad hoc LD_PRELOAD tcmalloc comparison (see status
   above) into a real script, HZ10_EXT_ROOT-gated same as Box 1's
-  scripts/run_hz10_pagemap_vs_hz9_same_run.sh, covering remote rows once
-  (a)-(c) land -- local rows are already worth locking in as a repeatable
-  measurement even before that
+  scripts/run_hz10_pagemap_vs_hz9_same_run.sh -- both local and remote
+  rows are now worth locking in as a repeatable measurement
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

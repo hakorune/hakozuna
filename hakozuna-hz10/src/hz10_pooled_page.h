@@ -26,6 +26,14 @@
 Hz10FreelistPage* hz10_pooled_page_create(uint32_t slot_size,
                                           uint32_t slot_count);
 
+/* Same as hz10_pooled_page_create(), but registers the page with itself as
+ * Box 1's owner tag in the same registration call
+ * (hz10_freelist_page_create_with_base_and_owner()), instead of a caller
+ * doing a second register() afterward -- see that function's comment for
+ * why the second call was a real, measured cost. */
+Hz10FreelistPage* hz10_pooled_page_create_with_owner(uint32_t slot_size,
+                                                     uint32_t slot_count);
+
 /*
  * Reclaims page's base via hz10_freelist_page_destroy_reclaim_base() and
  * offers it to hz10_page_pool_release() -- cached if the pool is under

@@ -12,10 +12,11 @@ Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-5 done (uncommitted).
-                Local rows measured ~40-50% of real tcmalloc (LD_PRELOAD
-                trick, in the good-target band); remote rows 15-17x
-                SLOWER than glibc (page churn) -- fix that next.
+  HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-6 done (uncommitted).
+                Local + remote rows both ~40-50% of real tcmalloc
+                (LD_PRELOAD trick, good-target band). Remote rows were
+                15-17x SLOWER than glibc (page churn); Box6's per-class
+                page-list scan fixed it, now 1.5-1.7x faster than glibc.
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry

@@ -1,10 +1,17 @@
 #include "hz10_public_entry.h"
+#include "hz10_class_pages.h"
 #include "hz10_pagemap.h"
 #include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
 #include "hz10_size_class.h"
 
-static _Thread_local Hz10FreelistPage* hz10_active_pages[HZ10_CLASS_COUNT];
+typedef struct Hz10ClassState {
+  Hz10FreelistPage* active;  /* fast-path cache; always also in `list` */
+  Hz10ClassPageList list;    /* every page this thread ever made for the
+                              * class -- see src/hz10_class_pages.h */
+} Hz10ClassState;
+
+static _Thread_local Hz10ClassState hz10_class_state[HZ10_CLASS_COUNT];
 static _Thread_local char hz10_thread_token_storage;
 /* &hz10_thread_token_storage is a genuinely distinct address per thread
  * (each thread gets its own TLS instance) -- a standard, portable way to
@@ -16,52 +23,47 @@ void* hz10_malloc(size_t size) {
   if (class_id >= HZ10_CLASS_COUNT) {
     return NULL;
   }
+  Hz10ClassState* state = &hz10_class_state[class_id];
 
-  Hz10FreelistPage* page = hz10_active_pages[class_id];
-  if (page) {
-    void* ptr = hz10_freelist_page_alloc(page);
+  if (state->active) {
+    void* ptr = hz10_freelist_page_alloc(state->active);
     if (ptr) {
       return ptr;
     }
-    /* Exhausted: absorb any remote frees that arrived before giving up on
-     * this page and paying for a fresh one. */
-    if (hz10_page_drain_remote(page) > 0u) {
-      ptr = hz10_freelist_page_alloc(page);
+    if (hz10_page_drain_remote(state->active) > 0u) {
+      ptr = hz10_freelist_page_alloc(state->active);
       if (ptr) {
         return ptr;
       }
     }
-    /* Still empty: abandon it. Known L0 gap, see header comment -- this
-     * page stays correctly freeable (local or remote) forever, it is just
-     * never revisited for new allocations by this module. */
+  }
+
+  /* The active page (if any) is exhausted even after draining. Before
+   * paying for a fresh page, scan every other page this thread has ever
+   * created for this class -- src/hz10_class_pages.h drains each
+   * candidate as it checks it, so a page that looked exhausted earlier
+   * but has since received a remote free is recovered instead of staying
+   * lost forever. This replaces Box 5's original abandon-on-exhaustion
+   * policy, which measured 15-17x slower than system malloc on
+   * remote-heavy rows (current_task.md). */
+  Hz10FreelistPage* found = hz10_class_pages_find_with_capacity(&state->list);
+  if (found) {
+    state->active = found;
+    return hz10_freelist_page_alloc(found);
   }
 
   uint32_t slot_size = hz10_size_class_slot_size(class_id);
   uint32_t slot_count = hz10_size_class_slot_count(class_id);
-  Hz10FreelistPage* fresh = hz10_pooled_page_create(slot_size, slot_count);
+  /* _with_owner registers the owner tag in the same pagemap call instead
+   * of a second one afterward -- see hz10_pooled_page.h. */
+  Hz10FreelistPage* fresh =
+      hz10_pooled_page_create_with_owner(slot_size, slot_count);
   if (!fresh) {
     return NULL;
   }
   hz10_freelist_page_set_owner_thread(fresh, HZ10_THREAD_TOKEN);
-  /* hz10_pooled_page_create() only knows Box 2's plain
-   * hz10_freelist_page_create_with_base(), which registers via Box 1's
-   * owner-less hz10_pagemap_register(). Re-registering here with the
-   * owner tag is what lets a later route() on one of this page's
-   * pointers hand back `fresh` itself. This bumps generation again (any
-   * re-registration does), so fresh->generation is updated to match --
-   * otherwise Box 3's remote_free() would compare a foreign caller's
-   * freshly-routed generation against a stale cached value and reject
-   * every legitimate remote free with GENERATION_STALE. */
-  uint32_t generation =
-      hz10_pagemap_register_with_owner(fresh->base, slot_size, slot_count,
-                                       fresh);
-  if (generation == 0u) {
-    hz10_pooled_page_destroy(fresh);
-    return NULL;
-  }
-  fresh->generation = generation;
-
-  hz10_active_pages[class_id] = fresh;
+  hz10_class_pages_add(&state->list, fresh);
+  state->active = fresh;
   return hz10_freelist_page_alloc(fresh); /* fresh page: never NULL */
 }
 

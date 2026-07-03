@@ -18,11 +18,13 @@
  *     standard malloc(0)'s implementation-defined "valid unique pointer"
  *     behavior -- not attempting libc-compatible edge-case parity here
  *   - a page that becomes fully exhausted (even after an exhaustion-time
- *     drain, see hz10_malloc) is abandoned: it stays registered and any
- *     future free -- local or remote -- into it is still correct, but the
- *     module no longer revisits it for new allocations, so its freed
- *     capacity is never reused until a future box adds a per-class
- *     multi-page free-page sweep
+ *     drain) is no longer abandoned: src/hz10_class_pages.h tracks every
+ *     page this thread has ever created for a class and scans (draining
+ *     each candidate) before paying for a fresh one. That list is never
+ *     pruned or capped, though -- a thread under sustained per-class
+ *     churn keeps every page it ever made findable (correct) but growing
+ *     without bound (not yet addressed; a future box should cap it and
+ *     return genuinely-idle pages to Box 4's pool)
  *   - free() takes no generation from the caller (real free() can't carry
  *     one), so it always routes with HZ10_GENERATION_ANY; the
  *     generation-mismatch contract that Box 1-4's own smokes exercise

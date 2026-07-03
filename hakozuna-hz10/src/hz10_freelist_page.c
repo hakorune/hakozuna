@@ -49,9 +49,15 @@ static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
   page->free_count = page->slot_count;
 }
 
-Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
-                                                      uint32_t slot_size,
-                                                      uint32_t slot_count) {
+/* Shared by hz10_freelist_page_create_with_base() and
+ * ..._with_base_and_owner(): allocates the struct/pending_bits first (so a
+ * self-referential owner tag has something to point at), then registers --
+ * with_owner picks which Box 1 registration call to make, so the caller
+ * never pays for two registrations of the same page. */
+static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
+                                                         uint32_t slot_size,
+                                                         uint32_t slot_count,
+                                                         int with_owner) {
   if (slot_size < sizeof(void*) || slot_count == 0u) {
     return NULL;
   }
@@ -69,17 +75,8 @@ Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
     owns_base = 1;
   }
 
-  uint32_t generation = hz10_pagemap_register(base, slot_size, slot_count);
-  if (generation == 0u) {
-    if (owns_base) {
-      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
-    }
-    return NULL;
-  }
-
   Hz10FreelistPage* page = calloc(1, sizeof(*page));
   if (!page) {
-    hz10_pagemap_release(base);
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
     }
@@ -89,11 +86,23 @@ Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
   uint32_t pending_words = (slot_count + 63u) / 64u;
   _Atomic(uint64_t)* pending_bits = calloc(pending_words, sizeof(*pending_bits));
   if (!pending_bits) {
-    hz10_pagemap_release(base);
+    free(page);
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
     }
+    return NULL;
+  }
+
+  uint32_t generation =
+      with_owner ? hz10_pagemap_register_with_owner(base, slot_size,
+                                                    slot_count, page)
+                : hz10_pagemap_register(base, slot_size, slot_count);
+  if (generation == 0u) {
+    free(pending_bits);
     free(page);
+    if (owns_base) {
+      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    }
     return NULL;
   }
 
@@ -105,6 +114,17 @@ Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
   page->pending_words = pending_words;
   hz10_freelist_page_init_chain(page);
   return page;
+}
+
+Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
+                                                      uint32_t slot_size,
+                                                      uint32_t slot_count) {
+  return hz10_freelist_page_create_common(base, slot_size, slot_count, 0);
+}
+
+Hz10FreelistPage* hz10_freelist_page_create_with_base_and_owner(
+    void* base, uint32_t slot_size, uint32_t slot_count) {
+  return hz10_freelist_page_create_common(base, slot_size, slot_count, 1);
 }
 
 Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,

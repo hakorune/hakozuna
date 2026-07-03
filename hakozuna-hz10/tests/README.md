@@ -102,6 +102,13 @@ abandoned page still freeable: exhausting a page (its class's active
   page is replaced) does not break freeing the pointers it already handed
   out -- route()'s owner tag recovers the exact Hz10FreelistPage* even
   after it stops being anyone's "active" page
+exhausted page recovered via remote free: a page exhausted locally, then
+  remote-freed from a foreign thread, is found and drained by
+  src/hz10_class_pages.h's scan on the very next malloc for that class --
+  proven by getting the exact same address back, not merely a fresh page.
+  This is the regression test for the fix described in src/hz10_class_pages.h
+  and current_task.md (Box 5's original abandon-on-exhaustion policy
+  measured 15-17x slower than system malloc on remote-heavy rows)
 cross-thread free: allocate on one thread, free on another -- must route
   through Box 3's remote path (accepted, not yet visible locally), then
   actually come back once the allocating thread's own traffic drains

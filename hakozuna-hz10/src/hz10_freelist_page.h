@@ -43,6 +43,14 @@ typedef struct Hz10FreelistPage {
   void* owner_thread_token;
 
   /*
+   * Also inert storage, same rule as owner_thread_token: a linked-list
+   * next pointer for whoever wants to track more than one page per class
+   * (src/hz10_class_pages.{h,c}). Box 2 never walks or otherwise touches
+   * this list itself.
+   */
+  struct Hz10FreelistPage* next_in_owner_list;
+
+  /*
    * HZ10RemoteStackDrain-L0 (Box 3, src/hz10_remote_stack.{h,c}): a
    * foreign thread cannot touch local_free_head directly without breaking
    * Box 2's "owner thread only, plain load/store" guarantee, so a remote
@@ -101,6 +109,15 @@ static inline void hz10_freelist_page_set_owner_thread(Hz10FreelistPage* page,
 Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
                                                       uint32_t slot_size,
                                                       uint32_t slot_count);
+
+/* Same as hz10_freelist_page_create_with_base(), but registers with Box
+ * 1's owner-tag-carrying hz10_pagemap_register_with_owner(owner ==
+ * the returned Hz10FreelistPage* itself) in the same registration call,
+ * instead of a caller doing a second register() afterward to attach the
+ * tag (that second registration was a real, measured cost for
+ * small-slot_count classes recreated often -- see current_task.md). */
+Hz10FreelistPage* hz10_freelist_page_create_with_base_and_owner(
+    void* base, uint32_t slot_size, uint32_t slot_count);
 
 /* Same as hz10_freelist_page_destroy(), but returns the underlying base
  * pointer to the caller instead of unmapping it (NULL if page was NULL).

@@ -83,9 +83,12 @@ static int check_rejected_inputs(void) {
   return failed;
 }
 
-/* Case 3: a page that becomes fully exhausted is abandoned (no longer the
- * active page for its class), but it must stay correctly freeable by its
- * original (owning) thread -- see hz10_public_entry.h's documented gap. */
+/* Case 3: a page that becomes fully exhausted stops being the active page
+ * for its class (a fresh page is created instead), but it must stay
+ * correctly freeable by its original (owning) thread, and -- since
+ * src/hz10_class_pages.h -- it also stays trackable rather than truly
+ * abandoned (exercised separately by check_exhausted_page_recovered_via_
+ * remote_free below). */
 static int check_abandoned_page_still_freeable(void) {
   /* size class 32768 has slot_count == 2 (HZ10_PAGE_QUANTUM / 32768),
    * so two allocations exhaust it deterministically. */
@@ -95,8 +98,8 @@ static int check_abandoned_page_still_freeable(void) {
     fprintf(stderr, "abandoned: setup malloc failed\n");
     return 1;
   }
-  /* This class's active page is now exhausted; the next malloc creates a
-   * fresh one and abandons the old one holding p1/p2. */
+  /* This class's active page is now exhausted with nothing to drain, so
+   * the next malloc creates a genuinely fresh page. */
   void* p3 = hz10_malloc(32768);
   if (!p3) {
     fprintf(stderr, "abandoned: malloc after exhaustion failed\n");
@@ -122,6 +125,57 @@ static int check_abandoned_page_still_freeable(void) {
 static void* hz10_smoke_free_in_other_thread(void* arg) {
   void* ptr = *(void**)arg;
   return (void*)(intptr_t)hz10_free(ptr);
+}
+
+/* Case 3b: the actual fix under test. A page exhausted locally, then freed
+ * from a foreign thread (so the slot lands in Box 3's remote stack, not the
+ * local freelist), must be found and drained by src/hz10_class_pages.h's
+ * scan -- proven by getting the *exact same address* back out, not merely a
+ * fresh page. Before this fix, the page was abandoned the moment it looked
+ * exhausted and this remotely-freed slot would never have been revisited. */
+static int check_exhausted_page_recovered_via_remote_free(void) {
+  void* p1 = hz10_malloc(32768);
+  void* p2 = hz10_malloc(32768);
+  if (!p1 || !p2) {
+    fprintf(stderr, "recovered: setup malloc failed\n");
+    return 1;
+  }
+
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, hz10_smoke_free_in_other_thread, &p1) !=
+      0) {
+    fprintf(stderr, "recovered: pthread_create failed\n");
+    return 1;
+  }
+  void* ret = NULL;
+  pthread_join(thread, &ret);
+  if ((intptr_t)ret != 1) {
+    fprintf(stderr, "recovered: remote free of p1 was rejected\n");
+    return 1;
+  }
+
+  /* This test's own p1/p2 page has no local capacity (both of its 2 slots
+   * were allocated) but does have a pending remote free sitting in Box 3's
+   * stack, so find_with_capacity must drain it and hand p1 straight back
+   * out -- rather than paying for yet another fresh page. */
+  void* p3 = hz10_malloc(32768);
+  if (p3 != p1) {
+    fprintf(stderr,
+            "recovered: expected the remotely-freed slot back (got a "
+            "different address -- the exhausted page was not recovered)\n");
+    hz10_free(p3);
+    hz10_free(p2);
+    return 1;
+  }
+
+  int failed = 0;
+  if (!hz10_free(p2)) {
+    failed = 1;
+  }
+  if (!hz10_free(p3)) {
+    failed = 1;
+  }
+  return failed;
 }
 
 /* Case 4: cross-thread free. A pointer allocated on this thread, freed on
@@ -181,8 +235,11 @@ int main(void) {
   if (check_abandoned_page_still_freeable()) {
     return 4;
   }
-  if (check_cross_thread_free()) {
+  if (check_exhausted_page_recovered_via_remote_free()) {
     return 5;
+  }
+  if (check_cross_thread_free()) {
+    return 6;
   }
 
   puts("hz10_public_entry_smoke ok");

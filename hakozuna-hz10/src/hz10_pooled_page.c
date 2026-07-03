@@ -14,6 +14,17 @@ Hz10FreelistPage* hz10_pooled_page_create(uint32_t slot_size,
   return page;
 }
 
+Hz10FreelistPage* hz10_pooled_page_create_with_owner(uint32_t slot_size,
+                                                     uint32_t slot_count) {
+  void* base = hz10_page_pool_try_acquire();
+  Hz10FreelistPage* page = hz10_freelist_page_create_with_base_and_owner(
+      base, slot_size, slot_count);
+  if (!page && base) {
+    hz10_page_pool_release(base);
+  }
+  return page;
+}
+
 void hz10_pooled_page_destroy(Hz10FreelistPage* page) {
   void* base = hz10_freelist_page_destroy_reclaim_base(page);
   if (base) {

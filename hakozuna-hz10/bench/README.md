@@ -52,20 +52,39 @@ Measured findings, reported honestly rather than assumed:
 ```text
 local rows (REMOTE_PCT=0): hz10 beats system_malloc, ~1.16x at
   main_local0-style (16-32768) and ~1.9x at medium_local0-style
-  (4097-65536), THREADS=4 ITERS=50000
+  (4097-65536), THREADS=4 ITERS=50000. Against real tcmalloc (LD_PRELOAD
+  swap of mech=system_malloc, no code changes), hz10 local rows land at
+  ~40-50% of tcmalloc -- inside the documented "good balanced target"
+  band in docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md, not the (explicitly
+  not-first-target) 70%+ bar.
 
-remote rows (REMOTE_PCT=50/90): hz10 is 15-17x SLOWER than system_malloc,
-  not faster -- isolated to size classes with small slot_count (e.g. a
-  fixed 65536-byte class has slot_count=1): under remote pressure a
-  1-slot page is exhausted almost every allocation, and each exhaustion
-  that a drain cannot satisfy pays a fresh page acquisition (plus this
-  module's own double pagemap registration for the owner tag, see
-  src/hz10_public_entry.c) instead of a cheap freelist pop. A fixed
-  16-byte class (slot_count=4096) under the same REMOTE_PCT=90 stays
-  fast (~7M ops/s) because one page absorbs far more remote churn before
-  needing replacement. This is layered on top of, and currently harder
-  to isolate from, the O(N^2) owner-drain regression noted in
-  current_task.md's box 3 section -- both need addressing before remote
-  rows are a fair comparison against HZ8/HZ9.
+remote rows (REMOTE_PCT=50/90) -- FIXED by src/hz10_class_pages.h (see
+  current_task.md): previously hz10 was 15-17x SLOWER than system_malloc,
+  root-caused to Box 5's abandon-on-exhaustion policy losing a page's
+  capacity forever the moment it looked exhausted, even when a foreign
+  remote free was sitting undrained in its Box 3 stack. After the fix
+  (every page a thread ever created for a class is scanned, draining
+  each candidate, before paying for a fresh one), THREADS=4 ITERS=500000
+  MIN_SIZE=16 MAX_SIZE=32768:
+
+    REMOTE_PCT=50: hz10 10.9M ops/s vs system_malloc 6.3M (hz10 ~1.7x
+      FASTER, was slower before the fix)
+    REMOTE_PCT=90: hz10 7.8M ops/s vs system_malloc 4.8M (hz10 ~1.5x
+      FASTER)
+
+  Against real tcmalloc (LD_PRELOAD): REMOTE_PCT=50 hz10 is ~43% of
+  tcmalloc (10.9M vs 25.5M), REMOTE_PCT=90 ~45% (7.8M vs 17.5M) -- both
+  now in the same "good balanced target" band as the local rows, instead
+  of being 15-17x off. The isolating fixed-size=65536/slot_count=1 case
+  (the worst case identified during root-causing) went from 15-17x
+  slower than system_malloc to only ~24% slower (4.6M vs 6.1M ops/s,
+  REMOTE_PCT=90, THREADS=4) -- much closer, not yet fully closed. RSS is
+  also lower than tcmalloc's on these rows (e.g. ~76MB vs ~129MB
+  post_rss_kb at REMOTE_PCT=90), consistent with the RSS target.
+
+  The remaining gap on the slot_count=1 isolation case, and the O(N^2)
+  owner-drain duplicate-check cost noted in current_task.md's box 3
+  section, are both still open -- this fix closed the dominant cost, not
+  every cost.
 ```
 
