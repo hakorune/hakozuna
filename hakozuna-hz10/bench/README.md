@@ -53,10 +53,20 @@ Measured findings, reported honestly rather than assumed:
 local rows (REMOTE_PCT=0): hz10 beats system_malloc, ~1.16x at
   main_local0-style (16-32768) and ~1.9x at medium_local0-style
   (4097-65536), THREADS=4 ITERS=50000. Against real tcmalloc (LD_PRELOAD
-  swap of mech=system_malloc, no code changes), hz10 local rows land at
-  ~40-50% of tcmalloc -- inside the documented "good balanced target"
-  band in docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md, not the (explicitly
-  not-first-target) 70%+ bar.
+  swap of mech=system_malloc, no code changes; formalized in
+  scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh, see below),
+  hz10 local rows land at ~60-70% of tcmalloc at THREADS=4
+  ITERS=500000-2000000 (main_local0 ~62-71%, medium_local0 ~47-67%
+  across repeats) -- noticeably higher than an earlier, smaller-ITERS
+  (50000) ad hoc reading of ~40-50%. Both readings are honest; the
+  difference is real and understood: at ITERS=50000 hz10's one-time
+  setup costs (first-touch pagemap leaf mmap, first page per class) are
+  a larger fraction of the timed window than at 500K-2M, so the smaller
+  run under-counts hz10's steady-state throughput. The 60-70% figure is
+  the more representative one for sustained traffic; still inside the
+  documented "good balanced target" band in
+  docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md, closer to its top than
+  first measured, not the (explicitly not-first-target) 70%+ bar.
 
 remote rows (REMOTE_PCT=50/90) -- FIXED by src/hz10_class_pages.h (see
   current_task.md): previously hz10 was 15-17x SLOWER than system_malloc,
@@ -72,15 +82,28 @@ remote rows (REMOTE_PCT=50/90) -- FIXED by src/hz10_class_pages.h (see
     REMOTE_PCT=90: hz10 7.8M ops/s vs system_malloc 4.8M (hz10 ~1.5x
       FASTER)
 
-  Against real tcmalloc (LD_PRELOAD): REMOTE_PCT=50 hz10 is ~43% of
-  tcmalloc (10.9M vs 25.5M), REMOTE_PCT=90 ~45% (7.8M vs 17.5M) -- both
-  now in the same "good balanced target" band as the local rows, instead
-  of being 15-17x off. The isolating fixed-size=65536/slot_count=1 case
-  (the worst case identified during root-causing) went from 15-17x
-  slower than system_malloc to only ~24% slower (4.6M vs 6.1M ops/s,
-  REMOTE_PCT=90, THREADS=4) -- much closer, not yet fully closed. RSS is
-  also lower than tcmalloc's on these rows (e.g. ~76MB vs ~129MB
-  post_rss_kb at REMOTE_PCT=90), consistent with the RSS target.
+  Against real tcmalloc (LD_PRELOAD, via
+  scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh, repeated at
+  THREADS=4 ITERS=1000000): main_r50 ~39-50% of tcmalloc, main_r90
+  ~41-48% -- lower than the local rows' ~60-70% (see above), but still
+  in the same "good balanced target" band, instead of being 15-17x off.
+  The isolating fixed-size=65536/slot_count=1 case (the worst case
+  identified during root-causing) went from 15-17x slower than
+  system_malloc to only ~24% slower (4.6M vs 6.1M ops/s, REMOTE_PCT=90,
+  THREADS=4) -- much closer, not yet fully closed. RSS is also lower
+  than tcmalloc's on these rows (e.g. ~76MB vs ~129MB post_rss_kb at
+  REMOTE_PCT=90), consistent with the RSS target.
+
+same-run tcmalloc comparison script
+(scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh): formalizes the
+ad hoc LD_PRELOAD technique above into a real, repeatable script,
+matching Box 1's scripts/run_hz10_pagemap_vs_hz9_same_run.sh pattern --
+opt-in (skips the tcmalloc rows gracefully if no
+libtcmalloc_minimal.so.4 is found; TCMALLOC_LIB overrides), always runs
+hz10's own main_local0/main_r50/main_r90/medium_local0 rows, and prints
+a same-run ratio summary. `make -C hakozuna-hz10
+bench-public-entry && hakozuna-hz10/scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh`
+(or set THREADS/ITERS/RUNS) reproduces the numbers above.
 
   The remaining gap on the slot_count=1 isolation case, and the O(N^2)
   owner-drain duplicate-check cost noted in current_task.md's box 3

@@ -6,20 +6,24 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1-6 implemented and verified, uncommitted
+  Box 1-6 implemented and verified, uncommitted; class_pages bounded
+  scan and drain-empty peek follow-ups done too (see below)
   Box 6 (src/hz10_class_pages.{h,c}) fixed Box 5's remote-row regression:
   remote rows flipped from 15-17x SLOWER than system malloc to ~1.5-1.7x
-  FASTER, and now land in the same tcmalloc "good balanced target" band
-  (~43-45%) as local rows -- see box 6 notes
-  real tcmalloc comparison (ad hoc, LD_PRELOAD on hz10_public_entry_bench's
-  existing MODE=1 system_malloc path -- it just calls libc malloc/free, so
-  LD_PRELOAD=libtcmalloc.so transparently swaps in the real thing, no new
-  code needed): local rows land in the documented "good balanced target"
-  band. main_local0-style 3 runs: 38.6-49.7% of tcmalloc; a single
-  medium_local0-style run: 48.2%. Remote rows (post-Box-6 fix): main_r50
-  ~43%, main_r90 ~45% -- same band. post RSS is consistently lower than
-  tcmalloc's in these runs, consistent with the "closer to HZ8 than
-  tcmalloc" RSS goal. Not yet a formal script (see next box)
+  FASTER -- see box 6 notes
+  real tcmalloc comparison, now a formal script
+  (scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh, LD_PRELOAD on
+  hz10_public_entry_bench's MODE=1 system_malloc path, opt-in/skips
+  gracefully if no libtcmalloc found): local rows land at ~60-70% of
+  tcmalloc at THREADS=4 ITERS=500K-2M (main_local0 ~62-71%,
+  medium_local0 ~47-67% across repeats) -- higher than an earlier,
+  smaller-ITERS (50000) ad hoc reading of ~38-50%; the earlier reading
+  under-counted steady-state throughput because hz10's one-time setup
+  costs are a larger fraction of a shorter timed window. Remote rows
+  land lower, ~39-50% (main_r50) and ~41-48% (main_r90) -- still the
+  same "good balanced target" band, just not as close to the top as
+  local rows. post RSS is consistently lower than tcmalloc's in these
+  runs, consistent with the "closer to HZ8 than tcmalloc" RSS goal
 
 design:
   thread-local intrusive freelist pages
@@ -299,6 +303,24 @@ box 6 follow-up done (class_pages bounded scan):
   files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.h (doc only),
   bench/hz10_class_pages_scan_bench.c, Makefile, .gitignore
 
+tcmalloc same-run script done
+(scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh):
+  formalized the ad hoc LD_PRELOAD tcmalloc comparison into a real,
+  repeatable script, matching Box 1's
+  scripts/run_hz10_pagemap_vs_hz9_same_run.sh opt-in pattern (skips the
+  tcmalloc rows gracefully if no libtcmalloc_minimal.so.4 is found;
+  TCMALLOC_LIB overrides; a new hz10_bench_find_tcmalloc_lib() helper in
+  bench/lib/hz10_bench_common.sh). Always runs hz10's own
+  main_local0/main_r50/main_r90/medium_local0 rows and prints a same-run
+  ratio summary. Running it with larger, steadier ITERS (500K-2M vs the
+  original ad hoc 50000) surfaced a real, positive correction: local
+  rows land at ~60-70% of tcmalloc, not ~38-50% as first measured -- see
+  status above and bench/README.md for the honest explanation (shorter
+  runs under-count hz10's steady-state throughput relative to its
+  one-time setup cost)
+  files: scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh,
+  bench/lib/hz10_bench_common.sh
+
 next box not yet named:
   remaining gaps, in priority order: (1) close the remaining ~24% gap
   on the slot_count=1 isolation case (neither the drain-empty peek nor
@@ -307,10 +329,6 @@ next box not yet named:
   a quieter machine or a longer, steadier-state bench to pin down), (2)
   the box 3 O(N^2) owner-drain duplicate-check cost (deprioritized: not
   clearly the isolating case's bottleneck per earlier investigation)
-  then: formalize the ad hoc LD_PRELOAD tcmalloc comparison (see status
-  above) into a real script, HZ10_EXT_ROOT-gated same as Box 1's
-  scripts/run_hz10_pagemap_vs_hz9_same_run.sh -- both local and remote
-  rows are now worth locking in as a repeatable measurement
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

@@ -28,3 +28,31 @@ hz10_bench_find_hz9_route_boundary_bench() {
   fi
   return 1
 }
+
+# Locates a real tcmalloc shared object to LD_PRELOAD over
+# hz10_public_entry_bench's mech=system_malloc path (plain libc
+# malloc/free calls -- LD_PRELOAD swaps them for tcmalloc's with zero new
+# code, the same ad hoc technique used to first measure this in
+# current_task.md). Opt-in like the HZ9 comparison above: an explicit
+# TCMALLOC_LIB wins, otherwise a handful of common distro install paths
+# are probed; returns empty (not an error) if none exist, so callers can
+# skip the comparison gracefully rather than fail the whole run.
+hz10_bench_find_tcmalloc_lib() {
+  local candidate="${TCMALLOC_LIB:-}"
+  if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+    printf '%s\n' "${candidate}"
+    return 0
+  fi
+  local path
+  for path in \
+    /lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 \
+    /usr/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4 \
+    /usr/local/lib/libtcmalloc_minimal.so.4 \
+    /usr/lib/libtcmalloc_minimal.so.4; do
+    if [[ -f "${path}" ]]; then
+      printf '%s\n' "${path}"
+      return 0
+    fi
+  done
+  return 1
+}
