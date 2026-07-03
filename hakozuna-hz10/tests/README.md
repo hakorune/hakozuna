@@ -88,3 +88,39 @@ in this line has kept. It does not add multi-class size dispatch or a
 public malloc()/free() entry point comparable to HZ8/HZ9's medium_local0/
 main_local0/medium_r50/main_r90 bench rows -- that wiring is future work,
 not something this box claims to deliver.
+
+Multi-class public entry (src/hz10_public_entry.{h,c}) tests:
+
+```text
+multi-class basic: alloc/free/touch across several distinct size classes,
+  plus LIFO reuse of the same active page after a free -- same shape as
+  Box 2's own smoke, exercised through hz10_malloc/hz10_free
+rejected inputs: malloc(0), malloc(quantum+1), free(NULL) as a no-op
+  success, and an interior/unknown pointer, all rejected per the pipeline
+  hz10_public_entry.h documents
+abandoned page still freeable: exhausting a page (its class's active
+  page is replaced) does not break freeing the pointers it already handed
+  out -- route()'s owner tag recovers the exact Hz10FreelistPage* even
+  after it stops being anyone's "active" page
+cross-thread free: allocate on one thread, free on another -- must route
+  through Box 3's remote path (accepted, not yet visible locally), then
+  actually come back once the allocating thread's own traffic drains
+  that page (proves the owner_thread_token dispatch in hz10_free, not
+  just Box 3's mechanism in isolation)
+```
+
+Known gap, not a smoke requirement: `hz10_free()` cannot carry a
+generation from the caller (real `free(void*)` has no such parameter), so
+it always routes with `HZ10_GENERATION_ANY`. The generation-mismatch
+contract Box 1-4's own smokes exercise directly with an explicit
+generation is real and tested there, but is not reachable through this
+public API by design -- there is no channel to carry it across a genuine
+malloc/free boundary, the same way real allocators do not expose one
+either.
+
+ASan/UBSan note: LeakSanitizer reports "still reachable" allocations from
+pages this smoke creates and never destroys (by design -- see "abandoned
+page" above, and there is no process-wide teardown API for the public
+entry's TLS state). This is expected; the smoke passes with
+`ASAN_OPTIONS=detect_leaks=0` and is clean of actual memory-safety errors
+(use-after-free, overflow, UB) either way.

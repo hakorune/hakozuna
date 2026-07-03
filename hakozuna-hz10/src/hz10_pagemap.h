@@ -48,6 +48,9 @@ typedef struct H10RouteResult {
   uint32_t slot_count;
   uint32_t slot_index;
   uint32_t generation;
+  void* owner; /* opaque, whatever hz10_pagemap_register_with_owner() was
+                * given; NULL if registered via plain hz10_pagemap_register()
+                * or if the route missed/was invalid. */
 } H10RouteResult;
 
 /*
@@ -60,6 +63,19 @@ typedef struct H10RouteResult {
  */
 uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
                                uint32_t slot_count);
+
+/*
+ * Same as hz10_pagemap_register(), but also stores an opaque owner tag
+ * (e.g. a higher-level module's own page handle) that hz10_pagemap_route()
+ * later returns verbatim in H10RouteResult.owner. Box 1 never dereferences
+ * or interprets owner -- it is pure storage for whoever registered it, so
+ * a caller that resolved an unknown pointer through route() can recover
+ * "which of my own structures does this belong to" without a second
+ * lookup. hz10_pagemap_register() is a thin wrapper for owner == NULL,
+ * kept so Box 1-4 callers that don't care about ownership need no change.
+ */
+uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
+                                          uint32_t slot_count, void* owner);
 
 /*
  * Marks `base` as no longer holding a live page. The generation counter is

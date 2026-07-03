@@ -31,6 +31,18 @@ typedef struct Hz10FreelistPage {
   uint32_t generation;    /* returned by hz10_pagemap_register() at create */
 
   /*
+   * Inert storage for whoever creates this page (e.g. a multi-class public
+   * entry module) to record "which thread owns me" -- Box 2 never reads or
+   * interprets this itself, alloc()/free() do not touch it, and it plays no
+   * role in this module's own correctness. It exists so a caller that
+   * recovers this page via hz10_pagemap_route()'s owner field (this page's
+   * own pointer, if registered with hz10_pagemap_register_with_owner) can
+   * decide same-thread (fast local free) vs. foreign-thread (Box 3 remote
+   * free) without Box 2 needing to know what a "thread" is.
+   */
+  void* owner_thread_token;
+
+  /*
    * HZ10RemoteStackDrain-L0 (Box 3, src/hz10_remote_stack.{h,c}): a
    * foreign thread cannot touch local_free_head directly without breaking
    * Box 2's "owner thread only, plain load/store" guarantee, so a remote
@@ -65,6 +77,13 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
 
 /* Releases the page from the pagemap and unmaps its payload. */
 void hz10_freelist_page_destroy(Hz10FreelistPage* page);
+
+/* Sets owner_thread_token (see the struct comment above). Not required by
+ * Box 2 itself; a higher-level module calls this once right after create. */
+static inline void hz10_freelist_page_set_owner_thread(Hz10FreelistPage* page,
+                                                      void* token) {
+  page->owner_thread_token = token;
+}
 
 /*
  * Pool-agnostic hooks for HZ10BoundedPagePool-L0 (Box 4,

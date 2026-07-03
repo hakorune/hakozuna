@@ -10,6 +10,7 @@
 
 typedef struct H10PageRecord {
   void* base;
+  void* owner;
   uint32_t slot_size;
   uint32_t slot_count;
   uint32_t generation;
@@ -61,8 +62,8 @@ static H10Leaf* hz10_pagemap_ensure_leaf(uint32_t root_idx) {
   return leaf;
 }
 
-uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
-                               uint32_t slot_count) {
+uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
+                                          uint32_t slot_count, void* owner) {
   if (!base || slot_size == 0u || slot_count == 0u) {
     return 0u;
   }
@@ -90,6 +91,7 @@ uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
                             ? 1u
                             : rec->generation + 1u;
   rec->base = base;
+  rec->owner = owner;
   rec->slot_count = slot_count;
   rec->generation = generation;
   rec->flags = 0u;
@@ -101,6 +103,11 @@ uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
   rec->slot_size = slot_size;
   hz10_platform_mutex_unlock(&hz10_pagemap_lock);
   return generation;
+}
+
+uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
+                               uint32_t slot_count) {
+  return hz10_pagemap_register_with_owner(base, slot_size, slot_count, NULL);
 }
 
 int hz10_pagemap_release(void* base) {
@@ -139,7 +146,7 @@ static H10RouteResult hz10_pagemap_result(H10RouteKind kind,
                                           void* page_base, uint32_t slot_size,
                                           uint32_t slot_count,
                                           uint32_t slot_index,
-                                          uint32_t generation) {
+                                          uint32_t generation, void* owner) {
   H10RouteResult result;
   result.kind = kind;
   result.reason = reason;
@@ -148,6 +155,7 @@ static H10RouteResult hz10_pagemap_result(H10RouteKind kind,
   result.slot_count = slot_count;
   result.slot_index = slot_index;
   result.generation = generation;
+  result.owner = owner;
   return result;
 }
 
@@ -155,7 +163,7 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
                                   uint32_t expected_generation) {
   if (!ptr) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_ROOT_ABSENT, NULL,
-                              0u, 0u, 0u, 0u);
+                              0u, 0u, 0u, 0u, NULL);
   }
 
   uintptr_t addr = (uintptr_t)ptr;
@@ -166,7 +174,7 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
   H10Leaf* leaf = hz10_pagemap_leaf_load(root_idx);
   if (!leaf) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_ROOT_ABSENT, NULL,
-                              0u, 0u, 0u, 0u);
+                              0u, 0u, 0u, 0u, NULL);
   }
 
   /* Lock-free read: acceptable single-threaded-scope simplification for
@@ -175,10 +183,11 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
   uint32_t slot_size = rec->slot_size;
   if (slot_size == 0u) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_LEAF_ABSENT, NULL,
-                              0u, 0u, 0u, 0u);
+                              0u, 0u, 0u, 0u, NULL);
   }
 
   void* base = rec->base;
+  void* owner = rec->owner;
   uint32_t slot_count = rec->slot_count;
   uint32_t generation = rec->generation;
   uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
@@ -189,25 +198,27 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
 
   if (offset >= span) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_TAIL_SLACK, base,
-                              slot_size, slot_count, 0u, generation);
+                              slot_size, slot_count, 0u, generation, owner);
   }
   if ((offset & (HZ10_MIN_ALIGN - 1u)) != 0u) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_MISALIGNED, base,
-                              slot_size, slot_count, 0u, generation);
+                              slot_size, slot_count, 0u, generation, owner);
   }
   if ((offset % slot_size) != 0u) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_INTERIOR, base,
-                              slot_size, slot_count, 0u, generation);
+                              slot_size, slot_count, 0u, generation, owner);
   }
   if (expected_generation != HZ10_GENERATION_ANY &&
       expected_generation != generation) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_GENERATION_STALE,
-                              base, slot_size, slot_count, 0u, generation);
+                              base, slot_size, slot_count, 0u, generation,
+                              owner);
   }
 
   return hz10_pagemap_result(H10_ROUTE_VALID, H10_REASON_NONE, base,
                             slot_size, slot_count,
-                            (uint32_t)(offset / slot_size), generation);
+                            (uint32_t)(offset / slot_size), generation,
+                            owner);
 }
 
 void hz10_pagemap_reset_for_tests(void) {
