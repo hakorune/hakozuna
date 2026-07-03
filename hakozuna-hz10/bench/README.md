@@ -27,3 +27,12 @@ row (Box 2's hz10_freelist_page_free, same total op count) runs alongside
 in the same invocation as the "cost of staying local" reference point,
 mirroring HZ8/HZ9's local-vs-remote-row comparisons.
 
+`HZ10BoundedPagePool-L0` bench is the local/remote/RSS matrix: the same
+create-alloc-free/remote-free-destroy page cycle is run with only the pool
+cap changed (CAP vs. 0) so "does pooling help" isolates to that one
+parameter, not a different code path (CAP=0 forces every release to really
+munmap, i.e. what HZ10 would cost with no pool at all). Rows: `pooled_local`,
+`unpooled_local`, `pooled_remote` (reusing Box 3's producer-thread remote
+free), plus a `getrusage` `ru_maxrss` sample taken before/after the local
+phases as the RSS half of the matrix, reported honestly rather than assumed.
+

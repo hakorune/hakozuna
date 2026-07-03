@@ -6,8 +6,12 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1, Box 2, and Box 3 implemented and verified, uncommitted
-  Box 4 (HZ10BoundedPagePool-L0) is the active next box
+  Box 1-4 implemented and verified, uncommitted
+  next box not yet named -- multi-class size dispatch and a public
+  malloc()/free() entry point are what would let HZ10 produce a real
+  medium_local0/main_local0/medium_r50/main_r90 row comparable to
+  HZ8/HZ9/tcmalloc/mimalloc; Box 4 deliberately did not attempt this
+  (see box 4 notes below)
 
 design:
   thread-local intrusive freelist pages
@@ -81,9 +85,48 @@ box 3 done (HZ10RemoteStackDrain-L0):
   files: src/hz10_remote_stack.{h,c}, tests/hz10_remote_stack_drain_smoke.c,
   bench/hz10_remote_stack_drain_bench.c
 
-box 4 next (HZ10BoundedPagePool-L0):
-  page cache caps, release pressure, local/remote/RSS matrix
-  this box is what the first GO / good target gates below are judged on
+box 4 done (HZ10BoundedPagePool-L0):
+  two modules, deliberately kept independent: src/hz10_page_pool.{h,c} is
+  a generic bounded cache of raw quantum blocks (mutex-protected, not
+  lock-free -- acquire+release both happen from arbitrary threads here,
+  unlike Box 3's push-only remote_free_head, and that is exactly the
+  classic Treiber-stack ABA hazard, so a mutex was the deliberate,
+  correct choice over cleverness); src/hz10_pooled_page.{h,c} is the only
+  module that knows about both the pool and Box 2's freelist page
+  Box 2 stayed pool-agnostic: added hz10_freelist_page_create_with_base()
+  (accepts an externally-supplied aligned block, or NULL for a fresh
+  mmap) and hz10_freelist_page_destroy_reclaim_base() (returns the base
+  instead of unmapping it) -- Box 2 still has zero dependency on pooling,
+  hz10_pooled_page is what composes them
+  a block recycled from the pool is re-registered with Box 1's pagemap,
+  bumping generation the same way any re-registration does, so a stale
+  pre-recycle generation is correctly rejected -- verified directly
+  smoke green: pool cap/reuse counters, pooled_page basic correctness,
+  generation-bump-on-reuse, and a deterministic "sustained churn bounds
+  the cache" case (more pages created+kept-alive than the cap, then all
+  destroyed, forcing real releases for the excess) -- counter-based proof
+  of release pressure, since a raw OS RSS sample is too noisy run to run
+  standalone check green; ASan/UBSan and TSan clean
+  bench (local/remote/RSS matrix): pooled_local vs. unpooled_local (same
+  code path, only the cap differs: CAP vs. 0) shows pooling is ~55-60x
+  faster per create/destroy cycle -- avoiding mmap+munmap+pagemap
+  re-registration on every cycle is a large, unsurprising win; pooled_remote
+  reuses Box 3's producer-thread remote free on a pool-backed page;
+  getrusage ru_maxrss sampled before/after, reported honestly (modest
+  growth observed, not claimed as zero)
+  scope note: single size class only, matching every box's L0 discipline
+  so far. Does NOT add multi-class dispatch or a public malloc()/free()
+  entry point -- so it does not yet produce a medium_local0/main_local0/
+  medium_r50/main_r90 row directly comparable to HZ8/HZ9/tcmalloc/mimalloc.
+  That wiring is explicitly future work, not silently claimed here
+  files: src/hz10_page_pool.{h,c}, src/hz10_pooled_page.{h,c},
+  tests/hz10_bounded_page_pool_smoke.c, bench/hz10_bounded_page_pool_bench.c
+
+next box not yet named:
+  multi-class size table + a real public malloc()/free() entry point,
+  wiring Box 1 (route) + Box 2 (local) + Box 3 (remote) + Box 4 (pool)
+  together per-class -- this is what the first GO / good target gates
+  below actually need to be judged against
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

@@ -58,3 +58,30 @@ either way. Both are owner-exit/thread-lifecycle protocol questions left to
 a later box (see docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md's RSS Contract
 "exit" section), not something Box 2 or Box 3 alone can guarantee.
 
+`HZ10BoundedPagePool-L0` tests:
+
+```text
+pool cap and reuse: acquiring from an empty pool returns NULL; releasing
+  more blocks than the cap keeps cached_count pinned at the cap and counts
+  the excess as real releases; acquiring drains the cache back down and
+  counts as reuse, never fabricating a block
+pooled_page basic: hz10_pooled_page_create/destroy behave exactly like
+  plain hz10_freelist_page_create/destroy; destroy offers its block back
+  to the pool
+generation bump on reuse: a block recycled from the pool is re-registered
+  with a bumped generation (same contract as any HZ10PageMapRoute-L0
+  re-registration), so routing with the pre-recycle generation is
+  rejected as stale, not silently treated as still valid
+sustained churn bounds the cache: creating more pages than the cap, all
+  kept alive, then destroying all of them forces real releases for the
+  excess -- a deterministic, counter-based proof of "release pressure"
+  that a raw OS RSS sample cannot give reliably run to run
+```
+
+Scope note: this box proves the page-pool mechanism and its integration
+with Box 2 for a single size class, per the L0 discipline every prior box
+in this line has kept. It does not add multi-class size dispatch or a
+public malloc()/free() entry point comparable to HZ8/HZ9's medium_local0/
+main_local0/medium_r50/main_r90 bench rows -- that wiring is future work,
+not something this box claims to deliver.
+

@@ -12,10 +12,10 @@ Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-3 (pagemap route,
-                freelist page, remote stack drain) done (uncommitted),
-                Box4 BoundedPagePool next. First GO >=2x HZ8 or 250M+
-                local0, not tcmalloc-70%.
+  HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-4 (pagemap route,
+                freelist page, remote stack drain, bounded page pool)
+                done (uncommitted), single-class only; multi-class +
+                public malloc()/free() entry point next, not yet named.
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry

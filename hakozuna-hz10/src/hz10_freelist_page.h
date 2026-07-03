@@ -66,6 +66,29 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
 void hz10_freelist_page_destroy(Hz10FreelistPage* page);
 
 /*
+ * Pool-agnostic hooks for HZ10BoundedPagePool-L0 (Box 4,
+ * src/hz10_pooled_page.{h,c}): this header/module still knows nothing
+ * about page pooling -- these two functions just let a caller supply
+ * memory instead of mmap'ing fresh, or take memory back instead of
+ * unmap'ing it, keeping the "where does memory come from" question
+ * entirely outside Box 2.
+ */
+
+/* Same as hz10_freelist_page_create(), but if base is non-NULL, uses that
+ * (already HZ10_PAGE_QUANTUM-aligned, HZ10_PAGE_QUANTUM-sized) block
+ * instead of reserving a fresh mapping. base == NULL behaves identically
+ * to hz10_freelist_page_create(). */
+Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
+                                                      uint32_t slot_size,
+                                                      uint32_t slot_count);
+
+/* Same as hz10_freelist_page_destroy(), but returns the underlying base
+ * pointer to the caller instead of unmapping it (NULL if page was NULL).
+ * The caller now owns that HZ10_PAGE_QUANTUM block and must either reuse
+ * it or release it (hz10_platform_release(base, HZ10_PAGE_QUANTUM)). */
+void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page);
+
+/*
  * alloc()/free() are the real hot path (called every malloc/free, unlike
  * create/destroy which run once per page), so they are `static inline` in
  * the header rather than exported .c functions -- the same reason real

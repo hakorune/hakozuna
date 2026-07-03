@@ -42,8 +42,9 @@ static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
   page->free_count = page->slot_count;
 }
 
-Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
-                                            uint32_t slot_count) {
+Hz10FreelistPage* hz10_freelist_page_create_with_base(void* base,
+                                                      uint32_t slot_size,
+                                                      uint32_t slot_count) {
   if (slot_size < sizeof(void*) || slot_count == 0u) {
     return NULL;
   }
@@ -52,21 +53,29 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
     return NULL;
   }
 
-  void* base = hz10_freelist_reserve_aligned_quantum();
+  int owns_base = 0;
   if (!base) {
-    return NULL;
+    base = hz10_freelist_reserve_aligned_quantum();
+    if (!base) {
+      return NULL;
+    }
+    owns_base = 1;
   }
 
   uint32_t generation = hz10_pagemap_register(base, slot_size, slot_count);
   if (generation == 0u) {
-    hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    if (owns_base) {
+      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    }
     return NULL;
   }
 
   Hz10FreelistPage* page = calloc(1, sizeof(*page));
   if (!page) {
     hz10_pagemap_release(base);
-    hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    if (owns_base) {
+      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    }
     return NULL;
   }
 
@@ -74,7 +83,9 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
   _Atomic(uint64_t)* pending_bits = calloc(pending_words, sizeof(*pending_bits));
   if (!pending_bits) {
     hz10_pagemap_release(base);
-    hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    if (owns_base) {
+      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+    }
     free(page);
     return NULL;
   }
@@ -89,19 +100,32 @@ Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
   return page;
 }
 
-void hz10_freelist_page_destroy(Hz10FreelistPage* page) {
+Hz10FreelistPage* hz10_freelist_page_create(uint32_t slot_size,
+                                            uint32_t slot_count) {
+  return hz10_freelist_page_create_with_base(NULL, slot_size, slot_count);
+}
+
+void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page) {
   if (!page) {
-    return;
+    return NULL;
   }
   /* Deliberately does not drain the remote stack (src/hz10_remote_stack.h)
    * itself -- Box 2 has no dependency on Box 3's module, only the reverse
    * (hz10_remote_stack.c includes this header for the struct). A caller
    * that has exposed this page to hz10_page_remote_free() must call
-   * hz10_page_drain_remote(page) itself before destroy(), or any
+   * hz10_page_drain_remote(page) itself before destroy, or any
    * already-pushed-but-undrained remote free is silently lost. See
    * tests/README.md's HZ10RemoteStackDrain-L0 notes. */
   hz10_pagemap_release(page->base);
-  hz10_platform_release(page->base, HZ10_PAGE_QUANTUM);
+  void* base = page->base;
   free(page->pending_bits);
   free(page);
+  return base;
+}
+
+void hz10_freelist_page_destroy(Hz10FreelistPage* page) {
+  void* base = hz10_freelist_page_destroy_reclaim_base(page);
+  if (base) {
+    hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+  }
 }
