@@ -449,6 +449,30 @@ static int check_public_remote_pending(void) {
   return 0;
 }
 
+static int check_public_raw_release_route_remove(void) {
+  bool owned = false;
+  void* p = h9_lsp_debug_public_nosync_malloc(65536u);
+  if (!p || !h9_lsp_debug_public_nosync_free(p, &owned) || !owned) {
+    fprintf(stderr, "raw release setup free failed owned=%d\n",
+            owned ? 1 : 0);
+    return 78;
+  }
+  if (!h9_lsp_debug_public_force_raw_release(p)) {
+    fprintf(stderr, "raw release force failed\n");
+    return 79;
+  }
+  if (expect_route(p, H8_ROUTE_MISS, "raw-release-stale")) {
+    fprintf(stderr, "raw release stale pointer remained route-visible\n");
+    return 80;
+  }
+  H9LspStats stats = h9_lsp_debug_stats();
+  if (stats.segment_release == 0u) {
+    fprintf(stderr, "raw release counter did not increment\n");
+    return 81;
+  }
+  return 0;
+}
+
 int main(void) {
   h9_lsp_debug_reset();
   int token_rc = check_pointer_token();
@@ -490,6 +514,11 @@ int main(void) {
   if (public_remote_rc != 0) {
     h9_lsp_debug_reset();
     return public_remote_rc;
+  }
+  int raw_release_rc = check_public_raw_release_route_remove();
+  if (raw_release_rc != 0) {
+    h9_lsp_debug_reset();
+    return raw_release_rc;
   }
   for (uint32_t class_id = 0u; class_id < 6u; ++class_id) {
     int rc = check_class(class_id);

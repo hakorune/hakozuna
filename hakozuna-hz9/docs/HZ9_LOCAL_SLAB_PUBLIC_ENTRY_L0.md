@@ -742,6 +742,46 @@ decision:
   ProductEntry advantage.
 ```
 
+## ProductEntry Lifecycle L0
+
+```text
+policy:
+  thread shutdown drains pending into entry-local bits, syncs segment bits,
+  then releases each active ProductEntry segment.
+
+  cached segments stay route-visible and generation-bump on cache pop.
+  raw-released segments are removed from the route hash before platform release.
+  hash removal uses a tombstone, not zero, so open-addressing probe chains are
+  preserved.
+
+hard gates:
+  raw release hash-remove smoke pass; stale pointer route visibility = 0
+  pending lost during shutdown = 0
+  cache while pending = 0
+  cap_reject on owner-drain rows = 0
+```
+Lifecycle check:
+```text
+bench_results/20260703T_hz9_product_lifecycle_l0_remote_check
+
+main_interleaved_remote90, R3 ASLR-off:
+  throughput 21.802M
+  post/peak RSS 9.82 / 15.00 MiB
+  create/release/live=32/0/32, cap_reject=0
+  remote_claim/drain/drain_slots/drain_invalid=457256/152098/498894/0
+
+medium_interleaved_remote50, R3 ASLR-off:
+  throughput 27.361M
+  post/peak RSS 8.38 / 9.13 MiB
+  create/release/live=48/0/48, cap_reject=0
+  remote_claim/drain/drain_slots/drain_invalid=327547/204387/346113/0
+
+read:
+  lifecycle/hash changes keep owner-drain rows stable and above HZ8-like
+  remote baselines, but cached live segments raise retained RSS. R10 must judge
+  this as an explicit HZ9 throughput-vs-retention tradeoff.
+```
+
 ## Contract Split
 
 ```text

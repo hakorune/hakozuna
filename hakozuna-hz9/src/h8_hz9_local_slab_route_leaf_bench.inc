@@ -537,8 +537,11 @@ static bool h9_lsp_public_sync_segment(H9LspSegment* segment) {
 }
 
 void h9_lsp_debug_public_thread_shutdown(void) {
-  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i)
+  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    h9_lsp_public_drain_pending(&h9_lsp_public_entries[i]);
+    h9_lsp_public_sync_entry(&h9_lsp_public_entries[i]);
     h9_lsp_release_segment(h9_lsp_public_entries[i].authority_segment);
+  }
   memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
   h9_lsp_public_last_class = UINT32_MAX, h9_lsp_public_current_entry = NULL;
 }
@@ -547,6 +550,15 @@ void h9_lsp_debug_public_entry_reset(void) {
   h9_lsp_debug_reset();
   memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
   h9_lsp_public_last_class = UINT32_MAX, h9_lsp_public_current_entry = NULL;
+}
+
+bool h9_lsp_debug_public_force_raw_release(void* ptr) {
+  H9LspSegment* segment = h9_lsp_public_segment_for_ptr(ptr);
+  if (!segment || !h9_lsp_public_sync_segment(segment)) return false;
+  size_t saved_count = h9_lsp_segment_cache_count;
+  h9_lsp_segment_cache_count = H9_LSP_SEGMENT_CACHE_CAP, h9_lsp_release_segment(segment);
+  h9_lsp_segment_cache_count = saved_count;
+  return true;
 }
 
 void* h9_lsp_debug_public_malloc(size_t size) {

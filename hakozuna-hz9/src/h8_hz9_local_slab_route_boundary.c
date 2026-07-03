@@ -133,11 +133,16 @@ static void h9_lsp_hash_insert(uintptr_t base, H9LspSegment* segment) {
   size_t pos = h9_lsp_hash_pos(base);
   for (size_t i = 0; i < H9_LSP_HASH_CAP; ++i) {
     size_t at = (pos + i) & (H9_LSP_HASH_CAP - 1u);
-    if (h9_lsp_hash[at] == 0u || h9_lsp_hash[at] == (uintptr_t)segment) {
+    if (h9_lsp_hash[at] <= 1u || h9_lsp_hash[at] == (uintptr_t)segment) {
       h9_lsp_hash[at] = (uintptr_t)segment;
       return;
     }
   }
+}
+
+static void h9_lsp_hash_remove(H9LspSegment* segment) {
+  for (size_t i = 0; i < H9_LSP_HASH_CAP; ++i)
+    if (h9_lsp_hash[i] == (uintptr_t)segment) h9_lsp_hash[i] = 1u;
 }
 
 static H9LspSegment* h9_lsp_hash_find(uintptr_t base) {
@@ -147,6 +152,7 @@ static H9LspSegment* h9_lsp_hash_find(uintptr_t base) {
     if (current == 0u) {
       return NULL;
     }
+    if (current == 1u) continue;
     H9LspSegment* segment = (H9LspSegment*)current;
     if ((uintptr_t)segment == base && segment->magic == H9_LSP_SEGMENT_MAGIC) {
       return segment;

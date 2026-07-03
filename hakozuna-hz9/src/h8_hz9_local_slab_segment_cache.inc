@@ -67,6 +67,7 @@ static void h9_lsp_release_segment(H9LspSegment* segment) {
         return;
       }
       raw = segment->raw_base, raw_bytes = segment->raw_bytes;
+      h9_lsp_hash_remove(segment);
       segment->magic = H9_LSP_SEGMENT_DEAD;
       h9_lsp_segments[i] = NULL;
       h9_lsp_stats.segment_release++;
