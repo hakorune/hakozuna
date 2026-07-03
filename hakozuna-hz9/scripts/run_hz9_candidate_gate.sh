@@ -16,6 +16,7 @@ mkdir -p "${OUTDIR}"
 if [[ "${HZ9_CANDIDATE_SKIP_BUILD:-0}" != "1" ]]; then
   make -C "${ROOT}" \
     bench-release \
+    bench-release-mediumfreecache \
     bench-release-hz9mediumtlscache \
     bench-release-hz9mediumtlscache-gated \
     bench-release-hz9mediumtlscache-remoteclass \
@@ -109,6 +110,9 @@ row_args() {
 variant_bin() {
   case "$1" in
     baseline) printf '%s\n' "${ROOT}/h8_bench_release" ;;
+    mediumfreecache)
+      printf '%s\n' "${ROOT}/h8_bench_release_mediumfreecache"
+      ;;
     tlscache) printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumtlscache" ;;
     tlscache_gated)
       printf '%s\n' "${ROOT}/h8_bench_release_hz9mediumtlscache_gated"

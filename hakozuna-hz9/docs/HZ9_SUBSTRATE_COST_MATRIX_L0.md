@@ -29,6 +29,11 @@ localarena_dense_ownerfast_phase8:
 ownerpage_purelocal:
   OwnerPage pure-local API path
   tests HZ9-owned page route/API cost against baseline
+
+mediumfreecache:
+  H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE
+  tests whether skipping directory_find on same-owner free is enough to close
+  medium/main local or remote gaps
 ```
 
 ## Command
@@ -77,6 +82,7 @@ profile evidence:
 
 NO-GO:
   loses both local and remote medium/main rows
+  or wins one non-target row while regressing small/guard footing materially
 ```
 
 ## Read
@@ -85,6 +91,26 @@ NO-GO:
 The next HZ9 implementation should not be another threshold-only admission
 tune. It needs a substrate shape that wins local rows or a deliberate profile
 mode that does not pretend to be the broad default.
+```
+
+## Medium Free Cache Formal Read
+
+```text
+log:
+  bench_results/20260703T_mediumfreecache_formal_r5_hz9_candidate_gate
+
+R5 ratios:
+  medium_local0 0.971
+  main_local0   0.982
+  medium_r50    0.983
+  main_r90      0.994
+  guard_local0  1.071
+  small_r90     0.766
+
+read:
+  This does not reproduce the claimed medium_r50 win in the formal candidate
+  gate.  It does not move local0, does not close the tcmalloc gap, and regresses
+  small_interleaved_remote90 too much for a default or profile candidate.
 ```
 
 ## Initial Result

@@ -22,6 +22,7 @@ Current direction:
                 1. same-run R10 matrix: hz8_ref vs hz9_product, RSS/counters.
                 2. release-pressure/lifecycle evidence with segment_release.
                 3. promotion-ready docs: throughput-first, bounded-RSS tradeoff.
+                4. mediumfreecache formal R5 is not a tcmalloc-gap fix.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
