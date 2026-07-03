@@ -1,4 +1,5 @@
-.PHONY: all clean smoke-pagemap-route bench-pagemap-route hz10-standalone-check
+.PHONY: all clean smoke-pagemap-route bench-pagemap-route \
+	smoke-freelist-page bench-freelist-page hz10-standalone-check
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -21,7 +22,11 @@ PAGEMAP_SRC := $(ROOT)/src/hz10_pagemap.c $(ROOT)/src/hz10_platform.c
 SMOKE_PAGEMAP_SRC := $(ROOT)/tests/hz10_pagemap_route_smoke.c $(PAGEMAP_SRC)
 BENCH_PAGEMAP_SRC := $(ROOT)/bench/hz10_pagemap_route_bench.c $(PAGEMAP_SRC)
 
-all: smoke-pagemap-route bench-pagemap-route
+FREELIST_SRC := $(ROOT)/src/hz10_freelist_page.c $(PAGEMAP_SRC)
+SMOKE_FREELIST_SRC := $(ROOT)/tests/hz10_freelist_page_smoke.c $(FREELIST_SRC)
+BENCH_FREELIST_SRC := $(ROOT)/bench/hz10_freelist_page_bench.c $(FREELIST_SRC)
+
+all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -35,8 +40,21 @@ $(ROOT)/hz10_pagemap_route_bench: $(BENCH_PAGEMAP_SRC) $(HEADERS)
 bench-pagemap-route: $(ROOT)/hz10_pagemap_route_bench
 	$(ROOT)/hz10_pagemap_route_bench
 
+$(ROOT)/hz10_freelist_page_smoke: $(SMOKE_FREELIST_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_FREELIST_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-freelist-page: $(ROOT)/hz10_freelist_page_smoke
+	$(ROOT)/hz10_freelist_page_smoke
+
+$(ROOT)/hz10_freelist_page_bench: $(BENCH_FREELIST_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_FREELIST_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-freelist-page: $(ROOT)/hz10_freelist_page_bench
+	$(ROOT)/hz10_freelist_page_bench
+
 hz10-standalone-check:
 	$(ROOT)/scripts/check_hz10_standalone.sh
 
 clean:
-	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench
+	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \
+		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench

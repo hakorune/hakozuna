@@ -6,8 +6,8 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1 implemented and verified, uncommitted
-  Box 2 (HZ10ThreadLocalFreelistPage-L0) is the active next box
+  Box 1 and Box 2 implemented and verified, uncommitted
+  Box 3 (HZ10RemoteStackDrain-L0) is the active next box
 
 design:
   thread-local intrusive freelist pages
@@ -31,18 +31,29 @@ box 1 done (HZ10PageMapRoute-L0):
   HZ9's platform wrappers, no HZ8/HZ9 entanglement), tests/hz10_pagemap_route_smoke.c,
   bench/hz10_pagemap_route_bench.c
 
-box 2 next (HZ10ThreadLocalFreelistPage-L0):
-  one-class intrusive local freelist page (Layer 0)
-  same-thread malloc/free: plain loads/stores only, no atomics, no
-  shared-struct sync on every op -- this exact mistake is why HZ9
-  ProductEntry never closed the tcmalloc gap, see
-  docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md "Forbidden fast-path shapes"
-  wires into Box 1's hz10_pagemap_register/route only at page
-  publish/release time, never per-op
-  honest public-shaped malloc/free microbench (no fused-loop, no
-  DCE-prone numbers, per bench/README.md)
+box 2 done (HZ10ThreadLocalFreelistPage-L0):
+  one-class intrusive local freelist page (Layer 0); alloc()/free() are
+  `static inline` in the header (not .c functions) so any caller gets them
+  inlined without relying on a build flag -- same reason mimalloc/tcmalloc
+  ship their hot path header-only; create()/destroy() are regular
+  functions and are the only calls into Box 1's hz10_pagemap_register/
+  release, exactly once each, never per-op
+  smoke green: exhaustion, LIFO reuse, non-LIFO/shuffled reuse (no
+  duplicates, no drops), pagemap integration at create/destroy boundary
+  standalone check green
+  bench: hz10_freelist beats plain libc malloc/free on the identical
+  fixed-size alloc/free/touch loop by ~5x (lifo) and ~2.6x (batch/
+  shuffled) -- expected, since this is a single-class/single-page
+  mechanism with none of glibc's size-class/tcache overhead yet; not a
+  same-run HZ8/HZ9 comparison (no public malloc() entry point exists yet,
+  that is Box 4's job)
+  known accepted gap: same-thread double-free is not rejected at this
+  layer, by design (see tests/README.md) -- that is the route boundary's
+  job (Layer 1), not Layer 0's trusted fast path
+  files: src/hz10_freelist_page.{h,c}, tests/hz10_freelist_page_smoke.c,
+  bench/hz10_freelist_page_bench.c
 
-box 3 (HZ10RemoteStackDrain-L0):
+box 3 next (HZ10RemoteStackDrain-L0):
   foreign free stack (single-CAS Treiber push)
   owner drain batches remote frees into the local freelist
   duplicate/stale/pending counters and smokes
