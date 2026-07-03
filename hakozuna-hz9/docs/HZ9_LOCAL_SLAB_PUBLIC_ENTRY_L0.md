@@ -328,6 +328,41 @@ remaining non-goal:
   no promotion decision from R3 quick matrix
 ```
 
+## Product Entry R5 ASLR-Off
+
+```text
+command shape:
+  setarch $(uname -m) -R
+  RUNS=5 THREADS=8 ITERS=50000
+  baseline: h8_bench_release
+  candidate: h8_bench_release_hz9localslabpublicentry
+
+fixed64_local0:
+  base 169.871M
+  cand 419.453M
+  ratio 2.47x
+
+medium_local0:
+  base 133.684M
+  cand 168.910M
+  ratio 1.26x
+
+main_local0:
+  base 122.580M
+  cand 172.312M
+  ratio 1.41x
+
+guard_local0:
+  base 288.976M
+  cand 285.909M
+  ratio 0.99x
+
+read:
+  local product entry stem is viable against HZ8 public path.
+  ProductEntry-L0 remains local-only evidence: MT remote free and lifecycle
+  release are not implemented yet.
+```
+
 ## Contract Split
 
 ```text
