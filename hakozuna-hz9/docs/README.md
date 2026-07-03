@@ -146,6 +146,7 @@ RUNS=5 make -C hakozuna-hz9 hz9-candidate-gate
 RUNS=10 hakozuna-hz9/scripts/run_hz9_slab_profile_gate.sh
 RUNS=3 hakozuna-hz9/scripts/run_hz9_slab_shadow_probe.sh
 RUNS=10 hakozuna-hz9/scripts/run_hz9_baseline_public_matrix.sh
+RUNS=10 hakozuna-hz9/scripts/run_hz9_product_entry_public_matrix.sh
 RUNS=5 hakozuna-hz9/scripts/run_hz9_substrate_readiness.sh
 RUNS_SIDECAR=3 hakozuna-hz9/scripts/run_hz9_post_owner_page_closure.sh
 RUNS=3 hakozuna-hz9/scripts/run_hz9_entry_route_probe.sh

@@ -460,6 +460,14 @@ promotion-quality remaining work:
   full public matrix / preload integration gates
   longer MT RSS observation outside the focused rows
   product naming and HZ9 default policy decision
+
+matrix wrapper:
+  scripts/run_hz9_product_entry_public_matrix.sh
+  default allocators: hz9_product, system
+  HZ8 frozen comparison is opt-in:
+    HZ9_EXT_ROOT=/path/to/parent ALLOCATORS=hz8_ref,hz9_product,system
+    or HZ8_REF_SO=/path/to/libhakozuna_hz8_preload.so
+  hz9_product points at the local ProductEntry preload artifact
 ```
 
 ## ProductEntry GuardBypass L1

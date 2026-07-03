@@ -5,6 +5,7 @@ set -euo pipefail
 # compatibility shim.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+source "${ROOT}/bench/lib/bench_common.sh"
 OUTDIR="${OUTDIR:-${ROOT}/bench_results/hz9_same_run_matrix_$(date -u +%Y%m%dT%H%M%SZ)}"
 RUNS="${RUNS:-5}"
 THREADS="${THREADS:-16}"
@@ -39,8 +40,11 @@ find_lib() {
     return 0
   fi
   case "${name}" in
-    hz9|hz8)
+    hz9|hz9_product)
       printf '%s\n' "${ROOT}/libhakozuna_hz8_preload.so"
+      ;;
+    hz8_ref)
+      printf '%s\n' "${HZ8_REF_SO:-${HZ9_EXT_ROOT}/hakozuna-hz8/libhakozuna_hz8_preload.so}"
       ;;
     hz9_legacy64k2|hz8_legacy64k2)
       printf '%s\n' "${ROOT}/libhakozuna_hz8_preload_medium64k2.so"
@@ -112,6 +116,9 @@ row_args() {
       ;;
     medium_interleaved_r50)
       printf '%s\n' "--min-size 4097 --max-size 65536 --remote-pct 50 --interleaved 1 --live-window 0"
+      ;;
+    fixed64_local0)
+      printf '%s\n' "--min-size 65536 --max-size 65536 --remote-pct 0 --interleaved 0 --live-window 0"
       ;;
     fixed24_local0)
       printf '%s\n' "--min-size 24576 --max-size 24576 --remote-pct 0 --interleaved 0 --live-window 0"

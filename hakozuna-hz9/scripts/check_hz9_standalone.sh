@@ -18,7 +18,7 @@ echo "[hz9-standalone] checking build/source path dependencies"
 if rg -n "hakozuna-" \
     --glob '!scripts/check_hz9_standalone.sh' \
     "${BUILD_TREE[@]}" |
-    rg -v 'HZ9_EXT_ROOT}/hakozuna-(hz5|hz6|mt)|hakozuna-hz9'; then
+    rg -v 'HZ9_EXT_ROOT}/hakozuna-(hz5|hz6|hz8|mt)|hakozuna-hz9'; then
   echo "[hz9-standalone] build/source tree references sibling Hakozuna path" >&2
   echo "[hz9-standalone] external comparisons must go through HZ9_EXT_ROOT" >&2
   echo "[hz9-standalone] local hz8 artifact names are allowed naming debt" >&2
