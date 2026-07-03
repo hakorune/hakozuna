@@ -56,6 +56,48 @@ In short:
 - **HZ8 is the recommended balanced allocator line.**
 - **HZ9 is the separate throughput research line; it is not the HZ8 default.**
 
+## Architecture Difference / アーキテクチャの違い
+
+English summary:
+
+```text
+HZ3:
+  TLS/cache-heavy local speed line.
+  Fast local reuse is the priority; safety/remote lifecycle boundaries are
+  intentionally lighter than HZ8/HZ9.
+
+HZ8:
+  Balanced low-RSS public line.
+  Shared medium-run metadata is the authority: slot_state, free/allocated masks,
+  pending bitmap, qstate, owner queue, and owner-exit hard drain.
+
+HZ9:
+  Throughput-first experimental line.
+  Medium/main local reuse is owned by TLS per-class ProductEntry state, while
+  remote frees still route through segment metadata and pending-bit owner drain.
+  RSS may be heavier than HZ8, but retention must stay explicit and bounded.
+```
+
+Japanese summary:
+
+```text
+HZ3:
+  TLS/cache中心のローカル速度重視ライン。
+  ローカル再利用の速さを優先し、HZ8/HZ9ほど重いremote/lifecycle境界は
+  背負わない。
+
+HZ8:
+  低RSSと安全性のバランスを取った公開推奨ライン。
+  slot_state、free/allocated mask、pending bitmap、qstate、owner queue、
+  owner-exit hard drainをmedium run側の共有authorityとして持つ。
+
+HZ9:
+  throughput-firstの実験ライン。
+  medium/mainのローカル再利用はTLS per-class ProductEntryが持ち、
+  remote freeはsegment routeとpending-bit owner drainで回収する。
+  RSSはHZ8より重くてもよいが、retentionは明示cap付きで扱う。
+```
+
 The API is still `malloc` / `free`, but allocator behavior changes sharply
 depending on how `free(ptr)` recovers pointer identity and where ownership is
 sent next. HZ5 is not a drop-in replacement for HZ3/HZ4 yet; it is an

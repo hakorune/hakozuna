@@ -34,26 +34,19 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  Phase 3 Pointer-Token Public Entry is active
-  Phase 2 substrate exploration is closed/evidence-only
-  HZ9LocalSlabPointerTokenEntry-L1 is the current design box
-  SegmentEntry and inlinebody proved fast local slab bodies, but route-first
-  public free remains the blocker
-  same-thread exact free should try a TLS pointer-token positive cache before
-  route; all misses/foreign/invalid pointers still fall back to route authority
-  the first route-fallback debug entry is evidence only and not the final shape
-  one-entry last-token is the current fast ceiling; general ledger needs redesign
-  StaticLocalPage is held as profile/local evidence
-  OwnerPage / SlabPage / LocalArena lanes are held as profile/evidence
-  HZ8 pending/qstate remains the remote authority
+  ProductEntry-L0 is active
+  Phase 2 substrate and Phase 3 pointer-token work are held as evidence
+  medium/main local reuse uses TLS per-class ProductEntry state
+  remote frees claim segment pending bits and owner drain merges them back
+  segment lifecycle/cache caps are part of the performance/RSS contract
+  HZ8 remains the public balanced line; HZ9 is not the HZ8 default
 
 next evidence work:
   read docs/HZ9_PHASES.md before opening another lane
-  stop treating fused-only microbenchmarks as behavior evidence
-  measure whether pointer-token entry can reconnect the inline body to a
-  public-shaped split malloc/free path
-  avoid ledger-miss-to-platform shortcuts; route remains the fallback authority
-  keep H8OwnerRecord/H8ThreadCtx layout unchanged
+  use honest ProductEntry and matrix measurements, not fused-only ceilings
+  keep same-thread local fast path entry-local
+  keep foreign/invalid/miss classification on route authority
+  verify owner-drain, lifecycle release, and RSS caps in R10 gates
   keep source/docs/scripts under the 800-line active-file limit
 ```
 
@@ -80,9 +73,9 @@ reuse from HZ8:
   owner-exit hard drain
 
 change in HZ9:
-  medium local entry
-  TLS object cache
-  future local slab/page substrate
+  medium/main ProductEntry local path
+  TLS per-class entry-local bits
+  owner-drain merge from pending bits to entry-local free bits
   explicit higher-RSS cache contract
 ```
 
@@ -235,6 +228,7 @@ hakozuna-hz9/scripts/run_hz9_code_shape_audit.sh
 HZ3:
   local throughput reference
   speed-first TLS/cache-heavy allocator
+  does not try to be HZ8/HZ9-style fail-closed remote-lifecycle line
 
 HZ8:
   balanced low-RSS allocator
@@ -245,47 +239,105 @@ HZ8:
 HZ9:
   throughput-first experimental line
   keeps HZ8 external safety contracts where useful
+  moves local medium/main hot state into TLS per-class ProductEntry
+  keeps remote frees on route + pending-bit owner drain
   may accept a heavier RSS/cache contract than HZ8
 ```
 
 HZ9 is not intended to be a clone of HZ3, tcmalloc, or mimalloc. The target is
 an HZ8-derived allocator with a faster local tier and explicit safety/RSS gates.
 
+## Architecture Snapshot
+
+English:
+
+```text
+HZ8 medium/main:
+  malloc/free
+    -> shared medium-run authority
+    -> slot_state + free/allocated masks
+    -> pending bitmap + qstate + owner queue
+    -> owner-exit hard drain
+
+HZ9 medium/main ProductEntry:
+  same-thread malloc/free
+    -> TLS ProductEntry[class]
+    -> entry-local alloc/free bits
+
+  foreign free
+    -> segment route
+    -> atomic pending_bits claim
+    -> owner drain: pending_bits -> entry-local free_bits
+
+  lifecycle/RSS
+    -> bounded segment cache
+    -> drain before retire/release/owner exit
+```
+
+Japanese:
+
+```text
+HZ8 medium/main:
+  malloc/free
+    -> 共有medium-run authority
+    -> slot_state + free/allocated mask
+    -> pending bitmap + qstate + owner queue
+    -> owner-exit hard drain
+
+HZ9 medium/main ProductEntry:
+  same-thread malloc/free
+    -> TLS ProductEntry[class]
+    -> entry-local alloc/free bits
+
+  foreign free
+    -> segment route
+    -> atomic pending_bits claim
+    -> owner drainでpending_bitsをentry-local free_bitsへ戻す
+
+  lifecycle/RSS
+    -> bounded segment cache
+    -> retire/release/owner exit前に必ずdrain
+```
+
 ## Current Standalone Design
 
 ```text
 local:
-  TLS per-class medium segment cache scaffold
-  segment-backed local slots, not HZ8 medium-run objects
+  TLS per-class ProductEntry for medium/main local reuse
+  entry-local alloc/free bits are the same-thread fast authority
+  calloc bypasses ProductEntry in L0 so control/realloc allocations stay on the
+  HZ8-derived inner path
 
 state:
-  LOCAL segments support put/take/free_allocated
-  REMOTE_SEEN segments reject local allocation
-  RETIRED segments are not reused in L0
+  segment metadata provides route and lifecycle identity
+  local slot bits are not synchronized to segment metadata on every operation
+  retired/cache segment counts are bounded
 
 remote:
-  remote mark records pending bits and moves segment out of LOCAL
-  owner-drain retires remote-contaminated segments in L0
+  foreign frees route to segment metadata and atomically claim pending bits
+  owner drain exchanges pending bits and merges reclaimed slots into entry-local
+  free bits
 
 lifecycle:
-  release_all clears touched TLS segment state before behavior integration
+  retire/release drains pending first
+  owner/thread exit releases cached segments
+  release-pressure smoke must exercise real segment_release
 
 non-goal:
-  no allocator routing yet
-  no H8OwnerRecord / H8ThreadCtx field additions in L0
+  no remote concurrent freelist in L0
+  no HZ8 default behavior mutation
 ```
 
 ## Active Design Lane
 
 ```text
-HZ9SegmentLocalCache-L0:
-  current design-prep lane
-  segment-backed local slots, not HZ8 medium-run objects
-  scaffold/drain/release-all/API sweep are implemented
-  no allocator routing yet
-  no public entry branch
-  no H8OwnerRecord / H8ThreadCtx field additions in L0
-  remote pending/qstate remains HZ8-derived authority
+HZ9ProductEntry-L0:
+  active implementation lane
+  public preload ProductEntry path exists for medium/main sizes
+  small/guard/control allocations bypass ProductEntry when required
+  owner drain prevents dirty segment switch/drop storms
+  lifecycle cache cap and segment_release pressure are part of the gate
+  R10 matrix/RSS/lifecycle evidence is required before promotion claims
 ```
 
 ## Held Evidence
