@@ -81,22 +81,31 @@ done
 if [[ -n "${tcmalloc_lib}" ]]; then
   {
     echo
-    echo "## summary: hz10 ops_per_s as a fraction of tcmalloc ops_per_s, per row"
+    echo "## summary: hz10 average ops_per_s as a fraction of tcmalloc average ops_per_s, per row"
     awk '
       /^## row=/ { row=$2; sub(/^row=/, "", row); order[++n]=row; next }
       /mech=hz10 / {
-        for (i=1;i<=NF;i++) if ($i ~ /^ops_per_s=/) { split($i,a,"="); hz10[row]=a[2] }
+        for (i=1;i<=NF;i++) if ($i ~ /^ops_per_s=/) {
+          split($i,a,"="); hz10_sum[row]+=a[2]; hz10_n[row]++
+        }
         next
       }
       /mech=system_malloc / {
-        for (i=1;i<=NF;i++) if ($i ~ /^ops_per_s=/) { split($i,a,"="); tc[row]=a[2] }
+        for (i=1;i<=NF;i++) if ($i ~ /^ops_per_s=/) {
+          split($i,a,"="); tc_sum[row]+=a[2]; tc_n[row]++
+        }
         next
       }
       END {
         for (i=1;i<=n;i++) {
           r=order[i]
-          if ((r in hz10) && (r in tc) && tc[r] > 0) {
-            printf "%s: hz10=%.2f tcmalloc=%.2f ratio=%.3f\n", r, hz10[r], tc[r], hz10[r]/tc[r]
+          if (hz10_n[r] > 0 && tc_n[r] > 0) {
+            hz10=hz10_sum[r]/hz10_n[r]
+            tc=tc_sum[r]/tc_n[r]
+            if (tc > 0) {
+              printf "%s: hz10_avg=%.2f tcmalloc_avg=%.2f ratio=%.3f runs=%d/%d\n",
+                     r, hz10, tc, hz10/tc, hz10_n[r], tc_n[r]
+            }
           }
         }
       }

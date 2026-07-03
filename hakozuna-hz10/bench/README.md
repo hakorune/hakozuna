@@ -101,7 +101,7 @@ matching Box 1's scripts/run_hz10_pagemap_vs_hz9_same_run.sh pattern --
 opt-in (skips the tcmalloc rows gracefully if no
 libtcmalloc_minimal.so.4 is found; TCMALLOC_LIB overrides), always runs
 hz10's own main_local0/main_r50/main_r90/medium_local0 rows, and prints
-a same-run ratio summary. `make -C hakozuna-hz10
+an average same-run ratio summary across the requested RUNS. `make -C hakozuna-hz10
 bench-public-entry && hakozuna-hz10/scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh`
 (or set THREADS/ITERS/RUNS) reproduces the numbers above.
 
@@ -149,4 +149,3 @@ class_pages bounded scan (src/hz10_class_pages.{h,c}, bench/hz10_class_pages_sca
   beat system_malloc; the isolating case's run-to-run noise on this
   machine is unchanged, no new signal either way).
 ```
-

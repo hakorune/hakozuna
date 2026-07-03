@@ -311,9 +311,10 @@ tcmalloc same-run script done
   tcmalloc rows gracefully if no libtcmalloc_minimal.so.4 is found;
   TCMALLOC_LIB overrides; a new hz10_bench_find_tcmalloc_lib() helper in
   bench/lib/hz10_bench_common.sh). Always runs hz10's own
-  main_local0/main_r50/main_r90/medium_local0 rows and prints a same-run
-  ratio summary. Running it with larger, steadier ITERS (500K-2M vs the
-  original ad hoc 50000) surfaced a real, positive correction: local
+  main_local0/main_r50/main_r90/medium_local0 rows and prints an average
+  same-run ratio summary across the requested RUNS. Running it with larger,
+  steadier ITERS (500K-2M vs the original ad hoc 50000) surfaced a real,
+  positive correction: local
   rows land at ~60-70% of tcmalloc, not ~38-50% as first measured -- see
   status above and bench/README.md for the honest explanation (shorter
   runs under-count hz10's steady-state throughput relative to its
