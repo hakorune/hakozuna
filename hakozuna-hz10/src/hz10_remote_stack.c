@@ -102,6 +102,17 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
 }
 
 uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
+  /* Relaxed peek before paying for the exchange: a caller that scans many
+   * candidate pages (src/hz10_class_pages.h) calls this on pages that
+   * usually have nothing pending, and an atomic RMW (exchange) costs more
+   * than a plain load on most architectures. A stale NULL read here just
+   * means this call skips a drain that a push landed a moment too late for
+   * -- correctness-neutral, the next drain call picks it up, same as any
+   * lock-free peek-before-acting fast path. */
+  if (atomic_load_explicit(&page->remote_free_head, memory_order_relaxed) ==
+      NULL) {
+    return 0u;
+  }
   void* head = atomic_exchange_explicit(&page->remote_free_head, NULL,
                                        memory_order_acquire);
   uint32_t merged = 0u;

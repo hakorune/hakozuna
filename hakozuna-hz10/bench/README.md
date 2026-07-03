@@ -86,5 +86,22 @@ remote rows (REMOTE_PCT=50/90) -- FIXED by src/hz10_class_pages.h (see
   owner-drain duplicate-check cost noted in current_task.md's box 3
   section, are both still open -- this fix closed the dominant cost, not
   every cost.
+
+drain-empty peek fast path (src/hz10_remote_stack.c, see current_task.md):
+  investigating the slot_count=1 isolation gap above, instrumented
+  hz10_class_pages_find_with_capacity and found each malloc call in that
+  workload scans ~19 pages on average (max ~79, not unbounded), each
+  paying a full atomic_exchange in hz10_page_drain_remote even when
+  nothing is pending. Added a relaxed-load peek before the exchange.
+  The full hz10_public_entry_bench isolating case is too noisy on this
+  machine to isolate the effect (2-6x run-to-run variance, confirmed by
+  re-running the unmodified baseline and seeing the same spread) -- a
+  dedicated single-threaded microbenchmark (tight loop calling
+  hz10_page_drain_remote on a page with nothing ever pushed) shows a
+  clean, repeatable ~1.6x for that specific operation (520-530M calls/s
+  baseline vs 830-844M calls/s with the peek), confirmed real. Whether
+  this moves the noisy full-bench isolating-case number is not
+  established either way -- reported honestly as "real at the
+  micro level, not confirmed at the macro level" rather than assumed.
 ```
 

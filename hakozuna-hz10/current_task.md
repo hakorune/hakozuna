@@ -236,15 +236,47 @@ box 6 done (HZ10PerClassPageList-L0):
   src/hz10_pooled_page.{h,c} (_with_owner), src/hz10_public_entry.{h,c}
   (rewritten to use the per-class list instead of a single active page)
 
+box 6 follow-up done (drain-empty peek fast path):
+  investigated item (1) from the box-6 follow-up list first: instrumented
+  hz10_class_pages_find_with_capacity with a temporary probe build on the
+  slot_count=1/REMOTE_PCT=90 isolating case (200K iters) -- the per-class
+  list does NOT grow unbounded in practice for this workload (avg ~19
+  scanned nodes, max ~79, stable across the run); the original "unbounded
+  list growth is the remaining cost" hypothesis was wrong for this shape.
+  A longer run (2M iters) does show real RSS growth over time, but a
+  stashed before/after comparison showed the same growth on the
+  unmodified baseline too -- not something this fix introduced or fixes,
+  likely Box 4 pool/page churn at sustained scale, left as-is
+  actual finding: each of those ~19 scanned nodes pays a full
+  atomic_exchange in hz10_page_drain_remote (src/hz10_remote_stack.c)
+  even when remote_free_head is NULL (nothing pending) -- an atomic RMW
+  costs more than a plain load on this architecture. Fixed with a
+  relaxed atomic_load peek before the exchange, returning 0 immediately
+  when nothing is pending; correctness-neutral (a stale NULL read just
+  means this call skips a drain the next call will catch)
+  measured honestly: the full hz10_public_entry_bench isolating case is
+  too noisy on this shared machine to isolate the effect (run-to-run
+  variance of 2-6x dwarfs the change, confirmed by re-running the
+  unmodified baseline and seeing the same spread). Wrote a dedicated
+  single-threaded microbenchmark instead (tight loop calling
+  hz10_page_drain_remote on a page with nothing ever pushed): baseline
+  ~520-530M calls/s, with the peek fast path ~830-844M calls/s -- a
+  clean, repeatable ~1.6x for this specific operation, confirmed real
+  and not noise. All smokes/ASan/UBSan/TSan/standalone check stayed
+  green
+  files: src/hz10_remote_stack.c only
+
 next box not yet named:
-  remaining gaps, in priority order: (1) revisit the box 3 O(N^2)
-  owner-drain duplicate-check cost now that box 6 changes how often
-  pages actually reach drain (likely more often now, since exhausted
-  pages are revisited instead of abandoned -- re-measure before deciding
-  whether this now matters more), (2) cap/bound box 6's per-class page
-  list and return genuinely-idle pages to Box 4's pool instead of holding
-  them forever, (3) close the remaining ~24% gap on the slot_count=1
-  isolation case
+  remaining gaps, in priority order: (1) cap/bound box 6's per-class
+  page list and return genuinely-idle pages to Box 4's pool instead of
+  holding them forever -- an accepted gap, not yet observed to matter at
+  tested scales but still unbounded by construction, (2) close the
+  remaining ~24% gap on the slot_count=1 isolation case (the peek fast
+  path above did not close this at the full-bench level; the real driver
+  is still unclear given measurement noise -- would need a quieter
+  machine or a longer, steadier-state bench to pin down), (3) the box 3
+  O(N^2) owner-drain duplicate-check cost (deprioritized: not clearly
+  the isolating case's bottleneck per the investigation above)
   then: formalize the ad hoc LD_PRELOAD tcmalloc comparison (see status
   above) into a real script, HZ10_EXT_ROOT-gated same as Box 1's
   scripts/run_hz10_pagemap_vs_hz9_same_run.sh -- both local and remote
