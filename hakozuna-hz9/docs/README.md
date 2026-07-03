@@ -53,6 +53,11 @@ HZ9_STANDALONE_CLOSURE.md:
 HZ9_NEXT_SUBSTRATE.md:
   active freeze boundary and requirements for the next local substrate
 
+../../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md:
+  next-design target after HZ9 ProductEntry evidence: thread-local intrusive
+  freelist pages, O(1) pagemap route, remote stack owner-drain, bounded RSS,
+  and performance gates relative to HZ3/HZ8/tcmalloc
+
 HZ9_POST_OWNER_PAGE_SUBSTRATE_CLOSURE_L1.md:
   post owner-page closure, closed lanes, and next-substrate requirements
 
@@ -103,6 +108,8 @@ LocalArena:
 
 next:
   HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0 is the current design box
+  ../../hakozuna-hz10 is the next-design folder if ProductEntry local
+  throughput remains too close to HZ8 in public matrices
   HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1 is historical substrate evidence
   HZ9_PHASES.md is the first read for phase boundaries
   stop adding fused-only cache probes unless they answer a public-entry

@@ -12,17 +12,26 @@ Current direction:
   Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
+  HZ10LocalPageSubstrate is scaffolded in hakozuna-hz10/, not an HZ9 micro-tune:
+                TLS intrusive freelist pages, O(1) pagemap route, remote stack
+                owner-drain, and bounded RSS. First GO is >=2x HZ8 or 250M+
+                local0; do not set tcmalloc-70% local as the first gate.
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry
                 where required, and remote pending bits drain into owner
                 entry-local free bits instead of dropping dirty segments.
-                Public R3 wins medium/main/remote; now close final gates.
+                Direct/API gates beat in-tree HZ8 API, but LD_PRELOAD local can
+                still flip vs frozen HZ8; public boundary is the current risk.
+                Product preload uses hidden visibility + initial-exec TLS as a
+                modest build-hygiene win, not a tcmalloc-70% path.
   Active HZ9 order:
                 1. same-run R10 matrix: hz8_ref vs hz9_product, RSS/counters.
                 2. release-pressure/lifecycle evidence with segment_release.
                 3. promotion-ready docs: throughput-first, bounded-RSS tradeoff.
-                4. mediumfreecache formal R5 is not a tcmalloc-gap fix.
+                4. ProductEntryHotPath-L1 drain-off/global-fast-counter is
+                   NO-GO; next stats must be TLS/sampled/off-hot.
+                5. PreloadBoundaryThin-L1 and mediumfreecache are not local tcmalloc-gap fixes.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
@@ -53,18 +62,13 @@ Current strength:
 HZ9 experimental orientation:
   hakozuna-hz9/README.md
   hakozuna-hz9/docs/HZ9_PHASES.md
-  hakozuna-hz9/docs/HZ9_DIRECT_SLAB_USE_PROOF_L0.md
-  hakozuna-hz9/docs/HZ9_LOCAL_PHASE_ADMISSION_L0.md
-  hakozuna-hz9/docs/HZ9_LOCAL_ARENA_L0.md
-  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PAGE_L1.md
-  hakozuna-hz9/docs/HZ9_STATIC_LOCAL_PAGE_SCAFFOLD_L0.md
-  hakozuna-hz9/docs/HZ9_SEGMENT_LOCAL_CACHE_L0.md
-  hakozuna-hz9/docs/HZ9_SEGMENT_ENTRY_L1.md
-  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
 
-Frozen HZ6 reference:
-  hakozuna-hz6/docs/current_task.md
+HZ10 next-substrate orientation:
+  hakozuna-hz10/README.md
+  hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
+
+Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```
 
 ## Rules

@@ -43,11 +43,38 @@ current direction:
 
 next evidence work:
   read docs/HZ9_PHASES.md before opening another lane
+  read ../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md before
+  starting a new substrate
   use honest ProductEntry and matrix measurements, not fused-only ceilings
   keep same-thread local fast path entry-local
   keep foreign/invalid/miss classification on route authority
   verify owner-drain, lifecycle release, and RSS caps in R10 gates
   keep source/docs/scripts under the 800-line active-file limit
+```
+
+## Next-Design Target
+
+HZ9 ProductEntry is useful evidence, but the next large substrate should not be
+another cache around the HZ8/HZ9 public path. The current target is documented
+in `../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md`.
+
+```text
+goal:
+  HZ3-class local speed
+  HZ4/HZ5-class remote resilience
+  HZ8-style fail-closed and bounded-RSS discipline
+
+first GO:
+  >= 2.0x HZ8 on main/medium local rows
+  or >= 250M ops/s on current T16 local0-style rows
+
+good target:
+  250-350M local0
+  remote rows >= 1.2x HZ8
+  post RSS <= 2x HZ8
+
+not first target:
+  tcmalloc 70%+ local throughput
 ```
 
 ## Source Layout Policy

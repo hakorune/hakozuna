@@ -17,6 +17,14 @@ HZ9:
   owns behavior code under hakozuna-hz9/
   keeps HZ8 remote safety boundaries where useful
   may accept higher RSS only under an explicit page/cache contract
+
+HZ10 candidate:
+  design target only
+  documented in ../../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
+  thread-local intrusive freelist pages + O(1) pagemap route + remote stack
+  owner-drain
+  target: HZ3-class local speed while keeping HZ8-style fail-closed and
+  bounded-RSS discipline
 ```
 
 Current design read:
@@ -59,6 +67,11 @@ phase gate:
   hot loops live in per-mode noinline workers
   Layer0 stays pure leaf / entry-local
   Layer1/Layer2 route and ledger fallback stay out of the hot loop
+
+next-design gate:
+  do not chase tcmalloc 70% local as the first goal
+  first meaningful local target is >=2.0x HZ8 or 250M+ local0 with RSS <=2x
+  HZ8 and remote rows >=1.2x HZ8
 ```
 
 ## Archived Segment Scaffold Read
