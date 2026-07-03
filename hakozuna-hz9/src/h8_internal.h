@@ -411,6 +411,7 @@ void h8_free_arena_inner(void* ptr);
 void h8_free_inner(void* ptr);
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
 void* h9_lsp_debug_public_nosync_malloc(size_t size);
+bool h9_lsp_debug_public_maybe_active(void);
 bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out);
 void h9_lsp_debug_public_thread_shutdown(void);
 #endif

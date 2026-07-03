@@ -513,6 +513,18 @@ void h8_free_inner(void* ptr) {
     h8_free_arena_inner(ptr);
     return;
   }
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  if (h9_lsp_debug_public_maybe_active()) {
+    bool owned = false;
+    if (h9_lsp_debug_public_product_free(ptr, &owned)) {
+      return;
+    }
+    if (owned) {
+      H8_DEBUG_INC(invalid_count);
+      return;
+    }
+  }
+#endif
   h8_free_non_arena_inner(ptr);
 }
 

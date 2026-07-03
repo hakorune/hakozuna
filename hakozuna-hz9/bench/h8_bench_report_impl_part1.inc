@@ -49,12 +49,15 @@ void h8_bench_print_final_report(const H8BenchReportInput* input) {
          stats.remote_collect_count);
 #if defined(H9_LOCAL_SLAB_PAGE_ROUTE_BOUNDARY_L0)
   H9LspStats h9_lsp = h9_lsp_debug_stats();
-  printf("h9_lsp_segments create=%zu release=%zu live=%zu committed_bytes=%zu committed_peak=%zu reserved_bytes=%zu reserved_peak=%zu cap_reject=%zu route_attempt=%zu route_valid=%zu route_invalid=%zu route_miss=%zu\n",
+  printf("h9_lsp_segments create=%zu release=%zu live=%zu committed_bytes=%zu committed_peak=%zu reserved_bytes=%zu reserved_peak=%zu cap_reject=%zu cache_hit=%zu cache_store=%zu cache_drop=%zu cache_live=%zu cache_bytes=%zu cache_peak=%zu route_attempt=%zu route_valid=%zu route_invalid=%zu route_miss=%zu\n",
          h9_lsp.segment_create, h9_lsp.segment_release,
          h9_lsp.segment_live, h9_lsp.segment_committed_bytes,
          h9_lsp.segment_committed_peak_bytes,
          h9_lsp.segment_reserved_bytes, h9_lsp.segment_reserved_peak_bytes,
          h9_lsp.segment_cap_reject,
+         h9_lsp.segment_cache_hit, h9_lsp.segment_cache_store,
+         h9_lsp.segment_cache_drop, h9_lsp.segment_cache_live,
+         h9_lsp.segment_cache_bytes, h9_lsp.segment_cache_peak_bytes,
          h9_lsp.route_attempt, h9_lsp.route_valid, h9_lsp.route_invalid,
          h9_lsp.route_miss);
 #endif

@@ -543,6 +543,92 @@ next:
   before MT remote protocol
 ```
 
+## Bounded Segment Cache L1
+
+```text
+goal:
+  recover release-cost throughput while keeping segment retention bounded
+
+design:
+  clean thread-exit ProductEntry segments enter a small global cache
+  cache cap: 48 segments
+  dirty/non-empty segments release immediately
+  same-class create path reuses cached segments before reserve/commit
+
+expected:
+  segment_create drops after warmup
+  segment_cache_hit/store explain reuse
+  segment_cache_live/bytes bound retained substrate
+  RSS may sit above full release but below unbounded retention
+
+gate:
+  medium/main throughput should recover toward no-release ProductEntry
+  post/peak RSS must remain explained by cache_live and cache_bytes
+  cap_reject must stay 0
+```
+
+R5 ASLR-off result:
+
+```text
+medium_local0:
+  base throughput 123.747M
+  cand throughput 234.203M
+  base post RSS 3.27 MiB
+  cand post RSS 3.22 MiB
+  cache_hit=192 cache_store=240 cache_live=48 cache_bytes=12 MiB
+  segment_create=48 release=0 live=48
+
+main_local0:
+  base throughput 131.981M
+  cand throughput 219.130M
+  base post RSS 3.59 MiB
+  cand post RSS 3.65 MiB
+  cache_hit=128 cache_store=160 cache_live=32 cache_bytes=8 MiB
+  segment_create=32 release=0 live=32
+
+guard_local0:
+  base throughput 315.442M
+  cand throughput 228.076M
+  segment_create=0 cache_live=0
+```
+
+read:
+  bounded cache recovers medium/main throughput and keeps observed post RSS near
+  HZ8 for these local rows, but guard still pays a ProductEntry free-dispatch
+  tax despite never creating a segment.
+
+next:
+  add a cheap ProductEntry presence guard so pure small/guard processes skip the
+  ProductEntry free path until a HZ9 segment has actually been created.
+
+Presence/inner-free R5 ASLR-off result:
+
+```text
+medium_local0:
+  base throughput 121.400M
+  cand throughput 207.444M
+  cand post RSS 2.95 MiB
+  cache_hit=192 cache_store=240 cache_live=48 cache_bytes=12 MiB
+
+main_local0:
+  base throughput 127.223M
+  cand throughput 187.648M
+  cand post RSS 3.38 MiB
+  cache_hit=128 cache_store=160 cache_live=32 cache_bytes=8 MiB
+
+guard_local0:
+  base throughput 224.023M
+  cand throughput 229.450M
+  cand post RSS 2.69 MiB
+  segment_create=0 cache_live=0
+```
+
+read:
+  moving ProductEntry free classification into h8_free_inner after the arena
+  fast return removes the small/guard tax. Pure small rows now bypass HZ9
+  ProductEntry entirely while medium non-arena frees still reach ProductEntry
+  when a segment has been created.
+
 ## Contract Split
 
 ```text

@@ -56,6 +56,12 @@ typedef struct H9LspStats {
   size_t segment_reserved_bytes;
   size_t segment_reserved_peak_bytes;
   size_t segment_cap_reject;
+  size_t segment_cache_hit;
+  size_t segment_cache_store;
+  size_t segment_cache_drop;
+  size_t segment_cache_live;
+  size_t segment_cache_bytes;
+  size_t segment_cache_peak_bytes;
 } H9LspStats;
 
 typedef struct H9LspRouteLeafBenchResult {
@@ -112,6 +118,7 @@ void* h9_lsp_debug_public_nosync_malloc(size_t size);
 bool h9_lsp_debug_public_nosync_free(void* ptr, bool* owned_out);
 void h9_lsp_debug_public_entry_reset(void);
 void h9_lsp_debug_public_thread_shutdown(void);
+bool h9_lsp_debug_public_maybe_active(void);
 bool h9_lsp_debug_public_current_free(void* ptr);
 bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out);
 bool h9_lsp_debug_publicentry_nosync_bench(

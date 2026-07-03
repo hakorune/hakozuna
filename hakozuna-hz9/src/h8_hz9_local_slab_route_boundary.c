@@ -39,6 +39,7 @@ static H9LspSegment* h9_lsp_segments[H9_LSP_MAX_SEGMENTS];
 static uintptr_t h9_lsp_hash[H9_LSP_HASH_CAP];
 static uint32_t h9_lsp_generation = 1u;
 static H9LspStats h9_lsp_stats;
+static _Atomic size_t h9_lsp_segment_presence;
 static _Thread_local H9LspSegment* h9_lsp_active[H8_MEDIUM_CLASS_COUNT];
 static _Thread_local void* h9_lsp_last_ptr;
 static _Thread_local H9LspSegment* h9_lsp_last_segment;
@@ -162,6 +163,8 @@ static uint32_t h9_lsp_slot_count_for(uint32_t slot_size) {
   return (uint32_t)slots;
 }
 
+#include "h8_hz9_local_slab_segment_cache.inc"
+
 static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   if (class_id >= H8_MEDIUM_CLASS_COUNT) {
     return NULL;
@@ -173,6 +176,11 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   uint32_t slot_count = h9_lsp_slot_count_for(spec->slot_size);
   if (slot_count == 0u) {
     return NULL;
+  }
+  H9LspSegment* cached =
+      h9_lsp_cache_pop(class_id, spec->slot_size, slot_count);
+  if (cached) {
+    return cached;
   }
 
   h8_platform_mutex_lock(&h9_lsp_lock);
@@ -233,6 +241,7 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   h9_lsp_segments[index] = segment;
   h9_lsp_hash_insert(base, segment);
   h9_lsp_stats.segment_create++;
+  atomic_store_explicit(&h9_lsp_segment_presence, 1u, memory_order_relaxed);
   h9_lsp_stats.segment_live++;
   h9_lsp_stats.segment_committed_bytes += H9_LSP_SEGMENT_BYTES;
   h9_lsp_stats.segment_reserved_bytes += raw_bytes;
@@ -251,34 +260,6 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
 static void* h9_lsp_slot_ptr(const H9LspSegment* segment, uint32_t slot) {
   return (void*)((uintptr_t)segment + H9_LSP_PAYLOAD_OFFSET +
                  (uintptr_t)slot * (uintptr_t)segment->slot_size);
-}
-
-static void h9_lsp_release_segment(H9LspSegment* segment) {
-  if (!segment) {
-    return;
-  }
-  void* raw = NULL;
-  size_t raw_bytes = 0u;
-  h8_platform_mutex_lock(&h9_lsp_lock);
-  for (size_t i = 0; i < H9_LSP_MAX_SEGMENTS; ++i) {
-    if (h9_lsp_segments[i] == segment) {
-      raw = segment->raw_base, raw_bytes = segment->raw_bytes;
-      segment->magic = H9_LSP_SEGMENT_DEAD;
-      h9_lsp_segments[i] = NULL;
-      h9_lsp_stats.segment_release++;
-      h9_lsp_stats.segment_live -= h9_lsp_stats.segment_live ? 1u : 0u;
-      size_t cb = h9_lsp_stats.segment_committed_bytes;
-      h9_lsp_stats.segment_committed_bytes =
-          cb >= H9_LSP_SEGMENT_BYTES ? cb - H9_LSP_SEGMENT_BYTES : 0u;
-      size_t rb = h9_lsp_stats.segment_reserved_bytes;
-      h9_lsp_stats.segment_reserved_bytes =
-          rb >= raw_bytes ? rb - raw_bytes : 0u;
-      break;
-    }
-  }
-  h8_platform_mutex_unlock(&h9_lsp_lock);
-  if (raw)
-    h8_platform_release(raw, raw_bytes);
 }
 
 void h9_lsp_debug_reset(void) {
@@ -309,6 +290,7 @@ void h9_lsp_debug_reset(void) {
     }
     h8_platform_release(raw, raw_bytes);
   }
+  h9_lsp_cache_clear();
   memset(h9_lsp_hash, 0, sizeof(h9_lsp_hash));
   memset(h9_lsp_active, 0, sizeof(h9_lsp_active));
   memset(h9_lsp_entry_ledger, 0, sizeof(h9_lsp_entry_ledger));
@@ -319,6 +301,12 @@ void h9_lsp_debug_reset(void) {
   h9_lsp_last_live = 0u;
   h8_platform_mutex_unlock(&h9_lsp_lock);
   memset(&h9_lsp_stats, 0, sizeof(h9_lsp_stats));
+  atomic_store_explicit(&h9_lsp_segment_presence, 0u, memory_order_relaxed);
+}
+
+bool h9_lsp_debug_public_maybe_active(void) {
+  return atomic_load_explicit(&h9_lsp_segment_presence,
+                              memory_order_relaxed) != 0u;
 }
 
 H9LspRouteResult h9_lsp_debug_route(void* ptr) {
