@@ -457,9 +457,12 @@ read:
 
 ```text
 promotion-quality remaining work:
-  full public matrix / preload integration gates
-  longer MT RSS observation outside the focused rows
-  product naming and HZ9 default policy decision
+  full public matrix R3 is HOLD, not promotion evidence yet
+  bench_results/20260703T_hz9_product_entry_public_matrix_r3_hz9_product_entry_public_matrix
+  hz9_product vs hz8_ref:
+    wins guard 1.034, fixed64 1.015, main_r50 1.031, main_r90 1.012
+    loses small_r90 0.990, medium_local0 0.958, medium_r50 0.956, main_local0 0.992
+  next work: attribute LD_PRELOAD public-entry overhead before R10 promotion
 
 matrix wrapper:
   scripts/run_hz9_product_entry_public_matrix.sh

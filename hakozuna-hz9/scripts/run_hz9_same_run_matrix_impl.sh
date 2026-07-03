@@ -221,7 +221,6 @@ done
 
 python3 - "${csv}" "${OUTDIR}/summary.md" "${MATRIX_TITLE}" <<'PY'
 import csv
-import statistics
 import sys
 from collections import defaultdict
 
@@ -259,12 +258,23 @@ with open(dst, "w", encoding="utf-8") as f:
             if items:
                 ranked.append((pick(items, "throughput", 0.5), alloc, items))
         ranked.sort(reverse=True)
+        ref_items = groups.get((row, "hz8_ref"), [])
+        ref_ops = pick(ref_items, "throughput", 0.5) if ref_items else 0.0
+        has_ref = ref_ops > 0.0
         f.write(f"## {row}\n\n")
-        f.write("| Rank | Allocator | median ops/s | p25 ops/s | min ops/s | post RSS | peak RSS | minor faults |\n")
-        f.write("|---:|---|---:|---:|---:|---:|---:|---:|\n")
+        if has_ref:
+            f.write("| Rank | Allocator | median ops/s | ratio vs hz8_ref | p25 ops/s | min ops/s | post RSS | peak RSS | minor faults |\n")
+            f.write("|---:|---|---:|---:|---:|---:|---:|---:|---:|\n")
+        else:
+            f.write("| Rank | Allocator | median ops/s | p25 ops/s | min ops/s | post RSS | peak RSS | minor faults |\n")
+            f.write("|---:|---|---:|---:|---:|---:|---:|---:|\n")
         for rank, (_, alloc, items) in enumerate(ranked, 1):
+            med = pick(items, "throughput", 0.5)
+            prefix = f"| {rank} | {alloc} | {med:.3f} | "
+            if has_ref:
+                prefix += f"{med / ref_ops:.3f} | "
             f.write(
-                f"| {rank} | {alloc} | {pick(items, 'throughput', 0.5):.3f} | "
+                prefix +
                 f"{pick(items, 'throughput', 0.25):.3f} | "
                 f"{pick(items, 'throughput', 0.0):.3f} | "
                 f"{pick(items, 'post_rss', 0.5):.0f} | "
