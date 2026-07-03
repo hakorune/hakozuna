@@ -27,7 +27,7 @@ Current direction:
                 ProductEntry RemotePending-L0 now drains pending bits into
                 owner entry-local free bits instead of dropping dirty segments.
                 GuardBypass-L1 closes the small-only footing regression.
-                Next: automate ProductEntry gate summaries from raw logs.
+                ProductEntry gate summaries are now generated from raw logs.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.
