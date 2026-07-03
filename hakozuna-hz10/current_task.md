@@ -9,10 +9,10 @@ status:
   Box 1-6 implemented and verified, uncommitted; class_pages bounded
   scan and drain-empty peek follow-ups done too (see below)
   NEW, IMPORTANT: a "small_remoteNN" row (MIN_SIZE=16 MAX_SIZE=64, never
-  tested before) shows hz10 3.2-4.2x SLOWER than system_malloc --
-  confirmed real cause (Box 3's O(N^2) drain-time duplicate check on
-  large-slot_count classes), fix needs a design decision pending user
-  input, not yet made -- see box 3 follow-up section below
+  tested before) showed hz10 3.2-4.2x SLOWER than system_malloc due to
+  Box 3's O(N^2) drain-time duplicate check on large-slot_count classes.
+  Fix lane selected: in-slot local-free marker, remote publish pre-reject,
+  and O(N) verification only on marker fallback
   Box 6 (src/hz10_class_pages.{h,c}) fixed Box 5's remote-row regression:
   remote rows flipped from 15-17x SLOWER than system malloc to ~1.5-1.7x
   FASTER -- see box 6 notes
@@ -86,15 +86,14 @@ box 3 done (HZ10RemoteStackDrain-L0):
   duplicate remote free of the same slot before it drains, so a slot is
   never merged into local_free_head twice
   remote-free of a slot already returned to the owner's local freelist is
-  rejected at owner-drain time (drain_invalid_count); this preserves the
-  planned delayed foreign double-free contract without putting validation on
-  the same-thread fast path
+  rejected before remote publish using the slot-local marker; this avoids
+  corrupting the local freelist next pointer with a Treiber-stack push
   classification pipeline (tail-slack/misaligned/interior/generation) is
   the same as Box 1's, scoped to a page the caller already resolved
   smoke green: basic push/drain, duplicate rejection, stale-generation/
-  invalid-pointer rejection with counters, delayed foreign double-free
-  rejection at drain, and an 8-thread concurrent stress case (disjoint slots
-  per thread) proving no lost pushes under real CAS contention -- not just
+  invalid-pointer rejection with counters, foreign double-free rejection
+  before push, and an 8-thread concurrent stress case (disjoint slots per
+  thread) proving no lost pushes under real CAS contention -- not just
   single-threaded API shape
   standalone check green; ASan/UBSan clean. TSan is not concluded in this
   environment: the TSan runtime aborts with "unexpected memory mapping"
@@ -104,17 +103,14 @@ box 3 done (HZ10RemoteStackDrain-L0):
   remote-freeing concurrently costs ~25x a single-threaded local free
   (CAS contention on one shared stack head, as expected -- same
   local-vs-remote asymmetry HZ8/HZ9 always showed)
-  measured regression from the delayed-double-free fix: owner_drain's
-  duplicate check (hz10_page_local_freelist_contains) walks the current
-  local_free_head chain per drained slot, so a full drain is O(merged x
-  current_local_len), not O(merged) -- at slot_count=1024 this measured
-  217.4M ops/s before the fix, 1.83M ops/s after (~119x). Correctness
-  (hard zero gate) kept as-is for now; making this O(1) would need a
-  per-slot "currently allocated" bit that Box 2's alloc()/free() hot path
-  would have to maintain, which is exactly the one-directional-dependency/
-  minimal-hot-path-state line Box 2 has held since Box 3 -- not changed
-  without deciding that trade-off first. Revisit before any class's
-  slot_count grows enough for this to dominate a remote-heavy row
+  measured regression from the original delayed-double-free fix:
+  owner_drain's duplicate check (hz10_page_local_freelist_contains) walked
+  the current local_free_head chain per drained slot, so a full drain was
+  O(merged x current_local_len), not O(merged). Marker lane replaces that:
+  Box 2 writes a second-word local-free marker on same-thread free and
+  clears it on alloc; Box 3 rejects marked slots before remote publish and
+  only falls back to the O(N) contains walk if a marked slot somehow reaches
+  drain. Normal remote drain is therefore O(merged)
   files: src/hz10_remote_stack.{h,c}, tests/hz10_remote_stack_drain_smoke.c,
   bench/hz10_remote_stack_drain_bench.c
 
@@ -366,8 +362,8 @@ fixed (documented, deprioritized):
   class, at REMOTE_PCT=90) that the established main_local0/main_r50/
   main_r90/medium_local0 rows do not hit -- deprioritized accordingly
 
-box 3 O(N^2) drain cost CONFIRMED real and significant -- previously
-mis-deprioritized, decision pending (not fixed, no code changed):
+box 3 O(N^2) drain cost CONFIRMED real and significant -- marker fix lane
+selected and implemented:
   the box 3 O(N^2) owner-drain duplicate-check was earlier deprioritized
   as "not clearly the isolating case's bottleneck" -- true for
   slot_count=1, but that was the wrong row to test it against. Small
@@ -390,38 +386,27 @@ mis-deprioritized, decision pending (not fixed, no code changed):
   (up to 4096 nodes) on every drained slot, exactly the O(merged x
   current_local_len) cost already measured in isolation back in box 3
   (217.4M ops/s before the user's delayed-double-free fix, 1.83M after)
-  tried to get the user's design preference via AskUserQuestion (fix by
-  adding an O(1) per-slot bit to Box 2's hot path -- taxes every local
-  alloc/free, even in workloads with zero remote traffic; vs. leave
-  as-is and document as a known limitation for small-size + high-remote
-  workloads; vs. weaken the safety check itself, which the user added
-  deliberately in fc597e81 with its own smoke test, and which the Rules
-  section explicitly says not to do without writing the contract first;
-  vs. a different design entirely) -- no response after 60s. Proceeding
-  conservatively: documenting only, NOT touching Box 2's hot path or
-  weakening the safety check without explicit sign-off, since both are
-  hard-to-reverse changes to principles this project has repeatedly
-  called out as deliberate (Box 2 hot-path purity; fail-closed-by-default)
-  one candidate idea worth a future look, not implemented: glibc's
-  tcache double-free check stores a "key" inside the freed chunk's own
-  bytes and checks it in O(1) instead of walking a free list -- Box 2's
-  minimum slot_size (16B) always has 8 spare bytes after the intrusive
-  next-pointer where a similar marker could live. Cheaper than a
-  separate bit array (same cache line already being written), but not
-  free of design work: it trades a true containment check for a
-  probabilistic one (a coincidental byte match could cause a false
-  rejection of a legitimate remote free), which is exactly the kind of
-  fail-closed-contract change the Rules section says needs to be
-  written down first, not assumed safe
+  selected fix: glibc-tcache-style in-slot marker. Box 2's minimum public
+  slot_size is 16B, so the first word remains the intrusive next pointer and
+  the second word can carry a local-free marker. Same-thread free writes the
+  marker, alloc clears it, remote publish rejects marked slots before it can
+  overwrite the local next pointer, and drain only pays the old O(N) contains
+  walk on a marked fallback. This preserves the fail-closed foreign
+  double-free check while avoiding a separate per-slot bit array
+  preliminary post-fix check (THREADS=4 ITERS=200000 RUNS=3,
+  MIN_SIZE=16 MAX_SIZE=64): REMOTE_PCT=50 hz10 ~17.0-18.8M vs system_malloc
+  ~18.1-19.5M; REMOTE_PCT=90 hz10 ~12.7-13.8M vs system_malloc ~12.0-13.1M.
+  The old 3-4x slower small_remote regression is gone in this short run.
+  Main/medium local short checks stayed strong (main_local0 ~171-178M vs
+  system_malloc ~105-106M; medium_local0 ~189-195M vs ~98-100M)
   this is now the clearer priority over the slot_count=1 gap (that one
   needs a quiet machine or bigger surgery either way; this one has a
   clean, low-noise, reproducible 3-4x signal and a concrete, bounded fix
   shape already sketched, just gated on the Box 2 hot-path decision)
 
-next box not yet named:
-  (1) get explicit user sign-off on the box 3 O(N^2) drain-cost fix
-  approach above before touching Box 2's hot path or any fail-closed
-  contract, (2) the slot_count=1 gap needs one of its three
+next:
+  rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
+  final table. The slot_count=1 gap still needs one of its three
   bigger-surgery options (see above), not another small parameter tweak
 
 first GO:

@@ -78,6 +78,16 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
     return 0;
   }
 
+  /* A slot already on the owner's local freelist has its first word in use
+   * as the local next pointer. Do not Treiber-push through that same word:
+   * reject before publishing so an invalid foreign double-free cannot corrupt
+   * the owner's local chain. */
+  if (hz10_freelist_page_is_marked_local_free(page, ptr)) {
+    atomic_fetch_add_explicit(&page->remote_invalid_count, 1u,
+                              memory_order_relaxed);
+    return 0;
+  }
+
   if (!hz10_page_pending_try_claim(page, slot_index)) {
     atomic_fetch_add_explicit(&page->remote_duplicate_count, 1u,
                               memory_order_relaxed);
@@ -123,7 +133,8 @@ uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
     uint32_t slot_index = (uint32_t)(offset / page->slot_size);
     hz10_page_pending_clear(page, slot_index);
 
-    if (hz10_page_local_freelist_contains(page, head)) {
+    if (hz10_freelist_page_is_marked_local_free(page, head) &&
+        hz10_page_local_freelist_contains(page, head)) {
       page->drain_invalid_count += 1u;
       atomic_fetch_add_explicit(&page->remote_invalid_count, 1u,
                                 memory_order_relaxed);
@@ -131,6 +142,7 @@ uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
       continue;
     }
 
+    hz10_freelist_page_mark_local_free(page, head);
     *(void**)head = page->local_free_head;
     page->local_free_head = head;
     page->free_count += 1u;

@@ -178,9 +178,9 @@ static int check_stale_and_invalid_rejected(void) {
 }
 
 /* Case 4: a foreign free of a slot that is already on the owner local
- * freelist is not immediately visible to the remote publisher, but owner
- * drain must reject it instead of inserting a duplicate freelist node. */
-static int check_remote_double_free_detected_at_drain(void) {
+ * freelist is rejected before Treiber push. Otherwise the remote push would
+ * overwrite the same first word the local freelist uses for its next pointer. */
+static int check_remote_double_free_rejected_before_push(void) {
   Hz10FreelistPage* page =
       hz10_freelist_page_create(HZ10_SMOKE_SLOT_SIZE, 4u);
   if (!page) {
@@ -196,8 +196,8 @@ static int check_remote_double_free_detected_at_drain(void) {
   hz10_freelist_page_free(page, p);
 
   int failed = 0;
-  if (!hz10_page_remote_free(page, p, page->generation)) {
-    fprintf(stderr, "drain-dup: remote publish should be delayed to drain\n");
+  if (hz10_page_remote_free(page, p, page->generation)) {
+    fprintf(stderr, "drain-dup: remote publish accepted local-free slot\n");
     failed = 1;
   }
   uint32_t before = page->free_count;
@@ -210,9 +210,14 @@ static int check_remote_double_free_detected_at_drain(void) {
     fprintf(stderr, "drain-dup: free_count changed on duplicate rejection\n");
     failed = 1;
   }
-  if (page->drain_invalid_count != 1u) {
-    fprintf(stderr, "drain-dup: drain_invalid_count=%llu, expected 1\n",
+  if (page->drain_invalid_count != 0u) {
+    fprintf(stderr, "drain-dup: drain_invalid_count=%llu, expected 0\n",
             (unsigned long long)page->drain_invalid_count);
+    failed = 1;
+  }
+  if (atomic_load_explicit(&page->remote_invalid_count,
+                           memory_order_relaxed) != 1u) {
+    fprintf(stderr, "drain-dup: remote_invalid_count expected 1\n");
     failed = 1;
   }
 
@@ -347,7 +352,7 @@ int main(void) {
   if (check_stale_and_invalid_rejected()) {
     return 4;
   }
-  if (check_remote_double_free_detected_at_drain()) {
+  if (check_remote_double_free_rejected_before_push()) {
     return 5;
   }
   if (check_concurrent_stress()) {

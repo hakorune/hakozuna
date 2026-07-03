@@ -42,6 +42,7 @@ static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
   void* head = NULL;
   for (uint32_t i = page->slot_count; i > 0u; --i) {
     void* slot = (char*)page->base + (size_t)(i - 1u) * (size_t)page->slot_size;
+    hz10_freelist_page_mark_local_free(page, slot);
     *(void**)slot = head;
     head = slot;
   }

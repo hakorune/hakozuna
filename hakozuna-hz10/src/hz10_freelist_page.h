@@ -5,6 +5,9 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define HZ10_FREELIST_LOCAL_MARKER \
+  ((uintptr_t)UINT64_C(0x4831304c46524545)) /* "H10LFREE" */
+
 /*
  * HZ10ThreadLocalFreelistPage-L0: Layer 0 of the HZ10 design -- one class,
  * one page, an intrusive freelist (a free slot's own first bytes hold the
@@ -19,7 +22,9 @@
  * Known, accepted gap: alloc()/free() trust the caller. A same-thread
  * double-free is not rejected here -- fail-closed validation for untrusted
  * pointers is the route boundary's job (Layer 1), not this local, plain
- * load/store fast path. See tests/README.md.
+ * load/store fast path. The only extra metadata written here is a cheap
+ * in-slot local-free marker in the second word, used by Box 3 to avoid an
+ * O(N) freelist search on every remote drain slot. See tests/README.md.
  */
 
 typedef struct Hz10FreelistPage {
@@ -137,12 +142,43 @@ void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page);
  */
 
 /* Same-thread fast path. Plain loads/stores only. NULL if empty. */
+static inline uintptr_t* hz10_freelist_page_slot_marker_ptr(
+    const Hz10FreelistPage* page, void* ptr) {
+  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    return NULL;
+  }
+  return (uintptr_t*)((char*)ptr + sizeof(void*));
+}
+
+static inline void hz10_freelist_page_mark_local_free(
+    const Hz10FreelistPage* page, void* ptr) {
+  uintptr_t* marker = hz10_freelist_page_slot_marker_ptr(page, ptr);
+  if (marker) {
+    *marker = HZ10_FREELIST_LOCAL_MARKER;
+  }
+}
+
+static inline void hz10_freelist_page_clear_local_free_marker(
+    const Hz10FreelistPage* page, void* ptr) {
+  uintptr_t* marker = hz10_freelist_page_slot_marker_ptr(page, ptr);
+  if (marker) {
+    *marker = 0u;
+  }
+}
+
+static inline int hz10_freelist_page_is_marked_local_free(
+    const Hz10FreelistPage* page, void* ptr) {
+  uintptr_t* marker = hz10_freelist_page_slot_marker_ptr(page, ptr);
+  return marker && *marker == HZ10_FREELIST_LOCAL_MARKER;
+}
+
 static inline void* hz10_freelist_page_alloc(Hz10FreelistPage* page) {
   void* slot = page->local_free_head;
   if (!slot) {
     return NULL;
   }
   page->local_free_head = *(void**)slot;
+  hz10_freelist_page_clear_local_free_marker(page, slot);
   page->free_count -= 1u;
   return slot;
 }
@@ -151,6 +187,7 @@ static inline void* hz10_freelist_page_alloc(Hz10FreelistPage* page) {
  * pointer this page actually handed out and has not already freed. */
 static inline void hz10_freelist_page_free(Hz10FreelistPage* page,
                                           void* ptr) {
+  hz10_freelist_page_mark_local_free(page, ptr);
   *(void**)ptr = page->local_free_head;
   page->local_free_head = ptr;
   page->free_count += 1u;

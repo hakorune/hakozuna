@@ -174,8 +174,8 @@ slot_count=1 isolation gap root cause (see current_task.md, not fixed):
   is a pathological combination (the single largest size class at
   REMOTE_PCT=90) the established rows above do not hit.
 
-small_remoteNN row -- box 3's O(n^2) drain cost CONFIRMED real (see
-current_task.md, not fixed, decision pending):
+small_remoteNN row -- box 3's O(n^2) drain cost CONFIRMED real, marker fix
+implemented (see current_task.md):
   every row this project had benched so far (main_local0/r50/r90,
   medium_local0) only ever lands in classes with slot_count<=16, so
   Box 3's owner-drain duplicate-check cost (O(merged x
@@ -195,12 +195,13 @@ current_task.md, not fixed, decision pending):
   0.015s, 606 page-faults, ~4880 cycles/op -- consistent with
   hz10_page_local_freelist_contains (src/hz10_remote_stack.c) walking
   long local_free_head chains (up to 4096 nodes) on every drained slot.
-  A real, proper fix (an O(1) per-slot bit in Box 2) taxes every local
-  alloc/free even with zero remote traffic, and weakening the safety
-  check itself conflicts with a rule this project already wrote down
-  ("do not weaken fail-closed route without writing the contract
-  first") -- this is a genuine design tradeoff, not something to decide
-  unilaterally, so it is documented and not yet fixed. See
-  current_task.md for the full writeup including a cheaper-but-not-free
-  candidate idea (a glibc-tcache-style in-slot marker).
+  Selected fix: a glibc-tcache-style in-slot marker, not a separate bit
+  array. Box 2 writes a second-word local-free marker on same-thread free
+  and clears it on alloc; Box 3 rejects marked slots before remote publish
+  and keeps the old O(N) contains walk only as a marked fallback. This should
+  make normal remote drain O(merged). Short post-fix check
+  (THREADS=4 ITERS=200000 RUNS=3, same MIN/MAX): REMOTE_PCT=50 hz10
+  ~17.0-18.8M vs system_malloc ~18.1-19.5M; REMOTE_PCT=90 hz10
+  ~12.7-13.8M vs system_malloc ~12.0-13.1M. The old 3-4x-slower numbers are
+  retained above as the pre-fix evidence, not the current state.
 ```
