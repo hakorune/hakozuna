@@ -409,6 +409,10 @@ void* h8_malloc_inner(size_t size);
 void* h8_realloc_inner(void* ptr, size_t size);
 void h8_free_arena_inner(void* ptr);
 void h8_free_inner(void* ptr);
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+void* h9_lsp_debug_public_nosync_malloc(size_t size);
+bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out);
+#endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
 void* h9_local_malloc_medium_inner(size_t size);
 void h9_local_free_outer(void* ptr);

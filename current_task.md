@@ -20,10 +20,10 @@ Current direction:
                 Inline local slab body is fast; route-first public free is the
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
-                PublicEntry-L0 is correct but slow; route authority sync is
-                the current practical residual before preload integration.
-                Next probe keeps segment as static route metadata and leaves
-                per-slot state entry-local; compare nosync to HZ8 public API.
+                ProductEntry-L0 is now wired into the real medium public path:
+                segment metadata is static on fast path, per-slot state stays
+                entry-local, HZ8 small arena is skipped before HZ9 route, and
+                segment cap was widened for matrix-like repeated runs.
                 ASM audit separates DCE phantom ceilings from gates.
                 Route/core and pointer-token helpers stay split for line rule.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.

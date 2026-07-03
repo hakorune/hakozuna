@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-#if defined(H9_LOCAL_ENTRY_SPLIT_L1) && defined(H9_SLAB_ENTRY_SPLIT_L1)
-#error "H9_LOCAL_ENTRY_SPLIT_L1 and H9_SLAB_ENTRY_SPLIT_L1 are exclusive"
+#if (defined(H9_LOCAL_ENTRY_SPLIT_L1) && defined(H9_SLAB_ENTRY_SPLIT_L1)) || \
+    (defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0) &&                         \
+     (defined(H9_LOCAL_ENTRY_SPLIT_L1) || defined(H9_SLAB_ENTRY_SPLIT_L1)))
+#error "HZ9 public entry variants are exclusive"
 #endif
 
 #if defined(H9_SLAB_ENTRY_SPLIT_L1) && defined(H9_SLAB_ENTRY_SIZE_BYPASS_L1)
@@ -37,6 +39,16 @@ static bool h9_slab_public_size_maybe_candidate(size_t size) {
 #endif
 
 static void* h8_public_malloc_dispatch(size_t size) {
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  if (size > H8_MAX_SMALL_SIZE && size <= H8_MEDIUM_MAX_SIZE) {
+    if (h8_thread_ctx_fast()) {
+      void* ptr = h9_lsp_debug_public_nosync_malloc(size);
+      if (ptr) {
+        return ptr;
+      }
+    }
+  }
+#endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
   if (size > H8_MAX_SMALL_SIZE && size <= H8_MEDIUM_MAX_SIZE) {
     H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_MALLOC_MEDIUM]);
@@ -60,6 +72,22 @@ static void* h8_public_malloc_dispatch(size_t size) {
 }
 
 static void h8_public_free_dispatch(void* ptr) {
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  if (ptr && atomic_load_explicit(&h8g.ready, memory_order_acquire)) {
+    if (h8_arena_contains(ptr)) {
+      h8_free_inner(ptr);
+      return;
+    }
+    bool owned = false;
+    if (h9_lsp_debug_public_product_free(ptr, &owned)) {
+      return;
+    }
+    if (owned) {
+      H8_DEBUG_INC(invalid_count);
+      return;
+    }
+  }
+#endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
   if (ptr && atomic_load_explicit(&h8g.ready, memory_order_acquire)) {
     H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_FREE_READY]);

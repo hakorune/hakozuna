@@ -28,6 +28,11 @@ $(ROOT)/h8_bench_hz9publicapi_baseline: $(HZ9_PUBLIC_API_BASELINE_BENCH_SRC) $(H
 bench-hz9publicapi-baseline: $(ROOT)/h8_bench_hz9publicapi_baseline
 	$(ROOT)/h8_bench_hz9publicapi_baseline
 
+$(ROOT)/h8_bench_release_hz9localslabpublicentry: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ9_LOCAL_SLAB_PUBLIC_ENTRY_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-release-hz9localslabpublicentry: $(ROOT)/h8_bench_release_hz9localslabpublicentry
+
 $(ROOT)/h8_bench_hz9segmententry: $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ9_SEGMENT_ENTRY_CFLAGS) $(INC) -o $@ $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 

@@ -254,6 +254,80 @@ read:
   step is product entry integration and matrix gates, not chasing fused ceiling.
 ```
 
+## Product Entry L0
+
+```text
+build:
+  bench-release-hz9localslabpublicentry
+  flag: H9_LOCAL_SLAB_PUBLIC_ENTRY_L0
+
+malloc:
+  medium size only
+  HZ9 public nosync local slab path first
+  fallback to HZ8 if no HZ9 ctx/page/segment is available
+
+free:
+  HZ8 small arena pointers skip HZ9 and go directly to HZ8
+  current-entry exact hit frees locally without route
+  fallback first checks the HZ9 segment hash; non-HZ9 pointers return MISS
+  only HZ9 segment hits synchronize that segment's entry before route
+
+cap:
+  H9_LSP_MAX_SEGMENTS = 1024
+  H9_LSP_HASH_CAP = 2048
+  create_segment preflights cap before reserve/commit
+```
+
+### Quick Matrix R3
+
+```text
+command shape:
+  RUNS=3 THREADS=8 ITERS=30000
+  baseline: h8_bench_release
+  candidate: h8_bench_release_hz9localslabpublicentry
+
+fixed64_local0:
+  base 130.158M
+  cand 297.355M
+
+medium_local0:
+  base 96.384M
+  cand 135.600M
+
+main_local0:
+  base 125.472M
+  cand 163.399M
+
+guard_local0:
+  base 237.237M
+  cand 203.300M
+
+read:
+  product entry is now matrix-shaped enough to continue.
+  fixed64/medium/main local are positive in this quick run.
+  guard still needs R10 because small-path variance remains visible, but the
+  prior severe small-free miss tax is gone.
+```
+
+## Product Entry Hazards Closed In L0
+
+```text
+small free miss tax:
+  prior product free routed every small/H8 arena free through HZ9 hash route
+  fix: h8_arena_contains(ptr) skips HZ9 product route
+
+run-to-run segment cliff:
+  HZ9 segments persist across runs in the same process
+  old cap 64 exhausted after repeated threaded runs
+  create_segment then reserve/committed before failing cap, producing slow runs
+  fix: widen cap and preflight free segment slot before reserve/commit
+
+remaining non-goal:
+  no segment release/lifecycle policy yet
+  no MT remote protocol yet
+  no promotion decision from R3 quick matrix
+```
+
 ## Contract Split
 
 ```text

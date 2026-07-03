@@ -522,6 +522,25 @@ static void h9_lsp_public_sync_all(void) {
   }
 }
 
+static H9LspSegment* h9_lsp_public_segment_for_ptr(void* ptr) {
+  if (!ptr) {
+    return NULL;
+  }
+  uintptr_t base =
+      (uintptr_t)ptr & ~(uintptr_t)(H9_LSP_SEGMENT_BYTES - 1u);
+  return h9_lsp_hash_find(base);
+}
+
+static void h9_lsp_public_sync_segment(H9LspSegment* segment) {
+  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[i];
+    if (entry->authority_segment == segment) {
+      h9_lsp_public_sync_entry(entry);
+      return;
+    }
+  }
+}
+
 void h9_lsp_debug_public_entry_reset(void) {
   h9_lsp_debug_reset();
   memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
@@ -624,6 +643,45 @@ bool h9_lsp_debug_public_current_free(void* ptr) {
 
   h9_lsp_public_sync_all();
   H9LspRouteResult route = h9_lsp_debug_route_direct_owned(ptr);
+  if (route.kind != H8_ROUTE_VALID) {
+    return false;
+  }
+  H9LspSegment* segment = (H9LspSegment*)route.segment;
+  uint64_t bit = UINT64_C(1) << route.slot;
+  segment->alloc_bits &= ~bit;
+  segment->free_bits |= bit;
+  if (route.class_id < H8_MEDIUM_CLASS_COUNT &&
+      h9_lsp_public_entries[route.class_id].authority_segment == segment) {
+    h9_lsp_public_entries[route.class_id].page.alloc_bits &= ~bit;
+    h9_lsp_public_entries[route.class_id].page.free_bits |= bit;
+  }
+  return true;
+}
+
+bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  H9LspCompactRouteLeafEntry* entry = h9_lsp_public_current_entry;
+  if (entry && h9_lsp_compact_routeleaf_fast_free(entry, ptr)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+
+  H9LspSegment* segment_hint = h9_lsp_public_segment_for_ptr(ptr);
+  if (!segment_hint) {
+    return false;
+  }
+  h9_lsp_public_sync_segment(segment_hint);
+  H9LspRouteResult route = h9_lsp_debug_route(ptr);
+  if (route.kind == H8_ROUTE_MISS) {
+    return false;
+  }
+  if (owned_out) {
+    *owned_out = true;
+  }
   if (route.kind != H8_ROUTE_VALID) {
     return false;
   }

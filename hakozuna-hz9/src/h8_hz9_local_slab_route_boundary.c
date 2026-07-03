@@ -10,8 +10,8 @@
 #define H9_LSP_PAYLOAD_OFFSET 4096u
 #define H9_LSP_SEGMENT_MAGIC 0x48394c53u
 #define H9_LSP_SEGMENT_DEAD 0x48394445u
-#define H9_LSP_MAX_SEGMENTS 64u
-#define H9_LSP_HASH_CAP 128u
+#define H9_LSP_MAX_SEGMENTS 1024u
+#define H9_LSP_HASH_CAP 2048u
 
 #if defined(__GNUC__) || defined(__clang__)
 #define H9_LSP_COLD_NOINLINE __attribute__((noinline, cold))
@@ -172,6 +172,19 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   }
   uint32_t slot_count = h9_lsp_slot_count_for(spec->slot_size);
   if (slot_count == 0u) {
+    return NULL;
+  }
+
+  h8_platform_mutex_lock(&h9_lsp_lock);
+  bool has_slot = false;
+  for (size_t i = 0; i < H9_LSP_MAX_SEGMENTS; ++i) {
+    if (!h9_lsp_segments[i]) {
+      has_slot = true;
+      break;
+    }
+  }
+  h8_platform_mutex_unlock(&h9_lsp_lock);
+  if (!has_slot) {
     return NULL;
   }
 
