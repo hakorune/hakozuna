@@ -111,6 +111,7 @@ bool h9_lsp_debug_publicentry_bench(size_t size, uint64_t iters, bool touch,
 void* h9_lsp_debug_public_nosync_malloc(size_t size);
 bool h9_lsp_debug_public_nosync_free(void* ptr, bool* owned_out);
 void h9_lsp_debug_public_entry_reset(void);
+void h9_lsp_debug_public_thread_shutdown(void);
 bool h9_lsp_debug_public_current_free(void* ptr);
 bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out);
 bool h9_lsp_debug_publicentry_nosync_bench(

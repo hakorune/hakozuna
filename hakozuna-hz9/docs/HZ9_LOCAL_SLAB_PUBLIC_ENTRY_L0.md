@@ -417,6 +417,132 @@ note:
   exceed resident RSS when pages are reserved/committed but sparsely touched.
 ```
 
+## Product Entry R10 ASLR-Off With Segment Counters
+
+```text
+command shape:
+  setarch $(uname -m) -R
+  RUNS=10 THREADS=8 ITERS=50000
+  baseline: h8_bench_release
+  candidate: h8_bench_release_hz9localslabpublicentry
+
+fixed64_local0:
+  throughput:
+    base 183.269M
+    cand 434.556M
+    ratio 2.37x
+  post RSS:
+    base 2.80 MiB
+    cand 2.81 MiB
+  segments:
+    create=80 live=80 committed=20.0 MiB reserved=40.0 MiB cap_reject=0
+
+medium_local0:
+  throughput:
+    base 145.891M
+    cand 182.962M
+    ratio 1.25x
+  post RSS:
+    base 3.25 MiB
+    cand 7.55 MiB
+  segments:
+    create=480 live=480 committed=120.0 MiB reserved=240.0 MiB cap_reject=0
+
+main_local0:
+  throughput:
+    base 143.083M
+    cand 153.690M
+    ratio 1.07x
+  post RSS:
+    base 3.52 MiB
+    cand 5.79 MiB
+  segments:
+    create=320 live=320 committed=80.0 MiB reserved=160.0 MiB cap_reject=0
+
+guard_local0:
+  throughput:
+    base 322.201M
+    cand 281.900M
+    ratio 0.87x
+  post RSS:
+    base 2.90 MiB
+    cand 3.02 MiB
+  segments:
+    create=0 live=0 committed=0 reserved=0 cap_reject=0
+
+read:
+  fixed64 and medium local throughput remain strong.
+  main local only barely clears positive territory in R10.
+  guard still regresses, although no HZ9 segment is created; this is dispatch
+  footing / arena skip cost, not segment retention.
+  medium/main RSS growth is explained by segment retention across runs.
+```
+
+## Next Decision
+
+```text
+do not open MT remote yet:
+  local ProductEntry is not stable enough on guard/main and has no release
+  story for retained HZ9 segments
+
+next box:
+  HZ9ProductEntrySegmentRelease-L1
+
+goal:
+  release or recycle ProductEntry test segments at thread/run boundaries
+  keep local throughput benefit
+  lower medium/main post RSS and segment_live after matrix runs
+
+secondary:
+  reduce guard tax by making the ProductEntry free dispatch bypass cheaper for
+  HZ8 small arena pointers
+```
+
+## Segment Release L1 Probe
+
+```text
+change:
+  H9_LOCAL_SLAB_PUBLIC_ENTRY_L0 releases each thread's TLS public-entry
+  segments during h8_thread_shutdown()
+
+scope:
+  local-only
+  remote protocol still closed
+  no reusable segment cache yet
+
+R5 ASLR OFF, THREADS=8, ITERS=50000:
+  medium_local0:
+    base throughput 124.818M
+    cand throughput 128.191M
+    base post RSS 3.13 MiB
+    cand post RSS 3.26 MiB
+    segments create=240 release=240 live=0
+
+  main_local0:
+    base throughput 134.400M
+    cand throughput 141.323M
+    base post RSS 3.39 MiB
+    cand post RSS 3.71 MiB
+    segments create=160 release=160 live=0
+
+  guard_local0:
+    base throughput 269.092M
+    cand throughput 271.296M
+    base post RSS 2.90 MiB
+    cand post RSS 2.85 MiB
+    segments create=0 release=0 live=0
+
+read:
+  release fixes retained segment live bytes and returns RSS near HZ8.
+  throughput benefit shrinks because synchronous thread-exit release is counted
+  in the public matrix run.
+
+next:
+  keep release for correctness/RSS evidence
+  investigate reusable bounded segment cache or cheaper run-boundary release
+  before MT remote protocol
+```
+
 ## Contract Split
 
 ```text

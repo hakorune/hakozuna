@@ -517,15 +517,12 @@ static void h9_lsp_public_sync_entry(H9LspCompactRouteLeafEntry* entry) {
 }
 
 static void h9_lsp_public_sync_all(void) {
-  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i)
     h9_lsp_public_sync_entry(&h9_lsp_public_entries[i]);
-  }
 }
-
 static H9LspSegment* h9_lsp_public_segment_for_ptr(void* ptr) {
-  if (!ptr) {
+  if (!ptr)
     return NULL;
-  }
   uintptr_t base =
       (uintptr_t)ptr & ~(uintptr_t)(H9_LSP_SEGMENT_BYTES - 1u);
   return h9_lsp_hash_find(base);
@@ -536,9 +533,16 @@ static void h9_lsp_public_sync_segment(H9LspSegment* segment) {
     H9LspCompactRouteLeafEntry* entry = &h9_lsp_public_entries[i];
     if (entry->authority_segment == segment) {
       h9_lsp_public_sync_entry(entry);
-      return;
+      break;
     }
   }
+}
+
+void h9_lsp_debug_public_thread_shutdown(void) {
+  for (uint32_t i = 0; i < H8_MEDIUM_CLASS_COUNT; ++i)
+    h9_lsp_release_segment(h9_lsp_public_entries[i].authority_segment);
+  memset(h9_lsp_public_entries, 0, sizeof(h9_lsp_public_entries));
+  h9_lsp_public_last_class = UINT32_MAX, h9_lsp_public_current_entry = NULL;
 }
 
 void h9_lsp_debug_public_entry_reset(void) {

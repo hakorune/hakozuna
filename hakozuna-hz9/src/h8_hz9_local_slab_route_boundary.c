@@ -237,15 +237,13 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
   h9_lsp_stats.segment_committed_bytes += H9_LSP_SEGMENT_BYTES;
   h9_lsp_stats.segment_reserved_bytes += raw_bytes;
   if (h9_lsp_stats.segment_committed_bytes >
-      h9_lsp_stats.segment_committed_peak_bytes) {
+      h9_lsp_stats.segment_committed_peak_bytes)
     h9_lsp_stats.segment_committed_peak_bytes =
         h9_lsp_stats.segment_committed_bytes;
-  }
   if (h9_lsp_stats.segment_reserved_bytes >
-      h9_lsp_stats.segment_reserved_peak_bytes) {
+      h9_lsp_stats.segment_reserved_peak_bytes)
     h9_lsp_stats.segment_reserved_peak_bytes =
         h9_lsp_stats.segment_reserved_bytes;
-  }
   h8_platform_mutex_unlock(&h9_lsp_lock);
   return segment;
 }
@@ -253,6 +251,34 @@ static H9LspSegment* h9_lsp_create_segment(uint32_t class_id) {
 static void* h9_lsp_slot_ptr(const H9LspSegment* segment, uint32_t slot) {
   return (void*)((uintptr_t)segment + H9_LSP_PAYLOAD_OFFSET +
                  (uintptr_t)slot * (uintptr_t)segment->slot_size);
+}
+
+static void h9_lsp_release_segment(H9LspSegment* segment) {
+  if (!segment) {
+    return;
+  }
+  void* raw = NULL;
+  size_t raw_bytes = 0u;
+  h8_platform_mutex_lock(&h9_lsp_lock);
+  for (size_t i = 0; i < H9_LSP_MAX_SEGMENTS; ++i) {
+    if (h9_lsp_segments[i] == segment) {
+      raw = segment->raw_base, raw_bytes = segment->raw_bytes;
+      segment->magic = H9_LSP_SEGMENT_DEAD;
+      h9_lsp_segments[i] = NULL;
+      h9_lsp_stats.segment_release++;
+      h9_lsp_stats.segment_live -= h9_lsp_stats.segment_live ? 1u : 0u;
+      size_t cb = h9_lsp_stats.segment_committed_bytes;
+      h9_lsp_stats.segment_committed_bytes =
+          cb >= H9_LSP_SEGMENT_BYTES ? cb - H9_LSP_SEGMENT_BYTES : 0u;
+      size_t rb = h9_lsp_stats.segment_reserved_bytes;
+      h9_lsp_stats.segment_reserved_bytes =
+          rb >= raw_bytes ? rb - raw_bytes : 0u;
+      break;
+    }
+  }
+  h8_platform_mutex_unlock(&h9_lsp_lock);
+  if (raw)
+    h8_platform_release(raw, raw_bytes);
 }
 
 void h9_lsp_debug_reset(void) {
