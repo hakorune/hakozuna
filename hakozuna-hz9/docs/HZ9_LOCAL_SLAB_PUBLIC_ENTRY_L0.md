@@ -417,85 +417,58 @@ note:
   exceed resident RSS when pages are reserved/committed but sparsely touched.
 ```
 
-## Product Entry R10 ASLR-Off With Segment Counters
+## Product Entry Same-Run R10 Gate Closure
 
 ```text
 command shape:
   setarch $(uname -m) -R
-  RUNS=10 THREADS=8 ITERS=50000
+  RUNS=10 THREADS=8 ITERS=30000
   baseline: h8_bench_release
   candidate: h8_bench_release_hz9localslabpublicentry
 
 fixed64_local0:
-  throughput:
-    base 183.269M
-    cand 434.556M
-    ratio 2.37x
-  post RSS:
-    base 2.80 MiB
-    cand 2.81 MiB
-  segments:
-    create=80 live=80 committed=20.0 MiB reserved=40.0 MiB cap_reject=0
+  base 93.686M, cand 206.814M, ratio 2.208
+  cand post/peak RSS 2.71 / 2.88 MiB, create/live=8/8
 
 medium_local0:
-  throughput:
-    base 145.891M
-    cand 182.962M
-    ratio 1.25x
-  post RSS:
-    base 3.25 MiB
-    cand 7.55 MiB
-  segments:
-    create=480 live=480 committed=120.0 MiB reserved=240.0 MiB cap_reject=0
+  base 80.293M, cand 149.585M, ratio 1.863
+  cand post/peak RSS 3.08 / 3.08 MiB, create/live=48/48
 
 main_local0:
-  throughput:
-    base 143.083M
-    cand 153.690M
-    ratio 1.07x
-  post RSS:
-    base 3.52 MiB
-    cand 5.79 MiB
-  segments:
-    create=320 live=320 committed=80.0 MiB reserved=160.0 MiB cap_reject=0
+  base 86.826M, cand 180.631M, ratio 2.080
+  cand post/peak RSS 3.67 / 3.72 MiB, create/live=32/32
+
+medium_interleaved_remote50:
+  base 22.946M, cand 27.857M, ratio 1.214
+  remote_claim/drain/drain_invalid=1090269/685088/0
+
+main_interleaved_remote90:
+  base 16.325M, cand 21.967M, ratio 1.346
+  remote_claim/drain/drain_invalid=1555662/535280/0
 
 guard_local0:
-  throughput:
-    base 322.201M
-    cand 281.900M
-    ratio 0.87x
-  post RSS:
-    base 2.90 MiB
-    cand 3.02 MiB
-  segments:
-    create=0 live=0 committed=0 reserved=0 cap_reject=0
+  base 189.703M, cand 174.152M, ratio 0.918
+  no HZ9 segments; remaining loss is dispatch/footing tax
 
 read:
-  fixed64 and medium local throughput remain strong.
-  main local only barely clears positive territory in R10.
-  guard still regresses, although no HZ9 segment is created; this is dispatch
-  footing / arena skip cost, not segment retention.
-  medium/main RSS growth is explained by segment retention across runs.
+  lifecycle cache removes the superseded 480-live segment retention artifact.
+  ProductEntry is strong on medium/main/fixed64 and remote, but guard remains
+  below gate and must be closed before promotion-quality status.
 ```
 
 ## Next Decision
 
 ```text
-do not open MT remote yet:
-  local ProductEntry is not stable enough on guard/main and has no release
-  story for retained HZ9 segments
+promotion-quality blocker:
+  guard_local0 remains below gate even though no HZ9 segment is created
 
 next box:
-  HZ9ProductEntrySegmentRelease-L1
+  HZ9ProductEntryGuardBypass-L1
 
 goal:
-  release or recycle ProductEntry test segments at thread/run boundaries
-  keep local throughput benefit
-  lower medium/main post RSS and segment_live after matrix runs
-
-secondary:
-  reduce guard tax by making the ProductEntry free dispatch bypass cheaper for
-  HZ8 small arena pointers
+  avoid ProductEntry footing on HZ8 small-only pointers
+  keep medium/main local and remote owner-drain wins
+  preserve bounded cache/release lifecycle
 ```
 
 ## Segment Release L1 Probe
@@ -775,6 +748,10 @@ medium_interleaved_remote50:
 main_interleaved_remote90:
   throughput 22.045M, post/peak RSS 10.52 / 14.11 MiB
   remote_claim/drain/drain_slots/drain_invalid=1531470/533162/1677467/0
+release pressure, T16 R5:
+  medium_local0 create/release/live=288/240/48, post/peak 5.62/5.77 MiB
+  medium_r50 create/release/live=288/240/48, drain_invalid=0
+  main_r90 create/release/live=128/80/48, drain_invalid=0
 
 read:
   R10 keeps local/remote throughput strong, cap_reject zero, and drain_invalid
