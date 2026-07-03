@@ -173,4 +173,34 @@ slot_count=1 isolation gap root cause (see current_task.md, not fixed):
   primitive, or a different reuse structure), deprioritized since this
   is a pathological combination (the single largest size class at
   REMOTE_PCT=90) the established rows above do not hit.
+
+small_remoteNN row -- box 3's O(n^2) drain cost CONFIRMED real (see
+current_task.md, not fixed, decision pending):
+  every row this project had benched so far (main_local0/r50/r90,
+  medium_local0) only ever lands in classes with slot_count<=16, so
+  Box 3's owner-drain duplicate-check cost (O(merged x
+  current_local_len), first measured in isolation back in box 3) had
+  never actually been exercised by a real hz10_public_entry row. Tested
+  a small_remoteNN row (MIN_SIZE=16 MAX_SIZE=64, hits slot_count
+  1024-4096 classes, matching this project's own established row-naming
+  convention) at THREADS=4 ITERS=500000, low noise (RSS flat, tight
+  spread unlike the slot_count=1 case):
+
+    REMOTE_PCT=0:  hz10 ~200-208M ops/s, parity with system_malloc
+    REMOTE_PCT=50: hz10 ~5.7-6.2M vs system_malloc ~19.4M (~3.2x SLOWER)
+    REMOTE_PCT=90: hz10 ~3.0-3.3M vs system_malloc ~12.9M (~4.2x SLOWER)
+
+  Confirmed via perf stat + strace this is a pure CPU cost (opposite
+  signature from the slot_count=1 case): user time 5.26s vs sys time
+  0.015s, 606 page-faults, ~4880 cycles/op -- consistent with
+  hz10_page_local_freelist_contains (src/hz10_remote_stack.c) walking
+  long local_free_head chains (up to 4096 nodes) on every drained slot.
+  A real, proper fix (an O(1) per-slot bit in Box 2) taxes every local
+  alloc/free even with zero remote traffic, and weakening the safety
+  check itself conflicts with a rule this project already wrote down
+  ("do not weaken fail-closed route without writing the contract
+  first") -- this is a genuine design tradeoff, not something to decide
+  unilaterally, so it is documented and not yet fixed. See
+  current_task.md for the full writeup including a cheaper-but-not-free
+  candidate idea (a glibc-tcache-style in-slot marker).
 ```

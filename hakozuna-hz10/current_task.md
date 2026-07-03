@@ -8,6 +8,11 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 status:
   Box 1-6 implemented and verified, uncommitted; class_pages bounded
   scan and drain-empty peek follow-ups done too (see below)
+  NEW, IMPORTANT: a "small_remoteNN" row (MIN_SIZE=16 MAX_SIZE=64, never
+  tested before) shows hz10 3.2-4.2x SLOWER than system_malloc --
+  confirmed real cause (Box 3's O(N^2) drain-time duplicate check on
+  large-slot_count classes), fix needs a design decision pending user
+  input, not yet made -- see box 3 follow-up section below
   Box 6 (src/hz10_class_pages.{h,c}) fixed Box 5's remote-row regression:
   remote rows flipped from 15-17x SLOWER than system malloc to ~1.5-1.7x
   FASTER -- see box 6 notes
@@ -361,12 +366,63 @@ fixed (documented, deprioritized):
   class, at REMOTE_PCT=90) that the established main_local0/main_r50/
   main_r90/medium_local0 rows do not hit -- deprioritized accordingly
 
+box 3 O(N^2) drain cost CONFIRMED real and significant -- previously
+mis-deprioritized, decision pending (not fixed, no code changed):
+  the box 3 O(N^2) owner-drain duplicate-check was earlier deprioritized
+  as "not clearly the isolating case's bottleneck" -- true for
+  slot_count=1, but that was the wrong row to test it against. Small
+  size classes (large slot_count: 16B->4096, 32B->2048, 64B->1024) are
+  never hit by the main_local0/r50/r90/medium_local0 rows this project
+  had been using (their size ranges only ever land in slot_count<=16
+  classes), so this cost went completely untested until now
+  new row tested (MIN_SIZE=16 MAX_SIZE=64, matching this project's own
+  established "small_remoteNN" naming from the root current_task.md's
+  HZ9 notes), THREADS=4 ITERS=500000, low noise (unlike the slot_count=1
+  case -- RSS stays flat, run-to-run spread is tight):
+    REMOTE_PCT=0:  hz10 ~200-208M ops/s, parity with system_malloc
+    REMOTE_PCT=50: hz10 ~5.7-6.2M vs system_malloc ~19.4M (~3.2x SLOWER)
+    REMOTE_PCT=90: hz10 ~3.0-3.3M vs system_malloc ~12.9M (~4.2x SLOWER)
+  confirmed via perf stat + strace this is a pure CPU cost, not a
+  syscall one (opposite signature from the slot_count=1 investigation
+  above): user time 5.26s vs sys time 0.015s, 606 page-faults (trivial),
+  ~4880 cycles per op -- consistent with hz10_page_local_freelist_contains
+  (src/hz10_remote_stack.c) walking long local_free_head chains
+  (up to 4096 nodes) on every drained slot, exactly the O(merged x
+  current_local_len) cost already measured in isolation back in box 3
+  (217.4M ops/s before the user's delayed-double-free fix, 1.83M after)
+  tried to get the user's design preference via AskUserQuestion (fix by
+  adding an O(1) per-slot bit to Box 2's hot path -- taxes every local
+  alloc/free, even in workloads with zero remote traffic; vs. leave
+  as-is and document as a known limitation for small-size + high-remote
+  workloads; vs. weaken the safety check itself, which the user added
+  deliberately in fc597e81 with its own smoke test, and which the Rules
+  section explicitly says not to do without writing the contract first;
+  vs. a different design entirely) -- no response after 60s. Proceeding
+  conservatively: documenting only, NOT touching Box 2's hot path or
+  weakening the safety check without explicit sign-off, since both are
+  hard-to-reverse changes to principles this project has repeatedly
+  called out as deliberate (Box 2 hot-path purity; fail-closed-by-default)
+  one candidate idea worth a future look, not implemented: glibc's
+  tcache double-free check stores a "key" inside the freed chunk's own
+  bytes and checks it in O(1) instead of walking a free list -- Box 2's
+  minimum slot_size (16B) always has 8 spare bytes after the intrusive
+  next-pointer where a similar marker could live. Cheaper than a
+  separate bit array (same cache line already being written), but not
+  free of design work: it trades a true containment check for a
+  probabilistic one (a coincidental byte match could cause a false
+  rejection of a legitimate remote free), which is exactly the kind of
+  fail-closed-contract change the Rules section says needs to be
+  written down first, not assumed safe
+  this is now the clearer priority over the slot_count=1 gap (that one
+  needs a quiet machine or bigger surgery either way; this one has a
+  clean, low-noise, reproducible 3-4x signal and a concrete, bounded fix
+  shape already sketched, just gated on the Box 2 hot-path decision)
+
 next box not yet named:
-  remaining gaps, in priority order: (1) the box 3 O(N^2) owner-drain
-  duplicate-check cost (deprioritized: not clearly the isolating case's
-  bottleneck per earlier investigation either), (2) if revisited, the
-  slot_count=1 gap above needs one of the three bigger-surgery options,
-  not another small parameter tweak
+  (1) get explicit user sign-off on the box 3 O(N^2) drain-cost fix
+  approach above before touching Box 2's hot path or any fail-closed
+  contract, (2) the slot_count=1 gap needs one of its three
+  bigger-surgery options (see above), not another small parameter tweak
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
