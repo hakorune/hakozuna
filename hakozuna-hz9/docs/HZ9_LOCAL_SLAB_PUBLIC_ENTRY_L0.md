@@ -471,6 +471,29 @@ goal:
   preserve bounded cache/release lifecycle
 ```
 
+## ProductEntry GuardBypass L1
+
+```text
+change:
+  public free dispatch sends HZ8 arena pointers directly to h8_free_arena_inner.
+
+R5 ASLR-off, THREADS=8, ITERS=30000:
+  guard_local0:
+    base 213.259M, cand 248.962M, ratio 1.167, HZ9 segments=0
+  main_local0:
+    base 102.394M, cand 194.377M, ratio 1.898
+  medium_local0:
+    base 126.896M, cand 256.029M, ratio 2.018
+  medium_interleaved_remote50:
+    base 23.805M, cand 28.014M, ratio 1.177, drain_invalid=0
+  main_interleaved_remote90:
+    base 16.072M, cand 21.896M, ratio 1.362, drain_invalid=0
+
+read:
+  guard blocker is closed in the focused gate. ProductEntry now keeps local and
+  remote wins while small-only guard bypasses the ProductEntry free footing.
+```
+
 ## Segment Release L1 Probe
 
 ```text

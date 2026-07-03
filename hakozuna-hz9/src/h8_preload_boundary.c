@@ -72,6 +72,13 @@ static void* h8_public_malloc_dispatch(size_t size) {
 }
 
 static void h8_public_free_dispatch(void* ptr) {
+#if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
+  if (ptr && atomic_load_explicit(&h8g.ready, memory_order_acquire) &&
+      h8_arena_contains(ptr)) {
+    h8_free_arena_inner(ptr);
+    return;
+  }
+#endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
   if (ptr && atomic_load_explicit(&h8g.ready, memory_order_acquire)) {
     H8_DEBUG_INC(h9_local_entry_event[H9_LOCAL_ENTRY_FREE_READY]);
