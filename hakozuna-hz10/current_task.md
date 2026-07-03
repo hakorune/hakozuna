@@ -485,12 +485,73 @@ finer size-class table done (src/hz10_size_class.{h,c}):
   fixed sizes -- 32768, 65536 -- are unchanged, both still exact classes)
   files: src/hz10_size_class.{h,c}, tests/hz10_size_class_smoke.c, Makefile
 
+large-object path done (src/hz10_large_alloc.{h,c}):
+  size > HZ10_PAGE_QUANTUM now routes to a dedicated direct-mmap path
+  instead of hz10_malloc returning NULL. Design: register the allocation
+  with Box 1 as a single-slot "page" (slot_size == the request rounded up
+  to the next HZ10_PAGE_QUANTUM multiple, slot_count == 1) -- reuses Box
+  1's exact classification pipeline (tail-slack/misaligned/interior/
+  generation) as-is instead of inventing a second one. Only the
+  allocation's own base quantum is ever registered; any pointer landing
+  in a later quantum of the same reservation looks up a different,
+  unregistered pagemap slot and correctly MISSes -- sufficient because a
+  large allocation only ever hands out its own base pointer, never an
+  interior offset, so nothing ever needs to validate an address in a
+  later quantum
+  hit a real bug during implementation, not just theory: Box 1's
+  register function rejected ANY span exceeding one quantum
+  unconditionally, including slot_count == 1, so the first attempt
+  failed every call. Fixed by relaxing the check to apply only when
+  slot_count > 1 -- the "fits in one quantum" requirement only exists
+  because a multi-slot page's later slots need to be addressable through
+  the SAME single leaf entry as the first, which a single-slot
+  registration (only ever slot index 0) never needed anyway. This was
+  exactly the extension the original Box 1 design doc anticipated
+  ("multi-quantum span registration is a natural Box 2+ extension, not
+  needed for the routing proof itself"). Verified the relaxation is
+  scoped correctly with a dedicated new Box 1 smoke case: a 3-quantum
+  single-slot registration succeeds and classifies correctly (exact/
+  later-quantum-MISS/past-end), while a multi-slot registration spanning
+  more than one quantum is still correctly rejected
+  added a second opaque field to Box 1, H10RouteResult.flags (mirrors
+  owner, Box 1 never interprets it), so hz10_free() can tell a large
+  allocation's route apart from a small-class Hz10FreelistPage* before
+  ever casting route.owner -- HZ10_PAGEMAP_FLAG_LARGE lives in
+  hz10_large_alloc.h, not Box 1, keeping Box 1 agnostic about what the
+  flag means
+  known, accepted L0 gaps (stated up front in hz10_large_alloc.h, not
+  discovered after the fact): no pooling/reuse of large blocks (every
+  hz10_large_alloc() is a fresh mmap, every hz10_large_free() a real
+  munmap) and no cross-thread remote-free batching for large objects
+  (works correctly either way, just not measured as a local-vs-remote
+  row the way small classes are)
+  measured the pooling gap's real cost, not just asserted it: a tight
+  alloc/touch/free loop (single object size, no other threads) is ~70K
+  ops/s for hz10's large path vs ~53-56M ops/s for system_malloc at the
+  same sizes (200KB and 1MB) -- roughly 750x slower. This is not
+  apples-to-apples: glibc's dynamic mmap-threshold adjustment serves
+  this exact repeated-same-size pattern from a reused heap region after
+  the first few iterations (no real syscalls), while every hz10 call
+  pays a genuine mmap+munmap round trip by design (no pooling yet). The
+  gap is real, expected, and already explained by a documented gap, not
+  a surprise -- a future box should add a size-bucketed large-object
+  cache if this matters for a workload that actually churns large
+  objects (most do not: large allocations are typically few and
+  long-lived, unlike the small/medium classes this project's rows
+  actually stress)
+  re-verified all existing smokes, ASan/UBSan/TSan, and that
+  main_local0/medium_local0 (which cap at 32768/65536, never reaching
+  this new path) show no regression
+  files: src/hz10_large_alloc.{h,c}, src/hz10_pagemap.{h,c} (flags field,
+  relaxed span check), src/hz10_public_entry.{h,c} (dispatch),
+  tests/hz10_pagemap_route_smoke.c, tests/hz10_public_entry_smoke.c,
+  Makefile
+
 next:
   rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
   final table. The slot_count=1 gap still needs one of its three
   bigger-surgery options (see above), not another small parameter tweak
-  then proceed to task #44 (large-object path), #45 (decommit/aging
-  policy), in that order per the agreed plan
+  then proceed to task #45 (decommit/aging policy for Box 4's page pool)
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

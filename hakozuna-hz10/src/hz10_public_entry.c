@@ -1,5 +1,6 @@
 #include "hz10_public_entry.h"
 #include "hz10_class_pages.h"
+#include "hz10_large_alloc.h"
 #include "hz10_pagemap.h"
 #include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
@@ -19,6 +20,12 @@ static _Thread_local char hz10_thread_token_storage;
 #define HZ10_THREAD_TOKEN ((void*)&hz10_thread_token_storage)
 
 void* hz10_malloc(size_t size) {
+  if (size == 0u) {
+    return NULL;
+  }
+  if (size > (size_t)HZ10_PAGE_QUANTUM) {
+    return hz10_large_alloc(size);
+  }
   uint32_t class_id = hz10_size_class_for(size);
   if (class_id >= HZ10_CLASS_COUNT) {
     return NULL;
@@ -74,6 +81,10 @@ int hz10_free(void* ptr) {
   H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
   if (route.kind != H10_ROUTE_VALID) {
     return 0;
+  }
+  if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
+    hz10_large_free(route.page_base, route.slot_size);
+    return 1;
   }
   Hz10FreelistPage* page = (Hz10FreelistPage*)route.owner;
   if (!page) {

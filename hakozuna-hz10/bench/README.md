@@ -222,4 +222,24 @@ picking this over literal batching):
   Settled on 4 stripes. Re-verified small_remote50/90 and main_r50/r90
   afterward: no regression from the added per-page memory or per-stripe
   drain peek.
+
+large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
+  now succeeds instead of returning NULL, via a dedicated direct-mmap
+  path (see current_task.md for the design and a real Box 1 bug this
+  surfaced and fixed). Measured the known "no pooling" gap's real cost
+  rather than just asserting it: a tight alloc/touch/free loop of one
+  fixed large size, no other threads, single-threaded -- hz10 ~70K ops/s
+  vs system_malloc ~53-56M ops/s at 200KB and 1MB (roughly 750x slower).
+  Not apples-to-apples: glibc's dynamic mmap-threshold adjustment serves
+  this exact repeated-same-size pattern from a reused heap region after
+  the first few iterations (no real syscalls after warmup), while every
+  hz10 call pays a genuine mmap+munmap round trip by design (no large-
+  object pooling yet, an explicitly stated gap, not a surprise). Not
+  expected to matter for the workload shapes this project's rows
+  actually stress (large allocations are typically few and long-lived in
+  real programs, unlike the small/medium classes main_local0/medium_local0/
+  small_remoteNN exercise) -- a future box should add a size-bucketed
+  large-object cache if a real workload shows otherwise.
+  Re-verified main_local0/medium_local0 (which cap at 32768/65536, never
+  reaching this new path): no regression.
 ```

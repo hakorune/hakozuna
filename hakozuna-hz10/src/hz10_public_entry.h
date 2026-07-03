@@ -11,9 +11,14 @@
  * main_local0/medium_r50/main_r90 benches.
  *
  * L0 scope, honestly stated:
- *   - single quantum per page still (no multi-quantum spanning), so
- *     size > HZ10_PAGE_QUANTUM (64KiB) is not supported -- hz10_malloc
- *     returns NULL, matching Box 1-4's existing single-quantum limit
+ *   - size > HZ10_PAGE_QUANTUM (64KiB) now routes to
+ *     src/hz10_large_alloc.h instead of returning NULL: a dedicated
+ *     direct-mmap path, one allocation per request, reusing Box 1's exact
+ *     classification pipeline via a single-slot registration (see
+ *     hz10_large_alloc.h for why only the allocation's own base pointer
+ *     needs to be registered). No pooling/reuse and no cross-thread
+ *     remote-free batching for large objects yet -- both are accepted,
+ *     documented gaps there, not silently missing
  *   - hz10_malloc(0) returns NULL (no class covers size 0), unlike
  *     standard malloc(0)'s implementation-defined "valid unique pointer"
  *     behavior -- not attempting libc-compatible edge-case parity here
@@ -37,8 +42,8 @@
  *     an oversight -- see tests/README.md
  */
 
-/* Returns NULL if size is 0, or larger than one HZ10_PAGE_QUANTUM, or on
- * allocation failure. */
+/* Returns NULL if size is 0 or on allocation failure. size >
+ * HZ10_PAGE_QUANTUM is now supported via src/hz10_large_alloc.h. */
 void* hz10_malloc(size_t size);
 
 /* ptr == NULL is a no-op success (matches free(NULL)). Returns 1 if freed

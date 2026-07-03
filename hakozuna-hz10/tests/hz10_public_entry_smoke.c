@@ -48,16 +48,13 @@ static int check_multi_class_basic(void) {
   return failed;
 }
 
-/* Case 2: rejected inputs -- oversized, zero, NULL, and genuinely unknown
- * pointers, per hz10_public_entry.h's stated L0 scope. */
+/* Case 2: rejected inputs -- zero and genuinely unknown pointers, per
+ * hz10_public_entry.h's stated L0 scope. size > HZ10_PAGE_QUANTUM is no
+ * longer rejected here -- see check_large_alloc_basic below. */
 static int check_rejected_inputs(void) {
   int failed = 0;
   if (hz10_malloc(0) != NULL) {
     fprintf(stderr, "rejected: malloc(0) should return NULL\n");
-    failed = 1;
-  }
-  if (hz10_malloc((size_t)HZ10_PAGE_QUANTUM + 1u) != NULL) {
-    fprintf(stderr, "rejected: malloc(quantum+1) should return NULL\n");
     failed = 1;
   }
   if (hz10_free(NULL) != 1) {
@@ -223,6 +220,85 @@ static int check_scan_limit_tradeoff(void) {
   return 0;
 }
 
+/* Case 5: basic large-object path (src/hz10_large_alloc.h) -- sizes at and
+ * beyond HZ10_PAGE_QUANTUM+1 must now succeed (they used to be rejected
+ * outright), the full requested range must be genuinely writable (not just
+ * the base pointer), and rounding to different HZ10_PAGE_QUANTUM multiples
+ * must not collide with each other. */
+static int check_large_alloc_basic(void) {
+  size_t sizes[] = {(size_t)HZ10_PAGE_QUANTUM + 1u, /* rounds up to 2 quanta */
+                    (size_t)HZ10_PAGE_QUANTUM * 2u,  /* exactly 2 quanta */
+                    (size_t)HZ10_PAGE_QUANTUM * 5u + 100u};
+  void* ptrs[sizeof(sizes) / sizeof(sizes[0])];
+  int failed = 0;
+
+  for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
+    ptrs[i] = hz10_malloc(sizes[i]);
+    if (!ptrs[i]) {
+      fprintf(stderr, "large_alloc: malloc(%zu) failed\n", sizes[i]);
+      failed = 1;
+      continue;
+    }
+    memset(ptrs[i], (int)(0xC0u + i), sizes[i]);
+  }
+  /* Distinct large allocations must not overlap -- corrupting one via a
+   * write to another would show up as a mismatch here. */
+  for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
+    if (!ptrs[i]) {
+      continue;
+    }
+    unsigned char* bytes = (unsigned char*)ptrs[i];
+    unsigned char expect = (unsigned char)(0xC0u + i);
+    if (bytes[0] != expect || bytes[sizes[i] - 1u] != expect) {
+      fprintf(stderr, "large_alloc: allocation %zu corrupted\n", i);
+      failed = 1;
+    }
+  }
+  for (size_t i = 0; i < sizeof(sizes) / sizeof(sizes[0]); ++i) {
+    if (ptrs[i] && !hz10_free(ptrs[i])) {
+      fprintf(stderr, "large_alloc: free of size %zu rejected\n", sizes[i]);
+      failed = 1;
+    }
+  }
+  return failed;
+}
+
+/* Case 6: a large allocation rejects an interior pointer (matching the
+ * same universal rule every small class already enforces), and a large
+ * allocation freed on a different thread than it was allocated on works
+ * (src/hz10_large_alloc.h documents there is no per-thread ownership
+ * concept for large objects, unlike Box 3's remote path for small
+ * classes -- free() there does not care which thread calls it). */
+static int check_large_alloc_edges(void) {
+  void* p = hz10_malloc((size_t)HZ10_PAGE_QUANTUM + 1u);
+  if (!p) {
+    fprintf(stderr, "large_alloc_edges: setup malloc failed\n");
+    return 1;
+  }
+  if (hz10_free((char*)p + 16) != 0) {
+    fprintf(stderr,
+            "large_alloc_edges: interior pointer should be rejected\n");
+    hz10_free(p);
+    return 1;
+  }
+
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, hz10_smoke_free_in_other_thread, &p) !=
+      0) {
+    fprintf(stderr, "large_alloc_edges: pthread_create failed\n");
+    return 1;
+  }
+  void* ret = NULL;
+  pthread_join(thread, &ret);
+  if ((intptr_t)ret != 1) {
+    fprintf(stderr,
+            "large_alloc_edges: cross-thread free of a large allocation "
+            "was rejected\n");
+    return 1;
+  }
+  return 0;
+}
+
 /* Case 4: cross-thread free. A pointer allocated on this thread, freed on
  * a different thread, must route through Box 3's remote path (accepted,
  * but not yet visible to this thread's allocator) and eventually come
@@ -286,8 +362,14 @@ int main(void) {
   if (check_scan_limit_tradeoff()) {
     return 6;
   }
-  if (check_cross_thread_free()) {
+  if (check_large_alloc_basic()) {
     return 7;
+  }
+  if (check_large_alloc_edges()) {
+    return 8;
+  }
+  if (check_cross_thread_free()) {
+    return 9;
   }
 
   puts("hz10_public_entry_smoke ok");

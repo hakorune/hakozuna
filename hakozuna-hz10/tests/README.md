@@ -10,6 +10,13 @@ generation mismatch invalid
 unknown pointer miss
 ```
 
+Bonus case added for src/hz10_large_alloc.h: a single-slot (slot_count ==
+1) registration may span more than one HZ10_PAGE_QUANTUM (an address in a
+later quantum of that span correctly MISSes, since only the base's own
+quantum is ever registered), while a multi-slot registration spanning
+more than one quantum is still rejected -- the relaxation is single-slot
+only. Also checks owner/flags round-trip through route() unaffected.
+
 `HZ10ThreadLocalFreelistPage-L0` tests:
 
 ```text
@@ -110,9 +117,10 @@ Multi-class public entry (src/hz10_public_entry.{h,c}) tests:
 multi-class basic: alloc/free/touch across several distinct size classes,
   plus LIFO reuse of the same active page after a free -- same shape as
   Box 2's own smoke, exercised through hz10_malloc/hz10_free
-rejected inputs: malloc(0), malloc(quantum+1), free(NULL) as a no-op
-  success, and an interior/unknown pointer, all rejected per the pipeline
-  hz10_public_entry.h documents
+rejected inputs: malloc(0), free(NULL) as a no-op success, and an
+  interior/unknown pointer, all rejected per the pipeline
+  hz10_public_entry.h documents. malloc(quantum+1) is NOT in this list
+  any more -- see large-alloc basic below, it now succeeds
 abandoned page still freeable: exhausting a page (its class's active
   page is replaced) does not break freeing the pointers it already handed
   out -- route()'s owner tag recovers the exact Hz10FreelistPage* even
@@ -136,6 +144,17 @@ cross-thread free: allocate on one thread, free on another -- must route
   actually come back once the allocating thread's own traffic drains
   that page (proves the owner_thread_token dispatch in hz10_free, not
   just Box 3's mechanism in isolation)
+large-alloc basic (src/hz10_large_alloc.h): sizes at and beyond
+  HZ10_PAGE_QUANTUM+1 now succeed instead of returning NULL; the full
+  requested range is genuinely writable, not just the base pointer; and
+  distinct large allocations of different HZ10_PAGE_QUANTUM-multiple
+  sizes do not overlap/corrupt each other
+large-alloc edges: an interior pointer into a large allocation is
+  rejected (same universal rule every small class already enforces),
+  and a large allocation freed on a different thread than it was
+  allocated on works correctly (hz10_large_alloc.h documents there is no
+  per-thread ownership concept for large objects, unlike Box 3's remote
+  path for small classes)
 ```
 
 Known gap, not a smoke requirement: `hz10_free()` cannot carry a

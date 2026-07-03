@@ -12,8 +12,11 @@
  * does address arithmetic against metadata this module owns, so callers
  * may register/query synthetic addresses that were never mmap'd.
  *
- * L0 scope: single-quantum registration only (slot_size * slot_count must
- * fit in one quantum). No allocator malloc/free behavior lives here.
+ * L0 scope: multi-slot registrations must still fit in one quantum
+ * (slot_size * slot_count <= HZ10_PAGE_QUANTUM); a single-slot
+ * (slot_count == 1) registration may span more quanta than that -- see
+ * hz10_pagemap_register_with_owner_and_flags() and src/hz10_large_alloc.h.
+ * No allocator malloc/free behavior lives here.
  */
 
 #define HZ10_PAGE_SHIFT 16u
@@ -51,15 +54,27 @@ typedef struct H10RouteResult {
   void* owner; /* opaque, whatever hz10_pagemap_register_with_owner() was
                 * given; NULL if registered via plain hz10_pagemap_register()
                 * or if the route missed/was invalid. */
+  uint32_t flags; /* opaque, whatever hz10_pagemap_register_with_owner_and_flags()
+                   * was given; 0 if registered via any other register call, or
+                   * if the route missed/was invalid. Box 1 never interprets
+                   * this -- same treatment as owner, just a second slot for a
+                   * caller that wants to distinguish "kinds" of registration
+                   * (e.g. a small-class page vs. a large direct allocation,
+                   * see src/hz10_large_alloc.h) without a second lookup. */
 } H10RouteResult;
 
 /*
  * Registers `base` (must be HZ10_PAGE_QUANTUM-aligned) as a page holding
- * slot_count slots of slot_size bytes each (slot_size * slot_count must be
- * <= HZ10_PAGE_QUANTUM). Returns the new generation (>= 1) on success, or 0
- * on failure (misaligned base, zero size/count, overflow, or OOM committing
- * the backing leaf). Registering an already-registered base bumps and
- * returns a new generation for the same slot.
+ * slot_count slots of slot_size bytes each. If slot_count > 1, slot_size *
+ * slot_count must fit in one HZ10_PAGE_QUANTUM (every slot has to be
+ * addressable through this one registration's single leaf entry). A
+ * single-slot registration (slot_count == 1) has no such limit and may
+ * span any number of quanta -- see src/hz10_large_alloc.h, the first
+ * caller that needs a span bigger than one quantum. Returns the new
+ * generation (>= 1) on success, or 0 on failure (misaligned base, zero
+ * size/count, overflow, or OOM committing the backing leaf). Registering
+ * an already-registered base bumps and returns a new generation for the
+ * same slot.
  */
 uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
                                uint32_t slot_count);
@@ -76,6 +91,19 @@ uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
  */
 uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
                                           uint32_t slot_count, void* owner);
+
+/*
+ * Same as hz10_pagemap_register_with_owner(), but also stores an opaque
+ * flags word (e.g. a "kind of registration" tag) that hz10_pagemap_route()
+ * later returns verbatim in H10RouteResult.flags. Box 1 never interprets
+ * flags, same rule as owner. hz10_pagemap_register_with_owner() is a thin
+ * wrapper for flags == 0, kept so existing callers need no change.
+ */
+uint32_t hz10_pagemap_register_with_owner_and_flags(void* base,
+                                                    uint32_t slot_size,
+                                                    uint32_t slot_count,
+                                                    void* owner,
+                                                    uint32_t flags);
 
 /*
  * Marks `base` as no longer holding a live page. The generation counter is

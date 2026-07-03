@@ -62,8 +62,11 @@ static H10Leaf* hz10_pagemap_ensure_leaf(uint32_t root_idx) {
   return leaf;
 }
 
-uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
-                                          uint32_t slot_count, void* owner) {
+uint32_t hz10_pagemap_register_with_owner_and_flags(void* base,
+                                                    uint32_t slot_size,
+                                                    uint32_t slot_count,
+                                                    void* owner,
+                                                    uint32_t flags) {
   if (!base || slot_size == 0u || slot_count == 0u) {
     return 0u;
   }
@@ -72,7 +75,18 @@ uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
     return 0u;
   }
   uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
-  if (span > (uint64_t)HZ10_PAGE_QUANTUM) {
+  /* The "fits in one quantum" limit only has to hold for slot_count > 1:
+   * a multi-slot page addresses every slot by (offset / slot_size) against
+   * a single leaf record keyed by base's own quantum index, so every slot
+   * has to live inside that one quantum for the addressing model to reach
+   * it at all. A single-slot (slot_count == 1) registration has no such
+   * requirement -- there is only one slot, index 0, at offset 0 -- so it
+   * may span any number of quanta. This is exactly the relaxation the
+   * original design doc anticipated ("multi-quantum span registration is
+   * a natural Box 2+ extension"): src/hz10_large_alloc.h is the first
+   * caller that needs it, registering a direct-mmap allocation bigger than
+   * one quantum as a single slot whose slot_size is the whole reservation. */
+  if (slot_count > 1u && span > (uint64_t)HZ10_PAGE_QUANTUM) {
     return 0u;
   }
 
@@ -94,7 +108,7 @@ uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
   rec->owner = owner;
   rec->slot_count = slot_count;
   rec->generation = generation;
-  rec->flags = 0u;
+  rec->flags = flags;
   /* slot_size is written last: route() treats slot_size==0 as "absent" and
    * reads these fields without the lock, so publishing slot_size last keeps
    * a concurrent lock-free reader from ever seeing a half-written record as
@@ -103,6 +117,12 @@ uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
   rec->slot_size = slot_size;
   hz10_platform_mutex_unlock(&hz10_pagemap_lock);
   return generation;
+}
+
+uint32_t hz10_pagemap_register_with_owner(void* base, uint32_t slot_size,
+                                          uint32_t slot_count, void* owner) {
+  return hz10_pagemap_register_with_owner_and_flags(base, slot_size,
+                                                    slot_count, owner, 0u);
 }
 
 uint32_t hz10_pagemap_register(void* base, uint32_t slot_size,
@@ -146,7 +166,8 @@ static H10RouteResult hz10_pagemap_result(H10RouteKind kind,
                                           void* page_base, uint32_t slot_size,
                                           uint32_t slot_count,
                                           uint32_t slot_index,
-                                          uint32_t generation, void* owner) {
+                                          uint32_t generation, void* owner,
+                                          uint32_t flags) {
   H10RouteResult result;
   result.kind = kind;
   result.reason = reason;
@@ -156,6 +177,7 @@ static H10RouteResult hz10_pagemap_result(H10RouteKind kind,
   result.slot_index = slot_index;
   result.generation = generation;
   result.owner = owner;
+  result.flags = flags;
   return result;
 }
 
@@ -163,7 +185,7 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
                                   uint32_t expected_generation) {
   if (!ptr) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_ROOT_ABSENT, NULL,
-                              0u, 0u, 0u, 0u, NULL);
+                              0u, 0u, 0u, 0u, NULL, 0u);
   }
 
   uintptr_t addr = (uintptr_t)ptr;
@@ -174,7 +196,7 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
   H10Leaf* leaf = hz10_pagemap_leaf_load(root_idx);
   if (!leaf) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_ROOT_ABSENT, NULL,
-                              0u, 0u, 0u, 0u, NULL);
+                              0u, 0u, 0u, 0u, NULL, 0u);
   }
 
   /* Lock-free read: acceptable single-threaded-scope simplification for
@@ -183,13 +205,14 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
   uint32_t slot_size = rec->slot_size;
   if (slot_size == 0u) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_LEAF_ABSENT, NULL,
-                              0u, 0u, 0u, 0u, NULL);
+                              0u, 0u, 0u, 0u, NULL, 0u);
   }
 
   void* base = rec->base;
   void* owner = rec->owner;
   uint32_t slot_count = rec->slot_count;
   uint32_t generation = rec->generation;
+  uint32_t flags = rec->flags;
   uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
 
   /* Unsigned subtraction: a "before base" pointer wraps to a huge value and
@@ -198,27 +221,30 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
 
   if (offset >= span) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_TAIL_SLACK, base,
-                              slot_size, slot_count, 0u, generation, owner);
+                              slot_size, slot_count, 0u, generation, owner,
+                              flags);
   }
   if ((offset & (HZ10_MIN_ALIGN - 1u)) != 0u) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_MISALIGNED, base,
-                              slot_size, slot_count, 0u, generation, owner);
+                              slot_size, slot_count, 0u, generation, owner,
+                              flags);
   }
   if ((offset % slot_size) != 0u) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_INTERIOR, base,
-                              slot_size, slot_count, 0u, generation, owner);
+                              slot_size, slot_count, 0u, generation, owner,
+                              flags);
   }
   if (expected_generation != HZ10_GENERATION_ANY &&
       expected_generation != generation) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_GENERATION_STALE,
                               base, slot_size, slot_count, 0u, generation,
-                              owner);
+                              owner, flags);
   }
 
   return hz10_pagemap_result(H10_ROUTE_VALID, H10_REASON_NONE, base,
                             slot_size, slot_count,
                             (uint32_t)(offset / slot_size), generation,
-                            owner);
+                            owner, flags);
 }
 
 void hz10_pagemap_reset_for_tests(void) {

@@ -39,7 +39,7 @@ POOLED_PAGE_SRC := $(ROOT)/src/hz10_pooled_page.c $(ROOT)/src/hz10_page_pool.c $
 SMOKE_POOLED_PAGE_SRC := $(ROOT)/tests/hz10_bounded_page_pool_smoke.c $(POOLED_PAGE_SRC)
 BENCH_POOLED_PAGE_SRC := $(ROOT)/bench/hz10_bounded_page_pool_bench.c $(POOLED_PAGE_SRC)
 
-PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_size_class.c $(POOLED_PAGE_SRC)
+PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_size_class.c $(ROOT)/src/hz10_large_alloc.c $(POOLED_PAGE_SRC)
 SMOKE_PUBLIC_ENTRY_SRC := $(ROOT)/tests/hz10_public_entry_smoke.c $(PUBLIC_ENTRY_SRC)
 BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY_SRC)
 

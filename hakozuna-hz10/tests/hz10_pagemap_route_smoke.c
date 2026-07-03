@@ -112,6 +112,77 @@ static int check_tail_slack_invalid(void) {
   return expect(H10_ROUTE_INVALID, H10_REASON_TAIL_SLACK, route, "tail_slack");
 }
 
+/* Bonus: a single-slot (slot_count == 1) registration may span more than
+ * one HZ10_PAGE_QUANTUM -- the relaxation src/hz10_large_alloc.h needs.
+ * A multi-slot (slot_count > 1) registration must still be rejected if its
+ * span exceeds one quantum (the relaxation must not silently widen to
+ * cases where it would break addressing of the later slots). Also checks
+ * that flags round-trips through route() alongside owner, unaffected by
+ * either fact above. */
+static int check_multi_quantum_single_slot(void) {
+  void* base3 = (char*)HZ10_SMOKE_BASE1 + 4u * (uintptr_t)HZ10_PAGE_QUANTUM;
+  uint32_t big_size = (uint32_t)HZ10_PAGE_QUANTUM * 3u;
+  int sentinel_owner;
+  uint32_t gen = hz10_pagemap_register_with_owner_and_flags(
+      base3, big_size, 1u, &sentinel_owner, 7u);
+  if (gen == 0u) {
+    fprintf(stderr,
+            "multi_quantum: single-slot registration spanning 3 quanta "
+            "unexpectedly failed\n");
+    return 1;
+  }
+
+  H10RouteResult exact = hz10_pagemap_route(base3, gen);
+  int failed = expect(H10_ROUTE_VALID, H10_REASON_NONE, exact, "multi_q/exact");
+  if (exact.owner != &sentinel_owner || exact.flags != 7u) {
+    fprintf(stderr, "multi_quantum: owner/flags did not round-trip\n");
+    failed = 1;
+  }
+
+  /* An address in the SECOND quantum of the span was never itself
+   * registered (only base3's own quantum was) -- it must MISS, not
+   * crash and not spuriously validate. This is the documented reason a
+   * large allocation only ever hands out its own base pointer. */
+  void* second_quantum = (char*)base3 + HZ10_PAGE_QUANTUM;
+  H10RouteResult mid = hz10_pagemap_route(second_quantum, gen);
+  if (mid.kind != H10_ROUTE_MISS) {
+    fprintf(stderr,
+            "multi_quantum: address in a later quantum of the span "
+            "should MISS (kind=%d)\n",
+            (int)mid.kind);
+    failed = 1;
+  }
+
+  /* One byte past the whole span lands in yet another unregistered
+   * quantum too -- MISS, not TAIL_SLACK. TAIL_SLACK only fires for an
+   * offset that is still within the registered quantum itself (see
+   * check_tail_slack_invalid above, where slot_size*slot_count is
+   * smaller than one quantum); this registration's span is an exact
+   * multiple of HZ10_PAGE_QUANTUM by construction (see
+   * src/hz10_large_alloc.h's rounding), so there is no such byte here. */
+  void* tail = (char*)base3 + big_size;
+  H10RouteResult past_end = hz10_pagemap_route(tail, gen);
+  if (past_end.kind != H10_ROUTE_MISS) {
+    fprintf(stderr,
+            "multi_quantum: one byte past the whole span should MISS "
+            "(kind=%d reason=%d)\n",
+            (int)past_end.kind, (int)past_end.reason);
+    failed = 1;
+  }
+
+  /* A multi-slot registration must still be rejected if its span exceeds
+   * one quantum -- the relaxation is single-slot only. */
+  void* base4 = (char*)HZ10_SMOKE_BASE1 + 8u * (uintptr_t)HZ10_PAGE_QUANTUM;
+  uint32_t rejected_gen = hz10_pagemap_register(base4, 4096u, 20u);
+  if (rejected_gen != 0u) {
+    fprintf(stderr,
+            "multi_quantum: multi-slot registration spanning more than "
+            "one quantum should still be rejected\n");
+    failed = 1;
+  }
+  return failed;
+}
+
 int main(void) {
   hz10_pagemap_reset_for_tests();
 
@@ -138,6 +209,9 @@ int main(void) {
   }
   if (check_tail_slack_invalid()) {
     return 7;
+  }
+  if (check_multi_quantum_single_slot()) {
+    return 8;
   }
 
   puts("hz10_pagemap_route_smoke ok");
