@@ -322,14 +322,51 @@ tcmalloc same-run script done
   files: scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh,
   bench/lib/hz10_bench_common.sh
 
+slot_count=1 isolation gap: root cause found via strace, not further
+fixed (documented, deprioritized):
+  measurement noise on this machine (2-6x run-to-run) made the ~24% gap
+  unreadable via wall-clock benching alone, so switched to `perf stat`
+  and `strace -c` on the exact isolating workload (THREADS=4
+  MIN_SIZE=MAX_SIZE=65536 REMOTE_PCT=90, 8M total ops). Real numbers,
+  not guesses: sys time (2.6s) exceeded user time (1.47s); strace showed
+  152,490 mmap + 152,479 munmap + 253,273 futex calls over 8M ops --
+  roughly 1 in 53 allocations pays a full fresh-page reservation
+  (src/hz10_freelist_page.c's hz10_freelist_reserve_aligned_quantum()
+  over-reserves 2x and munmaps the unaligned head/tail every time,
+  so each miss costs 1 mmap + up to 2 munmap). This directly
+  contradicted an earlier same-session RSS-delta-based estimate of
+  "~500 pages per 800K ops, negligible" -- that estimate was wrong;
+  strace is the trustworthy number here, RSS deltas were not.
+  The reasonable next hypothesis (widen HZ10_CLASS_PAGES_SCAN_LIMIT so
+  more late-arriving remote frees get caught before falling out of the
+  window) was tested directly: SCAN_LIMIT=128 vs 1024, 6 repeats each,
+  same workload -- averages were 5.36M and 5.55M ops/s, ~4% apart, well
+  inside the run-to-run noise band. Widening the window does NOT
+  meaningfully help; the misses are not primarily a window-size problem
+  also confirmed separately: hz10_page_pool_reuse_count() and
+  hz10_page_pool_release_count() both stay 0 throughout every one of
+  these runs -- Box 4's pool is never populated because
+  hz10_public_entry.c never calls hz10_pooled_page_destroy() (Box 6
+  keeps every page reachable via the class list instead of destroying
+  any of them). This is consistent with Box 6's design (not a bug), but
+  it does mean every genuine miss pays a full syscall-level reservation
+  with no pool to soften it
+  conclusion: real, understood, not closed. A real fix would need either
+  (a) making pages that fall permanently out of the scan window and are
+  later confirmed idle destroyable and returned to Box 4's pool, or (b)
+  a cheaper aligned-reservation primitive than reserve-2x-then-trim, or
+  (c) a fundamentally different reuse structure. All three are bigger
+  surgery than this investigation's scope, and this gap is isolated to
+  a pathological combination (slot_count=1, the single largest size
+  class, at REMOTE_PCT=90) that the established main_local0/main_r50/
+  main_r90/medium_local0 rows do not hit -- deprioritized accordingly
+
 next box not yet named:
-  remaining gaps, in priority order: (1) close the remaining ~24% gap
-  on the slot_count=1 isolation case (neither the drain-empty peek nor
-  the bounded scan closed this at the full-bench level; the real driver
-  is still unclear given measurement noise on this machine -- would need
-  a quieter machine or a longer, steadier-state bench to pin down), (2)
-  the box 3 O(N^2) owner-drain duplicate-check cost (deprioritized: not
-  clearly the isolating case's bottleneck per earlier investigation)
+  remaining gaps, in priority order: (1) the box 3 O(N^2) owner-drain
+  duplicate-check cost (deprioritized: not clearly the isolating case's
+  bottleneck per earlier investigation either), (2) if revisited, the
+  slot_count=1 gap above needs one of the three bigger-surgery options,
+  not another small parameter tweak
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

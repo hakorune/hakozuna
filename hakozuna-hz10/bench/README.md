@@ -148,4 +148,29 @@ class_pages bounded scan (src/hz10_class_pages.{h,c}, bench/hz10_class_pages_sca
   consistent with the pre-fix numbers above (main_r50/r90 still clearly
   beat system_malloc; the isolating case's run-to-run noise on this
   machine is unchanged, no new signal either way).
+
+slot_count=1 isolation gap root cause (see current_task.md, not fixed):
+  wall-clock benching of this case is too noisy on this machine (2-6x
+  run-to-run) to read a ~24% gap directly, so switched to `perf stat`
+  and `strace -c` on THREADS=4 MIN_SIZE=MAX_SIZE=65536 REMOTE_PCT=90 (8M
+  total ops). Found: sys time exceeded user time (2.6s vs 1.47s);
+  152,490 mmap + 152,479 munmap + 253,273 futex calls -- roughly 1 in 53
+  allocations pays a full fresh-page reservation (each miss costs 1
+  mmap + up to 2 munmap from src/hz10_freelist_page.c's over-reserve-
+  then-trim alignment technique). This contradicts an earlier, wrong
+  same-session RSS-delta estimate of "~500 pages per 800K ops,
+  negligible" -- strace is the trustworthy number, that estimate was
+  not. Tested the obvious next hypothesis directly (widen
+  HZ10_CLASS_PAGES_SCAN_LIMIT so more late-arriving remote frees get
+  caught before falling out of the window): SCAN_LIMIT=128 vs 1024, 6
+  repeats each, averaged 5.36M vs 5.55M ops/s -- ~4% apart, inside the
+  noise band, not a real fix. Also confirmed Box 4's page pool is never
+  populated in this path (hz10_page_pool_reuse_count/release_count stay
+  0 throughout) because hz10_public_entry.c never destroys a page, so
+  every genuine miss pays the full syscall cost with nothing to soften
+  it. Real, understood, not closed -- a fix needs bigger surgery
+  (destroyable-and-pool-returnable pages, a cheaper aligned-reservation
+  primitive, or a different reuse structure), deprioritized since this
+  is a pathological combination (the single largest size class at
+  REMOTE_PCT=90) the established rows above do not hit.
 ```
