@@ -33,6 +33,16 @@ $(ROOT)/h8_bench_release_hz9localslabpublicentry: $(SRC) $(ROOT)/bench/h8_bench.
 
 bench-release-hz9localslabpublicentry: $(ROOT)/h8_bench_release_hz9localslabpublicentry
 
+$(ROOT)/h8_bench_matrix_api_baseline: $(SRC) $(ROOT)/bench/bench_matrix_malloc.c $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_MATRIX_USE_HZ8_API -o $@ $(SRC) $(ROOT)/bench/bench_matrix_malloc.c $(LDFLAGS) $(LDLIBS)
+
+bench-hz9baseline-matrix-api: $(ROOT)/h8_bench_matrix_api_baseline
+
+$(ROOT)/h8_bench_matrix_api_hz9product: $(SRC) $(ROOT)/bench/bench_matrix_malloc.c $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ9_LOCAL_SLAB_PUBLIC_ENTRY_CFLAGS) $(INC) -DH8_MATRIX_USE_HZ8_API -o $@ $(SRC) $(ROOT)/bench/bench_matrix_malloc.c $(LDFLAGS) $(LDLIBS)
+
+bench-hz9product-matrix-api: $(ROOT)/h8_bench_matrix_api_hz9product
+
 $(ROOT)/h8_bench_hz9segmententry: $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ9_SEGMENT_ENTRY_CFLAGS) $(INC) -o $@ $(HZ9_SEGMENT_ENTRY_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 

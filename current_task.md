@@ -26,8 +26,8 @@ Current direction:
                 segment cap was widened for matrix-like repeated runs.
                 ProductEntry RemotePending-L0 now drains pending bits into
                 owner entry-local free bits instead of dropping dirty segments.
-                Public matrix R3 is HOLD despite focused wins.
-                Next: attribute LD_PRELOAD public-entry overhead.
+                Public matrix R3 is HOLD, but direct API matrix R3 wins
+                medium/main rows; next attribute preload/dispatch tax.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

@@ -83,6 +83,8 @@ Current lane:
 ```text
 phase:
   Phase 4 ProductEntry GuardBypass/Lifecycle is active as focused evidence
+  ProductEntry public matrix is in LD_PRELOAD attribution, with a direct API
+  matrix probe before any R10 promotion run
   Phase 3 Pointer-Token Public Entry is the underlying stem
   Phase 2 substrate exploration is closed/evidence-only
 

@@ -464,13 +464,19 @@ promotion-quality remaining work:
     loses small_r90 0.990, medium_local0 0.958, medium_r50 0.956, main_local0 0.992
   next work: attribute LD_PRELOAD public-entry overhead before R10 promotion
 
+direct API matrix probe:
+  scripts/run_hz9_product_entry_matrix_api_probe.sh
+  direct h8_malloc/h8_free payload path, no LD_PRELOAD
+  R3: fixed64 1.542, medium_local0 1.185, medium_r50 1.111,
+      main_local0 1.178, main_r50 1.171, main_r90 1.235
+  R3 small/guard: small_r90 0.978, guard 0.912
+  verdict: medium/main matrix shape is not the culprit; preload/interpose or
+           public-dispatch tax explains the public-matrix flip.  Small/guard
+           dispatch tax remains separate and needs hit-rate/dispatch counters.
+
 matrix wrapper:
   scripts/run_hz9_product_entry_public_matrix.sh
-  default allocators: hz9_product, system
-  HZ8 frozen comparison is opt-in:
-    HZ9_EXT_ROOT=/path/to/parent ALLOCATORS=hz8_ref,hz9_product,system
-    or HZ8_REF_SO=/path/to/libhakozuna_hz8_preload.so
-  hz9_product points at the local ProductEntry preload artifact
+  default allocators: hz9_product, system; HZ8 frozen comparison is opt-in
 ```
 
 ## ProductEntry GuardBypass L1
@@ -775,7 +781,6 @@ read:
   zero. Cached live segments intentionally raise retained RSS versus HZ8; this
   remains the explicit HZ9 throughput-vs-retention tradeoff.
 ```
-
 ## Contract Split
 
 ```text
