@@ -414,6 +414,10 @@ void* h9_lsp_debug_public_nosync_malloc(size_t size);
 bool h9_lsp_debug_public_maybe_active(void);
 bool h9_lsp_debug_public_product_free(void* ptr, bool* owned_out);
 void h9_lsp_debug_public_thread_shutdown(void);
+#define h9_lsp_public_malloc h9_lsp_debug_public_nosync_malloc
+#define h9_lsp_public_free h9_lsp_debug_public_product_free
+#define h9_lsp_public_maybe_active h9_lsp_debug_public_maybe_active
+#define h9_lsp_public_thread_shutdown h9_lsp_debug_public_thread_shutdown
 #endif
 #if defined(H9_LOCAL_ENTRY_SPLIT_L1)
 void* h9_local_malloc_medium_inner(size_t size);

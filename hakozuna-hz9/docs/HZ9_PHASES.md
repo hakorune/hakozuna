@@ -61,7 +61,7 @@ read:
 
 ```text
 status:
-  active
+  completed as the substrate stem for ProductEntry
 
 box:
   HZ9LocalSlabPointerTokenEntry-L1
@@ -121,13 +121,14 @@ read:
 
 ```text
 status:
-  not open
+  open as focused ProductEntry GuardBypass/Lifecycle evidence
 
-open only after:
-  public-shaped local entry clears local/main gates
+current evidence:
+  docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
+  public-shaped local entry clears focused local/main/guard gates
   route fallback keeps hard zero safety gates clean
-  remote rows have bounded regression
-  RSS/cache retention has an explicit HZ9 cap
+  owner-drain remote rows are positive in focused same-run gates
+  bounded segment cache caps live segments and exercises raw release
 ```
 
 ## Development Rules

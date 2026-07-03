@@ -176,7 +176,7 @@ void h8_thread_shutdown(void* arg) {
   h9_slab_flush_thread(ctx);
 #endif
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
-  h9_lsp_debug_public_thread_shutdown();
+  h9_lsp_public_thread_shutdown();
 #endif
   h9_slab_shadow_flush_all(ctx);
   if (h8_tls_ctx == ctx) {

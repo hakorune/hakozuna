@@ -514,9 +514,9 @@ void h8_free_inner(void* ptr) {
     return;
   }
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
-  if (h9_lsp_debug_public_maybe_active()) {
+  if (h9_lsp_public_maybe_active()) {
     bool owned = false;
-    if (h9_lsp_debug_public_product_free(ptr, &owned)) {
+    if (h9_lsp_public_free(ptr, &owned)) {
       return;
     }
     if (owned) {

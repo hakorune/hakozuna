@@ -4,15 +4,15 @@
 
 ```text
 move HZ9 from micro substrate proof toward public allocator shape
-without opening preload, remote protocol, or RSS policy yet
+while keeping route authority, owner-drain remote safety, and bounded cache RSS
 ```
 
 ## Scope
 
 ```text
 entry:
-  h9_lsp_debug_public_malloc(size)
-  h9_lsp_debug_public_free(ptr, owned_out)
+  h9_lsp_public_malloc(size)
+  h9_lsp_public_free(ptr, owned_out)
 
 fast local path:
   size -> medium class
@@ -23,10 +23,9 @@ fallback:
   direct-owned route remains canonical authority for miss / invalid / non-LIFO
 
 non-goals:
-  no preload integration
-  no multithread remote protocol
-  no RSS/cache cap policy
   no HZ8 default behavior change
+  no remote concurrent freelist
+  no unbounded segment retention
 ```
 
 ## Measurement Rules
@@ -99,8 +98,8 @@ read:
   throughput by about 3x versus routeleafcompact.
 
 decision:
-  PublicEntry-L0 is correct evidence, not performance-ready.
-  Do not open preload until public entry shape is improved.
+  historical PublicEntry-L0 was correct evidence, not performance-ready.
+  Superseded by PublicEntryNoSync, GuardBypass, OwnerDrain, and Lifecycle.
 ```
 
 ## Static Segment Entry Probe
@@ -165,7 +164,7 @@ read:
 
 decision:
   keep publicentrynosync as evidence.
-  Do not open preload or MT remote work from this shape.
+  Superseded by ProductEntry GuardBypass / OwnerDrain / Lifecycle.
 ```
 
 ## Public API Baseline Rule
@@ -322,10 +321,9 @@ run-to-run segment cliff:
   create_segment then reserve/committed before failing cap, producing slow runs
   fix: widen cap and preflight free segment slot before reserve/commit
 
-remaining non-goal:
-  no segment release/lifecycle policy yet
-  no MT remote protocol yet
-  no promotion decision from R3 quick matrix
+historical R3 non-goal:
+  segment release/lifecycle and owner-drain remote protocol were not wired yet
+  superseded by Remote Pending L0, OwnerDrain L0, and Lifecycle L0 below
 ```
 
 ## Product Entry R5 ASLR-Off
@@ -359,8 +357,7 @@ guard_local0:
 
 read:
   local product entry stem is viable against HZ8 public path.
-  ProductEntry-L0 remains local-only evidence: MT remote free and lifecycle
-  release are not implemented yet.
+  superseded by Remote Pending L0 and Lifecycle L0 below for remote/lifecycle.
 ```
 
 ### RSS Read
@@ -407,9 +404,8 @@ decision rule:
   if medium/main RSS grows without an explicit segment cap/release story,
   ProductEntry remains evidence-only
 
-next implementation:
-  expose HZ9 local slab segment counters in bench summary
-  use them to explain R10 RSS before MT remote work
+completed follow-up:
+  segment counters explain R10 RSS and are superseded by Lifecycle L0 below
 
 note:
   RSS remains the canonical resident-memory metric.
@@ -488,9 +484,7 @@ change:
   segments during h8_thread_shutdown()
 
 scope:
-  local-only
-  remote protocol still closed
-  no reusable segment cache yet
+  historical local-only release probe before reusable segment cache / owner drain
 
 R5 ASLR OFF, THREADS=8, ITERS=50000:
   medium_local0:
@@ -521,8 +515,7 @@ read:
 
 next:
   keep release for correctness/RSS evidence
-  investigate reusable bounded segment cache or cheaper run-boundary release
-  before MT remote protocol
+  superseded by Bounded Segment Cache L1 and Remote Pending L0 below
 ```
 
 ## Bounded Segment Cache L1
@@ -683,8 +676,7 @@ result:
 
 decision:
   NO-GO. Switching to fresh segments without owner drain creates a segment
-  storm and exhausts the segment cap. The L0 default remains dirty-drop /
-  no-reuse until there is a real owner drain or bounded retired-segment policy.
+  storm and exhausts the segment cap. Superseded by OwnerDrain-L0 below.
 ```
 
 OwnerDrain-L0 result:

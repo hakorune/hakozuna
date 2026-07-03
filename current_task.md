@@ -15,8 +15,8 @@ Current direction:
   HZ9 single-folder closure is complete enough for local development.
   OwnerLocalPagePoolPureLocal-L1 is implemented but HOLD/profile evidence:
                 directory-first free routing reduces remote route tax, but
-                medium local remains below gate.
-  Current HZ9 read: HZ9LocalSlabPointerTokenEntry-L1.
+                medium-local promotion gate was not met.
+  Current HZ9 read: HZ9ProductEntry GuardBypass/Lifecycle evidence.
                 Inline local slab body is fast; route-first public free is the
                 residual.  Ptrtoken is now the main HZ9 stem:
                 exact free may skip route, but route fallback stays authority.
@@ -26,8 +26,8 @@ Current direction:
                 segment cap was widened for matrix-like repeated runs.
                 ProductEntry RemotePending-L0 now drains pending bits into
                 owner entry-local free bits instead of dropping dirty segments.
-                ASM audit separates DCE phantom ceilings from gates.
-                Route/core and pointer-token helpers stay split for line rule.
+                GuardBypass-L1 closes the small-only footing regression;
+                focused same-run gates now beat HZ8.
   Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
                 SlabDirectUse is remote/profile evidence.
                 LocalArena phase8 is broad NO-GO.

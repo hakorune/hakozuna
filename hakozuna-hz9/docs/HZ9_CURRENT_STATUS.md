@@ -37,21 +37,23 @@ and remote medium rows.
 ## Active Box
 
 ```text
-HZ9LocalSlabPointerTokenEntry-L1
+HZ9ProductEntry GuardBypass/Lifecycle
 
 status:
   HZ8 remains the frozen balanced default
   HZ9 remains a standalone throughput research tree
   OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
   Phase 2 substrate lanes are closed/evidence-only
-  Phase 3 Pointer-Token Public Entry is active
+  Phase 3 Pointer-Token Public Entry is the substrate stem
+  Phase 4 ProductEntry integration is active as focused evidence
 
 current design:
   docs/HZ9_PHASES.md
-  docs/HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1.md
+  docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
   same-thread exact free may use pointer-token positive proof before route
   route remains canonical fallback authority for miss / foreign / invalid
-  integrated/fastleaf workers are isolated to avoid harness artifacts
+  owner-drain remote pending and bounded cache lifecycle are wired
+  GuardBypass closes the small-only footing regression in focused gates
 
 phase gate:
   hot loops live in per-mode noinline workers

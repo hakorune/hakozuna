@@ -82,7 +82,8 @@ Current lane:
 
 ```text
 phase:
-  Phase 3 Pointer-Token Public Entry is active
+  Phase 4 ProductEntry GuardBypass/Lifecycle is active as focused evidence
+  Phase 3 Pointer-Token Public Entry is the underlying stem
   Phase 2 substrate exploration is closed/evidence-only
 
 TLS object cache:
@@ -99,7 +100,8 @@ LocalArena:
   collapse on medium_r50/main_r90
 
 next:
-  HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1 is the current design box
+  HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0 is the current design box
+  HZ9_LOCAL_SLAB_POINTER_TOKEN_ENTRY_L1 is historical substrate evidence
   HZ9_PHASES.md is the first read for phase boundaries
   stop adding fused-only cache probes unless they answer a public-entry
   question

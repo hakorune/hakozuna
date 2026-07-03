@@ -42,7 +42,7 @@ static void* h8_public_malloc_dispatch(size_t size) {
 #if defined(H9_LOCAL_SLAB_PUBLIC_ENTRY_L0)
   if (size > H8_MAX_SMALL_SIZE && size <= H8_MEDIUM_MAX_SIZE) {
     if (h8_thread_ctx_fast()) {
-      void* ptr = h9_lsp_debug_public_nosync_malloc(size);
+      void* ptr = h9_lsp_public_malloc(size);
       if (ptr) {
         return ptr;
       }
