@@ -404,10 +404,57 @@ selected and implemented:
   clean, low-noise, reproducible 3-4x signal and a concrete, bounded fix
   shape already sketched, just gated on the Box 2 hot-path decision)
 
+remote-free striping done (Box 3, not literal snmalloc-style batching --
+see reasoning below):
+  ChatGPT-collaborator plan (independently reviewed, mostly agreed with)
+  proposed snmalloc-style batching to attack the ~25x local-vs-remote
+  contention cost measured back in box 3. Considered literal batching
+  (stage several frees locally, flush as one push) and rejected it for
+  this iteration: it needs a guaranteed eventual flush, and a thread that
+  remote-frees exactly once and then does nothing else could leave that
+  free stuck in a thread-local staging buffer forever -- silently
+  breaking the "accepted means at least drainable" contract every box
+  and smoke test relies on. HZ10 has no thread-lifecycle/timer hook to
+  guarantee a flush yet, so this would be a real, if narrow, correctness
+  regression, not a safe drop-in
+  implemented instead: remote_free_head is now HZ10_REMOTE_STRIPE_COUNT
+  (4) independent Treiber stacks per page
+  (src/hz10_freelist_page.h/.c), keyed by a hash of the freeing thread's
+  own private thread-local token (hz10_remote_stack.c owns this identity
+  concept itself -- does not reach into Box 5's owner_thread_token, kept
+  one-directional). Every remote free still does exactly one CAS (same
+  count as before), just onto one of several cache lines instead of one
+  shared one -- spreads contention without any flush-guarantee gap
+  measured honestly: the EXISTING hz10_remote_stack_drain_bench's
+  remote_push mech showed no visible change from striping -- turned out
+  its own methodology creates a new OS thread via pthread_create for
+  EVERY one of REPEAT (2000) cycles, so its "remote_push" number is
+  dominated by thread-lifecycle overhead, not CAS contention (a real,
+  pre-existing bench limitation, not something this change introduced;
+  worth fixing in that bench file later but out of scope here). Wrote a
+  dedicated microbenchmark instead (persistent producer threads via
+  pthread_barrier, no per-cycle thread creation) and swept stripe counts
+  1/2/4/8/16, 5-6 repeats each: baseline (1 stripe) ~15.0M ops/s stable;
+  4 stripes ~16.3-16.5M (~8-9% faster); 8 stripes ~15.2-21.0M (noisier,
+  ~15% faster on average); 16 stripes no further gain (~16.3M) -- matches
+  the "spreads contention across N cores, plateaus once stripes >=
+  thread count" intuition. Settled on 4 stripes: modest, real,
+  reproducible improvement, not the dramatic win the original ~25x
+  number might have suggested (a meaningful chunk of that 25x is the
+  inherent cost of an atomic RMW vs a plain store, which no amount of
+  striping removes)
+  re-verified small_remote50/90 and main_r50/r90 rows afterward: no
+  regression from the added per-page memory (remote_free_head grew from
+  1 pointer to 4) or the extra per-stripe peek during drain
+  files: src/hz10_freelist_page.h (struct field, HZ10_REMOTE_STRIPE_COUNT),
+  src/hz10_remote_stack.c (stripe picker, push/drain loop over stripes)
+
 next:
   rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
   final table. The slot_count=1 gap still needs one of its three
   bigger-surgery options (see above), not another small parameter tweak
+  then proceed to task #43 (finer size-class table), #44 (large-object
+  path), #45 (decommit/aging policy), in that order per the agreed plan
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

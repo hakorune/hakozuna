@@ -204,4 +204,22 @@ implemented (see current_task.md):
   ~17.0-18.8M vs system_malloc ~18.1-19.5M; REMOTE_PCT=90 hz10
   ~12.7-13.8M vs system_malloc ~12.0-13.1M. The old 3-4x-slower numbers are
   retained above as the pre-fix evidence, not the current state.
+
+remote-free striping (Box 3, see current_task.md for the reasoning behind
+picking this over literal batching):
+  remote_free_head is now 4 independent Treiber stacks per page
+  (HZ10_REMOTE_STRIPE_COUNT), keyed by a hash of the freeing thread, to
+  spread the CAS traffic across cache lines instead of contending one.
+  hz10_remote_stack_drain_bench's own remote_push mech showed no visible
+  change -- that bench creates a new OS thread per REPEAT cycle (2000
+  times), so its number is dominated by thread-lifecycle cost, not CAS
+  contention (a pre-existing bench limitation, not something this change
+  introduced). A dedicated microbenchmark with persistent threads (no
+  per-cycle thread creation) showed a real, modest effect: baseline (1
+  stripe) ~15.0M ops/s stable; 4 stripes ~16.3-16.5M (~8-9% faster); 8
+  stripes ~15.2-21.0M (noisier, ~15% on average); 16 stripes no further
+  gain -- plateaus once stripe count matches thread count, as expected.
+  Settled on 4 stripes. Re-verified small_remote50/90 and main_r50/r90
+  afterward: no regression from the added per-page memory or per-stripe
+  drain peek.
 ```

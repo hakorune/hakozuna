@@ -3,6 +3,35 @@
 
 #include <stdatomic.h>
 
+/*
+ * Contention mitigation, not batching: hz10_remote_stack_drain_bench
+ * measured 4 producer threads remote-freeing concurrently costing ~25x a
+ * single-threaded local free, on one shared remote_free_head cache line
+ * (CAS/cache-line-ownership traffic, not retried CAS loops -- the Treiber
+ * push itself is cheap when uncontended). True cross-thread batching (stage
+ * several frees locally, flush as one push) was considered and rejected for
+ * this iteration: it needs a guaranteed eventual flush (a thread that
+ * remote-frees exactly once and then does nothing else could leave that
+ * free stuck in a thread-local staging buffer forever, silently breaking
+ * the "accepted means at least drainable" contract every other box and
+ * smoke test relies on) and HZ10 has no thread-lifecycle/timer hook to
+ * guarantee that yet. Splitting remote_free_head into
+ * HZ10_REMOTE_STRIPE_COUNT independent Treiber stacks, keyed by a hash of
+ * the freeing thread, spreads the SAME number of CAS operations across
+ * that many cache lines instead of contending one -- same measured problem,
+ * without introducing a flush-guarantee gap. Revisit true batching later if
+ * this isn't enough and a thread-lifecycle mechanism exists to hang a flush
+ * guarantee on.
+ */
+static _Thread_local char hz10_remote_stripe_token_storage;
+
+static uint32_t hz10_remote_pick_stripe(void) {
+  uintptr_t addr = (uintptr_t)&hz10_remote_stripe_token_storage;
+  addr ^= addr >> 16;
+  addr ^= addr >> 8;
+  return (uint32_t)addr & (HZ10_REMOTE_STRIPE_COUNT - 1u);
+}
+
 /* Returns 1 if this call was the one that set the bit (i.e. it was
  * previously clear -- the slot is now claimed for a remote free), 0 if the
  * bit was already set (a duplicate remote free of the same slot). */
@@ -94,17 +123,16 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
     return 0;
   }
 
-  /* Treiber stack push. Safe to stash into *ptr: the pending-bit claim
-   * above guarantees no other remote free of this same slot is
-   * concurrently doing the same thing, and the owner thread never writes
-   * to a slot that isn't in local_free_head. */
-  void* old_head =
-      atomic_load_explicit(&page->remote_free_head, memory_order_relaxed);
+  /* Treiber stack push, onto this thread's stripe. Safe to stash into
+   * *ptr: the pending-bit claim above guarantees no other remote free of
+   * this same slot is concurrently doing the same thing, and the owner
+   * thread never writes to a slot that isn't in local_free_head. */
+  _Atomic(void*)* stack = &page->remote_free_head[hz10_remote_pick_stripe()];
+  void* old_head = atomic_load_explicit(stack, memory_order_relaxed);
   do {
     *(void**)ptr = old_head;
   } while (!atomic_compare_exchange_weak_explicit(
-      &page->remote_free_head, &old_head, ptr, memory_order_release,
-      memory_order_relaxed));
+      stack, &old_head, ptr, memory_order_release, memory_order_relaxed));
 
   atomic_fetch_add_explicit(&page->remote_push_count, 1u,
                             memory_order_relaxed);
@@ -112,43 +140,46 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
 }
 
 uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
-  /* Relaxed peek before paying for the exchange: a caller that scans many
-   * candidate pages (src/hz10_class_pages.h) calls this on pages that
-   * usually have nothing pending, and an atomic RMW (exchange) costs more
-   * than a plain load on most architectures. A stale NULL read here just
-   * means this call skips a drain that a push landed a moment too late for
-   * -- correctness-neutral, the next drain call picks it up, same as any
-   * lock-free peek-before-acting fast path. */
-  if (atomic_load_explicit(&page->remote_free_head, memory_order_relaxed) ==
-      NULL) {
-    return 0u;
-  }
-  void* head = atomic_exchange_explicit(&page->remote_free_head, NULL,
-                                       memory_order_acquire);
   uint32_t merged = 0u;
-  while (head) {
-    void* next = *(void**)head;
+  for (uint32_t s = 0u; s < HZ10_REMOTE_STRIPE_COUNT; ++s) {
+    _Atomic(void*)* stack = &page->remote_free_head[s];
 
-    uint64_t offset = (uint64_t)((char*)head - (char*)page->base);
-    uint32_t slot_index = (uint32_t)(offset / page->slot_size);
-    hz10_page_pending_clear(page, slot_index);
-
-    if (hz10_freelist_page_is_marked_local_free(page, head) &&
-        hz10_page_local_freelist_contains(page, head)) {
-      page->drain_invalid_count += 1u;
-      atomic_fetch_add_explicit(&page->remote_invalid_count, 1u,
-                                memory_order_relaxed);
-      head = next;
+    /* Relaxed peek before paying for the exchange: a caller that scans
+     * many candidate pages (src/hz10_class_pages.h) calls this on pages
+     * that usually have nothing pending in any stripe, and an atomic RMW
+     * (exchange) costs more than a plain load on most architectures. A
+     * stale NULL read here just means this call skips a drain that a push
+     * landed a moment too late for -- correctness-neutral, the next drain
+     * call picks it up, same as any lock-free peek-before-acting fast
+     * path. */
+    if (atomic_load_explicit(stack, memory_order_relaxed) == NULL) {
       continue;
     }
+    void* head = atomic_exchange_explicit(stack, NULL, memory_order_acquire);
+    while (head) {
+      void* next = *(void**)head;
 
-    hz10_freelist_page_mark_local_free(page, head);
-    *(void**)head = page->local_free_head;
-    page->local_free_head = head;
-    page->free_count += 1u;
-    merged += 1u;
+      uint64_t offset = (uint64_t)((char*)head - (char*)page->base);
+      uint32_t slot_index = (uint32_t)(offset / page->slot_size);
+      hz10_page_pending_clear(page, slot_index);
 
-    head = next;
+      if (hz10_freelist_page_is_marked_local_free(page, head) &&
+          hz10_page_local_freelist_contains(page, head)) {
+        page->drain_invalid_count += 1u;
+        atomic_fetch_add_explicit(&page->remote_invalid_count, 1u,
+                                  memory_order_relaxed);
+        head = next;
+        continue;
+      }
+
+      hz10_freelist_page_mark_local_free(page, head);
+      *(void**)head = page->local_free_head;
+      page->local_free_head = head;
+      page->free_count += 1u;
+      merged += 1u;
+
+      head = next;
+    }
   }
   if (merged > 0u) {
     page->drain_count += 1u;

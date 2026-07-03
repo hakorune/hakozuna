@@ -8,6 +8,14 @@
 #define HZ10_FREELIST_LOCAL_MARKER \
   ((uintptr_t)UINT64_C(0x4831304c46524545)) /* "H10LFREE" */
 
+/* Number of independent Treiber stacks Box 3 (src/hz10_remote_stack.c)
+ * spreads remote frees across, keyed by a hash of the freeing thread's own
+ * identity -- see hz10_remote_stack.c for why. Must be a power of two (the
+ * stripe picker masks instead of modulos). Lives here, not in
+ * hz10_remote_stack.h, because the array size has to be known wherever
+ * Hz10FreelistPage itself is defined. */
+#define HZ10_REMOTE_STRIPE_COUNT 4u
+
 /*
  * HZ10ThreadLocalFreelistPage-L0: Layer 0 of the HZ10 design -- one class,
  * one page, an intrusive freelist (a free slot's own first bytes hold the
@@ -59,15 +67,19 @@ typedef struct Hz10FreelistPage {
    * HZ10RemoteStackDrain-L0 (Box 3, src/hz10_remote_stack.{h,c}): a
    * foreign thread cannot touch local_free_head directly without breaking
    * Box 2's "owner thread only, plain load/store" guarantee, so a remote
-   * free instead pushes onto remote_free_head (a Treiber stack, single
-   * CAS) and the owner drains it into local_free_head at its own pace.
+   * free instead pushes onto one of remote_free_head's stripes (a Treiber
+   * stack, single CAS) and the owner drains all stripes into
+   * local_free_head at its own pace. Splitting into HZ10_REMOTE_STRIPE_COUNT
+   * independent stacks spreads concurrent remote-free CAS traffic across
+   * that many cache lines instead of one shared one -- see
+   * hz10_remote_stack.c for the measured contention this addresses.
    * pending_bits (one bit per slot) is set by a successful remote push and
    * cleared at drain, so a second remote free of the same slot before it
    * drains is rejected as a duplicate instead of corrupting the freelist.
    * These fields are owned by hz10_remote_stack.c; hz10_freelist_page.c
    * only initializes/tears them down and drains once at destroy time.
    */
-  _Atomic(void*) remote_free_head;
+  _Atomic(void*) remote_free_head[HZ10_REMOTE_STRIPE_COUNT];
   _Atomic(uint64_t)* pending_bits;
   uint32_t pending_words;   /* (slot_count + 63) / 64 */
   _Atomic(uint64_t) remote_push_count;
