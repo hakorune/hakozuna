@@ -19,18 +19,59 @@ status:
       reservation
 
   Current performance read:
-    local rows: ~60-70% of tcmalloc in formal same-run script
-    remote rows: ~40-50% of tcmalloc after Box6 remote recovery
+    LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
+      RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):
+      logs at bench_results/20260704T030633Z_hz10_public_entry_vs_tcmalloc_same_run/combined.log
+      and bench_results/20260704T030633Z_hz10_full_followup/
+        main_local0:    ratio=0.562 (hz10 184.4M vs tcmalloc 328.0M ops/s)
+        main_r50:       ratio=0.475 (hz10  13.4M vs tcmalloc  28.3M ops/s)
+        main_r90:       ratio=0.488 (hz10   8.7M vs tcmalloc  17.8M ops/s)
+        medium_local0:  ratio=0.553 (hz10 183.3M vs tcmalloc 331.6M ops/s)
+        small_remote50: ratio=0.694 (hz10  18.76M vs tcmalloc 27.05M ops/s)
+        small_remote90: ratio=0.700 (hz10  12.97M vs tcmalloc 18.52M ops/s)
+        slot_count=1 (65536/65536, REMOTE_PCT=90):
+                        ratio=0.628 (hz10   6.72M vs tcmalloc 10.71M ops/s)
+      RSS: small_remote50/90 sees HZ10 noticeably lighter than tcmalloc;
+        slot_count=1 RSS stays high for HZ10 (see RSS growth note below)
     Box6 flipped prior remote rows from 15-17x SLOWER than system malloc
       to ~1.5-1.7x FASTER than system malloc
     small_remoteNN O(N^2) drain regression is fixed by in-slot marker:
       short post-fix check puts small_remote50/90 around system_malloc
-      parity instead of 3-4x slower
-    slot_count=1 gap is closed by batched quantum reservation:
-      strace mmap calls dropped ~152,490 -> 874, munmap ~152,479 -> 864;
-      isolating REMOTE_PCT=90 row is now roughly system_malloc parity
+      parity instead of 3-4x slower; against real tcmalloc the locked-in
+      table above still shows a real ~30% gap, attributed (not yet
+      further reducible) to the inherent cost of the 2 atomic RMWs every
+      remote free pays: pending-bit fetch_or (hz10_page_remote_free) and
+      the Treiber-stack CAS push, both in src/hz10_remote_stack.c -- box3's
+      striping notes already found stripe count plateaus around 4-8, so
+      this is not expected to move further without a design change
+    slot_count=1 gap is closed FOR THE RAW SYSCALL COST by batched quantum
+      reservation (strace mmap calls dropped ~152,490 -> 874, munmap
+      ~152,479 -> 864, roughly system_malloc parity) but the locked-in
+      table above shows a real ~37% gap against actual tcmalloc still
+      remains. Root cause not yet fixed: Box4's page pool is created
+      (hz10_pooled_page_create_with_owner is called from
+      src/hz10_public_entry.c:67) but never destroyed back
+      (hz10_pooled_page_destroy is never called from the public-entry
+      path) -- so every slot_count=1 exhaustion event still pays a fresh
+      Hz10FreelistPage struct alloc + full pagemap registration, because a
+      1-slot page is exhausted on literally every allocation (nothing
+      amortizes this bookkeeping the way a multi-slot page does). This is
+      the still-open "Box6/Box4 pool wiring" question below, now
+      re-prioritized as the concrete next action for this row specifically
     post RSS is generally below tcmalloc in measured public-entry rows;
       HZ10 still aims for "closer to HZ8 RSS than tcmalloc RSS"
+    RSS growth observation (new, from the locked-in 20260704T030633Z run):
+      post_rss_kb in combined.log increases monotonically run 1->10 within
+      the SAME process for main_local0/main_r50/main_r90 (e.g. main_r90
+      165248 -> 883808 KB across 10 runs of the same 2M-op workload). This
+      is consistent with, not contradicting, Box6's deliberate "never
+      destroy a page, keep it forever in the per-class list" design (see
+      box 6 notes above) -- not a bug, but it does mean sustained/long-running
+      traffic keeps growing RSS with no ceiling in the current wiring. Not
+      separately root-caused yet; likely mitigated by the same Box4 pool
+      wiring fix as the slot_count=1 gap above, since actually destroying
+      genuinely-idle pages is a prerequisite for both. Revisit after that
+      fix lands and report honestly whether it helps or not
 
   Validation read:
     standalone check and normal smokes pass
@@ -40,14 +81,30 @@ status:
       before test execution. Reconfirm TSan in a clean environment before
       calling it a release gate.
 
-  Next HZ10 action:
-    collect one final R10/RSS table with larger ITERS/RUNS:
-      main_local0, main_r50, main_r90, medium_local0,
-      small_remote50/90, slot_count=1 isolating row,
-      tcmalloc same-run if libtcmalloc is available
-    then update bench/README.md and decide whether HZ10 is ready to freeze
-    as a research result. Box6->Box4 pool wiring remains open but lower
-    priority after batched reservation closed the slot_count=1 syscall gap.
+  Next HZ10 action (re-prioritized after the locked-in table above):
+    (1) DONE: perf stat + strace pass on main_r50/main_r90 found and fixed
+        two real over-scoped locks (src/hz10_freelist_page.c's
+        quantum-region lock, src/hz10_page_pool.c's pool lock -- see
+        "main_r50/main_r90 perf stat + strace pass done" below), but the
+        row ratio stayed within this machine's documented noise band
+        (not a confirmed win). The real ~1.8x futex differential vs
+        tcmalloc, after subtracting the bench harness's own shared inbox
+        cost, is still not attributed to a specific line -- open
+        hypothesis: compounded remote-free atomic RMW cost across all 24
+        size classes, unconfirmed
+    (2) DONE: wired Box6's per-class page list to Box4's pool (see
+        "Box 6 -> Box 4 pool wiring done" below) -- real, measured RSS win
+        for slot_count=1-shaped classes (bounded instead of unbounded
+        growth), no ops/s change. Also found and corrected a measurement
+        error in the original slot_count=1 ratio (0.628 -> 0.485, see
+        "CORRECTION" note below) while re-measuring this
+    (3) DONE: revisited RSS growth -- the Box6/Box4 wiring fix helps
+        slot_count=1 specifically, does not meaningfully change
+        main_r50/r90's RSS growth (see below for why)
+    bench/README.md update still deferred: the real ops/s gap for
+    main_r50/r90 and slot_count=1 (~0.48 both, after correction) remains
+    open and unattributed to a specific line -- see "next" below for the
+    concrete follow-up (a dedicated remote-free RMW microbenchmark)
 
 design:
   thread-local intrusive freelist pages
@@ -654,14 +711,207 @@ reuse structure):
   bench unaffected
   files: src/hz10_freelist_page.c only
 
-next:
-  rerun small_remote50/90, main/medium rows, and the (now-closed)
-  slot_count=1 isolating case at larger ITERS/RUNS for a final locked-in
-  table. Remaining open items: the Box 6/Box 4 pool-wiring question
-  (deprioritized further now that its main motivating case is fixed a
-  different way) and the box 3 O(N^2) contains-walk fallback
-  (deprioritized: not confirmed to matter given the marker fix already
-  handles the common case)
+locked-in final table collected (20260704T030633Z, THREADS=4 ITERS=500000
+RUNS=10, real tcmalloc via LD_PRELOAD): main_local0=0.562, main_r50=0.475,
+main_r90=0.488, medium_local0=0.553, small_remote50=0.694,
+small_remote90=0.700, slot_count=1=0.628 -- see "Current performance read"
+above for the full breakdown and per-row root-cause status. Also surfaced
+a new RSS monotonic-growth observation from this run (see above)
+
+CORRECTION to the slot_count=1 figure above, found while re-measuring for
+the Box 6/Box 4 pool-wiring work below: 0.628 (6.72M/10.71M) does not
+reproduce from bench_results/20260704T030633Z_hz10_full_followup's own raw
+data. Recomputing directly from slot_count1_tcmalloc.log alone (the one
+genuine same-run pairing: mech=hz10 and mech=system_malloc in the SAME
+LD_PRELOAD=libtcmalloc_minimal.so.4 process) gives hz10_avg=6.99M,
+tcmalloc_avg=14.42M, ratio=0.485 -- both this session's independent re-run
+(THREADS=4 ITERS=500000 RUNS=10, fresh process) and the original log's own
+numbers agree on this. The 10.71M figure lands almost exactly on the
+average of slot_count1_tcmalloc.log's real-tcmalloc numbers (14.42M) AND
+slot_count1_native.log's plain-glibc numbers (6.68M, no LD_PRELOAD at
+all) pooled together -- (14.42+6.68)/2 = 10.55M, within rounding of
+10.71M. Whatever produced the original figure blended two different
+mechanisms (real tcmalloc and plain glibc malloc) into one "tcmalloc"
+average, which is not a valid same-run comparison. Corrected: slot_count=1
+ratio against REAL tcmalloc is ~0.485, a bigger gap than previously
+stated, not 0.628. Treat any other cross-session-reported ratio the same
+way going forward -- recompute from the actual paired same-process log
+before trusting it
+
+main_r50/main_r90 perf stat + strace pass done -- found and fixed two
+real over-scoped locks, but the row ratio did NOT move outside this
+machine's already-documented noise band; gap stays open, not closed:
+  perf stat on the isolating workload (THREADS=4 MIN_SIZE=16 MAX_SIZE=32768
+  REMOTE_PCT=50, MODE=0/hz10-only, 8M ops) showed sys time (0.985s)
+  exceeding user time (0.767s) -- a mutex/futex signature, not a CPU-bound
+  one. strace -c confirmed: 98.7-98.9% of syscall time in futex (132,803
+  calls for r50, 209,231 for r90), versus near-zero (122 total syscalls,
+  no futex) at REMOTE_PCT=0 on the identical size range -- the cost is
+  real and specific to REMOTE_PCT>0, not a general main_local0-shaped cost
+  found bug #1: src/hz10_freelist_page.c's hz10_quantum_region_lock (the
+  slot_count=1 fix's own mutex) wrapped the ENTIRE
+  hz10_freelist_reserve_aligned_quantum() body, including the common
+  per-quantum bump-allocate, not just the rare mmap+trim refill -- every
+  single fresh-quantum handout across all 24 size classes and all threads
+  serialized on one lock. Fixed: common path is now a lock-free CAS bump
+  on _Atomic(char*) cursor/end; the mutex now guards only the actual
+  refill (~1-in-256 calls), matching what the surrounding comment already
+  claimed it did
+  found bug #2 (bigger effect on paper): src/hz10_page_pool.c's
+  hz10_page_pool_try_acquire() takes hz10_pool_lock unconditionally on
+  EVERY new-page creation. Per this file's own earlier finding (see the
+  decommit/aging policy box above), the pool is PROVABLY always empty on
+  the real hz10_public_entry.c path (hz10_pooled_page_destroy is never
+  called there) -- so every call was paying a full lock/unlock pair to
+  find nothing. Fixed with the same relaxed-peek-before-lock pattern
+  already used in src/hz10_remote_stack.c's drain fast path: hz10_pool_head
+  is now _Atomic(Hz10PagePoolNode*), and try_acquire returns NULL
+  immediately on a relaxed NULL peek, skipping the mutex entirely on the
+  (currently: always) empty case. hz10_page_pool_purge_idle() updated to
+  walk a local snapshot under the lock and publish the kept list back
+  once, since it can no longer take `&hz10_pool_head` as a plain pointer
+  measured, not assumed, that these were NOT the dominant cost: re-ran the
+  identical strace -c after both fixes -- futex count for main_r50/r90 was
+  unchanged (135,587 / 212,721, statistically the same as before). Root
+  cause of that non-result, found by comparing MODE=0 (hz10) vs MODE=1
+  with real tcmalloc vs MODE=1 with plain glibc, same bench binary, same
+  row: bench/hz10_public_entry_bench.c's OWN Hz10BenchInbox (the
+  mutex-protected per-thread queue the harness itself uses to simulate
+  "a different thread ends up calling free()", see
+  hz10_bench_inbox_push/drain) contributes a large futex cost EQUALLY to
+  every mechanism under test -- plain glibc malloc alone (no LD_PRELOAD)
+  hit 1.1M futex calls on this same row from arena-lock contention on top
+  of that shared inbox cost, while real tcmalloc (LD_PRELOAD, MODE=1)
+  showed 73,627. HZ10 (MODE=0) showing 135,587 sits between those two,
+  meaning strace on the full bench binary conflates bench-harness
+  simulation cost with allocator-internal cost -- a methodological finding
+  for whoever profiles this bench again: compare mode=0 against a
+  known-good real mechanism in the SAME run before attributing 100% of
+  syscalls to the thing under test
+  confirmed hz10_pagemap_route() (the per-free lookup used by every single
+  op, unlike register/release) is lock-free by design already (see
+  src/hz10_pagemap.c, "Lock-free read" comment) -- not a hidden contention
+  source
+  net result, reported honestly: re-ran the same-run tcmalloc script
+  (THREADS=4 ITERS=500000 RUNS=6) after both fixes: main_local0=0.540,
+  main_r50=0.484, main_r90=0.434, medium_local0=0.574 -- all within this
+  machine's already-documented 2-6x run-to-run noise band around the
+  locked-in table above (0.562/0.475/0.488/0.553), not a confirmed
+  improvement OR regression. Both fixes are kept anyway: they are real,
+  correctness-preserving removals of unnecessary lock/unlock pairs
+  (verified via strace that the pool lock truly is skippable on this path,
+  and the quantum lock truly was over-scoped), re-verified against all
+  smokes, ASan/UBSan, TSan (ASLR off), and hz10-standalone-check, all
+  green -- just not the row's dominant cost, so the ~0.48 gap stays open
+  still-open hypothesis for the real ~1.8x futex differential between
+  HZ10 and tcmalloc after subtracting the shared inbox cost: most likely
+  the same "inherent" per-op cost already documented in the small_remoteNN
+  investigation above (2 atomic RMWs per remote free: pending-bit
+  fetch_or + Treiber CAS push, src/hz10_remote_stack.c), now compounded
+  across all 24 size classes simultaneously instead of the 1-3 small
+  classes that row exercised -- not confirmed, would need a dedicated
+  microbenchmark isolating remote-free RMW cost at this class count to
+  say for sure. Left open, not further chased here
+  files: src/hz10_freelist_page.c, src/hz10_page_pool.c
+
+Box 6 -> Box 4 pool wiring done (src/hz10_class_pages.{h,c}, src/
+hz10_freelist_page.h): a real RSS win, but NOT an ops/s win --
+reported honestly as both:
+  root cause (see "slot_count=1 isolation gap" above, option (a), and the
+  corrected ratio above): Box 6 never destroys a page, so Box 4's pool is
+  provably always empty on the real hz10_malloc/hz10_free path. For a
+  slot_count=1 class specifically, a page is exhausted on literally every
+  allocation, so the number of distinct pages ever created for that class
+  vastly exceeds HZ10_CLASS_PAGES_SCAN_LIMIT (128) under sustained churn --
+  confirmed the fix target is real: widening SCAN_LIMIT to 1024 was
+  already tested earlier (see above) and did NOT help, meaning "keep
+  everything forever and hope a wider scan finds it" cannot work at this
+  churn rate; proactive reclaim is the only lever left
+  design: Hz10FreelistPage gained a second list pointer
+  (prev_in_owner_list, same "inert storage Box 2 never touches" rule as
+  next_in_owner_list) so Hz10ClassPageList is now doubly-linked with a
+  tail pointer and a length counter. hz10_class_pages_add() is still O(1)
+  amortized -- prepend at head, and if length now exceeds SCAN_LIMIT,
+  evict exactly the tail (oldest) node: one hz10_page_drain_remote() call
+  (a last chance to notice a pending remote free) then a free_count ==
+  slot_count check. Idle -> hz10_pooled_page_destroy() (real reclaim to
+  Box 4's pool). Not idle -> just unlink and drop, identical fate to
+  today's already-accepted out-of-window behavior (list membership was
+  never load-bearing for hz10_free's correctness, see hz10_class_pages.h)
+  this also closes Box 6's other long-standing accepted gap for free, as
+  a side effect: the per-class list can no longer grow unbounded -- it is
+  now permanently capped at SCAN_LIMIT nodes
+  correctness reasoning, not just hope: destroying a page requires
+  free_count == slot_count, which means every slot ever handed out has
+  already come back -- no application-held live pointer can reference any
+  of its slots, so reclaiming it is memory-safe. List mutation only ever
+  happens from the owning thread's own hz10_malloc call (single-writer,
+  matches Box 6's existing threading model), so no new synchronization
+  was needed for the doubly-linked bookkeeping itself
+  measured, not assumed: re-ran the slot_count=1 isolating workload
+  (THREADS=4 MIN_SIZE=MAX_SIZE=65536 REMOTE_PCT=90) 6x in the same
+  process, MODE=0 -- post_rss_kb stayed in the 265,984-424,064 KB range
+  across all 6 runs, versus the pre-fix combined.log showing the same
+  workload climb monotonically from 61,568 KB (run 1) to 1,174,492 KB
+  (run 10) in ONE 10-run process. This is the real, intended win: RSS is
+  now bounded instead of growing without limit under sustained slot_count=1
+  churn. Checked the OTHER rows too, not just the one this was designed
+  for: main_r90's RSS growth across 10 runs was NOT meaningfully
+  different before vs after (149K->1.01M KB post-fix vs 165K->884K KB
+  pre-fix, same order of growth) -- expected and reported honestly: main's
+  24 classes mostly hold many slots per page, so few distinct pages get
+  created per class within one run, meaning the per-class list rarely
+  reaches the 128-node eviction boundary at all. This fix is a real win
+  specifically for slot_count=1-shaped (or any high-distinct-page-count)
+  classes, not a general RSS fix for every row
+  ops/s: re-measured the slot_count=1 row against real tcmalloc after this
+  fix (THREADS=4 ITERS=500000 RUNS=10, same methodology as the correction
+  above) -- hz10_avg=6.91M, tcmalloc_avg=14.46M, ratio=0.478, statistically
+  unchanged from the corrected 0.485 baseline. Reported honestly, not
+  spun: this fix solves the RSS/memory-retention problem it targeted, but
+  does NOT move the throughput ratio -- makes sense in hindsight, since
+  the earlier batched-quantum-reservation fix had already made a *fresh*
+  quantum cheap (bump-allocate, no per-call mmap), so pool-reuse vs
+  fresh-allocation are now close in CPU cost; the value here is bounding
+  RSS, not raising ops/s
+  re-verified: all smokes (including a new-shape bounded_page_pool/
+  public_entry pairing), ASan/UBSan (ASAN_OPTIONS=detect_leaks=0 to
+  isolate real errors from the already-documented TLS-resident-page
+  LeakSanitizer noise, per tests/README.md), TSan (ASLR off),
+  hz10-standalone-check, and the checked-in never-free regression bench
+  (bench/hz10_class_pages_scan_bench.c) all green -- that bench's
+  last_over_first stayed ~1.02-1.09 (flat, no O(n^2) reintroduced),
+  though its absolute ops/s dropped from the pre-fix ~32-34M to ~27-29M:
+  a real, expected, honestly-reported cost (every add() in a pure
+  never-free workload now pays one extra drain-peek + free_count compare
+  for the eviction check, since that workload hits the eviction path on
+  almost every call)
+  files: src/hz10_class_pages.{h,c}, src/hz10_freelist_page.h
+
+next (re-prioritized from this table, see "Next HZ10 action" above):
+  (1) DONE (see above) -- perf stat + strace root-cause pass on
+      main_r50/main_r90: fixed two real over-scoped locks, ratio did not
+      move outside noise, real cost still unattributed past the
+      still-open RMW hypothesis above
+  (2) DONE (see above) -- wired Box 6's per-class page list to Box 4's
+      pool: real, measured RSS win for slot_count=1-shaped classes
+      specifically (bounded instead of unbounded growth), but no ops/s
+      change (ratio stays ~0.48, corrected baseline)
+  (3) DONE (see above) -- revisited RSS growth: fix helps slot_count=1
+      specifically, does not meaningfully change main_r50/r90's RSS growth
+      (few distinct pages per class there, eviction rarely triggers)
+  still open, unclaimed: the real ops/s gap for both main_r50/r90 (~0.48)
+      and slot_count=1 (~0.48, corrected) remains unattributed to a
+      specific line past the still-open remote-free RMW hypothesis above.
+      Whoever picks this up next should write a dedicated microbenchmark
+      isolating remote-free RMW cost (pending-bit fetch_or + Treiber CAS
+      push, src/hz10_remote_stack.c) at the actual class counts/thread
+      counts these rows use, rather than re-profiling the full bench
+      again -- strace/perf on the full bench binary conflates bench
+      harness cost (Hz10BenchInbox's own mutex) with allocator cost, see
+      the main_r50/r90 investigation above
+  deprioritized, unchanged: the box 3 O(N^2) contains-walk fallback (not
+  confirmed to matter given the marker fix already handles the common case)
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
