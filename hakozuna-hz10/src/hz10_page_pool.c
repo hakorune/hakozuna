@@ -2,6 +2,7 @@
 #include "hz10_pagemap.h"
 #include "hz10_platform.h"
 
+#include <stdatomic.h>
 #include <stddef.h>
 
 typedef struct Hz10PagePoolNode {
@@ -11,7 +12,11 @@ typedef struct Hz10PagePoolNode {
 } Hz10PagePoolNode;
 
 static hz10_platform_mutex_t hz10_pool_lock = HZ10_PLATFORM_MUTEX_INIT;
-static Hz10PagePoolNode* hz10_pool_head;
+/* _Atomic so hz10_page_pool_try_acquire() can peek at emptiness without
+ * taking the mutex (see below); every actual mutation still happens under
+ * hz10_pool_lock, same discipline as src/hz10_remote_stack.c's
+ * remote_free_head peek. */
+static _Atomic(Hz10PagePoolNode*) hz10_pool_head;
 static uint32_t hz10_pool_count;
 static uint32_t hz10_pool_cap = HZ10_PAGE_POOL_DEFAULT_CAP;
 static uint64_t hz10_pool_reuse_count;
@@ -19,10 +24,23 @@ static uint64_t hz10_pool_release_count;
 static uint64_t hz10_pool_purged_count;
 
 void* hz10_page_pool_try_acquire(void) {
+  /* Real, measured motivation (current_task.md): a perf stat + strace pass
+   * on main_r50/main_r90 found this function's mutex was THE dominant
+   * futex cost (98%+ of syscall time), because callers on the current
+   * hz10_public_entry.c path never call hz10_pooled_page_destroy() -- the
+   * pool is provably always empty here, so every call was paying a
+   * lock/unlock pair to find nothing. This relaxed peek skips the mutex
+   * entirely on the common empty case; a stale NULL read just means this
+   * call misses a page another thread released a moment ago, no different
+   * from being called a moment earlier -- correctness-neutral. */
+  if (atomic_load_explicit(&hz10_pool_head, memory_order_relaxed) == NULL) {
+    return NULL;
+  }
   hz10_platform_mutex_lock(&hz10_pool_lock);
-  Hz10PagePoolNode* node = hz10_pool_head;
+  Hz10PagePoolNode* node =
+      atomic_load_explicit(&hz10_pool_head, memory_order_relaxed);
   if (node) {
-    hz10_pool_head = node->next;
+    atomic_store_explicit(&hz10_pool_head, node->next, memory_order_relaxed);
     hz10_pool_count -= 1u;
     hz10_pool_reuse_count += 1u;
   }
@@ -56,9 +74,15 @@ uint32_t hz10_page_pool_purge_idle(uint64_t max_idle_ns) {
   hz10_platform_mutex_lock(&hz10_pool_lock);
   uint64_t now = hz10_platform_now_ns();
   Hz10PagePoolNode* purged_head = NULL;
-  Hz10PagePoolNode** link = &hz10_pool_head;
-  while (*link) {
-    Hz10PagePoolNode* node = *link;
+  Hz10PagePoolNode* kept_head = NULL;
+  Hz10PagePoolNode** kept_link = &kept_head;
+  /* Local, non-atomic walk under the lock (hz10_pool_head is only _Atomic
+   * for the lock-free peek in try_acquire above); rebuild the kept list
+   * and publish it back once at the end. */
+  Hz10PagePoolNode* node =
+      atomic_load_explicit(&hz10_pool_head, memory_order_relaxed);
+  while (node) {
+    Hz10PagePoolNode* next = node->next;
     uint64_t idle_ns = now - node->released_at_ns; /* unsigned: a clock
                                                      * that ever went
                                                      * backwards would wrap
@@ -67,14 +91,17 @@ uint32_t hz10_page_pool_purge_idle(uint64_t max_idle_ns) {
                                                      * never -- fail-safe
                                                      * either way */
     if (idle_ns >= max_idle_ns) {
-      *link = node->next;
       hz10_pool_count -= 1u;
       node->next = purged_head;
       purged_head = node;
     } else {
-      link = &node->next;
+      *kept_link = node;
+      kept_link = &node->next;
     }
+    node = next;
   }
+  *kept_link = NULL;
+  atomic_store_explicit(&hz10_pool_head, kept_head, memory_order_relaxed);
   hz10_platform_mutex_unlock(&hz10_pool_lock);
 
   uint32_t purged = 0u;

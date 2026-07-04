@@ -21,9 +21,19 @@
  */
 #define HZ10_QUANTUM_REGION_COUNT 256u
 
+/* The mutex below guards only the rare refill (one mmap+trim per
+ * HZ10_QUANTUM_REGION_COUNT handouts). The common per-quantum bump is
+ * lock-free (CAS on the cursor): a perf stat + strace pass on main_r50/
+ * main_r90 (current_task.md) found this mutex wrapping EVERY handout, not
+ * just the refill, was the dominant cost under REMOTE_PCT>0 across the
+ * full main_local0 class range -- 98%+ of syscall time in futex (130K-210K
+ * calls over 8M ops), essentially zero at REMOTE_PCT=0. All 24 size
+ * classes and all threads share this one reservoir by design (a page is
+ * always exactly one HZ10_PAGE_QUANTUM regardless of class), so any
+ * per-handout lock serializes unrelated classes against each other. */
 static hz10_platform_mutex_t hz10_quantum_region_lock = HZ10_PLATFORM_MUTEX_INIT;
-static char* hz10_quantum_region_cursor;
-static char* hz10_quantum_region_end;
+static _Atomic(char*) hz10_quantum_region_cursor;
+static _Atomic(char*) hz10_quantum_region_end;
 #endif
 
 /* Reserves an HZ10_PAGE_QUANTUM-aligned, HZ10_PAGE_QUANTUM-sized RW mapping.
@@ -47,33 +57,62 @@ static void* hz10_freelist_reserve_aligned_quantum(void) {
    * not apply here; every call is its own VirtualAlloc, same as before. */
   return hz10_platform_reserve_rw(bytes);
 #else
-  hz10_platform_mutex_lock(&hz10_quantum_region_lock);
-  if (hz10_quantum_region_cursor == hz10_quantum_region_end) {
-    size_t region_bytes = bytes * (size_t)HZ10_QUANTUM_REGION_COUNT;
-    size_t raw_bytes = region_bytes + bytes;
-    void* raw = hz10_platform_reserve_rw(raw_bytes);
-    if (!raw) {
-      hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
-      return NULL;
+  for (;;) {
+    char* cursor =
+        atomic_load_explicit(&hz10_quantum_region_cursor, memory_order_acquire);
+    char* end =
+        atomic_load_explicit(&hz10_quantum_region_end, memory_order_acquire);
+    if (cursor != end) {
+      char* next = cursor + bytes;
+      if (atomic_compare_exchange_weak_explicit(
+              &hz10_quantum_region_cursor, &cursor, next,
+              memory_order_acq_rel, memory_order_relaxed)) {
+        return cursor;
+      }
+      continue; /* lost the race to another thread's bump, retry */
     }
-    uintptr_t raw_addr = (uintptr_t)raw;
-    uintptr_t aligned_addr =
-        (raw_addr + (bytes - 1u)) & ~(uintptr_t)(bytes - 1u);
-    size_t head_trim = (size_t)(aligned_addr - raw_addr);
-    size_t tail_trim = raw_bytes - head_trim - region_bytes;
-    if (head_trim > 0u) {
-      hz10_platform_release(raw, head_trim);
+
+    /* Exhausted (or never initialized): the mutex now only guards this
+     * rare refill, once every HZ10_QUANTUM_REGION_COUNT handouts. */
+    hz10_platform_mutex_lock(&hz10_quantum_region_lock);
+    /* Re-check under the lock -- another thread may have refilled already
+     * while we were waiting for it. */
+    cursor =
+        atomic_load_explicit(&hz10_quantum_region_cursor, memory_order_acquire);
+    end = atomic_load_explicit(&hz10_quantum_region_end, memory_order_acquire);
+    if (cursor == end) {
+      size_t region_bytes = bytes * (size_t)HZ10_QUANTUM_REGION_COUNT;
+      size_t raw_bytes = region_bytes + bytes;
+      void* raw = hz10_platform_reserve_rw(raw_bytes);
+      if (!raw) {
+        hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+        return NULL;
+      }
+      uintptr_t raw_addr = (uintptr_t)raw;
+      uintptr_t aligned_addr =
+          (raw_addr + (bytes - 1u)) & ~(uintptr_t)(bytes - 1u);
+      size_t head_trim = (size_t)(aligned_addr - raw_addr);
+      size_t tail_trim = raw_bytes - head_trim - region_bytes;
+      if (head_trim > 0u) {
+        hz10_platform_release(raw, head_trim);
+      }
+      if (tail_trim > 0u) {
+        hz10_platform_release((void*)(aligned_addr + region_bytes), tail_trim);
+      }
+      /* Publish end before cursor: any thread whose lock-free acquire load
+       * observes the new cursor is then guaranteed (same-thread program
+       * order + release/acquire) to also observe the new end, never a
+       * stale one paired with a fresh cursor. */
+      atomic_store_explicit(&hz10_quantum_region_end,
+                            (char*)aligned_addr + region_bytes,
+                            memory_order_release);
+      atomic_store_explicit(&hz10_quantum_region_cursor, (char*)aligned_addr,
+                            memory_order_release);
     }
-    if (tail_trim > 0u) {
-      hz10_platform_release((void*)(aligned_addr + region_bytes), tail_trim);
-    }
-    hz10_quantum_region_cursor = (char*)aligned_addr;
-    hz10_quantum_region_end = (char*)aligned_addr + region_bytes;
+    hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+    /* Loop back and retry the lock-free bump against the (now fresh)
+     * region -- does not recurse, at most one extra iteration. */
   }
-  void* result = hz10_quantum_region_cursor;
-  hz10_quantum_region_cursor += bytes;
-  hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
-  return result;
 #endif
 }
 
