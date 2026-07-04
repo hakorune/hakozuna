@@ -266,6 +266,7 @@ state:
   TLS owner-page state lazily created from try_alloc
   state freed at thread flush
   REMOTE_SEEN / DRAINING / DETACHED helpers and counters
+  owner flush releases already all-free pages instead of only detaching them
 
 page skeleton:
   one mapped owner page per thread/class

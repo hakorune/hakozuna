@@ -459,6 +459,19 @@ current behavior:
   remote producer only claims pending_bits
   owner/local path is the only path that mutates local_free_bits
 
+rare lifecycle bug fixed:
+  commit 4e6a50d1 closed an owner-exit retention hole in
+  h9_owner_page_flush_owner(). The bug shape was rare because it required an
+  owner flush to see a page that had no live slots left after pending remote
+  frees were collected. The old path detached that page like any other owner
+  page, which made it unreachable from normal owner state while leaving the
+  mapping allocated. The fixed path collects pending under
+  h9_owner_page_global_lock, and if the page is all-free it unregisters the
+  global route entry, starts drain, detaches it, queues it for release, drops
+  the lock, then calls the shared destroy helper outside the lock. Pages that
+  are not all-free still only detach; they must remain globally routeable until
+  final exact frees arrive.
+
 decision:
   HOLD as broad HZ9 default
   profile/evidence only until remote-row admission cost and local owner-page
