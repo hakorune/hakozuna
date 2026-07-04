@@ -272,10 +272,15 @@ remote-free RMW attribution microbench:
 
   Pending-bit ordering/ceiling matrix: `pending_acqrel_treiber` and
   `pending_relaxed_treiber` were effectively tied (~40.5 ns/op), so the
-  safe acq_rel -> relaxed change is not a useful lever on this machine.
-  The unsafe no-pending ceiling (`treiber_no_pending_unsafe`) was much
-  lower (~24.9 ns/op), which means the remaining possible win is a
-  correctness-design problem, not a trivial memory-order cleanup.
+  safe acq_rel -> relaxed change is not a useful lever on this x86_64
+  Linux machine. Do not generalize this to ARM/AArch64 without measuring:
+  relaxed RMW may have a different ordering cost there. The unsafe
+  no-pending ceiling (`treiber_no_pending_unsafe`) was much lower
+  (~24.9 ns/op), which means the remaining possible win is a
+  correctness-design problem, not a trivial memory-order cleanup. That box
+  is intentionally not opened here: the pending bit is the remote-remote
+  duplicate-free guard, and weakening/replacing it would be a contract
+  change that needs a full-bench gate.
 
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap

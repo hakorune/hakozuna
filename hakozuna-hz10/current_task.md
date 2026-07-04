@@ -7,7 +7,7 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 ```text
 status:
   Box 1-6 and the follow-on fixes are implemented, verified, and committed.
-  Latest commits through de4a0715:
+  Latest commits through 5f279e0f:
     Box1 pagemap route
     Box2 thread-local intrusive freelist page
     Box3 remote stack + owner drain
@@ -64,10 +64,20 @@ status:
           pending_relaxed_treiber      ~40.47ns/op
           pending_counter_treiber      ~73.45ns/op
         Conclusion: acq_rel -> relaxed does not buy a safe win on this
-        machine; same-location RMW ordering is not the current lever. The
-        unsafe no-pending ceiling is still large (~15ns/op worker-side vs
+        x86_64 Linux machine; same-location RMW ordering is not the current
+        lever here. Do not generalize this to ARM/AArch64 without measuring:
+        relaxed RMW may avoid ordering/barrier cost there. The unsafe
+        no-pending ceiling is still large (~15ns/op worker-side vs
         pending+Treiber), so the remaining possible win is a correctness
         design question, not a trivial memory-order cleanup.
+      DECISION: do not open the pending-bit correctness-design box now.
+        Throughput already clears the HZ8 gate on the latest same-run
+        comparison, while the failing gate is RSS/lifecycle behavior. The
+        pending bit is the remote-remote duplicate-free guard; replacing or
+        weakening it would be a contract change and must be justified by a
+        full-bench gate, not by this microbench ceiling alone. Keep the log
+        as ceiling intel and return attention to the RSS/HZ8-reclaim path if
+        a true continuous workload reproduces growth.
 
     LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
       RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):
