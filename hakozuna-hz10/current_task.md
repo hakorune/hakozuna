@@ -19,6 +19,25 @@ status:
       reservation
 
   Current performance read:
+    LATEST RECHECK after HZ9 owner-flush fix and HZ10 boundary-stress
+      classification, 20260704T201752Z/201823Z/201859Z, THREADS=4
+      ITERS=500000 RUNS=10:
+      logs:
+        bench_results/20260704T201752Z_hz10_public_entry_vs_tcmalloc_same_run/combined.log
+        bench_results/20260704T201823Z_hz10_public_entry_vs_hz8_same_run/combined.log
+        bench_results/20260704T201859Z_hz10_full_followup_extra_tcmalloc/combined.log
+      vs real tcmalloc:
+        main_local0=0.564, main_r50=0.472, main_r90=0.492,
+        medium_local0=0.611, small_remote50=0.479,
+        small_remote90=0.539, slot_count1_r90=0.543
+      vs HZ8 default preload:
+        main_local0=1.896, main_r50=1.386, main_r90=1.763,
+        medium_local0=2.137
+      Read: HZ10 is consistently faster than HZ8 on these rows, but still
+        ~0.47-0.61x of tcmalloc. The next performance box should isolate
+        remote-free atomic/RMW cost directly; do not spend the next step on
+        thread-exit/RSS unless a true continuous workload reproduces it.
+
     LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
       RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):
       logs at bench_results/20260704T030633Z_hz10_public_entry_vs_tcmalloc_same_run/combined.log
