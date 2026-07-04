@@ -4,6 +4,7 @@
 /hz10_freelist_page_bench
 /hz10_remote_stack_drain_smoke
 /hz10_remote_stack_drain_bench
+/hz10_multiclass_remote_bench
 /hz10_bounded_page_pool_smoke
 /hz10_bounded_page_pool_bench
 /hz10_public_entry_smoke
