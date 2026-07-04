@@ -226,8 +226,15 @@ status:
       4. Only after (1)-(3): revisit throughput. The next real lever is
          remote-free publication cost, but touching the pending bit itself
          is a duplicate-free contract change and stays last; look at remote
-         publish batching or an owner-visible handoff shape first. NOT YET
-         DONE.
+         publish batching or an owner-visible handoff shape first.
+         DESIGN NOTE written as docs/HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md.
+         Current read: producer TLS staging is NO-GO for default behavior
+         without a producer-side quiescent flush contract, because accepted
+         remote frees must be at least drainable before hz10_free() returns.
+         Same-call publish_batch is the only small safe primitive, but it
+         helps only callers that already have a batch. Next implementation
+         should be HZ10RemotePublishBatchLocality-L0, a measurement-only box
+         estimating same-page batchability before adding behavior.
     (PRIOR) HZ10ActiveScanCost-L0: measurement-only box.
         Agent triage 20260705 converged on the same read:
           - do NOT open HZ8-style reclaim/thread-lifecycle port now; true

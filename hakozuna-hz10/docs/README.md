@@ -13,4 +13,7 @@ HZ10_NO_GO_LEDGER.md:
 
 HZ10_DEBUG_NOTES.md:
   rare bug records, race fixes, and future load-bearing guard notes
+
+HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md:
+  contract and allowed shapes for future remote-free publish batching work
 ```
