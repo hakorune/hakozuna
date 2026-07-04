@@ -403,6 +403,14 @@ and 12,021 deferred_ready; main_r90 bounds RSS at 102,400 -> 505,200 KB with
 14,302 reclaimed and 21,436 deferred_ready. This is safe but not full RSS
 closure; the L1 design needs a ready-drain phase before the direct retired
 walk.
+L1 ready-drain follow-up:
+`bench_results/20260704T225643Z_hz10_thread_lifecycle_flush_l1/combined.log`.
+The lifecycle hook now drains ready entries first through the owner path, then
+runs the guarded direct walk. main_r50 RSS is 39,040 -> 92,052 KB with
+20,250/20,250 pages reclaimed and no busy/deferred pages; main_r90 is
+148,480 -> 175,380 KB with 38,654/38,654 reclaimed and no busy/deferred
+pages. This keeps the ready/cancel safety guards while recovering most of the
+aggressive diagnostic RSS win.
 
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap

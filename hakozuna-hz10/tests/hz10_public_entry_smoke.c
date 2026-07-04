@@ -289,12 +289,12 @@ static int check_class_list_stats_accessor(void) {
   return 0;
 }
 
-/* Case 4c: a retired page already linked onto the ready stack must not be
- * destroyed by the lifecycle reclaim hook, even if draining it makes it
- * fully idle. The normal harvest path has two load-bearing guards for this
- * (retired_ready_on_stack and hz10_retired_ready_cancel()); this locks the
- * same requirement for hz10_public_entry_reclaim_thread_idle_pages(). */
-static int check_thread_reclaim_defers_ready_retired_page(void) {
+/* Case 4c: lifecycle reclaim must process a retired page already linked
+ * onto the ready stack through the ready owner path, not through the direct
+ * retired walk. Before the ready-drain phase this page was either
+ * unsafely destroyed by the direct walk or safely but incompletely
+ * deferred; L1 should safely reclaim it after pop()+generation check. */
+static int check_thread_reclaim_drains_ready_retired_page(void) {
   void* target_a = hz10_malloc(24576);
   void* target_b = hz10_malloc(24576);
   if (!target_a || !target_b) {
@@ -331,10 +331,16 @@ static int check_thread_reclaim_defers_ready_retired_page(void) {
 
   Hz10PublicEntryThreadReclaimStats reclaim_stats;
   hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
-  if (reclaim_stats.pages_deferred_ready == 0u) {
+  if (reclaim_stats.pages_reclaimed == 0u) {
     fprintf(stderr,
-            "thread_reclaim_ready: expected at least one ready-stacked "
-            "retired page to be deferred\n");
+            "thread_reclaim_ready: expected ready-stacked retired page to "
+            "be reclaimed by the ready-drain phase\n");
+    return 1;
+  }
+  if (reclaim_stats.pages_deferred_ready != 0u) {
+    fprintf(stderr,
+            "thread_reclaim_ready: ready-stacked page was deferred instead "
+            "of being drained first\n");
     return 1;
   }
   return 0;
@@ -485,7 +491,7 @@ int main(void) {
   if (check_class_list_stats_accessor()) {
     return 7;
   }
-  if (check_thread_reclaim_defers_ready_retired_page()) {
+  if (check_thread_reclaim_drains_ready_retired_page()) {
     return 8;
   }
   if (check_large_alloc_basic()) {

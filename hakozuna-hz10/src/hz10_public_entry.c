@@ -78,6 +78,46 @@ static void hz10_public_entry_reclaim_keep_page(Hz10PageSublist* survivors,
   survivors->length += 1u;
 }
 
+static void hz10_public_entry_retired_remove(Hz10ClassPageList* list,
+                                             Hz10FreelistPage* page) {
+  if (list->retired_sweep_cursor == page) {
+    list->retired_sweep_cursor = page->prev_in_owner_list;
+  }
+  if (page->prev_in_owner_list) {
+    page->prev_in_owner_list->next_in_owner_list = page->next_in_owner_list;
+  } else {
+    list->retired.head = page->next_in_owner_list;
+  }
+  if (page->next_in_owner_list) {
+    page->next_in_owner_list->prev_in_owner_list = page->prev_in_owner_list;
+  } else {
+    list->retired.tail = page->prev_in_owner_list;
+  }
+  list->retired.length -= 1u;
+}
+
+static void hz10_public_entry_reclaim_ready_idle_pages(
+    Hz10ClassPageList* list, Hz10PublicEntryThreadReclaimStats* stats) {
+  Hz10FreelistPage* page;
+  while ((page = hz10_retired_ready_pop(&list->ready)) != NULL) {
+    if (page->generation != page->retired_ready_generation) {
+      list->ready_stale_generation_count += 1u;
+      continue;
+    }
+    stats->pages_seen += 1u;
+    stats->slots_merged += hz10_page_drain_remote(page);
+    if (page->free_count == page->slot_count) {
+      hz10_public_entry_retired_remove(list, page);
+      list->retired_reclaimed_by_ready_count += 1u;
+      stats->pages_reclaimed += 1u;
+      hz10_pooled_page_destroy(page);
+    } else {
+      list->ready_false_positive_count += 1u;
+      stats->pages_busy += 1u;
+    }
+  }
+}
+
 static void hz10_public_entry_reclaim_sublist_idle_pages(
     Hz10PageSublist* sub, Hz10PublicEntryThreadReclaimStats* stats,
     int is_retired) {
@@ -124,6 +164,7 @@ void hz10_public_entry_reclaim_thread_idle_pages(
   Hz10PublicEntryThreadReclaimStats stats = {0};
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
     Hz10ClassState* state = &hz10_class_state[c];
+    hz10_public_entry_reclaim_ready_idle_pages(&state->list, &stats);
     hz10_public_entry_reclaim_sublist_idle_pages(&state->list.active, &stats,
                                                  0);
     hz10_public_entry_reclaim_sublist_idle_pages(&state->list.retired, &stats,

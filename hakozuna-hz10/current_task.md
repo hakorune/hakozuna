@@ -449,7 +449,27 @@ status:
               drains the ready stack through the normal owner path before
               the direct sublist walk; otherwise a safe periodic/quiescent
               flush will intentionally defer many already-idle retired pages.
-              PROPOSED NEXT BOX: HZ10ThreadLifecycleFlush-L1.
+              DONE: HZ10ThreadLifecycleFlush-L1.
+                Implemented the ready-drain phase inside
+                hz10_public_entry_reclaim_thread_idle_pages(): for each
+                class, pop ready entries first, generation-check them, drain
+                remote frees, reclaim fully idle candidates through the owner
+                path, and only then run the guarded active/retired direct
+                walk. The ready-stacked retired-page smoke now expects safe
+                reclaim via this ready-drain phase, not defer.
+                Measurement:
+                  bench_results/20260704T225643Z_hz10_thread_lifecycle_flush_l1/combined.log
+                  main_r50 RSS 39,040 -> 92,052 KB, median RSS 92,052 KB;
+                    pages_seen=20,250, reclaimed=20,250, busy=0,
+                    deferred_ready=0, deferred_cancel=0, slots_merged=118,810.
+                  main_r90 RSS 148,480 -> 175,380 KB, median RSS 175,380 KB;
+                    pages_seen=38,654, reclaimed=38,654, busy=0,
+                    deferred_ready=0, deferred_cancel=0, slots_merged=197,826.
+                Read: this closes the safety hole fable5 flagged while
+                recovering most of the aggressive diagnostic's RSS win.
+                It is still an explicit quiescent hook, not an automatic TLS
+                destructor.
+              NEXT, if graduating from diagnostic to product API:
                 Contract first, implementation second. Add an explicit API
                 whose caller must guarantee a quiescent ownership boundary:
                 no thread may still allocate from, free into, or hold an
