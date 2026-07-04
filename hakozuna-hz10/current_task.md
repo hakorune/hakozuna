@@ -967,6 +967,63 @@ refining rather than confirming or refuting it outright:
   the confirmed lead instead of the RMW guess
   files: bench/hz10_multiclass_remote_bench.c (new), Makefile, .gitignore
 
+first GO measured against real HZ8, not just guessed at -- mixed result,
+reported honestly (throughput mostly clears the bar, RSS does not):
+  this bar was stated in current_task.md from the start but had never
+  actually been measured: every prior comparison in this file was against
+  tcmalloc, not HZ8. New script scripts/run_hz10_public_entry_vs_hz8_same_run.sh
+  (same technique as the tcmalloc same-run script: LD_PRELOAD HZ8's own
+  default preload build, libhakozuna_hz8_preload.so from HZ8's own `make
+  preload` -- HZ8-v2/KeepRefill baked in, over hz10_public_entry_bench's
+  mech=system_malloc path) plus a new hz10_bench_find_hz8_preload_lib()
+  helper in bench/lib/hz10_bench_common.sh, opt-in via HZ8_PRELOAD_LIB or
+  HZ10_EXT_ROOT same as the existing HZ9 comparison
+  measured (THREADS=4 ITERS=500000 RUNS=10, reproduced twice, numbers
+  agree within ~1%):
+    throughput ratio (hz10/hz8):
+      main_local0:    1.971-1.972 (bar: >=2.0x -- just under, ~1.5% short,
+                       not a clean pass but very close)
+      main_r50:       1.462-1.580 (bar: >=1.2x remote -- clears easily)
+      main_r90:       1.587-1.610 (bar: >=1.2x remote -- clears easily)
+      medium_local0:  2.262-2.375 (not one of the three named gate rows,
+                       but clears the 2.0x local bar comfortably)
+    RSS ratio (hz10 post_rss_kb / hz8 post_rss_kb, run 10/10 of a 10-run
+    same-process series, so this is steady-state after real accumulation,
+    not a cold first sample):
+      main_local0:    48,832 / 64,600 = 0.756 (bar: <=2x -- clears, hz10
+                       actually lighter than HZ8 here)
+      medium_local0:   9,196 / 64,564 = 0.142 (clears easily)
+      main_r50:       791,024 / 179,272 = 4.41x HZ8's RSS (bar: <=2x --
+                       FAILS, badly)
+      main_r90:       953,860 / 253,124 = 3.77x HZ8's RSS (FAILS, badly)
+  conclusion: the throughput half of "first GO" is essentially met (local
+  just barely short, remote comfortably clear), directly consistent with
+  hz3/hz4's own established pattern of winning specific lanes rather than
+  sweeping every row. The RSS half is NOT met, and specifically fails on
+  the remote rows -- directly consistent with everything else this
+  session found: Box 6's per-class list only bounds/reclaims once a
+  class's list actually hits HZ10_CLASS_PAGES_SCAN_LIMIT (128) within the
+  run, which the earlier RSS-revisit work already showed does not
+  meaningfully happen for main_r50/r90's classes at this op count (many
+  slots per page, few distinct pages created) -- so RSS keeps
+  accumulating there with nothing to trigger reclaim, exactly the
+  mechanism already documented, now shown to matter enough to fail an
+  actual named gate, not just look untidy in a chart
+  honest scope note: this is ONE comparison point (THREADS=4,
+  ITERS=500000x10, this machine, HZ8's current default build). Not
+  re-verified against a from-scratch HZ8 rebuild or a different thread
+  count; treat as a real first data point for a bar that had never been
+  measured before, not a final verdict
+  next concrete step this points to: closing the RSS gate for main_r50/r90
+  needs the SAME Box 6/Box 4 reclaim mechanism built this session, just
+  triggered by something other than the SCAN_LIMIT boundary (e.g. an
+  explicit idle-page sweep call, or a much smaller effective window for
+  high-churn classes) -- the slot_count=1 fix's mechanism already proves
+  the reclaim path works, it just isn't reached by these rows' access
+  pattern
+  files: scripts/run_hz10_public_entry_vs_hz8_same_run.sh (new),
+  bench/lib/hz10_bench_common.sh
+
 first GO:
   >=2.0x HZ8 local or 250M+ local0
   remote >=1.2x HZ8
