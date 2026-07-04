@@ -974,6 +974,107 @@ directly. This is what caught the correction above:
   files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
   tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
 
+active/retired two-list reclaim done (src/hz10_class_pages.{h,c}, src/
+hz10_public_entry.{h,c}, tests/hz10_class_pages_smoke.c,
+bench/hz10_public_entry_bench.c): the design proposed to fix the "one-
+shot idle check misses async idle transitions" root cause -- implemented
+and verified correct, but measured to NOT meaningfully move RSS in
+either row it was tried against. Reported honestly as a real, working
+mechanism whose real-world effect is too small to matter, not spun as a
+fix:
+  design (external review from two independent reviewers before
+  implementation, both converged on this shape): Hz10ClassPageList split
+  into two sublists, `active` (hz10_malloc's own bounded search
+  structure, unchanged behavior, still capped at HZ10_CLASS_PAGES_
+  SCAN_LIMIT=128) and `retired` (new, also capped, HZ10_CLASS_PAGES_
+  RETIRED_LIMIT=128). An active-tail eviction that is NOT immediately
+  idle moves to `retired` instead of being dropped; a new
+  hz10_class_pages_sweep_retired() re-drains and re-checks up to
+  HZ10_CLASS_PAGES_SWEEP_BUDGET=4 pages from retired's tail per call --
+  called ONLY from hz10_public_entry.c's slow path (right after
+  hz10_class_pages_find_with_capacity() fails and before a fresh page
+  would be created -- a page reclaimed right there immediately feeds
+  that same call's pool-acquire-first check), never the hot per-op alloc
+  path. `retired` overflowing forces one final drain+check on its own
+  tail before truly giving up (dropped, same fate as before this design
+  existed). Both sublists reuse Hz10FreelistPage's existing prev/next_
+  in_owner_list fields via small shared splice helpers (a page is in at
+  most one sublist at a time). Counters split by WHICH mechanism
+  reclaimed a page (eviction-instant / retired-overflow / budgeted
+  sweep) plus retired_count and max_retired_length (high-water mark)
+  deliberately deferred to a later phase, not implemented now: promoting
+  a retired page back to `active` when a sweep drain finds it PARTIALLY
+  (not fully) idle -- would also help ops/s, not just RSS, but risks
+  active/retired thrashing if active is already full; correctly judged
+  as needing destroy-only reclaim measured on its own first
+  hz10_public_entry_class_list_stats() reshaped from four separate out-
+  parameters into one Hz10ClassPageListStats out-struct (matches H10
+  RouteResult's existing plain-struct-return pattern) since there were
+  now nine fields worth reporting, not three
+  tests/hz10_class_pages_smoke.c grew from 3 to 5 cases: the two new
+  ones are the actual regression tests for this design -- a page that
+  becomes idle AFTER entering retired (a late free, standing in for an
+  async remote free) is reclaimed by the next sweep_retired() call (the
+  old design could never catch this by construction); retired overflow
+  drops its own oldest tail after one final failed check, staying
+  bounded and reported via retired_dropped_count
+  measured against the real workloads this was built for (THREADS=4
+  ITERS=500000 RUNS=10, HZ10_DUMP_CLASS_STATS=1) -- decisive, not
+  hopeful:
+    slot_count=1 (the row this whole investigation started from): a
+      real, nonzero improvement -- retired_reclaimed_by_sweep went from
+      0 (old design, confirmed 0/0 across 20 runs) to 2-277 per run
+      here. But eviction_count is 5,942-21,187 per run and
+      retired_dropped_count is 5,556-19,638 per run in the SAME runs --
+      the sweep is reclaiming roughly 1-2% of what gets dropped, not
+      enough to matter. post_rss_kb across 10 runs in one process still
+      climbed 75,904 -> 998,824 KB, essentially the same shape as before
+      this design existed
+    main_r50 (multi-slot classes, the row this was also meant to help):
+      retired_reclaimed_by_sweep was EXACTLY 0 across all 10 runs.
+      post_rss_kb still climbed 53,504 -> 830,056 KB across the same 10
+      runs, again essentially unchanged
+  root cause of the small effect, understood via a follow-up diagnostic,
+  not guessed: raised HZ10_CLASS_PAGES_SWEEP_BUDGET to 16 and
+  HZ10_CLASS_PAGES_RETIRED_LIMIT to 512 (4x both, as a probe, then
+  reverted -- not kept) and re-measured slot_count=1: reclaim rate
+  barely moved (525/12,283 evictions in the best run, ~4.3%, still
+  dominated by drops). This rules out "just needs bigger constants" --
+  the mechanism is structurally limited, not under-tuned. The real
+  reason: idle requires free_count == slot_count, i.e. EVERY slot this
+  page ever handed out has come back. For slot_count=1 that is one
+  free -- readily achievable, if often just late (this is exactly the
+  case the two-list design measurably helps, per the nonzero sweep
+  counts above). For a multi-slot class (main_r50/r90's normal range,
+  pages holding hundreds to thousands of slots), a page reaching find_
+  with_capacity's scan already means it was JUST confirmed to have zero
+  local AND zero remote capacity moments before eviction -- so at
+  eviction time it typically still has many (not one) outstanding slots,
+  and under continuous churn there is no guarantee all of them are ever
+  freed within any bounded window, let alone within HZ10_CLASS_PAGES_
+  RETIRED_LIMIT more eviction cycles. "Wait for 100% of a page's slots
+  to come back" is a fundamentally harder target for high-slot-count
+  classes than for low-slot-count ones -- not a timing problem sweep can
+  fix by trying more often, a structural one
+  conclusion: kept this design (it is correct, real, and does help
+  slot_count=1 by a small, honestly-measured amount, plus it closes Box
+  6's list-length-unbounded-growth gap the same way the earlier one-list
+  version did) but does NOT claim it fixes the RSS gate. The real
+  RSS problem for multi-slot classes remains open, and per the analysis
+  above, likely needs an entirely different strategy than idle-page
+  reclaim -- idle may just not be the right bar to wait for when a page
+  holds hundreds of slots under sustained churn
+  re-verified: all smokes (5 cases in hz10_class_pages_smoke.c, ASan/
+  UBSan with ASAN_OPTIONS=detect_leaks=0 -- one of the 5 cases
+  deliberately leaks a dropped page, same documented category as the
+  existing TLS-resident-page noise), TSan (ASLR off),
+  hz10-standalone-check, and the never-free regression bench
+  (bench/hz10_class_pages_scan_bench.c, confirms the extra bounded sweep
+  cost per slow-path call does not reintroduce O(n^2): last_over_first
+  stayed ~1.03-1.15 across repeated runs) all green
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+  tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
+
 next (re-prioritized from this table, see "Next HZ10 action" above):
   (1) DONE (see above) -- perf stat + strace root-cause pass on
       main_r50/main_r90: fixed two real over-scoped locks, ratio did not
@@ -992,6 +1093,16 @@ next (re-prioritized from this table, see "Next HZ10 action" above):
       (~0% in all rows tested) -- the RSS problem is open in every row,
       not fixed in one and merely absent in others as previously believed
       (few distinct pages per class there, eviction rarely triggers)
+  (3b) DONE, real but small (see "active/retired two-list reclaim"
+      above) -- implemented the active/retired redesign this section's
+      own analysis pointed at. Correct, verified, and a genuine (if
+      ~1-2%) reclaim-rate improvement for slot_count=1; exactly 0 for
+      main_r50/r90. RSS growth is essentially unchanged in both rows
+      even at 4x the budget/limit constants -- ruled out as a tuning
+      problem. New understanding: for multi-slot classes, "wait until
+      100% of a page's slots come back" may not be a reachable bar at
+      all under sustained churn, not just a timing one -- this is now
+      the open question, not "make the existing mechanism fire more"
   (4) DONE -- built the dedicated microbenchmark this section used to
       call for (see "remote-free class-count sweep" below): the RMW-cost-
       compounds-across-classes hypothesis is REFUTED for the push side,
