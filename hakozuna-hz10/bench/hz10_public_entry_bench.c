@@ -122,6 +122,7 @@ static long hz10_bench_maxrss_kb(void) {
  * untouched? Off by default -- zero cost for every other bench run
  * through this file. */
 static int hz10_bench_dump_class_stats;
+static int hz10_bench_thread_exit_reclaim;
 static _Atomic(uint64_t) hz10_bench_active_length_sum;
 static _Atomic(uint64_t) hz10_bench_retired_length_sum;
 static _Atomic(uint64_t) hz10_bench_max_retired_length;
@@ -134,6 +135,60 @@ static _Atomic(uint64_t) hz10_bench_harvest_call_sum;
 static _Atomic(uint64_t) hz10_bench_retired_reclaimed_ready_sum;
 static _Atomic(uint64_t) hz10_bench_retired_promoted_ready_sum;
 static _Atomic(uint64_t) hz10_bench_ready_false_positive_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_hit_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_alloc_fail_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_drain_call_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_drain_fail_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_nonempty_drain_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_slots_merged_sum;
+static _Atomic(uint64_t) hz10_bench_active_cache_drain_hit_sum;
+static _Atomic(uint64_t) hz10_bench_find_call_sum;
+static _Atomic(uint64_t) hz10_bench_find_miss_sum;
+static _Atomic(uint64_t) hz10_bench_find_pages_visited_sum;
+static _Atomic(uint64_t) hz10_bench_find_drain_call_sum;
+static _Atomic(uint64_t) hz10_bench_find_nonempty_drain_sum;
+static _Atomic(uint64_t) hz10_bench_find_slots_merged_sum;
+static _Atomic(uint64_t) hz10_bench_find_local_hit_sum;
+static _Atomic(uint64_t) hz10_bench_find_drain_hit_sum;
+static _Atomic(uint64_t) hz10_bench_find_hit_depth_sum;
+static _Atomic(uint64_t) hz10_bench_find_miss_pages_visited_sum;
+static _Atomic(uint64_t) hz10_bench_find_hit_depth_max;
+static _Atomic(uint64_t)
+    hz10_bench_find_depth_hist[HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS];
+static _Atomic(uint64_t) hz10_bench_active_switch_sum;
+static _Atomic(uint64_t) hz10_bench_active_ops_served_sum;
+static _Atomic(uint64_t) hz10_bench_active_ops_served_immediate_sum;
+static _Atomic(uint64_t) hz10_bench_second_active_check_sum;
+static _Atomic(uint64_t) hz10_bench_second_active_hit_sum;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_seen;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_reclaimed;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_busy;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_deferred_ready;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_deferred_cancel;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_slots_merged;
+
+#define HZ10_BENCH_LOAD(counter) \
+  ((unsigned long long)atomic_load_explicit(&(counter), memory_order_relaxed))
+
+typedef struct Hz10BenchClassStats {
+  _Atomic(uint64_t) active_cache_alloc_fail_count;
+  _Atomic(uint64_t) active_cache_drain_fail_count;
+  _Atomic(uint64_t) find_call_count;
+  _Atomic(uint64_t) find_miss_count;
+  _Atomic(uint64_t) find_pages_visited_count;
+  _Atomic(uint64_t) find_miss_pages_visited_count;
+  _Atomic(uint64_t) find_drain_call_count;
+  _Atomic(uint64_t) find_nonempty_drain_count;
+  _Atomic(uint64_t) find_hit_depth_sum;
+  _Atomic(uint64_t) find_hit_depth_max;
+  _Atomic(uint64_t) active_switch_count;
+  _Atomic(uint64_t) active_ops_served_sum;
+  _Atomic(uint64_t) active_ops_served_immediate_count;
+  _Atomic(uint64_t) second_active_check_count;
+  _Atomic(uint64_t) second_active_hit_count;
+} Hz10BenchClassStats;
+
+static Hz10BenchClassStats hz10_bench_class_stats[HZ10_CLASS_COUNT];
 
 static void hz10_bench_atomic_max_u64(_Atomic(uint64_t)* target,
                                     uint64_t candidate) {
@@ -179,6 +234,258 @@ static void hz10_bench_collect_class_stats(void) {
     atomic_fetch_add_explicit(&hz10_bench_ready_false_positive_sum,
                               stats.ready_false_positive_count,
                               memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_hit_sum,
+                              stats.active_cache_hit_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_alloc_fail_sum,
+                              stats.active_cache_alloc_fail_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_drain_call_sum,
+                              stats.active_cache_drain_call_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_drain_fail_sum,
+                              stats.active_cache_drain_fail_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_nonempty_drain_sum,
+                              stats.active_cache_nonempty_drain_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_slots_merged_sum,
+                              stats.active_cache_slots_merged_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_cache_drain_hit_sum,
+                              stats.active_cache_drain_hit_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_call_sum,
+                              stats.find_call_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_miss_sum,
+                              stats.find_miss_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_pages_visited_sum,
+                              stats.find_pages_visited_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_drain_call_sum,
+                              stats.find_drain_call_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_nonempty_drain_sum,
+                              stats.find_nonempty_drain_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_slots_merged_sum,
+                              stats.find_slots_merged_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_local_hit_sum,
+                              stats.find_local_hit_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_drain_hit_sum,
+                              stats.find_drain_hit_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_hit_depth_sum,
+                              stats.find_hit_depth_sum,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_find_miss_pages_visited_sum,
+                              stats.find_miss_pages_visited_count,
+                              memory_order_relaxed);
+    hz10_bench_atomic_max_u64(&hz10_bench_find_hit_depth_max,
+                             stats.find_hit_depth_max);
+    for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS; ++i) {
+      atomic_fetch_add_explicit(&hz10_bench_find_depth_hist[i],
+                                stats.find_depth_hist[i],
+                                memory_order_relaxed);
+    }
+    Hz10BenchClassStats* class_stats = &hz10_bench_class_stats[c];
+    atomic_fetch_add_explicit(&class_stats->active_cache_alloc_fail_count,
+                              stats.active_cache_alloc_fail_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->active_cache_drain_fail_count,
+                              stats.active_cache_drain_fail_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_call_count,
+                              stats.find_call_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_miss_count,
+                              stats.find_miss_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_pages_visited_count,
+                              stats.find_pages_visited_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_miss_pages_visited_count,
+                              stats.find_miss_pages_visited_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_drain_call_count,
+                              stats.find_drain_call_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_nonempty_drain_count,
+                              stats.find_nonempty_drain_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->find_hit_depth_sum,
+                              stats.find_hit_depth_sum,
+                              memory_order_relaxed);
+    hz10_bench_atomic_max_u64(&class_stats->find_hit_depth_max,
+                             stats.find_hit_depth_max);
+    atomic_fetch_add_explicit(&hz10_bench_active_switch_sum,
+                              stats.active_switch_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_ops_served_sum,
+                              stats.active_ops_served_sum,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_active_ops_served_immediate_sum,
+                              stats.active_ops_served_immediate_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_second_active_check_sum,
+                              stats.second_active_check_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_second_active_hit_sum,
+                              stats.second_active_hit_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->active_switch_count,
+                              stats.active_switch_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->active_ops_served_sum,
+                              stats.active_ops_served_sum,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->active_ops_served_immediate_count,
+                              stats.active_ops_served_immediate_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->second_active_check_count,
+                              stats.second_active_check_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&class_stats->second_active_hit_count,
+                              stats.second_active_hit_count,
+                              memory_order_relaxed);
+  }
+}
+
+static void hz10_bench_collect_thread_reclaim_stats(
+    const Hz10PublicEntryThreadReclaimStats* stats) {
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_seen,
+                            stats->pages_seen, memory_order_relaxed);
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_reclaimed,
+                            stats->pages_reclaimed, memory_order_relaxed);
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_busy,
+                            stats->pages_busy, memory_order_relaxed);
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_deferred_ready,
+                            stats->pages_deferred_ready,
+                            memory_order_relaxed);
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_deferred_cancel,
+                            stats->pages_deferred_cancel,
+                            memory_order_relaxed);
+  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_slots_merged,
+                            stats->slots_merged, memory_order_relaxed);
+}
+
+static void hz10_bench_reset_class_stats(void) {
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10BenchClassStats* stats = &hz10_bench_class_stats[c];
+    atomic_store_explicit(&stats->active_cache_alloc_fail_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->active_cache_drain_fail_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_call_count, 0u, memory_order_relaxed);
+    atomic_store_explicit(&stats->find_miss_count, 0u, memory_order_relaxed);
+    atomic_store_explicit(&stats->find_pages_visited_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_miss_pages_visited_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_drain_call_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_nonempty_drain_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_hit_depth_sum, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->find_hit_depth_max, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->active_switch_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->active_ops_served_sum, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->active_ops_served_immediate_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->second_active_check_count, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&stats->second_active_hit_count, 0u,
+                          memory_order_relaxed);
+  }
+}
+
+static void hz10_bench_print_top_class_stats(const char* mech, uint32_t run,
+                                            uint32_t runs) {
+  enum { TOP_N = 5 };
+  uint32_t top_class[TOP_N] = {0};
+  uint64_t top_pages[TOP_N] = {0};
+
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    uint64_t pages = atomic_load_explicit(
+        &hz10_bench_class_stats[c].find_pages_visited_count,
+        memory_order_relaxed);
+    for (uint32_t i = 0; i < TOP_N; ++i) {
+      if (pages <= top_pages[i]) {
+        continue;
+      }
+      for (uint32_t j = TOP_N - 1u; j > i; --j) {
+        top_pages[j] = top_pages[j - 1u];
+        top_class[j] = top_class[j - 1u];
+      }
+      top_pages[i] = pages;
+      top_class[i] = c;
+      break;
+    }
+  }
+
+  for (uint32_t i = 0; i < TOP_N; ++i) {
+    if (top_pages[i] == 0u) {
+      continue;
+    }
+    uint32_t c = top_class[i];
+    Hz10BenchClassStats* stats = &hz10_bench_class_stats[c];
+    uint64_t find_calls = atomic_load_explicit(
+        &stats->find_call_count, memory_order_relaxed);
+    uint64_t find_misses = atomic_load_explicit(
+        &stats->find_miss_count, memory_order_relaxed);
+    uint64_t hit_depth_sum = atomic_load_explicit(
+        &stats->find_hit_depth_sum, memory_order_relaxed);
+    uint64_t hit_count = find_calls >= find_misses
+                             ? find_calls - find_misses
+                             : 0u;
+    uint64_t active_switch_count = atomic_load_explicit(
+        &stats->active_switch_count, memory_order_relaxed);
+    uint64_t active_ops_served_sum = atomic_load_explicit(
+        &stats->active_ops_served_sum, memory_order_relaxed);
+    uint64_t active_ops_served_immediate_count = atomic_load_explicit(
+        &stats->active_ops_served_immediate_count, memory_order_relaxed);
+    uint64_t second_active_check_count = atomic_load_explicit(
+        &stats->second_active_check_count, memory_order_relaxed);
+    uint64_t second_active_hit_count = atomic_load_explicit(
+        &stats->second_active_hit_count, memory_order_relaxed);
+    printf(
+        "hz10_public_entry_class_top mech=%s run=%u/%u rank=%u "
+        "class_id=%u slot_size=%u slot_count=%u "
+        "active_alloc_fails=%llu active_drain_fails=%llu "
+        "find_calls=%llu find_misses=%llu find_pages_visited=%llu "
+        "find_miss_pages_visited=%llu find_drain_calls=%llu "
+        "find_nonempty_drains=%llu find_hit_depth_sum=%llu "
+        "find_hit_depth_max=%llu find_hit_count=%llu "
+        "active_switch_count=%llu active_ops_served_sum=%llu "
+        "active_ops_served_immediate_count=%llu "
+        "second_active_check_count=%llu second_active_hit_count=%llu\n",
+        mech, run, runs, i + 1u, c, hz10_size_class_slot_size(c),
+        hz10_size_class_slot_count(c),
+        (unsigned long long)atomic_load_explicit(
+            &stats->active_cache_alloc_fail_count, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &stats->active_cache_drain_fail_count, memory_order_relaxed),
+        (unsigned long long)find_calls, (unsigned long long)find_misses,
+        (unsigned long long)top_pages[i],
+        (unsigned long long)atomic_load_explicit(
+            &stats->find_miss_pages_visited_count, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &stats->find_drain_call_count, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &stats->find_nonempty_drain_count, memory_order_relaxed),
+        (unsigned long long)hit_depth_sum,
+        (unsigned long long)atomic_load_explicit(
+            &stats->find_hit_depth_max, memory_order_relaxed),
+        (unsigned long long)hit_count,
+        (unsigned long long)active_switch_count,
+        (unsigned long long)active_ops_served_sum,
+        (unsigned long long)active_ops_served_immediate_count,
+        (unsigned long long)second_active_check_count,
+        (unsigned long long)second_active_hit_count);
   }
 }
 
@@ -240,6 +547,11 @@ static void* hz10_bench_worker(void* raw) {
   if (arg->use_hz10 && hz10_bench_dump_class_stats) {
     hz10_bench_collect_class_stats();
   }
+  if (arg->use_hz10 && hz10_bench_thread_exit_reclaim) {
+    Hz10PublicEntryThreadReclaimStats reclaim_stats;
+    hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
+    hz10_bench_collect_thread_reclaim_stats(&reclaim_stats);
+  }
   return NULL;
 }
 
@@ -273,6 +585,46 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_retired_reclaimed_ready_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_promoted_ready_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_ready_false_positive_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_hit_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_alloc_fail_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_drain_call_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_drain_fail_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_nonempty_drain_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_slots_merged_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_cache_drain_hit_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_call_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_miss_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_pages_visited_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_drain_call_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_nonempty_drain_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_slots_merged_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_local_hit_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_drain_hit_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_hit_depth_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_miss_pages_visited_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_find_hit_depth_max, 0u, memory_order_relaxed);
+    for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS; ++i) {
+      atomic_store_explicit(&hz10_bench_find_depth_hist[i], 0u,
+                            memory_order_relaxed);
+    }
+    atomic_store_explicit(&hz10_bench_active_switch_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_ops_served_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_ops_served_immediate_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_second_active_check_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_second_active_hit_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_seen, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_reclaimed, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_busy, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_deferred_ready, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_deferred_cancel, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_thread_reclaim_slots_merged, 0u,
+                          memory_order_relaxed);
+    hz10_bench_reset_class_stats();
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -333,32 +685,82 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         "eviction_reclaimed_count=%llu retired_count=%llu "
         "retired_reclaimed_by_sweep=%llu retired_promoted_by_sweep=%llu "
         "harvest_call_count=%llu retired_reclaimed_by_ready=%llu "
-        "retired_promoted_by_ready=%llu ready_false_positive=%llu\n",
+        "retired_promoted_by_ready=%llu ready_false_positive=%llu "
+        "active_cache_hit=%llu active_cache_alloc_fails=%llu "
+        "active_cache_drain_calls=%llu active_cache_drain_fails=%llu "
+        "active_cache_nonempty_drains=%llu active_cache_slots_merged=%llu "
+        "active_cache_drain_hits=%llu find_calls=%llu find_misses=%llu "
+        "find_pages_visited=%llu find_drain_calls=%llu "
+        "find_nonempty_drains=%llu find_slots_merged=%llu "
+        "find_local_hits=%llu find_drain_hits=%llu "
+        "find_hit_depth_sum=%llu find_miss_pages_visited=%llu "
+        "find_hit_depth_max=%llu "
+        "find_depth_h0=%llu find_depth_h1=%llu find_depth_h2_4=%llu "
+        "find_depth_h5_16=%llu find_depth_h17_64=%llu "
+        "find_depth_h65_128=%llu\n",
         mech, run, runs, HZ10_CLASS_PAGES_SWEEP_BUDGET,
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_active_length_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_length_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_max_retired_length, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_eviction_count_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_eviction_reclaimed_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_count_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_promoted_sweep_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_harvest_call_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_reclaimed_ready_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_promoted_ready_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_ready_false_positive_sum, memory_order_relaxed));
+        HZ10_BENCH_LOAD(hz10_bench_active_length_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_length_sum),
+        HZ10_BENCH_LOAD(hz10_bench_max_retired_length),
+        HZ10_BENCH_LOAD(hz10_bench_eviction_count_sum),
+        HZ10_BENCH_LOAD(hz10_bench_eviction_reclaimed_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_count_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_reclaimed_sweep_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_promoted_sweep_sum),
+        HZ10_BENCH_LOAD(hz10_bench_harvest_call_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_reclaimed_ready_sum),
+        HZ10_BENCH_LOAD(hz10_bench_retired_promoted_ready_sum),
+        HZ10_BENCH_LOAD(hz10_bench_ready_false_positive_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_hit_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_alloc_fail_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_drain_call_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_drain_fail_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_nonempty_drain_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_slots_merged_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_cache_drain_hit_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_call_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_miss_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_pages_visited_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_drain_call_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_nonempty_drain_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_slots_merged_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_local_hit_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_drain_hit_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_hit_depth_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_miss_pages_visited_sum),
+        HZ10_BENCH_LOAD(hz10_bench_find_hit_depth_max),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[0]),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[1]),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[2]),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[3]),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[4]),
+        HZ10_BENCH_LOAD(hz10_bench_find_depth_hist[5]));
+    printf(
+        "hz10_public_entry_two_slot_stats mech=%s run=%u/%u "
+        "active_switch_count=%llu active_ops_served_sum=%llu "
+        "active_ops_served_immediate_count=%llu "
+        "second_active_check_count=%llu second_active_hit_count=%llu\n",
+        mech, run, runs,
+        HZ10_BENCH_LOAD(hz10_bench_active_switch_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_ops_served_sum),
+        HZ10_BENCH_LOAD(hz10_bench_active_ops_served_immediate_sum),
+        HZ10_BENCH_LOAD(hz10_bench_second_active_check_sum),
+        HZ10_BENCH_LOAD(hz10_bench_second_active_hit_sum));
+    if (hz10_bench_thread_exit_reclaim) {
+      printf(
+          "hz10_public_entry_thread_reclaim mech=%s run=%u/%u "
+          "pages_seen=%llu pages_reclaimed=%llu pages_busy=%llu "
+          "pages_deferred_ready=%llu pages_deferred_cancel=%llu "
+          "slots_merged=%llu\n",
+          mech, run, runs,
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_seen),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_reclaimed),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_busy),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_deferred_ready),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_deferred_cancel),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_slots_merged));
+    }
+    hz10_bench_print_top_class_stats(mech, run, runs);
   }
   return 0;
 }
@@ -373,6 +775,8 @@ int main(void) {
   uint32_t mode = (uint32_t)hz10_bench_env_u64("MODE", 2ull); /* 2 = both */
   hz10_bench_dump_class_stats =
       hz10_bench_env_u64("HZ10_DUMP_CLASS_STATS", 0ull) != 0ull;
+  hz10_bench_thread_exit_reclaim =
+      hz10_bench_env_u64("HZ10_THREAD_EXIT_RECLAIM", 0ull) != 0ull;
 
   if (threads == 0u || min_size == 0u || max_size < min_size) {
     fprintf(stderr, "invalid THREADS/MIN_SIZE/MAX_SIZE\n");

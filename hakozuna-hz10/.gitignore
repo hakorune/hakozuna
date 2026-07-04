@@ -10,8 +10,15 @@
 /hz10_class_pages_smoke
 /hz10_public_entry_smoke
 /hz10_public_entry_bench
+/hz10_public_entry_active_scan_bench
+/hz10_public_entry_active_mtf_bench
+/hz10_public_entry_two_slot_bench
 /hz10_class_pages_scan_bench
 /hz10_size_class_smoke
+/hz10_retired_ready_smoke
+/hz10_retired_ready_bench
+/hz10_public_entry_steady_state_bench
+/hz10_public_entry_thread_reuse_bench
 bench_results/
 .external-disabled/
 

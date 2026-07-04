@@ -3,6 +3,50 @@
 #include "hz10_remote_stack.h"
 #include "hz10_retired_ready.h"
 
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+static uint32_t hz10_class_pages_scan_depth_bucket(uint32_t depth) {
+  if (depth == 0u) {
+    return 0u;
+  }
+  if (depth == 1u) {
+    return 1u;
+  }
+  if (depth <= 4u) {
+    return 2u;
+  }
+  if (depth <= 16u) {
+    return 3u;
+  }
+  if (depth <= 64u) {
+    return 4u;
+  }
+  return 5u;
+}
+
+void hz10_class_pages_note_active_cache_hit(Hz10ClassPageList* list) {
+  list->active_cache_hit_count += 1u;
+}
+
+void hz10_class_pages_note_active_cache_alloc_fail(Hz10ClassPageList* list) {
+  list->active_cache_alloc_fail_count += 1u;
+}
+
+void hz10_class_pages_note_active_cache_drain(Hz10ClassPageList* list,
+                                             uint32_t slots_merged,
+                                             int produced_capacity) {
+  list->active_cache_drain_call_count += 1u;
+  list->active_cache_slots_merged_count += slots_merged;
+  if (slots_merged > 0u) {
+    list->active_cache_nonempty_drain_count += 1u;
+  }
+  if (produced_capacity) {
+    list->active_cache_drain_hit_count += 1u;
+  } else {
+    list->active_cache_drain_fail_count += 1u;
+  }
+}
+#endif
+
 /* Generic doubly-linked splice helpers shared by `active` and `retired`
  * (a page is in at most one of the two sublists at a time, so reusing
  * Hz10FreelistPage's prev/next_in_owner_list fields for whichever list
@@ -50,6 +94,17 @@ static void hz10_page_sublist_remove(Hz10PageSublist* sub,
   }
   sub->length -= 1u;
 }
+
+#if HZ10_ENABLE_ACTIVE_MTF
+static void hz10_page_sublist_move_to_head(Hz10PageSublist* sub,
+                                          Hz10FreelistPage* node) {
+  if (sub->head == node) {
+    return;
+  }
+  hz10_page_sublist_remove(sub, node);
+  hz10_page_sublist_prepend(sub, node);
+}
+#endif
 
 /* Same as hz10_page_sublist_remove(&list->retired, node), but also
  * redirects list->retired_sweep_cursor first if it currently points at
@@ -120,17 +175,60 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
 
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(
     Hz10ClassPageList* list) {
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+  list->find_call_count += 1u;
+#endif
   uint32_t scanned = 0u;
   for (Hz10FreelistPage* page = list->active.head;
        page && scanned < HZ10_CLASS_PAGES_SCAN_LIMIT;
        page = page->next_in_owner_list, ++scanned) {
     if (page->local_free_head) {
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+      uint32_t depth = scanned + 1u;
+      list->find_pages_visited_count += depth;
+      list->find_local_hit_count += 1u;
+      list->find_hit_depth_sum += depth;
+      if (depth > list->find_hit_depth_max) {
+        list->find_hit_depth_max = depth;
+      }
+      list->find_depth_hist[hz10_class_pages_scan_depth_bucket(depth)] += 1u;
+#endif
+#if HZ10_ENABLE_ACTIVE_MTF
+      hz10_page_sublist_move_to_head(&list->active, page);
+#endif
       return page;
     }
-    if (hz10_page_drain_remote(page) > 0u) {
+    uint32_t merged = hz10_page_drain_remote(page);
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+    list->find_drain_call_count += 1u;
+    list->find_slots_merged_count += merged;
+    if (merged > 0u) {
+      list->find_nonempty_drain_count += 1u;
+    }
+#endif
+    if (merged > 0u) {
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+      uint32_t depth = scanned + 1u;
+      list->find_pages_visited_count += depth;
+      list->find_drain_hit_count += 1u;
+      list->find_hit_depth_sum += depth;
+      if (depth > list->find_hit_depth_max) {
+        list->find_hit_depth_max = depth;
+      }
+      list->find_depth_hist[hz10_class_pages_scan_depth_bucket(depth)] += 1u;
+#endif
+#if HZ10_ENABLE_ACTIVE_MTF
+      hz10_page_sublist_move_to_head(&list->active, page);
+#endif
       return page;
     }
   }
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+  list->find_miss_count += 1u;
+  list->find_pages_visited_count += scanned;
+  list->find_miss_pages_visited_count += scanned;
+  list->find_depth_hist[hz10_class_pages_scan_depth_bucket(scanned)] += 1u;
+#endif
   return NULL;
 }
 

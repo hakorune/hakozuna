@@ -289,6 +289,57 @@ static int check_class_list_stats_accessor(void) {
   return 0;
 }
 
+/* Case 4c: a retired page already linked onto the ready stack must not be
+ * destroyed by the lifecycle reclaim hook, even if draining it makes it
+ * fully idle. The normal harvest path has two load-bearing guards for this
+ * (retired_ready_on_stack and hz10_retired_ready_cancel()); this locks the
+ * same requirement for hz10_public_entry_reclaim_thread_idle_pages(). */
+static int check_thread_reclaim_defers_ready_retired_page(void) {
+  void* target_a = hz10_malloc(24576);
+  void* target_b = hz10_malloc(24576);
+  if (!target_a || !target_b) {
+    fprintf(stderr, "thread_reclaim_ready: target setup failed\n");
+    return 1;
+  }
+
+  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT + 1u; ++i) {
+    void* a = hz10_malloc(24576);
+    void* b = hz10_malloc(24576);
+    if (!a || !b) {
+      fprintf(stderr, "thread_reclaim_ready: filler %u failed\n", i);
+      return 1;
+    }
+  }
+
+  pthread_t thread_a;
+  pthread_t thread_b;
+  if (pthread_create(&thread_a, NULL, hz10_smoke_free_in_other_thread,
+                     &target_a) != 0 ||
+      pthread_create(&thread_b, NULL, hz10_smoke_free_in_other_thread,
+                     &target_b) != 0) {
+    fprintf(stderr, "thread_reclaim_ready: pthread_create failed\n");
+    return 1;
+  }
+  void* ret_a = NULL;
+  void* ret_b = NULL;
+  pthread_join(thread_a, &ret_a);
+  pthread_join(thread_b, &ret_b);
+  if ((intptr_t)ret_a != 1 || (intptr_t)ret_b != 1) {
+    fprintf(stderr, "thread_reclaim_ready: remote free rejected\n");
+    return 1;
+  }
+
+  Hz10PublicEntryThreadReclaimStats reclaim_stats;
+  hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
+  if (reclaim_stats.pages_deferred_ready == 0u) {
+    fprintf(stderr,
+            "thread_reclaim_ready: expected at least one ready-stacked "
+            "retired page to be deferred\n");
+    return 1;
+  }
+  return 0;
+}
+
 /* Case 5: basic large-object path (src/hz10_large_alloc.h) -- sizes at and
  * beyond HZ10_PAGE_QUANTUM+1 must now succeed (they used to be rejected
  * outright), the full requested range must be genuinely writable (not just
@@ -434,14 +485,17 @@ int main(void) {
   if (check_class_list_stats_accessor()) {
     return 7;
   }
-  if (check_large_alloc_basic()) {
+  if (check_thread_reclaim_defers_ready_retired_page()) {
     return 8;
   }
-  if (check_large_alloc_edges()) {
+  if (check_large_alloc_basic()) {
     return 9;
   }
-  if (check_cross_thread_free()) {
+  if (check_large_alloc_edges()) {
     return 10;
+  }
+  if (check_cross_thread_free()) {
+    return 11;
   }
 
   puts("hz10_public_entry_smoke ok");

@@ -149,7 +149,23 @@ status:
       calling it a release gate.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
-    (NEXT) HZ10ActiveScanCost-L0: measurement-only box.
+    HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
+    HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
+    of 20260705: move-to-front NO-GO, and the two-slot ping-pong hypothesis
+    NO-GO (see below) means HZ10SecondActiveByClass-AB-L0 is not opened
+    either. This active-list/scan-cost investigation thread found a real,
+    well-characterized cost but no actionable cache-policy win. The two
+    remaining open levers on the main_r50/r90 tcmalloc gap are explicitly
+    separated, not silently dropped: the pending-bit correctness-design
+    ceiling (a duplicate-free contract change, needs a full-bench gate to
+    justify) and thread-exit page abandonment. The latter is now diagnosed
+    by HZ10ThreadExitReclaim-L0 below: an explicit quiescent reclaim hook
+    reclaims every page it sees in public-entry fresh-thread rows and bounds
+    RSS much lower. Do not turn that into an automatic pthread destructor
+    without a lifecycle/ownership design, because general thread exit can
+    race with foreign threads that still hold pointers into the dying
+    thread's pages.
+    (PRIOR) HZ10ActiveScanCost-L0: measurement-only box.
         Agent triage 20260705 converged on the same read:
           - do NOT open HZ8-style reclaim/thread-lifecycle port now; true
             continuous main_r50/r90 does not reproduce retired/RSS growth
@@ -166,6 +182,318 @@ status:
         lead from the older multiclass sweep note: owner-drain throughput fell
         as distinct pages increased, while the remote RMW microbench ruled out
         memory-order and debug-counter cleanup as enough.
+        UPDATE: HZ10ActiveScanCost-L0 instrumentation is now wired as an
+        opt-in lane: make target `bench-public-entry-active-scan` builds a
+        separate `hz10_public_entry_active_scan_bench` with
+        HZ10_ENABLE_ACTIVE_SCAN_STATS=1. Existing
+        HZ10_DUMP_CLASS_STATS=1 output now includes active-cache hits,
+        active-cache drain calls/merged slots, find_with_capacity() calls,
+        misses, pages visited, drain calls, non-empty drains, merged slots,
+        local/drain hits, and depth buckets. A short wiring probe
+        (THREADS=4 ITERS=50000 MODE=0 MIN=16 MAX=32768 REMOTE_PCT=50)
+        produced nonzero scan counters; treat it as validation only, not a
+        tuning result. Next step is the intended main_r50/r90 and
+        small_remote50/90 RUNS=10 measurement set.
+        MEASURED 20260705:
+        log:
+          bench_results/20260704T214123Z_hz10_active_scan_cost_l0/combined.log
+        THREADS=4 ITERS=500000 RUNS=10 HZ10_DUMP_CLASS_STATS=1 MODE=0:
+          main_r50 median ops/s=13.94M, find_calls=260.9k,
+            find_pages_visited=886.8k (~3.40 pages/find),
+            find_drain_calls=886.8k, nonempty_find_drains=259.4k
+            (~29.3%), active_cache_drain_calls=404.5k with ~35.4%
+            nonempty, depth buckets median h0/h1/h2_4/h5_16/h17_64/
+            h65_128 = 88/74.8k/138.3k/46.3k/0.46k/1.08k.
+          main_r90 median ops/s=8.61M, find_calls=509.3k,
+            find_pages_visited=2.44M (~4.80 pages/find),
+            find_drain_calls=2.44M, nonempty_find_drains=505.6k
+            (~20.7%), active_cache_drain_calls=714.3k with ~28.7%
+            nonempty, depth buckets median h0/h1/h2_4/h5_16/h17_64/
+            h65_128 = 88/110.4k/226.5k/168.2k/1.14k/3.43k.
+          small_remote50 median ops/s=17.97M, find_calls=20,
+            find_pages_visited=4; active_cache_drain_calls=742 with
+            ~99.5% nonempty.
+          small_remote90 median ops/s=12.90M, find_calls=24,
+            find_pages_visited=12; active_cache_drain_calls=1323 with
+            ~99.6% nonempty.
+        Read: main_r50/r90 do pay a real alloc-side active-list scan/drain
+        tax, and r90 roughly doubles find calls while raising median pages
+        per find from ~3.4 to ~4.8. The small_remote rows are not explained
+        by active-list scan depth: almost all useful remote recovery happens
+        through the current active page's drain, with find_with_capacity()
+        essentially absent after warm-up. Any next tuning should therefore
+        keep the boxes separate: main rows can investigate active-list
+        search/drain policy; small_remote rows still point at active-page
+        drain/remote publication cost, not list scanning.
+        RECOMMENDED ATTACK ORDER after this measurement:
+          (A) NEXT: HZ10ActiveHitDepthByClass-L0, measurement-only.
+              Extend the existing opt-in active-scan lane, not the default
+              path. Add per-class totals and success-depth detail:
+                active_cache_alloc_fail_count,
+                active_cache_drain_fail_count,
+                find_hit_depth_sum/max,
+                find_miss_pages_visited,
+                per-class find_calls/find_misses/find_pages_visited/
+                  find_drain_calls/find_nonempty_drains.
+              Reason: current counters prove main_r50/r90 pay scan cost, but
+              not whether hits are shallow/recent (move-to-front candidate),
+              class-local (second-active/recent-active candidate), or mostly
+              genuine misses (lifecycle/RSS candidate). Re-run only
+              main_r50/r90 RUNS=10 first.
+              DONE 20260705:
+              log:
+                bench_results/20260704T220236Z_hz10_active_hit_depth_by_class_l0/combined.log
+              THREADS=4 ITERS=500000 RUNS=10 HZ10_DUMP_CLASS_STATS=1 MODE=0.
+              Median aggregate:
+                main_r50: ops/s=13.43M, find_calls=261.6k,
+                  find_misses=2.61k (~1.0%), find_pages_visited=969.3k,
+                  avg_hit_depth~2.90, avg_miss_depth~85.4,
+                  active_alloc_fails=403.5k, active_drain_fails=261.5k.
+                main_r90: ops/s=8.85M, find_calls=506.6k,
+                  find_misses=2.97k (~0.59%), find_pages_visited=2.25M,
+                  avg_hit_depth~3.91, avg_miss_depth~89.2,
+                  active_alloc_fails=712.7k, active_drain_fails=506.5k.
+              Per-class read from top-class output:
+                main_r50 pages_visited share: class 21 (32768, 2 slots)
+                  ~46.8%, class 20 (24576, 2 slots) ~46.4%; together
+                  ~93.2% of scan work. class 19/18 add ~4.1%/~2.5%.
+                main_r90 pages_visited share: class 20 (24576, 2 slots)
+                  ~46.9%, class 21 (32768, 2 slots) ~46.8%; together
+                  ~93.7% of scan work. class 19/18 add ~3.8%/~2.4%.
+              Interpretation: this is not broad all-class list scanning.
+              The scan tax is dominated by two large 2-slot classes, and
+              successful hits are shallow (~3-4 pages) while true misses are
+              rare but expensive (~85-89 pages). That points to a cheap
+              recency/order experiment before a broader second-active design:
+              try move-to-front on pages found by find_with_capacity(), then
+              re-measure main_r50/r90. Keep RSS/lifecycle as a separate
+              diagnostic because misses are too rare to explain the main
+              throughput gap by themselves.
+          (B) THEN, only if (A) shows shallow or recurring successful hits:
+              HZ10ActiveMoveToFront-AB-L0. A/B an opt-in build flag that
+              moves a page found by find_with_capacity() to active head
+              before making it state->active. Gate on same-run main_r50/r90
+              throughput and active-scan counters. Immediate rollback:
+              HZ10_ENABLE_ACTIVE_MTF=0.
+              DONE / NO-GO 20260705:
+              log:
+                bench_results/20260704T220424Z_hz10_active_mtf_ab_l0/combined.log
+              Implementation is opt-in only:
+                bench-public-entry-active-mtf builds with
+                HZ10_ENABLE_ACTIVE_SCAN_STATS=1 and HZ10_ENABLE_ACTIVE_MTF=1.
+              Same-run RUNS=10 medians vs active-scan baseline:
+                main_r50: ops/s 13.97M -> 13.20M (-5.50%),
+                  find_pages_visited 846.4k -> 1.076M (+27.1%),
+                  avg_hit_depth 2.89 -> 3.38 (+17.1%),
+                  find_misses 1.51k -> 2.31k (+52.8%).
+                main_r90: ops/s 8.61M -> 8.69M (+0.95%),
+                  find_pages_visited 2.30M -> 2.65M (+15.1%),
+                  avg_hit_depth 3.92 -> 4.54 (+15.8%),
+                  find_misses 3.51k -> 3.40k (-3.1%).
+              Decision: do not turn MTF on. It worsens the scan-shape
+              counters and clearly regresses r50; the small r90 throughput
+              uptick is not a defensible trade. Keep the flag as an archived
+              opt-in measurement lane for now, default OFF.
+          (C) ELSE, if (A) shows a few classes dominate find cost:
+              HZ10SecondActiveByClass-AB-L0. A/B a single per-class
+              recent/second-active page, not a broad policy rewrite. Gate
+              on the dominant classes and main_r50/r90; do not judge from
+              small_remote rows because they barely enter find_with_capacity().
+              UPDATED NEXT after MTF NO-GO: before implementing this, add one
+              narrow measurement for the dominant 2-slot classes only:
+              HZ10TwoSlotActivePattern-L0. For class 20/21, count whether
+              repeated find hits alternate between two pages, whether
+              state->active changes to a page that immediately exhausts, and
+              whether a second-active pointer would avoid active_cache_drain_
+              fail -> find transitions. If that confirms a stable two-page
+              ping-pong, then A/B second-active. If not, skip to the RSS/
+              lifecycle diagnostic instead of adding another cache policy.
+              DONE / NO-GO on the ping-pong hypothesis, 20260705:
+              log:
+                bench_results/20260704T221256Z_hz10_two_slot_active_pattern_l0/combined.log
+              Opt-in lane: `make bench-public-entry-two-slot` builds with
+              HZ10_ENABLE_ACTIVE_SCAN_STATS=1 and HZ10_ENABLE_TWO_SLOT_STATS=1
+              (src/hz10_public_entry.c's Hz10ClassState gains prior_active +
+              ops_since_activate, both compiled out when the flag is off).
+              THREADS=4 ITERS=500000 RUNS=10 HZ10_DUMP_CLASS_STATS=1 MODE=0,
+              class 20/21 median:
+                main_r50: active_switch~118.6-119.1k, avg_ops_served_per_
+                  activation~4.22 (immediate-exhaust, <=1 op, only ~9.5% of
+                  switches), second_active_hit_rate~14% (chk~117.9-118.3k).
+                main_r90: active_switch~223.3-223.4k, avg_ops_served~2.24
+                  (immediate-exhaust ~18.1% of switches), second_active_
+                  hit_rate~5.8% (chk~222.1-221.9k).
+              Interpretation: neither sub-hypothesis holds. A freshly
+              activated page usually serves several allocs (not "immediately
+              exhausts") because remote frees keep refilling it while it is
+              active, and remembering just the one page that was active
+              immediately before the current one would catch only ~6-14% of
+              the next find_with_capacity() misses -- far below what a real
+              two-page ping-pong would show (which would read close to
+              100%). This class's remote-free traffic is spread across more
+              than two live pages per thread, not oscillating between a
+              fixed pair. Decision: do NOT open HZ10SecondActiveByClass-AB-L0
+              (item (C) below) -- a single remembered page would not avoid
+              most full-list scans, so it is not a defensible design before
+              even measuring its A/B cost. Per this box's own fallback rule,
+              the next step is the RSS/lifecycle diagnostic in (D) below, but
+              that diagnostic's question (RUNS=10 fixed-iteration growth vs.
+              true continuous steady-state) was already answered by (0) DONE
+              further below -- true continuous main_r50/r90 does not
+              reproduce retired/RSS growth. There is therefore no unopened
+              diagnostic left on this specific active-list/scan-cost
+              investigation thread (HZ10ActiveScanCost-L0 ->
+              HZ10ActiveHitDepthByClass-L0 -> HZ10ActiveMoveToFront-AB-L0 ->
+              HZ10TwoSlotActivePattern-L0, all measurement done, MTF and now
+              second-active both NO-GO). Remaining open, larger items are
+              the ones already deferred elsewhere in this file: the
+              pending-bit correctness-design ceiling (a contract change) and
+              thread-exit page abandonment -- neither is opened by this box.
+          (D) PARALLEL/DIAGNOSTIC, before any large reclaim design:
+              HZ10RunLifecycleRSS-L0. Reproduce Claude's RSS concern with
+              the SAME counters in two shapes:
+                1. public_entry RUNS=10 in one process,
+                2. true continuous steady-state for equivalent wall time.
+              Record post_rss_kb, active/retired length, eviction_count,
+              retired_reclaimed/promoted_by_ready/sweep, boundary inbox
+              counts if applicable. Purpose is classification only:
+              bench-lifecycle/thread-boundary artifact vs. real continuous
+              main-class fragmentation. Do not implement HZ8-style reclaim
+              until continuous reproduces the growth.
+              DONE 20260705:
+              log:
+                bench_results/20260704T221855Z_hz10_run_lifecycle_rss_l0/combined.log
+              Compared three shapes for main_r50/r90:
+                public_entry: fresh worker threads each run, RUNS=10,
+                  HZ10_DUMP_CLASS_STATS=1.
+                thread_reuse: one worker population reused for 10
+                  segments, with boundary inbox counts printed.
+                steady_state: true wall-clock continuous run, 8s,
+                  CHECKPOINTS=4.
+              Result:
+                main_r50 public_entry RSS 42,880 -> 542,256 KB (12.65x);
+                  per-run retired_count == retired_length == eviction_count
+                  and reclaimed/promoted_by_ready stayed 0. This is
+                  fresh-thread/TLS page-set abandonment: each run's worker
+                  pages disappear from the next run's counters but remain
+                  resident in the process.
+                main_r90 public_entry RSS 123,776 -> 781,996 KB (6.32x),
+                  same shape: per-run retired counters reset with each fresh
+                  worker population and ready reclaim stays 0.
+                main_r50 thread_reuse RSS 28,160 -> 180,640 KB (6.41x) but
+                  plateaus after run 7; ready reclaim reaches 10,391 by run
+                  10. Boundary inbox backlog is nonzero every segment
+                  (2,320..12,010), so this is still boundary stress, not a
+                  neutral continuous workload.
+                main_r90 thread_reuse RSS 82,688 -> 265,840 KB (3.21x) and
+                  plateaus by run 8; ready reclaim reaches 37,690 by run 10,
+                  with large boundary inbox backlog (9,988..23,260).
+                main_r50 steady_state 8s: total_ops=107.5M, post_rss_kb
+                  20,992, retired_count stayed 0 at every checkpoint,
+                  pre-flush, and post-flush.
+                main_r90 steady_state 8s: total_ops=68.8M, post_rss_kb
+                  31,488, retired_count stayed 0 at every checkpoint,
+                  pre-flush, and post-flush.
+              Decision: this confirms the RSS growth is not continuous
+              main-class fragmentation under live traffic. It is primarily
+              thread/run lifecycle page-set abandonment, with thread_reuse
+              adding a separate boundary-backlog stress mode. Do not open
+              active-list reclaim tuning for this. The real fix box, if we
+              choose to solve RSS, is a thread-exit/lifecycle ownership box
+              that can flush, publish, or transfer a thread's active/retired
+              page sets before TLS disappears. That is larger than an
+              allocator hot-path tweak and must be designed as its own
+              rollbackable box.
+              FOLLOW-UP DONE 20260705:
+              HZ10ThreadExitReclaim-L0 added an explicit diagnostic hook,
+              `hz10_public_entry_reclaim_thread_idle_pages()`, and an opt-in
+              bench env, `HZ10_THREAD_EXIT_RECLAIM=1`, called only after the
+              public-entry workers' two final inbox-drain barriers. Log:
+                bench_results/20260704T223610Z_hz10_thread_exit_reclaim_l0/combined.log
+              THREADS=4 ITERS=500000 RUNS=10, baseline vs reclaim:
+                main_r50 baseline RSS 55,296 -> 612,200 KB; reclaim RSS
+                  109,056 -> 127,720 KB. Reclaim saw 29,581 pages and
+                  reclaimed all 29,581, busy=0, slots_merged=147,100.
+                main_r90 baseline RSS 57,216 -> 858,352 KB; reclaim RSS
+                  108,416 -> 227,804 KB. Reclaim saw 57,522 pages and
+                  reclaimed all 57,522, busy=0, slots_merged=254,383.
+              Read: the abandoned page sets are fully idle at the benchmark's
+              quiescent point; the RSS growth is real lifecycle retention,
+              not hidden live fragmentation. The measured hook has overhead
+              and is diagnostic only. Next design box, if opened, should be a
+              guarded lifecycle handoff/flush API with an explicit safe-call
+              contract, not an unconditional TLS destructor.
+              CORRECTION after fable5 review, 20260705:
+              the diagnostic walker originally destroyed idle retired pages
+              without the normal ready-queue guards. That was acceptable only
+              for the narrow benchmark call shape where the owning TLS state
+              disappears immediately afterward; it is not safe as an L1 core.
+              Fixed before opening L1: retired sublist reclaim now mirrors
+              hz10_class_pages_harvest_retired_capacity()'s ownership rules:
+              skip pages with retired_ready_on_stack set, and require
+              hz10_retired_ready_cancel() to win before destroying an idle
+              retired page. Deferred pages stay registered and are counted
+              separately as pages_deferred_ready/pages_deferred_cancel.
+              A public-entry smoke regression now constructs a ready-stacked
+              retired page and verifies lifecycle reclaim defers it rather
+              than destroying it.
+              Guarded re-measure:
+                bench_results/20260704T224951Z_hz10_thread_exit_reclaim_guard_fix_l0/combined.log
+                main_r50 guarded RSS 58,112 -> 311,580 KB; pages_seen=25,218,
+                  reclaimed=13,197, deferred_ready=12,021, busy=0.
+                main_r90 guarded RSS 102,400 -> 505,200 KB; pages_seen=35,738,
+                  reclaimed=14,302, deferred_ready=21,436, busy=0.
+              Read: the safe guard still confirms lifecycle retention and
+              recovers active/unguarded-idle pages, but it no longer claims
+              full RSS closure. A production L1 must add a first phase that
+              drains the ready stack through the normal owner path before
+              the direct sublist walk; otherwise a safe periodic/quiescent
+              flush will intentionally defer many already-idle retired pages.
+              PROPOSED NEXT BOX: HZ10ThreadLifecycleFlush-L1.
+                Contract first, implementation second. Add an explicit API
+                whose caller must guarantee a quiescent ownership boundary:
+                no thread may still allocate from, free into, or hold an
+                unflushed inbox entry for the exiting thread's pages. In the
+                public-entry bench this is exactly after the two final
+                barrier+inbox-drain phases; in an embedding runtime this is a
+                thread-pool/job-system responsibility, not something HZ10 can
+                infer from pthread exit alone.
+                Shape:
+                  - keep the current reclaim walker as the private core, but
+                    rename the public surface away from "diagnostic" only
+                    after the contract is written in src/hz10_public_entry.h
+                  - expose one guarded call such as
+                    hz10_public_entry_flush_thread_cache_quiescent(stats)
+                  - never install it as an automatic TLS destructor in this
+                    box; destructor support would be a later, separate box
+                    that must prove how foreign frees are stopped/drained
+                  - retain stats pages_seen/reclaimed/busy/deferred_ready/
+                    deferred_cancel/slots_merged and leave busy or deferred
+                    pages registered rather than pretending reclaim was
+                    complete
+                  - retired destroy must keep the load-bearing ready guards:
+                    retired_ready_on_stack skip plus
+                    hz10_retired_ready_cancel() before destruction
+                  - run a ready-drain phase through the normal owner path
+                    before the direct retired walk, so ready-stacked idle
+                    pages are reclaimed by the path that owns those entries
+                  - gate bench use with HZ10_THREAD_EXIT_RECLAIM or a renamed
+                    HZ10_THREAD_LIFECYCLE_FLUSH env so rollback is immediate
+                Validation gate:
+                  - smoke + standalone check unchanged
+                  - public_entry main_r50/r90 RUNS=10 RSS must remain bounded
+                    near the diagnostic result
+                  - thread_reuse boundary-stress run must not corrupt ready/
+                    retired lists
+                  - keep the ready-stacked retired-page negative smoke; add a
+                    busy-page case if this graduates from diagnostic to API
+                This box is about RSS/lifecycle correctness. Do not mix it
+                with pending-bit throughput redesign.
+          (E) DEFER: pending-bit redesign and small_remote-specific tuning.
+              The pending bit is a correctness contract change, and
+              small_remote rows point at active-page drain/remote publication
+              cost rather than active-list scan depth. Keep both out of the
+              main_r50/r90 active-list box.
     (0) DONE: resolve the main_r50/r90 RSS contradiction before designing
         any thread-lifecycle hook. True continuous steady-state
         (bench/hz10_public_entry_steady_state_bench.c) reports active_length

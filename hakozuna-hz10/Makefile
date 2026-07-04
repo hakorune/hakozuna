@@ -4,7 +4,9 @@
 	bench-remote-rmw-micro \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
-	smoke-public-entry bench-public-entry bench-class-pages-scan \
+	smoke-public-entry bench-public-entry bench-public-entry-active-scan \
+	bench-public-entry-active-mtf bench-public-entry-two-slot \
+	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
 	hz10-standalone-check
@@ -145,6 +147,24 @@ $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
 
+$(ROOT)/hz10_public_entry_active_scan_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-active-scan: $(ROOT)/hz10_public_entry_active_scan_bench
+	$(ROOT)/hz10_public_entry_active_scan_bench
+
+$(ROOT)/hz10_public_entry_active_mtf_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_ACTIVE_MTF=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-active-mtf: $(ROOT)/hz10_public_entry_active_mtf_bench
+	$(ROOT)/hz10_public_entry_active_mtf_bench
+
+$(ROOT)/hz10_public_entry_two_slot_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_TWO_SLOT_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-two-slot: $(ROOT)/hz10_public_entry_two_slot_bench
+	$(ROOT)/hz10_public_entry_two_slot_bench
+
 CLASS_PAGES_SCAN_BENCH_SRC := $(ROOT)/bench/hz10_class_pages_scan_bench.c $(PUBLIC_ENTRY_SRC)
 
 $(ROOT)/hz10_class_pages_scan_bench: $(CLASS_PAGES_SCAN_BENCH_SRC) $(HEADERS)
@@ -196,6 +216,9 @@ clean:
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
+		$(ROOT)/hz10_public_entry_active_scan_bench \
+		$(ROOT)/hz10_public_entry_active_mtf_bench \
+		$(ROOT)/hz10_public_entry_two_slot_bench \
 		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \
 		$(ROOT)/hz10_public_entry_steady_state_bench \

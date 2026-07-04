@@ -156,6 +156,20 @@
 
 #define HZ10_CLASS_PAGES_SCAN_LIMIT 128u
 
+#ifndef HZ10_ENABLE_ACTIVE_SCAN_STATS
+#define HZ10_ENABLE_ACTIVE_SCAN_STATS 0
+#endif
+
+#ifndef HZ10_ENABLE_ACTIVE_MTF
+#define HZ10_ENABLE_ACTIVE_MTF 0
+#endif
+
+#ifndef HZ10_ENABLE_TWO_SLOT_STATS
+#define HZ10_ENABLE_TWO_SLOT_STATS 0
+#endif
+
+#define HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS 6u
+
 /* Pages checked per hz10_class_pages_harvest_retired_capacity() call.
  * Kept small on purpose: for a slot_count=1 class under sustained churn,
  * the slow path this is called from can fire on nearly every hz10_malloc
@@ -249,7 +263,88 @@ typedef struct Hz10ClassPageList {
                                           * race window); a nonzero count
                                           * confirms the window is real,
                                           * not just theoretical. */
+
+  /*
+   * HZ10ActiveScanCost-L0 counters. Updated only when
+   * HZ10_ENABLE_ACTIVE_SCAN_STATS=1; otherwise they stay zero and the
+   * release path keeps its previous counter cost. The counters live here
+   * so public-entry active-cache hits and find_with_capacity() scan/drain
+   * work share one diagnostic boundary.
+   */
+  uint64_t active_cache_hit_count;
+  uint64_t active_cache_alloc_fail_count;
+  uint64_t active_cache_drain_call_count;
+  uint64_t active_cache_drain_fail_count;
+  uint64_t active_cache_nonempty_drain_count;
+  uint64_t active_cache_slots_merged_count;
+  uint64_t active_cache_drain_hit_count;
+  uint64_t find_call_count;
+  uint64_t find_miss_count;
+  uint64_t find_pages_visited_count;
+  uint64_t find_drain_call_count;
+  uint64_t find_nonempty_drain_count;
+  uint64_t find_slots_merged_count;
+  uint64_t find_local_hit_count;
+  uint64_t find_drain_hit_count;
+  uint64_t find_hit_depth_sum;
+  uint64_t find_miss_pages_visited_count;
+  uint32_t find_hit_depth_max;
+  uint64_t find_depth_hist[HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS];
+
+  /*
+   * HZ10TwoSlotActivePattern-L0 counters. Updated only when
+   * HZ10_ENABLE_TWO_SLOT_STATS=1 (src/hz10_public_entry.c owns the
+   * increments, since this is about the fast-path active pointer, not
+   * find_with_capacity() itself). Purpose: for the classes where
+   * find_with_capacity()'s scan cost concentrates (see current_task.md,
+   * class 20/21 at ~93% of scan pages), test whether the active-page
+   * cache is ping-ponging between exactly two physical pages, whether a
+   * freshly activated page tends to exhaust again almost immediately,
+   * and whether remembering a single "prior active" pointer would catch
+   * the next miss without paying find_with_capacity()'s full list scan.
+   */
+  uint64_t active_switch_count;             /* state->active reassigned */
+  uint64_t active_ops_served_sum;           /* sum, over every switch, of
+                                             * how many allocs the page
+                                             * being replaced had served
+                                             * since it became active */
+  uint64_t active_ops_served_immediate_count; /* ...of those, how many
+                                              * served 0 or 1 alloc before
+                                              * exhausting again */
+  uint64_t second_active_check_count;   /* find_with_capacity() was about
+                                        * to be called and a prior-active
+                                        * pointer existed to compare
+                                        * against */
+  uint64_t second_active_hit_count;     /* ...of those, find_with_capacity()
+                                        * returned exactly that prior-active
+                                        * page -- a hit a single remembered
+                                        * pointer would have caught for free */
 } Hz10ClassPageList;
+
+#if HZ10_ENABLE_ACTIVE_SCAN_STATS
+void hz10_class_pages_note_active_cache_hit(Hz10ClassPageList* list);
+void hz10_class_pages_note_active_cache_alloc_fail(Hz10ClassPageList* list);
+void hz10_class_pages_note_active_cache_drain(Hz10ClassPageList* list,
+                                             uint32_t slots_merged,
+                                             int produced_capacity);
+#else
+static inline void hz10_class_pages_note_active_cache_hit(
+    Hz10ClassPageList* list) {
+  (void)list;
+}
+
+static inline void hz10_class_pages_note_active_cache_alloc_fail(
+    Hz10ClassPageList* list) {
+  (void)list;
+}
+
+static inline void hz10_class_pages_note_active_cache_drain(
+    Hz10ClassPageList* list, uint32_t slots_merged, int produced_capacity) {
+  (void)list;
+  (void)slots_merged;
+  (void)produced_capacity;
+}
+#endif
 
 /* Prepends page to `list->active`, O(1) amortized: at most one tail
  * eviction (drain attempt + free_count comparison) is performed per

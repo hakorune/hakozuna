@@ -7,10 +7,20 @@
 #include "hz10_retired_ready.h"
 #include "hz10_size_class.h"
 
+#include <stdatomic.h>
+
 typedef struct Hz10ClassState {
   Hz10FreelistPage* active;  /* fast-path cache; always also in `list` */
   Hz10ClassPageList list;    /* every page this thread ever made for the
                               * class -- see src/hz10_class_pages.h */
+#if HZ10_ENABLE_TWO_SLOT_STATS
+  /* HZ10TwoSlotActivePattern-L0: the page that was active immediately
+   * before `active`, and how many allocs `active` has served since it
+   * became the active page -- see the counters' doc comment in
+   * src/hz10_class_pages.h. */
+  Hz10FreelistPage* prior_active;
+  uint64_t ops_since_activate;
+#endif
 } Hz10ClassState;
 
 static _Thread_local Hz10ClassState hz10_class_state[HZ10_CLASS_COUNT];
@@ -19,6 +29,116 @@ static _Thread_local char hz10_thread_token_storage;
  * (each thread gets its own TLS instance) -- a standard, portable way to
  * get a per-thread identity token without inventing a thread-id concept. */
 #define HZ10_THREAD_TOKEN ((void*)&hz10_thread_token_storage)
+
+#if HZ10_ENABLE_TWO_SLOT_STATS
+/* Called right before state->active is reassigned to `next_active`.
+ * `from_find` distinguishes the find_with_capacity() switch site (the
+ * only one the second-active hypothesis targets) from harvest/fresh,
+ * which reach here only after find_with_capacity() already returned NULL
+ * and so cannot be predicted by a single remembered pointer either way. */
+static void hz10_class_state_note_switch(Hz10ClassState* state,
+                                         Hz10FreelistPage* next_active,
+                                         int from_find) {
+  if (state->active) {
+    state->list.active_switch_count += 1u;
+    state->list.active_ops_served_sum += state->ops_since_activate;
+    if (state->ops_since_activate <= 1u) {
+      state->list.active_ops_served_immediate_count += 1u;
+    }
+  }
+  if (from_find && state->prior_active) {
+    state->list.second_active_check_count += 1u;
+    if (next_active == state->prior_active) {
+      state->list.second_active_hit_count += 1u;
+    }
+  }
+  state->prior_active = state->active;
+  state->ops_since_activate = 0u;
+}
+#else
+static inline void hz10_class_state_note_switch(Hz10ClassState* state,
+                                                Hz10FreelistPage* next_active,
+                                                int from_find) {
+  (void)state;
+  (void)next_active;
+  (void)from_find;
+}
+#endif
+
+static void hz10_public_entry_reclaim_keep_page(Hz10PageSublist* survivors,
+                                                Hz10FreelistPage* page) {
+  page->prev_in_owner_list = survivors->tail;
+  page->next_in_owner_list = NULL;
+  if (survivors->tail) {
+    survivors->tail->next_in_owner_list = page;
+  } else {
+    survivors->head = page;
+  }
+  survivors->tail = page;
+  survivors->length += 1u;
+}
+
+static void hz10_public_entry_reclaim_sublist_idle_pages(
+    Hz10PageSublist* sub, Hz10PublicEntryThreadReclaimStats* stats,
+    int is_retired) {
+  Hz10PageSublist survivors = {0};
+  for (Hz10FreelistPage* page = sub->head; page;) {
+    Hz10FreelistPage* next = page->next_in_owner_list;
+    page->next_in_owner_list = NULL;
+    page->prev_in_owner_list = NULL;
+    stats->pages_seen += 1u;
+    stats->slots_merged += hz10_page_drain_remote(page);
+
+    if (page->free_count != page->slot_count) {
+      stats->pages_busy += 1u;
+      hz10_public_entry_reclaim_keep_page(&survivors, page);
+      page = next;
+      continue;
+    }
+
+    if (is_retired &&
+        atomic_load_explicit(&page->retired_ready_on_stack,
+                             memory_order_acquire)) {
+      stats->pages_deferred_ready += 1u;
+      hz10_public_entry_reclaim_keep_page(&survivors, page);
+      page = next;
+      continue;
+    }
+
+    if (is_retired && !hz10_retired_ready_cancel(page)) {
+      stats->pages_deferred_cancel += 1u;
+      hz10_public_entry_reclaim_keep_page(&survivors, page);
+      page = next;
+      continue;
+    }
+
+    stats->pages_reclaimed += 1u;
+    hz10_pooled_page_destroy(page);
+    page = next;
+  }
+  *sub = survivors;
+}
+
+void hz10_public_entry_reclaim_thread_idle_pages(
+    Hz10PublicEntryThreadReclaimStats* stats_out) {
+  Hz10PublicEntryThreadReclaimStats stats = {0};
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10ClassState* state = &hz10_class_state[c];
+    hz10_public_entry_reclaim_sublist_idle_pages(&state->list.active, &stats,
+                                                 0);
+    hz10_public_entry_reclaim_sublist_idle_pages(&state->list.retired, &stats,
+                                                 1);
+    state->list.retired_sweep_cursor = NULL;
+    state->active = state->list.active.head;
+#if HZ10_ENABLE_TWO_SLOT_STATS
+    state->prior_active = NULL;
+    state->ops_since_activate = 0u;
+#endif
+  }
+  if (stats_out) {
+    *stats_out = stats;
+  }
+}
 
 void* hz10_malloc(size_t size) {
   if (size == 0u) {
@@ -36,13 +156,26 @@ void* hz10_malloc(size_t size) {
   if (state->active) {
     void* ptr = hz10_freelist_page_alloc(state->active);
     if (ptr) {
+      hz10_class_pages_note_active_cache_hit(&state->list);
+#if HZ10_ENABLE_TWO_SLOT_STATS
+      state->ops_since_activate += 1u;
+#endif
       return ptr;
     }
-    if (hz10_page_drain_remote(state->active) > 0u) {
+    hz10_class_pages_note_active_cache_alloc_fail(&state->list);
+    uint32_t merged = hz10_page_drain_remote(state->active);
+    if (merged > 0u) {
       ptr = hz10_freelist_page_alloc(state->active);
+      hz10_class_pages_note_active_cache_drain(&state->list, merged,
+                                               ptr != NULL);
       if (ptr) {
+#if HZ10_ENABLE_TWO_SLOT_STATS
+        state->ops_since_activate += 1u;
+#endif
         return ptr;
       }
+    } else {
+      hz10_class_pages_note_active_cache_drain(&state->list, merged, 0);
     }
   }
 
@@ -56,7 +189,11 @@ void* hz10_malloc(size_t size) {
    * remote-heavy rows (current_task.md). */
   Hz10FreelistPage* found = hz10_class_pages_find_with_capacity(&state->list);
   if (found) {
+    hz10_class_state_note_switch(state, found, 1);
     state->active = found;
+#if HZ10_ENABLE_TWO_SLOT_STATS
+    state->ops_since_activate += 1u;
+#endif
     return hz10_freelist_page_alloc(found);
   }
 
@@ -70,7 +207,11 @@ void* hz10_malloc(size_t size) {
   Hz10FreelistPage* harvested =
       hz10_class_pages_harvest_retired_capacity(&state->list);
   if (harvested) {
+    hz10_class_state_note_switch(state, harvested, 0);
     state->active = harvested;
+#if HZ10_ENABLE_TWO_SLOT_STATS
+    state->ops_since_activate += 1u;
+#endif
     return hz10_freelist_page_alloc(harvested);
   }
 
@@ -85,7 +226,11 @@ void* hz10_malloc(size_t size) {
   }
   hz10_freelist_page_set_owner_thread(fresh, HZ10_THREAD_TOKEN);
   hz10_class_pages_add(&state->list, fresh);
+  hz10_class_state_note_switch(state, fresh, 0);
   state->active = fresh;
+#if HZ10_ENABLE_TWO_SLOT_STATS
+  state->ops_since_activate += 1u;
+#endif
   return hz10_freelist_page_alloc(fresh); /* fresh page: never NULL */
 }
 
@@ -159,4 +304,38 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
       list->ready_stale_generation_count;
   stats_out->sweep_cancel_lost_race_count =
       list->sweep_cancel_lost_race_count;
+  stats_out->active_cache_hit_count = list->active_cache_hit_count;
+  stats_out->active_cache_alloc_fail_count =
+      list->active_cache_alloc_fail_count;
+  stats_out->active_cache_drain_call_count =
+      list->active_cache_drain_call_count;
+  stats_out->active_cache_drain_fail_count =
+      list->active_cache_drain_fail_count;
+  stats_out->active_cache_nonempty_drain_count =
+      list->active_cache_nonempty_drain_count;
+  stats_out->active_cache_slots_merged_count =
+      list->active_cache_slots_merged_count;
+  stats_out->active_cache_drain_hit_count =
+      list->active_cache_drain_hit_count;
+  stats_out->find_call_count = list->find_call_count;
+  stats_out->find_miss_count = list->find_miss_count;
+  stats_out->find_pages_visited_count = list->find_pages_visited_count;
+  stats_out->find_drain_call_count = list->find_drain_call_count;
+  stats_out->find_nonempty_drain_count = list->find_nonempty_drain_count;
+  stats_out->find_slots_merged_count = list->find_slots_merged_count;
+  stats_out->find_local_hit_count = list->find_local_hit_count;
+  stats_out->find_drain_hit_count = list->find_drain_hit_count;
+  stats_out->find_hit_depth_sum = list->find_hit_depth_sum;
+  stats_out->find_miss_pages_visited_count =
+      list->find_miss_pages_visited_count;
+  stats_out->find_hit_depth_max = list->find_hit_depth_max;
+  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS; ++i) {
+    stats_out->find_depth_hist[i] = list->find_depth_hist[i];
+  }
+  stats_out->active_switch_count = list->active_switch_count;
+  stats_out->active_ops_served_sum = list->active_ops_served_sum;
+  stats_out->active_ops_served_immediate_count =
+      list->active_ops_served_immediate_count;
+  stats_out->second_active_check_count = list->second_active_check_count;
+  stats_out->second_active_hit_count = list->second_active_hit_count;
 }

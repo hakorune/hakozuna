@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "hz10_class_pages.h"
+
 /*
  * The box that finally wires Box 1 (route) + Box 2 (local) + Box 3
  * (remote) + Box 4 (pool) + the size-class table together into something
@@ -84,6 +86,30 @@ typedef struct Hz10ClassPageListStats {
   uint64_t ready_push_count;
   uint64_t ready_stale_generation_count;
   uint64_t sweep_cancel_lost_race_count;
+  uint64_t active_cache_hit_count;
+  uint64_t active_cache_alloc_fail_count;
+  uint64_t active_cache_drain_call_count;
+  uint64_t active_cache_drain_fail_count;
+  uint64_t active_cache_nonempty_drain_count;
+  uint64_t active_cache_slots_merged_count;
+  uint64_t active_cache_drain_hit_count;
+  uint64_t find_call_count;
+  uint64_t find_miss_count;
+  uint64_t find_pages_visited_count;
+  uint64_t find_drain_call_count;
+  uint64_t find_nonempty_drain_count;
+  uint64_t find_slots_merged_count;
+  uint64_t find_local_hit_count;
+  uint64_t find_drain_hit_count;
+  uint64_t find_hit_depth_sum;
+  uint64_t find_miss_pages_visited_count;
+  uint32_t find_hit_depth_max;
+  uint64_t find_depth_hist[HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS];
+  uint64_t active_switch_count;
+  uint64_t active_ops_served_sum;
+  uint64_t active_ops_served_immediate_count;
+  uint64_t second_active_check_count;
+  uint64_t second_active_hit_count;
 } Hz10ClassPageListStats;
 
 /*
@@ -100,5 +126,29 @@ typedef struct Hz10ClassPageListStats {
  */
 void hz10_public_entry_class_list_stats(uint32_t class_id,
                                         Hz10ClassPageListStats* stats_out);
+
+typedef struct Hz10PublicEntryThreadReclaimStats {
+  uint64_t pages_seen;
+  uint64_t pages_reclaimed;
+  uint64_t pages_busy;
+  uint64_t pages_deferred_ready;
+  uint64_t pages_deferred_cancel;
+  uint64_t slots_merged;
+} Hz10PublicEntryThreadReclaimStats;
+
+/*
+ * Diagnostic lifecycle hook for the calling thread's own TLS state. Drains
+ * every active/retired page this thread owns and destroys only pages that
+ * are fully idle after that drain. Retired pages still owned by the ready
+ * hint protocol are left registered unless hz10_retired_ready_cancel() wins
+ * the same ownership transition used by the normal harvest path. Busy or
+ * deferred pages are left registered and counted. This is deliberately an
+ * explicit call, not an automatic pthread destructor: a general thread exit
+ * may race with foreign threads that still hold pointers into this thread's
+ * pages. Benchmarks call it only at their own quiescent point, after all
+ * worker inboxes have been flushed.
+ */
+void hz10_public_entry_reclaim_thread_idle_pages(
+    Hz10PublicEntryThreadReclaimStats* stats_out);
 
 #endif
