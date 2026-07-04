@@ -61,6 +61,22 @@ typedef struct Hz10ClassPageList {
   Hz10FreelistPage* head;
   Hz10FreelistPage* tail;
   uint32_t length;
+
+  /*
+   * Plain counters, not atomic: list mutation only ever happens from this
+   * class's owning thread (see the module comment's threading note), same
+   * reason head/tail/length above are plain fields. Added specifically to
+   * make the main_r50/main_r90 RSS finding in current_task.md checkable
+   * instead of inferred -- without these there was no way to tell whether
+   * a given workload's classes ever actually hit the eviction boundary at
+   * all, only to guess from RSS growth after the fact.
+   */
+  uint64_t eviction_count;           /* tail-evictions triggered (length
+                                      * exceeded HZ10_CLASS_PAGES_SCAN_LIMIT) */
+  uint64_t eviction_reclaimed_count; /* of those, how many were confirmed
+                                      * idle and returned to Box 4's pool
+                                      * (the rest were just unlinked, still
+                                      * outstanding, see below) */
 } Hz10ClassPageList;
 
 /* Prepends page to the list, O(1) amortized: at most one tail eviction

@@ -28,12 +28,14 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
     list->head = NULL; /* unreachable: length > SCAN_LIMIT >= 1 */
   }
   list->length -= 1u;
+  list->eviction_count += 1u;
 
   /* One last chance to notice a pending remote free before giving up on
    * this page -- same drain hz10_class_pages_find_with_capacity would
    * have done had it still been within the scan window. */
   hz10_page_drain_remote(evict);
   if (evict->free_count == evict->slot_count) {
+    list->eviction_reclaimed_count += 1u;
     hz10_pooled_page_destroy(evict);
   }
   /* Otherwise: evict still has outstanding slots. Just drop it from this

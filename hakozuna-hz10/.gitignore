@@ -7,6 +7,7 @@
 /hz10_multiclass_remote_bench
 /hz10_bounded_page_pool_smoke
 /hz10_bounded_page_pool_bench
+/hz10_class_pages_smoke
 /hz10_public_entry_smoke
 /hz10_public_entry_bench
 /hz10_class_pages_scan_bench
