@@ -6,29 +6,48 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 
 ```text
 status:
-  Box 1-6 implemented and verified, uncommitted; class_pages bounded
-  scan and drain-empty peek follow-ups done too (see below)
-  NEW, IMPORTANT: a "small_remoteNN" row (MIN_SIZE=16 MAX_SIZE=64, never
-  tested before) showed hz10 3.2-4.2x SLOWER than system_malloc due to
-  Box 3's O(N^2) drain-time duplicate check on large-slot_count classes.
-  Fix lane selected: in-slot local-free marker, remote publish pre-reject,
-  and O(N) verification only on marker fallback
-  Box 6 (src/hz10_class_pages.{h,c}) fixed Box 5's remote-row regression:
-  remote rows flipped from 15-17x SLOWER than system malloc to ~1.5-1.7x
-  FASTER -- see box 6 notes
-  real tcmalloc comparison, now a formal script
-  (scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh, LD_PRELOAD on
-  hz10_public_entry_bench's MODE=1 system_malloc path, opt-in/skips
-  gracefully if no libtcmalloc found): local rows land at ~60-70% of
-  tcmalloc at THREADS=4 ITERS=500K-2M (main_local0 ~62-71%,
-  medium_local0 ~47-67% across repeats) -- higher than an earlier,
-  smaller-ITERS (50000) ad hoc reading of ~38-50%; the earlier reading
-  under-counted steady-state throughput because hz10's one-time setup
-  costs are a larger fraction of a shorter timed window. Remote rows
-  land lower, ~39-50% (main_r50) and ~41-48% (main_r90) -- still the
-  same "good balanced target" band, just not as close to the top as
-  local rows. post RSS is consistently lower than tcmalloc's in these
-  runs, consistent with the "closer to HZ8 than tcmalloc" RSS goal
+  Box 1-6 and the follow-on fixes are implemented, verified, and committed.
+  Latest commits through de4a0715:
+    Box1 pagemap route
+    Box2 thread-local intrusive freelist page
+    Box3 remote stack + owner drain
+    Box4 bounded page pool + explicit purge_idle()
+    Box5 multi-class public entry
+    Box6 per-class page tracking / remote recovery
+    follow-ons: in-slot local-free marker, remote-free striping, finer
+      size classes, large-object path, pool decommit, batched quantum
+      reservation
+
+  Current performance read:
+    local rows: ~60-70% of tcmalloc in formal same-run script
+    remote rows: ~40-50% of tcmalloc after Box6 remote recovery
+    Box6 flipped prior remote rows from 15-17x SLOWER than system malloc
+      to ~1.5-1.7x FASTER than system malloc
+    small_remoteNN O(N^2) drain regression is fixed by in-slot marker:
+      short post-fix check puts small_remote50/90 around system_malloc
+      parity instead of 3-4x slower
+    slot_count=1 gap is closed by batched quantum reservation:
+      strace mmap calls dropped ~152,490 -> 874, munmap ~152,479 -> 864;
+      isolating REMOTE_PCT=90 row is now roughly system_malloc parity
+    post RSS is generally below tcmalloc in measured public-entry rows;
+      HZ10 still aims for "closer to HZ8 RSS than tcmalloc RSS"
+
+  Validation read:
+    standalone check and normal smokes pass
+    ASan/UBSan smokes pass
+    TSan claims in older log entries should be treated cautiously here:
+      this environment previously hit TSan runtime "unexpected memory mapping"
+      before test execution. Reconfirm TSan in a clean environment before
+      calling it a release gate.
+
+  Next HZ10 action:
+    collect one final R10/RSS table with larger ITERS/RUNS:
+      main_local0, main_r50, main_r90, medium_local0,
+      small_remote50/90, slot_count=1 isolating row,
+      tcmalloc same-run if libtcmalloc is available
+    then update bench/README.md and decide whether HZ10 is ready to freeze
+    as a research result. Box6->Box4 pool wiring remains open but lower
+    priority after batched reservation closed the slot_count=1 syscall gap.
 
 design:
   thread-local intrusive freelist pages
