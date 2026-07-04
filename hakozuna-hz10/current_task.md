@@ -141,28 +141,12 @@ status:
       unbounded allocator steady-state RSS growth.
 
   Pre-resume rare bug debug record, 20260705:
-    HZ9 owner flush:
-      commit 4e6a50d1 ("HZ9: release all-free owner pages on owner flush")
-      fixed a rare lifecycle/retention bug in
-      hakozuna-hz9/src/h8_hz9_owner_page_pool.c. h9_owner_page_flush_owner()
-      used to detach every owner page for the exiting owner, but an already
-      all-free page needed the stronger release path: collect pending under
-      the global owner-page lock, unregister it from the global route list,
-      mark it draining, detach it, then destroy/release the mapping after
-      dropping the lock. Partially live pages remain detached and globally
-      routeable until final exact frees arrive. The shared destroy helper also
-      keeps the release counters consistent with normal thread/page flush.
-      Durable note added in hakozuna-hz9/docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md.
-    HZ10 retired-ready races:
-      details already live below under "HZ10RetiredReadyQueue-L0 wired into
-      the real path" and "Thread-reuse bench finds two more real bugs". The
-      real bugs were: retired_sweep_cursor UAF after ready-path removal, ready
-      stack entry also reachable by the retired cursor walk, claim/publish
-      race where note_remote_free() touched a page after remote publish made
-      it owner-reclaimable, ready-stack ABA fixed by retired_ready_generation,
-      and stale tracking fixed by hz10_retired_ready_cancel(). Keep the
-      load-bearing guards in any future lifecycle reclaim: skip ready-stacked
-      retired pages and require cancel before direct destruction.
+    moved to docs/HZ10_DEBUG_NOTES.md and
+    ../hakozuna-hz9/docs/HZ9_DEBUG_NOTES.md. Keep future rare bug detail
+    there; leave only active restart pointers in this file.
+  Closed NO-GO ledger:
+    moved to docs/HZ10_NO_GO_LEDGER.md. Keep future measured negative
+    decisions there once they are no longer active work.
 
   Validation read:
     standalone check and normal smokes pass

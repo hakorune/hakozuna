@@ -86,6 +86,10 @@ HZ9_OWNER_LOCAL_PAGE_POOL_L0.md:
 HZ9_LANE_HISTORY.md:
   compact archive of closed HZ9 boxes and detailed evidence reads
 
+HZ9_DEBUG_NOTES.md:
+  rare bug records and lifecycle/debugging notes that should not live in
+  HZ9_CURRENT_STATUS.md
+
 ../README.md and ../src/README.md:
   standalone source-layout policy
 ```
