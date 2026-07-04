@@ -114,6 +114,23 @@ status:
         mismatch (harvest runs constantly but the specific pages it
         inspects resolve far too slowly), not a bug. main_r50/r90's RSS
         growth is STILL OPEN; see that section's "next concrete step"
+    (6) DONE: wired an event-driven ready queue (HZ10RetiredReadyQueue-L0)
+        alongside harvest -- see "HZ10RetiredReadyQueue-L0 wired into the
+        real path" below. MAJOR REFRAMING: a new opt-in steady-state
+        bench (not fixed ITERS) revealed main_r50/r90 stop evicting
+        pages ENTIRELY after a short ramp-up in true steady state
+        (retired_count stays at exactly 0) -- the "RSS climbs
+        monotonically" finding this whole investigation chased was very
+        likely an artifact of the locked-in bench's own RUNS=10
+        structure (fresh threads every run, abandoned on exit -- HZ10
+        has no thread-lifecycle hook), not genuine unbounded steady-
+        state growth. The ready queue itself is a real, large,
+        confirmed win where it CAN apply (slot_count=1: ~99.8% of
+        retirements reclaimed via the queue vs 0% via polling alone,
+        backlog bounded instead of unbounded) -- but neither mechanism
+        was ever going to fix main_r50/r90, because that row's real
+        open problem is thread-exit abandonment, a different, larger,
+        not-yet-scoped question
     bench/README.md update still deferred: the real ops/s gap for
     main_r50/r90 and slot_count=1 (~0.48 both, after correction) remains
     open and unattributed to a specific line -- see "next" below for the
@@ -1652,6 +1669,138 @@ hz10_retired_ready_bench.c (new)):
   files: src/hz10_retired_ready.{h,c} (new), src/hz10_freelist_page.h,
   tests/hz10_retired_ready_smoke.c (new), bench/hz10_retired_ready_bench.c
   (new)
+
+HZ10RetiredReadyQueue-L0 wired into the real path -- two real bugs found
+and fixed via a new opt-in steady-state bench, and a major reframing of
+the whole main_r50/r90 RSS investigation (src/hz10_class_pages.{h,c},
+src/hz10_public_entry.{h,c}, src/hz10_retired_ready.{h,c}, src/
+hz10_freelist_page.h, bench/hz10_public_entry_bench.c, bench/
+hz10_public_entry_steady_state_bench.c (new)):
+  wiring: hz10_class_pages_add()'s eviction path calls hz10_retired_
+  ready_mark() (outstanding = slot_count - free_count) alongside moving a
+  non-idle evicted page to `retired`, unchanged otherwise. hz10_free()'s
+  remote-free branch calls hz10_retired_ready_note_remote_free() after
+  every accepted hz10_page_remote_free() (unconditional -- a cheap flag
+  check, no-op for a page never retired this way). hz10_class_pages_
+  harvest_retired_capacity() now drains list->ready to empty FIRST (each
+  candidate re-verified against the same idle/partial check before being
+  trusted, exactly as the isolated prototype's design specified), only
+  falling through to the existing budgeted cursor walk if the ready
+  queue yields nothing promotable. New diagnostic counters (retired_
+  reclaimed/promoted_by_ready_count, ready_false_positive_count, and
+  Hz10RetiredReadyStack's own push_count) threaded through Hz10ClassPage-
+  ListStats and both public-entry benches, matching every prior
+  diagnostic counter added this session
+  claude君's new-bench design (relayed, agreed with, and built): a
+  SEPARATE, opt-in bench (bench/hz10_public_entry_steady_state_bench.c),
+  never named main_rNN so it can't be confused with the locked-in
+  ITERS=500000 RUNS=10 table -- workers run for RUN_SECONDS of wall
+  time (steady state) instead of a fixed iteration count, removing the
+  old bench's "pthread_barrier_wait + two unconditional full inbox
+  drains, only THEN collect stats" structure entirely. Stats are
+  captured twice (the instant each worker's own time-bounded loop ends,
+  before any flush, and again after the same barrier+flush the other
+  bench always did) plus at N approximate mid-run checkpoints (each
+  worker self-reports against its own elapsed-time clock -- no
+  synchronizing barrier, since a barrier here would distort the very
+  steady state being measured)
+  bug #1, found immediately by this new bench under ASan (heap-use-
+  after-free in hz10_class_pages_harvest_retired_capacity, reading
+  node->prev_in_owner_list on a freed page): the ready-queue draining
+  loop's hz10_page_sublist_remove() calls did not know about list-
+  >retired_sweep_cursor -- if the cursor (left over from a PRIOR
+  harvest() call) happened to point at exactly the page the ready-queue
+  loop destroyed or promoted, the very next budgeted-walk read of that
+  stale cursor was a use-after-free. Fixed with a new hz10_class_pages_
+  retired_remove() wrapper (redirects the cursor to the removed node's
+  prev first, then does the plain unlink) used at all four `retired`
+  removal sites, not just the new ones -- cheap and correct regardless
+  of which mechanism is doing the removing
+  bug #2, found next (same bench, longer run, same category of error):
+  a page could be sitting on the ready stack (pushed, not yet popped)
+  AND simultaneously still linked into `retired`'s doubly-linked list --
+  the budgeted cursor walk, which has no idea a page might be ready-
+  queue-tracked, could independently find it idle via its OWN free_
+  count check and destroy it while hz10_retired_ready_pop() might still
+  reach it via retired_ready_next, corrupting the stack. retired_ready_
+  flag could not detect this: it is already cleared before the push (so
+  it cannot double as "currently on the stack"). Fixed with a THIRD,
+  separate field (retired_ready_on_stack, set right before the push,
+  cleared right after a successful pop) that the budgeted walk now
+  checks and skips over -- leaving any such node for the ready-queue
+  path to finish instead of touching it itself. Both bugs are new,
+  specific to this integration (not the pre-existing, already-documented
+  "foreign push vs. destroy" gap tests/README.md accepts) -- re-verified
+  clean under ASan/UBSan and TSan (ASLR off) at up to 30 seconds/265M
+  ops after each fix, plus the full existing smoke suite and the never-
+  free regression bench (last_over_first ~1.05-1.23 across rebuilds)
+  the major finding, from the fixed bench, that reframes this whole
+  investigation: main_r50/main_r90-shaped churn (MIN_SIZE=16 MAX_SIZE=
+  32768, REMOTE_PCT=50/90), run as a genuine steady state instead of a
+  bounded iteration count, converges to a small, STABLE working set
+  (active_length_sum plateaus around 500-900 across 4 threads within a
+  few seconds) and DOES NOT EVICT A SINGLE PAGE AGAIN afterward --
+  retired_count stayed at EXACTLY 0 for the ENTIRE run in every trial
+  (up to 265M ops over 20 seconds, both REMOTE_PCT=50 and 90). Once
+  find_with_capacity()'s bounded scan has enough real churn to draw
+  from, it keeps finding capacity within its own SCAN_LIMIT=128 window
+  every time, so hz10_malloc's genuine-miss slow path -- the ONLY place
+  eviction/retirement is ever triggered -- simply stops firing. Neither
+  harvest's polling NOR this session's new ready queue can matter for a
+  row that never evicts in the first place
+  what this means for the "RSS climbs monotonically across RUNS=10"
+  finding this whole investigation was chasing: that finding almost
+  certainly was NOT observing genuine unbounded steady-state growth --
+  it was observing bench/hz10_public_entry_bench.c's own RUNS=10
+  structure spinning up a BRAND NEW set of 4 threads every run, each of
+  which abandons its entire active+retired page set when its threads
+  exit (HZ10 has no thread-exit/thread-lifecycle hook -- an already-
+  documented, separate gap, see "abandoned/TLS-resident pages" in tests/
+  README.md), accumulating across 10 runs. This is a real, still-open
+  RSS problem, but a DIFFERENT one than RetiredPartialReuse-L1 or this
+  ready-queue were ever built to address -- neither a smarter retired-
+  list reclaim mechanism nor a faster discovery queue helps memory that
+  is abandoned whole-thread, not stuck-page-by-stuck-page
+  a genuine, measured win for the ready queue, on the row shape where it
+  actually applies: slot_count=1 (MIN_SIZE=MAX_SIZE=65536, REMOTE_PCT=90)
+  DOES keep evicting/retiring continuously even in steady state (a
+  1-slot page's active-list churn does not stabilize the way multi-slot
+  classes do), and here the ready queue delivers exactly the effect
+  predicted: over a 30-second steady-state run, retired_reclaimed_by_
+  ready climbed to 14,120 against retired_count=14,153 (~99.8% coverage)
+  while retired_reclaimed_by_sweep (the old polling path) stayed at
+  EXACTLY 0 the entire time -- the unresolved backlog (retired_length)
+  fluctuated in a bounded ~20-300 range instead of growing without limit.
+  ready_false_positive_count was 0 throughout every trial run (the race
+  the design accepts as possible was not observed in practice at this
+  scale, though it remains structurally possible and is not assumed
+  impossible just because unseen)
+  conclusion: the ready queue works exactly as designed and delivers a
+  large, real win for the row shape that keeps evicting under steady
+  state (slot_count=1). For main_r50/r90 specifically, it cannot matter
+  because -- newly discovered here, not previously known -- steady-state
+  churn for those classes does not keep evicting at all past an initial
+  ramp-up, so this investigation's original framing ("main_r50/r90 RSS
+  climbs monotonically, needs a better retired-page reclaim mechanism")
+  was aimed at the wrong layer for that specific row. The real open
+  problem for main_r50/r90 is thread-exit page abandonment, a Box-6-
+  external, thread-lifecycle question neither RetiredPartialReuse-L1 nor
+  this ready queue were positioned to solve
+  next concrete step: (1) measure whether bench/hz10_public_entry_bench.c
+  itself should change its RUNS=10 methodology (reuse the SAME threads
+  across runs instead of spawning fresh ones each time) to separate "RSS
+  growth within one thread population's lifetime" from "RSS growth from
+  abandoning thread populations" -- these are two different bars, and
+  the locked-in table's current RUNS=10 number conflates them; (2) if
+  thread-exit abandonment is confirmed as the real main_r50/r90 driver,
+  the fix is a thread-lifecycle/cleanup hook (HZ10 has none today, by
+  design, see current_task.md's rules) -- a materially different, larger
+  design question than anything this session has built so far, not to
+  be started without discussing scope first
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c}, src/
+  hz10_retired_ready.{h,c}, src/hz10_freelist_page.h, bench/
+  hz10_public_entry_bench.c, bench/hz10_public_entry_steady_state_bench.c
+  (new), Makefile
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
