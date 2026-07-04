@@ -1802,6 +1802,98 @@ hz10_public_entry_steady_state_bench.c (new)):
   hz10_public_entry_bench.c, bench/hz10_public_entry_steady_state_bench.c
   (new), Makefile
 
+Thread-reuse bench finds two more real bugs in HZ10RetiredReadyQueue-L0's
+wiring (a genuine cross-thread race and a same-thread stale-tracking bug),
+both fixed (src/hz10_remote_stack.{h,c}, src/hz10_public_entry.c, src/
+hz10_retired_ready.{h,c}, src/hz10_class_pages.{h,c}, src/
+hz10_freelist_page.h, bench/hz10_public_entry_thread_reuse_bench.c (new)):
+  motivation: the previous entry's "RSS climbs monotonically across
+  RUNS=10" reframing (fresh-threads-per-run artifact, not genuine
+  unbounded growth) needed direct testing, not just inference -- built a
+  new bench that reuses the SAME worker threads across "logical run"
+  segments instead of spawning fresh ones each time (matching the
+  locked-in bench's THREADS=4/ITERS=500000/RUNS=10 shape otherwise, no
+  unconditional flush between segments, a barrier used only to keep
+  printed per-segment stats clean, never gating the work loop itself)
+  bug #3 (a genuine data race, not a hint-vs-authoritative gap): the OLD,
+  unsplit hz10_page_remote_free() made a slot visible to the owner's
+  drain (its Treiber-stack CAS) BEFORE returning, so hz10_retired_ready_
+  note_remote_free() -- called after that function returned -- could
+  still be reading/writing `page` while the owner concurrently observed
+  the page as idle and destroyed it. TSan confirmed this immediately
+  under sustained, continuously-checking-in load (never exercised long
+  enough to hit by any earlier bench). Fixed by splitting hz10_page_
+  remote_free() into hz10_page_remote_free_claim() + _publish() (src/
+  hz10_remote_stack.{h,c}) and running note_remote_free() strictly
+  BETWEEN them (src/hz10_public_entry.c's hz10_free()): a claimed-but-
+  not-yet-published slot is unreachable from remote_free_head, so it
+  cannot be merged, so free_count cannot reach slot_count, so the owner
+  cannot destroy/recycle the page while a claim is outstanding. Also
+  proves the design's original "could this double-count a slot" worry
+  was never possible in the first place: a slot's note() call can only
+  run while retired_ready_flag is already 1 (set by mark(), which already
+  folded that slot's own prior resolution, if any, into the initial
+  outstanding snapshot via drain) -- the initial snapshot and a later
+  note() decrement are provably disjoint sets, never the same slot twice
+  bug #4 (an ABA hazard bug #3's fix does not cover): even with claim/
+  publish, a `ready` stack ENTRY can go stale between push and pop if the
+  page is destroyed and its address recycled for an unrelated brand-new
+  page in between (the budgeted cursor walk never has this problem --
+  it only ever walks its own thread-local `retired` list, never a
+  reference a foreign thread handed it). Fixed with retired_ready_
+  generation (src/hz10_freelist_page.h, set at mark() time): the owner
+  must compare a popped candidate's CURRENT page->generation against the
+  value captured at mark() time before touching any other field (src/
+  hz10_class_pages.c's ready-queue drain loop) -- a mismatch means drop
+  the reference, do not process it
+  bug #5 (the mirror image of #4, found via extensive debug-instrumented
+  list-consistency assertions under the new bench, confirmed by an
+  abort() showing a ready candidate no longer in list->retired's chain):
+  no address recycling needed -- the SAME live page is the problem. The
+  budgeted cursor walk decides to destroy/promote a retired page using
+  only its own free_count/local_free_head check, with zero knowledge of
+  whether hz10_retired_ready_mark() still considers that page tracked
+  (flag == 1, outstanding > 0, not yet pushed). If the walk took the page
+  anyway (e.g. promoting it into `active`), a LATER note_remote_free()
+  call for one of that page's still-genuinely-outstanding slots would
+  still see stale flag == 1, decrement/push a page no longer in `retired`
+  at all, and corrupt list->retired's own linkage when that stale entry
+  is later popped and unlinked. Closed with hz10_retired_ready_cancel()
+  (src/hz10_retired_ready.{h,c}): the walk must win a CAS on flag's 1->0
+  transition -- the SAME transition note_remote_free() itself performs
+  when its decrement reaches zero -- before it is allowed to actually
+  remove the page (both destroy and promote branches); note_remote_free()
+  was changed from an unconditional store to the same CAS so exactly one
+  side ever wins, and the loser backs off (a lost cancel() leaves the
+  node in `retired` for the ready path to finish, counted in the new
+  sweep_cancel_lost_race_count diagnostic -- expected rare, worth
+  measuring rather than assuming; on_stack's existing skip check in the
+  walk is a strict subset of what cancel() now covers and was kept as a
+  cheap fast-path, not removed)
+  reasoning explicitly ruled out a simpler fix: a plain (non-CAS) flag
+  clear in cancel() was considered first and rejected -- it leaves a
+  check-then-act window where a concurrent note_remote_free() that
+  already read flag==1 could still push a page the walk is simultaneously
+  taking out of `retired`, reopening bug #5 through a narrower door. The
+  CAS makes the two paths genuinely mutually exclusive instead of merely
+  making the window rare
+  verification: full smoke suite, ASan/UBSan (detect_leaks=0), TSan
+  (ASLR off via setarch -R), hz10-standalone-check, and the never-free
+  regression bench (last_over_first=0.996) all clean after every fix.
+  The new thread-reuse bench itself (previously crashing on a
+  substantial fraction of runs) re-run 20x plain release, 20x with the
+  debug list-consistency assertions still compiled in, 8x under ASan,
+  and 5x under TSan (ASLR off) -- zero failures across all four. Re-
+  measured main_r50/main_r90/main_local0/medium_local0 against tcmalloc
+  with the locked-in THREADS=4/ITERS=500000/RUNS=10 methodology
+  (ratio~0.50/0.46/0.50/0.52) and slot_count=1 against the steady-state
+  bench (MIN_SIZE=MAX_SIZE=65536 REMOTE_PCT=90, 15s) -- reclaimed_by_
+  ready still dominates over reclaimed_by_sweep and retired_length stays
+  bounded, consistent with the pre-fix win, no regression on either axis
+  files: src/hz10_remote_stack.{h,c}, src/hz10_public_entry.{h,c}, src/
+  hz10_retired_ready.{h,c}, src/hz10_class_pages.{h,c}, src/
+  hz10_freelist_page.h, bench/hz10_public_entry_thread_reuse_bench.c (new)
+
 first GO:
   >=2.0x HZ8 local or 250M+ local0
   remote >=1.2x HZ8
