@@ -30,6 +30,22 @@
 void* hz10_page_pool_try_acquire(void);
 
 /*
+ * Decommit/aging policy, part 2 of the RSS Contract's "cap overflow
+ * returns/decommits pages" line: cached blocks under the cap still sit
+ * resident forever with no expiry, which is fine for a cap of 64 blocks
+ * (4MiB) but would not be for a much larger cap or a workload with long
+ * idle stretches between bursts. HZ10 has no background-thread/timer
+ * infrastructure (see current_task.md), so this is deliberately an
+ * explicit, caller-invoked sweep -- like glibc's malloc_trim() -- rather
+ * than an automatic one: hz10_page_pool_purge_idle(max_idle_ns) walks the
+ * cache (bounded by the cap, so this is cheap even if called often, not
+ * an unbounded per-op cost) and really releases (hz10_platform_release)
+ * any block that has been sitting idle longer than max_idle_ns, removing
+ * it from the cache. Returns the number of blocks purged.
+ */
+uint32_t hz10_page_pool_purge_idle(uint64_t max_idle_ns);
+
+/*
  * Offers base (a HZ10_PAGE_QUANTUM block the caller no longer needs) back
  * to the pool. If the pool is under its cap, base is cached and this
  * returns 1. If the pool is already at cap, base is actually released
@@ -46,6 +62,7 @@ uint32_t hz10_page_pool_set_cap(uint32_t cap);
 uint32_t hz10_page_pool_cached_count(void);
 uint64_t hz10_page_pool_reuse_count(void);   /* successful acquire-from-pool */
 uint64_t hz10_page_pool_release_count(void); /* real hz10_platform_release calls */
+uint64_t hz10_page_pool_purged_count(void);  /* real releases via purge_idle */
 
 /* Test/bench only: releases every currently cached block for real and
  * resets all counters and the cap to HZ10_PAGE_POOL_DEFAULT_CAP. */

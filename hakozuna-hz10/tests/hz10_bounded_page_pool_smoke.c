@@ -181,6 +181,64 @@ static int check_sustained_churn_bounds_cache(void) {
   return failed;
 }
 
+/* Case 5: the decommit/aging sweep (hz10_page_pool_purge_idle). Avoids any
+ * real-time sleep (which would make this test flaky/slow) by testing the
+ * two unambiguous ends of the threshold instead: a huge max_idle_ns must
+ * purge nothing this fresh, and a zero max_idle_ns must purge everything
+ * currently cached (idle_ns >= 0 always holds, however recently a block
+ * was released) -- together these prove the sweep's threshold comparison
+ * itself is correct without depending on wall-clock timing in the test. */
+static int check_purge_idle(void) {
+  hz10_page_pool_reset_for_tests();
+  hz10_page_pool_set_cap(HZ10_SMOKE_POOL_CAP);
+
+  for (uint32_t i = 0; i < HZ10_SMOKE_POOL_CAP; ++i) {
+    void* block = hz10_platform_reserve_rw(HZ10_PAGE_QUANTUM);
+    if (!block || !hz10_page_pool_release(block)) {
+      fprintf(stderr, "purge_idle: setup release %u failed\n", i);
+      return 1;
+    }
+  }
+  if (hz10_page_pool_cached_count() != HZ10_SMOKE_POOL_CAP) {
+    fprintf(stderr, "purge_idle: setup did not fill the cache\n");
+    return 1;
+  }
+
+  int failed = 0;
+  uint32_t purged_none = hz10_page_pool_purge_idle(UINT64_MAX);
+  if (purged_none != 0u ||
+      hz10_page_pool_cached_count() != HZ10_SMOKE_POOL_CAP) {
+    fprintf(stderr,
+            "purge_idle: a huge idle threshold purged %u (should be 0)\n",
+            purged_none);
+    failed = 1;
+  }
+
+  uint32_t purged_all = hz10_page_pool_purge_idle(0u);
+  if (purged_all != HZ10_SMOKE_POOL_CAP) {
+    fprintf(stderr, "purge_idle: zero threshold purged %u, expected %u\n",
+            purged_all, HZ10_SMOKE_POOL_CAP);
+    failed = 1;
+  }
+  if (hz10_page_pool_cached_count() != 0u) {
+    fprintf(stderr,
+            "purge_idle: cache should be empty after purging everything\n");
+    failed = 1;
+  }
+  if (hz10_page_pool_purged_count() != HZ10_SMOKE_POOL_CAP) {
+    fprintf(stderr, "purge_idle: purged_count=%llu, expected %u\n",
+            (unsigned long long)hz10_page_pool_purged_count(),
+            HZ10_SMOKE_POOL_CAP);
+    failed = 1;
+  }
+  if (hz10_page_pool_purge_idle(0u) != 0u) {
+    fprintf(stderr, "purge_idle: purging an already-empty cache should "
+                    "purge 0\n");
+    failed = 1;
+  }
+  return failed;
+}
+
 int main(void) {
   hz10_pagemap_reset_for_tests();
 
@@ -195,6 +253,9 @@ int main(void) {
   }
   if (check_sustained_churn_bounds_cache()) {
     return 5;
+  }
+  if (check_purge_idle()) {
+    return 6;
   }
 
   puts("hz10_bounded_page_pool_smoke ok");

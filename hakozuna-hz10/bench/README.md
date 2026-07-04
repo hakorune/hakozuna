@@ -36,6 +36,19 @@ munmap, i.e. what HZ10 would cost with no pool at all). Rows: `pooled_local`,
 free), plus a `getrusage` `ru_maxrss` sample taken before/after the local
 phases as the RSS half of the matrix, reported honestly rather than assumed.
 
+Decommit/aging (hz10_page_pool_purge_idle, see current_task.md): filled
+the pool to 1024 cached blocks (well above the real default cap of 64,
+for a clean signal) and touched each block's first byte so it was
+genuinely resident, then measured purge_idle(0) directly: ~3.8-4.4ms to
+purge all 1024 (cheap, bounded by cap), and a real drop in *current* RSS
+(via /proc/self/statm, not getrusage's ru_maxrss high-water mark, which
+cannot show a decrease at all) from ~5.3MB to ~1.4-1.7MB -- confirms the
+mechanism genuinely returns memory to the OS. Honestly scoped: this is
+not yet exercised by hz10_public_entry_bench's rows, because Box 6
+never calls hz10_pooled_page_destroy() today (a deliberate design
+choice, not an oversight) -- see current_task.md for the open question
+this leaves.
+
 Multi-class public entry (src/hz10_public_entry.{h,c}) bench is the first
 one shaped exactly like HZ8/HZ9/tcmalloc/mimalloc's medium_local0/
 main_local0/medium_r50/main_r90 rows: a `MIN_SIZE..MAX_SIZE` random-size

@@ -87,6 +87,12 @@ sustained churn bounds the cache: creating more pages than the cap, all
   kept alive, then destroying all of them forces real releases for the
   excess -- a deterministic, counter-based proof of "release pressure"
   that a raw OS RSS sample cannot give reliably run to run
+purge idle (hz10_page_pool_purge_idle): avoids real-time sleep (flaky/
+  slow) by testing both unambiguous ends of the idle threshold instead
+  -- a huge max_idle_ns purges nothing this fresh, a zero max_idle_ns
+  purges everything currently cached (idle_ns >= 0 always holds) --
+  together these prove the threshold comparison itself is correct
+  without depending on wall-clock timing in the test
 ```
 
 Scope note: this box proves the page-pool mechanism and its integration

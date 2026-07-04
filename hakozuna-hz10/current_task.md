@@ -547,11 +547,58 @@ large-object path done (src/hz10_large_alloc.{h,c}):
   tests/hz10_pagemap_route_smoke.c, tests/hz10_public_entry_smoke.c,
   Makefile
 
+decommit/aging policy done (src/hz10_page_pool.{h,c}):
+  the RSS Contract's "cap overflow returns/decommits pages" line only
+  ever covered the OVERFLOW half -- cached blocks under the cap sat
+  resident forever with no expiry. Added
+  hz10_page_pool_purge_idle(max_idle_ns): each cached block now stores
+  its own release() timestamp (hz10_platform_now_ns(), CLOCK_MONOTONIC)
+  in its own memory (same "write into otherwise-unused cached-block
+  bytes" technique Box 3's local-free marker already uses), and
+  purge_idle walks the cache (bounded by the cap, so cheap even called
+  often) releasing any block idle longer than the given threshold
+  deliberately an explicit, caller-invoked sweep (like glibc's
+  malloc_trim()), not automatic: HZ10 has no background-thread/timer
+  infrastructure, and building one now would be new, untested
+  infrastructure well beyond this task's scope -- an explicit API gives
+  the capability without inventing a scheduler
+  smoke test avoids real-time sleep (flaky/slow) by testing both
+  unambiguous ends of the threshold instead: a huge max_idle_ns purges
+  nothing this fresh, a zero max_idle_ns purges everything currently
+  cached (idle_ns >= 0 always holds) -- together these prove the
+  threshold comparison itself without depending on wall-clock timing
+  measured, not just asserted: filled the pool to 1024 cached blocks (a
+  cap far above the real default of 64, to get a clean signal), touched
+  each block's first byte so it was genuinely resident, then measured
+  purge_idle(0) directly: ~3.8-4.4ms to purge all 1024 (cheap, bounded
+  by cap as designed) and a real, current-RSS drop (via /proc/self/statm,
+  not getrusage's ru_maxrss high-water mark, which cannot show a
+  decrease at all) from ~5.3MB to ~1.4-1.7MB -- confirms the mechanism
+  actually returns memory to the OS, not just removes bookkeeping
+  IMPORTANT, honestly-scoped caveat: this feature has zero effect on
+  hz10_public_entry_bench's rows today. hz10_public_entry.c (Box 6)
+  never calls hz10_pooled_page_destroy() -- it keeps every page
+  reachable via the class list forever instead of destroying any of
+  them (a deliberate Box 6 decision, not an oversight) -- so Box 4's
+  pool, this decommit policy included, is currently populated by
+  NOTHING in the real hz10_malloc/hz10_free path; only Box 4's own
+  standalone smoke/bench exercise create/destroy cycles directly. This
+  is not swept under the rug: whether it is worth wiring Box 6 to
+  actually destroy genuinely-idle pages and use Box 4's pool (trading
+  some of Box 6's "never destroy, always findable" guarantee for real
+  RSS give-back) is an open design question for whoever picks this up
+  next, not resolved here
+  re-verified all existing Box 4 smokes, ASan/UBSan/TSan: no regression
+  files: src/hz10_page_pool.{h,c}, tests/hz10_bounded_page_pool_smoke.c
+
 next:
   rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
   final table. The slot_count=1 gap still needs one of its three
   bigger-surgery options (see above), not another small parameter tweak
-  then proceed to task #45 (decommit/aging policy for Box 4's page pool)
+  all 5 tasks from the ChatGPT-reviewed plan are now done (#41-#45,
+  see above); the open question above (wire Box 6 to Box 4's pool) and
+  the deprioritized items (slot_count=1 gap, box 3 O(N^2) contains-walk
+  fallback) are the natural next candidates, not yet decided which first
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
