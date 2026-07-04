@@ -389,6 +389,20 @@ static H9OwnerLocalPage* h9_owner_page_create_active(
   return page;
 }
 
+static size_t h9_owner_page_destroy_unlocked(H9OwnerLocalPage* page) {
+  if (!page) {
+    return 0;
+  }
+  size_t bytes = page->page_bytes;
+  if (page->base && bytes) {
+    h8_platform_release(page->base, bytes);
+  }
+  H8_DEBUG_INC(h9_owner_page_api_page_release);
+  H8_DEBUG_ADD(h9_owner_page_api_page_bytes_release, bytes);
+  h8_sys_free(page);
+  return bytes;
+}
+
 static void h9_owner_page_release_page(H9OwnerPageThreadState* state,
                                        uint32_t class_id) {
   if (!state || class_id >= H8_MEDIUM_CLASS_COUNT) {
@@ -416,18 +430,12 @@ static void h9_owner_page_release_page(H9OwnerPageThreadState* state,
   h8_platform_mutex_unlock(&h9_owner_page_global_lock);
   (void)h9_owner_page_start_drain(page);
   (void)h9_owner_page_detach(page);
-  size_t bytes = page->page_bytes;
-  if (page->base && bytes) {
-    h8_platform_release(page->base, bytes);
-  }
+  size_t bytes = h9_owner_page_destroy_unlocked(page);
   if (state->retained_bytes >= bytes) {
     state->retained_bytes -= bytes;
   } else {
     state->retained_bytes = 0;
   }
-  h8_sys_free(page);
-  H8_DEBUG_INC(h9_owner_page_api_page_release);
-  H8_DEBUG_ADD(h9_owner_page_api_page_bytes_release, bytes);
 }
 
 static void h9_owner_page_release_thread_pages(
@@ -565,11 +573,7 @@ bool h9_owner_page_try_free(H8ThreadCtx* ctx, void* ptr, bool* owned_out) {
             h9_owner_page_is_all_free(page)) {
           h9_owner_page_unregister_global_locked(page);
           h8_platform_mutex_unlock(&h9_owner_page_global_lock);
-          h8_platform_release(page->base, page->page_bytes);
-          H8_DEBUG_INC(h9_owner_page_api_page_release);
-          H8_DEBUG_ADD(h9_owner_page_api_page_bytes_release,
-                       page->page_bytes);
-          h8_sys_free(page);
+          (void)h9_owner_page_destroy_unlocked(page);
           return true;
         }
         h8_platform_mutex_unlock(&h9_owner_page_global_lock);
@@ -622,17 +626,32 @@ void h9_owner_page_flush_owner(H8OwnerRecord* owner) {
   if (owner_word == 0) {
     return;
   }
+  H9OwnerLocalPage* release_head = NULL;
   h8_platform_mutex_lock(&h9_owner_page_global_lock);
   H9OwnerLocalPage* page = h9_owner_page_global_head;
   while (page) {
     H9OwnerLocalPage* next = page->next_global;
     if (page->owner_word == owner_word) {
       h9_owner_page_collect_pending_locked(page);
-      (void)h9_owner_page_detach(page);
+      if (h9_owner_page_is_all_free(page)) {
+        h9_owner_page_unregister_global_locked(page);
+        (void)h9_owner_page_start_drain(page);
+        (void)h9_owner_page_detach(page);
+        page->next_global = release_head;
+        release_head = page;
+      } else {
+        (void)h9_owner_page_detach(page);
+      }
     }
     page = next;
   }
   h8_platform_mutex_unlock(&h9_owner_page_global_lock);
+  while (release_head) {
+    H9OwnerLocalPage* next = release_head->next_global;
+    release_head->next_global = NULL;
+    (void)h9_owner_page_destroy_unlocked(release_head);
+    release_head = next;
+  }
 }
 
 #if defined(H9_OWNER_LOCAL_PAGE_POOL_ROUTE_SMOKE)
