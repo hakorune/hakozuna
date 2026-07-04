@@ -91,19 +91,44 @@ typedef struct Hz10FreelistPage {
   uint64_t drain_invalid_count; /* owner-only: remote frees rejected at drain */
 
   /*
-   * HZ10RetiredReadyQueue-L0 prototype (src/hz10_retired_ready.{h,c}): an
-   * event-driven HINT layer on top of Box 6's polling harvest sweep,
-   * still being evaluated in isolation (see current_task.md's "polling-
-   * vs-event-driven" entry) -- not yet wired into hz10_malloc/hz10_free,
-   * and deliberately NOT a replacement for harvest's authoritative
-   * free_count == slot_count / local_free_head check: this mechanism can
-   * race (see hz10_retired_ready.c's module comment for why an exact
-   * fix would need much heavier machinery than a hint layer justifies),
-   * so a page it reports as ready is only ever a CANDIDATE -- the caller
-   * must still re-verify with the existing check before treating it as
+   * HZ10RetiredReadyQueue-L0 (src/hz10_retired_ready.{h,c}): an event-
+   * driven HINT layer on top of Box 6's polling harvest sweep, wired into
+   * hz10_malloc/hz10_free -- deliberately NOT a replacement for harvest's
+   * authoritative free_count == slot_count / local_free_head check, so a
+   * page it reports as ready is only ever a CANDIDATE -- the caller must
+   * still re-verify with the existing check before treating it as
    * reclaimable. A false positive (or a missed one) is a wasted/skipped
    * opportunity, never a correctness issue, because nothing downstream
    * trusts this layer's count on its own.
+   *
+   * Two real bugs were found (via ASan/TSan under sustained,
+   * continuously-running workloads -- see current_task.md) and fixed
+   * before this was trustworthy; both are recorded here because the
+   * invariants they depend on are easy to accidentally violate later:
+   *
+   * (1) src/hz10_remote_stack.h's hz10_page_remote_free() is split into
+   *     claim() + publish() specifically so hz10_retired_ready_note_
+   *     remote_free() (called between them, see hz10_public_entry.c's
+   *     hz10_free()) always runs BEFORE the slot becomes visible to the
+   *     owner's drain -- a claimed-but-not-published slot cannot be
+   *     merged, so free_count cannot reach slot_count, so the owner
+   *     cannot conclude the page is idle and destroy/recycle it, while
+   *     note_remote_free() is still touching it. Do not introduce a path
+   *     that marks a page reclaimable by any means other than free_count
+   *     == slot_count, or this invariant breaks.
+   * (2) even with (1), a ready-queue ENTRY can still go stale by ABA: the
+   *     page could be destroyed and its address recycled for a brand-new
+   *     page between being pushed and being popped (Box 6's budgeted
+   *     cursor walk never has this problem -- it only ever walks its own
+   *     thread-local retired list, never a cross-thread-pushed
+   *     reference). retired_ready_generation exists to catch this: the
+   *     owner must compare a popped candidate's CURRENT page->generation
+   *     against the value captured at mark() time, before touching any
+   *     other field (including unlinking it from `retired`) -- a
+   *     mismatch means this address now belongs to a different page
+   *     entirely, and the popped reference must simply be dropped, not
+   *     processed as if it were still the original page.
+   *
    * retired_ready_flag is set by the owner only, at the moment a page
    * becomes retired, and read (never written) by a foreign thread's free
    * to decide whether that free should also touch
@@ -133,12 +158,17 @@ typedef struct Hz10FreelistPage {
    * dereference. Set (relaxed) right before the push, cleared (relaxed)
    * right after a successful pop -- the budgeted walk must skip any
    * node with this set, leaving it for the ready-queue path to finish.
+   * retired_ready_generation is set by the owner at mark() time, from
+   * this page's own (stable, Box-1-assigned) `generation` field -- see
+   * bug (2) above for why the ready-queue's pop path must compare the
+   * two before trusting a popped candidate.
    */
   _Atomic(int) retired_ready_flag;
   _Atomic(uint32_t) retired_ready_outstanding;
   struct Hz10FreelistPage* retired_ready_next;
   void* retired_ready_stack;
   _Atomic(int) retired_ready_on_stack;
+  uint32_t retired_ready_generation;
 } Hz10FreelistPage;
 
 /*

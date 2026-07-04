@@ -82,6 +82,8 @@ typedef struct Hz10ClassPageListStats {
   uint64_t retired_promoted_by_ready_count;
   uint64_t ready_false_positive_count;
   uint64_t ready_push_count;
+  uint64_t ready_stale_generation_count;
+  uint64_t sweep_cancel_lost_race_count;
 } Hz10ClassPageListStats;
 
 /*

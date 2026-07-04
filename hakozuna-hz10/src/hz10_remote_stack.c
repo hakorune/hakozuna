@@ -97,8 +97,9 @@ static int hz10_page_classify_for_remote(const Hz10FreelistPage* page,
   return 1;
 }
 
-int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
-                          uint32_t expected_generation) {
+int hz10_page_remote_free_claim(Hz10FreelistPage* page, void* ptr,
+                                uint32_t expected_generation,
+                                uint32_t* slot_index_out) {
   uint32_t slot_index = 0u;
   if (!hz10_page_classify_for_remote(page, ptr, expected_generation,
                                     &slot_index)) {
@@ -123,19 +124,41 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
     return 0;
   }
 
+  if (slot_index_out) {
+    *slot_index_out = slot_index;
+  }
+  return 1;
+}
+
+void hz10_page_remote_free_publish(Hz10FreelistPage* page, void* ptr) {
+  /* Bumped here, before the CAS below -- not after -- so that CAS really
+   * is the last touch this thread ever makes to `page` for this call
+   * (see the module comment in the header for why that matters). */
+  atomic_fetch_add_explicit(&page->remote_push_count, 1u,
+                            memory_order_relaxed);
+
   /* Treiber stack push, onto this thread's stripe. Safe to stash into
-   * *ptr: the pending-bit claim above guarantees no other remote free of
-   * this same slot is concurrently doing the same thing, and the owner
-   * thread never writes to a slot that isn't in local_free_head. */
+   * *ptr: the pending-bit claim (in claim(), already done) guarantees no
+   * other remote free of this same slot is concurrently doing the same
+   * thing, and the owner thread never writes to a slot that isn't in
+   * local_free_head. */
   _Atomic(void*)* stack = &page->remote_free_head[hz10_remote_pick_stripe()];
   void* old_head = atomic_load_explicit(stack, memory_order_relaxed);
   do {
     *(void**)ptr = old_head;
   } while (!atomic_compare_exchange_weak_explicit(
       stack, &old_head, ptr, memory_order_release, memory_order_relaxed));
+  /* Nothing may follow this CAS -- see the module comment in the header. */
+}
 
-  atomic_fetch_add_explicit(&page->remote_push_count, 1u,
-                            memory_order_relaxed);
+int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
+                          uint32_t expected_generation) {
+  uint32_t slot_index;
+  if (!hz10_page_remote_free_claim(page, ptr, expected_generation,
+                                  &slot_index)) {
+    return 0;
+  }
+  hz10_page_remote_free_publish(page, ptr);
   return 1;
 }
 

@@ -109,16 +109,21 @@ int hz10_free(void* ptr) {
     hz10_freelist_page_free(page, ptr);
     return 1;
   }
-  if (!hz10_page_remote_free(page, ptr, route.generation)) {
+  /* claim() then publish(), not a single hz10_page_remote_free() call,
+   * with hz10_retired_ready_note_remote_free() run in between -- see
+   * src/hz10_remote_stack.h's module comment for why this gap has to
+   * exist: note_remote_free() (cheap, a no-op unless `page` is currently
+   * tracked by HZ10RetiredReadyQueue-L0) needs a point to run BEFORE this
+   * slot becomes visible to the owner's drain, or its own reads/writes
+   * to `page` can race a destroy the owner performs the instant it
+   * observes this slot merged. */
+  uint32_t slot_index;
+  if (!hz10_page_remote_free_claim(page, ptr, route.generation,
+                                  &slot_index)) {
     return 0;
   }
-  /* Cheap (one flag check, see hz10_retired_ready.h) no-op unless `page`
-   * is currently tracked by HZ10RetiredReadyQueue-L0 -- see
-   * src/hz10_class_pages.h for why this call is unconditional for every
-   * accepted remote free rather than gated on some "is this page
-   * retired" check here: the module itself is the one source of truth
-   * for that, via the flag it owns. */
   hz10_retired_ready_note_remote_free(page);
+  hz10_page_remote_free_publish(page, ptr);
   return 1;
 }
 
@@ -150,4 +155,8 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
   stats_out->ready_false_positive_count = list->ready_false_positive_count;
   stats_out->ready_push_count = atomic_load_explicit(
       &list->ready.push_count, memory_order_relaxed);
+  stats_out->ready_stale_generation_count =
+      list->ready_stale_generation_count;
+  stats_out->sweep_cancel_lost_race_count =
+      list->sweep_cancel_lost_race_count;
 }

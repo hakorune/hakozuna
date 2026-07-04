@@ -143,6 +143,18 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
    * exactly like the budgeted walk below verifies its own candidates. */
   Hz10FreelistPage* candidate;
   while ((candidate = hz10_retired_ready_pop(&list->ready)) != NULL) {
+    /* Generation guard FIRST, before touching any other field -- see
+     * hz10_retired_ready.h's bug (2) and src/hz10_freelist_page.h's
+     * retired_ready_generation comment. If this address was destroyed
+     * and recycled for an unrelated page between being pushed and being
+     * popped, `candidate` is no longer the page we marked -- every field
+     * below (free_count, local_free_head, the retired-list prev/next
+     * links) would belong to that unrelated page instead, so this
+     * reference must simply be dropped here, not processed. */
+    if (candidate->generation != candidate->retired_ready_generation) {
+      list->ready_stale_generation_count += 1u;
+      continue;
+    }
     hz10_page_drain_remote(candidate);
     if (candidate->free_count == candidate->slot_count) {
       hz10_class_pages_retired_remove(list, candidate);
@@ -191,11 +203,35 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
     hz10_page_drain_remote(node);
 
     if (node->free_count == node->slot_count) {
-      /* Fully idle: nothing left to reuse, just reclaim it. */
+      /* Fully idle: nothing left to reuse, just reclaim it -- but only
+       * once hz10_retired_ready_cancel() confirms no concurrent
+       * note_remote_free() call is also about to act on this page (see
+       * hz10_retired_ready.h's module comment, bug (3)). Losing this
+       * race just means it is about to be (or already is) linked onto
+       * `ready` instead -- leave it exactly where it is for that path
+       * to finish, same tolerance as the retired_ready_on_stack skip
+       * above. */
+      if (!hz10_retired_ready_cancel(node)) {
+        list->sweep_cancel_lost_race_count += 1u;
+        node = prev;
+        ++checked;
+        continue;
+      }
       hz10_class_pages_retired_remove(list, node);
       list->retired_reclaimed_by_sweep_count += 1u;
       hz10_pooled_page_destroy(node);
     } else if (node->local_free_head) {
+      /* Same cancel()-first requirement as the destroy branch above --
+       * see hz10_retired_ready.h's bug (3): promoting this page into
+       * `active` while a note_remote_free() call still believes it owns
+       * this page's ready-tracking is exactly the bug that surfaced as
+       * ready-loop candidates no longer found in `retired`. */
+      if (!hz10_retired_ready_cancel(node)) {
+        list->sweep_cancel_lost_race_count += 1u;
+        node = prev;
+        ++checked;
+        continue;
+      }
       /* Partial capacity: don't wait for the rest to come back too --
        * promote it into `active` right now and hand it to the caller,
        * who is about to pay for a fresh page otherwise (see the module

@@ -231,6 +231,24 @@ typedef struct Hz10ClassPageList {
                                         * nor partial -- left in `retired`
                                         * for the cursor walk to find
                                         * later; see hz10_retired_ready.h */
+  uint64_t ready_stale_generation_count;  /* a `ready` candidate whose
+                                          * address was recycled for an
+                                          * unrelated page between push
+                                          * and pop -- dropped without
+                                          * being touched further; see
+                                          * hz10_retired_ready.h's bug (2) */
+  uint64_t sweep_cancel_lost_race_count;  /* the budgeted walk decided to
+                                          * destroy/promote a node but lost
+                                          * hz10_retired_ready_cancel()'s
+                                          * CAS to a concurrent
+                                          * note_remote_free() call -- left
+                                          * in `retired` for the ready path
+                                          * to finish instead; see
+                                          * hz10_retired_ready.h's bug (3).
+                                          * Expected to be rare (a narrow
+                                          * race window); a nonzero count
+                                          * confirms the window is real,
+                                          * not just theoretical. */
 } Hz10ClassPageList;
 
 /* Prepends page to `list->active`, O(1) amortized: at most one tail
@@ -260,18 +278,23 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
 
 /*
  * First drains list->ready to empty (see the module comment on
- * HZ10RetiredReadyQueue-L0): each candidate popped is re-verified with
- * exactly the same idle/partial check the budgeted walk below uses
- * before being trusted (a candidate is only ever a hint -- see
- * hz10_retired_ready.h). A candidate found fully idle is unlinked from
- * `retired` and destroyed, and draining continues (more candidates may
- * be waiting, and this is O(1) per candidate, no scan cost). A candidate
- * found with PARTIAL capacity is unlinked from `retired`, promoted back
- * into `list->active`, and returned immediately -- this is the common
- * case this mechanism exists for, so it short-circuits here rather than
- * also running the budgeted walk below on the same call. A candidate
- * that is neither (a race -- see hz10_retired_ready.h) is simply left in
- * `retired`, counted, and draining continues.
+ * HZ10RetiredReadyQueue-L0): each candidate popped is FIRST generation-
+ * checked (candidate->generation == candidate->retired_ready_generation)
+ * before anything else touches it -- a mismatch means this address was
+ * recycled for an unrelated page since it was pushed (hz10_retired_
+ * ready.h's bug (2)), so the reference is simply dropped, counted, and
+ * draining continues. Only once generation matches is a candidate
+ * re-verified with exactly the same idle/partial check the budgeted walk
+ * below uses before being trusted (a candidate is only ever a hint --
+ * see hz10_retired_ready.h). A candidate found fully idle is unlinked
+ * from `retired` and destroyed, and draining continues (more candidates
+ * may be waiting, and this is O(1) per candidate, no scan cost). A
+ * candidate found with PARTIAL capacity is unlinked from `retired`,
+ * promoted back into `list->active`, and returned immediately -- this is
+ * the common case this mechanism exists for, so it short-circuits here
+ * rather than also running the budgeted walk below on the same call. A
+ * candidate that is neither (a race -- see hz10_retired_ready.h) is
+ * simply left in `retired`, counted, and draining continues.
  *
  * If `ready` never yields a promotable candidate, checks up to
  * HZ10_CLASS_PAGES_SWEEP_BUDGET pages from `list->retired` via a
@@ -287,9 +310,17 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
  * budget still eventually rotates through all of `retired` instead of
  * re-examining the same few oldest entries every call (see the module
  * comment) -- this remains the correctness backstop for anything the
- * ready queue's race window ever misses. Call only from a slow path (a
- * hz10_malloc cache-miss, right before it would otherwise pay for a
- * fresh page), never the hot per-op alloc path.
+ * ready queue's race window ever misses. Before the walk actually acts on
+ * a destroy/promote decision (not before deciding -- only before
+ * committing), it must win hz10_retired_ready_cancel()'s CAS first: this
+ * walk's own free_count/local_free_head check has no idea whether this
+ * module still considers the page tracked, and taking it out from under
+ * a still-live mark() cycle without this handshake is exactly
+ * hz10_retired_ready.h's bug (3). Losing that CAS just leaves the node in
+ * `retired` for the ready path to finish (counted in
+ * sweep_cancel_lost_race_count) -- expected to be rare. Call only from a
+ * slow path (a hz10_malloc cache-miss, right before it would otherwise
+ * pay for a fresh page), never the hot per-op alloc path.
  */
 Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
     Hz10ClassPageList* list);

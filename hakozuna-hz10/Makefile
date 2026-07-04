@@ -5,6 +5,7 @@
 	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
+	bench-public-entry-thread-reuse \
 	hz10-standalone-check
 
 CC ?= gcc
@@ -165,6 +166,14 @@ $(ROOT)/hz10_public_entry_steady_state_bench: $(STEADY_STATE_BENCH_SRC) $(HEADER
 bench-public-entry-steady-state: $(ROOT)/hz10_public_entry_steady_state_bench
 	$(ROOT)/hz10_public_entry_steady_state_bench
 
+THREAD_REUSE_BENCH_SRC := $(ROOT)/bench/hz10_public_entry_thread_reuse_bench.c $(PUBLIC_ENTRY_SRC)
+
+$(ROOT)/hz10_public_entry_thread_reuse_bench: $(THREAD_REUSE_BENCH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(THREAD_REUSE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-thread-reuse: $(ROOT)/hz10_public_entry_thread_reuse_bench
+	$(ROOT)/hz10_public_entry_thread_reuse_bench
+
 bench-class-pages-scan: $(ROOT)/hz10_class_pages_scan_bench
 	$(ROOT)/hz10_class_pages_scan_bench
 
@@ -181,4 +190,5 @@ clean:
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
 		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \
-		$(ROOT)/hz10_public_entry_steady_state_bench
+		$(ROOT)/hz10_public_entry_steady_state_bench \
+		$(ROOT)/hz10_public_entry_thread_reuse_bench
