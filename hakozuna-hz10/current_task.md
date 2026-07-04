@@ -46,6 +46,14 @@ status:
         This confirms the remote-row gap is dominated by freeing-thread
         atomic publication cost, especially Treiber CAS plus the extra
         remote_push_count fetch_add, not by owner drain.
+      UPDATE: remote_push_count is now debug-only
+        (HZ10_ENABLE_DEBUG_STATS) so the release hot path no longer pays
+        that successful-publish fetch_add. The same microbench now reports
+        the release-equivalent pending_plus_treiber case at ~39ns/op versus
+        ~62ns/op for pending_counter_treiber. Short public-entry checks
+        (main_r50/r90 and small_remote50/90, RUNS=5) did not show a clear
+        row-level win, so treat this as a justified hot-path cleanup, not a
+        confirmed public-entry performance step.
 
     LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
       RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):

@@ -262,6 +262,14 @@ remote-free RMW attribution microbench:
   Treiber CAS plus the extra remote_push_count fetch_add, not by owner
   drain.
 
+  Follow-up: remote_push_count is debug-only after this measurement, so
+  the release hot path matches the new `pending_plus_treiber` mode rather
+  than `pending_counter_treiber`. On the same standard setting, that
+  release-equivalent mode measured around 39 ns/op, while the debug-style
+  full counter mode measured around 62 ns/op. A short public-entry recheck
+  did not show a clear row-level win, so record this as hot-path cleanup
+  and attribution evidence, not a confirmed public-entry throughput gain.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this

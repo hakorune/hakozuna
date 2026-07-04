@@ -83,7 +83,7 @@ typedef struct Hz10FreelistPage {
   _Atomic(void*) remote_free_head[HZ10_REMOTE_STRIPE_COUNT];
   _Atomic(uint64_t)* pending_bits;
   uint32_t pending_words;   /* (slot_count + 63) / 64 */
-  _Atomic(uint64_t) remote_push_count;
+  _Atomic(uint64_t) remote_push_count; /* debug-only successful publish */
   _Atomic(uint64_t) remote_duplicate_count;
   _Atomic(uint64_t) remote_invalid_count;
   uint64_t drain_count;      /* owner-only, plain: incremented at drain */

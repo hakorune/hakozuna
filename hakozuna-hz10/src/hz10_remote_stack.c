@@ -131,11 +131,13 @@ int hz10_page_remote_free_claim(Hz10FreelistPage* page, void* ptr,
 }
 
 void hz10_page_remote_free_publish(Hz10FreelistPage* page, void* ptr) {
-  /* Bumped here, before the CAS below -- not after -- so that CAS really
-   * is the last touch this thread ever makes to `page` for this call
-   * (see the module comment in the header for why that matters). */
+  /* Debug-only: keep the successful-publish counter out of the release hot
+   * path. The CAS below is the load-bearing publication point; adding a
+   * second uncontended RMW here measured as a real remote-row cost. */
+#if defined(HZ10_ENABLE_DEBUG_STATS)
   atomic_fetch_add_explicit(&page->remote_push_count, 1u,
                             memory_order_relaxed);
+#endif
 
   /* Treiber stack push, onto this thread's stripe. Safe to stash into
    * *ptr: the pending-bit claim (in claim(), already done) guarantees no

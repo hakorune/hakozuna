@@ -20,8 +20,9 @@
 typedef enum BenchMode {
   MODE_PENDING = 0,
   MODE_TREIBER = 1,
-  MODE_COUNTER_TREIBER = 2,
-  MODE_FULL_PUBLISH = 3,
+  MODE_PENDING_TREIBER = 2,
+  MODE_COUNTER_TREIBER = 3,
+  MODE_FULL_PUBLISH = 4,
   MODE_COUNT
 } BenchMode;
 
@@ -68,6 +69,8 @@ static const char* mode_name(BenchMode mode) {
       return "pending_fetch_or";
     case MODE_TREIBER:
       return "treiber_push";
+    case MODE_PENDING_TREIBER:
+      return "pending_plus_treiber";
     case MODE_COUNTER_TREIBER:
       return "counter_plus_treiber";
     case MODE_FULL_PUBLISH:
@@ -109,15 +112,16 @@ static void* worker_main(void* raw) {
     BenchMode mode =
         (BenchMode)atomic_load_explicit(&state->mode, memory_order_acquire);
     for (uint32_t i = arg->begin; i < arg->end; ++i) {
-      if (mode == MODE_PENDING || mode == MODE_FULL_PUBLISH) {
+      if (mode == MODE_PENDING || mode == MODE_PENDING_TREIBER ||
+          mode == MODE_FULL_PUBLISH) {
         pending_claim(state, i);
       }
       if (mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
         atomic_fetch_add_explicit(&state->counter, 1u,
                                   memory_order_relaxed);
       }
-      if (mode == MODE_TREIBER || mode == MODE_COUNTER_TREIBER ||
-          mode == MODE_FULL_PUBLISH) {
+      if (mode == MODE_TREIBER || mode == MODE_PENDING_TREIBER ||
+          mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
         treiber_push(state, &state->nodes[i], arg->stripe);
       }
     }
@@ -168,9 +172,10 @@ static uint64_t run_mode(BenchState* state, BenchMode mode,
 
     start = hz10_platform_now_ns();
     uint32_t drained = 0u;
-    if (mode == MODE_TREIBER || mode == MODE_COUNTER_TREIBER ||
-        mode == MODE_FULL_PUBLISH) {
-      drained = drain_stacks(state, mode == MODE_FULL_PUBLISH);
+    if (mode == MODE_TREIBER || mode == MODE_PENDING_TREIBER ||
+        mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
+      drained = drain_stacks(state, mode == MODE_PENDING_TREIBER ||
+                                        mode == MODE_FULL_PUBLISH);
       if (drained != state->slot_count) {
         atomic_fetch_add_explicit(&state->failed, 1u,
                                   memory_order_relaxed);
