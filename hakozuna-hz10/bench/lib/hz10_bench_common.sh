@@ -56,3 +56,28 @@ hz10_bench_find_tcmalloc_lib() {
   done
   return 1
 }
+
+# Locates HZ8's own default preload shared object (libhakozuna_hz8_preload.so,
+# built by HZ8's own `make preload` -- HZ8-v2/KeepRefill baked in as the
+# current default, see HZ8's own current_task.md), to LD_PRELOAD over
+# hz10_public_entry_bench's mech=system_malloc path -- same technique as
+# hz10_bench_find_tcmalloc_lib() above, needed because current_task.md's
+# "first GO" bar is stated relative to HZ8, not tcmalloc. Opt-in like the
+# HZ9 comparison above: an explicit HZ8_PRELOAD_LIB wins, otherwise looks
+# under HZ10_EXT_ROOT (a sibling checkout the caller must point at
+# explicitly -- HZ10 must not implicitly depend on sibling source trees).
+# Returns empty (not an error) if unavailable, so callers can skip this
+# comparison gracefully.
+hz10_bench_find_hz8_preload_lib() {
+  local candidate="${HZ8_PRELOAD_LIB:-}"
+  if [[ -n "${candidate}" && -f "${candidate}" ]]; then
+    printf '%s\n' "${candidate}"
+    return 0
+  fi
+  candidate="${HZ10_EXT_ROOT}/hakozuna-hz8/libhakozuna_hz8_preload.so"
+  if [[ -f "${candidate}" ]]; then
+    printf '%s\n' "${candidate}"
+    return 0
+  fi
+  return 1
+}
