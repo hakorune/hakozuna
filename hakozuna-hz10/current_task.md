@@ -591,14 +591,58 @@ decommit/aging policy done (src/hz10_page_pool.{h,c}):
   re-verified all existing Box 4 smokes, ASan/UBSan/TSan: no regression
   files: src/hz10_page_pool.{h,c}, tests/hz10_bounded_page_pool_smoke.c
 
+slot_count=1 gap CLOSED (src/hz10_freelist_page.c, option (b) from the
+three candidates listed above -- a cheaper aligned-reservation
+primitive, not (a) wiring Box 6 to Box 4's pool or (c) a different
+reuse structure):
+  root cause (already found via strace, see above): every fresh single
+  quantum paid its own mmap(2x)+trim(1-2 munmap) round trip.
+  hz10_freelist_reserve_aligned_quantum() now reserves
+  HZ10_QUANTUM_REGION_COUNT (256) quanta at once with the same
+  over-reserve-then-trim technique, then bump-allocates individual
+  quanta from that region with no further syscalls until it's
+  exhausted -- amortizing the trim cost by ~256x. POSIX only (the
+  Windows branch is unchanged: VirtualAlloc's allocation granularity
+  already matches HZ10_PAGE_QUANTUM with no trim needed, and Windows
+  cannot MEM_RELEASE a sub-range of a larger reservation the way POSIX
+  munmap can). Individual quanta still release independently when a
+  page is destroyed -- munmapping a sub-range of a larger mapping is
+  valid POSIX usage, and the bump cursor only ever moves forward so
+  nothing is ever double-handed-out. Chose option (b) over (a): (a)
+  needed a way to find idle pages beyond the scan window without
+  reintroducing unbounded scan cost (no clean solution found when
+  reconsidered), while (b) is a pure Box 2 implementation detail,
+  touches nothing in Box 3-6, and directly attacks the exact syscalls
+  strace already identified as the cost
+  did NOT decide the open Box 6/Box 4 wiring question from the
+  decommit-policy box -- this fix makes it moot for the slot_count=1
+  case specifically (see below), so it stays open for whatever else
+  might motivate it later
+  measured, not assumed: re-ran the exact strace diagnostic from the
+  original root-cause investigation (THREADS=4 MIN_SIZE=MAX_SIZE=65536
+  REMOTE_PCT=90, 8M ops) -- mmap dropped from ~152,490 to 874 calls
+  (~175x fewer), munmap from ~152,479 to 864. hz10_public_entry_bench's
+  isolating-case numbers, run 4 times with both mechs in the same
+  invocation: hz10 5.5-6.9M ops/s vs system_malloc 5.4-7.1M ops/s --
+  essentially at parity (hz10 wins some runs), up from the previously
+  measured ~24% slower (4.6M vs 6.1M). Numbers are also far more stable
+  run-to-run than before (the original 2-6x variance was largely the
+  syscall cost itself, not scheduler noise as first suspected)
+  re-verified all existing smokes, ASan/UBSan/TSan (this touches shared
+  mutable state -- a global bump cursor behind a mutex -- so this
+  mattered more than usual), and every established row (main_local0/
+  r50/r90, medium_local0, small_remote50/90): no regression, Box 2's own
+  bench unaffected
+  files: src/hz10_freelist_page.c only
+
 next:
-  rerun small_remote50/90 and main/medium rows at larger ITERS/RUNS for the
-  final table. The slot_count=1 gap still needs one of its three
-  bigger-surgery options (see above), not another small parameter tweak
-  all 5 tasks from the ChatGPT-reviewed plan are now done (#41-#45,
-  see above); the open question above (wire Box 6 to Box 4's pool) and
-  the deprioritized items (slot_count=1 gap, box 3 O(N^2) contains-walk
-  fallback) are the natural next candidates, not yet decided which first
+  rerun small_remote50/90, main/medium rows, and the (now-closed)
+  slot_count=1 isolating case at larger ITERS/RUNS for a final locked-in
+  table. Remaining open items: the Box 6/Box 4 pool-wiring question
+  (deprioritized further now that its main motivating case is fixed a
+  different way) and the box 3 O(N^2) contains-walk fallback
+  (deprioritized: not confirmed to matter given the marker fix already
+  handles the common case)
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0

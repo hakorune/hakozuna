@@ -4,34 +4,76 @@
 
 #include <stdlib.h>
 
+#if !defined(_WIN32)
+/*
+ * How many quanta to reserve in one go (see hz10_freelist_reserve_aligned_
+ * quantum() below). Real, measured motivation, not a guess: strace on the
+ * slot_count=1/REMOTE_PCT=90 isolating case (current_task.md) showed
+ * ~152K mmap + ~152K munmap over 8M ops -- roughly one genuine miss (a
+ * class with nothing to reuse, needing a truly fresh quantum) per 53
+ * allocations, each paying a full mmap-2x-then-trim round trip. Batching
+ * the mmap+trim dance over HZ10_QUANTUM_REGION_COUNT quanta at once
+ * amortizes that cost by the same factor -- one big reservation's trim
+ * cost divided across 256 quanta instead of paid by each individually.
+ * 256 quanta = 16MiB of *virtual* address space per region, reserved via
+ * anonymous mmap (demand-paged by the kernel), not 16MiB of real RSS --
+ * only the quanta actually handed out and touched ever cost real memory.
+ */
+#define HZ10_QUANTUM_REGION_COUNT 256u
+
+static hz10_platform_mutex_t hz10_quantum_region_lock = HZ10_PLATFORM_MUTEX_INIT;
+static char* hz10_quantum_region_cursor;
+static char* hz10_quantum_region_end;
+#endif
+
 /* Reserves an HZ10_PAGE_QUANTUM-aligned, HZ10_PAGE_QUANTUM-sized RW mapping.
  * Plain mmap only guarantees page-size alignment, not our 64KiB quantum, so
- * this over-reserves (2x) and trims the unused head/tail -- the same
- * over-allocate-then-trim shape HZ9's segment allocator uses. */
+ * getting one aligned quantum at a time would need an over-reserve-then-trim
+ * dance (the same shape HZ9's segment allocator uses) on every single call.
+ * Instead, this hands out quanta from a much larger region reserved (and
+ * trimmed to alignment) once every HZ10_QUANTUM_REGION_COUNT calls -- see
+ * the constant's comment above for the measured cost this amortizes.
+ * Individual quanta are still released independently (hz10_platform_release
+ * on a sub-range of a larger mapping is valid POSIX munmap usage, and the
+ * bump cursor only ever moves forward, so nothing is ever handed out twice)
+ * -- this only changes how a *fresh* quantum is obtained, not how one is
+ * given back. */
 static void* hz10_freelist_reserve_aligned_quantum(void) {
   size_t bytes = HZ10_PAGE_QUANTUM;
 #if defined(_WIN32)
-  /* VirtualAlloc returns allocation-granularity aligned regions. With the
-   * current 64KiB quantum that is already sufficient, and Windows cannot
-   * MEM_RELEASE arbitrary head/tail slices from a larger reservation. */
+  /* VirtualAlloc returns allocation-granularity aligned regions already,
+   * and Windows cannot MEM_RELEASE arbitrary sub-ranges of a larger
+   * reservation the way POSIX munmap can -- so the batching below does
+   * not apply here; every call is its own VirtualAlloc, same as before. */
   return hz10_platform_reserve_rw(bytes);
 #else
-  size_t raw_bytes = bytes * 2u;
-  void* raw = hz10_platform_reserve_rw(raw_bytes);
-  if (!raw) {
-    return NULL;
+  hz10_platform_mutex_lock(&hz10_quantum_region_lock);
+  if (hz10_quantum_region_cursor == hz10_quantum_region_end) {
+    size_t region_bytes = bytes * (size_t)HZ10_QUANTUM_REGION_COUNT;
+    size_t raw_bytes = region_bytes + bytes;
+    void* raw = hz10_platform_reserve_rw(raw_bytes);
+    if (!raw) {
+      hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+      return NULL;
+    }
+    uintptr_t raw_addr = (uintptr_t)raw;
+    uintptr_t aligned_addr =
+        (raw_addr + (bytes - 1u)) & ~(uintptr_t)(bytes - 1u);
+    size_t head_trim = (size_t)(aligned_addr - raw_addr);
+    size_t tail_trim = raw_bytes - head_trim - region_bytes;
+    if (head_trim > 0u) {
+      hz10_platform_release(raw, head_trim);
+    }
+    if (tail_trim > 0u) {
+      hz10_platform_release((void*)(aligned_addr + region_bytes), tail_trim);
+    }
+    hz10_quantum_region_cursor = (char*)aligned_addr;
+    hz10_quantum_region_end = (char*)aligned_addr + region_bytes;
   }
-  uintptr_t raw_addr = (uintptr_t)raw;
-  uintptr_t aligned_addr = (raw_addr + (bytes - 1u)) & ~(uintptr_t)(bytes - 1u);
-  size_t head_trim = (size_t)(aligned_addr - raw_addr);
-  size_t tail_trim = raw_bytes - head_trim - bytes;
-  if (head_trim > 0u) {
-    hz10_platform_release(raw, head_trim);
-  }
-  if (tail_trim > 0u) {
-    hz10_platform_release((void*)(aligned_addr + bytes), tail_trim);
-  }
-  return (void*)aligned_addr;
+  void* result = hz10_quantum_region_cursor;
+  hz10_quantum_region_cursor += bytes;
+  hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+  return result;
 #endif
 }
 

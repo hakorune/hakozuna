@@ -14,9 +14,9 @@ Current direction:
   HZ9 development must remain self-contained in hakozuna-hz9/.
   HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-6 done. Local ~60-70%
                 of tcmalloc, remote ~40-50% (fixed from 15-17x SLOWER).
-                Follow-ons done: remote-free striping, finer size
-                classes, large-object path, pool decommit. small_remoteNN
-                row (3-4x slower) fixed via an in-slot drain marker.
+                Follow-ons done: striping, finer size classes,
+                large-object path, pool decommit, in-slot drain marker,
+                batched quantum reservation (closed slot_count=1 gap).
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry
