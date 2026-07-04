@@ -1478,6 +1478,181 @@ tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c):
   files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
   tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
 
+polling-vs-event-driven diagnosis + design decision (external review,
+Claude, given the RetiredPartialReuse-L1 measurement above): sharper
+framing of the same root cause, confirmed against existing counters
+without needing a new measurement, plus a decision to try a structurally
+different reclaim trigger:
+  diagnosis: hz10_malloc's slow path only calls harvest_retired_capacity()
+  when find_with_capacity() returns NULL across the whole `active` scan
+  window (src/hz10_public_entry.c) -- so harvest's outflow rate is
+  (frequency active goes fully dry) x SWEEP_BUDGET=4, while retired's
+  inflow rate (evictions) tracks total churn directly, with no shared
+  ceiling between the two. Confirmed, not re-measured, from data already
+  in the entry above: for every main_r50/r90 run, retired_count ==
+  retired_length exactly (e.g. run3: 2041 == 2041) -- 100% of everything
+  that ever entered `retired` was still sitting there, unmodified, at
+  the end of the run. Outflow was not just slow, it was zero, for the
+  entire run's duration, in every run measured. This is the same
+  underlying fact as the "0.24% resolution rate" finding above, restated
+  as a supply/demand mismatch rather than a timing-probability one -- not
+  a new discovery, but a clarifying one: it rules out "the budget or
+  sweep frequency just needs tuning higher" as a fix, since inflow has no
+  ceiling that any fixed per-call budget can chase
+  rejected direction: decommitting at OS-page (not Hz10FreelistPage-
+  quantum) granularity instead of changing the trigger. Reasoning agreed
+  with: destroy, decommit, and pool-return all still gate on the SAME
+  fact (an owning thread observing a page's outstanding count reach
+  zero) -- changing how memory is given back does not change WHEN the
+  owner finds out it can be given back. The actual failure is in the
+  discovery mechanism (owner-polls-eventually), not the reclaim
+  mechanism (destroy-vs-decommit), so this does not address the root
+  cause. Also independently a poor fit for this project's design: the
+  intrusive freelist stores its next-pointer inside otherwise-free slots,
+  so decommitting individual slots within a page would need to relocate
+  that bookkeeping first
+  accepted direction: event-driven reclaim instead of owner-polling.
+  Structural argument for why this closes the gap that no amount of
+  budget/frequency tuning can: today, ONLY the owning thread's own
+  malloc-driven scan can ever discover that a retired page became usable
+  again, and that scan's frequency is entirely decoupled from how fast
+  pages actually become idle/partial. An event-driven design instead has
+  whichever thread frees the LAST outstanding slot of a retired page
+  self-register that page onto a lock-free "ready" queue at the moment
+  it happens -- discovery latency becomes O(1) relative to churn instead
+  of dependent on how often the owner happens to look, closing the
+  supply/demand gap by construction rather than by degree
+  design sketch, not yet built: a new atomic `outstanding` count per
+  page, set to slot_count - free_count only at the moment a page is
+  retired (active pages keep today's plain free_count path untouched,
+  so the hot local-alloc/local-free path pays nothing new). A remote
+  free against a page flagged `retired` atomically decrements
+  `outstanding`; whichever thread's decrement reaches 0 pushes the page
+  onto a new lock-free stack (same Treiber-stack shape as Box 3's
+  remote_free_head, but keyed by page references, not individual slots).
+  The owning thread drains that stack on its own next slow-path call --
+  O(1) relative to queue depth, same as remote_free_head's existing
+  drain. Open design questions, unresolved: only a REMOTE free can use
+  the ready-queue push (a foreign thread cannot safely unlink from
+  `list->retired`'s doubly-linked sublist itself -- that mutation stays
+  owner-only, per the existing threading model); an owner-thread local
+  free of its own retired page's last slot can instead react inline,
+  without needing the queue at all. Cost to the existing remote-free hot
+  path (src/hz10_remote_stack.c's hz10_page_remote_free(), already 2
+  atomics per call: pending-bit fetch_or + Treiber CAS) needs to be
+  measured, not assumed, once built -- expected to be a flag check plus
+  one conditional atomic decrement, opt-in only for pages already
+  flagged retired, but "expected" is exactly the kind of claim this
+  project does not accept without a bench number
+  plan agreed: do not build this against main_r50/r90 directly first.
+  Build an isolated prototype (single class or slot_count=1, matching
+  this session's own precedent of proving the cursor mechanism correct
+  in isolation before trusting it against a real workload) and confirm
+  RSS actually bounds there before wiring it into the real multi-class
+  public entry path. Not yet started as of this entry.
+
+HZ10RetiredReadyQueue-L0 prototype built and measured in isolation --
+hypothesis confirmed decisively, plus one real (pre-existing, documented)
+correctness gap found and worked around at the bench level, not in
+production code (src/hz10_retired_ready.{h,c} (new), src/
+hz10_freelist_page.h, tests/hz10_retired_ready_smoke.c (new), bench/
+hz10_retired_ready_bench.c (new)):
+  design landed as a HINT layer, not a harvest replacement (a deliberate,
+  load-bearing scope decision, not a shortcut): making the event-driven
+  outstanding count itself provably race-free against the exact instant
+  a page transitions from Box 3's push+drain tracking to this counter
+  would need real synchronization machinery (something like a
+  quiescence/epoch scheme) to rule out a double-count -- the one failure
+  mode that would be genuinely unsafe (a page's count reaching zero
+  early, before every slot is actually back, risks treating a still-live
+  slot as reclaimable). Rather than build that, this module never lets
+  its own count directly authorize a destroy: hz10_retired_ready_pop()
+  only ever returns a CANDIDATE, and the caller is required to re-run
+  the exact same free_count == slot_count check harvest already uses
+  before trusting it. A false positive (raced, not actually fully idle
+  yet) just fails that re-check and is left for harvest's own cursor to
+  find later -- a wasted queue entry, not a correctness bug. A false
+  negative (resolved but never pushed) likewise just falls back to
+  harvest eventually finding it. Since nothing downstream trusts this
+  module's count on its own, only its effect on DISCOVERY LATENCY needed
+  measuring, not its exactness
+  mechanism: Hz10FreelistPage gained retired_ready_flag/_outstanding/
+  _next/_stack (zero cost for a page never retired this way -- Box 2/3's
+  existing alloc/free/drain paths never read or write them).
+  hz10_retired_ready_mark(page, stack, outstanding) is owner-only, called
+  once at retirement. hz10_retired_ready_note_remote_free(page) is safe
+  from any thread, meant to be called immediately after a
+  hz10_page_remote_free() call returns 1 on the same page -- pairing
+  matters, since Box 3 already guarantees at most one success per slot
+  ever, so this never double-counts a single slot against itself.
+  Whichever call's atomic decrement reaches what it believes is zero
+  pushes the page onto a Treiber stack (same shape as Box 3's
+  remote_free_head) for the owner to pop
+  correctness verified before measuring performance (this session's
+  standing rule): tests/hz10_retired_ready_smoke.c -- single-page
+  countdown fires exactly on the Nth note, an unmarked page is inert,
+  two pages on one stack resolve independently and pop LIFO, and a
+  64-page/4-thread concurrent-note stress case confirms no duplicate
+  pops and no lost pages under real concurrent pressure. ASan/UBSan and
+  TSan (ASLR off) both clean
+  bench/hz10_retired_ready_bench.c: two independent page sets (slot_
+  count=2, matching main_r50's dominant pathological class -- see
+  the "RetiredPartialReuse-L1" entry above for why size=32768 speci-
+  fically), one driven by a miniature reimplementation of harvest's
+  budgeted cursor walk, one by this module, both aged by the same
+  producer threads under identical conditions in the same process.
+  Measured (PAGES_PER_SET=50000, POLL_BUDGET=4, matching HZ10_CLASS_
+  PAGES_SWEEP_BUDGET): polling needed 12,500 owner check-ins to reach
+  zero unresolved (exactly pages_per_set / budget, a hard floor from
+  budget-limited scanning); event-driven needed 1. Reproduced at
+  PAGES_PER_SET=200,000 (polling: 50,000 check-ins, event-driven: 1) and
+  with 8 producer threads instead of 4 (no change to either) -- polling's
+  cost scales linearly with population regardless of producer count or
+  total population, event-driven's does not scale with population at
+  all, exactly as the diagnosis above predicted
+  a real bug found and fixed, but in the BENCH, not in Box 2/3 (important
+  to state precisely): TSan caught a genuine data race the first time
+  this bench ran unguarded -- the owner destroying a page while a
+  producer thread was still inside its own hz10_page_remote_free() call
+  for that same page's last slot (a use-after-free of the page struct's
+  own remote_push_count field). This is NOT a new bug: tests/README.md
+  already documents this exact gap ("a foreign thread starting a new
+  push concurrently with destroy is not defended against either way").
+  It had simply never been exercised this aggressively before -- every
+  existing test/bench checks in far less often than this bench's
+  unthrottled busy-loop check-in does, so the nanosecond-wide window
+  between a push's CAS landing and hz10_page_remote_free()'s own
+  trailing bookkeeping finishing had never been hit. Fixed at the bench
+  level (not by touching src/hz10_remote_stack.c or hz10_freelist_page.c
+  -- out of scope for this prototype and not owned by this change): each
+  page's producer thread sets a per-page "producer done" flag (release)
+  only after its LAST hz10_page_remote_free() call for that page has
+  fully returned, and both checkers require that flag before trusting
+  free_count == slot_count. Re-verified clean under ASan/UBSan and TSan
+  (ASLR off) after the fix -- TSan needed a smaller PAGES_PER_SET
+  (2,000 instead of 50,000) to avoid its own shadow-memory/mmap-tracking
+  resource limit unrelated to correctness (a `ThreadSanitizer failed to
+  deallocate` internal-allocator error, not a reported race)
+  conclusion: the isolated hypothesis is confirmed, decisively and
+  reproducibly -- an event-driven ready queue eliminates the search-cost
+  floor that makes polling's outflow scale with retired population
+  instead of staying flat. This is a strong enough result to justify
+  wiring it into the real multi-class public entry path next, per the
+  agreed plan, rather than a reason to skip straight there
+  next concrete step: wire hz10_retired_ready into src/hz10_class_pages.c
+  /hz10_public_entry.c for real -- hz10_class_pages_add()'s eviction path
+  calls hz10_retired_ready_mark() instead of (or alongside) moving a
+  non-idle page to plain `retired`; hz10_free()'s remote-free dispatch
+  calls note_remote_free() after a successful hz10_page_remote_free();
+  hz10_malloc's slow path pops from the ready stack before falling back
+  to harvest's cursor walk. Measure against main_r50, main_r90, and
+  slot_count=1 with the same locked-in methodology as every other row in
+  this file once wired -- this isolated bench's dramatic gap is
+  motivation to build the integration, not a substitute for measuring it
+  files: src/hz10_retired_ready.{h,c} (new), src/hz10_freelist_page.h,
+  tests/hz10_retired_ready_smoke.c (new), bench/hz10_retired_ready_bench.c
+  (new)
+
 first GO:
   >=2.0x HZ8 local or 250M+ local0
   remote >=1.2x HZ8
