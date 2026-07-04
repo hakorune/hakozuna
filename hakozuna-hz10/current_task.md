@@ -49,11 +49,25 @@ status:
       UPDATE: remote_push_count is now debug-only
         (HZ10_ENABLE_DEBUG_STATS) so the release hot path no longer pays
         that successful-publish fetch_add. The same microbench now reports
-        the release-equivalent pending_plus_treiber case at ~39ns/op versus
-        ~62ns/op for pending_counter_treiber. Short public-entry checks
+        the release-equivalent pending_acqrel_treiber case at ~39-40ns/op
+        versus ~62ns/op for pending_counter_treiber. Short public-entry checks
         (main_r50/r90 and small_remote50/90, RUNS=5) did not show a clear
         row-level win, so treat this as a justified hot-path cleanup, not a
         confirmed public-entry performance step.
+      UPDATE: pending-bit ordering/ceiling matrix, 20260705
+        THREADS=4 SLOT_COUNT=4096 REPEAT=20000 RUNS=3:
+        log: bench_results/20260704T205540Z_hz10_pending_order_ceiling_matrix/combined.log
+          pending_acqrel_fetch_or      ~3.33ns/op
+          pending_relaxed_fetch_or     ~3.40ns/op
+          treiber_no_pending_unsafe    ~24.86ns/op
+          pending_acqrel_treiber       ~40.48ns/op
+          pending_relaxed_treiber      ~40.47ns/op
+          pending_counter_treiber      ~73.45ns/op
+        Conclusion: acq_rel -> relaxed does not buy a safe win on this
+        machine; same-location RMW ordering is not the current lever. The
+        unsafe no-pending ceiling is still large (~15ns/op worker-side vs
+        pending+Treiber), so the remaining possible win is a correctness
+        design question, not a trivial memory-order cleanup.
 
     LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
       RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):

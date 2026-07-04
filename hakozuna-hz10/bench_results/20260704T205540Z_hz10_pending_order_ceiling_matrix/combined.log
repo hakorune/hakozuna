@@ -1,0 +1,46 @@
+make: Entering directory '/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10'
+/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/hz10_remote_rmw_microbench
+hz10_remote_rmw_micro threads=4 slot_count=4096 repeat=20000 runs=3 stripes=4
+run=1/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_fetch_or threads=4 ops=81920000 seconds=0.272155 ops_per_s=301004407.84 ns_per_op=3.32
+run=1/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_fetch_or threads=1 ops=81920000 seconds=0.001291 ops_per_s=63478779707.25 ns_per_op=0.02
+run=1/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_fetch_or threads=4 ops=81920000 seconds=0.276240 ops_per_s=296553870.62 ns_per_op=3.37
+run=1/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_fetch_or threads=1 ops=81920000 seconds=0.001355 ops_per_s=60464034896.72 ns_per_op=0.02
+run=1/3 hz10_remote_rmw_micro phase=worker mode=treiber_no_pending_unsafe threads=4 ops=81920000 seconds=2.080404 ops_per_s=39376960.71 ns_per_op=25.40
+run=1/3 hz10_remote_rmw_micro phase=owner mode=treiber_no_pending_unsafe threads=1 ops=81920000 seconds=0.122541 ops_per_s=668511247.40 ns_per_op=1.50
+run=1/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_treiber threads=4 ops=81920000 seconds=3.316001 ops_per_s=24704456.96 ns_per_op=40.48
+run=1/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_treiber threads=1 ops=81920000 seconds=0.305192 ops_per_s=268420786.90 ns_per_op=3.73
+run=1/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_treiber threads=4 ops=81920000 seconds=3.315600 ops_per_s=24707444.68 ns_per_op=40.47
+run=1/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_treiber threads=1 ops=81920000 seconds=0.296027 ops_per_s=276731116.12 ns_per_op=3.61
+run=1/3 hz10_remote_rmw_micro phase=worker mode=counter_plus_treiber threads=4 ops=81920000 seconds=2.906546 ops_per_s=28184656.66 ns_per_op=35.48
+run=1/3 hz10_remote_rmw_micro phase=owner mode=counter_plus_treiber threads=1 ops=81920000 seconds=0.121742 ops_per_s=672896805.06 ns_per_op=1.49
+run=1/3 hz10_remote_rmw_micro phase=worker mode=pending_counter_treiber threads=4 ops=81920000 seconds=6.007593 ops_per_s=13636077.82 ns_per_op=73.33
+run=1/3 hz10_remote_rmw_micro phase=owner mode=pending_counter_treiber threads=1 ops=81920000 seconds=0.298992 ops_per_s=273987145.66 ns_per_op=3.65
+run=2/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_fetch_or threads=4 ops=81920000 seconds=0.272935 ops_per_s=300144547.15 ns_per_op=3.33
+run=2/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_fetch_or threads=1 ops=81920000 seconds=0.001521 ops_per_s=53863375600.39 ns_per_op=0.02
+run=2/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_fetch_or threads=4 ops=81920000 seconds=0.280387 ops_per_s=292168119.70 ns_per_op=3.42
+run=2/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_fetch_or threads=1 ops=81920000 seconds=0.001441 ops_per_s=56855604670.32 ns_per_op=0.02
+run=2/3 hz10_remote_rmw_micro phase=worker mode=treiber_no_pending_unsafe threads=4 ops=81920000 seconds=1.975682 ops_per_s=41464159.80 ns_per_op=24.12
+run=2/3 hz10_remote_rmw_micro phase=owner mode=treiber_no_pending_unsafe threads=1 ops=81920000 seconds=0.121825 ops_per_s=672440146.49 ns_per_op=1.49
+run=2/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_treiber threads=4 ops=81920000 seconds=3.285975 ops_per_s=24930196.04 ns_per_op=40.11
+run=2/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_treiber threads=1 ops=81920000 seconds=0.298216 ops_per_s=274700157.42 ns_per_op=3.64
+run=2/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_treiber threads=4 ops=81920000 seconds=3.312709 ops_per_s=24729002.59 ns_per_op=40.44
+run=2/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_treiber threads=1 ops=81920000 seconds=0.296470 ops_per_s=276317789.54 ns_per_op=3.62
+run=2/3 hz10_remote_rmw_micro phase=worker mode=counter_plus_treiber threads=4 ops=81920000 seconds=2.912677 ops_per_s=28125328.04 ns_per_op=35.56
+run=2/3 hz10_remote_rmw_micro phase=owner mode=counter_plus_treiber threads=1 ops=81920000 seconds=0.124972 ops_per_s=655507515.41 ns_per_op=1.53
+run=2/3 hz10_remote_rmw_micro phase=worker mode=pending_counter_treiber threads=4 ops=81920000 seconds=6.027807 ops_per_s=13590349.34 ns_per_op=73.58
+run=2/3 hz10_remote_rmw_micro phase=owner mode=pending_counter_treiber threads=1 ops=81920000 seconds=0.293068 ops_per_s=279525975.27 ns_per_op=3.58
+run=3/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_fetch_or threads=4 ops=81920000 seconds=0.272801 ops_per_s=300292290.85 ns_per_op=3.33
+run=3/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_fetch_or threads=1 ops=81920000 seconds=0.001321 ops_per_s=62025411338.57 ns_per_op=0.02
+run=3/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_fetch_or threads=4 ops=81920000 seconds=0.278379 ops_per_s=294275123.89 ns_per_op=3.40
+run=3/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_fetch_or threads=1 ops=81920000 seconds=0.001314 ops_per_s=62362449766.33 ns_per_op=0.02
+run=3/3 hz10_remote_rmw_micro phase=worker mode=treiber_no_pending_unsafe threads=4 ops=81920000 seconds=2.036655 ops_per_s=40222812.23 ns_per_op=24.86
+run=3/3 hz10_remote_rmw_micro phase=owner mode=treiber_no_pending_unsafe threads=1 ops=81920000 seconds=0.124838 ops_per_s=656212745.84 ns_per_op=1.52
+run=3/3 hz10_remote_rmw_micro phase=worker mode=pending_acqrel_treiber threads=4 ops=81920000 seconds=3.316056 ops_per_s=24704044.86 ns_per_op=40.48
+run=3/3 hz10_remote_rmw_micro phase=owner mode=pending_acqrel_treiber threads=1 ops=81920000 seconds=0.302183 ops_per_s=271093892.02 ns_per_op=3.69
+run=3/3 hz10_remote_rmw_micro phase=worker mode=pending_relaxed_treiber threads=4 ops=81920000 seconds=3.361759 ops_per_s=24368195.87 ns_per_op=41.04
+run=3/3 hz10_remote_rmw_micro phase=owner mode=pending_relaxed_treiber threads=1 ops=81920000 seconds=0.307955 ops_per_s=266012911.36 ns_per_op=3.76
+run=3/3 hz10_remote_rmw_micro phase=worker mode=counter_plus_treiber threads=4 ops=81920000 seconds=2.954456 ops_per_s=27727612.86 ns_per_op=36.07
+run=3/3 hz10_remote_rmw_micro phase=owner mode=counter_plus_treiber threads=1 ops=81920000 seconds=0.126239 ops_per_s=648928665.27 ns_per_op=1.54
+run=3/3 hz10_remote_rmw_micro phase=worker mode=pending_counter_treiber threads=4 ops=81920000 seconds=6.016670 ops_per_s=13615504.81 ns_per_op=73.45
+run=3/3 hz10_remote_rmw_micro phase=owner mode=pending_counter_treiber threads=1 ops=81920000 seconds=0.295729 ops_per_s=277010707.26 ns_per_op=3.61
+make: Leaving directory '/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10'

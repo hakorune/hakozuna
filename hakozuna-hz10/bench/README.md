@@ -263,12 +263,19 @@ remote-free RMW attribution microbench:
   drain.
 
   Follow-up: remote_push_count is debug-only after this measurement, so
-  the release hot path matches the new `pending_plus_treiber` mode rather
+  the release hot path matches the new `pending_acqrel_treiber` mode rather
   than `pending_counter_treiber`. On the same standard setting, that
-  release-equivalent mode measured around 39 ns/op, while the debug-style
+  release-equivalent mode measured around 39-40 ns/op, while the debug-style
   full counter mode measured around 62 ns/op. A short public-entry recheck
   did not show a clear row-level win, so record this as hot-path cleanup
   and attribution evidence, not a confirmed public-entry throughput gain.
+
+  Pending-bit ordering/ceiling matrix: `pending_acqrel_treiber` and
+  `pending_relaxed_treiber` were effectively tied (~40.5 ns/op), so the
+  safe acq_rel -> relaxed change is not a useful lever on this machine.
+  The unsafe no-pending ceiling (`treiber_no_pending_unsafe`) was much
+  lower (~24.9 ns/op), which means the remaining possible win is a
+  correctness-design problem, not a trivial memory-order cleanup.
 
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap

@@ -18,11 +18,13 @@
  */
 
 typedef enum BenchMode {
-  MODE_PENDING = 0,
-  MODE_TREIBER = 1,
-  MODE_PENDING_TREIBER = 2,
-  MODE_COUNTER_TREIBER = 3,
-  MODE_FULL_PUBLISH = 4,
+  MODE_PENDING_ACQREL = 0,
+  MODE_PENDING_RELAXED = 1,
+  MODE_TREIBER = 2,
+  MODE_PENDING_ACQREL_TREIBER = 3,
+  MODE_PENDING_RELAXED_TREIBER = 4,
+  MODE_COUNTER_TREIBER = 5,
+  MODE_FULL_PUBLISH = 6,
   MODE_COUNT
 } BenchMode;
 
@@ -65,12 +67,16 @@ static uint64_t env_u64(const char* name, uint64_t fallback) {
 
 static const char* mode_name(BenchMode mode) {
   switch (mode) {
-    case MODE_PENDING:
-      return "pending_fetch_or";
+    case MODE_PENDING_ACQREL:
+      return "pending_acqrel_fetch_or";
+    case MODE_PENDING_RELAXED:
+      return "pending_relaxed_fetch_or";
     case MODE_TREIBER:
-      return "treiber_push";
-    case MODE_PENDING_TREIBER:
-      return "pending_plus_treiber";
+      return "treiber_no_pending_unsafe";
+    case MODE_PENDING_ACQREL_TREIBER:
+      return "pending_acqrel_treiber";
+    case MODE_PENDING_RELAXED_TREIBER:
+      return "pending_relaxed_treiber";
     case MODE_COUNTER_TREIBER:
       return "counter_plus_treiber";
     case MODE_FULL_PUBLISH:
@@ -80,11 +86,12 @@ static const char* mode_name(BenchMode mode) {
   }
 }
 
-static void pending_claim(BenchState* state, uint32_t slot) {
+static void pending_claim(BenchState* state, uint32_t slot,
+                          memory_order order) {
   uint32_t word = slot / 64u;
   uint64_t bit = UINT64_C(1) << (slot % 64u);
-  uint64_t old = atomic_fetch_or_explicit(&state->pending_words[word], bit,
-                                         memory_order_acq_rel);
+  uint64_t old =
+      atomic_fetch_or_explicit(&state->pending_words[word], bit, order);
   if ((old & bit) != 0u) {
     atomic_fetch_add_explicit(&state->failed, 1u, memory_order_relaxed);
   }
@@ -112,15 +119,20 @@ static void* worker_main(void* raw) {
     BenchMode mode =
         (BenchMode)atomic_load_explicit(&state->mode, memory_order_acquire);
     for (uint32_t i = arg->begin; i < arg->end; ++i) {
-      if (mode == MODE_PENDING || mode == MODE_PENDING_TREIBER ||
-          mode == MODE_FULL_PUBLISH) {
-        pending_claim(state, i);
+      if (mode == MODE_PENDING_ACQREL ||
+          mode == MODE_PENDING_ACQREL_TREIBER || mode == MODE_FULL_PUBLISH) {
+        pending_claim(state, i, memory_order_acq_rel);
+      }
+      if (mode == MODE_PENDING_RELAXED ||
+          mode == MODE_PENDING_RELAXED_TREIBER) {
+        pending_claim(state, i, memory_order_relaxed);
       }
       if (mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
         atomic_fetch_add_explicit(&state->counter, 1u,
                                   memory_order_relaxed);
       }
-      if (mode == MODE_TREIBER || mode == MODE_PENDING_TREIBER ||
+      if (mode == MODE_TREIBER || mode == MODE_PENDING_ACQREL_TREIBER ||
+          mode == MODE_PENDING_RELAXED_TREIBER ||
           mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
         treiber_push(state, &state->nodes[i], arg->stripe);
       }
@@ -172,9 +184,11 @@ static uint64_t run_mode(BenchState* state, BenchMode mode,
 
     start = hz10_platform_now_ns();
     uint32_t drained = 0u;
-    if (mode == MODE_TREIBER || mode == MODE_PENDING_TREIBER ||
+    if (mode == MODE_TREIBER || mode == MODE_PENDING_ACQREL_TREIBER ||
+        mode == MODE_PENDING_RELAXED_TREIBER ||
         mode == MODE_COUNTER_TREIBER || mode == MODE_FULL_PUBLISH) {
-      drained = drain_stacks(state, mode == MODE_PENDING_TREIBER ||
+      drained = drain_stacks(state, mode == MODE_PENDING_ACQREL_TREIBER ||
+                                        mode == MODE_PENDING_RELAXED_TREIBER ||
                                         mode == MODE_FULL_PUBLISH);
       if (drained != state->slot_count) {
         atomic_fetch_add_explicit(&state->failed, 1u,
