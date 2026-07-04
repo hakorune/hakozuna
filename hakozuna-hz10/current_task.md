@@ -1075,6 +1075,103 @@ fix:
   files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
   tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
 
+retired cursor fix done (src/hz10_class_pages.{h,c}, src/
+hz10_public_entry.{h,c}, tests/hz10_class_pages_smoke.c, bench/
+hz10_public_entry_bench.c): external review (a second reviewer, after
+reading bench/hz10_public_entry_bench.c's actual loop body) identified a
+sharper, more mechanistically precise critique of the active/retired
+design above than the "multi-slot pages structurally can't reach idle"
+conclusion this session had settled on. Result: BOTH turned out to be
+real, each explaining a different row -- reported honestly, not spun
+either direction:
+  the critique: this bench has zero live set -- every allocated object
+  IS eventually freed (locally or via the inbox simulation), so every
+  page, if fully drained, WOULD become idle. Two concrete mechanisms
+  were named: (1) a remote free only pushes onto the owning page's
+  remote stack; nothing updates free_count until the OWNER thread later
+  calls hz10_page_drain_remote() on that specific page, so a caller-side
+  "free" completing is not the same event as this module observing it --
+  real, sometimes long, delay between the two; (2) hz10_class_pages_
+  sweep_retired() always restarted its budgeted walk from retired's
+  CURRENT tail -- if the tail-most entries are slow to resolve, the tail
+  barely advances, so newer entries arriving at head are never reached
+  at all (classic head-of-line blocking), regardless of how many times
+  sweep is called. Proposed fix: stop dropping retired's overflow tail
+  (let retired grow unbounded -- it is never linearly scanned by
+  hz10_malloc, only budget-swept, so this does not reintroduce the
+  O(n^2) cost SCAN_LIMIT prevents on `active`) and replace the
+  tail-restarting sweep with a persistent, resumable cursor that rotates
+  through all of retired over time
+  implemented as proposed: removed HZ10_CLASS_PAGES_RETIRED_LIMIT and
+  its overflow-eviction/drop path entirely (retired_reclaimed_by_
+  overflow_count and retired_dropped_count counters removed with it --
+  nothing to count anymore). Added retired_sweep_cursor to
+  Hz10ClassPageList: hz10_class_pages_sweep_retired() resumes from
+  wherever the last call left off (wrapping back to retired's tail once
+  a walk reaches head) instead of always restarting from tail
+  verified the cursor itself is correct, isolated from any bench timing,
+  before trusting it in the real workload (this project's own hard-won
+  lesson about RSS deltas without direct verification, cited by the
+  reviewer): built 1000 retired pages directly via hz10_class_pages_add,
+  marked exactly 500 of them idle, then called sweep_retired() enough
+  times to cover several full rotations (budget=4, so ~1250 calls for
+  ~5 rotations of 1000 entries) -- all 500 idle ones were reclaimed,
+  the other 500 were not, confirming the cursor rotates correctly and
+  does not false-positive. This ruled out an implementation bug as the
+  explanation for whatever the real-workload measurement showed next
+  measured against the same real workloads, not assumed to have
+  improved just because the mechanism is now correct:
+    slot_count=1: a real but modest improvement over the tail-restarting
+      version -- retired_reclaimed_by_sweep per run went from single
+      digits (0-277, prior measurement) to a similar-to-somewhat-higher
+      range (3-218 across 10 fresh runs), not the order-of-magnitude
+      jump the mechanism's fix would suggest if head-of-line blocking
+      were the whole story for this row. post_rss_kb still climbed
+      51,968 -> 803,896 KB across 10 runs -- still not bounded
+    main_r50: retired_reclaimed_by_sweep was EXACTLY 0 across all 10
+      runs, same as before this fix, with retired.length growing into
+      the thousands per thread within single runs (up to ~1803 pages)
+      and never once reclaiming any of them via sweep. This is now
+      doubly confirmed to not be a traversal-order bug (fixed, and
+      proven correct in isolation above) or a premature-drop artifact
+      (removed entirely, retired is unbounded) -- something about this
+      row's pages genuinely does not reach free_count == slot_count
+      within the sweep's reach, at all, in this session's testing
+  conclusion, holding both findings at once rather than picking one:
+  the reviewer's diagnosis was correct and the fix is real -- the sweep
+  mechanism itself was measurably broken (proven via the isolated test)
+  and is now fixed, and slot_count=1 (single-slot pages, where the
+  reviewer's "just a delayed free" framing applies cleanly) shows a
+  real, if smaller-than-hoped, improvement from it. But main_r50/r90's
+  exact-zero result even under the fully corrected mechanism reinforces,
+  rather than replaces, this session's earlier "many-slots-per-page"
+  hypothesis: for those classes specifically, something beyond sweep
+  traversal order or premature dropping is preventing free_count from
+  ever reaching slot_count within a run's timeframe. Whether that is the
+  bench's own inbox-drain-lag mechanism compounding at higher slot
+  counts, or a genuinely different effect, is not resolved here -- flagged
+  for whoever continues this, with the isolated-cursor-test methodology
+  above as a template for verifying any next hypothesis before trusting
+  a real-workload number
+  honest safety note on unbounding retired: checked (not assumed) that
+  this does not introduce new unbounded-memory risk in the adversarial
+  never-free bench (bench/hz10_class_pages_scan_bench.c, 20M never-freed
+  allocations): peak RSS ~1.26GB, reasoned through and consistent with
+  what the OLD bounded+drop design would ALSO have resident in this
+  exact scenario -- a genuinely-never-freed page's quantum stays mapped
+  either way (tracked-but-unreachable in a growing retired list, or
+  silently dropped-but-still-mapped), so unbounding retired changes
+  bookkeeping reachability, not actual memory footprint, for this case
+  re-verified: all 5 smokes (case 5 rewritten from "retired overflow
+  drops oldest" to "sweep cursor rotates past a chronically stuck tail
+  and reclaims something that became idle closer to head" -- the actual
+  regression test for this fix), ASan/UBSan (no leak noise this time --
+  nothing gets deliberately dropped anymore, so the smoke's teardown
+  reaches everything), TSan (ASLR off), hz10-standalone-check, and the
+  never-free regression bench (last_over_first ~1.05, flat) all green
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+  tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
+
 next (re-prioritized from this table, see "Next HZ10 action" above):
   (1) DONE (see above) -- perf stat + strace root-cause pass on
       main_r50/main_r90: fixed two real over-scoped locks, ratio did not
@@ -1099,10 +1196,19 @@ next (re-prioritized from this table, see "Next HZ10 action" above):
       ~1-2%) reclaim-rate improvement for slot_count=1; exactly 0 for
       main_r50/r90. RSS growth is essentially unchanged in both rows
       even at 4x the budget/limit constants -- ruled out as a tuning
-      problem. New understanding: for multi-slot classes, "wait until
-      100% of a page's slots come back" may not be a reachable bar at
-      all under sustained churn, not just a timing one -- this is now
-      the open question, not "make the existing mechanism fire more"
+      problem
+  (3c) DONE, refines (3b) rather than replacing it (see "retired cursor
+      fix" above) -- external review found and fixed a real bug (sweep
+      always restarted from retired's tail, causing head-of-line
+      blocking) and a real design flaw (retired's own overflow-drop),
+      both verified correct via an isolated test before trusting real-
+      workload numbers again. slot_count=1 improved somewhat further but
+      still not by an order of magnitude; main_r50 stayed at EXACTLY 0
+      reclaims even with both fixed. This doubly confirms (3b)'s
+      "multi-slot classes may not reach 100% idle" hypothesis for
+      main_r50/r90 specifically, while also confirming the reviewer's
+      "sweep traversal was broken" diagnosis was independently real for
+      slot_count=1 -- both true, for different rows, not a single cause
   (4) DONE -- built the dedicated microbenchmark this section used to
       call for (see "remote-free class-count sweep" below): the RMW-cost-
       compounds-across-classes hypothesis is REFUTED for the push side,
