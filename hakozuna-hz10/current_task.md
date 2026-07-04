@@ -37,6 +37,15 @@ status:
         ~0.47-0.61x of tcmalloc. The next performance box should isolate
         remote-free atomic/RMW cost directly; do not spend the next step on
         thread-exit/RSS unless a true continuous workload reproduces it.
+      UPDATE: remote-free RMW attribution microbench added
+        (bench/hz10_remote_rmw_microbench.c). THREADS=4 SLOT_COUNT=4096
+        REPEAT=20000 RUNS=3 shows worker-side medians:
+        pending_fetch_or ~3.3ns/op, treiber_push ~26.5ns/op,
+        counter_plus_treiber ~40ns/op, pending_counter_treiber ~59.5ns/op.
+        Owner-side drain/clear is small (~3.7ns/op for the full case).
+        This confirms the remote-row gap is dominated by freeing-thread
+        atomic publication cost, especially Treiber CAS plus the extra
+        remote_push_count fetch_add, not by owner drain.
 
     LOCKED-IN final table, 20260704T030633Z, THREADS=4 ITERS=500000
       RUNS=10, real tcmalloc via LD_PRELOAD (not system_malloc-only):

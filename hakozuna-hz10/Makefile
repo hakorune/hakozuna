@@ -1,6 +1,7 @@
 .PHONY: all clean smoke-pagemap-route bench-pagemap-route \
 	smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain bench-multiclass-remote \
+	bench-remote-rmw-micro \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan \
@@ -37,6 +38,7 @@ REMOTE_STACK_SRC := $(ROOT)/src/hz10_remote_stack.c $(FREELIST_SRC)
 SMOKE_REMOTE_STACK_SRC := $(ROOT)/tests/hz10_remote_stack_drain_smoke.c $(REMOTE_STACK_SRC)
 BENCH_REMOTE_STACK_SRC := $(ROOT)/bench/hz10_remote_stack_drain_bench.c $(REMOTE_STACK_SRC)
 BENCH_MULTICLASS_REMOTE_SRC := $(ROOT)/bench/hz10_multiclass_remote_bench.c $(ROOT)/src/hz10_size_class.c $(REMOTE_STACK_SRC)
+BENCH_REMOTE_RMW_MICRO_SRC := $(ROOT)/bench/hz10_remote_rmw_microbench.c $(ROOT)/src/hz10_platform.c
 
 POOLED_PAGE_SRC := $(ROOT)/src/hz10_pooled_page.c $(ROOT)/src/hz10_page_pool.c $(REMOTE_STACK_SRC)
 SMOKE_POOLED_PAGE_SRC := $(ROOT)/tests/hz10_bounded_page_pool_smoke.c $(POOLED_PAGE_SRC)
@@ -97,6 +99,12 @@ $(ROOT)/hz10_multiclass_remote_bench: $(BENCH_MULTICLASS_REMOTE_SRC) $(HEADERS)
 
 bench-multiclass-remote: $(ROOT)/hz10_multiclass_remote_bench
 	$(ROOT)/hz10_multiclass_remote_bench
+
+$(ROOT)/hz10_remote_rmw_microbench: $(BENCH_REMOTE_RMW_MICRO_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_RMW_MICRO_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-remote-rmw-micro: $(ROOT)/hz10_remote_rmw_microbench
+	$(ROOT)/hz10_remote_rmw_microbench
 
 $(ROOT)/hz10_bounded_page_pool_smoke: $(SMOKE_POOLED_PAGE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_POOLED_PAGE_SRC) $(LDFLAGS) $(LDLIBS)
@@ -184,7 +192,7 @@ clean:
 	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \
 		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench \
 		$(ROOT)/hz10_remote_stack_drain_smoke $(ROOT)/hz10_remote_stack_drain_bench \
-		$(ROOT)/hz10_multiclass_remote_bench \
+		$(ROOT)/hz10_multiclass_remote_bench $(ROOT)/hz10_remote_rmw_microbench \
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \

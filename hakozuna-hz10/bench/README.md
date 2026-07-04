@@ -240,6 +240,28 @@ picking this over literal batching):
   afterward: no regression from the added per-page memory or per-stripe
   drain peek.
 
+remote-free RMW attribution microbench:
+  `make -C hakozuna-hz10 bench-remote-rmw-micro` builds
+  `bench/hz10_remote_rmw_microbench.c`, a synthetic persistent-worker
+  microbench that isolates the remote-free atomic publication pieces after
+  routing has already found a page. Standard run:
+
+    THREADS=4 SLOT_COUNT=4096 REPEAT=20000 RUNS=3 \
+      make -C hakozuna-hz10 bench-remote-rmw-micro
+
+  On 2026-07-04, worker-side medians were approximately:
+
+    pending_fetch_or:         3.3 ns/op
+    treiber_push:            26.5 ns/op
+    counter_plus_treiber:    40.0 ns/op
+    pending_counter_treiber: 59.5 ns/op
+
+  Owner-side drain/clear stayed small (~3.7 ns/op for the full
+  pending+counter+Treiber case). This confirms the remaining remote-row
+  gap is dominated by freeing-thread publication cost, especially the
+  Treiber CAS plus the extra remote_push_count fetch_add, not by owner
+  drain.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this
