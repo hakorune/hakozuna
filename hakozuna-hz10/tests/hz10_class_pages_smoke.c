@@ -16,19 +16,42 @@
  * checks them.
  */
 
+/* Shared setup: adds `count` freshly created (64u, 16u) pages to `list`,
+ * used by all three cases below as filler to reach/exceed
+ * HZ10_CLASS_PAGES_SCAN_LIMIT. Returns 0 on success. */
+static int fill_list_with_filler_pages(Hz10ClassPageList* list, uint32_t count,
+                                      const char* case_name) {
+  for (uint32_t i = 0; i < count; ++i) {
+    Hz10FreelistPage* page = hz10_freelist_page_create(64u, 16u);
+    if (!page) {
+      fprintf(stderr, "%s: create %u failed\n", case_name, i);
+      return 1;
+    }
+    hz10_class_pages_add(list, page);
+  }
+  return 0;
+}
+
+/* Shared teardown: destroys every page still reachable from `list->head`
+ * (a page already evicted/dropped by hz10_class_pages_add() is not
+ * reachable here and must be torn down separately by its own case). */
+static void destroy_class_page_list(Hz10ClassPageList* list) {
+  for (Hz10FreelistPage* page = list->head; page;) {
+    Hz10FreelistPage* next = page->next_in_owner_list;
+    hz10_freelist_page_destroy(page);
+    page = next;
+  }
+}
+
 /* Case 1: adding exactly HZ10_CLASS_PAGES_SCAN_LIMIT pages never evicts. */
 static int check_no_eviction_within_limit(void) {
   hz10_page_pool_reset_for_tests();
   Hz10ClassPageList list = {0};
   int failed = 0;
 
-  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT; ++i) {
-    Hz10FreelistPage* page = hz10_freelist_page_create(64u, 16u);
-    if (!page) {
-      fprintf(stderr, "no_eviction: create %u failed\n", i);
-      return 1;
-    }
-    hz10_class_pages_add(&list, page);
+  if (fill_list_with_filler_pages(&list, HZ10_CLASS_PAGES_SCAN_LIMIT,
+                                 "no_eviction")) {
+    return 1;
   }
 
   if (list.length != HZ10_CLASS_PAGES_SCAN_LIMIT) {
@@ -42,11 +65,7 @@ static int check_no_eviction_within_limit(void) {
     failed = 1;
   }
 
-  for (Hz10FreelistPage* page = list.head; page;) {
-    Hz10FreelistPage* next = page->next_in_owner_list;
-    hz10_freelist_page_destroy(page);
-    page = next;
-  }
+  destroy_class_page_list(&list);
   return failed;
 }
 
@@ -59,13 +78,9 @@ static int check_eviction_reclaims_idle_tail(void) {
   Hz10ClassPageList list = {0};
   int failed = 0;
 
-  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT + 1u; ++i) {
-    Hz10FreelistPage* page = hz10_freelist_page_create(64u, 16u);
-    if (!page) {
-      fprintf(stderr, "reclaim_idle: create %u failed\n", i);
-      return 1;
-    }
-    hz10_class_pages_add(&list, page);
+  if (fill_list_with_filler_pages(&list, HZ10_CLASS_PAGES_SCAN_LIMIT + 1u,
+                                 "reclaim_idle")) {
+    return 1;
   }
 
   if (list.length != HZ10_CLASS_PAGES_SCAN_LIMIT) {
@@ -98,11 +113,7 @@ static int check_eviction_reclaims_idle_tail(void) {
     failed = 1;
   }
 
-  for (Hz10FreelistPage* page = list.head; page;) {
-    Hz10FreelistPage* next = page->next_in_owner_list;
-    hz10_freelist_page_destroy(page);
-    page = next;
-  }
+  destroy_class_page_list(&list);
   return failed;
 }
 
@@ -128,13 +139,9 @@ static int check_eviction_drops_non_idle_tail(void) {
   }
   hz10_class_pages_add(&list, oldest);
 
-  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT; ++i) {
-    Hz10FreelistPage* page = hz10_freelist_page_create(64u, 16u);
-    if (!page) {
-      fprintf(stderr, "drop_non_idle: create %u failed\n", i);
-      return 1;
-    }
-    hz10_class_pages_add(&list, page);
+  if (fill_list_with_filler_pages(&list, HZ10_CLASS_PAGES_SCAN_LIMIT,
+                                 "drop_non_idle")) {
+    return 1;
   }
 
   if (list.eviction_count != 1u) {
@@ -161,11 +168,7 @@ static int check_eviction_drops_non_idle_tail(void) {
   }
   hz10_freelist_page_destroy(oldest);
 
-  for (Hz10FreelistPage* page = list.head; page;) {
-    Hz10FreelistPage* next = page->next_in_owner_list;
-    hz10_freelist_page_destroy(page);
-    page = next;
-  }
+  destroy_class_page_list(&list);
   return failed;
 }
 

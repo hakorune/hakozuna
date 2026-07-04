@@ -74,13 +74,17 @@ uint32_t hz10_page_pool_purge_idle(uint64_t max_idle_ns) {
   hz10_platform_mutex_lock(&hz10_pool_lock);
   uint64_t now = hz10_platform_now_ns();
   Hz10PagePoolNode* purged_head = NULL;
-  Hz10PagePoolNode* kept_head = NULL;
-  Hz10PagePoolNode** kept_link = &kept_head;
   /* Local, non-atomic walk under the lock (hz10_pool_head is only _Atomic
-   * for the lock-free peek in try_acquire above); rebuild the kept list
-   * and publish it back once at the end. */
+   * for the lock-free peek in try_acquire above): unlink idle nodes in
+   * place (a `prev` pointer, same shape as the original pre-_Atomic
+   * version) instead of rebuilding a parallel "kept" list, and only
+   * publish hz10_pool_head back if something was actually purged -- the
+   * common case (nothing idle yet) does zero writes here, not a full
+   * list rebuild plus an unconditional store. */
+  Hz10PagePoolNode* prev = NULL;
   Hz10PagePoolNode* node =
       atomic_load_explicit(&hz10_pool_head, memory_order_relaxed);
+  Hz10PagePoolNode* new_head = node;
   while (node) {
     Hz10PagePoolNode* next = node->next;
     uint64_t idle_ns = now - node->released_at_ns; /* unsigned: a clock
@@ -92,16 +96,21 @@ uint32_t hz10_page_pool_purge_idle(uint64_t max_idle_ns) {
                                                      * either way */
     if (idle_ns >= max_idle_ns) {
       hz10_pool_count -= 1u;
+      if (prev) {
+        prev->next = next;
+      } else {
+        new_head = next;
+      }
       node->next = purged_head;
       purged_head = node;
     } else {
-      *kept_link = node;
-      kept_link = &node->next;
+      prev = node;
     }
     node = next;
   }
-  *kept_link = NULL;
-  atomic_store_explicit(&hz10_pool_head, kept_head, memory_order_relaxed);
+  if (purged_head) {
+    atomic_store_explicit(&hz10_pool_head, new_head, memory_order_relaxed);
+  }
   hz10_platform_mutex_unlock(&hz10_pool_lock);
 
   uint32_t purged = 0u;

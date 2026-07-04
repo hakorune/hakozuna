@@ -27,13 +27,15 @@
  *     drain) is no longer abandoned: src/hz10_class_pages.h tracks every
  *     page this thread has ever created for a class and scans (draining
  *     each candidate, bounded to HZ10_CLASS_PAGES_SCAN_LIMIT pages) before
- *     paying for a fresh one. The list is now bounded to
+ *     paying for a fresh one. The list is bounded to
  *     HZ10_CLASS_PAGES_SCAN_LIMIT pages, not unbounded: once it would grow
  *     past that, the oldest page is evicted and, if confirmed idle,
- *     returned to Box 4's pool -- see hz10_class_pages.h for the measured
- *     before/after and the accepted tradeoff (a page that was NOT idle
- *     when evicted just stops being searchable, though it remains
- *     correctly freeable via the pagemap route either way)
+ *     returned to Box 4's pool -- a page that was NOT idle when evicted
+ *     just stops being searchable, though it remains correctly freeable
+ *     via the pagemap route either way. See hz10_class_pages.h for a
+ *     measured caveat: this bounds list LENGTH reliably, but does NOT
+ *     reliably bound RSS in practice (reclaim essentially never fires
+ *     under real remote-free churn) -- the two are different claims
  *   - free() takes no generation from the caller (real free() can't carry
  *     one), so it always routes with HZ10_GENERATION_ANY; the
  *     generation-mismatch contract that Box 1-4's own smokes exercise

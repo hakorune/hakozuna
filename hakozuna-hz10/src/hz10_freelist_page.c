@@ -62,14 +62,21 @@ static void* hz10_freelist_reserve_aligned_quantum(void) {
         atomic_load_explicit(&hz10_quantum_region_cursor, memory_order_acquire);
     char* end =
         atomic_load_explicit(&hz10_quantum_region_end, memory_order_acquire);
-    if (cursor != end) {
+    /* A failed CAS already writes the current cursor value into `cursor`
+     * for us, so retry directly against it instead of paying a fresh
+     * atomic load -- `end` stays valid to compare against across those
+     * retries too: cursor can only ever reach `end` exactly (never
+     * overshoot it, since HZ10_PAGE_QUANTUM evenly divides the region),
+     * so a concurrent refill can only be in progress once cursor == end,
+     * which this loop's own condition already detects and falls through
+     * to the mutex-guarded refill path below for. */
+    while (cursor != end) {
       char* next = cursor + bytes;
       if (atomic_compare_exchange_weak_explicit(
               &hz10_quantum_region_cursor, &cursor, next,
               memory_order_acq_rel, memory_order_relaxed)) {
         return cursor;
       }
-      continue; /* lost the race to another thread's bump, retry */
     }
 
     /* Exhausted (or never initialized): the mutex now only guards this

@@ -36,7 +36,7 @@
  * consulted by hz10_free (which routes through Box 1's pagemap and its
  * owner tag directly, independent of this list).
  *
- * List length is now bounded to HZ10_CLASS_PAGES_SCAN_LIMIT permanently
+ * List LENGTH is now bounded to HZ10_CLASS_PAGES_SCAN_LIMIT permanently
  * (the "never pruned, grows without bound" gap from the note above is
  * closed): hz10_class_pages_add() evicts the tail (the oldest, least-
  * recently-created page) whenever the list would grow past the limit.
@@ -44,15 +44,25 @@
  * that leaves it genuinely idle (free_count == slot_count -- no
  * application-held pointer can reference any of its slots, since idle
  * means every slot that was ever handed out has already come back), it is
- * returned to Box 4's pool via hz10_pooled_page_destroy() instead of
- * being silently kept forever unreachable. This directly targets the
- * slot_count=1 residual gap documented in current_task.md: a 1-slot page
- * is exhausted on every single allocation, so under sustained churn it
- * fell out of the (formerly unbounded but only-128-scanned) window almost
- * immediately, permanently losing its capacity to future allocations and
- * its RSS to the process for good. A page evicted while NOT yet idle is
- * just unlinked, same as today's out-of-window behavior -- no correctness
- * change, since list membership was never load-bearing for hz10_free.
+ * returned to Box 4's pool via hz10_pooled_page_destroy(). A page evicted
+ * while NOT yet idle is just unlinked, same as the pre-existing out-of-
+ * window behavior -- no correctness change, since list membership was
+ * never load-bearing for hz10_free.
+ *
+ * IMPORTANT, measured (not assumed) RSS caveat: this reclaim path does
+ * NOT reliably bound RSS in practice, despite bounding list length.
+ * eviction_count/eviction_reclaimed_count (below) were added specifically
+ * to check this, and real workloads (main_r50, main_r90, and the
+ * slot_count=1 row this was originally built for) all show eviction
+ * firing constantly while eviction_reclaimed_count stays at essentially
+ * 0% -- see current_task.md's "class-list diagnostic counters" entry for
+ * the full measurement. Root cause: the one-shot idle check at eviction
+ * time only catches a page that happens to be idle at that exact instant;
+ * under real cross-thread churn a page's last slot is usually freed by
+ * another thread on its own schedule, often just after this page was
+ * already evicted-and-dropped. Do not treat "list length is bounded" as
+ * "RSS is bounded" -- they are two different claims, and only the first
+ * one is currently true.
  */
 
 #define HZ10_CLASS_PAGES_SCAN_LIMIT 128u

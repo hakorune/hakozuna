@@ -19,14 +19,12 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
 
   /* Evict the tail (oldest, least-recently-created page for this class).
    * `page` was just prepended at head, so tail is always a different node
-   * here (length was already >= 1 before this call). */
+   * here, and list->length > HZ10_CLASS_PAGES_SCAN_LIMIT >= 1 guarantees
+   * at least two nodes remain -- evict->prev_in_owner_list is therefore
+   * always non-NULL, no defensive fallback needed. */
   Hz10FreelistPage* evict = list->tail;
   list->tail = evict->prev_in_owner_list;
-  if (list->tail) {
-    list->tail->next_in_owner_list = NULL;
-  } else {
-    list->head = NULL; /* unreachable: length > SCAN_LIMIT >= 1 */
-  }
+  list->tail->next_in_owner_list = NULL;
   list->length -= 1u;
   list->eviction_count += 1u;
 

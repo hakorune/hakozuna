@@ -83,43 +83,33 @@ static void* producer_main(void* raw) {
   return NULL;
 }
 
-/* One repeat cycle: owner allocates every slot on every page, shuffles the
- * flat (slot, owning-page) pairing, producer threads remote-free their
- * static slice concurrently (timed), then the owner drains every page
- * once (timed). Returns 0 on success. */
+/* One repeat cycle: owner allocates every slot on every page (in the
+ * fixed shuffled order slot_page_index[] already describes), producer
+ * threads remote-free their static slice concurrently (timed), then the
+ * owner drains every page once (timed). Returns 0 on success. */
 static int hz10_bench_one_repeat(Hz10FreelistPage** pages, uint32_t classes,
-                                uint32_t* slot_counts, uint32_t total_slots,
-                                void** slots, uint32_t* slot_page_index,
-                                uint32_t threads, pthread_t* thread_ids,
-                                ProducerSlice* args, uint64_t* seed,
+                                uint32_t total_slots, void** slots,
+                                uint32_t* slot_page_index, uint32_t threads,
+                                pthread_t* thread_ids, ProducerSlice* args,
                                 uint64_t* push_ns, uint64_t* drain_ns,
                                 uint64_t* merged_total) {
-  uint32_t cursor = 0;
-  for (uint32_t p = 0; p < classes; ++p) {
-    for (uint32_t s = 0; s < slot_counts[p]; ++s) {
-      void* slot = hz10_freelist_page_alloc(pages[p]);
-      if (!slot) {
-        fprintf(stderr, "setup: alloc failed on class %u slot %u\n", p, s);
-        return 1;
-      }
-      slots[cursor] = slot;
-      slot_page_index[cursor] = p;
-      ++cursor;
+  /* slot_page_index[] is the same fixed, already-shuffled permutation on
+   * every repeat cycle (computed once in hz10_bench_run_classes) -- only
+   * the slot POINTERS actually change cycle to cycle, so only they need
+   * refreshing here, not the shuffle itself. Allocating in this fixed
+   * shuffled order still exhausts each page's full slot_counts[p]
+   * capacity exactly once (each page appears exactly that many times in
+   * the permutation, by construction), just interleaved across classes
+   * instead of grouped by class -- the same "realistic cross-class mix"
+   * property, without re-paying an O(total_slots) shuffle every cycle. */
+  for (uint32_t i = 0; i < total_slots; ++i) {
+    void* slot = hz10_freelist_page_alloc(pages[slot_page_index[i]]);
+    if (!slot) {
+      fprintf(stderr, "setup: alloc failed on class %u slot %u\n",
+              slot_page_index[i], i);
+      return 1;
     }
-  }
-
-  /* Fisher-Yates shuffle of the (slot, page) pairing so each producer's
-   * contiguous slice below is a realistic cross-class mix, not one class
-   * per thread. */
-  for (uint32_t i = total_slots; i > 1u; --i) {
-    uint32_t j = (uint32_t)(hz10_bench_rng_next(seed) % (uint64_t)i);
-    uint32_t k = i - 1u;
-    void* tmp_slot = slots[k];
-    slots[k] = slots[j];
-    slots[j] = tmp_slot;
-    uint32_t tmp_page = slot_page_index[k];
-    slot_page_index[k] = slot_page_index[j];
-    slot_page_index[j] = tmp_page;
+    slots[i] = slot;
   }
 
   uint32_t per_thread = total_slots / threads;
@@ -213,15 +203,35 @@ static int hz10_bench_run_classes(uint32_t classes, uint32_t threads,
     return 1;
   }
 
+  /* Build the (slot, owning-page) permutation once, up front, not once per
+   * repeat cycle: page-grouped order first, then a single Fisher-Yates
+   * shuffle. Every repeat cycle below reuses this exact same shuffled
+   * class assignment -- only the slot POINTERS change cycle to cycle
+   * (fresh allocations), not which class each flat position belongs to,
+   * so there is nothing left to reshuffle per cycle. */
+  uint32_t cursor = 0;
+  for (uint32_t p = 0; p < classes; ++p) {
+    for (uint32_t s = 0; s < slot_counts[p]; ++s) {
+      slot_page_index[cursor++] = p;
+    }
+  }
+  uint64_t seed = 0x2545F4914F6CDD1Dull ^ (uint64_t)classes;
+  for (uint32_t i = total_slots; i > 1u; --i) {
+    uint32_t j = (uint32_t)(hz10_bench_rng_next(&seed) % (uint64_t)i);
+    uint32_t k = i - 1u;
+    uint32_t tmp = slot_page_index[k];
+    slot_page_index[k] = slot_page_index[j];
+    slot_page_index[j] = tmp;
+  }
+
   int failed = 0;
   for (uint32_t run = 1; run <= runs && !failed; ++run) {
-    uint64_t seed = 0x2545F4914F6CDD1Dull ^ (uint64_t)classes;
     uint64_t push_ns = 0, drain_ns = 0, merged_total = 0;
     for (uint64_t r = 0; r < repeat && !failed; ++r) {
-      failed |= hz10_bench_one_repeat(pages, classes, slot_counts,
-                                     total_slots, slots, slot_page_index,
-                                     threads, thread_ids, args, &seed,
-                                     &push_ns, &drain_ns, &merged_total);
+      failed |= hz10_bench_one_repeat(pages, classes, total_slots, slots,
+                                     slot_page_index, threads, thread_ids,
+                                     args, &push_ns, &drain_ns,
+                                     &merged_total);
     }
     if (!failed) {
       uint64_t ops = repeat * (uint64_t)total_slots;
