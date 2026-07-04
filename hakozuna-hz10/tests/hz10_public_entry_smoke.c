@@ -220,6 +220,63 @@ static int check_scan_limit_tradeoff(void) {
   return 0;
 }
 
+/* Case 4b: hz10_public_entry_class_list_stats() (src/hz10_public_entry.h)
+ * reports what check_scan_limit_tradeoff() just did -- length bounded at
+ * HZ10_CLASS_PAGES_SCAN_LIMIT and at least one eviction recorded (that
+ * function's setup guarantees several: it pushes HZ10_CLASS_PAGES_SCAN_
+ * LIMIT + 8 never-freed pages through a slot_count==1 class). Must run
+ * right after check_scan_limit_tradeoff so this reflects that state, not
+ * a fresh one. Does not assert on eviction_reclaimed_count here -- every
+ * page that function's loop evicts still has an outstanding, never-freed
+ * slot (non-idle), so 0 is the correct value for this specific scenario;
+ * the idle-reclaim path itself is tested directly in
+ * tests/hz10_class_pages_smoke.c, where a fabricated idle tail can be
+ * constructed without hz10_malloc's own state->active reuse getting in
+ * the way first. */
+static int check_class_list_stats_accessor(void) {
+  uint32_t class_id = hz10_size_class_for(65536u);
+  if (class_id >= HZ10_CLASS_COUNT) {
+    fprintf(stderr, "class_list_stats: no class for probe size\n");
+    return 1;
+  }
+
+  uint32_t length = 0u;
+  uint64_t eviction_count = 0u;
+  uint64_t eviction_reclaimed_count = 0u;
+  hz10_public_entry_class_list_stats(class_id, &length, &eviction_count,
+                                     &eviction_reclaimed_count);
+
+  if (length != HZ10_CLASS_PAGES_SCAN_LIMIT) {
+    fprintf(stderr, "class_list_stats: length=%u, expected %u\n", length,
+            HZ10_CLASS_PAGES_SCAN_LIMIT);
+    return 1;
+  }
+  if (eviction_count == 0u) {
+    fprintf(stderr,
+            "class_list_stats: eviction_count=0, expected > 0 after "
+            "check_scan_limit_tradeoff's setup\n");
+    return 1;
+  }
+
+  /* Out-of-range class_id is a documented no-op, not undefined behavior --
+   * seed the outputs with sentinel values first so a no-op is actually
+   * observable. */
+  uint32_t oob_length = 999u;
+  uint64_t oob_eviction = 999u;
+  uint64_t oob_reclaimed = 999u;
+  hz10_public_entry_class_list_stats(HZ10_CLASS_COUNT, &oob_length,
+                                     &oob_eviction, &oob_reclaimed);
+  if (oob_length != 0u || oob_eviction != 0u || oob_reclaimed != 0u) {
+    fprintf(stderr,
+            "class_list_stats: out-of-range class_id was not a no-op "
+            "(length=%u eviction=%llu reclaimed=%llu)\n",
+            oob_length, (unsigned long long)oob_eviction,
+            (unsigned long long)oob_reclaimed);
+    return 1;
+  }
+  return 0;
+}
+
 /* Case 5: basic large-object path (src/hz10_large_alloc.h) -- sizes at and
  * beyond HZ10_PAGE_QUANTUM+1 must now succeed (they used to be rejected
  * outright), the full requested range must be genuinely writable (not just
@@ -362,14 +419,17 @@ int main(void) {
   if (check_scan_limit_tradeoff()) {
     return 6;
   }
-  if (check_large_alloc_basic()) {
+  if (check_class_list_stats_accessor()) {
     return 7;
   }
-  if (check_large_alloc_edges()) {
+  if (check_large_alloc_basic()) {
     return 8;
   }
-  if (check_cross_thread_free()) {
+  if (check_large_alloc_edges()) {
     return 9;
+  }
+  if (check_cross_thread_free()) {
+    return 10;
   }
 
   puts("hz10_public_entry_smoke ok");

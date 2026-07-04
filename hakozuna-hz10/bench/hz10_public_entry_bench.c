@@ -1,8 +1,10 @@
 #include "../src/hz10_pagemap.h"
 #include "../src/hz10_platform.h"
 #include "../src/hz10_public_entry.h"
+#include "../src/hz10_size_class.h"
 
 #include <pthread.h>
+#include <stdatomic.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -105,6 +107,38 @@ static long hz10_bench_maxrss_kb(void) {
   return getrusage(RUSAGE_SELF, &usage) == 0 ? usage.ru_maxrss : -1;
 }
 
+/*
+ * Optional, opt-in (HZ10_DUMP_CLASS_STATS=1): aggregates Box 6's per-class
+ * eviction/reclaim counters (src/hz10_class_pages.h, read via
+ * hz10_public_entry_class_list_stats()) across every worker thread and
+ * class, right before each thread's TLS state disappears at pthread_join.
+ * Added specifically to check the main_r50/main_r90 RSS finding in
+ * current_task.md against a real workload instead of only the isolated
+ * unit tests: does this row's classes ever actually reach
+ * HZ10_CLASS_PAGES_SCAN_LIMIT and trigger an eviction, and if so, how
+ * often is the evicted page idle (reclaimed) vs not? Off by default --
+ * zero cost for every other bench run through this file. */
+static int hz10_bench_dump_class_stats;
+static _Atomic(uint64_t) hz10_bench_class_length_sum;
+static _Atomic(uint64_t) hz10_bench_class_eviction_sum;
+static _Atomic(uint64_t) hz10_bench_class_reclaimed_sum;
+
+static void hz10_bench_collect_class_stats(void) {
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    uint32_t length = 0u;
+    uint64_t eviction_count = 0u;
+    uint64_t eviction_reclaimed_count = 0u;
+    hz10_public_entry_class_list_stats(c, &length, &eviction_count,
+                                       &eviction_reclaimed_count);
+    atomic_fetch_add_explicit(&hz10_bench_class_length_sum, length,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_class_eviction_sum, eviction_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_class_reclaimed_sum,
+                              eviction_reclaimed_count, memory_order_relaxed);
+  }
+}
+
 typedef struct WorkerArg {
   uint32_t tid;
   uint32_t threads;
@@ -156,6 +190,13 @@ static void* hz10_bench_worker(void* raw) {
   hz10_bench_inbox_drain(&arg->inboxes[arg->tid], free_fn);
   pthread_barrier_wait(arg->barrier);
   hz10_bench_inbox_drain(&arg->inboxes[arg->tid], free_fn);
+
+  /* Must read this thread's class-list stats here, before returning --
+   * its TLS state (src/hz10_public_entry.c's hz10_class_state) is gone
+   * once this thread has exited and the caller has joined it. */
+  if (arg->use_hz10 && hz10_bench_dump_class_stats) {
+    hz10_bench_collect_class_stats();
+  }
   return NULL;
 }
 
@@ -174,6 +215,15 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   for (uint32_t t = 0; t < threads; ++t) {
     /* capacity: worst case every alloc from every other thread lands here */
     hz10_bench_inbox_init(&inboxes[t], iters * threads + 1u);
+  }
+
+  if (use_hz10 && hz10_bench_dump_class_stats) {
+    atomic_store_explicit(&hz10_bench_class_length_sum, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_class_eviction_sum, 0u,
+                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_class_reclaimed_sum, 0u,
+                          memory_order_relaxed);
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -224,6 +274,20 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
       mech, threads, (unsigned long long)iters, (unsigned long long)ops, run,
       runs, min_size, max_size, remote_pct, seconds, (double)ops / seconds,
       hz10_bench_maxrss_kb());
+
+  if (use_hz10 && hz10_bench_dump_class_stats) {
+    printf(
+        "hz10_public_entry_class_stats mech=%s run=%u/%u "
+        "total_length_sum=%llu total_eviction_count=%llu "
+        "total_eviction_reclaimed_count=%llu\n",
+        mech, run, runs,
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_class_length_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_class_eviction_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_class_reclaimed_sum, memory_order_relaxed));
+  }
   return 0;
 }
 
@@ -235,6 +299,8 @@ int main(void) {
   uint32_t remote_pct = (uint32_t)hz10_bench_env_u64("REMOTE_PCT", 0ull);
   uint32_t runs = (uint32_t)hz10_bench_env_u64("RUNS", 1ull);
   uint32_t mode = (uint32_t)hz10_bench_env_u64("MODE", 2ull); /* 2 = both */
+  hz10_bench_dump_class_stats =
+      hz10_bench_env_u64("HZ10_DUMP_CLASS_STATS", 0ull) != 0ull;
 
   if (threads == 0u || min_size == 0u || max_size < min_size) {
     fprintf(stderr, "invalid THREADS/MIN_SIZE/MAX_SIZE\n");

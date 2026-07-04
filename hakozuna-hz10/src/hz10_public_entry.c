@@ -96,3 +96,27 @@ int hz10_free(void* ptr) {
   }
   return hz10_page_remote_free(page, ptr, route.generation) ? 1 : 0;
 }
+
+void hz10_public_entry_class_list_stats(uint32_t class_id,
+                                        uint32_t* length_out,
+                                        uint64_t* eviction_count_out,
+                                        uint64_t* eviction_reclaimed_count_out) {
+  uint32_t length = 0u;
+  uint64_t eviction_count = 0u;
+  uint64_t eviction_reclaimed_count = 0u;
+  if (class_id < HZ10_CLASS_COUNT) {
+    const Hz10ClassPageList* list = &hz10_class_state[class_id].list;
+    length = list->length;
+    eviction_count = list->eviction_count;
+    eviction_reclaimed_count = list->eviction_reclaimed_count;
+  }
+  if (length_out) {
+    *length_out = length;
+  }
+  if (eviction_count_out) {
+    *eviction_count_out = eviction_count;
+  }
+  if (eviction_reclaimed_count_out) {
+    *eviction_reclaimed_count_out = eviction_reclaimed_count;
+  }
+}
