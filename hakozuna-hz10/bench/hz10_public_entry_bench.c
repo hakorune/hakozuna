@@ -116,10 +116,11 @@ static long hz10_bench_maxrss_kb(void) {
  * Added specifically to check the main_r50/main_r90 RSS finding in
  * current_task.md against a real workload instead of only the isolated
  * unit tests: does this row's classes ever actually reach
- * HZ10_CLASS_PAGES_SCAN_LIMIT, and once the active/retired two-list
- * redesign landed, how much of the resulting `retired` traffic does
- * hz10_class_pages_sweep_retired() actually reclaim vs. drop? Off by
- * default -- zero cost for every other bench run through this file. */
+ * HZ10_CLASS_PAGES_SCAN_LIMIT, and of the resulting `retired` traffic, how
+ * much does hz10_class_pages_harvest_retired_capacity() destroy (fully
+ * idle) vs. promote back to `active` (partial capacity) vs. leave
+ * untouched? Off by default -- zero cost for every other bench run
+ * through this file. */
 static int hz10_bench_dump_class_stats;
 static _Atomic(uint64_t) hz10_bench_active_length_sum;
 static _Atomic(uint64_t) hz10_bench_retired_length_sum;
@@ -128,6 +129,8 @@ static _Atomic(uint64_t) hz10_bench_eviction_count_sum;
 static _Atomic(uint64_t) hz10_bench_eviction_reclaimed_sum;
 static _Atomic(uint64_t) hz10_bench_retired_count_sum;
 static _Atomic(uint64_t) hz10_bench_retired_reclaimed_sweep_sum;
+static _Atomic(uint64_t) hz10_bench_retired_promoted_sweep_sum;
+static _Atomic(uint64_t) hz10_bench_harvest_call_sum;
 
 static void hz10_bench_atomic_max_u64(_Atomic(uint64_t)* target,
                                     uint64_t candidate) {
@@ -159,6 +162,11 @@ static void hz10_bench_collect_class_stats(void) {
     atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_sweep_sum,
                               stats.retired_reclaimed_by_sweep_count,
                               memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_promoted_sweep_sum,
+                              stats.retired_promoted_by_sweep_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_harvest_call_sum,
+                              stats.harvest_call_count, memory_order_relaxed);
   }
 }
 
@@ -248,6 +256,8 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_eviction_reclaimed_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_count_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_reclaimed_sweep_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_promoted_sweep_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_harvest_call_sum, 0u, memory_order_relaxed);
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -306,7 +316,8 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         "active_length_sum=%llu retired_length_sum=%llu "
         "max_retired_length=%llu eviction_count=%llu "
         "eviction_reclaimed_count=%llu retired_count=%llu "
-        "retired_reclaimed_by_sweep=%llu\n",
+        "retired_reclaimed_by_sweep=%llu retired_promoted_by_sweep=%llu "
+        "harvest_call_count=%llu\n",
         mech, run, runs, HZ10_CLASS_PAGES_SWEEP_BUDGET,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_active_length_sum, memory_order_relaxed),
@@ -321,7 +332,11 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_retired_count_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed));
+            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_promoted_sweep_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_harvest_call_sum, memory_order_relaxed));
   }
   return 0;
 }

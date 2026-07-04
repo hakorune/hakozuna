@@ -29,13 +29,17 @@
  *     each candidate, bounded to HZ10_CLASS_PAGES_SCAN_LIMIT pages) before
  *     paying for a fresh one. The active list is bounded to
  *     HZ10_CLASS_PAGES_SCAN_LIMIT pages; a page evicted from it but not
- *     yet idle moves to a separate, also-bounded `retired` list instead
+ *     yet idle moves to a separate, unbounded `retired` list instead
  *     of being dropped outright, and hz10_malloc's own slow path (right
- *     after a genuine miss, before paying for a fresh page) sweeps a
- *     small budget of it looking for pages that have since become idle
- *     -- see src/hz10_class_pages.h for the full two-list design and why
- *     an earlier one-shot-at-eviction version measured as an almost-total
- *     miss under real remote-free churn
+ *     after a genuine miss, before paying for a fresh page) harvests a
+ *     small budget of it: a page found fully idle is destroyed, and one
+ *     found with only PARTIAL capacity back (not idle, but usable) is
+ *     promoted straight back into `active` for immediate reuse instead of
+ *     waiting on the rest of its slots to free too -- see
+ *     src/hz10_class_pages.h for the full two-list design, why an earlier
+ *     one-shot-at-eviction version measured as an almost-total miss under
+ *     real remote-free churn, and why waiting for full idle alone measured
+ *     as a dead end for multi-slot classes
  *   - free() takes no generation from the caller (real free() can't carry
  *     one), so it always routes with HZ10_GENERATION_ANY; the
  *     generation-mismatch contract that Box 1-4's own smokes exercise
@@ -62,6 +66,8 @@ typedef struct Hz10ClassPageListStats {
   uint64_t eviction_reclaimed_count;
   uint64_t retired_count;
   uint64_t retired_reclaimed_by_sweep_count;
+  uint64_t retired_promoted_by_sweep_count;
+  uint64_t harvest_call_count;
 } Hz10ClassPageListStats;
 
 /*

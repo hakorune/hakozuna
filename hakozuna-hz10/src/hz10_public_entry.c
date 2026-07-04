@@ -60,12 +60,18 @@ void* hz10_malloc(size_t size) {
   }
 
   /* Genuine miss: about to pay for a fresh page below, so this is exactly
-   * the moment a retired-list reclaim pays off most -- a page swept back
-   * to Box 4's pool right here can be picked up immediately by this same
-   * call's pool-acquire-first check inside hz10_pooled_page_create_with_
-   * owner(). Slow path only, bounded cost (HZ10_CLASS_PAGES_SWEEP_BUDGET),
-   * never on the hot per-op alloc path above -- see src/hz10_class_pages.h. */
-  hz10_class_pages_sweep_retired(&state->list);
+   * the moment a retired-list harvest pays off most -- a page found idle
+   * right here is destroyed and returned to Box 4's pool, and one found
+   * with only partial capacity is promoted straight back into `active`
+   * and handed back below, skipping the fresh-page cost entirely. Slow
+   * path only, bounded cost (HZ10_CLASS_PAGES_SWEEP_BUDGET), never on the
+   * hot per-op alloc path above -- see src/hz10_class_pages.h. */
+  Hz10FreelistPage* harvested =
+      hz10_class_pages_harvest_retired_capacity(&state->list);
+  if (harvested) {
+    state->active = harvested;
+    return hz10_freelist_page_alloc(harvested);
+  }
 
   uint32_t slot_size = hz10_size_class_slot_size(class_id);
   uint32_t slot_count = hz10_size_class_slot_count(class_id);
@@ -123,4 +129,7 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
   stats_out->retired_count = list->retired_count;
   stats_out->retired_reclaimed_by_sweep_count =
       list->retired_reclaimed_by_sweep_count;
+  stats_out->retired_promoted_by_sweep_count =
+      list->retired_promoted_by_sweep_count;
+  stats_out->harvest_call_count = list->harvest_call_count;
 }

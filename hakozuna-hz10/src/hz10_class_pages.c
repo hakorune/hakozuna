@@ -50,7 +50,15 @@ static void hz10_page_sublist_remove(Hz10PageSublist* sub,
   sub->length -= 1u;
 }
 
-void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
+/* Shared by hz10_class_pages_add() (a brand-new page) and
+ * hz10_class_pages_harvest_retired_capacity() (a page promoted back from
+ * `retired`): prepend to `active`'s head, and if that pushes length past
+ * SCAN_LIMIT, evict the tail -- destroying it if a drain confirms it is
+ * now fully idle, otherwise handing it to `retired` instead of dropping
+ * it (see the module comment). At most one eviction per call, same O(1)
+ * amortized cost either caller relies on. */
+static void hz10_class_pages_prepend_active_with_eviction(
+    Hz10ClassPageList* list, Hz10FreelistPage* page) {
   hz10_page_sublist_prepend(&list->active, page);
 
   if (list->active.length <= HZ10_CLASS_PAGES_SCAN_LIMIT) {
@@ -83,6 +91,10 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
   }
 }
 
+void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
+  hz10_class_pages_prepend_active_with_eviction(list, page);
+}
+
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(
     Hz10ClassPageList* list) {
   uint32_t scanned = 0u;
@@ -99,11 +111,14 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(
   return NULL;
 }
 
-void hz10_class_pages_sweep_retired(Hz10ClassPageList* list) {
+Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
+    Hz10ClassPageList* list) {
   /* Resume from the cursor left by the last call (or `retired`'s tail if
    * there wasn't one, or the last call walked off the head end) -- see
    * the module comment for why restarting from the tail every call
    * measured as a head-of-line-blocking dead end. */
+  list->harvest_call_count += 1u;
+
   Hz10FreelistPage* node = list->retired_sweep_cursor;
   if (!node) {
     node = list->retired.tail;
@@ -111,18 +126,34 @@ void hz10_class_pages_sweep_retired(Hz10ClassPageList* list) {
 
   uint32_t checked = 0u;
   while (node && checked < HZ10_CLASS_PAGES_SWEEP_BUDGET) {
-    /* Save prev (toward head) before a possible reclaim unlinks `node`. */
+    /* Save prev (toward head) before this node possibly gets unlinked. */
     Hz10FreelistPage* prev = node->prev_in_owner_list;
     hz10_page_drain_remote(node);
+
     if (node->free_count == node->slot_count) {
+      /* Fully idle: nothing left to reuse, just reclaim it. */
       hz10_page_sublist_remove(&list->retired, node);
       list->retired_reclaimed_by_sweep_count += 1u;
       hz10_pooled_page_destroy(node);
+    } else if (node->local_free_head) {
+      /* Partial capacity: don't wait for the rest to come back too --
+       * promote it into `active` right now and hand it to the caller,
+       * who is about to pay for a fresh page otherwise (see the module
+       * comment on RetiredPartialReuse-L1). */
+      hz10_page_sublist_remove(&list->retired, node);
+      list->retired_promoted_by_sweep_count += 1u;
+      hz10_class_pages_prepend_active_with_eviction(list, node);
+      list->retired_sweep_cursor = prev;
+      return node;
     }
+    /* Else: still fully non-idle, no capacity to offer -- leave it in
+     * place for a future call to re-check. */
+
     node = prev;
     ++checked;
   }
   /* NULL here (walked off the head end) correctly means "start fresh
    * from the tail" on the next call, same as an empty cursor today. */
   list->retired_sweep_cursor = node;
+  return NULL;
 }
