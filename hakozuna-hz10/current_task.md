@@ -104,6 +104,16 @@ status:
     (3) DONE: revisited RSS growth -- the Box6/Box4 wiring fix helps
         slot_count=1 specifically, does not meaningfully change
         main_r50/r90's RSS growth (see below for why)
+    (5) DONE: implemented RetiredPartialReuse-L1 (promote partial-capacity
+        retired pages back to active instead of only destroying fully-idle
+        ones -- see "RetiredPartialReuse-L1 implemented and measured"
+        below). Correctly implemented and verified (unit test, isolated
+        mechanism test, and confirmed to fire given 6x the iteration
+        budget), but measures as exactly zero effect on main_r50/main_r90
+        at the established benchmark scale -- root-caused to a rate
+        mismatch (harvest runs constantly but the specific pages it
+        inspects resolve far too slowly), not a bug. main_r50/r90's RSS
+        growth is STILL OPEN; see that section's "next concrete step"
     bench/README.md update still deferred: the real ops/s gap for
     main_r50/r90 and slot_count=1 (~0.48 both, after correction) remains
     open and unattributed to a specific line -- see "next" below for the
@@ -1336,6 +1346,137 @@ reported honestly (throughput mostly clears the bar, RSS does not):
   design entirely)
   files: scripts/run_hz10_public_entry_vs_hz8_same_run.sh (new),
   bench/lib/hz10_bench_common.sh
+
+RetiredPartialReuse-L1 implemented and measured -- mechanism proven
+correct, real-workload effect on main_r50/r90 is exactly zero, and the
+reason why is now understood mechanistically instead of just observed
+(src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c):
+  design (external review, ChatGPT Pro, after being shown the "retired
+  cursor fix" section above and asked for a design given "main_r50/r90's
+  multi-slot pages doubly confirmed to never reach free_count ==
+  slot_count"): stop requiring 100% idle before a retired page can be
+  reused. hz10_class_pages_sweep_retired() (void, destroy-only) replaced
+  with hz10_class_pages_harvest_retired_capacity() (returns
+  Hz10FreelistPage*): same budgeted, cursor-resumed walk as before, but
+  now checks free_count==slot_count (destroy, as before) OR
+  local_free_head != NULL (PARTIAL capacity -- promote straight back into
+  `active` via the same prepend-with-eviction path hz10_class_pages_add()
+  uses, and return this page directly so the caller can allocate from it
+  immediately instead of paying for a fresh page). Idle takes priority
+  over partial when both are true. New counter
+  retired_promoted_by_sweep_count alongside the existing
+  retired_reclaimed_by_sweep_count, split by which of the two happened
+  verified the technical premise directly from source before implementing
+  (this session's established discipline): hz10_page_drain_remote()
+  (src/hz10_remote_stack.c) merges into local_free_head and increments
+  free_count on ANY drain, not just one that reaches 100%; hz10_freelist_
+  page_alloc() pops from local_free_head unconditionally -- so a
+  "partial" page is genuinely, correctly allocatable, not a theoretical
+  possibility
+  smoke test rework required before trusting the new logic (caught by
+  re-reading the existing fixtures against the new promote condition, not
+  by a failing test): the existing "busy filler" helper allocated only 1
+  of 16 slots per filler page, leaving the other 15 sitting on
+  local_free_head from creation -- already "partial" by the new
+  definition, silently breaking cases 3-5's "this filler must never be
+  reclaimed/promoted" assumption. Fixed by fully exhausting every busy
+  filler/target/stuck page (all slots allocated, zero capacity, not just
+  fewer) before eviction in every case that needs a genuinely
+  zero-capacity page, and adding a new case 6 that directly exercises the
+  promote path (create, fully exhaust, evict to retired, free 5 of 16,
+  harvest, assert: returned page is the candidate, now in `active`, not
+  `retired`, retired_promoted_by_sweep_count==1, and is actually
+  allocatable afterward)
+  new diagnostic-only counter added while measuring, not part of the
+  original design: harvest_call_count (Hz10ClassPageList, wired through
+  hz10_public_entry_class_list_stats() and the bench's stats dump) --
+  needed to distinguish "harvest is never reached for this workload
+  shape" from "harvest runs constantly but finds nothing in its budget,"
+  which look identical if you only have the destroy/promote counters
+  measured against main_r50, main_r90, and slot_count=1 (THREADS=4
+  ITERS=500000 RUNS=10 MODE=0, the same locked-in methodology as every
+  other row in this file):
+    main_r50: retired_reclaimed_by_sweep and retired_promoted_by_sweep
+      BOTH exactly 0 across all 10 runs -- but harvest_call_count is
+      1,011-3,918 per run, proving harvest IS being reached constantly
+      (this sharpens, not just repeats, the earlier "doubly confirmed
+      zero" finding: it is not a reachability problem). post_rss_kb still
+      climbs monotonically, 28,928 -> 638,096 KB across the 10 runs
+    main_r90: same pattern -- 0 and 0 across all 10 runs,
+      harvest_call_count 1,931-7,725 per run, post_rss_kb climbing
+      185,984 -> 1,120,440 KB
+    slot_count=1: retired_reclaimed_by_sweep small but nonzero (3-69 per
+      run vs 5,000-21,000+ evictions), consistent with the prior cursor-
+      fix measurement; retired_promoted_by_sweep is EXACTLY 0 in every
+      run -- expected and structurally correct, not a bug: a 1-slot page
+      can only ever be fully idle (1/1 free) or fully exhausted (0/1
+      free), never "partial" by definition. post_rss_kb still climbs
+      monotonically, 49,664 -> 935,540 KB
+  root-caused the exact-zero result before accepting it (this session's
+  "measure, don't assume" rule applied one level deeper than usual, since
+  the counters alone could not distinguish a bug from a genuine rate
+  problem): added a temporary HZ10_DEBUG_HARVEST_PRINT build flag (not
+  committed -- reverted after use) to print every node harvest actually
+  inspected. First verified the drain+classify mechanism itself in
+  complete isolation (a standalone 2-slot page, both slots remote-freed
+  from a real second pthread, then drained) -- worked correctly on the
+  first try, free_count went 0 -> 2 as expected, ruling out a mechanism
+  bug. Then found, from the debug prints against the real bench, that
+  main_r50/r90 (MIN_SIZE=16 MAX_SIZE=32768, sizes drawn UNIFORMLY BY BYTE
+  VALUE) spend the large majority of allocations in the class nearest
+  MAX_SIZE, because most integers in a uniform [16,32768] range are large
+  -- for size=32768 specifically that is class 21, slot_count=2
+  (65536/32768). Every single node harvest inspected in a THREADS=4
+  ITERS=500000 REMOTE_PCT=50 run (2,548-4,852 checks logged) showed
+  free_count=0, slot_count=2, remote_invalid_count=0, remote_duplicate_
+  count=0 -- not rejected, simply never yet resolved. Re-ran the same
+  single-class shape (MIN_SIZE=MAX_SIZE=32768) at 3,000,000 iters/thread
+  (6x the locked-in budget) and DID see resolution: 84 destroys + 14
+  promotes out of 40,830 checks (~0.24%) -- proving the mechanism does
+  eventually work given enough time, just far too slowly to register at
+  all within the established 500,000-iteration budget
+  conclusion: RetiredPartialReuse-L1 is correctly implemented (unit-
+  tested, isolated-mechanism-tested, and confirmed to fire given enough
+  iterations) but provides no measurable benefit for main_r50/main_r90 at
+  this project's established benchmark scale. This is not a traversal bug
+  or a premature-drop artifact (both already ruled out in the cursor-fix
+  entry above) and not a reachability problem either (harvest_call_count
+  proves it runs constantly) -- it is a rate mismatch: the specific pages
+  that reach `retired` are, by the very selection mechanism of eviction
+  itself, precisely the ones whose outstanding objects are ALL still
+  in-flight via cross-thread remote-free channels (a page that recovers
+  even one slot locally gets reused immediately and rarely accumulates
+  enough active-list pressure to be evicted at all), and resolving that
+  requires both another thread's own periodic drain AND this thread's
+  cursor revisiting that exact page again -- a combination that this
+  measurement shows resolves at roughly 0.24% per check even after 6x the
+  standard iteration budget. Waiting for partial capacity is a strictly
+  weaker bar than waiting for full idle, and unambiguously fixes the
+  design flaw the two external reviews correctly identified, but "weaker
+  bar" and "reachable within this benchmark's timeframe" are different
+  properties -- this measurement shows the row this was aimed at needs
+  the latter, which this fix alone does not supply
+  next concrete step for whoever continues this: the RSS problem for
+  main_r50/r90 needs a trigger that does not depend on this specific
+  thread revisiting this specific page fast enough relative to remote-
+  free traffic -- e.g. reclaiming/decommitting at the OS-page (not
+  Hz10FreelistPage-quantum) granularity so a page's memory can be
+  returned even while some of its slots are still logically outstanding,
+  or a fundamentally different ownership/recovery model for the remote-
+  heavy multi-slot case. A larger HZ10_CLASS_PAGES_SWEEP_BUDGET was not
+  tried this round (the 6x-iteration test above suggests the bottleneck
+  is call COUNT over a long enough timeframe, not budget-per-call, but
+  this is inference, not measurement -- verify before assuming)
+  re-verified: all 6 smokes (case 6 new, cases 3-5 reworked for full
+  slot exhaustion), ASan/UBSan (ASAN_OPTIONS=detect_leaks=0, both the
+  smokes and bench/hz10_public_entry_bench.c under main_r50-shaped and
+  slot_count=1-shaped real workloads), TSan (ASLR off via
+  `setarch $(uname -m) -R`, same two workload shapes), hz10-standalone-
+  check, and the never-free regression bench (last_over_first ~0.90-1.04
+  across reruns, flat) all green
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+  tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
