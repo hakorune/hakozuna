@@ -1,0 +1,18 @@
+## main_r50
+hz10_public_entry_steady_state threads=4 run_seconds=8 min_size=16 max_size=32768 remote_pct=50 checkpoints=4
+  wall_seconds=8.000 total_ops=106707860 ops_per_s=13338007.36 post_rss_kb=18688
+  [checkpoint 1/4] active_length=224 retired_length=0 retired_count=0 harvest_calls=224 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 2/4] active_length=231 retired_length=0 retired_count=0 harvest_calls=231 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 3/4] active_length=260 retired_length=0 retired_count=0 harvest_calls=260 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 4/4] active_length=443 retired_length=0 retired_count=0 harvest_calls=443 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [steady_state (pre-flush)] active_length=532 retired_length=0 retired_count=0 harvest_calls=532 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [post_flush] active_length=532 retired_length=0 retired_count=0 harvest_calls=532 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+## main_r90
+hz10_public_entry_steady_state threads=4 run_seconds=8 min_size=16 max_size=32768 remote_pct=90 checkpoints=4
+  wall_seconds=8.000 total_ops=68971632 ops_per_s=8621146.42 post_rss_kb=15488
+  [checkpoint 1/4] active_length=294 retired_length=0 retired_count=0 harvest_calls=294 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 2/4] active_length=358 retired_length=0 retired_count=0 harvest_calls=358 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 3/4] active_length=359 retired_length=0 retired_count=0 harvest_calls=359 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [checkpoint 4/4] active_length=360 retired_length=0 retired_count=0 harvest_calls=360 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [steady_state (pre-flush)] active_length=417 retired_length=0 retired_count=0 harvest_calls=417 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0
+  [post_flush] active_length=417 retired_length=0 retired_count=0 harvest_calls=417 reclaimed_by_sweep=0 promoted_by_sweep=0 reclaimed_by_ready=0 promoted_by_ready=0 ready_false_positive=0 ready_push=0

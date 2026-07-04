@@ -60,6 +60,18 @@ main_r90-style one). `mech=system_malloc` is the always-available same-run
 reference; a real HZ8/HZ9/tcmalloc/mimalloc row is `HZ10_EXT_ROOT` territory
 (Box 1's same-run script pattern), not something this C binary links.
 
+Two follow-up public-entry shapes exist for methodology checks:
+`hz10_public_entry_steady_state_bench` is a true continuous, time-based
+worker run with periodic allocator stats; use it to decide whether RSS or
+retired-page growth exists during one live thread population. On the
+20260705 main_r50/r90 recheck, retired_count stayed exactly 0 and RSS stayed
+low, so the RUNS=10 fixed-iteration RSS climb is not currently treated as
+proof of unbounded steady-state allocator growth.
+`hz10_public_entry_thread_reuse_bench` intentionally keeps worker threads
+alive across fixed segments, but segment barriers create remote-inbox
+backlog; treat it as a boundary-stress diagnostic, not as the steady-state
+RSS authority.
+
 Measured findings, reported honestly rather than assumed:
 
 ```text

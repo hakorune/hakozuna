@@ -134,7 +134,11 @@ status:
       diagnostic counters added afterward confirmed why: reclaim almost
       never fires in any row (see "class-list diagnostic counters + real-
       workload check done" further down for the full, corrected finding).
-      This RSS growth is still open, not resolved, in every row tested
+      UPDATE: this wording is now too strong. A true continuous steady-state
+      recheck (see the Next HZ10 action note below) does NOT reproduce
+      main_r50/main_r90 retired-page growth. Keep the locked-in RUNS=10 RSS
+      growth as a bench-lifecycle/thread-boundary finding, not as proof of
+      unbounded allocator steady-state RSS growth.
 
   Validation read:
     standalone check and normal smokes pass
@@ -145,7 +149,7 @@ status:
       calling it a release gate.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
-    (0) CURRENT: resolve the main_r50/r90 RSS contradiction before designing
+    (0) DONE: resolve the main_r50/r90 RSS contradiction before designing
         any thread-lifecycle hook. True continuous steady-state
         (bench/hz10_public_entry_steady_state_bench.c) reports active_length
         stabilizing after ramp-up and retired_count staying exactly 0, while
@@ -168,6 +172,19 @@ status:
         continuous 5s run completed ~63.3M ops with retired_count=0 and
         RSS ~25MB. Therefore thread-reuse is now classified as a
         boundary-stress diagnostic, not a true steady-state RSS proof.
+        RECHECK 20260705:
+        log: bench_results/20260704T210540Z_hz10_steady_rss_recheck/combined.log
+        THREADS=4 RUN_SECONDS=8 CHECKPOINTS=4 MIN=16 MAX=32768:
+          main_r50 REMOTE_PCT=50:
+            total_ops=106.7M, ops/s=13.34M, post_rss_kb=18,688;
+            retired_count stayed 0 at every checkpoint and post_flush.
+          main_r90 REMOTE_PCT=90:
+            total_ops=68.97M, ops/s=8.62M, post_rss_kb=15,488;
+            retired_count stayed 0 at every checkpoint and post_flush.
+        Decision: do not open a large HZ8-style reclaim/thread-lifecycle
+        port based only on the RUNS=10 locked-in RSS shape. It targets a
+        bench lifecycle artifact unless a real continuous workload reproduces
+        the growth.
     (1) DONE: perf stat + strace pass on main_r50/main_r90 found and fixed
         two real over-scoped locks (src/hz10_freelist_page.c's
         quantum-region lock, src/hz10_page_pool.c's pool lock -- see
