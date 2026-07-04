@@ -85,6 +85,29 @@ status:
       calling it a release gate.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
+    (0) CURRENT: resolve the main_r50/r90 RSS contradiction before designing
+        any thread-lifecycle hook. True continuous steady-state
+        (bench/hz10_public_entry_steady_state_bench.c) reports active_length
+        stabilizing after ramp-up and retired_count staying exactly 0, while
+        the thread-reuse segmented bench reports retired_count and RSS
+        increasing segment by segment under a nominally identical main_r50
+        shape. Treat the workloads as NOT equivalent until proven otherwise.
+        Next diagnostic box: compare continuous periodic stats against
+        segmented boundary stats, with special attention to segment-end
+        drain/flush/barrier/live-set reset behavior. Do not start the
+        larger thread-exit cleanup design until this contradiction is
+        explained.
+        UPDATE: the first diagnostic pass explains the contradiction as a
+        bench-shape difference, not allocator steady-state growth. With
+        THREADS=4 ITERS=500000 RUNS=5 MIN=16 MAX=32768 REMOTE_PCT=50,
+        thread-reuse showed retired_count 319 -> 5790 and RSS 30MB ->
+        118MB, but also boundary_inbox_count 2860 -> 8519: fast workers
+        stop at the segment barrier while slower workers keep pushing
+        remote frees into their inboxes, so the boundary itself creates
+        a remote-free backlog and eventual retire pressure. The matching
+        continuous 5s run completed ~63.3M ops with retired_count=0 and
+        RSS ~25MB. Therefore thread-reuse is now classified as a
+        boundary-stress diagnostic, not a true steady-state RSS proof.
     (1) DONE: perf stat + strace pass on main_r50/main_r90 found and fixed
         two real over-scoped locks (src/hz10_freelist_page.c's
         quantum-region lock, src/hz10_page_pool.c's pool lock -- see

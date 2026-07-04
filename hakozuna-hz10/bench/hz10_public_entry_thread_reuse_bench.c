@@ -39,8 +39,13 @@
  * blend its next segment's counters into the one main is about to
  * print/reset) -- it does NOT gate the actual work loop itself, which
  * runs continuously exactly like a real long-running process would;
- * the barrier is paid only twice per segment (10 segments, 4 threads),
- * not per-op, so it cannot meaningfully affect the measured throughput.
+ * Important diagnostic caveat: the barrier is NOT allocator-neutral for
+ * remote-heavy rows. A fast worker waits at the segment boundary while
+ * slower workers can still push remote frees into its inbox; those frees
+ * cannot be drained until the next segment starts. The printed
+ * boundary_inbox_count/boundary_inbox_max fields expose that backlog.
+ * If they are non-zero, this is a boundary-stress workload, not a true
+ * continuous steady-state workload.
  */
 
 typedef struct Hz10BenchInbox {
@@ -78,6 +83,14 @@ static void hz10_bench_inbox_drain(Hz10BenchInbox* box,
   }
   box->count = 0;
   hz10_platform_mutex_unlock(&box->lock);
+}
+
+static size_t hz10_bench_inbox_count(const Hz10BenchInbox* box) {
+  Hz10BenchInbox* mutable_box = (Hz10BenchInbox*)box;
+  hz10_platform_mutex_lock(&mutable_box->lock);
+  size_t count = mutable_box->count;
+  hz10_platform_mutex_unlock(&mutable_box->lock);
+  return count;
 }
 
 static void hz10_bench_free_hz10(void* ptr) {
@@ -302,13 +315,23 @@ int main(void) {
     uint64_t ops = iters * (uint64_t)threads;
     struct rusage usage;
     long rss_kb = getrusage(RUSAGE_SELF, &usage) == 0 ? usage.ru_maxrss : -1;
+    size_t boundary_inbox_count = 0u;
+    size_t boundary_inbox_max = 0u;
+    for (uint32_t t = 0; t < threads; ++t) {
+      size_t count = hz10_bench_inbox_count(&inboxes[t]);
+      boundary_inbox_count += count;
+      if (count > boundary_inbox_max) {
+        boundary_inbox_max = count;
+      }
+    }
     printf(
         "hz10_public_entry_thread_reuse run=%u/%u seconds=%.6f "
         "ops_per_s=%.2f post_rss_kb=%ld active_length_sum=%llu "
         "retired_length_sum=%llu eviction_count=%llu retired_count=%llu "
         "harvest_call_count=%llu reclaimed_by_sweep=%llu "
         "promoted_by_sweep=%llu reclaimed_by_ready=%llu "
-        "promoted_by_ready=%llu\n",
+        "promoted_by_ready=%llu boundary_inbox_count=%zu "
+        "boundary_inbox_max=%zu\n",
         seg, runs, seconds, (double)ops / seconds, rss_kb,
         (unsigned long long)atomic_load_explicit(&g_active_length_sum,
                                                 memory_order_relaxed),
@@ -327,7 +350,8 @@ int main(void) {
         (unsigned long long)atomic_load_explicit(&g_reclaimed_by_ready_sum,
                                                 memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(&g_promoted_by_ready_sum,
-                                                memory_order_relaxed));
+                                                memory_order_relaxed),
+        boundary_inbox_count, boundary_inbox_max);
     reset_segment_stats();
     pthread_barrier_wait(&barrier);
     seg_start = hz10_platform_now_ns();
