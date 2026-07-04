@@ -18,13 +18,6 @@
  * cascade (h8_medium_alloc.inc's h8_medium_malloc_class_inner), scoped
  * down to what a single thread's own single-class page set needs.
  *
- * Known, accepted L0 gap: the list itself is never pruned -- a thread
- * that creates many pages for one class under sustained churn keeps all
- * of them allocated (RSS-wise) for as long as any of their slots are
- * still outstanding, which this module cannot safely second-guess (see
- * hz10_public_entry.h). What IS bounded, below, is the search cost paid
- * per hz10_malloc call, which is a separate concern from list length.
- *
  * Measured, not assumed: an unbounded scan (the original Box 6 shape)
  * degrades badly on a realistic "allocate a lot, free rarely or never"
  * workload -- a single-threaded probe doing nothing but hz10_malloc(64)
@@ -42,17 +35,40 @@
  * membership here is purely an hz10_malloc-side search structure, never
  * consulted by hz10_free (which routes through Box 1's pagemap and its
  * owner tag directly, independent of this list).
+ *
+ * List length is now bounded to HZ10_CLASS_PAGES_SCAN_LIMIT permanently
+ * (the "never pruned, grows without bound" gap from the note above is
+ * closed): hz10_class_pages_add() evicts the tail (the oldest, least-
+ * recently-created page) whenever the list would grow past the limit.
+ * The evicted page gets one last hz10_page_drain_remote() attempt; if
+ * that leaves it genuinely idle (free_count == slot_count -- no
+ * application-held pointer can reference any of its slots, since idle
+ * means every slot that was ever handed out has already come back), it is
+ * returned to Box 4's pool via hz10_pooled_page_destroy() instead of
+ * being silently kept forever unreachable. This directly targets the
+ * slot_count=1 residual gap documented in current_task.md: a 1-slot page
+ * is exhausted on every single allocation, so under sustained churn it
+ * fell out of the (formerly unbounded but only-128-scanned) window almost
+ * immediately, permanently losing its capacity to future allocations and
+ * its RSS to the process for good. A page evicted while NOT yet idle is
+ * just unlinked, same as today's out-of-window behavior -- no correctness
+ * change, since list membership was never load-bearing for hz10_free.
  */
 
 #define HZ10_CLASS_PAGES_SCAN_LIMIT 128u
 
 typedef struct Hz10ClassPageList {
   Hz10FreelistPage* head;
+  Hz10FreelistPage* tail;
+  uint32_t length;
 } Hz10ClassPageList;
 
-/* Prepends page to the list. O(1), does not check for duplicates -- the
- * caller (hz10_public_entry.c) only ever adds a page once, right after
- * creating it. */
+/* Prepends page to the list, O(1) amortized: at most one tail eviction
+ * (itself O(1) -- a single drain attempt plus a free_count comparison,
+ * see the module comment above) is performed per call, never a walk of
+ * the whole list. Does not check for duplicates -- the caller
+ * (hz10_public_entry.c) only ever adds a page once, right after creating
+ * it. */
 void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
 
 /*

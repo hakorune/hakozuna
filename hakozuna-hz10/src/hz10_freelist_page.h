@@ -56,12 +56,13 @@ typedef struct Hz10FreelistPage {
   void* owner_thread_token;
 
   /*
-   * Also inert storage, same rule as owner_thread_token: a linked-list
-   * next pointer for whoever wants to track more than one page per class
-   * (src/hz10_class_pages.{h,c}). Box 2 never walks or otherwise touches
-   * this list itself.
+   * Also inert storage, same rule as owner_thread_token: a doubly-linked
+   * list pointer pair for whoever wants to track more than one page per
+   * class (src/hz10_class_pages.{h,c}) and evict/reclaim from either end
+   * in O(1). Box 2 never walks or otherwise touches this list itself.
    */
   struct Hz10FreelistPage* next_in_owner_list;
+  struct Hz10FreelistPage* prev_in_owner_list;
 
   /*
    * HZ10RemoteStackDrain-L0 (Box 3, src/hz10_remote_stack.{h,c}): a
