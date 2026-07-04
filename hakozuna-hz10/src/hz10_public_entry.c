@@ -159,7 +159,10 @@ static void hz10_public_entry_reclaim_sublist_idle_pages(
   *sub = survivors;
 }
 
-void hz10_public_entry_reclaim_thread_idle_pages(
+/* See src/hz10_public_entry.h's HZ10LifecycleFlushContract-L1 doc comment
+ * for the precondition/postcondition contract and the load-bearing
+ * ready/cancel guard this function and its helpers above must preserve. */
+void hz10_public_entry_flush_thread_cache_quiescent(
     Hz10PublicEntryThreadReclaimStats* stats_out) {
   Hz10PublicEntryThreadReclaimStats stats = {0};
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {

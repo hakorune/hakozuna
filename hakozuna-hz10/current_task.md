@@ -173,6 +173,39 @@ status:
     without a lifecycle/ownership design, because general thread exit can
     race with foreign threads that still hold pointers into the dying
     thread's pages.
+
+    Agreed queue after HZ10LifecycleFlushContract-L1, 20260705 (see that
+    box's "DONE: graduated diagnostic -> contracted API" entry further down
+    for what just landed -- the rename to
+    hz10_public_entry_flush_thread_cache_quiescent(), the numbered
+    precondition/postcondition/load-bearing-rule contract in src/
+    hz10_public_entry.h, and the added busy-page smoke case):
+      1. HZ10LifecycleFlushContract-L1 -- DONE (this entry).
+      2. Split bench display: today's single ops_per_s conflates the work
+         loop with the lifecycle-flush cost when HZ10_THREAD_EXIT_RECLAIM=1
+         (see HZ10LifecycleFlushCost-L0's -14%/-19% main_r50/r90 numbers
+         below -- real boundary cost, not a hot-path regression, but
+         unreadable in one combined column). Report work_loop_ops_per_s and
+         work_loop_plus_flush_ops_per_s as two fields so future comparison
+         tables don't need a footnote to explain this every time.
+         DONE as HZ10LifecycleFlushBenchSplit-L0: the main
+         hz10_public_entry line now keeps legacy seconds/ops_per_s fields
+         and additionally prints work_loop_seconds/work_loop_ops_per_s plus
+         work_loop_plus_flush_seconds/work_loop_plus_flush_ops_per_s. The
+         work-loop view subtracts flush_max_thread_ns, not flush_total_ns,
+         because worker flushes run concurrently and the wall-clock boundary
+         cost is the slowest participating thread.
+      3. HZ10LifecycleFlush-L1 A/B gate -- promote HZ10_THREAD_EXIT_RECLAIM
+         from a diagnostic-only flag to a real guarded opt-in lane and
+         measure it properly across main_r50/r90, local0, small_remote50/90,
+         and slot_count=1. Judge on "hot path unchanged, RSS moves toward
+         HZ8" -- NOT YET DONE, depends on (2)'s split display to read
+         cleanly.
+      4. Only after (1)-(3): revisit throughput. The next real lever is
+         remote-free publication cost, but touching the pending bit itself
+         is a duplicate-free contract change and stays last; look at remote
+         publish batching or an owner-visible handoff shape first. NOT YET
+         DONE.
     (PRIOR) HZ10ActiveScanCost-L0: measurement-only box.
         Agent triage 20260705 converged on the same read:
           - do NOT open HZ8-style reclaim/thread-lifecycle port now; true
@@ -517,6 +550,48 @@ status:
                     busy-page case if this graduates from diagnostic to API
                 This box is about RSS/lifecycle correctness. Do not mix it
                 with pending-bit throughput redesign.
+              DONE: graduated diagnostic -> contracted API, 20260705.
+                Renamed the public surface, now that the ready-drain-first
+                fix above is in place, per this box's own shape bullet
+                ("rename ... only after the contract is written"):
+                `hz10_public_entry_reclaim_thread_idle_pages()` ->
+                `hz10_public_entry_flush_thread_cache_quiescent()`
+                (src/hz10_public_entry.{h,c}, callers updated in
+                bench/hz10_public_entry_bench.c and
+                tests/hz10_public_entry_smoke.c). The private helpers
+                underneath keep their existing names -- only the public
+                surface changed name.
+                src/hz10_public_entry.h's doc comment was rewritten into an
+                explicit numbered contract: PRECONDITION (the caller must
+                already be at a genuine quiescent boundary -- no thread may
+                still allocate from, locally free into, or remote-free
+                (including mid claim()/publish() or an unflushed inbox
+                entry) into any page this thread owns; a general pthread
+                exit does NOT satisfy this), POSTCONDITION (every owned page
+                inspected exactly once; destroyed only if drain confirms
+                free_count == slot_count at that instant; anything else left
+                fully registered and counted, never partially unlinked), and
+                a named LOAD-BEARING RULE section spelling out why the
+                retired_ready_on_stack skip + hz10_retired_ready_cancel()
+                guard is a correctness requirement (mirrors hz10_retired_
+                ready.h's documented bugs (1)/(2) for the ordinary harvest
+                path), not an incidental detail to simplify away later.
+                Added the validation gate's remaining item: a new smoke
+                case, check_thread_reclaim_leaves_busy_page() (tests/
+                hz10_public_entry_smoke.c), covering the basic half of the
+                contract the existing ready-stacked case doesn't exercise --
+                a live, un-freed, never-retired allocation must survive the
+                flush call reported as pages_busy, with its contents intact
+                and still freeable afterward. smoke + standalone check both
+                green with the rename and the new case; no behavior change,
+                so RSS/throughput numbers from the prior measurement above
+                still apply unchanged.
+                Left as-is, not done in this box: bench-side "work loop
+                only" vs "work loop + flush" ops/s split (still one combined
+                ops_per_s field today, see HZ10LifecycleFlushCost-L0's
+                "Read" note above) and an actual guarded A/B throughput gate
+                for HZ10_THREAD_EXIT_RECLAIM/flush -- both are separate next
+                boxes, not part of writing the contract.
               DONE: HZ10LifecycleFlushCost-L0.
                 Added bench-only flush timing fields to
                 `hz10_public_entry_thread_reclaim`:

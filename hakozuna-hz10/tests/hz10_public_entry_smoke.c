@@ -330,7 +330,7 @@ static int check_thread_reclaim_drains_ready_retired_page(void) {
   }
 
   Hz10PublicEntryThreadReclaimStats reclaim_stats;
-  hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
+  hz10_public_entry_flush_thread_cache_quiescent(&reclaim_stats);
   if (reclaim_stats.pages_reclaimed == 0u) {
     fprintf(stderr,
             "thread_reclaim_ready: expected ready-stacked retired page to "
@@ -341,6 +341,45 @@ static int check_thread_reclaim_drains_ready_retired_page(void) {
     fprintf(stderr,
             "thread_reclaim_ready: ready-stacked page was deferred instead "
             "of being drained first\n");
+    return 1;
+  }
+  return 0;
+}
+
+/* Case 4d: the basic half of the HZ10LifecycleFlushContract-L1 contract in
+ * src/hz10_public_entry.h -- a genuinely busy page (a live, un-freed
+ * allocation, never evicted to retired, never linked onto any ready stack)
+ * must survive hz10_public_entry_flush_thread_cache_quiescent() completely
+ * untouched: reported via pages_busy, not destroyed, not corrupted, still
+ * freeable afterward. Distinct from check_thread_reclaim_drains_ready_
+ * retired_page() above, which covers the harder ready-stacked case. */
+static int check_thread_reclaim_leaves_busy_page(void) {
+  void* live = hz10_malloc(24576);
+  if (!live) {
+    fprintf(stderr, "thread_reclaim_busy: setup malloc failed\n");
+    return 1;
+  }
+  memset(live, 0x7A, 24576);
+
+  Hz10PublicEntryThreadReclaimStats stats;
+  hz10_public_entry_flush_thread_cache_quiescent(&stats);
+  if (stats.pages_busy == 0u) {
+    fprintf(stderr,
+            "thread_reclaim_busy: expected the live page to be reported "
+            "busy, not destroyed\n");
+    return 1;
+  }
+
+  unsigned char* bytes = (unsigned char*)live;
+  if (bytes[0] != 0x7A || bytes[24576 - 1] != 0x7A) {
+    fprintf(stderr,
+            "thread_reclaim_busy: live allocation corrupted by flush\n");
+    return 1;
+  }
+  if (!hz10_free(live)) {
+    fprintf(stderr,
+            "thread_reclaim_busy: live allocation not freeable after "
+            "flush\n");
     return 1;
   }
   return 0;
@@ -493,6 +532,9 @@ int main(void) {
   }
   if (check_thread_reclaim_drains_ready_retired_page()) {
     return 8;
+  }
+  if (check_thread_reclaim_leaves_busy_page()) {
+    return 12;
   }
   if (check_large_alloc_basic()) {
     return 9;

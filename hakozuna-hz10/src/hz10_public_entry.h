@@ -137,18 +137,59 @@ typedef struct Hz10PublicEntryThreadReclaimStats {
 } Hz10PublicEntryThreadReclaimStats;
 
 /*
- * Diagnostic lifecycle hook for the calling thread's own TLS state. Drains
- * every active/retired page this thread owns and destroys only pages that
- * are fully idle after that drain. Retired pages still owned by the ready
- * hint protocol are left registered unless hz10_retired_ready_cancel() wins
- * the same ownership transition used by the normal harvest path. Busy or
- * deferred pages are left registered and counted. This is deliberately an
- * explicit call, not an automatic pthread destructor: a general thread exit
- * may race with foreign threads that still hold pointers into this thread's
- * pages. Benchmarks call it only at their own quiescent point, after all
- * worker inboxes have been flushed.
+ * HZ10LifecycleFlushContract-L1: an explicit, non-destructor lifecycle
+ * flush for the CALLING thread's own TLS state (hz10_class_state in
+ * src/hz10_public_entry.c). This is a contract, not a convenience call --
+ * calling it outside the precondition below corrupts live allocator state
+ * instead of merely wasting work.
+ *
+ * PRECONDITION (the caller's responsibility; not checked or enforceable
+ * from inside this function): the calling thread must already be at a
+ * genuine quiescent boundary for every page it has ever created. Nothing,
+ * anywhere, may still (a) allocate from, (b) locally free into, or (c)
+ * remote-free into one of this thread's pages -- including a remote free
+ * that is mid claim()/publish() (src/hz10_remote_stack.h) or an inbox entry
+ * some other thread has accepted but not yet handed to hz10_free(). A
+ * benchmark's own "barrier, drain every worker inbox, barrier, drain again"
+ * protocol satisfies this (see the call site in bench/
+ * hz10_public_entry_bench.c). Ordinary pthread exit does NOT satisfy it --
+ * a foreign thread can still be actively remote-freeing into a dying
+ * thread's page -- which is exactly why this is a manual call, never an
+ * automatic pthread destructor, and must not become one without a real
+ * ownership/handoff redesign.
+ *
+ * POSTCONDITION this function guarantees in return: every page the calling
+ * thread owns is inspected exactly once. A page is destroyed (returned to
+ * Box 4's pool via hz10_pooled_page_destroy()) only after
+ * hz10_page_drain_remote() confirms free_count == slot_count for it right
+ * then. Any page that is not fully idle, or that this call cannot safely
+ * take ownership of (see the load-bearing rule below), is left fully
+ * registered in this thread's active/retired lists -- never partially
+ * unlinked, never corrupted -- and counted in *stats_out
+ * (pages_busy / pages_deferred_ready / pages_deferred_cancel) instead of
+ * being silently dropped or destroyed anyway.
+ *
+ * LOAD-BEARING RULE (do not simplify this away when touching this
+ * function): a retired page can be concurrently linked onto its class's
+ * `list->ready` stack (src/hz10_retired_ready.h) by a FOREIGN thread's
+ * remote free even after this thread's own traffic has gone quiet -- the
+ * ready stack's push side is multi-producer by design, not owner-only.
+ * Destroying such a page without first popping it via the ready-stack
+ * owner-only drain, or without winning hz10_retired_ready_cancel()'s CAS,
+ * is exactly the data-race/ABA hazard hz10_retired_ready.h's bugs (1) and
+ * (2) already document for the ordinary harvest path
+ * (hz10_class_pages_harvest_retired_capacity(), src/hz10_class_pages.c).
+ * This function mirrors that same two-step guard (retired_ready_on_stack
+ * skip, then hz10_retired_ready_cancel()) for the identical reason -- it is
+ * a correctness requirement, not an incidental implementation detail, and
+ * removing it to "simplify" the retired-page walk would reopen a real
+ * use-after-free/ABA window. pages_deferred_ready/pages_deferred_cancel
+ * exist so a caller can observe this happening instead of it being
+ * invisible. See tests/hz10_public_entry_smoke.c's
+ * check_thread_reclaim_drains_ready_retired_page() for the regression
+ * test that exercises exactly this path.
  */
-void hz10_public_entry_reclaim_thread_idle_pages(
+void hz10_public_entry_flush_thread_cache_quiescent(
     Hz10PublicEntryThreadReclaimStats* stats_out);
 
 #endif

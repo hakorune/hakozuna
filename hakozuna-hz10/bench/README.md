@@ -380,8 +380,8 @@ set abandonment, not continuous main-class fragmentation.
 Thread-exit reclaim diagnostic (HZ10ThreadExitReclaim-L0):
 `bench_results/20260704T223610Z_hz10_thread_exit_reclaim_l0/combined.log`.
 `HZ10_THREAD_EXIT_RECLAIM=1` is an opt-in public-entry bench env that calls
-`hz10_public_entry_reclaim_thread_idle_pages()` only after the workers' two
-final inbox-drain barriers. It is a diagnostic quiescent hook, not an
+what was then `hz10_public_entry_reclaim_thread_idle_pages()` only after the
+workers' two final inbox-drain barriers. It is a diagnostic quiescent hook, not an
 automatic pthread destructor. On THREADS=4 ITERS=500000 RUNS=10, main_r50
 baseline RSS climbed 55,296 -> 612,200 KB, while reclaim bounded it at
 109,056 -> 127,720 KB; main_r90 baseline climbed 57,216 -> 858,352 KB, while
@@ -423,6 +423,31 @@ median drops 380,540 -> 74,072 KB; main_r90 8.84M -> 7.11M (-19.6%) while RSS
 median drops 334,596 -> 146,304 KB. Treat this as lifecycle boundary work,
 not a hot-path regression; future throughput tables should separate work-loop
 time from work-loop+flush time when comparing allocator speed.
+
+HZ10LifecycleFlushContract-L1 (graduated diagnostic -> contracted API):
+no new bench numbers -- this box renamed the public call to
+`hz10_public_entry_flush_thread_cache_quiescent()` and replaced its doc
+comment with an explicit precondition/postcondition/load-bearing-rule
+contract (src/hz10_public_entry.h); see current_task.md for the full text.
+Behavior is unchanged, so every RSS/ops number logged above under the old
+name still applies. `HZ10_THREAD_EXIT_RECLAIM=1`'s bench call site was
+updated to the new name; a new smoke case
+(`check_thread_reclaim_leaves_busy_page`, tests/hz10_public_entry_smoke.c)
+covers the basic "a live allocation survives the flush untouched" half of
+the contract, alongside the existing ready-stacked-page case. Still open,
+not part of this box: a real guarded A/B throughput gate for the flush lane
+-- see current_task.md's queued next steps.
+
+HZ10LifecycleFlushBenchSplit-L0:
+the main `hz10_public_entry` output now keeps the legacy `seconds` and
+`ops_per_s` fields, and also prints `work_loop_seconds`,
+`work_loop_ops_per_s`, `work_loop_plus_flush_seconds`, and
+`work_loop_plus_flush_ops_per_s`. When `HZ10_THREAD_EXIT_RECLAIM=1`,
+`work_loop_*` subtracts `flush_max_thread_ns` from elapsed wall time; it does
+not subtract `flush_total_ns`, because worker flushes run concurrently and the
+wall-clock boundary cost is the slowest worker's flush. The reclaim counters
+are also reset whenever `HZ10_THREAD_EXIT_RECLAIM=1`, independent of
+`HZ10_DUMP_CLASS_STATS`.
 
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap

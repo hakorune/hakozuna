@@ -551,7 +551,7 @@ static void* hz10_bench_worker(void* raw) {
   if (arg->use_hz10 && hz10_bench_thread_exit_reclaim) {
     Hz10PublicEntryThreadReclaimStats reclaim_stats;
     uint64_t reclaim_start = hz10_platform_now_ns();
-    hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
+    hz10_public_entry_flush_thread_cache_quiescent(&reclaim_stats);
     hz10_bench_collect_thread_reclaim_stats(
         &reclaim_stats, hz10_platform_now_ns() - reclaim_start);
   }
@@ -615,17 +615,14 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_active_ops_served_immediate_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_second_active_check_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_second_active_hit_sum, 0u, memory_order_relaxed);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_seen);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_reclaimed);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_busy);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_ready);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_cancel);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_slots_merged);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_total_ns);
-    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_max_ns);
     hz10_bench_reset_class_stats();
   }
-
+  if (use_hz10 && hz10_bench_thread_exit_reclaim) {
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_seen); HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_reclaimed);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_busy); HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_ready);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_cancel); HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_slots_merged);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_total_ns); HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_max_ns);
+  }
   uint64_t start = hz10_platform_now_ns();
   for (uint32_t t = 0; t < threads; ++t) {
     args[t].tid = t;
@@ -662,18 +659,21 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   if (failed) {
     return 1;
   }
-  double seconds = (double)elapsed_ns / 1000000000.0;
-  if (seconds <= 0.0) {
-    seconds = 1e-9;
-  }
-  uint64_t ops = iters * (uint64_t)threads;
-  printf(
+  uint64_t flush_max_ns = use_hz10 ? HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_max_ns) : 0u;
+  uint64_t work_elapsed_ns = elapsed_ns > flush_max_ns ? elapsed_ns - flush_max_ns : elapsed_ns;
+  double seconds = (double)elapsed_ns / 1000000000.0, work_seconds = (double)work_elapsed_ns / 1000000000.0;
+  if (seconds <= 0.0) { seconds = 1e-9; }
+  if (work_seconds <= 0.0) { work_seconds = 1e-9; }
+  uint64_t ops = iters * (uint64_t)threads; printf(
       "hz10_public_entry mech=%s threads=%u iters_per_thread=%llu ops=%llu "
       "run=%u/%u min_size=%zu max_size=%zu remote_pct=%u seconds=%.6f "
-      "ops_per_s=%.2f post_rss_kb=%ld\n",
+      "ops_per_s=%.2f work_loop_seconds=%.6f work_loop_ops_per_s=%.2f "
+      "work_loop_plus_flush_seconds=%.6f work_loop_plus_flush_ops_per_s=%.2f "
+      "post_rss_kb=%ld\n",
       mech, threads, (unsigned long long)iters, (unsigned long long)ops, run,
       runs, min_size, max_size, remote_pct, seconds, (double)ops / seconds,
-      hz10_bench_maxrss_kb());
+      work_seconds, (double)ops / work_seconds, seconds,
+      (double)ops / seconds, hz10_bench_maxrss_kb());
 
   if (use_hz10 && hz10_bench_dump_class_stats) {
     printf(
