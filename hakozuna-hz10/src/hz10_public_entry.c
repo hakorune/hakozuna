@@ -123,7 +123,4 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
   stats_out->retired_count = list->retired_count;
   stats_out->retired_reclaimed_by_sweep_count =
       list->retired_reclaimed_by_sweep_count;
-  stats_out->retired_reclaimed_by_overflow_count =
-      list->retired_reclaimed_by_overflow_count;
-  stats_out->retired_dropped_count = list->retired_dropped_count;
 }

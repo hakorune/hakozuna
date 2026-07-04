@@ -62,8 +62,6 @@ typedef struct Hz10ClassPageListStats {
   uint64_t eviction_reclaimed_count;
   uint64_t retired_count;
   uint64_t retired_reclaimed_by_sweep_count;
-  uint64_t retired_reclaimed_by_overflow_count;
-  uint64_t retired_dropped_count;
 } Hz10ClassPageListStats;
 
 /*

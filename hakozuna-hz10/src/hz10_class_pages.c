@@ -73,30 +73,13 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
   /* Not idle yet: give it more chances in `retired` instead of dropping
    * it outright (see the module comment for why a single eviction-time
    * check measured as an almost-total miss under real remote-free
-   * churn). */
+   * churn). `retired` is unbounded -- see the module comment for why
+   * that is safe and necessary (a bounded version with its own overflow
+   * eviction was tried and measured to not meaningfully help). */
   hz10_page_sublist_prepend(&list->retired, evict);
   list->retired_count += 1u;
   if (list->retired.length > list->max_retired_length) {
     list->max_retired_length = list->retired.length;
-  }
-
-  if (list->retired.length <= HZ10_CLASS_PAGES_RETIRED_LIMIT) {
-    return;
-  }
-
-  /* `retired` is itself bounded: its own tail gets one final drain+check
-   * before this design truly gives up on it (retired.length > LIMIT >= 1
-   * guarantees pop_tail's precondition holds here too). */
-  Hz10FreelistPage* give_up = hz10_page_sublist_pop_tail(&list->retired);
-  hz10_page_drain_remote(give_up);
-  if (give_up->free_count == give_up->slot_count) {
-    list->retired_reclaimed_by_overflow_count += 1u;
-    hz10_pooled_page_destroy(give_up);
-  } else {
-    list->retired_dropped_count += 1u;
-    /* Same fate an evicted page always had before this design existed:
-     * still safely freeable via Box 1's pagemap route either way, list
-     * membership was never load-bearing for hz10_free's correctness. */
   }
 }
 
@@ -117,10 +100,18 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(
 }
 
 void hz10_class_pages_sweep_retired(Hz10ClassPageList* list) {
+  /* Resume from the cursor left by the last call (or `retired`'s tail if
+   * there wasn't one, or the last call walked off the head end) -- see
+   * the module comment for why restarting from the tail every call
+   * measured as a head-of-line-blocking dead end. */
+  Hz10FreelistPage* node = list->retired_sweep_cursor;
+  if (!node) {
+    node = list->retired.tail;
+  }
+
   uint32_t checked = 0u;
-  Hz10FreelistPage* node = list->retired.tail;
   while (node && checked < HZ10_CLASS_PAGES_SWEEP_BUDGET) {
-    /* Save prev before a possible reclaim unlinks `node`. */
+    /* Save prev (toward head) before a possible reclaim unlinks `node`. */
     Hz10FreelistPage* prev = node->prev_in_owner_list;
     hz10_page_drain_remote(node);
     if (node->free_count == node->slot_count) {
@@ -131,4 +122,7 @@ void hz10_class_pages_sweep_retired(Hz10ClassPageList* list) {
     node = prev;
     ++checked;
   }
+  /* NULL here (walked off the head end) correctly means "start fresh
+   * from the tail" on the next call, same as an empty cursor today. */
+  list->retired_sweep_cursor = node;
 }

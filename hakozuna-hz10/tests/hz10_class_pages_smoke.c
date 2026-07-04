@@ -288,68 +288,102 @@ static int check_sweep_reclaims_after_late_free(void) {
   return failed;
 }
 
-/* Case 5: once `retired` itself fills up, the next non-idle eviction
- * forces retired's own tail through one final drain+check. If still not
- * idle (as here -- nothing in this case ever frees anything), it is
- * truly given up: dropped, not destroyed (same correctness argument as
- * case 3 -- still safely freeable, just no longer tracked anywhere in
- * Box 6). */
-static int check_retired_overflow_drops_oldest(void) {
+/* Case 5: `retired` is unbounded, but hz10_class_pages_sweep_retired()'s
+ * budget is not -- if it always restarted its walk from retired's tail,
+ * a chronically non-idle page sitting there (`stuck` below, standing in
+ * for a page whose real application data genuinely never comes back)
+ * would make every sweep call re-examine the same few tail-most
+ * positions forever, never reaching newer, already-resolvable entries
+ * further toward head. This is the actual regression test for the
+ * persistent sweep cursor (retired_sweep_cursor): repeated
+ * sweep_retired() calls must eventually rotate past `stuck` and reclaim
+ * something (`target`) that became idle closer to head, while leaving
+ * `stuck` in place (never falsely reclaimed, since it never becomes
+ * idle in this test). */
+static int check_sweep_cursor_rotates_past_stuck_tail(void) {
   hz10_page_pool_reset_for_tests();
   Hz10ClassPageList list = {0};
   int failed = 0;
 
-  /* Fill active to its limit, all busy (non-idle) so every further add
-   * evicts straight into retired. */
+  /* 9 candidates, each busy (allocated, not yet freed): `stuck` first
+   * (oldest -> evicted first -> ends up at retired.tail), 7 generic
+   * fillers, then `target` last (evicted last -> ends up at
+   * retired.head). None are freed yet -- freeing target before it is
+   * evicted would let it get reclaimed immediately at eviction time
+   * instead of testing the sweep cursor at all. */
+  Hz10FreelistPage* stuck = hz10_freelist_page_create(64u, 16u);
+  if (!stuck || !hz10_freelist_page_alloc(stuck)) {
+    fprintf(stderr, "sweep_rotate: create/alloc stuck failed\n");
+    return 1;
+  }
+  hz10_class_pages_add(&list, stuck);
+
+  Hz10FreelistPage* target = NULL;
+  void* target_ptr = NULL;
+  for (uint32_t i = 0; i < 8u; ++i) {
+    Hz10FreelistPage* page = hz10_freelist_page_create(64u, 16u);
+    void* p = page ? hz10_freelist_page_alloc(page) : NULL;
+    if (!page || !p) {
+      fprintf(stderr, "sweep_rotate: create/alloc candidate %u failed\n", i);
+      return 1;
+    }
+    hz10_class_pages_add(&list, page);
+    if (i == 7u) {
+      target = page;
+      target_ptr = p;
+    }
+  }
+
+  /* Enough generic fillers to trigger exactly 9 evictions (stuck + the 8
+   * candidates above), pushing all 9 into retired, oldest (stuck) at
+   * tail through newest (target) at head -- none idle yet. */
   if (fill_list_with_busy_filler_pages(&list, HZ10_CLASS_PAGES_SCAN_LIMIT,
-                                     "retired_overflow")) {
+                                     "sweep_rotate")) {
     return 1;
   }
-  /* Push retired to exactly its own limit: HZ10_CLASS_PAGES_RETIRED_LIMIT
-   * more busy adds, each evicting one (busy) active page into retired. */
-  if (fill_list_with_busy_filler_pages(&list, HZ10_CLASS_PAGES_RETIRED_LIMIT,
-                                     "retired_overflow")) {
-    return 1;
-  }
-  if (list.retired.length != HZ10_CLASS_PAGES_RETIRED_LIMIT) {
+  if (list.retired.length != 9u || list.retired.tail != stuck ||
+      list.retired.head != target) {
     fprintf(stderr,
-            "retired_overflow: retired.length=%u, expected %u before "
-            "overflow\n",
-            list.retired.length, HZ10_CLASS_PAGES_RETIRED_LIMIT);
-    return 1;
-  }
-  if (list.retired_dropped_count != 0u) {
-    fprintf(stderr,
-            "retired_overflow: retired_dropped_count=%llu, expected 0 "
-            "before overflow\n",
-            (unsigned long long)list.retired_dropped_count);
-    failed = 1;
-  }
-
-  /* One more busy add: evicts another active page into retired, which now
-   * exceeds its own limit -- forces retired's own tail through its final
-   * check. That tail is busy (never freed), so it must be dropped. */
-  if (fill_list_with_busy_filler_pages(&list, 1u, "retired_overflow")) {
+            "sweep_rotate: expected 9 retired entries, stuck at tail, "
+            "target at head (retired.length=%u)\n",
+            list.retired.length);
     return 1;
   }
 
-  if (list.retired.length != HZ10_CLASS_PAGES_RETIRED_LIMIT) {
+  /* Only now does target become idle -- the late free this design exists
+   * to catch, exactly like check_sweep_reclaims_after_late_free, just
+   * with target buried behind 8 other retired entries instead of being
+   * the only one. */
+  hz10_freelist_page_free(target, target_ptr);
+
+  /* HZ10_CLASS_PAGES_SWEEP_BUDGET=4: reaching target (position 8 from
+   * tail) needs ceil(9/4)=3 calls if the cursor genuinely advances each
+   * time instead of restarting from tail every call (the bug this
+   * design fixes -- a tail-restarting sweep would check the same first
+   * few tail-most positions on every call and never reach target no
+   * matter how many times it is called). */
+  hz10_class_pages_sweep_retired(&list);
+  hz10_class_pages_sweep_retired(&list);
+  hz10_class_pages_sweep_retired(&list);
+
+  if (list.retired_reclaimed_by_sweep_count != 1u) {
     fprintf(stderr,
-            "retired_overflow: retired.length=%u, expected %u to stay "
-            "bounded after overflow\n",
-            list.retired.length, HZ10_CLASS_PAGES_RETIRED_LIMIT);
+            "sweep_rotate: retired_reclaimed_by_sweep_count=%llu, expected "
+            "1 -- the cursor did not reach target (still stuck near tail?)\n",
+            (unsigned long long)list.retired_reclaimed_by_sweep_count);
     failed = 1;
   }
-  if (list.retired_dropped_count != 1u) {
+  if (list.retired.length != 8u) {
     fprintf(stderr,
-            "retired_overflow: retired_dropped_count=%llu, expected 1\n",
-            (unsigned long long)list.retired_dropped_count);
+            "sweep_rotate: retired.length=%u, expected 8 after reclaiming "
+            "target\n",
+            list.retired.length);
     failed = 1;
   }
-  if (list.max_retired_length < HZ10_CLASS_PAGES_RETIRED_LIMIT) {
+  if (list.retired.tail != stuck) {
     fprintf(stderr,
-            "retired_overflow: max_retired_length=%u, expected >= %u\n",
-            list.max_retired_length, HZ10_CLASS_PAGES_RETIRED_LIMIT);
+            "sweep_rotate: stuck was reclaimed or moved -- it must never "
+            "be, since it is never idle\n");
     failed = 1;
   }
 
@@ -370,7 +404,7 @@ int main(void) {
   if (check_sweep_reclaims_after_late_free()) {
     return 4;
   }
-  if (check_retired_overflow_drops_oldest()) {
+  if (check_sweep_cursor_rotates_past_stuck_tail()) {
     return 5;
   }
   puts("hz10_class_pages_smoke ok");

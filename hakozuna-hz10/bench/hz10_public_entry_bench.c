@@ -128,8 +128,6 @@ static _Atomic(uint64_t) hz10_bench_eviction_count_sum;
 static _Atomic(uint64_t) hz10_bench_eviction_reclaimed_sum;
 static _Atomic(uint64_t) hz10_bench_retired_count_sum;
 static _Atomic(uint64_t) hz10_bench_retired_reclaimed_sweep_sum;
-static _Atomic(uint64_t) hz10_bench_retired_reclaimed_overflow_sum;
-static _Atomic(uint64_t) hz10_bench_retired_dropped_sum;
 
 static void hz10_bench_atomic_max_u64(_Atomic(uint64_t)* target,
                                     uint64_t candidate) {
@@ -160,12 +158,6 @@ static void hz10_bench_collect_class_stats(void) {
                               stats.retired_count, memory_order_relaxed);
     atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_sweep_sum,
                               stats.retired_reclaimed_by_sweep_count,
-                              memory_order_relaxed);
-    atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_overflow_sum,
-                              stats.retired_reclaimed_by_overflow_count,
-                              memory_order_relaxed);
-    atomic_fetch_add_explicit(&hz10_bench_retired_dropped_sum,
-                              stats.retired_dropped_count,
                               memory_order_relaxed);
   }
 }
@@ -256,8 +248,6 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_eviction_reclaimed_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_count_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_reclaimed_sweep_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_reclaimed_overflow_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_dropped_sum, 0u, memory_order_relaxed);
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -312,14 +302,12 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   if (use_hz10 && hz10_bench_dump_class_stats) {
     printf(
         "hz10_public_entry_class_stats mech=%s run=%u/%u "
-        "sweep_budget=%u retired_limit=%u "
+        "sweep_budget=%u "
         "active_length_sum=%llu retired_length_sum=%llu "
         "max_retired_length=%llu eviction_count=%llu "
         "eviction_reclaimed_count=%llu retired_count=%llu "
-        "retired_reclaimed_by_sweep=%llu retired_reclaimed_by_overflow=%llu "
-        "retired_dropped=%llu\n",
+        "retired_reclaimed_by_sweep=%llu\n",
         mech, run, runs, HZ10_CLASS_PAGES_SWEEP_BUDGET,
-        HZ10_CLASS_PAGES_RETIRED_LIMIT,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_active_length_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
@@ -333,11 +321,7 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_retired_count_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_reclaimed_overflow_sum, memory_order_relaxed),
-        (unsigned long long)atomic_load_explicit(
-            &hz10_bench_retired_dropped_sum, memory_order_relaxed));
+            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed));
   }
   return 0;
 }

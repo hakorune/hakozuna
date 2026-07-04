@@ -60,15 +60,46 @@
  *   hz10_public_entry.c's SLOW path (right after find_with_capacity()
  *   fails and before a fresh page would be created; a page reclaimed
  *   right here can immediately feed that very call's pool-acquire-first
- *   check), never from the hot per-op alloc path. Each sweep call
- *   re-drains and re-checks up to HZ10_CLASS_PAGES_SWEEP_BUDGET pages
- *   from `retired`'s tail (oldest first) -- bounded, so this cannot
- *   reintroduce the O(n^2) cost SCAN_LIMIT already closed on `active`.
- *   `retired` is itself bounded to HZ10_CLASS_PAGES_RETIRED_LIMIT: once
- *   full, the next non-idle eviction forces retired's own tail through
- *   one final drain+check (idle -> reclaimed; still not idle -> truly
- *   given up, dropped -- the same fate an evicted page always had before
- *   this design existed).
+ *   check), never from the hot per-op alloc path.
+ *
+ *   `retired` is deliberately UNBOUNDED -- an earlier version capped it
+ *   (HZ10_CLASS_PAGES_RETIRED_LIMIT) and dropped its own tail on
+ *   overflow, but measurement (current_task.md) showed the cap was not
+ *   the limiting factor: removing it entirely (retired growing to tens
+ *   of thousands of pages within a single run) barely changed the
+ *   reclaim rate. Unlike `active`, `retired` is never linearly scanned
+ *   by hz10_malloc (hz10_class_pages_find_with_capacity() never touches
+ *   it) -- only hz10_class_pages_sweep_retired()'s fixed-budget walk
+ *   does, so an unbounded `retired` does not reintroduce the O(n^2) scan
+ *   cost SCAN_LIMIT exists to prevent on `active`. Its only cost is the
+ *   memory itself, which in the worst case (a page's remaining slots
+ *   never actually get freed) is no worse than today's pre-existing
+ *   status quo of a page just sitting there unreclaimed.
+ *
+ *   The real fix, found by testing (not guessing) why the earlier
+ *   bounded+dropped version measured near-zero reclaims even after
+ *   removing the drop: hz10_class_pages_sweep_retired() always restarted
+ *   its budgeted walk from `retired`'s CURRENT tail. If the few oldest
+ *   entries take a while to resolve (the common case here -- see the
+ *   remote-free chain note below), the tail barely advances, so newer
+ *   entries arriving at head are never reached at all: classic
+ *   head-of-line blocking. Fixed with a persistent, resumable cursor
+ *   (retired_sweep_cursor below): each call picks up where the last one
+ *   left off (wrapping back to the tail once it reaches the head), so
+ *   every retired page gets visited on a roughly even rotation instead
+ *   of the same few oldest ones being re-examined every call.
+ *
+ *   Why a page's last slot can take a while to actually register as
+ *   freed, even in a workload where every object IS eventually freed
+ *   (worth stating plainly, since it is not obvious from this module
+ *   alone): a remote free only pushes onto the OWNING page's remote
+ *   stack; nothing updates that page's free_count until the OWNING
+ *   thread itself later calls hz10_page_drain_remote() on that specific
+ *   page (during its own local alloc, find_with_capacity scan, or this
+ *   module's sweep). A caller-side "free" completing is therefore not
+ *   the same event as this module observing it -- there is a real,
+ *   sometimes long delay between the two, which is exactly what the
+ *   persistent cursor is designed to outlast.
  *
  *   Deliberately NOT done in this version (documented up front, not
  *   discovered later): a `retired` page that a sweep drain finds
@@ -81,13 +112,12 @@
  *   effect is measured on its own.
  *
  *   Counters below are split by WHICH mechanism reclaimed a page
- *   (eviction-instant vs. retired-overflow vs. budgeted sweep) so real
- *   workloads can show which lever is actually doing the work, not just
- *   whether reclaim happens at all.
+ *   (eviction-instant vs. budgeted sweep) so real workloads can show
+ *   which lever is actually doing the work, not just whether reclaim
+ *   happens at all.
  */
 
 #define HZ10_CLASS_PAGES_SCAN_LIMIT 128u
-#define HZ10_CLASS_PAGES_RETIRED_LIMIT 128u
 
 /* Pages checked per hz10_class_pages_sweep_retired() call. Kept small on
  * purpose: for a slot_count=1 class under sustained churn, the slow path
@@ -106,6 +136,13 @@ typedef struct Hz10ClassPageList {
   Hz10PageSublist active;
   Hz10PageSublist retired;
 
+  /* Where hz10_class_pages_sweep_retired() resumes next -- persists
+   * across calls so a fixed-budget walk eventually rotates through all
+   * of `retired` instead of always restarting from the tail (see the
+   * module comment's head-of-line-blocking note). NULL means "start
+   * fresh from retired.tail" (also true once a walk reaches head). */
+  Hz10FreelistPage* retired_sweep_cursor;
+
   /*
    * Plain counters, not atomic: list mutation only ever happens from this
    * class's owning thread (see the module comment's threading note).
@@ -116,24 +153,19 @@ typedef struct Hz10ClassPageList {
   uint64_t retired_count;            /* pages that ever entered retired
                                       * (an eviction that was NOT
                                       * immediately idle) */
-  uint32_t max_retired_length;       /* high-water mark, for tuning
-                                      * HZ10_CLASS_PAGES_RETIRED_LIMIT */
-  uint64_t retired_reclaimed_by_sweep_count;    /* reclaimed later by a
-                                                 * budgeted sweep call */
-  uint64_t retired_reclaimed_by_overflow_count; /* reclaimed at the moment
-                                                 * retired itself overflowed
-                                                 * (its own tail's one
-                                                 * last chance) */
-  uint64_t retired_dropped_count;    /* truly given up: retired overflowed
-                                      * and its tail was still not idle */
+  uint32_t max_retired_length;       /* high-water mark -- retired is
+                                      * unbounded, so this is purely
+                                      * informational */
+  uint64_t retired_reclaimed_by_sweep_count; /* reclaimed by a budgeted
+                                              * sweep call */
 } Hz10ClassPageList;
 
 /* Prepends page to `list->active`, O(1) amortized: at most one tail
  * eviction (drain attempt + free_count comparison) is performed per
  * call, never a walk of the whole list. An evicted, not-yet-idle page
  * moves to `list->retired` instead of being dropped (see the module
- * comment) -- itself at most one more bounded eviction check if
- * `retired` also overflows. Does not check for duplicates -- the caller
+ * comment) -- retired is unbounded, so this never itself triggers a
+ * second eviction. Does not check for duplicates -- the caller
  * (hz10_public_entry.c) only ever adds a page once, right after creating
  * it. */
 void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
@@ -151,16 +183,19 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
 
 /*
- * Checks up to HZ10_CLASS_PAGES_SWEEP_BUDGET pages from `list->retired`'s
- * tail (oldest first), draining each and reclaiming (destroying, via Box
- * 4's pool) any now confirmed idle. A page not (yet) idle is left in
- * place in `retired` for a future sweep call to re-check -- this
- * function does not give up on anything itself, only retired-overflow in
- * hz10_class_pages_add() does. Call only from a slow path (a
- * hz10_malloc cache-miss), never the hot per-op alloc path -- the fixed
- * budget keeps this O(1) per call regardless of how large `retired` is,
- * but it is still real, non-trivial work (drain_remote calls), unlike
- * the hot path's plain pointer-chasing.
+ * Checks up to HZ10_CLASS_PAGES_SWEEP_BUDGET pages from `list->retired`,
+ * draining each and reclaiming (destroying, via Box 4's pool) any now
+ * confirmed idle. Resumes from list->retired_sweep_cursor (or `retired`'s
+ * tail if NULL) and saves where it left off for the next call, so a
+ * fixed budget still eventually rotates through all of `retired` instead
+ * of re-examining the same few oldest entries every call (see the module
+ * comment). This function never gives up on anything -- a page not
+ * (yet) idle is simply left in place for a future call to re-check.
+ * Call only from a slow path (a hz10_malloc cache-miss), never the hot
+ * per-op alloc path -- the fixed budget keeps this O(1) per call
+ * regardless of how large `retired` is, but it is still real,
+ * non-trivial work (drain_remote calls), unlike the hot path's plain
+ * pointer-chasing.
  */
 void hz10_class_pages_sweep_retired(Hz10ClassPageList* list);
 
