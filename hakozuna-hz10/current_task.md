@@ -67,11 +67,14 @@ status:
       is consistent with, not contradicting, Box6's deliberate "never
       destroy a page, keep it forever in the per-class list" design (see
       box 6 notes above) -- not a bug, but it does mean sustained/long-running
-      traffic keeps growing RSS with no ceiling in the current wiring. Not
-      separately root-caused yet; likely mitigated by the same Box4 pool
-      wiring fix as the slot_count=1 gap above, since actually destroying
-      genuinely-idle pages is a prerequisite for both. Revisit after that
-      fix lands and report honestly whether it helps or not
+      traffic keeps growing RSS with no ceiling in the current wiring.
+      UPDATE: the Box 6 -> Box 4 pool wiring fix was built and initially
+      looked like it mitigated this, but that result did not reproduce
+      under matched before/after methodology, and the class-list
+      diagnostic counters added afterward confirmed why: reclaim almost
+      never fires in any row (see "class-list diagnostic counters + real-
+      workload check done" further down for the full, corrected finding).
+      This RSS growth is still open, not resolved, in every row tested
 
   Validation read:
     standalone check and normal smokes pass
@@ -888,17 +891,106 @@ reported honestly as both:
   almost every call)
   files: src/hz10_class_pages.{h,c}, src/hz10_freelist_page.h
 
+CORRECTION to the RSS win claimed above -- it does not reproduce, and
+new eviction_count/eviction_reclaimed_count counters (added below) show
+exactly why: the claimed "265,984-424,064 KB, bounded" measurement used
+6 SEPARATE process invocations (RUNS=1 each, via a shell for-loop), while
+the pre-fix baseline it was compared against (61,568 -> 1,174,492 KB) used
+ONE process doing RUNS=10 internally -- not a same-run comparison, an
+apples-to-oranges one. Re-measured with the SAME RUNS=10-in-one-process
+methodology on both sides: post_rss_kb for the slot_count=1 row still
+climbs monotonically, 46,592 KB (run 1) -> 896,884 KB (run 10) -- the
+same order of magnitude and shape as the ORIGINAL pre-fix numbers. The
+Box 6 -> Box 4 wiring did not close this gap. Caught by adding real
+instrumentation instead of continuing to infer from RSS deltas -- see
+"class-list diagnostic counters + real-workload check" immediately below
+for the root cause this surfaced, and current_task.md's own broader
+lesson: an RSS number without matching run methodology on both sides of
+a before/after comparison is not trustworthy, no matter how clean it
+looks in isolation
+
+class-list diagnostic counters + real-workload check done (src/
+hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c): Box 6
+had zero instrumentation -- every claim about whether/how often eviction
+and reclaim actually fire was inferred from RSS deltas, never measured
+directly. This is what caught the correction above:
+  added eviction_count and eviction_reclaimed_count to Hz10ClassPageList
+  (plain fields, list mutation is single-writer -- see the header for the
+  full reasoning), incremented in hz10_class_pages_add(); added
+  hz10_public_entry_class_list_stats(class_id, ...) to read them from the
+  calling thread's own state (out-of-range class_id is a documented
+  no-op); added tests/hz10_class_pages_smoke.c (Box 6's first dedicated
+  smoke, previously only exercised indirectly) covering: no eviction
+  within the scan limit, an idle evicted tail gets reclaimed, a non-idle
+  evicted tail is only dropped and stays safely freeable; added an opt-in
+  HZ10_DUMP_CLASS_STATS=1 aggregation to bench/hz10_public_entry_bench.c
+  (reads every worker thread's per-class stats right before it returns,
+  since TLS state disappears at pthread_join -- zero cost when unset)
+  measured against the real main_r50/main_r90 and slot_count=1 workloads
+  (THREADS=4 ITERS=500000 RUNS=10, MODE=0), and the result overturns the
+  "SCAN_LIMIT rarely reached" guess from the earlier main_r50/r90
+  section: eviction fires CONSTANTLY, not rarely -- main_r50 saw
+  100-2,563 evictions per run, main_r90 saw 645-5,768 per run, and
+  slot_count=1 saw 4,932-19,973 per run. But eviction_reclaimed_count
+  stayed EXACTLY 0 across all 10 runs of BOTH main_r50 and main_r90 (20
+  runs total, not one lucky sample), and stayed at 0-4 per run for
+  slot_count=1 -- a reclaim rate of essentially 0% in every row tested,
+  as low as 4-out-of-19,973 (0.02%) even in the row this mechanism was
+  built for
+  root cause, now understood instead of guessed: the one-shot
+  hz10_page_drain_remote() call at eviction time only catches a page that
+  HAPPENS to be idle at that exact instant. Under real cross-thread churn
+  (REMOTE_PCT=50/90), a page's last outstanding slot is freed by another
+  thread on its own schedule -- if that free hasn't landed yet (or hasn't
+  even been pushed) at the moment this page reaches the tail and gets
+  evicted, it is permanently classified "not idle" and dropped, even
+  though it might have become idle microseconds later. The mechanism
+  built this session (destroy-if-idle-at-eviction) is correct and works
+  exactly as designed (proven by the unit test and by the rare nonzero
+  reclaim counts for slot_count=1) -- it is just structurally unable to
+  catch pages whose idleness arrives asynchronously and late, which is
+  the common case under remote pressure, not an edge case
+  conclusion: the actual, now-measured state of HZ10's RSS story is worse
+  than either the original ~40-50% ratio narrative or the corrected-then-
+  retracted "slot_count=1 RSS win" suggested. Bounding list LENGTH (the
+  eviction_count side) is real and working -- the per-class list is
+  provably capped at SCAN_LIMIT nodes, per the earlier bench/
+  hz10_class_pages_scan_bench.c result. But bounding RSS (the
+  reclaimed_count side) is NOT working in any row tested, because the
+  reclaim trigger (opportunistic, point-in-time) is fundamentally
+  mismatched to how idleness actually arrives (asynchronous, delayed)
+  under remote pressure
+  next concrete step this points to: a point-in-time idle check at
+  eviction cannot work for this access pattern -- a real fix needs either
+  (a) a deferred/retry mechanism for dropped-non-idle pages (a bounded
+  "second chance" list, itself needing its own eviction policy -- real
+  complexity, not a quick patch), or (b) accepting that reclaim-on-evict
+  is the wrong lever entirely and revisiting the alternative already
+  named in the original "slot_count=1 isolation gap" investigation: a
+  cheaper aligned-reservation primitive already closed the SYSCALL half
+  of this (see "slot_count=1 gap CLOSED" above) -- the RSS half may need
+  its own, different mechanism rather than reusing that one
+  files: src/hz10_class_pages.{h,c}, src/hz10_public_entry.{h,c},
+  tests/hz10_class_pages_smoke.c, bench/hz10_public_entry_bench.c
+
 next (re-prioritized from this table, see "Next HZ10 action" above):
   (1) DONE (see above) -- perf stat + strace root-cause pass on
       main_r50/main_r90: fixed two real over-scoped locks, ratio did not
       move outside noise, real cost still unattributed past the
       still-open RMW hypothesis above
-  (2) DONE (see above) -- wired Box 6's per-class page list to Box 4's
-      pool: real, measured RSS win for slot_count=1-shaped classes
-      specifically (bounded instead of unbounded growth), but no ops/s
-      change (ratio stays ~0.48, corrected baseline)
-  (3) DONE (see above) -- revisited RSS growth: fix helps slot_count=1
-      specifically, does not meaningfully change main_r50/r90's RSS growth
+  (2) DONE, then CORRECTED (see above) -- wired Box 6's per-class page
+      list to Box 4's pool. Initially reported as a real RSS win for
+      slot_count=1; that comparison turned out to be methodologically
+      flawed (6 separate processes vs. one 10-run process) and did NOT
+      reproduce under matched methodology. No ops/s change either way
+      (ratio stays ~0.48, corrected baseline)
+  (3) DONE, then SUPERSEDED (see "class-list diagnostic counters" above)
+      -- revisited RSS growth using real counters instead of inference:
+      eviction fires constantly in every row (main_r50/r90 included, not
+      just slot_count=1), but reclaim essentially never fires anywhere
+      (~0% in all rows tested) -- the RSS problem is open in every row,
+      not fixed in one and merely absent in others as previously believed
       (few distinct pages per class there, eviction rarely triggers)
   (4) DONE -- built the dedicated microbenchmark this section used to
       call for (see "remote-free class-count sweep" below): the RMW-cost-
@@ -1003,24 +1095,28 @@ reported honestly (throughput mostly clears the bar, RSS does not):
   the remote rows -- directly consistent with everything else this
   session found: Box 6's per-class list only bounds/reclaims once a
   class's list actually hits HZ10_CLASS_PAGES_SCAN_LIMIT (128) within the
-  run, which the earlier RSS-revisit work already showed does not
-  meaningfully happen for main_r50/r90's classes at this op count (many
-  slots per page, few distinct pages created) -- so RSS keeps
-  accumulating there with nothing to trigger reclaim, exactly the
-  mechanism already documented, now shown to matter enough to fail an
-  actual named gate, not just look untidy in a chart
+  run, which was assumed at the time to be because main_r50/r90's classes
+  rarely reach HZ10_CLASS_PAGES_SCAN_LIMIT. CORRECTION (see "class-list
+  diagnostic counters" above): that assumption was wrong -- real counters
+  later showed eviction fires constantly in main_r50/r90 too (hundreds to
+  thousands of times per run), just like slot_count=1. The real cause is
+  that reclaim (not eviction) almost never fires in ANY row, because the
+  one-shot idle check at eviction time structurally cannot catch a page
+  whose last slot is freed by another thread moments too late -- see that
+  section for the full, corrected root cause
   honest scope note: this is ONE comparison point (THREADS=4,
   ITERS=500000x10, this machine, HZ8's current default build). Not
   re-verified against a from-scratch HZ8 rebuild or a different thread
   count; treat as a real first data point for a bar that had never been
   measured before, not a final verdict
-  next concrete step this points to: closing the RSS gate for main_r50/r90
-  needs the SAME Box 6/Box 4 reclaim mechanism built this session, just
-  triggered by something other than the SCAN_LIMIT boundary (e.g. an
-  explicit idle-page sweep call, or a much smaller effective window for
-  high-churn classes) -- the slot_count=1 fix's mechanism already proves
-  the reclaim path works, it just isn't reached by these rows' access
-  pattern
+  next concrete step this points to (SUPERSEDED, see "class-list
+  diagnostic counters" above for the corrected version): closing the RSS
+  gate for main_r50/r90 does NOT just need the existing Box 6/Box 4
+  reclaim mechanism reached more often -- that mechanism barely reclaims
+  anything even in the row it was built for. A real fix needs a
+  different trigger than a point-in-time idle check at eviction (a
+  deferred/retry path for dropped-non-idle pages, or a different reclaim
+  design entirely)
   files: scripts/run_hz10_public_entry_vs_hz8_same_run.sh (new),
   bench/lib/hz10_bench_common.sh
 
