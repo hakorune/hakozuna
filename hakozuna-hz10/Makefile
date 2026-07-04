@@ -4,6 +4,7 @@
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan \
+	smoke-retired-ready bench-retired-ready \
 	hz10-standalone-check
 
 CC ?= gcc
@@ -51,7 +52,8 @@ all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-
 	smoke-remote-stack-drain bench-remote-stack-drain bench-multiclass-remote \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
-	smoke-public-entry bench-public-entry bench-class-pages-scan
+	smoke-public-entry bench-public-entry bench-class-pages-scan \
+	smoke-retired-ready bench-retired-ready
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -139,6 +141,22 @@ CLASS_PAGES_SCAN_BENCH_SRC := $(ROOT)/bench/hz10_class_pages_scan_bench.c $(PUBL
 $(ROOT)/hz10_class_pages_scan_bench: $(CLASS_PAGES_SCAN_BENCH_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(INC) -o $@ $(CLASS_PAGES_SCAN_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 
+RETIRED_READY_SRC := $(ROOT)/src/hz10_retired_ready.c $(REMOTE_STACK_SRC)
+SMOKE_RETIRED_READY_SRC := $(ROOT)/tests/hz10_retired_ready_smoke.c $(RETIRED_READY_SRC)
+BENCH_RETIRED_READY_SRC := $(ROOT)/bench/hz10_retired_ready_bench.c $(RETIRED_READY_SRC)
+
+$(ROOT)/hz10_retired_ready_smoke: $(SMOKE_RETIRED_READY_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_RETIRED_READY_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-retired-ready: $(ROOT)/hz10_retired_ready_smoke
+	$(ROOT)/hz10_retired_ready_smoke
+
+$(ROOT)/hz10_retired_ready_bench: $(BENCH_RETIRED_READY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_RETIRED_READY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-retired-ready: $(ROOT)/hz10_retired_ready_bench
+	$(ROOT)/hz10_retired_ready_bench
+
 bench-class-pages-scan: $(ROOT)/hz10_class_pages_scan_bench
 	$(ROOT)/hz10_class_pages_scan_bench
 
@@ -153,4 +171,5 @@ clean:
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
-		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke
+		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
+		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench

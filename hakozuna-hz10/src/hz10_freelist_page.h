@@ -89,6 +89,41 @@ typedef struct Hz10FreelistPage {
   uint64_t drain_count;      /* owner-only, plain: incremented at drain */
   uint64_t drain_slot_count; /* owner-only, plain: total slots ever drained */
   uint64_t drain_invalid_count; /* owner-only: remote frees rejected at drain */
+
+  /*
+   * HZ10RetiredReadyQueue-L0 prototype (src/hz10_retired_ready.{h,c}): an
+   * event-driven HINT layer on top of Box 6's polling harvest sweep,
+   * still being evaluated in isolation (see current_task.md's "polling-
+   * vs-event-driven" entry) -- not yet wired into hz10_malloc/hz10_free,
+   * and deliberately NOT a replacement for harvest's authoritative
+   * free_count == slot_count / local_free_head check: this mechanism can
+   * race (see hz10_retired_ready.c's module comment for why an exact
+   * fix would need much heavier machinery than a hint layer justifies),
+   * so a page it reports as ready is only ever a CANDIDATE -- the caller
+   * must still re-verify with the existing check before treating it as
+   * reclaimable. A false positive (or a missed one) is a wasted/skipped
+   * opportunity, never a correctness issue, because nothing downstream
+   * trusts this layer's count on its own.
+   * retired_ready_flag is set by the owner only, at the moment a page
+   * becomes retired, and read (never written) by a foreign thread's free
+   * to decide whether that free should also touch
+   * retired_ready_outstanding. Both are untouched, and cost nothing, for
+   * a page that is never retired this way -- Box 2/3's existing
+   * alloc/free/drain paths do not read or write either field.
+   * retired_ready_next is a Treiber-stack link distinct from
+   * next_in_owner_list/prev_in_owner_list: a page can be linked into Box
+   * 6's retired doubly-linked list AND awaiting a ready-stack push at
+   * the same time, so reusing either of those two fields for this would
+   * corrupt one or the other. retired_ready_stack is an opaque (to Box
+   * 2) pointer to whichever Hz10RetiredReadyStack this page should push
+   * itself onto if its count reaches zero -- set by the owner alongside
+   * the flag, read by a foreign thread's free so it does not need its
+   * own separate lookup of "which stack does this page belong to."
+   */
+  _Atomic(int) retired_ready_flag;
+  _Atomic(uint32_t) retired_ready_outstanding;
+  struct Hz10FreelistPage* retired_ready_next;
+  void* retired_ready_stack;
 } Hz10FreelistPage;
 
 /*
