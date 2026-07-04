@@ -803,15 +803,15 @@ machine's already-documented noise band; gap stays open, not closed:
   and the quantum lock truly was over-scoped), re-verified against all
   smokes, ASan/UBSan, TSan (ASLR off), and hz10-standalone-check, all
   green -- just not the row's dominant cost, so the ~0.48 gap stays open
-  still-open hypothesis for the real ~1.8x futex differential between
-  HZ10 and tcmalloc after subtracting the shared inbox cost: most likely
-  the same "inherent" per-op cost already documented in the small_remoteNN
-  investigation above (2 atomic RMWs per remote free: pending-bit
-  fetch_or + Treiber CAS push, src/hz10_remote_stack.c), now compounded
-  across all 24 size classes simultaneously instead of the 1-3 small
-  classes that row exercised -- not confirmed, would need a dedicated
-  microbenchmark isolating remote-free RMW cost at this class count to
-  say for sure. Left open, not further chased here
+  hypothesis at the time this was written: the same "inherent" per-op
+  cost already documented in the small_remoteNN investigation above (2
+  atomic RMWs per remote free: pending-bit fetch_or + Treiber CAS push,
+  src/hz10_remote_stack.c), now compounded across all 24 size classes
+  simultaneously instead of the 1-3 small classes that row exercised --
+  UPDATE: tested directly with a dedicated microbenchmark (see "remote-
+  free class-count sweep done" below) and REFUTED for the push/RMW side
+  specifically; a real but different compounding cost was found instead,
+  on the drain/scan side. See that entry for the full result
   files: src/hz10_freelist_page.c, src/hz10_page_pool.c
 
 Box 6 -> Box 4 pool wiring done (src/hz10_class_pages.{h,c}, src/
@@ -900,18 +900,72 @@ next (re-prioritized from this table, see "Next HZ10 action" above):
   (3) DONE (see above) -- revisited RSS growth: fix helps slot_count=1
       specifically, does not meaningfully change main_r50/r90's RSS growth
       (few distinct pages per class there, eviction rarely triggers)
-  still open, unclaimed: the real ops/s gap for both main_r50/r90 (~0.48)
-      and slot_count=1 (~0.48, corrected) remains unattributed to a
-      specific line past the still-open remote-free RMW hypothesis above.
-      Whoever picks this up next should write a dedicated microbenchmark
-      isolating remote-free RMW cost (pending-bit fetch_or + Treiber CAS
-      push, src/hz10_remote_stack.c) at the actual class counts/thread
-      counts these rows use, rather than re-profiling the full bench
-      again -- strace/perf on the full bench binary conflates bench
-      harness cost (Hz10BenchInbox's own mutex) with allocator cost, see
-      the main_r50/r90 investigation above
+  (4) DONE -- built the dedicated microbenchmark this section used to
+      call for (see "remote-free class-count sweep" below): the RMW-cost-
+      compounds-across-classes hypothesis is REFUTED for the push side,
+      CONFIRMED for the drain side, refining rather than just closing this
+      question
   deprioritized, unchanged: the box 3 O(N^2) contains-walk fallback (not
   confirmed to matter given the marker fix already handles the common case)
+
+remote-free class-count sweep done (bench/hz10_multiclass_remote_bench.c,
+new file, `make bench-multiclass-remote`): decisive answer to the
+still-open "does remote-free RMW cost compound across classes" question,
+refining rather than confirming or refuting it outright:
+  design: same proven shape as bench/hz10_remote_stack_drain_bench.c
+  (pre-allocate every slot up front, split ownership statically across
+  persistent producer threads, time a pure parallel remote-free burst then
+  a single owner drain pass) -- deliberately reused instead of
+  reinvented, since that shape already avoids the two confounds the
+  main_r50/r90 investigation identified: bench/hz10_public_entry_bench.c's
+  own Hz10BenchInbox mutex, and fresh-page creation/eviction churn. New
+  here: CLASSES pages (the first N of the 24 real hz10_size_class shapes,
+  THREADS=4 matching main_r50/r90) instead of one, all their slots pooled
+  into one flat array and Fisher-Yates shuffled (fixed seed) before being
+  split across producer threads, so each thread's slice is a realistic
+  cross-class mix rather than one class per thread. Swept CLASSES = 1, 2,
+  4, 8, 16, 24
+  measured, reproduced twice (REPEAT=200 and REPEAT=500, numbers agree
+  within a few percent both times -- unusually low noise for this
+  environment, unlike the slot_count=1 investigation's syscall-bound
+  numbers): remote_push (the actual atomic RMW cost: pending-bit
+  fetch_or + Treiber CAS) stayed FLAT to slightly IMPROVING across the
+  sweep -- ~25-27M ops/s at classes=1, ~29-31M ops/s at classes=24, no
+  degradation. owner_drain (the per-class hz10_page_drain_remote() calls
+  a scan makes) showed a clear, reproducible, monotonic DECLINE instead:
+  ~131-134M ops/s at classes=1 down to ~73-74M ops/s at classes=8, flat
+  from there to classes=24 -- roughly 1.8x slower, plateauing rather than
+  growing further past ~8 distinct pages
+  conclusion: the original hypothesis ("compounded remote-free RMW cost
+  across 24 classes") is REFUTED as stated -- the RMW push itself does not
+  get more expensive with more classes live. What IS real and reproducible
+  is a cache/TLB-pressure cost on the DRAIN/scan side from touching more
+  distinct Hz10FreelistPage structs and their backing quanta, unrelated to
+  the atomic-RMW mechanism itself. This is a genuinely different, more
+  specific finding than the RMW guess it replaces: it points at
+  hz10_class_pages_find_with_capacity()'s per-candidate
+  hz10_page_drain_remote() calls (src/hz10_class_pages.c) as the
+  compounding cost, not src/hz10_remote_stack.c's push path
+  honest scope limit, stated up front: this bench measures N DIFFERENT
+  pages touched in one timed drain round, which is a reasonable proxy for
+  cache/TLB pressure from a larger live working set, but is NOT a literal
+  reproduction of hz10_class_pages_find_with_capacity()'s real bound (a
+  single hz10_malloc call only ever drains within its OWN class's list,
+  up to HZ10_CLASS_PAGES_SCAN_LIMIT=128 pages of the SAME shape -- never
+  across classes in one call). main_r50/r90's real working set could be
+  up to 24 classes x 128 pages each, far larger than this sweep's max of
+  24 total pages -- so the real effect in the full bench could plausibly
+  be larger than what's measured here, not smaller. Not further chased
+  in this session; flagged for whoever picks up the ops/s gap next
+  re-verified: ASan/UBSan clean (no bugs in the new shuffle/thread-split
+  logic), ops/s numbers reproduced across two separate REPEAT values,
+  hz10-standalone-check green
+  next concrete step for whoever continues this: profile
+  hz10_class_pages_find_with_capacity()'s scan specifically (not the full
+  bench binary) with perf stat/cachegrind at realistic SCAN_LIMIT-bounded
+  depths per class, now that the drain-side cache-pressure mechanism is
+  the confirmed lead instead of the RMW guess
+  files: bench/hz10_multiclass_remote_bench.c (new), Makefile, .gitignore
 
 first GO:
   >=2.0x HZ8 local or 250M+ local0
