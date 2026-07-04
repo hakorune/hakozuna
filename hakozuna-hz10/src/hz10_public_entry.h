@@ -35,8 +35,18 @@
  *     small budget of it: a page found fully idle is destroyed, and one
  *     found with only PARTIAL capacity back (not idle, but usable) is
  *     promoted straight back into `active` for immediate reuse instead of
- *     waiting on the rest of its slots to free too -- see
- *     src/hz10_class_pages.h for the full two-list design, why an earlier
+ *     waiting on the rest of its slots to free too. Before that budgeted
+ *     scan even runs, a lock-free ready queue (src/hz10_retired_ready.h)
+ *     is drained first: any thread's accepted remote free that resolves
+ *     a retired page's last known-outstanding slot pushes it there
+ *     directly, so the owner can find it in O(1) instead of waiting on
+ *     a rotating scan -- measured (current_task.md) to need a single
+ *     check-in regardless of population size, against a budgeted scan's
+ *     population/budget floor. A candidate from that queue is always
+ *     re-verified with the same idle/partial check before being trusted
+ *     (it is a hint, not authoritative -- see hz10_retired_ready.h for
+ *     why), so this can never itself cause an incorrect reclaim -- see
+ *     src/hz10_class_pages.h for the full design, why an earlier
  *     one-shot-at-eviction version measured as an almost-total miss under
  *     real remote-free churn, and why waiting for full idle alone measured
  *     as a dead end for multi-slot classes
@@ -68,6 +78,10 @@ typedef struct Hz10ClassPageListStats {
   uint64_t retired_reclaimed_by_sweep_count;
   uint64_t retired_promoted_by_sweep_count;
   uint64_t harvest_call_count;
+  uint64_t retired_reclaimed_by_ready_count;
+  uint64_t retired_promoted_by_ready_count;
+  uint64_t ready_false_positive_count;
+  uint64_t ready_push_count;
 } Hz10ClassPageListStats;
 
 /*

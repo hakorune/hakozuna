@@ -2,6 +2,7 @@
 #define HZ10_CLASS_PAGES_H
 
 #include "hz10_freelist_page.h"
+#include "hz10_retired_ready.h"
 
 /*
  * Fixes the box 5 remote-row regression: a thread's public entry used to
@@ -128,6 +129,29 @@
  *   page (eviction-instant destroy / budgeted-sweep destroy / budgeted-
  *   sweep promote) so real workloads can show which lever is actually
  *   doing the work, not just whether reclaim happens at all.
+ *
+ *   HZ10RetiredReadyQueue-L0 (src/hz10_retired_ready.{h,c}): measured in
+ *   isolation (current_task.md's "polling-vs-event-driven" entry) to
+ *   need O(1) owner check-ins to reclaim a population that budgeted
+ *   polling alone needs O(population / SWEEP_BUDGET) check-ins for --
+ *   harvest's own outflow is capped at (frequency of a genuine miss) x
+ *   SWEEP_BUDGET, entirely decoupled from how fast pages actually
+ *   resolve, which is exactly what left retired_count == retired_length
+ *   (100% retention, 0% outflow) in every main_r50/main_r90 run measured
+ *   under RetiredPartialReuse-L1 above. `ready` is drained FIRST, before
+ *   the budgeted cursor walk below, on every harvest call: each
+ *   candidate popped from it is a HINT ONLY (see hz10_retired_ready.h for
+ *   why this cannot be authoritative without much heavier synchronization
+ *   machinery) and is re-verified with the exact same idle/partial check
+ *   the cursor walk uses before being trusted -- a false positive just
+ *   falls through to the cursor walk finding it later (still correctly
+ *   linked in `retired` either way), never a correctness risk. A page
+ *   evicted-but-not-idle is marked into `ready` (hz10_retired_ready_mark())
+ *   at the same point it is prepended to `retired`, and every accepted
+ *   remote free (hz10_public_entry.c's hz10_free()) reports itself via
+ *   hz10_retired_ready_note_remote_free() -- a single flag check, cheap
+ *   and unconditional, for every remote free regardless of whether its
+ *   target page is tracked this way.
  */
 
 #define HZ10_CLASS_PAGES_SCAN_LIMIT 128u
@@ -156,6 +180,14 @@ typedef struct Hz10ClassPageList {
    * "start fresh from retired.tail" (also true once a walk reaches
    * head). */
   Hz10FreelistPage* retired_sweep_cursor;
+
+  /* HZ10RetiredReadyQueue-L0's ready stack for this class list -- pages
+   * evicted-but-not-idle are marked against this (hz10_retired_ready_
+   * mark()) and any thread's accepted remote free may push one back onto
+   * it (hz10_retired_ready_note_remote_free()); only this class's owning
+   * thread ever pops from it (hz10_class_pages_harvest_retired_capacity()
+   * drains it first, before the budgeted cursor walk). */
+  Hz10RetiredReadyStack ready;
 
   /*
    * Plain counters, not atomic: list mutation only ever happens from this
@@ -187,6 +219,18 @@ typedef struct Hz10ClassPageList {
                                       * reached for this workload shape",
                                       * which look identical in the two
                                       * counters above alone. */
+  uint64_t retired_reclaimed_by_ready_count;  /* destroyed via a `ready`
+                                              * candidate (found fully
+                                              * idle on re-verify) */
+  uint64_t retired_promoted_by_ready_count;   /* moved back to `active`
+                                              * via a `ready` candidate
+                                              * (found partial capacity
+                                              * on re-verify) */
+  uint64_t ready_false_positive_count;  /* a `ready` candidate that,
+                                        * on re-verify, was neither idle
+                                        * nor partial -- left in `retired`
+                                        * for the cursor walk to find
+                                        * later; see hz10_retired_ready.h */
 } Hz10ClassPageList;
 
 /* Prepends page to `list->active`, O(1) amortized: at most one tail
@@ -194,9 +238,12 @@ typedef struct Hz10ClassPageList {
  * call, never a walk of the whole list. An evicted, not-yet-idle page
  * moves to `list->retired` instead of being dropped (see the module
  * comment) -- retired is unbounded, so this never itself triggers a
- * second eviction. Does not check for duplicates -- the caller
- * (hz10_public_entry.c) only ever adds a page once, right after creating
- * it. */
+ * second eviction. That same page is also marked against list->ready
+ * (hz10_retired_ready_mark()) so an accepted remote free targeting one
+ * of its still-outstanding slots can push it back for O(1) discovery
+ * instead of waiting on the budgeted cursor walk alone. Does not check
+ * for duplicates -- the caller (hz10_public_entry.c) only ever adds a
+ * page once, right after creating it. */
 void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
 
 /*
@@ -212,28 +259,37 @@ void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page);
 Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
 
 /*
- * Checks up to HZ10_CLASS_PAGES_SWEEP_BUDGET pages from `list->retired`,
- * draining each. A page found fully idle (free_count == slot_count) is
- * destroyed (returned to Box 4's pool) and checking continues. A page
- * found with PARTIAL capacity (local_free_head != NULL, but not fully
- * idle) is immediately unlinked from `retired` and promoted back into
- * `list->active` (via the same prepend-with-eviction path
- * hz10_class_pages_add() uses) -- this function returns that page
- * directly so the caller can allocate from it right away, without
- * waiting for a later hz10_malloc call to rediscover it. Returns NULL if
- * the budget is exhausted (or `retired` is empty) without finding
- * anything promotable -- fully-idle destroys along the way still happen
- * and are still counted even when NULL is returned.
+ * First drains list->ready to empty (see the module comment on
+ * HZ10RetiredReadyQueue-L0): each candidate popped is re-verified with
+ * exactly the same idle/partial check the budgeted walk below uses
+ * before being trusted (a candidate is only ever a hint -- see
+ * hz10_retired_ready.h). A candidate found fully idle is unlinked from
+ * `retired` and destroyed, and draining continues (more candidates may
+ * be waiting, and this is O(1) per candidate, no scan cost). A candidate
+ * found with PARTIAL capacity is unlinked from `retired`, promoted back
+ * into `list->active`, and returned immediately -- this is the common
+ * case this mechanism exists for, so it short-circuits here rather than
+ * also running the budgeted walk below on the same call. A candidate
+ * that is neither (a race -- see hz10_retired_ready.h) is simply left in
+ * `retired`, counted, and draining continues.
  *
- * Resumes from list->retired_sweep_cursor (or `retired`'s tail if NULL)
- * and saves where it left off, so a fixed budget still eventually
- * rotates through all of `retired` instead of re-examining the same few
- * oldest entries every call (see the module comment). Call only from a
- * slow path (a hz10_malloc cache-miss, right before it would otherwise
- * pay for a fresh page), never the hot per-op alloc path -- the fixed
- * budget keeps this O(1) per call regardless of how large `retired` is,
- * but it is still real, non-trivial work (drain_remote calls), unlike
- * the hot path's plain pointer-chasing.
+ * If `ready` never yields a promotable candidate, checks up to
+ * HZ10_CLASS_PAGES_SWEEP_BUDGET pages from `list->retired` via a
+ * budgeted cursor walk (the original RetiredPartialReuse-L1 mechanism,
+ * unchanged): draining each, destroying on full idle, promoting and
+ * returning on partial capacity. Returns NULL if both the ready queue
+ * and the budgeted walk are exhausted (or empty) without finding
+ * anything promotable -- destroys along either path still happen and
+ * are still counted even when NULL is returned.
+ *
+ * The budgeted walk resumes from list->retired_sweep_cursor (or
+ * `retired`'s tail if NULL) and saves where it left off, so a fixed
+ * budget still eventually rotates through all of `retired` instead of
+ * re-examining the same few oldest entries every call (see the module
+ * comment) -- this remains the correctness backstop for anything the
+ * ready queue's race window ever misses. Call only from a slow path (a
+ * hz10_malloc cache-miss, right before it would otherwise pay for a
+ * fresh page), never the hot per-op alloc path.
  */
 Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
     Hz10ClassPageList* list);

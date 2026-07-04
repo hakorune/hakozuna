@@ -1,6 +1,7 @@
 #include "hz10_class_pages.h"
 #include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
+#include "hz10_retired_ready.h"
 
 /* Generic doubly-linked splice helpers shared by `active` and `retired`
  * (a page is in at most one of the two sublists at a time, so reusing
@@ -50,6 +51,23 @@ static void hz10_page_sublist_remove(Hz10PageSublist* sub,
   sub->length -= 1u;
 }
 
+/* Same as hz10_page_sublist_remove(&list->retired, node), but also
+ * redirects list->retired_sweep_cursor first if it currently points at
+ * `node` -- a persistent cross-call cursor left dangling by a removal it
+ * does not know about is a real use-after-free (found via ASan under
+ * bench/hz10_public_entry_steady_state_bench.c's long-running,
+ * continuously-checking-in workload): HZ10RetiredReadyQueue-L0's own
+ * removals (below) happen independently of the budgeted walk's own
+ * prev-tracking, so any removal from `retired` from ANYWHERE must go
+ * through this, not the plain sublist helper directly. */
+static void hz10_class_pages_retired_remove(Hz10ClassPageList* list,
+                                           Hz10FreelistPage* node) {
+  if (list->retired_sweep_cursor == node) {
+    list->retired_sweep_cursor = node->prev_in_owner_list;
+  }
+  hz10_page_sublist_remove(&list->retired, node);
+}
+
 /* Shared by hz10_class_pages_add() (a brand-new page) and
  * hz10_class_pages_harvest_retired_capacity() (a page promoted back from
  * `retired`): prepend to `active`'s head, and if that pushes length past
@@ -89,6 +107,11 @@ static void hz10_class_pages_prepend_active_with_eviction(
   if (list->retired.length > list->max_retired_length) {
     list->max_retired_length = list->retired.length;
   }
+  /* Also register for O(1) event-driven discovery (see the module
+   * comment on HZ10RetiredReadyQueue-L0) -- outstanding is exactly the
+   * slots this drain_remote() call above did not just account for. */
+  hz10_retired_ready_mark(evict, &list->ready,
+                         evict->slot_count - evict->free_count);
 }
 
 void hz10_class_pages_add(Hz10ClassPageList* list, Hz10FreelistPage* page) {
@@ -113,12 +136,36 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(
 
 Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
     Hz10ClassPageList* list) {
+  list->harvest_call_count += 1u;
+
+  /* O(1) event-driven fast path first -- see the module comment on
+   * HZ10RetiredReadyQueue-L0. Every candidate is a hint, re-verified
+   * exactly like the budgeted walk below verifies its own candidates. */
+  Hz10FreelistPage* candidate;
+  while ((candidate = hz10_retired_ready_pop(&list->ready)) != NULL) {
+    hz10_page_drain_remote(candidate);
+    if (candidate->free_count == candidate->slot_count) {
+      hz10_class_pages_retired_remove(list, candidate);
+      list->retired_reclaimed_by_ready_count += 1u;
+      hz10_pooled_page_destroy(candidate);
+      /* Keep draining -- more candidates may already be waiting, and
+       * each is O(1), no scan cost. */
+    } else if (candidate->local_free_head) {
+      hz10_class_pages_retired_remove(list, candidate);
+      list->retired_promoted_by_ready_count += 1u;
+      hz10_class_pages_prepend_active_with_eviction(list, candidate);
+      return candidate;
+    } else {
+      /* Race (see hz10_retired_ready.h): leave it exactly where it
+       * already is in `retired` for the budgeted walk below to find. */
+      list->ready_false_positive_count += 1u;
+    }
+  }
+
   /* Resume from the cursor left by the last call (or `retired`'s tail if
    * there wasn't one, or the last call walked off the head end) -- see
    * the module comment for why restarting from the tail every call
    * measured as a head-of-line-blocking dead end. */
-  list->harvest_call_count += 1u;
-
   Hz10FreelistPage* node = list->retired_sweep_cursor;
   if (!node) {
     node = list->retired.tail;
@@ -128,11 +175,24 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
   while (node && checked < HZ10_CLASS_PAGES_SWEEP_BUDGET) {
     /* Save prev (toward head) before this node possibly gets unlinked. */
     Hz10FreelistPage* prev = node->prev_in_owner_list;
+
+    /* Skip a node currently linked into `ready` (see the struct comment
+     * on retired_ready_on_stack): destroying or promoting it here, while
+     * hz10_retired_ready_pop() might still reach it via retired_ready_
+     * next, is a real use-after-free -- leave it for the ready-queue
+     * path (drained at the top of this function) to finish instead. */
+    if (atomic_load_explicit(&node->retired_ready_on_stack,
+                             memory_order_acquire)) {
+      node = prev;
+      ++checked;
+      continue;
+    }
+
     hz10_page_drain_remote(node);
 
     if (node->free_count == node->slot_count) {
       /* Fully idle: nothing left to reuse, just reclaim it. */
-      hz10_page_sublist_remove(&list->retired, node);
+      hz10_class_pages_retired_remove(list, node);
       list->retired_reclaimed_by_sweep_count += 1u;
       hz10_pooled_page_destroy(node);
     } else if (node->local_free_head) {
@@ -140,7 +200,7 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
        * promote it into `active` right now and hand it to the caller,
        * who is about to pay for a fresh page otherwise (see the module
        * comment on RetiredPartialReuse-L1). */
-      hz10_page_sublist_remove(&list->retired, node);
+      hz10_class_pages_retired_remove(list, node);
       list->retired_promoted_by_sweep_count += 1u;
       hz10_class_pages_prepend_active_with_eviction(list, node);
       list->retired_sweep_cursor = prev;

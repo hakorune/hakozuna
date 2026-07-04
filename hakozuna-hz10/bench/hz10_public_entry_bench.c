@@ -131,6 +131,9 @@ static _Atomic(uint64_t) hz10_bench_retired_count_sum;
 static _Atomic(uint64_t) hz10_bench_retired_reclaimed_sweep_sum;
 static _Atomic(uint64_t) hz10_bench_retired_promoted_sweep_sum;
 static _Atomic(uint64_t) hz10_bench_harvest_call_sum;
+static _Atomic(uint64_t) hz10_bench_retired_reclaimed_ready_sum;
+static _Atomic(uint64_t) hz10_bench_retired_promoted_ready_sum;
+static _Atomic(uint64_t) hz10_bench_ready_false_positive_sum;
 
 static void hz10_bench_atomic_max_u64(_Atomic(uint64_t)* target,
                                     uint64_t candidate) {
@@ -167,6 +170,15 @@ static void hz10_bench_collect_class_stats(void) {
                               memory_order_relaxed);
     atomic_fetch_add_explicit(&hz10_bench_harvest_call_sum,
                               stats.harvest_call_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_ready_sum,
+                              stats.retired_reclaimed_by_ready_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_promoted_ready_sum,
+                              stats.retired_promoted_by_ready_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_ready_false_positive_sum,
+                              stats.ready_false_positive_count,
+                              memory_order_relaxed);
   }
 }
 
@@ -258,6 +270,9 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_retired_reclaimed_sweep_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_retired_promoted_sweep_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_harvest_call_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_reclaimed_ready_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_promoted_ready_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_ready_false_positive_sum, 0u, memory_order_relaxed);
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -317,7 +332,8 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         "max_retired_length=%llu eviction_count=%llu "
         "eviction_reclaimed_count=%llu retired_count=%llu "
         "retired_reclaimed_by_sweep=%llu retired_promoted_by_sweep=%llu "
-        "harvest_call_count=%llu\n",
+        "harvest_call_count=%llu retired_reclaimed_by_ready=%llu "
+        "retired_promoted_by_ready=%llu ready_false_positive=%llu\n",
         mech, run, runs, HZ10_CLASS_PAGES_SWEEP_BUDGET,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_active_length_sum, memory_order_relaxed),
@@ -336,7 +352,13 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
         (unsigned long long)atomic_load_explicit(
             &hz10_bench_retired_promoted_sweep_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_harvest_call_sum, memory_order_relaxed));
+            &hz10_bench_harvest_call_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_reclaimed_ready_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_promoted_ready_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_ready_false_positive_sum, memory_order_relaxed));
   }
   return 0;
 }

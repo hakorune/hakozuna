@@ -119,11 +119,26 @@ typedef struct Hz10FreelistPage {
    * itself onto if its count reaches zero -- set by the owner alongside
    * the flag, read by a foreign thread's free so it does not need its
    * own separate lookup of "which stack does this page belong to."
+   * retired_ready_on_stack is a THIRD, separate state from
+   * retired_ready_flag (found necessary, not assumed, after ASan caught
+   * a real use-after-free under bench/hz10_public_entry_steady_state_
+   * bench.c's long-running workload): retired_ready_flag is cleared
+   * BEFORE the Treiber-stack push in hz10_retired_ready_note_remote_
+   * free(), so it cannot also serve as "is this page currently linked
+   * into the ready stack" -- and Box 6's budgeted cursor walk, which
+   * knows nothing about ready-stack membership, could otherwise destroy
+   * a page (via its own, independent free_count==slot_count check)
+   * while that same page was still linked into the ready stack via
+   * retired_ready_next, leaving a dangling entry for a later pop() to
+   * dereference. Set (relaxed) right before the push, cleared (relaxed)
+   * right after a successful pop -- the budgeted walk must skip any
+   * node with this set, leaving it for the ready-queue path to finish.
    */
   _Atomic(int) retired_ready_flag;
   _Atomic(uint32_t) retired_ready_outstanding;
   struct Hz10FreelistPage* retired_ready_next;
   void* retired_ready_stack;
+  _Atomic(int) retired_ready_on_stack;
 } Hz10FreelistPage;
 
 /*

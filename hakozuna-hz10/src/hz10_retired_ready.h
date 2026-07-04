@@ -58,6 +58,13 @@
 
 typedef struct Hz10RetiredReadyStack {
   _Atomic(struct Hz10FreelistPage*) head;
+
+  /* Diagnostic only: lifetime count of successful pushes (see
+   * hz10_retired_ready_note_remote_free()) -- lets a caller compute
+   * "backlog currently sitting in `head`, not yet popped" as
+   * push_count minus however many it has itself popped and processed,
+   * without needing to walk the stack. Not read or written by pop(). */
+  _Atomic(uint64_t) push_count;
 } Hz10RetiredReadyStack;
 
 /*

@@ -4,6 +4,7 @@
 #include "hz10_pagemap.h"
 #include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
+#include "hz10_retired_ready.h"
 #include "hz10_size_class.h"
 
 typedef struct Hz10ClassState {
@@ -108,7 +109,17 @@ int hz10_free(void* ptr) {
     hz10_freelist_page_free(page, ptr);
     return 1;
   }
-  return hz10_page_remote_free(page, ptr, route.generation) ? 1 : 0;
+  if (!hz10_page_remote_free(page, ptr, route.generation)) {
+    return 0;
+  }
+  /* Cheap (one flag check, see hz10_retired_ready.h) no-op unless `page`
+   * is currently tracked by HZ10RetiredReadyQueue-L0 -- see
+   * src/hz10_class_pages.h for why this call is unconditional for every
+   * accepted remote free rather than gated on some "is this page
+   * retired" check here: the module itself is the one source of truth
+   * for that, via the flag it owns. */
+  hz10_retired_ready_note_remote_free(page);
+  return 1;
 }
 
 void hz10_public_entry_class_list_stats(uint32_t class_id,
@@ -132,4 +143,11 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
   stats_out->retired_promoted_by_sweep_count =
       list->retired_promoted_by_sweep_count;
   stats_out->harvest_call_count = list->harvest_call_count;
+  stats_out->retired_reclaimed_by_ready_count =
+      list->retired_reclaimed_by_ready_count;
+  stats_out->retired_promoted_by_ready_count =
+      list->retired_promoted_by_ready_count;
+  stats_out->ready_false_positive_count = list->ready_false_positive_count;
+  stats_out->ready_push_count = atomic_load_explicit(
+      &list->ready.push_count, memory_order_relaxed);
 }
