@@ -199,8 +199,30 @@ status:
          from a diagnostic-only flag to a real guarded opt-in lane and
          measure it properly across main_r50/r90, local0, small_remote50/90,
          and slot_count=1. Judge on "hot path unchanged, RSS moves toward
-         HZ8" -- NOT YET DONE, depends on (2)'s split display to read
-         cleanly.
+         HZ8".
+         DONE as HZ10LifecycleFlushAB-L1:
+         log:
+           bench_results/20260704T234016Z_hz10_lifecycle_flush_ab_l1/combined.log
+         THREADS=4 ITERS=500000 RUNS=10 MODE=0 HZ10_DUMP_CLASS_STATS=1,
+         baseline vs HZ10_THREAD_EXIT_RECLAIM=1 medians:
+           main_local0 work_loop 176.31M -> 183.05M, RSS 27,962 -> 8,000 KB.
+           main_r50 work_loop 14.07M -> 13.09M, total 14.07M -> 11.97M,
+             RSS 300,410 -> 77,768 KB, reclaimed median 2,070 pages.
+           main_r90 work_loop 8.61M -> 8.17M, total 8.61M -> 7.21M,
+             RSS 679,746 -> 146,944 KB, reclaimed median 4,176 pages.
+           small_remote50 work_loop 18.19M -> 17.70M,
+             RSS 17,360 -> 5,674 KB.
+           small_remote90 work_loop 13.49M -> 13.23M,
+             RSS 22,074 -> 7,490 KB.
+           slot_count1_r90 work_loop 6.97M -> 6.24M, total 6.97M -> 5.20M,
+             RSS 426,176 -> 256,128 KB, reclaimed median 9,464 pages.
+         Read: GO as an explicit opt-in lifecycle boundary. RSS closure is
+         strong and no busy pages were reclaimed. The remaining work-loop
+         delta is not a hot-path code change; it is mainly policy/cold-start
+         effect because baseline retains page state across RUNS while flush
+         intentionally discards it. Run-1 work-loop ratios for main_r50/r90
+         and small_remote rows were ~1.00-1.03, supporting that read. Keep
+         reporting both work_loop and work_loop_plus_flush columns.
       4. Only after (1)-(3): revisit throughput. The next real lever is
          remote-free publication cost, but touching the pending bit itself
          is a duplicate-free contract change and stays last; look at remote

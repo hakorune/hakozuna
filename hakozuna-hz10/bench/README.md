@@ -449,6 +449,30 @@ wall-clock boundary cost is the slowest worker's flush. The reclaim counters
 are also reset whenever `HZ10_THREAD_EXIT_RECLAIM=1`, independent of
 `HZ10_DUMP_CLASS_STATS`.
 
+HZ10LifecycleFlushAB-L1:
+`bench_results/20260704T234016Z_hz10_lifecycle_flush_ab_l1/combined.log`.
+Compared baseline against `HZ10_THREAD_EXIT_RECLAIM=1` after the split-output
+change, THREADS=4 ITERS=500000 RUNS=10 MODE=0 with class stats enabled.
+Median read:
+
+```text
+row              work_loop Mops/s     total Mops/s        RSS KB
+main_local0      176.31 -> 183.05     176.31 -> 177.15    27962 -> 8000
+main_r50          14.07 -> 13.09       14.07 -> 11.97    300410 -> 77768
+main_r90           8.61 -> 8.17         8.61 -> 7.21    679746 -> 146944
+small_remote50    18.19 -> 17.70       18.19 -> 17.66     17360 -> 5674
+small_remote90    13.49 -> 13.23       13.49 -> 13.19     22074 -> 7490
+slot_count1_r90    6.97 -> 6.24         6.97 -> 5.20    426176 -> 256128
+```
+
+Decision: GO as an explicit opt-in lifecycle boundary, not an automatic
+destructor and not a hot-path change. RSS closure is strong, and the reclaim
+stats reported no busy-page destruction. The work-loop delta in RUNS=10 is
+mostly a policy/cold-start effect: baseline keeps page state warm across runs,
+while flush intentionally discards it. Run-1 work-loop ratios for main_r50/r90
+and small_remote rows were ~1.00-1.03; keep using both throughput columns in
+future tables.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this
