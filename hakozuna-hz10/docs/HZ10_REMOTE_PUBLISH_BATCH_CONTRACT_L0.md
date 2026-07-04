@@ -184,3 +184,40 @@ weakening the pending bit
 automatic destructor-based flush
 ```
 
+## HZ10RemotePublishBatchLocality-L0 Result
+
+Log:
+
+```text
+bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log
+```
+
+THREADS=4 ITERS=500000 RUNS=10 median read:
+
+```text
+row              remote frees   ideal CAS    CAS ceiling   avg run   run len 1
+main_r50             999739       950560        4.92%       1.052      94.95%
+main_r90            1800534      1707038        5.19%       1.055      94.66%
+small_remote50       999739       870090       12.97%       1.149      87.68%
+small_remote90      1800534      1523272       15.40%       1.182      85.43%
+slot_count1_r90     1800534      1800534        0.00%       1.000     100.00%
+```
+
+Decision:
+
+```text
+normal public free path:
+  NO-GO for remote publish batching now
+
+same-call publish_batch helper:
+  keep as possible future primitive for bulk/inbox paths only
+
+producer TLS staging:
+  still NO-GO without a producer-side quiescent flush contract
+```
+
+Read: the important main rows have too little same-page locality for a
+same-call batch helper to be worth implementing as the next throughput box.
+The small rows show a larger ceiling, but those rows are not the current main
+tcmalloc gap driver. The slot_count=1 row has exactly no batchability because
+each page has one slot.

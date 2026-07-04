@@ -6,6 +6,7 @@
 	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-public-entry-active-scan \
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
+	bench-public-entry-remote-batch-locality \
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
@@ -52,6 +53,7 @@ SMOKE_CLASS_PAGES_SRC := $(ROOT)/tests/hz10_class_pages_smoke.c $(CLASS_PAGES_SR
 PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_retired_ready.c $(ROOT)/src/hz10_size_class.c $(ROOT)/src/hz10_large_alloc.c $(POOLED_PAGE_SRC)
 SMOKE_PUBLIC_ENTRY_SRC := $(ROOT)/tests/hz10_public_entry_smoke.c $(PUBLIC_ENTRY_SRC)
 BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY_SRC)
+BENCH_REMOTE_BATCH_LOCALITY_SRC := $(ROOT)/bench/hz10_public_entry_remote_batch_locality_bench.c $(PUBLIC_ENTRY_SRC)
 
 all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain bench-multiclass-remote \
@@ -165,6 +167,12 @@ $(ROOT)/hz10_public_entry_two_slot_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 bench-public-entry-two-slot: $(ROOT)/hz10_public_entry_two_slot_bench
 	$(ROOT)/hz10_public_entry_two_slot_bench
 
+$(ROOT)/hz10_public_entry_remote_batch_locality_bench: $(BENCH_REMOTE_BATCH_LOCALITY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_BATCH_LOCALITY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-remote-batch-locality: $(ROOT)/hz10_public_entry_remote_batch_locality_bench
+	$(ROOT)/hz10_public_entry_remote_batch_locality_bench
+
 CLASS_PAGES_SCAN_BENCH_SRC := $(ROOT)/bench/hz10_class_pages_scan_bench.c $(PUBLIC_ENTRY_SRC)
 
 $(ROOT)/hz10_class_pages_scan_bench: $(CLASS_PAGES_SCAN_BENCH_SRC) $(HEADERS)
@@ -218,6 +226,7 @@ clean:
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
 		$(ROOT)/hz10_public_entry_active_scan_bench \
 		$(ROOT)/hz10_public_entry_active_mtf_bench \
+		$(ROOT)/hz10_public_entry_remote_batch_locality_bench \
 		$(ROOT)/hz10_public_entry_two_slot_bench \
 		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \

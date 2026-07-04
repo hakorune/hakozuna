@@ -473,6 +473,28 @@ while flush intentionally discards it. Run-1 work-loop ratios for main_r50/r90
 and small_remote rows were ~1.00-1.03; keep using both throughput columns in
 future tables.
 
+Remote publish batch locality (HZ10RemotePublishBatchLocality-L0):
+`bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log`.
+This measurement-only bench uses public-entry allocation/free shape but counts
+how many consecutive remote frees in each inbox drain target the same page.
+That estimates the best-case Treiber CAS reduction if a same-call
+`publish_batch(page, first, last)` helper existed. It does not change
+allocator behavior.
+
+```text
+row              remote frees   ideal CAS    CAS ceiling   avg run   run len 1
+main_r50             999739       950560        4.92%       1.052      94.95%
+main_r90            1800534      1707038        5.19%       1.055      94.66%
+small_remote50       999739       870090       12.97%       1.149      87.68%
+small_remote90      1800534      1523272       15.40%       1.182      85.43%
+slot_count1_r90     1800534      1800534        0.00%       1.000     100.00%
+```
+
+Decision: do not implement remote publish batching for the normal public
+`free(ptr)` path now. Main rows barely batch, and slot_count=1 cannot batch at
+all. A same-call batch helper remains possible for a future bulk/inbox path,
+but it is not the next throughput box.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this

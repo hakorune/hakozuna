@@ -235,6 +235,24 @@ status:
          helps only callers that already have a batch. Next implementation
          should be HZ10RemotePublishBatchLocality-L0, a measurement-only box
          estimating same-page batchability before adding behavior.
+         DONE: HZ10RemotePublishBatchLocality-L0 measured ideal same-call
+         batchability without changing allocator behavior.
+         log:
+           bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log
+         THREADS=4 ITERS=500000 RUNS=10:
+           main_r50: remote frees median 999,739, ideal publish CAS median
+             950,560, ceiling 4.92%, avg same-page run 1.052, ~94.95% of
+             runs length 1.
+           main_r90: remote frees median 1,800,534, ideal publish CAS median
+             1,707,038, ceiling 5.19%, avg run 1.055, ~94.66% length 1.
+           small_remote50: ceiling 12.97%, avg run 1.149.
+           small_remote90: ceiling 15.40%, avg run 1.182.
+           slot_count1_r90: ceiling 0.00%, avg/max run 1.
+         Decision: do not implement remote publish batching for the normal
+         public free path now. The main rows barely batch, and slot_count=1
+         cannot batch at all. A same-call publish_batch helper remains a
+         possible future primitive for a bulk/inbox path, but not the next
+         HZ10 throughput box.
     (PRIOR) HZ10ActiveScanCost-L0: measurement-only box.
         Agent triage 20260705 converged on the same read:
           - do NOT open HZ8-style reclaim/thread-lifecycle port now; true

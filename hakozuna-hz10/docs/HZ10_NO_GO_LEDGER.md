@@ -87,3 +87,28 @@ Decision:
 - Keep lifecycle reclaim as an explicit quiescent-boundary tool, measured
   separately from work-loop throughput.
 
+## 20260705 Remote Publish Batching For Normal Free
+
+Status: `NO-GO for normal public free path`
+
+Evidence:
+
+- Contract design: `hakozuna-hz10/docs/HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md`
+- Locality log:
+  `bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log`
+- Same-call ideal publish CAS reduction ceilings:
+  - main_r50: 4.92%
+  - main_r90: 5.19%
+  - small_remote50: 12.97%
+  - small_remote90: 15.40%
+  - slot_count1_r90: 0.00%
+
+Decision:
+
+- Do not implement remote publish batching for ordinary `hz10_free(ptr)` now.
+- The main rows barely batch, and slot_count=1 cannot batch at all.
+- Keep a same-call batch publish helper as a possible future primitive only
+  for a bulk/inbox path that already owns a batch.
+- Producer TLS staging remains out of scope until HZ10 has a producer-side
+  quiescent flush contract; returning success before publication would break
+  `accepted == drainable`.
