@@ -412,6 +412,18 @@ runs the guarded direct walk. main_r50 RSS is 39,040 -> 92,052 KB with
 pages. This keeps the ready/cancel safety guards while recovering most of the
 aggressive diagnostic RSS win.
 
+Lifecycle flush cost:
+`bench_results/20260704T230740Z_hz10_lifecycle_flush_cost_l0/combined.log`.
+The bench now prints `flush_total_ns` and `flush_max_thread_ns` on
+`hz10_public_entry_thread_reclaim` lines. With THREADS=4 ITERS=500000 RUNS=10,
+local rows are noise-level (+2-3% median ops/s with ~0.3-0.5ms max-thread
+flush per run). Remote rows pay real boundary cost when flush is included in
+reported `seconds`: main_r50 median ops/s 13.69M -> 11.72M (-14.4%) while RSS
+median drops 380,540 -> 74,072 KB; main_r90 8.84M -> 7.11M (-19.6%) while RSS
+median drops 334,596 -> 146,304 KB. Treat this as lifecycle boundary work,
+not a hot-path regression; future throughput tables should separate work-loop
+time from work-loop+flush time when comparing allocator speed.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this

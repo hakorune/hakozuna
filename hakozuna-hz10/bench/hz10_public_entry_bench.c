@@ -160,15 +160,19 @@ static _Atomic(uint64_t) hz10_bench_active_ops_served_sum;
 static _Atomic(uint64_t) hz10_bench_active_ops_served_immediate_sum;
 static _Atomic(uint64_t) hz10_bench_second_active_check_sum;
 static _Atomic(uint64_t) hz10_bench_second_active_hit_sum;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_seen;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_reclaimed;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_busy;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_deferred_ready;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_deferred_cancel;
-static _Atomic(uint64_t) hz10_bench_thread_reclaim_slots_merged;
+static _Atomic(uint64_t) hz10_bench_thread_reclaim_pages_seen,
+    hz10_bench_thread_reclaim_pages_reclaimed, hz10_bench_thread_reclaim_pages_busy,
+    hz10_bench_thread_reclaim_pages_deferred_ready,
+    hz10_bench_thread_reclaim_pages_deferred_cancel,
+    hz10_bench_thread_reclaim_slots_merged, hz10_bench_thread_reclaim_total_ns,
+    hz10_bench_thread_reclaim_max_ns;
 
 #define HZ10_BENCH_LOAD(counter) \
   ((unsigned long long)atomic_load_explicit(&(counter), memory_order_relaxed))
+#define HZ10_BENCH_ADD(counter, value) \
+  atomic_fetch_add_explicit(&(counter), (value), memory_order_relaxed)
+#define HZ10_BENCH_ZERO(counter) \
+  atomic_store_explicit(&(counter), 0u, memory_order_relaxed)
 
 typedef struct Hz10BenchClassStats {
   _Atomic(uint64_t) active_cache_alloc_fail_count;
@@ -352,21 +356,18 @@ static void hz10_bench_collect_class_stats(void) {
 }
 
 static void hz10_bench_collect_thread_reclaim_stats(
-    const Hz10PublicEntryThreadReclaimStats* stats) {
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_seen,
-                            stats->pages_seen, memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_reclaimed,
-                            stats->pages_reclaimed, memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_busy,
-                            stats->pages_busy, memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_deferred_ready,
-                            stats->pages_deferred_ready,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_pages_deferred_cancel,
-                            stats->pages_deferred_cancel,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz10_bench_thread_reclaim_slots_merged,
-                            stats->slots_merged, memory_order_relaxed);
+    const Hz10PublicEntryThreadReclaimStats* stats, uint64_t elapsed_ns) {
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_pages_seen, stats->pages_seen);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_pages_reclaimed,
+                 stats->pages_reclaimed);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_pages_busy, stats->pages_busy);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_pages_deferred_ready,
+                 stats->pages_deferred_ready);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_pages_deferred_cancel,
+                 stats->pages_deferred_cancel);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_slots_merged, stats->slots_merged);
+  HZ10_BENCH_ADD(hz10_bench_thread_reclaim_total_ns, elapsed_ns);
+  hz10_bench_atomic_max_u64(&hz10_bench_thread_reclaim_max_ns, elapsed_ns);
 }
 
 static void hz10_bench_reset_class_stats(void) {
@@ -549,8 +550,10 @@ static void* hz10_bench_worker(void* raw) {
   }
   if (arg->use_hz10 && hz10_bench_thread_exit_reclaim) {
     Hz10PublicEntryThreadReclaimStats reclaim_stats;
+    uint64_t reclaim_start = hz10_platform_now_ns();
     hz10_public_entry_reclaim_thread_idle_pages(&reclaim_stats);
-    hz10_bench_collect_thread_reclaim_stats(&reclaim_stats);
+    hz10_bench_collect_thread_reclaim_stats(
+        &reclaim_stats, hz10_platform_now_ns() - reclaim_start);
   }
   return NULL;
 }
@@ -612,18 +615,14 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
     atomic_store_explicit(&hz10_bench_active_ops_served_immediate_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_second_active_check_sum, 0u, memory_order_relaxed);
     atomic_store_explicit(&hz10_bench_second_active_hit_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_seen, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_reclaimed, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_busy, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_deferred_ready, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_pages_deferred_cancel, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_thread_reclaim_slots_merged, 0u,
-                          memory_order_relaxed);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_seen);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_reclaimed);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_busy);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_ready);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_pages_deferred_cancel);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_slots_merged);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_total_ns);
+    HZ10_BENCH_ZERO(hz10_bench_thread_reclaim_max_ns);
     hz10_bench_reset_class_stats();
   }
 
@@ -751,14 +750,16 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
           "hz10_public_entry_thread_reclaim mech=%s run=%u/%u "
           "pages_seen=%llu pages_reclaimed=%llu pages_busy=%llu "
           "pages_deferred_ready=%llu pages_deferred_cancel=%llu "
-          "slots_merged=%llu\n",
+          "slots_merged=%llu flush_total_ns=%llu flush_max_thread_ns=%llu\n",
           mech, run, runs,
           HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_seen),
           HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_reclaimed),
           HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_busy),
           HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_deferred_ready),
           HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_pages_deferred_cancel),
-          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_slots_merged));
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_slots_merged),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_total_ns),
+          HZ10_BENCH_LOAD(hz10_bench_thread_reclaim_max_ns));
     }
     hz10_bench_print_top_class_stats(mech, run, runs);
   }

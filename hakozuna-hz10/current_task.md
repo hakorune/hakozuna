@@ -509,6 +509,40 @@ status:
                     busy-page case if this graduates from diagnostic to API
                 This box is about RSS/lifecycle correctness. Do not mix it
                 with pending-bit throughput redesign.
+              DONE: HZ10LifecycleFlushCost-L0.
+                Added bench-only flush timing fields to
+                `hz10_public_entry_thread_reclaim`:
+                flush_total_ns (sum over worker threads) and
+                flush_max_thread_ns (wall-clock contribution proxy for that
+                run). Log:
+                  bench_results/20260704T230740Z_hz10_lifecycle_flush_cost_l0/combined.log
+                THREADS=4 ITERS=500000 RUNS=10, median ops/s:
+                  main_local0: baseline 172.65M, flush 176.47M (+2.2%,
+                    local/no-retired case, treat as noise); flush cost about
+                    0.3-0.4ms max-thread per run for 88 pages.
+                  medium_local0: baseline 165.39M, flush 170.53M (+3.1%,
+                    also noise); flush cost about 0.4-0.5ms for 96 pages.
+                  main_r50: baseline 13.69M, flush 11.72M (-14.4%).
+                    RSS median 380,540 -> 74,072 KB. Flush reclaimed
+                    19,743 pages, merged 117,544 slots, total flush_ns
+                    399.6ms over all workers/runs (~20.2us/page,
+                    ~3.4us/merged slot); per-run max-thread flush was
+                    roughly 5-12% of reported seconds.
+                  main_r90: baseline 8.84M, flush 7.11M (-19.6%).
+                    RSS median 334,596 -> 146,304 KB. Flush reclaimed
+                    41,847 pages, merged 207,103 slots, total flush_ns
+                    734.6ms (~17.6us/page, ~3.5us/merged slot);
+                    per-run max-thread flush was roughly 7-17% of reported
+                    seconds.
+                Read: lifecycle flush is not free on remote rows when it is
+                included in the measured worker lifetime. That is expected:
+                the hook intentionally pays at thread-boundary time to drain
+                and reclaim the pages that otherwise remain resident across
+                fresh-thread RUNS. For future throughput tables, report both
+                "work loop only" and "work loop + lifecycle flush" or keep
+                this bench result attached to the RSS table; otherwise the
+                RSS fix looks like a hot-path regression even though the cost
+                is boundary work.
           (E) DEFER: pending-bit redesign and small_remote-specific tuning.
               The pending bit is a correctness contract change, and
               small_remote rows point at active-page drain/remote publication
