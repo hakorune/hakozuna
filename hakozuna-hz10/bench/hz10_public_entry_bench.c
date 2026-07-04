@@ -1,3 +1,4 @@
+#include "../src/hz10_class_pages.h"
 #include "../src/hz10_pagemap.h"
 #include "../src/hz10_platform.h"
 #include "../src/hz10_public_entry.h"
@@ -109,33 +110,63 @@ static long hz10_bench_maxrss_kb(void) {
 
 /*
  * Optional, opt-in (HZ10_DUMP_CLASS_STATS=1): aggregates Box 6's per-class
- * eviction/reclaim counters (src/hz10_class_pages.h, read via
- * hz10_public_entry_class_list_stats()) across every worker thread and
+ * active/retired eviction/reclaim counters (src/hz10_class_pages.h, read
+ * via hz10_public_entry_class_list_stats()) across every worker thread and
  * class, right before each thread's TLS state disappears at pthread_join.
  * Added specifically to check the main_r50/main_r90 RSS finding in
  * current_task.md against a real workload instead of only the isolated
  * unit tests: does this row's classes ever actually reach
- * HZ10_CLASS_PAGES_SCAN_LIMIT and trigger an eviction, and if so, how
- * often is the evicted page idle (reclaimed) vs not? Off by default --
- * zero cost for every other bench run through this file. */
+ * HZ10_CLASS_PAGES_SCAN_LIMIT, and once the active/retired two-list
+ * redesign landed, how much of the resulting `retired` traffic does
+ * hz10_class_pages_sweep_retired() actually reclaim vs. drop? Off by
+ * default -- zero cost for every other bench run through this file. */
 static int hz10_bench_dump_class_stats;
-static _Atomic(uint64_t) hz10_bench_class_length_sum;
-static _Atomic(uint64_t) hz10_bench_class_eviction_sum;
-static _Atomic(uint64_t) hz10_bench_class_reclaimed_sum;
+static _Atomic(uint64_t) hz10_bench_active_length_sum;
+static _Atomic(uint64_t) hz10_bench_retired_length_sum;
+static _Atomic(uint64_t) hz10_bench_max_retired_length;
+static _Atomic(uint64_t) hz10_bench_eviction_count_sum;
+static _Atomic(uint64_t) hz10_bench_eviction_reclaimed_sum;
+static _Atomic(uint64_t) hz10_bench_retired_count_sum;
+static _Atomic(uint64_t) hz10_bench_retired_reclaimed_sweep_sum;
+static _Atomic(uint64_t) hz10_bench_retired_reclaimed_overflow_sum;
+static _Atomic(uint64_t) hz10_bench_retired_dropped_sum;
+
+static void hz10_bench_atomic_max_u64(_Atomic(uint64_t)* target,
+                                    uint64_t candidate) {
+  uint64_t current = atomic_load_explicit(target, memory_order_relaxed);
+  while (candidate > current &&
+        !atomic_compare_exchange_weak_explicit(target, &current, candidate,
+                                               memory_order_relaxed,
+                                               memory_order_relaxed)) {
+  }
+}
 
 static void hz10_bench_collect_class_stats(void) {
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
-    uint32_t length = 0u;
-    uint64_t eviction_count = 0u;
-    uint64_t eviction_reclaimed_count = 0u;
-    hz10_public_entry_class_list_stats(c, &length, &eviction_count,
-                                       &eviction_reclaimed_count);
-    atomic_fetch_add_explicit(&hz10_bench_class_length_sum, length,
+    Hz10ClassPageListStats stats;
+    hz10_public_entry_class_list_stats(c, &stats);
+    atomic_fetch_add_explicit(&hz10_bench_active_length_sum,
+                              stats.active_length, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_length_sum,
+                              stats.retired_length, memory_order_relaxed);
+    hz10_bench_atomic_max_u64(&hz10_bench_max_retired_length,
+                             stats.max_retired_length);
+    atomic_fetch_add_explicit(&hz10_bench_eviction_count_sum,
+                              stats.eviction_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_eviction_reclaimed_sum,
+                              stats.eviction_reclaimed_count,
                               memory_order_relaxed);
-    atomic_fetch_add_explicit(&hz10_bench_class_eviction_sum, eviction_count,
+    atomic_fetch_add_explicit(&hz10_bench_retired_count_sum,
+                              stats.retired_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_sweep_sum,
+                              stats.retired_reclaimed_by_sweep_count,
                               memory_order_relaxed);
-    atomic_fetch_add_explicit(&hz10_bench_class_reclaimed_sum,
-                              eviction_reclaimed_count, memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_reclaimed_overflow_sum,
+                              stats.retired_reclaimed_by_overflow_count,
+                              memory_order_relaxed);
+    atomic_fetch_add_explicit(&hz10_bench_retired_dropped_sum,
+                              stats.retired_dropped_count,
+                              memory_order_relaxed);
   }
 }
 
@@ -218,12 +249,15 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   }
 
   if (use_hz10 && hz10_bench_dump_class_stats) {
-    atomic_store_explicit(&hz10_bench_class_length_sum, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_class_eviction_sum, 0u,
-                          memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_class_reclaimed_sum, 0u,
-                          memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_active_length_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_length_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_max_retired_length, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_eviction_count_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_eviction_reclaimed_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_count_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_reclaimed_sweep_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_reclaimed_overflow_sum, 0u, memory_order_relaxed);
+    atomic_store_explicit(&hz10_bench_retired_dropped_sum, 0u, memory_order_relaxed);
   }
 
   uint64_t start = hz10_platform_now_ns();
@@ -278,15 +312,32 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   if (use_hz10 && hz10_bench_dump_class_stats) {
     printf(
         "hz10_public_entry_class_stats mech=%s run=%u/%u "
-        "total_length_sum=%llu total_eviction_count=%llu "
-        "total_eviction_reclaimed_count=%llu\n",
-        mech, run, runs,
+        "sweep_budget=%u retired_limit=%u "
+        "active_length_sum=%llu retired_length_sum=%llu "
+        "max_retired_length=%llu eviction_count=%llu "
+        "eviction_reclaimed_count=%llu retired_count=%llu "
+        "retired_reclaimed_by_sweep=%llu retired_reclaimed_by_overflow=%llu "
+        "retired_dropped=%llu\n",
+        mech, run, runs, HZ10_CLASS_PAGES_SWEEP_BUDGET,
+        HZ10_CLASS_PAGES_RETIRED_LIMIT,
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_class_length_sum, memory_order_relaxed),
+            &hz10_bench_active_length_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_class_eviction_sum, memory_order_relaxed),
+            &hz10_bench_retired_length_sum, memory_order_relaxed),
         (unsigned long long)atomic_load_explicit(
-            &hz10_bench_class_reclaimed_sum, memory_order_relaxed));
+            &hz10_bench_max_retired_length, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_eviction_count_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_eviction_reclaimed_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_count_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_reclaimed_sweep_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_reclaimed_overflow_sum, memory_order_relaxed),
+        (unsigned long long)atomic_load_explicit(
+            &hz10_bench_retired_dropped_sum, memory_order_relaxed));
   }
   return 0;
 }

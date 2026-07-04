@@ -240,38 +240,50 @@ static int check_class_list_stats_accessor(void) {
     return 1;
   }
 
-  uint32_t length = 0u;
-  uint64_t eviction_count = 0u;
-  uint64_t eviction_reclaimed_count = 0u;
-  hz10_public_entry_class_list_stats(class_id, &length, &eviction_count,
-                                     &eviction_reclaimed_count);
+  Hz10ClassPageListStats stats;
+  hz10_public_entry_class_list_stats(class_id, &stats);
 
-  if (length != HZ10_CLASS_PAGES_SCAN_LIMIT) {
-    fprintf(stderr, "class_list_stats: length=%u, expected %u\n", length,
-            HZ10_CLASS_PAGES_SCAN_LIMIT);
+  if (stats.active_length != HZ10_CLASS_PAGES_SCAN_LIMIT) {
+    fprintf(stderr, "class_list_stats: active_length=%u, expected %u\n",
+            stats.active_length, HZ10_CLASS_PAGES_SCAN_LIMIT);
     return 1;
   }
-  if (eviction_count == 0u) {
+  if (stats.eviction_count == 0u) {
     fprintf(stderr,
             "class_list_stats: eviction_count=0, expected > 0 after "
             "check_scan_limit_tradeoff's setup\n");
     return 1;
   }
+  /* check_scan_limit_tradeoff's setup never frees anything after its one
+   * initial reuse (see that function), so every evicted page there is
+   * non-idle -- they all route through `retired`, none reclaimed
+   * immediately. This also doubles as a real-workload check that the
+   * active/retired split actually engages, not just the isolated unit
+   * tests in tests/hz10_class_pages_smoke.c. */
+  if (stats.retired_count == 0u) {
+    fprintf(stderr,
+            "class_list_stats: retired_count=0, expected > 0 (evicted "
+            "pages here are never idle, so they should all route through "
+            "retired)\n");
+    return 1;
+  }
 
-  /* Out-of-range class_id is a documented no-op, not undefined behavior --
-   * seed the outputs with sentinel values first so a no-op is actually
-   * observable. */
-  uint32_t oob_length = 999u;
-  uint64_t oob_eviction = 999u;
-  uint64_t oob_reclaimed = 999u;
-  hz10_public_entry_class_list_stats(HZ10_CLASS_COUNT, &oob_length,
-                                     &oob_eviction, &oob_reclaimed);
-  if (oob_length != 0u || oob_eviction != 0u || oob_reclaimed != 0u) {
+  /* Out-of-range class_id is a documented no-op (zero-filled), not
+   * undefined behavior -- seed with sentinel values first so a no-op is
+   * actually observable. */
+  Hz10ClassPageListStats oob_stats;
+  oob_stats.active_length = 999u;
+  oob_stats.eviction_count = 999u;
+  oob_stats.retired_count = 999u;
+  hz10_public_entry_class_list_stats(HZ10_CLASS_COUNT, &oob_stats);
+  if (oob_stats.active_length != 0u || oob_stats.eviction_count != 0u ||
+      oob_stats.retired_count != 0u) {
     fprintf(stderr,
             "class_list_stats: out-of-range class_id was not a no-op "
-            "(length=%u eviction=%llu reclaimed=%llu)\n",
-            oob_length, (unsigned long long)oob_eviction,
-            (unsigned long long)oob_reclaimed);
+            "(active_length=%u eviction_count=%llu retired_count=%llu)\n",
+            oob_stats.active_length,
+            (unsigned long long)oob_stats.eviction_count,
+            (unsigned long long)oob_stats.retired_count);
     return 1;
   }
   return 0;

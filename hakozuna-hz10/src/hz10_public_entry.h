@@ -27,15 +27,15 @@
  *     drain) is no longer abandoned: src/hz10_class_pages.h tracks every
  *     page this thread has ever created for a class and scans (draining
  *     each candidate, bounded to HZ10_CLASS_PAGES_SCAN_LIMIT pages) before
- *     paying for a fresh one. The list is bounded to
- *     HZ10_CLASS_PAGES_SCAN_LIMIT pages, not unbounded: once it would grow
- *     past that, the oldest page is evicted and, if confirmed idle,
- *     returned to Box 4's pool -- a page that was NOT idle when evicted
- *     just stops being searchable, though it remains correctly freeable
- *     via the pagemap route either way. See hz10_class_pages.h for a
- *     measured caveat: this bounds list LENGTH reliably, but does NOT
- *     reliably bound RSS in practice (reclaim essentially never fires
- *     under real remote-free churn) -- the two are different claims
+ *     paying for a fresh one. The active list is bounded to
+ *     HZ10_CLASS_PAGES_SCAN_LIMIT pages; a page evicted from it but not
+ *     yet idle moves to a separate, also-bounded `retired` list instead
+ *     of being dropped outright, and hz10_malloc's own slow path (right
+ *     after a genuine miss, before paying for a fresh page) sweeps a
+ *     small budget of it looking for pages that have since become idle
+ *     -- see src/hz10_class_pages.h for the full two-list design and why
+ *     an earlier one-shot-at-eviction version measured as an almost-total
+ *     miss under real remote-free churn
  *   - free() takes no generation from the caller (real free() can't carry
  *     one), so it always routes with HZ10_GENERATION_ANY; the
  *     generation-mismatch contract that Box 1-4's own smokes exercise
@@ -52,20 +52,33 @@ void* hz10_malloc(size_t size);
  * this module created (fail-closed rejection, matching Box 1's pipeline). */
 int hz10_free(void* ptr);
 
+/* Diagnostic snapshot of one class's page-list state (src/
+ * hz10_class_pages.h) -- see hz10_public_entry_class_list_stats() below. */
+typedef struct Hz10ClassPageListStats {
+  uint32_t active_length;
+  uint32_t retired_length;
+  uint32_t max_retired_length;
+  uint64_t eviction_count;
+  uint64_t eviction_reclaimed_count;
+  uint64_t retired_count;
+  uint64_t retired_reclaimed_by_sweep_count;
+  uint64_t retired_reclaimed_by_overflow_count;
+  uint64_t retired_dropped_count;
+} Hz10ClassPageListStats;
+
 /*
  * Diagnostic accessor, calling thread's own state only (per-class lists
- * are thread-local, see hz10_public_entry.c): reads out the current
- * length and lifetime eviction/reclaim counters (src/hz10_class_pages.h)
- * for class_id's page list, without disturbing them. class_id >=
- * HZ10_CLASS_COUNT is a no-op (all outputs left at 0) rather than
+ * are thread-local, see hz10_public_entry.c): fills *stats_out with the
+ * current length and lifetime eviction/reclaim counters (src/
+ * hz10_class_pages.h) for class_id's page list, without disturbing them.
+ * class_id >= HZ10_CLASS_COUNT zero-fills *stats_out rather than
  * undefined behavior, so a caller sweeping every class_id doesn't need
- * its own bounds check. Added to make the main_r50/main_r90 RSS finding
- * in current_task.md checkable against a real workload instead of only
- * the isolated unit test in tests/hz10_class_pages_smoke.c.
+ * its own bounds check. stats_out == NULL is a no-op. Added to make the
+ * main_r50/main_r90 RSS finding in current_task.md checkable against a
+ * real workload instead of only the isolated unit tests in
+ * tests/hz10_class_pages_smoke.c.
  */
 void hz10_public_entry_class_list_stats(uint32_t class_id,
-                                        uint32_t* length_out,
-                                        uint64_t* eviction_count_out,
-                                        uint64_t* eviction_reclaimed_count_out);
+                                        Hz10ClassPageListStats* stats_out);
 
 #endif

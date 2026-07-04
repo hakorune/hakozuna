@@ -59,6 +59,14 @@ void* hz10_malloc(size_t size) {
     return hz10_freelist_page_alloc(found);
   }
 
+  /* Genuine miss: about to pay for a fresh page below, so this is exactly
+   * the moment a retired-list reclaim pays off most -- a page swept back
+   * to Box 4's pool right here can be picked up immediately by this same
+   * call's pool-acquire-first check inside hz10_pooled_page_create_with_
+   * owner(). Slow path only, bounded cost (HZ10_CLASS_PAGES_SWEEP_BUDGET),
+   * never on the hot per-op alloc path above -- see src/hz10_class_pages.h. */
+  hz10_class_pages_sweep_retired(&state->list);
+
   uint32_t slot_size = hz10_size_class_slot_size(class_id);
   uint32_t slot_count = hz10_size_class_slot_count(class_id);
   /* _with_owner registers the owner tag in the same pagemap call instead
@@ -98,25 +106,24 @@ int hz10_free(void* ptr) {
 }
 
 void hz10_public_entry_class_list_stats(uint32_t class_id,
-                                        uint32_t* length_out,
-                                        uint64_t* eviction_count_out,
-                                        uint64_t* eviction_reclaimed_count_out) {
-  uint32_t length = 0u;
-  uint64_t eviction_count = 0u;
-  uint64_t eviction_reclaimed_count = 0u;
-  if (class_id < HZ10_CLASS_COUNT) {
-    const Hz10ClassPageList* list = &hz10_class_state[class_id].list;
-    length = list->length;
-    eviction_count = list->eviction_count;
-    eviction_reclaimed_count = list->eviction_reclaimed_count;
+                                        Hz10ClassPageListStats* stats_out) {
+  if (!stats_out) {
+    return;
   }
-  if (length_out) {
-    *length_out = length;
+  if (class_id >= HZ10_CLASS_COUNT) {
+    *stats_out = (Hz10ClassPageListStats){0};
+    return;
   }
-  if (eviction_count_out) {
-    *eviction_count_out = eviction_count;
-  }
-  if (eviction_reclaimed_count_out) {
-    *eviction_reclaimed_count_out = eviction_reclaimed_count;
-  }
+  const Hz10ClassPageList* list = &hz10_class_state[class_id].list;
+  stats_out->active_length = list->active.length;
+  stats_out->retired_length = list->retired.length;
+  stats_out->max_retired_length = list->max_retired_length;
+  stats_out->eviction_count = list->eviction_count;
+  stats_out->eviction_reclaimed_count = list->eviction_reclaimed_count;
+  stats_out->retired_count = list->retired_count;
+  stats_out->retired_reclaimed_by_sweep_count =
+      list->retired_reclaimed_by_sweep_count;
+  stats_out->retired_reclaimed_by_overflow_count =
+      list->retired_reclaimed_by_overflow_count;
+  stats_out->retired_dropped_count = list->retired_dropped_count;
 }
