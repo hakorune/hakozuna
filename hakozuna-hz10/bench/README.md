@@ -294,6 +294,14 @@ remote-free RMW attribution microbench:
   duplicate-free guard, and weakening/replacing it would be a contract
   change that needs a full-bench gate.
 
+Next measurement box after the RMW ceiling: active-list scan/drain cost in
+`hz10_class_pages_find_with_capacity()`. The RMW microbench isolates the
+freeing-thread publication cost, but it does not cover alloc-side page scans,
+remote-stack drain attempts, non-empty drain rate, or scan depth across the
+multi-class public-entry rows. Any next remote-row tuning should first report
+pages visited, drain calls, non-empty drains, slots merged, active-fast hits,
+and scan-depth histograms for main_r50/r90 and small_remote50/90.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this

@@ -7,7 +7,7 @@ HZ10 is a standalone next-substrate research line. Keep this file short.
 ```text
 status:
   Box 1-6 and the follow-on fixes are implemented, verified, and committed.
-  Latest commits through 5f279e0f:
+  Latest commits through 3da2c4e6:
     Box1 pagemap route
     Box2 thread-local intrusive freelist page
     Box3 remote stack + owner drain
@@ -149,6 +149,23 @@ status:
       calling it a release gate.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
+    (NEXT) HZ10ActiveScanCost-L0: measurement-only box.
+        Agent triage 20260705 converged on the same read:
+          - do NOT open HZ8-style reclaim/thread-lifecycle port now; true
+            continuous main_r50/r90 does not reproduce retired/RSS growth
+          - do NOT open pending-bit correctness redesign now; it is a
+            duplicate-free contract change and only a microbench ceiling
+          - remote throughput already clears the HZ8 gate, but HZ10 remains
+            ~0.47-0.54x tcmalloc on remote rows and main_local0 is close but
+            not strictly through a row-specific 2x HZ8 gate
+        First measurement target: hz10_class_pages_find_with_capacity()
+        active-list scan/drain behavior. Add opt-in counters or an isolated
+        bench that reports pages visited, drain calls, non-empty drains,
+        slots merged, active-fast hits, and scan-depth histograms for
+        main_r50/r90 and small_remote50/90. This directly tests the remaining
+        lead from the older multiclass sweep note: owner-drain throughput fell
+        as distinct pages increased, while the remote RMW microbench ruled out
+        memory-order and debug-counter cleanup as enough.
     (0) DONE: resolve the main_r50/r90 RSS contradiction before designing
         any thread-lifecycle hook. True continuous steady-state
         (bench/hz10_public_entry_steady_state_bench.c) reports active_length
