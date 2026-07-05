@@ -427,9 +427,19 @@ status:
       working_set=2 case is a small fraction of the full gap. The
       remaining, larger local0 lever for classes 20/21/slot_count1 is a
       structural one (a different page-selection/refill design for
-      small-slot_count classes), not yet scoped, and sits in the same
+      small-slot_count classes), and sits in the same
       "needs a bigger design, not proven safe yet" category as the
-      pending-bit redesign on the remote side. Small classes (16/64,
+      pending-bit redesign on the remote side.
+      UPDATE 20260705: that structural design is now scoped as
+      docs/HZ10_FRONT_CACHE_DESIGN_L0.md (box HZ10FrontCache-L1): a
+      per-thread per-class OBJECT freelist (tcmalloc thread-cache shape)
+      layered in front of the existing page substrate, opt-in build flag
+      HZ10_ENABLE_FRONT_CACHE. Remote claim/note/publish, pending bits,
+      and retired/ready are untouched; front-cached slots count as
+      allocated so idle detection stays conservative; lifecycle flush
+      gains a phase-0 front-cache flush. Review that doc (its gates,
+      implementation boundary around hz10_freelist_page_free(), and open
+      questions) before implementing. Small classes (16/64,
       ~1.4-1.5x behind tcmalloc) remain the more tractable near-term
       target if further local0 work is wanted, via ordinary route/
       local-free micro-optimization -- but that gap is modest, not the

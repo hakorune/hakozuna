@@ -20,4 +20,9 @@ HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md:
 HZ10_SPEED_ATTACK_PLAN_L0.md:
   post-RSS throughput attack plan, measurement order, candidate designs, and
   GO/NO-GO gates for the next speed boxes
+
+HZ10_FRONT_CACHE_DESIGN_L0.md:
+  review design for the opt-in per-thread per-class object front cache that
+  attacks the slot_count 1-2 local-path gap without changing remote publish
+  or retired/ready contracts
 ```
