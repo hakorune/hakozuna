@@ -501,6 +501,11 @@ status:
             stage-cost bench also got a zero-init hygiene fix because
             LTO made its maybe-uninitialized warning visible under
             -Werror.
+            E3 IMPLEMENTED 20260705: hz10_size_class_for() and the
+            slot_size/slot_count lookups are now static inline in
+            hz10_size_class.h over one shared table definition in
+            hz10_size_class.c. No semantic change; smoke-size-class keeps
+            the exhaustive oracle over every size 1..HZ10_PAGE_QUANTUM.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
