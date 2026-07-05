@@ -489,6 +489,30 @@ status:
             default-ON discussion.
       Threshold bypass for small classes is NO-GO (measured, see
       docs/HZ10_NO_GO_LEDGER.md "Front-Cache Slot-Count Threshold").
+      DONE: HZ10VsMimallocProbe-L0, 20260705 -- first-ever mimalloc
+      comparison. log:
+        bench_results/20260705T045309Z_hz10_vs_mimalloc_probe/notes.md
+      METHODOLOGY TRAP recorded there: Ubuntu's packaged libmimalloc2.0
+      (2.0.5+ds-2) is pathologically slow on this machine (16B pairs
+      34.7ns, 64KiB ~1000ns single-threaded, worse than glibc, verified
+      with a standalone mini bench) -- comparisons must use a source
+      build; numbers below are mimalloc v2.1.7 default Release via the
+      same-run script's TCMALLOC_LIB override, front-lane hz10.
+      Same-run ratios (hz10/mimalloc ops/s, >1 = hz10 faster):
+        main_local0 1.342, medium_local0 1.438, slot_count1_local0
+        1.233, main_r50 0.882, main_r90 0.853, small_remote50 0.833,
+        small_remote90 0.829, small_local0 0.657, slot_count1_r90 0.629.
+      Local-path bulk large classes: hz10 1.6-1.9x FASTER than mimalloc
+      (mimalloc pays 31-43ns there); tiny classes 1.8x slower (mimalloc's
+      16-64B path is the best of the three allocators measured).
+      post_rss: hz10 lighter on every row except slot_count1_r90, often
+      ~10x+ on local rows, without HZ10_THREAD_EXIT_RECLAIM.
+      Read: against mimalloc 2.1.7 HZ10 is already competitive-to-ahead
+      on speed/RSS balance in these rows; tcmalloc (0.45-0.55 on mixed/
+      remote) remains the honest speed target -- unchanged next lever is
+      HZ10EntryTrim (docs/HZ10_ENTRY_TRIM_DESIGN_L0.md). Weakest rows
+      match the already-named boxes: slot_count1 (aliasing/coloring) and
+      tiny-class entry cost.
       Small classes (16/64,
       ~1.4-1.5x behind tcmalloc) remain the more tractable near-term
       target if further local0 work is wanted, via ordinary route/
