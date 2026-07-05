@@ -473,6 +473,24 @@ while flush intentionally discards it. Run-1 work-loop ratios for main_r50/r90
 and small_remote rows were ~1.00-1.03; keep using both throughput columns in
 future tables.
 
+RSS current sample (HZ10RSSCurrentSample-L0):
+`bench_results/20260705T000639Z_hz10_rss_current_sample_l0/combined.log`.
+The public-entry bench now prints both `post_rss_kb` (legacy ru_maxrss
+high-water mark) and `current_rss_kb` (/proc/self/status VmRSS). Treat
+`current_rss_kb` as the primary "did memory come back after explicit
+quiescent flush?" signal; high-water remains useful for peak pressure.
+
+```text
+row              current RSS KB       peak/post RSS KB      work_loop Mops/s
+main_r50          408610 -> 8354       408978 -> 150252      12.47 -> 11.19
+main_r90         1017466 -> 10462     1017844 -> 271664       7.10 -> 6.94
+slot_count1_r90   808674 -> 14346      809080 -> 181860       6.10 -> 4.78
+```
+
+All three rows reported median busy=0 and deferred=0 in the reclaim stats.
+Read: the explicit lifecycle boundary is a real current-RSS closure
+mechanism, not just a high-water accounting artifact.
+
 Remote publish batch locality (HZ10RemotePublishBatchLocality-L0):
 `bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log`.
 This measurement-only bench uses public-entry allocation/free shape but counts

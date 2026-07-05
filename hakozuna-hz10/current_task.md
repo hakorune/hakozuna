@@ -157,6 +157,31 @@ status:
       calling it a release gate.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
+    RSS hardening comes before the next throughput fight. HZ10's product
+    positioning is now "HZ8-class RSS discipline with much better speed";
+    do not reopen tcmalloc-speed boxes until the lifecycle/RSS evidence is
+    easy to read and hard to regress.
+    DONE: HZ10RSSCurrentSample-L0.
+      `hz10_public_entry` bench now prints both `post_rss_kb` (ru_maxrss
+      high-water mark, legacy field) and `current_rss_kb` (/proc/self/status
+      VmRSS). This matters because lifecycle flush can return current RSS to
+      the OS even when high-water remains high.
+      log:
+        bench_results/20260705T000639Z_hz10_rss_current_sample_l0/combined.log
+      THREADS=4 ITERS=500000 RUNS=10 MODE=0 HZ10_DUMP_CLASS_STATS=1,
+      baseline vs HZ10_THREAD_EXIT_RECLAIM=1 medians:
+        main_r50 current RSS 408,610 -> 8,354 KB (2.0% of baseline);
+          post/peak RSS 408,978 -> 150,252 KB; work_loop 12.47M -> 11.19M.
+        main_r90 current RSS 1,017,466 -> 10,462 KB (1.0%);
+          post/peak RSS 1,017,844 -> 271,664 KB; work_loop 7.10M -> 6.94M.
+        slot_count1_r90 current RSS 808,674 -> 14,346 KB (1.8%);
+          post/peak RSS 809,080 -> 181,860 KB; work_loop 6.10M -> 4.78M.
+      Reclaim stats: busy median 0 and deferred median 0 on all three rows.
+      Read: explicit quiescent flush is a real current-RSS closure mechanism,
+      not only a high-water artifact. Future RSS gates must report both
+      current and high-water RSS; current_rss_kb is the primary "did memory
+      come back after boundary flush?" signal.
+
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
     of 20260705: move-to-front NO-GO, and the two-slot ping-pong hypothesis

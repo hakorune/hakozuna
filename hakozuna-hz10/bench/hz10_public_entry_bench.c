@@ -107,6 +107,17 @@ static long hz10_bench_maxrss_kb(void) {
   struct rusage usage;
   return getrusage(RUSAGE_SELF, &usage) == 0 ? usage.ru_maxrss : -1;
 }
+static long hz10_bench_current_rss_kb(void) {
+  FILE* fp = fopen("/proc/self/status", "r");
+  if (!fp) return -1;
+  char line[128];
+  long rss = -1;
+  while (fgets(line, sizeof(line), fp)) {
+    if (sscanf(line, "VmRSS: %ld kB", &rss) == 1) break;
+  }
+  fclose(fp);
+  return rss;
+}
 
 /*
  * Optional, opt-in (HZ10_DUMP_CLASS_STATS=1): aggregates Box 6's per-class
@@ -576,36 +587,16 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   }
 
   if (use_hz10 && hz10_bench_dump_class_stats) {
-    atomic_store_explicit(&hz10_bench_active_length_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_length_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_max_retired_length, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_eviction_count_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_eviction_reclaimed_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_count_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_reclaimed_sweep_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_promoted_sweep_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_harvest_call_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_reclaimed_ready_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_retired_promoted_ready_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_ready_false_positive_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_hit_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_alloc_fail_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_drain_call_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_drain_fail_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_nonempty_drain_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_slots_merged_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_active_cache_drain_hit_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_call_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_miss_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_pages_visited_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_drain_call_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_nonempty_drain_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_slots_merged_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_local_hit_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_drain_hit_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_hit_depth_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_miss_pages_visited_sum, 0u, memory_order_relaxed);
-    atomic_store_explicit(&hz10_bench_find_hit_depth_max, 0u, memory_order_relaxed);
+    HZ10_BENCH_ZERO(hz10_bench_active_length_sum); HZ10_BENCH_ZERO(hz10_bench_retired_length_sum); HZ10_BENCH_ZERO(hz10_bench_max_retired_length);
+    HZ10_BENCH_ZERO(hz10_bench_eviction_count_sum); HZ10_BENCH_ZERO(hz10_bench_eviction_reclaimed_sum); HZ10_BENCH_ZERO(hz10_bench_retired_count_sum);
+    HZ10_BENCH_ZERO(hz10_bench_retired_reclaimed_sweep_sum); HZ10_BENCH_ZERO(hz10_bench_retired_promoted_sweep_sum); HZ10_BENCH_ZERO(hz10_bench_harvest_call_sum);
+    HZ10_BENCH_ZERO(hz10_bench_retired_reclaimed_ready_sum); HZ10_BENCH_ZERO(hz10_bench_retired_promoted_ready_sum); HZ10_BENCH_ZERO(hz10_bench_ready_false_positive_sum);
+    HZ10_BENCH_ZERO(hz10_bench_active_cache_hit_sum); HZ10_BENCH_ZERO(hz10_bench_active_cache_alloc_fail_sum); HZ10_BENCH_ZERO(hz10_bench_active_cache_drain_call_sum);
+    HZ10_BENCH_ZERO(hz10_bench_active_cache_drain_fail_sum); HZ10_BENCH_ZERO(hz10_bench_active_cache_nonempty_drain_sum); HZ10_BENCH_ZERO(hz10_bench_active_cache_slots_merged_sum);
+    HZ10_BENCH_ZERO(hz10_bench_active_cache_drain_hit_sum); HZ10_BENCH_ZERO(hz10_bench_find_call_sum); HZ10_BENCH_ZERO(hz10_bench_find_miss_sum);
+    HZ10_BENCH_ZERO(hz10_bench_find_pages_visited_sum); HZ10_BENCH_ZERO(hz10_bench_find_drain_call_sum); HZ10_BENCH_ZERO(hz10_bench_find_nonempty_drain_sum);
+    HZ10_BENCH_ZERO(hz10_bench_find_slots_merged_sum); HZ10_BENCH_ZERO(hz10_bench_find_local_hit_sum); HZ10_BENCH_ZERO(hz10_bench_find_drain_hit_sum);
+    HZ10_BENCH_ZERO(hz10_bench_find_hit_depth_sum); HZ10_BENCH_ZERO(hz10_bench_find_miss_pages_visited_sum); HZ10_BENCH_ZERO(hz10_bench_find_hit_depth_max);
     for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS; ++i) {
       atomic_store_explicit(&hz10_bench_find_depth_hist[i], 0u,
                             memory_order_relaxed);
@@ -669,11 +660,11 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
       "run=%u/%u min_size=%zu max_size=%zu remote_pct=%u seconds=%.6f "
       "ops_per_s=%.2f work_loop_seconds=%.6f work_loop_ops_per_s=%.2f "
       "work_loop_plus_flush_seconds=%.6f work_loop_plus_flush_ops_per_s=%.2f "
-      "post_rss_kb=%ld\n",
+      "post_rss_kb=%ld current_rss_kb=%ld\n",
       mech, threads, (unsigned long long)iters, (unsigned long long)ops, run,
       runs, min_size, max_size, remote_pct, seconds, (double)ops / seconds,
       work_seconds, (double)ops / work_seconds, seconds,
-      (double)ops / seconds, hz10_bench_maxrss_kb());
+      (double)ops / seconds, hz10_bench_maxrss_kb(), hz10_bench_current_rss_kb());
 
   if (use_hz10 && hz10_bench_dump_class_stats) {
     printf(
