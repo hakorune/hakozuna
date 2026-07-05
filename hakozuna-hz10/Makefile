@@ -15,6 +15,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
+	preload smoke-shim-api smoke-shim-foreign \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
@@ -28,6 +29,7 @@ DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS
 # Keep DEBUG_CFLAGS separate so smoke/sanitizer/TSan-style compiler modes stay
 # explicit gates instead of inheriting optimizer-mode assumptions.
 OPT_CFLAGS := $(CFLAGS) -flto
+SHIM_CFLAGS := $(OPT_CFLAGS) -fno-builtin
 TSAN_DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS -fsanitize=thread -fno-omit-frame-pointer
 TSAN_LDFLAGS := $(LDFLAGS) -fsanitize=thread
 
@@ -60,6 +62,8 @@ BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY
 BENCH_REMOTE_BATCH_LOCALITY_SRC := $(ROOT)/bench/hz10_public_entry_remote_batch_locality_bench.c $(PUBLIC_ENTRY_SRC)
 STAGE_COST_SRC := $(ROOT)/bench/hz10_public_entry_stage_cost_bench.c $(ROOT)/src/hz10_retired_ready.c $(POOLED_PAGE_SRC)
 LOCAL_PATH_SRC := $(ROOT)/bench/hz10_public_entry_local_path_bench.c $(PUBLIC_ENTRY_SRC)
+SHIM_SRC := $(ROOT)/src/hz10_shim.c $(PUBLIC_ENTRY_SRC)
+SMOKE_SHIM_API_SRC := $(ROOT)/tests/hz10_shim_api_smoke.c
 
 all: smoke-pagemap-route smoke-pagemap-route-diff bench-pagemap-route \
 	smoke-freelist-page bench-freelist-page \
@@ -67,7 +71,7 @@ all: smoke-pagemap-route smoke-pagemap-route-diff bench-pagemap-route \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
 	smoke-public-entry bench-public-entry bench-class-pages-scan \
-	smoke-retired-ready bench-retired-ready
+	smoke-retired-ready bench-retired-ready preload smoke-shim-api
 
 $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -173,6 +177,20 @@ $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
+
+$(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload: $(ROOT)/libhz10.so
+
+$(ROOT)/hz10_shim_api_smoke: $(SMOKE_SHIM_API_SRC) $(ROOT)/libhz10.so $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_SHIM_API_SRC) $(LDFLAGS) -ldl $(LDLIBS)
+
+smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
+	cd $(ROOT) && $(ROOT)/hz10_shim_api_smoke
+
+smoke-shim-foreign: $(ROOT)/libhz10.so
+	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
 # The smoke lane adds the event counters; the bench lanes build with the
@@ -324,4 +342,5 @@ clean:
 		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \
 		$(ROOT)/hz10_public_entry_steady_state_bench \
-		$(ROOT)/hz10_public_entry_thread_reuse_bench
+		$(ROOT)/hz10_public_entry_thread_reuse_bench \
+		$(ROOT)/libhz10.so $(ROOT)/hz10_shim_api_smoke

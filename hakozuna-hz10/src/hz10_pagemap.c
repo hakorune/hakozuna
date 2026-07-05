@@ -132,6 +132,18 @@ int hz10_pagemap_release(void* base) {
   return released;
 }
 
+void hz10_pagemap_atfork_prepare(void) {
+  hz10_platform_mutex_lock(&hz10_pagemap_lock);
+}
+
+void hz10_pagemap_atfork_parent(void) {
+  hz10_platform_mutex_unlock(&hz10_pagemap_lock);
+}
+
+void hz10_pagemap_atfork_child(void) {
+  hz10_platform_mutex_unlock(&hz10_pagemap_lock);
+}
+
 static H10RouteResult hz10_pagemap_result(H10RouteKind kind,
                                           H10RouteReason reason,
                                           void* page_base, uint32_t slot_size,

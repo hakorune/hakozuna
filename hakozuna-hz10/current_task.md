@@ -776,6 +776,18 @@ status:
                  bench_results/
                    20260705T194922Z_hz10_metadata_self_host_d1_alternating/
                  NEXT: D2 shim target/API smoke.
+                 D2/D3 DONE 20260706: `preload` builds libhz10.so;
+                 shim API smoke covers malloc/free/calloc/realloc,
+                 usable_size, posix_memalign/aligned_alloc/memalign,
+                 unknown-free abort, and tolerate env. D3 foreign smoke
+                 added as scripts/run_hz10_shim_smoke.sh /
+                 smoke-shim-foreign: fail-closed LD_PRELOAD passes
+                 true/ls/grep/python3/git status; direct `/bin/sh -c`
+                 fork probe also passed after pthread_atfork hooks for
+                 pagemap + freelist metadata/quantum locks. Gates green:
+                 shim API, foreign smoke, ASan/UBSan shim API, core
+                 public-entry/freelist/pagemap smokes, standalone.
+                 NEXT: D4 macro bench lane definition and first run.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.

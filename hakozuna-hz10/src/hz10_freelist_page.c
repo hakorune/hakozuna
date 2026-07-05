@@ -308,3 +308,24 @@ void hz10_freelist_page_destroy(Hz10FreelistPage* page) {
     hz10_platform_release(base, HZ10_PAGE_QUANTUM);
   }
 }
+
+void hz10_freelist_page_atfork_prepare(void) {
+  hz10_platform_mutex_lock(&hz10_metadata_slab_lock);
+#if !defined(_WIN32)
+  hz10_platform_mutex_lock(&hz10_quantum_region_lock);
+#endif
+}
+
+void hz10_freelist_page_atfork_parent(void) {
+#if !defined(_WIN32)
+  hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+#endif
+  hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+}
+
+void hz10_freelist_page_atfork_child(void) {
+#if !defined(_WIN32)
+  hz10_platform_mutex_unlock(&hz10_quantum_region_lock);
+#endif
+  hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+}

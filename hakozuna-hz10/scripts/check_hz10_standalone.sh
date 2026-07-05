@@ -47,7 +47,8 @@ if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       hz10_freelist_page_smoke hz10_freelist_page_bench \
       hz10_remote_stack_drain_smoke hz10_remote_stack_drain_bench \
       hz10_bounded_page_pool_smoke hz10_bounded_page_pool_bench \
-      hz10_public_entry_smoke hz10_public_entry_bench; do
+      hz10_public_entry_smoke hz10_public_entry_bench \
+      libhz10.so hz10_shim_api_smoke; do
     if ! git -C "$ROOT" check-ignore -q "$product"; then
       echo "[hz10-standalone] expected local build product ignored: ${product}" >&2
       exit 1

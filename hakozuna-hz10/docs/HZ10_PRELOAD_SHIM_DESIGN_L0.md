@@ -160,6 +160,44 @@ flatness: alternating base/current n=30, THREADS=4 ITERS=200000,
 log: bench_results/20260705T194922Z_hz10_metadata_self_host_d1_alternating/
 ```
 
+## D2/D3 implementation record
+
+DONE 20260706: `src/hz10_shim.c` builds `libhz10.so` via the new
+`preload` target. It interposes `malloc/free/calloc/realloc`,
+`malloc_usable_size`, `posix_memalign`, `aligned_alloc`, and `memalign`.
+Internal shim calls use private helpers rather than symbol lookup, which
+matters for the direct `dlopen()` API smoke and for real LD_PRELOAD
+startup. The shim registers `pthread_atfork()` hooks for the pagemap lock
+and the freelist metadata/quantum reservoirs.
+
+API semantics are covered by `tests/hz10_shim_api_smoke.c`:
+
+```text
+malloc(0) -> non-NULL shim allocation
+calloc zero-fill and overflow ENOMEM
+realloc in-place when new size <= malloc_usable_size, copy+free when grown
+realloc(NULL,0) follows malloc(0); realloc(ptr,0) frees and returns NULL
+posix_memalign/aligned_alloc/memalign alignment checks
+malloc_usable_size route -> slot_size
+unknown free aborts by default; HZ10_SHIM_TOLERATE_FOREIGN=1 counts+returns
+```
+
+D3 foreign-program smoke is `scripts/run_hz10_shim_smoke.sh` and the
+`smoke-shim-foreign` make target. It currently runs fail-closed
+`LD_PRELOAD=libhz10.so` over `/bin/true`, `/bin/ls`, `/bin/grep`,
+`/usr/bin/python3`, and `git status`. A direct fork smoke
+(`/bin/sh -c 'true; echo ...'`) also passed after atfork hooks landed.
+
+Gates:
+
+```text
+smoke-shim-api: green
+smoke-shim-foreign: green
+ASan/UBSan shim build + smoke-shim-api: green
+public-entry/freelist/pagemap smokes: green
+standalone check: green
+```
+
 ## Open questions for reviewers
 
 ```text

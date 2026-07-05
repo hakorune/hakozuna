@@ -233,4 +233,10 @@ static inline int hz10_pagemap_route_local_fast(
 /* Test/bench only: unregisters everything and unmaps all leaves. */
 void hz10_pagemap_reset_for_tests(void);
 
+/* LD_PRELOAD shim atfork hooks: lock before fork, unlock in parent/child so
+ * a child process never inherits these internal mutexes as held. */
+void hz10_pagemap_atfork_prepare(void);
+void hz10_pagemap_atfork_parent(void);
+void hz10_pagemap_atfork_child(void);
+
 #endif
