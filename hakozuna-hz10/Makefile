@@ -14,7 +14,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	hz10-rss-guard hz10-standalone-check
+	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -27,6 +27,8 @@ DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS
 # Keep DEBUG_CFLAGS separate so smoke/sanitizer/TSan-style compiler modes stay
 # explicit gates instead of inheriting optimizer-mode assumptions.
 OPT_CFLAGS := $(CFLAGS) -flto
+TSAN_DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS -fsanitize=thread -fno-omit-frame-pointer
+TSAN_LDFLAGS := $(LDFLAGS) -fsanitize=thread
 
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 PAGEMAP_SRC := $(ROOT)/src/hz10_pagemap.c $(ROOT)/src/hz10_platform.c
@@ -181,6 +183,20 @@ $(ROOT)/hz10_public_entry_front_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 
 smoke-public-entry-front: $(ROOT)/hz10_public_entry_front_smoke
 	$(ROOT)/hz10_public_entry_front_smoke
+
+smoke-tsan-aslr-off:
+	command -v setarch >/dev/null
+	$(MAKE) -B DEBUG_CFLAGS="$(TSAN_DEBUG_CFLAGS)" LDFLAGS="$(TSAN_LDFLAGS)" \
+		"$(ROOT)/hz10_pagemap_route_smoke" \
+		"$(ROOT)/hz10_pagemap_route_diff_smoke" \
+		"$(ROOT)/hz10_public_entry_smoke" \
+		"$(ROOT)/hz10_public_entry_front_smoke"
+	arch=$$(uname -m); \
+	for bin in hz10_pagemap_route_smoke hz10_pagemap_route_diff_smoke \
+		hz10_public_entry_smoke hz10_public_entry_front_smoke; do \
+		echo "== $$bin (TSan, ASLR off) =="; \
+		setarch "$$arch" -R "$(ROOT)/$$bin" || exit $$?; \
+	done
 
 $(ROOT)/hz10_public_entry_front_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)

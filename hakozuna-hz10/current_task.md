@@ -151,10 +151,11 @@ status:
   Validation read:
     standalone check and normal smokes pass
     ASan/UBSan smokes pass
-    TSan claims in older log entries should be treated cautiously here:
-      this environment previously hit TSan runtime "unexpected memory mapping"
-      before test execution. Reconfirm TSan in a clean environment before
-      calling it a release gate.
+    TSan on this Ubuntu 22.04 / GCC 11 / Linux 6.8 box needs ASLR off:
+      plain TSan binaries abort before test execution with
+      "unexpected memory mapping", but `make -C hakozuna-hz10
+      smoke-tsan-aslr-off` builds the TSan smoke set and runs it through
+      `setarch $(uname -m) -R`. Use that target for local TSan gates.
 
   Next HZ10 action (re-prioritized after the locked-in table above):
     RSS hardening comes before the next throughput fight. HZ10's product
@@ -521,17 +522,17 @@ status:
             route median ~2.46ns vs route_fast median ~1.57ns (~0.89ns win).
             Short same-run tcmalloc probe (THREADS=4 ITERS=200000 RUNS=3,
             front bench) showed main_local0 ratio 0.556 and small_local0
-            0.748; main still needs E2/next box. ASan/UBSan smoke green;
-            TSan runtime still fails at process start with "unexpected memory
-            mapping", so no TSan signal was obtained in this environment.
+            0.748; main still needs E2/next box. ASan/UBSan smoke green.
+            TSan infra fixed afterward: use smoke-tsan-aslr-off, which
+            runs the TSan smoke binaries under setarch/ASLR-off.
             E2a IMPLEMENTED 20260705: slot_count==1 now skips route
             division entirely in both slow and fast route paths after
             preserving the existing tail-slack/misaligned/interior order
             (valid pointer is base only; offset!=0 is interior). Differential
             route smoke, public-entry smokes, standalone, and ASan/UBSan
-            smoke are green. NEXT: E2b reciprocal/division-free route for
-            multi-slot records, guarded by the existing differential route
-            smoke.
+            smoke are green. TSan smoke is green via smoke-tsan-aslr-off.
+            NEXT: E2b reciprocal/division-free route for multi-slot records,
+            guarded by the existing differential route smoke.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
