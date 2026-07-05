@@ -182,6 +182,23 @@ status:
       current and high-water RSS; current_rss_kb is the primary "did memory
       come back after boundary flush?" signal.
 
+    DONE: HZ10RSSGuard-L0.
+      Added `scripts/run_hz10_rss_guard.sh` and `make hz10-rss-guard` as a
+      short regression gate for the opt-in lifecycle flush lane. Defaults:
+      THREADS=4 ITERS=200000 RUNS=3 with HZ10_THREAD_EXIT_RECLAIM=1 and
+      HZ10_DUMP_CLASS_STATS=1. Rows: main_r50, main_r90, slot_count1_r90.
+      The guard fails if any run exceeds current RSS limits (main rows
+      128MiB, slot_count1 256MiB by default; override via
+      HZ10_RSS_GUARD_MAIN_KB/HZ10_RSS_GUARD_SLOT1_KB) or if pages_busy is
+      nonzero. Deferred ready/cancel pages are allowed observations under
+      the flush contract: they mean the hook refused to destroy a page that
+      failed the ready/cancel guard, and RSS is still bounded by the current
+      RSS limit.
+      Verified log:
+        bench_results/20260705T001314Z_hz10_rss_guard/combined.log
+      Result: all rows passed; current_rss_kb stayed in single-digit MB-ish
+      territory after quiescent flush.
+
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
     of 20260705: move-to-front NO-GO, and the two-slot ping-pong hypothesis

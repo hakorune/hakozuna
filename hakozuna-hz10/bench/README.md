@@ -491,6 +491,18 @@ All three rows reported median busy=0 and deferred=0 in the reclaim stats.
 Read: the explicit lifecycle boundary is a real current-RSS closure
 mechanism, not just a high-water accounting artifact.
 
+RSS guard (HZ10RSSGuard-L0):
+`make -C hakozuna-hz10 hz10-rss-guard` runs a short opt-in lifecycle-flush
+gate over main_r50, main_r90, and slot_count1_r90. It checks per-run
+`current_rss_kb` and fails if any thread-cache flush reports busy pages.
+Deferred ready/cancel pages are observations, not failures, because the
+contract requires leaving those pages registered rather than destroying
+them. Defaults are THREADS=4 ITERS=200000 RUNS=3, with current
+RSS limits of 128MiB for main rows and 256MiB for slot_count1
+(`HZ10_RSS_GUARD_MAIN_KB` and `HZ10_RSS_GUARD_SLOT1_KB` override them).
+First passing log:
+`bench_results/20260705T001314Z_hz10_rss_guard/combined.log`.
+
 Remote publish batch locality (HZ10RemotePublishBatchLocality-L0):
 `bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log`.
 This measurement-only bench uses public-entry allocation/free shape but counts

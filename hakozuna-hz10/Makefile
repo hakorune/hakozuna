@@ -10,7 +10,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	hz10-standalone-check
+	hz10-rss-guard hz10-standalone-check
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -215,6 +215,9 @@ bench-class-pages-scan: $(ROOT)/hz10_class_pages_scan_bench
 
 hz10-standalone-check:
 	$(ROOT)/scripts/check_hz10_standalone.sh
+
+hz10-rss-guard:
+	$(ROOT)/scripts/run_hz10_rss_guard.sh
 
 clean:
 	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \
