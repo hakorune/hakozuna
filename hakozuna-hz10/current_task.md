@@ -818,23 +818,27 @@ status:
                  1..4096 over the current table = +16.6% expected =
                  ~+14MB of the row's +24.5MB; residual ~+9MB =
                  retention/pool/metadata).
-                 NEXT after this attribution, in order:
-                   - HZ10ClassGranularity-L1 (primary): quarter-step
-                     classes (2^k x {1,1.25,1.5,1.75}) in the 64..8192
-                     band ONLY -- above 8192 quarter classes waste
-                     quantum tail instead (40960 = 1 slot + 37.5%
-                     slack), so the big band waits for a multi-quantum
-                     page design. Expected: uniform overhead +16.6% ->
-                     ~+11%, worst case +50% -> +25%. Class count 24 ->
-                     ~36. Gates MUST include small-working-set rows and
-                     the full micro matrix (more classes spread working
-                     sets over more pages -- RSS can regress on tiny
-                     footprints), plus this python row's maxrss.
-                   - HZ10ShimExitStats-L0 (secondary): env-gated atexit
-                     per-class/pool dump to decompose the ~+9MB
-                     best-fit residual before touching retention
-                     policy; retention moves current_rss (redis-class
-                     servers), not churn maxrss peaks.
+                 HZ10ClassGranularity-L1 ATTEMPTED 20260706:
+                 quarter-step classes in the 64..8192 band were
+                 implemented and measured. Verdict: NO-GO as default,
+                 opt-in retained behind
+                 `HZ10_ENABLE_FINE_SIZE_CLASSES=1`. The python_alloc
+                 macro row improved (median RSS 116.9MB -> 106.7MB,
+                 wall 0.905s -> 0.890s), confirming fable5's class-
+                 rounding attribution, but the full public-entry matrix
+                 failed the default gate: the initial default-fine A/B
+                 regressed main_local0 to 0.750x and small_local0 to
+                 0.852x; after lookup trim, main_local0 was still only
+                 ~0.77x in the short check. Decision is recorded in
+                 docs/HZ10_NO_GO_LEDGER.md. NEXT: use the fine-class
+                 lane only for macro/RSS probes; do not enable by
+                 default until a class policy avoids the local/interleaved
+                 working-set spread penalty. The next concrete RSS box
+                 is HZ10ShimExitStats-L0: env-gated atexit per-class/
+                 pool dump to decompose the ~+9MB best-fit residual
+                 before touching retention policy; retention moves
+                 current_rss (redis-class servers), not churn maxrss
+                 peaks.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.

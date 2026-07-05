@@ -257,3 +257,38 @@ Decision:
 - Keep the front cache opt-in for bulk/local-path and targeted experiments.
   Reopen only with a small-class-safe shape or a selective policy that avoids
   reintroducing the measured threshold-branch regression.
+
+## 20260706 Fine Size Classes As Default
+
+Status: `NO-GO as default; opt-in retained`
+
+Evidence:
+
+- `bench_results/20260705T205340Z_hz10_class_granularity_l1/`
+- Prototype changed the default table from 24 classes to 38 classes:
+  quarter-step spacing (`2^k * {1, 1.25, 1.5, 1.75}`) in the 64..8192
+  band, with the old 1.5x/2x spacing above 8192 to avoid burning whole
+  single-quantum page tails.
+- The macro attribution was real: the `python_alloc` shim row improved
+  median RSS from 116.9MB to 106.7MB and median wall time from 0.905s to
+  0.890s in the same session.
+- The default microbench gate failed. Initial full public-entry A/B
+  (`THREADS=4 ITERS=200000`, 20 alternations, base vs default-fine):
+  - main_local0: 0.750x ops/s, post_rss 1.531x
+  - small_local0: 0.852x ops/s
+  - medium_local0: 0.969x ops/s, post_rss 1.167x
+  - remote rows were mixed/noisy rather than a compensating win.
+- After trimming the fine lookup, a shorter 4-row A/B still showed the
+  key local regression:
+  - main_local0: ~0.77x
+  - small_local0: ~0.93x
+
+Decision:
+
+- Do not enable fine size classes by default.
+- Keep `HZ10_ENABLE_FINE_SIZE_CLASSES=1` as an opt-in macro/RSS probe lane.
+  It preserves the useful evidence that class rounding drives a large part
+  of `python_alloc` RSS, while making rollback immediate.
+- Reopen only with a policy that avoids spreading interleaved/local
+  workloads across too many live classes/pages, or with a macro-specific
+  shim mode justified by product-level measurements.

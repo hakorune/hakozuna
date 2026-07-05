@@ -7,9 +7,18 @@
  * strictly increasing, and every class fits in one quantum. */
 static int check_table_shape(void) {
   static const uint32_t expected[HZ10_CLASS_COUNT] = {
+#if HZ10_ENABLE_FINE_SIZE_CLASSES
+      16u,    32u,    48u,    64u,    80u,    96u,    112u,   128u,
+      160u,   192u,   224u,   256u,   320u,   384u,   448u,   512u,
+      640u,   768u,   896u,   1024u,  1280u,  1536u,  1792u,  2048u,
+      2560u,  3072u,  3584u,  4096u,  5120u,  6144u,  7168u,  8192u,
+      12288u, 16384u, 24576u, 32768u, 49152u, 65536u
+#else
       16u,   32u,   48u,    64u,    96u,    128u,   192u,   256u,
       384u,  512u,  768u,   1024u,  1536u,  2048u,  3072u,  4096u,
-      6144u, 8192u, 12288u, 16384u, 24576u, 32768u, 49152u, 65536u};
+      6144u, 8192u, 12288u, 16384u, 24576u, 32768u, 49152u, 65536u
+#endif
+  };
   uint32_t prev = 0u;
   for (uint32_t c = 0u; c < HZ10_CLASS_COUNT; ++c) {
     uint32_t slot_size = hz10_size_class_slot_size(c);

@@ -246,6 +246,29 @@ glibc/mimalloc. Next D4 work is to add the real mimalloc-bench subset or
 longer macro rows; do not promote this two-workload smoke as the final
 headline table.
 
+## Python RSS attribution and class-granularity result
+
+DONE 20260706: `python_alloc` RSS was decomposed in
+`bench_results/20260706T190000Z_hz10_macro_rss_attribution/notes.md`.
+Two probes established that front-cache is not the fix for this row, while
+class-boundary fit is the main driver: worst-fit sizes just above class
+edges made HZ10 ~49% heavier than glibc, while best-fit sizes just below
+edges reduced the gap to ~11%.
+
+HZ10ClassGranularity-L1 then added quarter-step classes in the 64..8192
+band. The attribution was confirmed: the `python_alloc` shim row improved
+from ~116.9MB to ~106.7MB median RSS in the same session. However, making
+the finer table the default failed the public-entry gate, with large
+local/interleaved regressions (main_local0 ~0.75x in the full A/B, still
+~0.77x after lookup trim). The result is recorded in
+`docs/HZ10_NO_GO_LEDGER.md` as `NO-GO as default`.
+
+The fine table remains as `HZ10_ENABLE_FINE_SIZE_CLASSES=1`, an opt-in
+macro/RSS probe lane. The next RSS box is not retention tuning by guesswork:
+add `HZ10ShimExitStats-L0`, an env-gated atexit per-class/pool dump, to
+split the remaining best-fit gap into live class occupancy, pool retention,
+and metadata before changing policy.
+
 ## Open questions for reviewers
 
 ```text
