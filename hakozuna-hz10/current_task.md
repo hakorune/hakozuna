@@ -224,6 +224,14 @@ status:
       and remote publish before changing behavior. Do not reopen normal
       remote publish batching, MTF, two-slot active cache, or pending-bit
       weakening without new evidence.
+      AI review #1 verdict, 20260705: plan GO; next box GO-with-change.
+      Applied changes to the design doc: use existing route/RMW benches as
+      citations, make the new box an integrated additivity check
+      (sum(stage ns/op) vs full remote free), measure ready_note as the new
+      standalone value, choose by remote_pct-weighted ns/logical-free rather
+      than raw ns/op, add small_local0 and slot_count1_local0 to the baseline
+      refresh, and close the harness/inbox-shape concern before trusting the
+      stage result.
 
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as

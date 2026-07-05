@@ -35,6 +35,21 @@ slot_count1_r90:~0.54-0.63x tcmalloc depending on run set
 HZ10 already clears the HZ8 comparison on the latest same-run read. The next
 fight is tcmalloc-class throughput while keeping HZ8-class RSS discipline.
 
+Reviewer feedback 2026-07-05:
+
+```text
+plan verdict:
+  GO
+
+next box:
+  HZ10PublicFreeStageCost-L0 is GO-with-change
+```
+
+The change: make the next box a decision-grade attribution pass, not a set of
+weak isolated one-page timings. Existing route and RMW benches already cover
+important isolated cases; the new box must explain how those pieces add up in
+the integrated public-free path.
+
 ## Load-Bearing Constraints
 
 Do not weaken these without a separate correctness design:
@@ -71,11 +86,18 @@ Is the tcmalloc gap mostly:
   E. benchmark harness/inbox shape masking the allocator cost?
 ```
 
-The existing evidence already weakens C for the main rows: active scan cost is
-real but move-to-front and two-slot caches were NO-GO. Existing RMW microbench
-points strongly at B for remote rows, but public-entry rows did not visibly
-move from the debug-counter cleanup, so we need a stage-level public-shaped
-measurement before changing contracts.
+The current table suggests the largest main-row gap may be local-path cost
+(A/C/D), not remote publication alone:
+
+```text
+main_local0 already sits around 0.56x tcmalloc with no remote frees
+main_r50/r90 add only about another 0.07-0.09x ratio loss
+small_remote50/90 are closer to tcmalloc than main_local0
+```
+
+So `HZ10PublicFreeStageCost-L0` must first confirm or reject route/local-path
+dominance. Remote publication remains a real measured cost, but it should not
+be allowed to dominate the prose until the integrated attribution says so.
 
 ## Recommended Attack Order
 
@@ -88,8 +110,8 @@ fields:
 rows:
   main_local0 main_r50 main_r90
   medium_local0
-  small_remote50 small_remote90
-  slot_count1_r90
+  small_local0 small_remote50 small_remote90
+  slot_count1_local0 slot_count1_r90
 
 report:
   hz10 work_loop_ops_per_s
@@ -99,12 +121,38 @@ report:
 ```
 
 Decision: if numbers differ materially from the locked table, update the
-target list before implementing any speed box.
+target list before implementing any speed box. The added local0 rows are not
+optional: `local0 -> remote` deltas are the cleanest way to bound the remote
+publication contribution by size distribution.
 
 ### 2. HZ10PublicFreeStageCost-L0
 
-Add an opt-in measurement lane that times or counts public free stages without
-changing default behavior:
+Add an opt-in measurement lane that attributes public free cost without
+changing default behavior. This box should explicitly relate to two existing
+benches:
+
+```text
+bench/hz10_pagemap_route_bench.c:
+  already measures route with PAGES round-robin address dispersion
+
+bench/hz10_remote_rmw_microbench.c:
+  already measures persistent-worker remote publication contention
+```
+
+Therefore the new box's unique value is:
+
+```text
+integrated public-free additivity:
+  compare sum(stage ns/op) against full remote free ns/op
+
+ready-note cost:
+  measure retired_ready_note_remote_free() in the active-page no-op case
+
+frequency weighting:
+  convert raw stage ns/op into weighted ns/logical-free
+```
+
+Stage split:
 
 ```text
 route:
@@ -125,25 +173,56 @@ remote publish:
 ```
 
 Preferred shape: a dedicated microbench that pre-allocates stable pages and
-calls these pieces in public-entry-like ratios. Avoid timing every production
-operation with always-on clock reads. Use compile-time opt-in counters or a
-separate bench binary.
+calls these pieces in public-entry-like ratios. Pre-allocate multiple stable
+pages and round-robin through them, matching the existing route bench's
+PAGES-style cache dispersion. Avoid timing every production operation with
+always-on clock reads. Use compile-time opt-in counters or a separate bench
+binary.
 
 Required output:
 
 ```text
+existing-bench citations:
+  route bench ns/op under PAGES round-robin
+  RMW microbench ns/op for publish/full-publish modes under persistent workers
+
 ns/op for route-only
 ns/op for local free after route
 ns/op for remote claim only
+ns/op for remote claim classification recomputation only
 ns/op for ready note in active-page no-op case
 ns/op for publish only
 ns/op for full remote free
+
+additivity:
+  sum(route + claim + ready_note + publish)
+  full_remote_free
+  interaction_delta = full_remote_free - sum(stages)
+
+frequency-weighted contribution:
+  route_weighted = route_ns * 1.0
+  local_weighted = local_ns * local_pct
+  claim_weighted = claim_ns * remote_pct
+  ready_note_weighted = ready_note_ns * remote_pct
+  publish_weighted = publish_ns * remote_pct
+  total_weighted_ns_per_logical_free
 ```
 
-Decision: pick the first implementation box from the largest measured stage,
-not from intuition.
+Decision: pick the first implementation box from the largest weighted
+contribution, not the largest raw ns/op stage. `route` runs on every
+`hz10_free(ptr)`, while claim/note/publish only run on remote frees. At r50,
+a 10ns route cost can matter as much as a 20ns remote-only stage.
 
-### 3. HZ10OwnerTokenFastState-Design-L0
+If `interaction_delta` is large, do not optimize the isolated stage first.
+That delta is the cache/interaction cost the isolated benches failed to
+capture.
+
+Harness check: before trusting the stage result, verify the same-run
+hz10-vs-tcmalloc script uses the same operation stream and thread assignment
+for both allocators and that timed allocator sections do not include external
+inbox lock work. This is the cheap way to close candidate E.
+
+### Branch After 2A. HZ10OwnerTokenFastState-Design-L0
 
 Current `owner_thread_token` is only a same-thread identity token:
 
@@ -176,7 +255,7 @@ What is the fail-closed behavior if owner state is shutting down?
 Does owner-state lookup cost less than current page-stripe publish?
 ```
 
-### 4. HZ10RemotePublicationV2-Design-L0
+### Branch After 2B. HZ10RemotePublicationV2-Design-L0
 
 Only after stage-cost data, consider replacing per-page Treiber publish with a
 different publication target. Candidate shapes:
@@ -208,7 +287,7 @@ do not implement producer staging as default behavior
 The key review question: can an owner-mailbox reduce total remote free cost
 without just replacing one CAS with another CAS plus a harder lifetime problem?
 
-### 5. HZ10LocalPathTrim-L0
+### Branch After 2C. HZ10LocalPathTrim-L0
 
 Do not ignore local rows. `main_local0` and `medium_local0` are still around
 0.55-0.61x tcmalloc. Possible causes:
@@ -228,6 +307,7 @@ fixed-size local0 rows by class
 alloc-only from warm active page
 free-only local route+free
 random-size local0 with pre-warmed pages
+route bench comparison with PAGES round-robin
 ```
 
 Decision: if local free route dominates, optimize public route/free. If alloc
@@ -264,4 +344,3 @@ HZ10PublicFreeStageCost-L0
 It is measurement-only, low-risk, and directly selects whether the next real
 box should attack route/local free, remote claim/publish, owner handoff, or
 page selection. This is the best next move before changing hot-path contracts.
-
