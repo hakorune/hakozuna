@@ -339,6 +339,24 @@ the full public-entry micro matrix, rss-guard, and the best-fit/uniform
 macro rows. Combine with `HZ10_ENABLE_FINE_SIZE_CLASSES=1` only as a
 separate shim/RSS experiment, not as a default allocator change.
 
+Follow-up gate result: `NO-GO as default`. The hook was tightened with an
+owner-list-state guard and bounded to the 80..4096 slot-size band, then
+rechecked. It still carried local-path risk in selected micro rows, while
+the macro result did not beat fine classes alone:
+
+```text
+default:       wall 0.910s, maxrss 116.8MB, retired_pages 933
+retired-local: wall 0.900s, maxrss 113.1MB, retired_pages 2
+fine:          wall 0.870s, maxrss 106.7MB, retired_pages 574
+fine+retired:  wall 0.920s, maxrss 108.2MB, retired_pages 1
+```
+
+Decision: keep retired-local as an opt-in diagnostic/footprint reducer, not
+a default or recommended shim lane. For the next macro step, fine classes
+remain the stronger measured RSS lever; expand the macro matrix and price
+thread-churn/no-destructor behavior before opening another local-free
+retention tweak.
+
 ## Open questions for reviewers
 
 ```text

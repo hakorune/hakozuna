@@ -128,7 +128,12 @@ static void hz10_public_entry_reclaim_ready_idle_pages(
 static inline void hz10_public_entry_note_owner_local_free(
     uint32_t class_id, Hz10FreelistPage* page) {
 #if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-  if (page && page->free_count == page->slot_count &&
+  if (class_id >= HZ10_RETIRED_LOCAL_IDLE_MIN_CLASS_ID &&
+      class_id <= HZ10_RETIRED_LOCAL_IDLE_MAX_CLASS_ID && page &&
+      page->slot_size >= HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE &&
+      page->slot_size <= HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE &&
+      page->free_count == page->slot_count &&
+      page->owner_list_kind == HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED &&
       class_id < HZ10_CLASS_COUNT) {
     (void)hz10_class_pages_reclaim_retired_idle_after_local_free(
         &hz10_class_state[class_id].list, page);
@@ -586,9 +591,15 @@ int hz10_free(void* ptr) {
   H10RouteLocalResult local_route = {0};
   Hz10FreelistPage* page = NULL;
   uint32_t route_generation = 0u;
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+  uint32_t route_slot_size = 0u;
+#endif
   if (hz10_pagemap_route_local_fast(ptr, &local_route)) {
     page = (Hz10FreelistPage*)local_route.owner;
     route_generation = local_route.generation;
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+    route_slot_size = local_route.slot_size;
+#endif
   } else {
     H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
     if (route.kind != H10_ROUTE_VALID) {
@@ -600,6 +611,9 @@ int hz10_free(void* ptr) {
     }
     page = (Hz10FreelistPage*)route.owner;
     route_generation = route.generation;
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+    route_slot_size = route.slot_size;
+#endif
   }
   if (!page) {
     return 0;
@@ -614,7 +628,12 @@ int hz10_free(void* ptr) {
 #if HZ10_FRONT_CACHE_MIN_CLASS > 0
     if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
       hz10_freelist_page_free(page, ptr);
-      hz10_public_entry_note_owner_local_free(class_id, page);
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+      if (route_slot_size >= HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE &&
+          route_slot_size <= HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE) {
+        hz10_public_entry_note_owner_local_free(class_id, page);
+      }
+#endif
       return 1;
     }
 #endif
@@ -633,7 +652,12 @@ int hz10_free(void* ptr) {
     return 1;
 #else
     hz10_freelist_page_free(page, ptr);
-    hz10_public_entry_note_owner_local_free(page->class_id, page);
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+    if (route_slot_size >= HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE &&
+        route_slot_size <= HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE) {
+      hz10_public_entry_note_owner_local_free(page->class_id, page);
+    }
+#endif
     return 1;
 #endif
   }

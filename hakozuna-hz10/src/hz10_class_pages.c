@@ -66,6 +66,18 @@ static void hz10_page_sublist_prepend(Hz10PageSublist* sub,
   sub->length += 1u;
 }
 
+static void hz10_class_pages_prepend_active(Hz10ClassPageList* list,
+                                            Hz10FreelistPage* page) {
+  page->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_ACTIVE;
+  hz10_page_sublist_prepend(&list->active, page);
+}
+
+static void hz10_class_pages_prepend_retired(Hz10ClassPageList* list,
+                                             Hz10FreelistPage* page) {
+  page->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED;
+  hz10_page_sublist_prepend(&list->retired, page);
+}
+
 /* Precondition: sub->tail != NULL (caller checks length first). */
 static Hz10FreelistPage* hz10_page_sublist_pop_tail(Hz10PageSublist* sub) {
   Hz10FreelistPage* node = sub->tail;
@@ -76,6 +88,9 @@ static Hz10FreelistPage* hz10_page_sublist_pop_tail(Hz10PageSublist* sub) {
     sub->head = NULL;
   }
   sub->length -= 1u;
+  node->next_in_owner_list = NULL;
+  node->prev_in_owner_list = NULL;
+  node->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_NONE;
   return node;
 }
 
@@ -93,6 +108,9 @@ static void hz10_page_sublist_remove(Hz10PageSublist* sub,
     sub->tail = node->prev_in_owner_list;
   }
   sub->length -= 1u;
+  node->next_in_owner_list = NULL;
+  node->prev_in_owner_list = NULL;
+  node->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_NONE;
 }
 
 #if HZ10_ENABLE_ACTIVE_MTF
@@ -103,6 +121,7 @@ static void hz10_page_sublist_move_to_head(Hz10PageSublist* sub,
   }
   hz10_page_sublist_remove(sub, node);
   hz10_page_sublist_prepend(sub, node);
+  node->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_ACTIVE;
 }
 #endif
 
@@ -132,7 +151,7 @@ static void hz10_class_pages_retired_remove(Hz10ClassPageList* list,
  * amortized cost either caller relies on. */
 static void hz10_class_pages_prepend_active_with_eviction(
     Hz10ClassPageList* list, Hz10FreelistPage* page) {
-  hz10_page_sublist_prepend(&list->active, page);
+  hz10_class_pages_prepend_active(list, page);
 
   if (list->active.length <= HZ10_CLASS_PAGES_SCAN_LIMIT) {
     return;
@@ -157,7 +176,7 @@ static void hz10_class_pages_prepend_active_with_eviction(
    * churn). `retired` is unbounded -- see the module comment for why
    * that is safe and necessary (a bounded version with its own overflow
    * eviction was tried and measured to not meaningfully help). */
-  hz10_page_sublist_prepend(&list->retired, evict);
+  hz10_class_pages_prepend_retired(list, evict);
   list->retired_count += 1u;
   if (list->retired.length > list->max_retired_length) {
     list->max_retired_length = list->retired.length;
@@ -356,6 +375,12 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
 int hz10_class_pages_reclaim_retired_idle_after_local_free(
     Hz10ClassPageList* list, Hz10FreelistPage* page) {
   if (!list || !page || page->free_count != page->slot_count) {
+    return 0;
+  }
+  if (page->slot_size < HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE ||
+      page->slot_size > HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE ||
+      page->owner_list_kind != HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED ||
+      !atomic_load_explicit(&page->retired_ready_flag, memory_order_acquire)) {
     return 0;
   }
 

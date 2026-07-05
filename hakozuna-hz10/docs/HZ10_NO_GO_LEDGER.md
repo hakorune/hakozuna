@@ -292,3 +292,42 @@ Decision:
 - Reopen only with a policy that avoids spreading interleaved/local
   workloads across too many live classes/pages, or with a macro-specific
   shim mode justified by product-level measurements.
+
+## 20260707 Retired Local Idle Reclaim As Default
+
+Status: `NO-GO as default; opt-in research lane retained`
+
+Evidence:
+
+- `bench_results/20260706T220000Z_hz10_retired_local_idle_reclaim_l0/`
+- `bench_results/20260707T004000Z_hz10_retired_local_macro_gate_bounded/`
+- The structural diagnosis is real. In `python_alloc`, default HZ10 retained
+  a large local-churn retired backlog:
+  - default median: `active_pages=684`, `retired_pages=933`,
+    `page_bytes=105971712`, `pool_reuse=230`.
+  - retired-local opt-in median: `active_pages=684`, `retired_pages=2`,
+    `page_bytes=44957696`, `pool_reuse=696`,
+    `reclaimed_local_free=1807`.
+- However, max RSS and wall time did not justify default enablement:
+  - default `python_alloc`: `max_rss_kb=116824`, `wall=0.910s`.
+  - retired-local opt-in: `max_rss_kb=113144`, `wall=0.900s`.
+  - fine classes alone did better on this row:
+    `max_rss_kb=106748`, `wall=0.870s`.
+  - fine+retired-local reduced retained page footprint but lost to fine
+    alone on max RSS/wall: `max_rss_kb=108156`, `wall=0.920s`.
+- Selected micro A/B also found local-path risk even after bounding the hook
+  to the 80..4096 slot-size band:
+  - `small_local0` and `slot_count1_local0` were noisy across iterations,
+    with slot-count-1 still showing about a 4-7% opt-in regression in
+    several short alternating checks.
+
+Decision:
+
+- Do not enable `HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM` by default.
+- Keep the lane for research because it cleanly proves and repairs the
+  retired-backlog mechanism; use it when measuring retained footprint, not
+  as a product default.
+- The next RSS work should prefer a macro-specific class policy or a better
+  peak-RSS reducer. Local idle reclaim needs a lower-cost trigger or a
+  page-state design that has no measurable effect on excluded local rows
+  before it can reopen as a default candidate.

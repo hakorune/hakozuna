@@ -888,6 +888,29 @@ status:
                  default discussion: public-entry micro matrix, rss-guard,
                  best-fit/uniform python rows with exit-stats, and likely
                  fine-class+retired-local combined shim lane.
+                 FOLLOW-UP GATES 20260707: retired-local is NO-GO as
+                 default; keep opt-in only. After adding a retired state
+                 guard and bounding the hook to the 80..4096 slot-size
+                 band, selected micro A/B still showed local-path risk
+                 (slot_count1_local0 around 0.93-0.96x in short n=10
+                 alternations; small_local0 noisy but sometimes negative).
+                 rss-guard passed under the opt-in bench. Macro RUNS=5:
+                   default: wall 0.910s, maxrss 116.8MB, retired_pages 933,
+                     page_bytes 105.97MB.
+                   retired-local: wall 0.900s, maxrss 113.1MB,
+                     retired_pages 2, page_bytes 44.96MB.
+                   fine classes: wall 0.870s, maxrss 106.7MB.
+                   fine+retired-local: wall 0.920s, maxrss 108.2MB,
+                     retired_pages 1, page_bytes 62.39MB.
+                 Read: local idle reclaim is a good diagnostic/footprint
+                 reducer but not a peak-RSS/product win yet, and it is not
+                 clean enough for default. Decision recorded in
+                 docs/HZ10_NO_GO_LEDGER.md. NEXT: do not spend more on
+                 this hook until a lower-cost trigger exists; for macro
+                 RSS, fine-class shim lane remains the stronger measured
+                 lever, and the next frontier should be a macro benchmark
+                 expansion/thread-churn pricing rather than another
+                 local-free hook tweak.
                  DONE 20260706 (fable5): residual decomposed. log:
                  bench_results/
                    20260706T213000Z_hz10_retention_residual_attribution/

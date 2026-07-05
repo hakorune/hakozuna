@@ -401,36 +401,36 @@ static int check_thread_reclaim_leaves_busy_page(void) {
 
 #if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
 static int check_retired_local_idle_reclaim(void) {
-  const size_t size = 49152u;
+  const size_t size = 3072u;
   const uint32_t class_id = hz10_size_class_for(size);
-  if (class_id >= HZ10_CLASS_COUNT) {
-    fprintf(stderr, "retired_local_idle: no class for probe size\n");
-    return 1;
-  }
+  const uint32_t slot_count = hz10_size_class_slot_count(class_id);
+  if (class_id >= HZ10_CLASS_COUNT) return 1;
 
-  void* retired_slot = hz10_malloc(size);
-  if (!retired_slot) {
-    fprintf(stderr, "retired_local_idle: initial malloc failed\n");
+  void* retired_slots[32];
+  if (slot_count > (uint32_t)(sizeof(retired_slots) / sizeof(retired_slots[0])))
     return 1;
+  for (uint32_t i = 0; i < slot_count; ++i) {
+    retired_slots[i] = hz10_malloc(size);
+    if (!retired_slots[i]) {
+      fprintf(stderr, "retired_local_idle: initial malloc %u failed\n", i);
+      return 1;
+    }
   }
-  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT; ++i) {
+  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT * slot_count; ++i) {
     void* ptr = hz10_malloc(size);
     if (!ptr) {
       fprintf(stderr, "retired_local_idle: filler %u failed\n", i);
       return 1;
     }
   }
-
   Hz10ClassPageListStats before;
   hz10_public_entry_class_list_stats(class_id, &before);
-  if (before.retired_length == 0u) {
-    fprintf(stderr, "retired_local_idle: expected one retired page before free\n");
-    return 1;
-  }
-
-  if (!hz10_free(retired_slot)) {
-    fprintf(stderr, "retired_local_idle: local free failed\n");
-    return 1;
+  if (before.retired_length == 0u) return 1;
+  for (uint32_t i = 0; i < slot_count; ++i) {
+    if (!hz10_free(retired_slots[i])) {
+      fprintf(stderr, "retired_local_idle: local free %u failed\n", i);
+      return 1;
+    }
   }
 
   Hz10ClassPageListStats after;

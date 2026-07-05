@@ -24,6 +24,10 @@
 #define HZ10_REMOTE_STRIPE_COUNT 4u
 #define HZ10_CACHE_LINE_BYTES 64u
 
+#define HZ10_FREELIST_PAGE_OWNER_LIST_NONE 0u
+#define HZ10_FREELIST_PAGE_OWNER_LIST_ACTIVE 1u
+#define HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED 2u
+
 typedef struct Hz10RemoteStripeLine {
   _Atomic(void*) head;
   unsigned char pad[HZ10_CACHE_LINE_BYTES - sizeof(_Atomic(void*))];
@@ -68,6 +72,7 @@ typedef struct Hz10FreelistPage {
    * design doc and re-checked against the stage-cost bench.
    */
   uint32_t class_id;
+  uint32_t owner_list_kind;
 
   /*
    * Inert storage for whoever creates this page (e.g. a multi-class public

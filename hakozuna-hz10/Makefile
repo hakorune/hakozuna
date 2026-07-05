@@ -9,14 +9,15 @@
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
 	bench-public-entry-remote-batch-locality bench-public-entry-stage-cost \
 	bench-public-entry-local-path \
-	smoke-public-entry-retired-local \
+	smoke-public-entry-retired-local bench-public-entry-retired-local \
 	smoke-public-entry-front bench-public-entry-front \
 	bench-public-entry-local-path-front smoke-public-entry-front-array \
 	bench-public-entry-front-array bench-public-entry-local-path-front-array \
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
+	preload preload-fine-size-classes preload-retired-local \
+	preload-fine-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
@@ -179,6 +180,12 @@ $(ROOT)/hz10_public_entry_retired_local_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADE
 smoke-public-entry-retired-local: $(ROOT)/hz10_public_entry_retired_local_smoke
 	$(ROOT)/hz10_public_entry_retired_local_smoke
 
+$(ROOT)/hz10_public_entry_retired_local_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-retired-local: $(ROOT)/hz10_public_entry_retired_local_bench
+	$(ROOT)/hz10_public_entry_retired_local_bench
+
 $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -190,8 +197,14 @@ $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
 
 preload: $(ROOT)/libhz10.so
 
+preload-fine-size-classes: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
 preload-retired-local: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload-fine-retired-local: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/hz10_shim_api_smoke: $(SMOKE_SHIM_API_SRC) $(ROOT)/libhz10.so $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_SHIM_API_SRC) $(LDFLAGS) -ldl $(LDLIBS)
@@ -340,7 +353,7 @@ clean:
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_retired_local_smoke \
-		$(ROOT)/hz10_public_entry_bench \
+		$(ROOT)/hz10_public_entry_bench $(ROOT)/hz10_public_entry_retired_local_bench \
 		$(ROOT)/hz10_public_entry_active_scan_bench \
 		$(ROOT)/hz10_public_entry_active_mtf_bench \
 		$(ROOT)/hz10_public_entry_remote_batch_locality_bench \
