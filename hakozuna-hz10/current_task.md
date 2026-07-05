@@ -742,6 +742,27 @@ status:
                  The malloc(0)/realloc semantics and the quiescent
                  flush contract are the known design items to resolve
                  there.
+                 ACTIVATED 20260706 (fable5): conditions (1)-(3) are
+                 settled -- spin lane landed, StripeSpread narrowed GO,
+                 F3 closed, front default-ON NO-GO -- so this is now
+                 THE next box. Design scoped as
+                 docs/HZ10_PRELOAD_SHIM_DESIGN_L0.md: interposition
+                 semantics table (malloc(0)->16 shim-side, fail-closed
+                 abort on foreign free with a tolerate env, realloc
+                 in-place via slot_size, always-memset calloc,
+                 alignment>16 via the large path), and the two real
+                 design items: D1 metadata self-hosting (the ONLY libc
+                 heap calls in src/ are three calloc sites in
+                 hz10_freelist_page.c create/destroy -- they recurse
+                 under a shim and move to an mmap-backed fixed-size
+                 metadata slab; lands first, library-only, judged on
+                 flat matrix), and the honest v0 thread-exit policy
+                 (NO destructor -- the flush contract forbids it;
+                 orphaned pages are safe-but-retained, and larson-class
+                 macro runs will price that liability to decide whether
+                 the ownership-handoff design opens next). Deliverables
+                 D1-D4 and gates in the doc; review its open questions
+                 before implementing.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.

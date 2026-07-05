@@ -26,6 +26,12 @@ HZ10_FRONT_CACHE_DESIGN_L0.md:
   attacks the slot_count 1-2 local-path gap without changing remote publish
   or retired/ready contracts
 
+HZ10_PRELOAD_SHIM_DESIGN_L0.md:
+  review design for the LD_PRELOAD shim (libhz10.so): interposition
+  surface semantics, metadata self-hosting to break malloc recursion,
+  the honest v0 thread-exit policy, and the macro-bench lane that
+  replaces the micro rows as headline evidence
+
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,
   division-free interior check, size-class inline, record-carried owner
