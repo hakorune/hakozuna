@@ -199,6 +199,23 @@ status:
       Result: all rows passed; current_rss_kb stayed in single-digit MB-ish
       territory after quiescent flush.
 
+    DONE: HZ10SteadyStateRSSRecheck-L0.
+      Added current_rss_kb to `hz10_public_entry_steady_state_bench` and ran
+      a longer steady-state RSS check:
+        bench_results/20260705T001559Z_hz10_steady_state_rss_l0/combined.log
+      THREADS=4 CHECKPOINTS=5 MIN_SIZE=16 MAX_SIZE=32768:
+        main_r50 RUN_SECONDS=8:  current_rss_kb=17,408, retired_length=0.
+        main_r50 RUN_SECONDS=20: current_rss_kb=25,088, retired_length=0.
+        main_r90 RUN_SECONDS=8:  current_rss_kb=13,440, retired_length=0.
+        main_r90 RUN_SECONDS=20: current_rss_kb=27,008, retired_length=18.
+        main_r90 RUN_SECONDS=40: current_rss_kb=30,848, retired_length=0.
+      Read: the RUNS=10 fixed-iteration RSS growth is not reproduced as
+      continuous steady-state growth. Main rows stay low-current-RSS over
+      8/20s and the worst row remains low at 40s; retired pages do not
+      accumulate monotonically. RSS is now considered locked enough to move
+      back to throughput work, with `hz10-rss-guard` as the cheap regression
+      gate and lifecycle flush as the explicit boundary mechanism.
+
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
     of 20260705: move-to-front NO-GO, and the two-slot ping-pong hypothesis

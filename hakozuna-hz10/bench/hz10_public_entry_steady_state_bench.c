@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/resource.h>
 
 /*
@@ -116,6 +117,25 @@ static uint64_t hz10_bench_env_u64(const char* name, uint64_t fallback) {
     return fallback;
   }
   return strtoull(value, NULL, 10);
+}
+
+static long hz10_bench_current_rss_kb(void) {
+  FILE* f = fopen("/proc/self/status", "r");
+  if (!f) {
+    return -1;
+  }
+  char line[256];
+  long rss = -1;
+  while (fgets(line, sizeof(line), f)) {
+    if (strncmp(line, "VmRSS:", 6) == 0) {
+      if (sscanf(line + 6, "%ld", &rss) != 1) {
+        rss = -1;
+      }
+      break;
+    }
+  }
+  fclose(f);
+  return rss;
 }
 
 /* One bucket of aggregated Hz10ClassPageListStats fields relevant to
@@ -361,9 +381,13 @@ int main(void) {
   double seconds = (double)elapsed_ns / 1000000000.0;
   uint64_t ops = atomic_load_explicit(&g_total_ops, memory_order_relaxed);
   struct rusage usage;
-  long rss_kb = getrusage(RUSAGE_SELF, &usage) == 0 ? usage.ru_maxrss : -1;
-  printf("  wall_seconds=%.3f total_ops=%llu ops_per_s=%.2f post_rss_kb=%ld\n",
-        seconds, (unsigned long long)ops, (double)ops / seconds, rss_kb);
+  long post_rss_kb =
+      getrusage(RUSAGE_SELF, &usage) == 0 ? usage.ru_maxrss : -1;
+  long current_rss_kb = hz10_bench_current_rss_kb();
+  printf("  wall_seconds=%.3f total_ops=%llu ops_per_s=%.2f "
+         "post_rss_kb=%ld current_rss_kb=%ld\n",
+        seconds, (unsigned long long)ops, (double)ops / seconds, post_rss_kb,
+        current_rss_kb);
 
   for (uint32_t i = 0; i < g_checkpoint_count; ++i) {
     char label[32];

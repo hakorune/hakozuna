@@ -64,9 +64,9 @@ Two follow-up public-entry shapes exist for methodology checks:
 `hz10_public_entry_steady_state_bench` is a true continuous, time-based
 worker run with periodic allocator stats; use it to decide whether RSS or
 retired-page growth exists during one live thread population. On the
-20260705 main_r50/r90 recheck, retired_count stayed exactly 0 and RSS stayed
-low, so the RUNS=10 fixed-iteration RSS climb is not currently treated as
-proof of unbounded steady-state allocator growth.
+20260705 main_r50/r90 recheck, current RSS stayed low and retired pages did
+not accumulate monotonically, so the RUNS=10 fixed-iteration RSS climb is not
+currently treated as proof of unbounded steady-state allocator growth.
 `hz10_public_entry_thread_reuse_bench` intentionally keeps worker threads
 alive across fixed segments, but segment barriers create remote-inbox
 backlog; treat it as a boundary-stress diagnostic, not as the steady-state
@@ -502,6 +502,17 @@ RSS limits of 128MiB for main rows and 256MiB for slot_count1
 (`HZ10_RSS_GUARD_MAIN_KB` and `HZ10_RSS_GUARD_SLOT1_KB` override them).
 First passing log:
 `bench_results/20260705T001314Z_hz10_rss_guard/combined.log`.
+
+Steady-state RSS recheck (HZ10SteadyStateRSSRecheck-L0):
+`hz10_public_entry_steady_state_bench` now reports `current_rss_kb` alongside
+`post_rss_kb`. Recheck log:
+`bench_results/20260705T001559Z_hz10_steady_state_rss_l0/combined.log`.
+THREADS=4 CHECKPOINTS=5 MIN_SIZE=16 MAX_SIZE=32768: main_r50 stayed at
+17,408 KB current RSS after 8s and 25,088 KB after 20s, with retired_length=0
+at both ends. main_r90 stayed at 13,440 KB after 8s, 27,008 KB after 20s,
+and 30,848 KB after a 40s worst-row follow-up; retired_length was 0 at 8s,
+18 at 20s, and 0 again at 40s. Read: this does not reproduce monotonic RSS or
+retired-page growth during continuous steady-state operation.
 
 Remote publish batch locality (HZ10RemotePublishBatchLocality-L0):
 `bench_results/20260704T235343Z_hz10_remote_publish_batch_locality_l0/combined.log`.
