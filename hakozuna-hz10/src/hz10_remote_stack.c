@@ -212,3 +212,11 @@ uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
   }
   return merged;
 }
+
+int hz10_page_classify_for_remote_probe(const Hz10FreelistPage* page,
+                                        const void* ptr,
+                                        uint32_t expected_generation,
+                                        uint32_t* slot_index_out) {
+  return hz10_page_classify_for_remote(page, ptr, expected_generation,
+                                      slot_index_out);
+}

@@ -14,6 +14,7 @@
 /hz10_public_entry_active_mtf_bench
 /hz10_public_entry_two_slot_bench
 /hz10_public_entry_remote_batch_locality_bench
+/hz10_public_entry_stage_cost_bench
 /hz10_class_pages_scan_bench
 /hz10_size_class_smoke
 /hz10_retired_ready_smoke

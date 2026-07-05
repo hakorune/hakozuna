@@ -423,3 +423,34 @@ HZ10PublicFreeStageCost-L0
 It is measurement-only, low-risk, and directly selects whether the next real
 box should attack route/local free, remote claim/publish, owner handoff, or
 page selection. This is the best next move before changing hot-path contracts.
+
+## Measured, 2026-07-05
+
+HZ10SpeedBaselineRefresh-L0 and HZ10PublicFreeStageCost-L0 are both done; see
+current_task.md and bench/README.md for the full numbers and logs. Summary:
+
+```text
+baseline refresh:
+  materially lower small_remote50/90 ratios than this doc's original table
+  (tcmalloc measured faster this session, not an hz10 regression) --
+  refreshed table in current_task.md is now the reference
+
+stage cost, THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10 REMOTE_PCT=50:
+  route=2.37ns local_free=3.07ns remote_claim=3.81ns
+  remote_ready_note=1.55ns remote_publish=3.93ns
+  full_remote_free=5.70ns (realistic, same-page adjacency)
+  interaction_delta=-5.93ns (large, negative -- isolated stage sum
+    overstates real cost ~2.0x; do not rank by the raw isolated sum)
+  weighted_ns_per_logical_free_corrected=5.56ns, of which route alone is
+    ~43%, local_free*local_pct ~28%, remote-specific remainder only ~30%
+```
+
+Decision: route/validation overhead is close to the same size as the
+remaining remote-specific cost at a 50/50 mix. The next implementation box is
+HZ10LocalPathTrim-L0. Do not open HZ10OwnerTokenFastState-Design-L0 or
+HZ10RemotePublicationV2-Design-L0 first -- both only attack the smaller
+remote-specific remainder, and a stage-cost regression on this scale (a
+synchronization bug in the first bench version made the whole remote path
+look artificially expensive) is exactly the kind of mistake this plan's
+"decision-grade attribution" bar was written to catch before implementing
+behavior changes.

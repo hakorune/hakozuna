@@ -95,4 +95,21 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
  */
 uint32_t hz10_page_drain_remote(Hz10FreelistPage* page);
 
+/*
+ * HZ10PublicFreeStageCost-L0: measurement-only probe exposing the same
+ * tail-slack/misaligned/interior/generation classification pipeline
+ * hz10_page_remote_free_claim() runs internally (the "remote claim
+ * classification recomputation" stage in docs/
+ * HZ10_SPEED_ATTACK_PLAN_L0.md) so a bench can time it in isolation for
+ * attribution purposes. Read-only, no side effects -- safe to call from
+ * any thread, does not require pairing with anything. Not used by any
+ * production path; hz10_page_remote_free_claim() still runs its own
+ * internal copy, unchanged. Returns 1 and fills *slot_index_out on VALID,
+ * 0 otherwise, same contract as the internal function it mirrors.
+ */
+int hz10_page_classify_for_remote_probe(const Hz10FreelistPage* page,
+                                        const void* ptr,
+                                        uint32_t expected_generation,
+                                        uint32_t* slot_index_out);
+
 #endif

@@ -16,8 +16,12 @@ set -euo pipefail
 # rows are skipped, not failed -- hz10's own rows always run.
 #
 # Row matrix matches the shape this whole project already benches:
-# main_local0/main_r50/main_r90 (16-32768 byte range) plus a
-# medium_local0 (4097-65536) row, mirroring HZ8/HZ9's own row naming.
+# main_local0/main_r50/main_r90 (16-32768 byte range), medium_local0
+# (4097-65536), small_local0/small_remote50/small_remote90 (16-64, hits
+# large-slot_count classes), and slot_count1_local0/slot_count1_r90
+# (fixed 65536, the single-slot isolating case) -- see
+# docs/HZ10_SPEED_ATTACK_PLAN_L0.md's HZ10SpeedBaselineRefresh-L0 for why
+# the local0 counterparts were added alongside the existing remote rows.
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "${ROOT}/bench/lib/hz10_bench_common.sh"
@@ -58,6 +62,11 @@ rows=(
   "main_r50 16 32768 50"
   "main_r90 16 32768 90"
   "medium_local0 4097 65536 0"
+  "small_local0 16 64 0"
+  "small_remote50 16 64 50"
+  "small_remote90 16 64 90"
+  "slot_count1_local0 65536 65536 0"
+  "slot_count1_r90 65536 65536 90"
 )
 
 for row in "${rows[@]}"; do

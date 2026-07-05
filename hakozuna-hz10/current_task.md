@@ -238,6 +238,115 @@ status:
       stats-dump diagnostics are explicitly separated from tcmalloc ratio
       runs, and the stage-cost protocol now follows the RMW microbench style
       (THREADS/PAGES/REPEAT/RUNS recorded).
+      DONE: HZ10SpeedBaselineRefresh-L0, 20260705.
+      log: bench_results/20260705T010000Z_hz10_public_entry_vs_tcmalloc_same_run/combined.log
+      THREADS=4 ITERS=500000 RUNS=10, extended
+      scripts/run_hz10_public_entry_vs_tcmalloc_same_run.sh with
+      small_local0/small_remote50/small_remote90/slot_count1_local0/
+      slot_count1_r90 rows (previously only main_local0/r50/r90 and
+      medium_local0 ran through this script):
+        main_local0=0.556 main_r50=0.452 main_r90=0.463 medium_local0=0.532
+        small_local0=0.668 small_remote50=0.476 small_remote90=0.511
+        slot_count1_local0=0.500 slot_count1_r90=0.454
+      Materially different from the locked table cited at the top of
+      docs/HZ10_SPEED_ATTACK_PLAN_L0.md for small_remote50/90 (was
+      ~0.69/~0.70, now ~0.48/~0.51). Re-ran small_remote50/90 alone
+      (RUNS=5) to check this wasn't one-off noise: tcmalloc consistently
+      measured ~35-36M ops/s this session vs ~27M ops/s in the original
+      locked-in run, while hz10's own ops/s stayed close to its old
+      number (~17-18M vs ~18.76M). The gap is attributable to tcmalloc
+      itself measuring faster in this environment/session, not an hz10
+      regression -- same LD_PRELOAD library path both times. Treat the
+      refreshed table above as the current reference for ranking attack
+      priority; the old locked-in table is stale for small_remote rows
+      specifically.
+      DONE: HZ10PublicFreeStageCost-L0, 20260705.
+      log: bench_results/20260705T011348Z_hz10_public_free_stage_cost_l0_rerun/combined.log
+      New opt-in bench, `make bench-public-entry-stage-cost`
+      (bench/hz10_public_entry_stage_cost_bench.c): THREADS worker threads
+      each own a private set of PAGES pages (slot_count=1, one full
+      quantum, matching this project's "slot_count1" row shape) and
+      round-robin through them -- deliberately a cost-attribution bench,
+      not a contention bench (that is bench/hz10_remote_rmw_microbench.c's
+      job); every stage runs single-threaded against a thread's own pages.
+      Also added `hz10_page_classify_for_remote_probe()`
+      (src/hz10_remote_stack.{h,c}), a read-only exported mirror of the
+      internal classification pipeline `hz10_page_remote_free_claim()`
+      already runs, purely so the "reclassification" sub-cost can be timed
+      without touching the production claim() path.
+      CORRECTNESS FIX during implementation, before trusting any numbers:
+      the first working version used two barriers (start/done) and read
+      `mode` once at the top of the worker loop, before that round's own
+      untimed pre-phase. That left no synchronization point between
+      "workers finish the previous round's post-phase and this round's
+      pre-phase" and "main takes the next round's start timestamp" --
+      main takes the timestamp and immediately blocks on start_barrier, so
+      untimed housekeeping still in flight on the worker side silently
+      counted inside the NEXT round's measured time. This produced the
+      impossible result of full_remote_free measuring FASTER than its own
+      claim+publish sub-parts (claim ~9.8ns, publish ~11.1ns, full ~10.3ns
+      alone). Fixed with a third barrier (ready_barrier): main only takes
+      its timestamp after every worker has already finished the previous
+      round's post-phase AND this round's pre-phase (including re-reading
+      `mode`, which also closes a smaller stage-transition race). See
+      BenchState's doc comment in the bench file for the full reasoning.
+      THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10 REMOTE_PCT=50 median,
+      after the fix and a follow-up rerun that corrected the ready_barrier
+      placement in the committed bench:
+        route=2.37ns local_free=3.07ns
+        claim_classify_recompute=1.96ns (sub-breakdown of remote_claim,
+          not separately summed) remote_claim=3.81ns
+        remote_ready_note=1.55ns remote_publish=3.93ns
+        full_remote_free=5.70ns (route+claim+ready_note+publish together,
+          same page, same iteration -- the realistic adjacency)
+        sum_stages (route+claim+ready_note+publish, measured in
+          isolation) = 11.67ns; interaction_delta = full_remote_free -
+          sum_stages = -5.93ns
+      Existing-bench citations at matching parameters: PAGES=4096
+      single-threaded bench-pagemap-route measures ~3.4ns/op (same
+      ballpark as this bench's uncontended route=2.37ns; not identical,
+      attributable to threading/no-LTO-in-this-bench, not a contradiction).
+      THREADS=4 SLOT_COUNT=4096 REPEAT=20000 bench-remote-rmw-micro's
+      pending_acqrel_treiber (claim+publish under REAL cross-thread
+      contention on one shared page) measures ~42ns/op, pending_counter_
+      treiber ~55-57ns/op -- 5-11x this bench's uncontended claim+publish
+      (~7.7ns combined, ~5.7ns as part of the adjacent full_remote_free
+      composite). Read together: CAS/CPU-contention across producer
+      threads sharing one page, not the bare computation, is the dominant
+      cost the RMW microbench isolates; this new bench isolates the
+      computation-only floor, and the two numbers are not in conflict --
+      they measure different things by design.
+      Interpretation: interaction_delta is large and negative, meaning the
+      isolated single-purpose sweep over `sum_stages` overstates real cost
+      by roughly 2.0x relative to the same operations running adjacently
+      inside one hz10_free() call (cache locality between claim/
+      ready_note/publish on the same page, not captured by measuring each
+      stage as its own repeated pass over the whole PAGES working set).
+      Per the design doc's own decision rule ("if interaction_delta is
+      large, do not optimize the isolated stage first"), added a corrected
+      weighted metric to the bench's output instead of trusting the raw
+      per-stage sum: weighted_ns_per_logical_free_corrected = route_ns *
+      1.0 + local_ns * local_pct + (full_remote_free_ns - route_ns) *
+      remote_pct_ (subtracting route_ns out of full_remote_free_ns avoids
+      double-counting it, since route already runs unconditionally on
+      every free). At REMOTE_PCT=50: weighted_corrected=5.56ns, of which
+      route alone is 2.37ns (~43%), local_free*local_pct is 1.53ns
+      (~28%), and the remainder attributable to remote-specific cost
+      beyond route is only ~1.67ns (~30%).
+      Decision: route/validation overhead (candidate A) is not a minor
+      fixed cost to ignore -- it is close to the SAME size as the
+      remaining remote-specific cost at a 50/50 local/remote mix, and
+      main_local0's own 0.556 tcmalloc ratio (zero remote frees at all)
+      already showed this. This confirms the doc's own suspicion: the
+      next implementation box should be HZ10LocalPathTrim-L0 (route/
+      local-free specialization and the other candidate shapes in
+      docs/HZ10_SPEED_ATTACK_PLAN_L0.md), not
+      HZ10OwnerTokenFastState-Design-L0 or HZ10RemotePublicationV2-
+      Design-L0 -- both of those attack only the smaller ~1.67ns
+      remote-specific remainder, and do so by replacing one CAS-based
+      mechanism with another, unproven to net positive. Do not open
+      either remote-publication redesign branch before HZ10LocalPathTrim-
+      L0's own measurement pass reports back.
 
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
