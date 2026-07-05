@@ -1,4 +1,5 @@
 /hz10_pagemap_route_smoke
+/hz10_pagemap_route_diff_smoke
 /hz10_pagemap_route_bench
 /hz10_freelist_page_smoke
 /hz10_freelist_page_bench

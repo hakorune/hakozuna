@@ -1,4 +1,5 @@
-.PHONY: all clean smoke-pagemap-route bench-pagemap-route \
+.PHONY: all clean smoke-pagemap-route smoke-pagemap-route-diff \
+	bench-pagemap-route \
 	smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain bench-multiclass-remote \
 	bench-remote-rmw-micro \
@@ -30,6 +31,7 @@ OPT_CFLAGS := $(CFLAGS) -flto
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 PAGEMAP_SRC := $(ROOT)/src/hz10_pagemap.c $(ROOT)/src/hz10_platform.c
 SMOKE_PAGEMAP_SRC := $(ROOT)/tests/hz10_pagemap_route_smoke.c $(PAGEMAP_SRC)
+SMOKE_PAGEMAP_DIFF_SRC := $(ROOT)/tests/hz10_pagemap_route_diff_smoke.c $(PAGEMAP_SRC)
 BENCH_PAGEMAP_SRC := $(ROOT)/bench/hz10_pagemap_route_bench.c $(PAGEMAP_SRC)
 
 FREELIST_SRC := $(ROOT)/src/hz10_freelist_page.c $(PAGEMAP_SRC)
@@ -56,7 +58,8 @@ BENCH_REMOTE_BATCH_LOCALITY_SRC := $(ROOT)/bench/hz10_public_entry_remote_batch_
 STAGE_COST_SRC := $(ROOT)/bench/hz10_public_entry_stage_cost_bench.c $(ROOT)/src/hz10_retired_ready.c $(POOLED_PAGE_SRC)
 LOCAL_PATH_SRC := $(ROOT)/bench/hz10_public_entry_local_path_bench.c $(PUBLIC_ENTRY_SRC)
 
-all: smoke-pagemap-route bench-pagemap-route smoke-freelist-page bench-freelist-page \
+all: smoke-pagemap-route smoke-pagemap-route-diff bench-pagemap-route \
+	smoke-freelist-page bench-freelist-page \
 	smoke-remote-stack-drain bench-remote-stack-drain bench-multiclass-remote \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
@@ -68,6 +71,12 @@ $(ROOT)/hz10_pagemap_route_smoke: $(SMOKE_PAGEMAP_SRC) $(HEADERS)
 
 smoke-pagemap-route: $(ROOT)/hz10_pagemap_route_smoke
 	$(ROOT)/hz10_pagemap_route_smoke
+
+$(ROOT)/hz10_pagemap_route_diff_smoke: $(SMOKE_PAGEMAP_DIFF_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PAGEMAP_DIFF_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-pagemap-route-diff: $(ROOT)/hz10_pagemap_route_diff_smoke
+	$(ROOT)/hz10_pagemap_route_diff_smoke
 
 $(ROOT)/hz10_pagemap_route_bench: $(BENCH_PAGEMAP_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
@@ -257,6 +266,7 @@ hz10-rss-guard:
 
 clean:
 	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \
+		$(ROOT)/hz10_pagemap_route_diff_smoke \
 		$(ROOT)/hz10_freelist_page_smoke $(ROOT)/hz10_freelist_page_bench \
 		$(ROOT)/hz10_remote_stack_drain_smoke $(ROOT)/hz10_remote_stack_drain_bench \
 		$(ROOT)/hz10_multiclass_remote_bench $(ROOT)/hz10_remote_rmw_microbench \

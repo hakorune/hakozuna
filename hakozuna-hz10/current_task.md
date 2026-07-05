@@ -506,6 +506,11 @@ status:
             hz10_size_class.h over one shared table definition in
             hz10_size_class.c. No semantic change; smoke-size-class keeps
             the exhaustive oracle over every size 1..HZ10_PAGE_QUANTUM.
+            PREP IMPLEMENTED 20260705: added
+            hz10_pagemap_route_local_fast() as the future E1 replacement
+            boundary (currently delegates to slow route), smoke-pagemap-
+            route-diff as the fast/slow accept-set gate, and stage-cost
+            route_fast output for the same measurement protocol.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

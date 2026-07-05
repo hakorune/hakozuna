@@ -64,6 +64,22 @@ typedef struct H10RouteResult {
 } H10RouteResult;
 
 /*
+ * Lean route result for the public-entry local/free fast path. It is
+ * intentionally narrower than H10RouteResult: no reason/page_base/slot_index.
+ * HZ10EntryTrim-L0 first wires tests and benches to this name while the
+ * implementation delegates to the slow route; E1 replaces the body with the
+ * header-inline reader. Contract: returns 1 only for small/slotted VALID
+ * registrations (flags == 0) with HZ10_GENERATION_ANY semantics. Large or
+ * otherwise flagged routes return 0 and must use the slow .c route.
+ */
+typedef struct H10RouteLocalResult {
+  void* owner;
+  uint32_t slot_size;
+  uint32_t generation;
+  uint32_t flags;
+} H10RouteLocalResult;
+
+/*
  * Registers `base` (must be HZ10_PAGE_QUANTUM-aligned) as a page holding
  * slot_count slots of slot_size bytes each. If slot_count > 1, slot_size *
  * slot_count must fit in one HZ10_PAGE_QUANTUM (every slot has to be
@@ -120,6 +136,21 @@ int hz10_pagemap_release(void* base);
  * expected_generation == HZ10_GENERATION_ANY skips the generation check.
  */
 H10RouteResult hz10_pagemap_route(const void* ptr, uint32_t expected_generation);
+
+static inline int hz10_pagemap_route_local_fast(
+    const void* ptr, H10RouteLocalResult* out) {
+  H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
+  if (route.kind != H10_ROUTE_VALID || route.flags != 0u) {
+    return 0;
+  }
+  if (out) {
+    out->owner = route.owner;
+    out->slot_size = route.slot_size;
+    out->generation = route.generation;
+    out->flags = route.flags;
+  }
+  return 1;
+}
 
 /* Test/bench only: unregisters everything and unmaps all leaves. */
 void hz10_pagemap_reset_for_tests(void);

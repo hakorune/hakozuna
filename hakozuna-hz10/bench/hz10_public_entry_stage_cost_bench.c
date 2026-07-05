@@ -41,6 +41,7 @@
 
 typedef enum StageMode {
   STAGE_ROUTE = 0,
+  STAGE_ROUTE_FAST,
   STAGE_LOCAL_FREE,
   STAGE_CLASSIFY,
   STAGE_CLAIM,
@@ -54,6 +55,8 @@ static const char* stage_name(StageMode s) {
   switch (s) {
     case STAGE_ROUTE:
       return "route";
+    case STAGE_ROUTE_FAST:
+      return "route_fast";
     case STAGE_LOCAL_FREE:
       return "local_free";
     case STAGE_CLASSIFY:
@@ -158,6 +161,7 @@ static void worker_post(StageMode mode, WorkerPage* wp) {
       wp->ptr = hz10_freelist_page_alloc(wp->page);
       break;
     case STAGE_ROUTE:
+    case STAGE_ROUTE_FAST:
     case STAGE_CLASSIFY:
     case STAGE_READY_NOTE:
     default:
@@ -178,6 +182,15 @@ static void worker_timed(StageMode mode, WorkerPage* wp, void* token,
         *local_failed += 1u;
       }
       *local_checksum += r.slot_index + r.generation;
+      break;
+    }
+    case STAGE_ROUTE_FAST: {
+      H10RouteLocalResult r = {0};
+      if (!hz10_pagemap_route_local_fast(wp->ptr, &r) ||
+          r.owner != wp->page) {
+        *local_failed += 1u;
+      }
+      *local_checksum += r.generation + r.slot_size;
       break;
     }
     case STAGE_LOCAL_FREE: {
@@ -387,8 +400,9 @@ int main(void) {
   uint64_t ops_per_round = (uint64_t)state.threads * pages_per_thread;
 
   for (uint32_t run = 1u; run <= runs; ++run) {
-    double route_ns = 0.0, local_ns = 0.0, classify_ns = 0.0, claim_ns = 0.0,
-          ready_note_ns = 0.0, publish_ns = 0.0, full_ns = 0.0;
+    double route_ns = 0.0, route_fast_ns = 0.0, local_ns = 0.0,
+          classify_ns = 0.0, claim_ns = 0.0, ready_note_ns = 0.0,
+          publish_ns = 0.0, full_ns = 0.0;
     for (StageMode s = 0; s < STAGE_COUNT; ++s) {
       uint64_t ops = ops_per_round * state.repeat;
       uint64_t elapsed = run_stage(&state, s);
@@ -404,6 +418,9 @@ int main(void) {
       switch (s) {
         case STAGE_ROUTE:
           route_ns = ns_per_op;
+          break;
+        case STAGE_ROUTE_FAST:
+          route_fast_ns = ns_per_op;
           break;
         case STAGE_LOCAL_FREE:
           local_ns = ns_per_op;
@@ -471,6 +488,10 @@ int main(void) {
         "abs(interaction_delta_ns) is large\n",
         run, runs, sum_stages, full_ns, interaction_delta, weighted_raw_sum,
         weighted_corrected, classify_ns);
+    printf(
+        "hz10_public_entry_stage_cost_route_fast_delta run=%u/%u "
+        "route_ns=%.4f route_fast_ns=%.4f delta_ns=%.4f\n",
+        run, runs, route_ns, route_fast_ns, route_fast_ns - route_ns);
   }
 
   atomic_store_explicit(&state.stop, 1, memory_order_release);
