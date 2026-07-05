@@ -76,6 +76,12 @@ static int check_case(const RouteCase* rc) {
   }
   failed |= compare_route(rc, (void*)(base - 16u), HZ10_GENERATION_ANY,
                           "before-base");
+  if (rc->slot_count > 1u) {
+    for (uint32_t offset = 0u; offset < (uint32_t)span; ++offset) {
+      failed |= compare_route(rc, (void*)(base + offset), HZ10_GENERATION_ANY,
+                              "exhaustive-span");
+    }
+  }
   return failed;
 }
 

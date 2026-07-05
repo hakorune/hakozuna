@@ -531,8 +531,15 @@ status:
             (valid pointer is base only; offset!=0 is interior). Differential
             route smoke, public-entry smokes, standalone, and ASan/UBSan
             smoke are green. TSan smoke is green via smoke-tsan-aslr-off.
-            NEXT: E2b reciprocal/division-free route for multi-slot records,
-            guarded by the existing differential route smoke.
+            E2b CLOSED AS NO-GO 20260705: per-record reciprocal fields
+            (`slot_magic`/`slot_shift`) were correct under exhaustive
+            fast-vs-slow span smoke and sanitizers, but regressed standard
+            stage-cost route_fast from the E1 baseline ~1.57ns to ~1.81ns
+            median and enlarged H10PageRecord 32B -> 48B. Do not land this
+            shape; recorded in docs/HZ10_NO_GO_LEDGER.md. The strengthened
+            exhaustive differential smoke stays as a future guard. NEXT:
+            leave route reciprocal alone; choose between slot coloring for
+            slot_count<=2 and remote/publication work based on the target row.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

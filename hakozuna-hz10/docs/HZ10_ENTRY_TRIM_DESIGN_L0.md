@@ -373,6 +373,29 @@ landed and measured BEFORE E1 so E1's baseline includes it; E1's
 remaining headroom (forcing the inline + lean result shape + acquire
 ordering) is then measured honestly against that.
 
+## Implementation Results, 2026-07-05
+
+```text
+Step 0 LTO: landed.
+E3 size-class inline: landed.
+HZ10EntryTrim prep: landed; route_fast stage added and differential route
+  smoke added.
+E1 route inline fast path: landed. Standard stage-cost
+  (THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10) measured route median
+  ~2.46ns vs route_fast median ~1.57ns.
+E2a slot_count==1 division skip: landed.
+E2b multi-slot reciprocal fields: NO-GO. Prototype was correct under
+  exhaustive fast-vs-slow span smoke and ASan/UBSan/TSan, but route_fast
+  regressed to ~1.81ns median and H10PageRecord grew 32B -> 48B. See
+  docs/HZ10_NO_GO_LEDGER.md.
+E4 record fatten: still deferred.
+```
+
+Read: this box delivered the call/sret/local route win, but not the
+division-free multi-slot shape. Future route work should avoid adding hot
+record fields; otherwise it risks paying more in loads/cache footprint than
+it saves in ALU latency.
+
 ## Relationship to the standing plans
 
 HZ10_SPEED_ATTACK_PLAN_L0.md's "route result fastening / route/local-free

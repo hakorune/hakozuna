@@ -135,3 +135,29 @@ Decision:
   (disabled, zero cost when 0).
 - If the small-class front-cache delta (-1.4%..-4.6% by session) must go
   to zero, attack the front fast path itself, not a bypass branch.
+
+## 20260705 Route Reciprocal For Multi-Slot Records
+
+Status: `NO-GO`
+
+Evidence:
+
+- E2b prototype added per-record `slot_magic` / `slot_shift` and changed the
+  inline local route from `% slot_size` to reciprocal multiply + multiply-back.
+- The differential route smoke was strengthened to compare fast vs slow for
+  every offset in each multi-slot registration span; correctness passed.
+- Sanitizers passed: ASan/UBSan smoke clean, TSan smoke clean via
+  `smoke-tsan-aslr-off`.
+- Standard stage-cost protocol
+  (`THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10`) regressed the inline route:
+  - E1 baseline: `route_fast` median ~1.57ns.
+  - E2b prototype: `route_fast` median ~1.81ns.
+  - The prototype also enlarged `H10PageRecord` from 32B to 48B.
+
+Decision:
+
+- Do not land per-record reciprocal fields for multi-slot route.
+- The extra record loads and larger record footprint cost more than the
+  division they remove on this path.
+- Keep the exhaustive differential route smoke; it is the right gate if a
+  future division-free shape is attempted without growing the hot record.
