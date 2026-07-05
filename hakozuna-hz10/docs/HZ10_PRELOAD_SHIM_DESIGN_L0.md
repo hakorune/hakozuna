@@ -357,6 +357,29 @@ remain the stronger measured RSS lever; expand the macro matrix and price
 thread-churn/no-destructor behavior before opening another local-free
 retention tweak.
 
+## HZ10MacroMatrixExpand-L0 scoped next box
+
+SCOPED 20260707: see `docs/HZ10_MACRO_MATRIX_EXPAND_L0.md`.
+
+The next D4 box is not another allocator micro-optimization. It expands the
+macro matrix so one run can answer two open decisions:
+
+```text
+1. Add an `hz10+fine` allocator column backed by a non-clobbering
+   `libhz10_fine.so` sibling. The existing convenience preload targets all
+   write `libhz10.so`, which is fine for manual probes but not for a matrix
+   that compares default HZ10 and fine HZ10 side by side.
+2. Add a larson row from local artifacts, SKIP if no executable is present.
+   This is the first macro row aimed directly at thread churn and the v0
+   no-destructor retained-page liability.
+```
+
+Use current RSS, not only `ru_maxrss`, when pricing retained/orphan debt.
+`ru_maxrss` remains useful for churn peak, but it cannot tell whether pages
+remain resident after worker exit. Keep thread-exit ownership and automatic
+destructor ideas closed until the larson/current-RSS matrix produces a
+material median delta.
+
 ## Open questions for reviewers
 
 ```text

@@ -32,6 +32,12 @@ HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   the honest v0 thread-exit policy, and the macro-bench lane that
   replaces the micro rows as headline evidence
 
+HZ10_MACRO_MATRIX_EXPAND_L0.md:
+  scoped design for the next macro evidence box: non-clobbering HZ10 shim
+  library variants, an hz10+fine allocator column, and a larson row to
+  decide fine-class shim adoption and whether thread-exit ownership work
+  should open
+
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,
   division-free interior check, size-class inline, record-carried owner

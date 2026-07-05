@@ -911,6 +911,20 @@ status:
                  lever, and the next frontier should be a macro benchmark
                  expansion/thread-churn pricing rather than another
                  local-free hook tweak.
+                 NEXT BOX SCOPED 20260707:
+                 HZ10MacroMatrixExpand-L0, see
+                 docs/HZ10_MACRO_MATRIX_EXPAND_L0.md. Claude review
+                 agreed with the order but collapsed the next work into
+                 one measurement box: add a non-clobbering `hz10+fine`
+                 shim column (libhz10_fine.so sibling, own soname) and a
+                 larson workload row to the existing macro matrix. This
+                 single matrix should decide both (1) whether fine classes
+                 can ship as a shim/RSS opt-in and (2) whether the v0
+                 no-destructor/thread-exit liability is large enough to
+                 open an ownership-handoff design. Keep F3/thread-exit
+                 semantics closed until larson/current-RSS evidence says
+                 otherwise. Do not use thread_reuse_bench as the macro
+                 row; it does not exit threads in the relevant shape.
                  DONE 20260706 (fable5): residual decomposed. log:
                  bench_results/
                    20260706T213000Z_hz10_retention_residual_attribution/
