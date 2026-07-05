@@ -16,4 +16,8 @@ HZ10_DEBUG_NOTES.md:
 
 HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md:
   contract and allowed shapes for future remote-free publish batching work
+
+HZ10_SPEED_ATTACK_PLAN_L0.md:
+  post-RSS throughput attack plan, measurement order, candidate designs, and
+  GO/NO-GO gates for the next speed boxes
 ```

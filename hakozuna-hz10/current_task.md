@@ -216,6 +216,15 @@ status:
       back to throughput work, with `hz10-rss-guard` as the cheap regression
       gate and lifecycle flush as the explicit boundary mechanism.
 
+    NEXT SPEED DESIGN:
+      docs/HZ10_SPEED_ATTACK_PLAN_L0.md is the review surface for the next
+      throughput push. Current recommended first box is
+      HZ10PublicFreeStageCost-L0: a measurement-only lane that decomposes
+      public free into route, local free, remote claim, retired-ready note,
+      and remote publish before changing behavior. Do not reopen normal
+      remote publish batching, MTF, two-slot active cache, or pending-bit
+      weakening without new evidence.
+
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as
     of 20260705: move-to-front NO-GO, and the two-slot ping-pong hypothesis
