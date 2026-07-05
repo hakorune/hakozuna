@@ -34,12 +34,18 @@ RUNS="${RUNS:-1}"
 
 mkdir -p "${OUTDIR}"
 
-make -C "${ROOT}" bench-public-entry >/dev/null 2>&1 || {
-  echo "[hz10-tcmalloc-same-run] building hz10_public_entry_bench" >&2
-  make -C "${ROOT}" bench-public-entry
-}
+# HZ10_PUBLIC_ENTRY_BENCH: opt-in override so build-flag lanes (e.g.
+# HZ10FrontCache-L1's hz10_public_entry_front_bench) can reuse this exact
+# row matrix and tcmalloc pairing. The caller builds the override binary;
+# only the default is built here.
+if [[ -z "${HZ10_PUBLIC_ENTRY_BENCH:-}" ]]; then
+  make -C "${ROOT}" bench-public-entry >/dev/null 2>&1 || {
+    echo "[hz10-tcmalloc-same-run] building hz10_public_entry_bench" >&2
+    make -C "${ROOT}" bench-public-entry
+  }
+fi
 
-bench="${ROOT}/hz10_public_entry_bench"
+bench="${HZ10_PUBLIC_ENTRY_BENCH:-${ROOT}/hz10_public_entry_bench}"
 log="${OUTDIR}/combined.log"
 
 tcmalloc_lib=""

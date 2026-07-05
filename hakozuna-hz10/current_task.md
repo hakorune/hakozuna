@@ -439,7 +439,41 @@ status:
       allocated so idle detection stays conservative; lifecycle flush
       gains a phase-0 front-cache flush. Review that doc (its gates,
       implementation boundary around hz10_freelist_page_free(), and open
-      questions) before implementing. Small classes (16/64,
+      questions) before implementing.
+      DONE: HZ10FrontCache-L1 implemented and measured, 20260705.
+      log: bench_results/20260705T041052Z_hz10_front_cache_l1/notes.md
+      (full protocols/numbers); the design doc's "Implemented and
+      measured" section has the summary and deviations. Opt-in flag
+      HZ10_ENABLE_FRONT_CACHE, default OFF; lanes:
+      make smoke-public-entry-front / bench-public-entry-front /
+      bench-public-entry-local-path-front; the tcmalloc same-run and
+      rss-guard scripts gained an HZ10_PUBLIC_ENTRY_BENCH override so
+      flag lanes reuse them unchanged.
+      Result read, short: the 5-9x large-class local0 gap collapses to
+      1.5-1.7x (65536: 8.9x -> 2.4x) on the bulk-cycle local-path gate;
+      interleaved public-entry rows move only +1..+4% (main rows) /
+      -1.4..-4.6% (small_local0, session-dependent) because their
+      slot-replace shape was already an active-page hit nearly every op;
+      remote rows unchanged; RSS gates green (front + default lanes).
+      Default therefore stays OFF per the design doc's own rollback rule.
+      Three follow-up levers now separated and named:
+        (1) route/per-op entry trim -- the remaining main_local0 gap
+            (~0.53 vs tcmalloc) is per-op cost (route ~43% of weighted
+            local free per HZ10PublicFreeStageCost-L0), not page
+            selection; this is the box that can move the aggregate
+            ratio bars.
+        (2) slot/page coloring for slot_count<=2 classes -- the residual
+            65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
+            page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
+            page-layer involvement), an address-layout property tcmalloc
+            does not share.
+        (3) HZ10FrontCacheCapacityTune-L0 -- shipped caps are
+            2MiB/8/4096 (deviation from the doc's first proposal, reason
+            recorded there); revisit with RSS columns before any
+            default-ON discussion.
+      Threshold bypass for small classes is NO-GO (measured, see
+      docs/HZ10_NO_GO_LEDGER.md "Front-Cache Slot-Count Threshold").
+      Small classes (16/64,
       ~1.4-1.5x behind tcmalloc) remain the more tractable near-term
       target if further local0 work is wanted, via ordinary route/
       local-free micro-optimization -- but that gap is modest, not the

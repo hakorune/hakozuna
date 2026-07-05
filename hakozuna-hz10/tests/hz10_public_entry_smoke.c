@@ -132,6 +132,20 @@ static void* hz10_smoke_free_in_other_thread(void* arg) {
  * fresh page. Before this fix, the page was abandoned the moment it looked
  * exhausted and this remotely-freed slot would never have been revisited. */
 static int check_exhausted_page_recovered_via_remote_free(void) {
+#if HZ10_ENABLE_FRONT_CACHE
+  /* This case asserts PAGE-layer recovery (drain hands the exact remotely-
+   * freed slot back). Under the front cache, stock left in this class by
+   * earlier cases in this same main thread would answer the malloc first
+   * and mask the page-layer behavior being tested -- start from an empty
+   * front cache instead. The main thread is quiescent here (every earlier
+   * case joined its worker threads), satisfying the flush precondition.
+   * With the flush, p1 comes from a fresh page's refill and p2 pops that
+   * refill's one extra slot, so both still share one 2-slot page and the
+   * drain-recovery assertion below tests the same mechanism as the
+   * flag-off build (recovery now happens inside refill's page-layer
+   * call, which is the point). */
+  hz10_public_entry_flush_thread_cache_quiescent(NULL);
+#endif
   void* p1 = hz10_malloc(32768);
   void* p2 = hz10_malloc(32768);
   if (!p1 || !p2) {
@@ -509,6 +523,174 @@ static int check_cross_thread_free(void) {
   return 1;
 }
 
+#if HZ10_ENABLE_FRONT_CACHE
+/*
+ * HZ10FrontCache-L1 gate cases (docs/HZ10_FRONT_CACHE_DESIGN_L0.md). Both
+ * run in a fresh thread so the front cache / class lists under test start
+ * empty and the quiescent-flush precondition trivially holds at the end.
+ */
+
+/* Gate: a front-cached slot stays ALLOCATED from its page's point of view
+ * (free_count unchanged by hz10_free), and lifecycle flush phase 0 returns
+ * every cached slot so the page is reclaimed, not left pinned busy. */
+static void* front_cache_accounting_thread(void* raw) {
+  int* failed = (int*)raw;
+  *failed = 1;
+
+  const size_t size = 4096; /* 16 slots/page: several ptrs share one page */
+  const uint32_t class_id = hz10_size_class_for(size);
+  enum { N = 8 };
+  void* ptrs[N];
+  for (int i = 0; i < N; ++i) {
+    ptrs[i] = hz10_malloc(size);
+    if (!ptrs[i]) {
+      fprintf(stderr, "front_accounting: setup malloc %d failed\n", i);
+      return NULL;
+    }
+    memset(ptrs[i], 0xC1, size);
+  }
+
+  H10RouteResult route = hz10_pagemap_route(ptrs[0], HZ10_GENERATION_ANY);
+  if (route.kind != H10_ROUTE_VALID || !route.owner) {
+    fprintf(stderr, "front_accounting: route of live ptr failed\n");
+    return NULL;
+  }
+  Hz10FreelistPage* page = (Hz10FreelistPage*)route.owner;
+  uint32_t free_count_before = page->free_count;
+
+  for (int i = 0; i < N; ++i) {
+    if (!hz10_free(ptrs[i])) {
+      fprintf(stderr, "front_accounting: free %d rejected\n", i);
+      return NULL;
+    }
+  }
+
+  if (page->free_count != free_count_before) {
+    fprintf(stderr,
+            "front_accounting: free_count moved %u -> %u on front-cache "
+            "push (must stay allocated until flush)\n",
+            free_count_before, page->free_count);
+    return NULL;
+  }
+  Hz10FrontCacheStats front_stats;
+  hz10_public_entry_front_cache_stats(class_id, &front_stats);
+  if (front_stats.cap == 0u || front_stats.count < (uint32_t)N) {
+    fprintf(stderr, "front_accounting: expected >=%d cached, cap!=0; got "
+                    "count=%u cap=%u\n",
+            N, front_stats.count, front_stats.cap);
+    return NULL;
+  }
+
+  Hz10PublicEntryThreadReclaimStats reclaim_stats;
+  hz10_public_entry_flush_thread_cache_quiescent(&reclaim_stats);
+
+  hz10_public_entry_front_cache_stats(class_id, &front_stats);
+  if (front_stats.count != 0u) {
+    fprintf(stderr, "front_accounting: %u objects survived phase-0 flush\n",
+            front_stats.count);
+    return NULL;
+  }
+  if (reclaim_stats.pages_busy != 0u) {
+    fprintf(stderr,
+            "front_accounting: %llu busy pages after flush (front-cached "
+            "slots pinned their page)\n",
+            (unsigned long long)reclaim_stats.pages_busy);
+    return NULL;
+  }
+  Hz10ClassPageListStats list_stats;
+  hz10_public_entry_class_list_stats(class_id, &list_stats);
+  if (list_stats.active_length != 0u || list_stats.retired_length != 0u) {
+    fprintf(stderr, "front_accounting: pages left after flush (active=%u "
+                    "retired=%u)\n",
+            list_stats.active_length, list_stats.retired_length);
+    return NULL;
+  }
+  *failed = 0;
+  return NULL;
+}
+
+static int check_front_cache_accounting_and_lifecycle(void) {
+  int failed = 1;
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, front_cache_accounting_thread, &failed)) {
+    fprintf(stderr, "front_accounting: pthread_create failed\n");
+    return 1;
+  }
+  pthread_join(thread, NULL);
+  return failed;
+}
+
+typedef struct ForeignDupFreeArg {
+  void* ptr;
+  int result;
+} ForeignDupFreeArg;
+
+static void* foreign_dup_free_thread(void* raw) {
+  ForeignDupFreeArg* arg = (ForeignDupFreeArg*)raw;
+  arg->result = hz10_free(arg->ptr);
+  return NULL;
+}
+
+/* Gate: a foreign thread's duplicate free of a front-cached slot is
+ * rejected through the existing local-free-marker check in
+ * hz10_page_remote_free_claim(), and the cached slot survives intact. */
+static void* front_cache_dup_free_thread(void* raw) {
+  int* failed = (int*)raw;
+  *failed = 1;
+
+  void* p = hz10_malloc(64);
+  if (!p) {
+    fprintf(stderr, "front_dup: setup malloc failed\n");
+    return NULL;
+  }
+  memset(p, 0xC2, 64);
+  if (!hz10_free(p)) {
+    fprintf(stderr, "front_dup: owner free rejected\n");
+    return NULL;
+  }
+
+  ForeignDupFreeArg arg = {p, -1};
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, foreign_dup_free_thread, &arg)) {
+    fprintf(stderr, "front_dup: pthread_create failed\n");
+    return NULL;
+  }
+  pthread_join(thread, NULL);
+  if (arg.result != 0) {
+    fprintf(stderr, "front_dup: foreign duplicate free of a front-cached "
+                    "slot returned %d, want 0 (rejected)\n",
+            arg.result);
+    return NULL;
+  }
+
+  /* The cached slot must come back usable (LIFO) despite the attempt. */
+  void* q = hz10_malloc(64);
+  if (q != p) {
+    fprintf(stderr, "front_dup: expected LIFO reuse of the cached slot\n");
+    return NULL;
+  }
+  memset(q, 0xC3, 64);
+  if (!hz10_free(q)) {
+    fprintf(stderr, "front_dup: re-free rejected\n");
+    return NULL;
+  }
+  hz10_public_entry_flush_thread_cache_quiescent(NULL);
+  *failed = 0;
+  return NULL;
+}
+
+static int check_front_cache_duplicate_remote_free_rejected(void) {
+  int failed = 1;
+  pthread_t thread;
+  if (pthread_create(&thread, NULL, front_cache_dup_free_thread, &failed)) {
+    fprintf(stderr, "front_dup: pthread_create failed\n");
+    return 1;
+  }
+  pthread_join(thread, NULL);
+  return failed;
+}
+#endif /* HZ10_ENABLE_FRONT_CACHE */
+
 int main(void) {
   hz10_pagemap_reset_for_tests();
 
@@ -545,6 +727,14 @@ int main(void) {
   if (check_cross_thread_free()) {
     return 11;
   }
+#if HZ10_ENABLE_FRONT_CACHE
+  if (check_front_cache_accounting_and_lifecycle()) {
+    return 13;
+  }
+  if (check_front_cache_duplicate_remote_free_rejected()) {
+    return 14;
+  }
+#endif
 
   puts("hz10_public_entry_smoke ok");
   return 0;

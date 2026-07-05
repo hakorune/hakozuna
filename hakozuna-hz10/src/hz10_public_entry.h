@@ -7,6 +7,24 @@
 #include "hz10_class_pages.h"
 
 /*
+ * HZ10FrontCache-L1 (docs/HZ10_FRONT_CACHE_DESIGN_L0.md): opt-in build
+ * flag. Default OFF -- the page-centric local path below stays the
+ * default until the design doc's A/B gates pass. When ON, hz10_malloc/
+ * hz10_free run through a per-thread per-class OBJECT freelist in front
+ * of the page substrate; the remote claim/note/publish path and every
+ * page-layer contract are unchanged either way.
+ * HZ10_ENABLE_FRONT_CACHE_STATS additionally compiles per-class event
+ * counters (hit/refill/flush) into the front cache, same opt-in-counters
+ * pattern as HZ10_ENABLE_ACTIVE_SCAN_STATS.
+ */
+#ifndef HZ10_ENABLE_FRONT_CACHE
+#define HZ10_ENABLE_FRONT_CACHE 0
+#endif
+#ifndef HZ10_ENABLE_FRONT_CACHE_STATS
+#define HZ10_ENABLE_FRONT_CACHE_STATS 0
+#endif
+
+/*
  * The box that finally wires Box 1 (route) + Box 2 (local) + Box 3
  * (remote) + Box 4 (pool) + the size-class table together into something
  * shaped like real malloc()/free(). This is the first HZ10 module that can
@@ -127,6 +145,31 @@ typedef struct Hz10ClassPageListStats {
 void hz10_public_entry_class_list_stats(uint32_t class_id,
                                         Hz10ClassPageListStats* stats_out);
 
+/*
+ * Diagnostic snapshot of one class's front cache (HZ10FrontCache-L1),
+ * calling thread's own TLS state only, same access rules as
+ * hz10_public_entry_class_list_stats() below. Builds without
+ * HZ10_ENABLE_FRONT_CACHE zero-fill everything; builds without
+ * HZ10_ENABLE_FRONT_CACHE_STATS zero-fill only the event counters
+ * (count/cap/refill_batch/slot_size stay live). cap == 0 means the
+ * calling thread has not touched this class through the front cache yet
+ * (lazy per-class init).
+ */
+typedef struct Hz10FrontCacheStats {
+  uint32_t count;        /* objects currently cached */
+  uint32_t cap;          /* overflow threshold; 0 == not yet initialized */
+  uint32_t refill_batch;
+  uint32_t slot_size;
+  uint64_t hit_count;    /* fast-path pops (stats builds only) */
+  uint64_t refill_count;
+  uint64_t refill_objects;
+  uint64_t flush_count;
+  uint64_t flush_objects;
+} Hz10FrontCacheStats;
+
+void hz10_public_entry_front_cache_stats(uint32_t class_id,
+                                         Hz10FrontCacheStats* stats_out);
+
 typedef struct Hz10PublicEntryThreadReclaimStats {
   uint64_t pages_seen;
   uint64_t pages_reclaimed;
@@ -159,7 +202,12 @@ typedef struct Hz10PublicEntryThreadReclaimStats {
  * ownership/handoff redesign.
  *
  * POSTCONDITION this function guarantees in return: every page the calling
- * thread owns is inspected exactly once. A page is destroyed (returned to
+ * thread owns is inspected exactly once. Under HZ10_ENABLE_FRONT_CACHE a
+ * phase 0 first returns every front-cached object to its owning page
+ * (front caches only ever hold slots of this thread's own pages, so this
+ * is plain owner-thread local-free work) -- without it, front-cached
+ * slots would pin their pages as busy across this boundary and the
+ * "every idle page reclaimed" read below would silently weaken. A page is destroyed (returned to
  * Box 4's pool via hz10_pooled_page_destroy()) only after
  * hz10_page_drain_remote() confirms free_count == slot_count for it right
  * then. Any page that is not fully idle, or that this call cannot safely

@@ -8,6 +8,8 @@
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
 	bench-public-entry-remote-batch-locality bench-public-entry-stage-cost \
 	bench-public-entry-local-path \
+	smoke-public-entry-front bench-public-entry-front \
+	bench-public-entry-local-path-front \
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
@@ -164,6 +166,29 @@ $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
 
+# HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
+# The smoke lane adds the event counters; the bench lanes build with the
+# flag only, so counter stores never sit inside a timed window.
+FRONT_CACHE_FLAG := -DHZ10_ENABLE_FRONT_CACHE=1
+
+$(ROOT)/hz10_public_entry_front_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(FRONT_CACHE_FLAG) -DHZ10_ENABLE_FRONT_CACHE_STATS=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-front: $(ROOT)/hz10_public_entry_front_smoke
+	$(ROOT)/hz10_public_entry_front_smoke
+
+$(ROOT)/hz10_public_entry_front_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-front: $(ROOT)/hz10_public_entry_front_bench
+	$(ROOT)/hz10_public_entry_front_bench
+
+$(ROOT)/hz10_public_entry_local_path_front_bench: $(LOCAL_PATH_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(LOCAL_PATH_SRC) $(LDFLAGS) $(LDLIBS)
+
+bench-public-entry-local-path-front: $(ROOT)/hz10_public_entry_local_path_front_bench
+	$(ROOT)/hz10_public_entry_local_path_front_bench
+
 $(ROOT)/hz10_public_entry_active_scan_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -247,6 +272,9 @@ clean:
 		$(ROOT)/hz10_public_entry_remote_batch_locality_bench \
 		$(ROOT)/hz10_public_entry_stage_cost_bench \
 		$(ROOT)/hz10_public_entry_local_path_bench \
+		$(ROOT)/hz10_public_entry_front_smoke \
+		$(ROOT)/hz10_public_entry_front_bench \
+		$(ROOT)/hz10_public_entry_local_path_front_bench \
 		$(ROOT)/hz10_public_entry_two_slot_bench \
 		$(ROOT)/hz10_class_pages_scan_bench $(ROOT)/hz10_size_class_smoke \
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \

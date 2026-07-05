@@ -112,9 +112,14 @@ When the front cache is empty, acquire `refill_batch` objects by running
 today's EXACT alloc slow path in a loop (active page pop -> active drain ->
 find_with_capacity -> harvest_retired -> fresh pooled page), pushing each
 object into the front cache, then pop one for the caller. Nothing about page
-selection changes; its cost is simply amortized over the batch instead of
-paid per op. For the 2-slot classes this alone cuts find/drain entry
-frequency by ~refill_batch/2.
+selection changes. Be precise about what refill does and does not buy
+(implementation measurement confirmed this): the refill loop pays the same
+per-object page-layer cost today's path pays -- batching only moves it, it
+does not amortize the page-SWITCH machinery, because a 2-slot page still
+exhausts every 2 pops inside the loop. The front cache's actual win is the
+HIT path: once the working set cycles under `cap`, the page layer is not
+entered at all. Refill batching exists to keep the miss path no worse than
+today, not to make it faster.
 
 The refill helper must bypass the public front-cache entry point; otherwise
 an empty front cache would recurse into itself. Shape: split today's
@@ -286,6 +291,66 @@ batching plus front-cache hits cut find_calls sharply), but the remote
 publish cost itself is untouched, so remote rows will not reach local-row
 ratios. That remaining remote gap stays owned by the deferred pending-bit /
 publication-V2 designs, unchanged by this box.
+
+## Implemented and measured, 2026-07-05
+
+HZ10FrontCache-L1 is implemented behind HZ10_ENABLE_FRONT_CACHE (default
+OFF). Full numbers and protocols:
+bench_results/20260705T041052Z_hz10_front_cache_l1/notes.md. Summary:
+
+```text
+local-path alloc_free vs real tcmalloc (was -> now):
+  16:    1.39x -> 1.52x   64:    1.47x -> 1.45x
+  24576: 5.33x -> 1.53x   32768: 5.14x -> 1.66x   65536: 8.94x -> 2.39x
+
+same-run public-entry vs same-session flag-off:
+  main_local0 +3.2%, main_r50 +4.1%, main_r90 +2.7%, medium +1.1%,
+  small_local0 -1.4%..-4.6% (session-dependent), remote rows unchanged
+
+RSS: rss-guard green (front + default lanes), steady-state main_r50
+  current_rss_kb 16.9MB ~= flag-off's 17.4MB reference
+```
+
+Implementation notes / deviations from the proposal above:
+
+1. Capacity defaults shipped as 2MiB/class, min 8, max 4096 objects (not
+   128KiB/4/128): the gate working sets (64 objects of 24576/32768, 32 of
+   65536) must fit under cap because refill does not amortize page-switch
+   cost (see the corrected refill section). HZ10FrontCacheCapacityTune-L0
+   still owns these numbers. This supersedes the proposal's ~3MiB/thread
+   theoretical pin: the implemented fixed-cap worst case is ~36MiB/thread
+   if every class is hot in one thread, so default-ON still needs RSS
+   columns, not just throughput wins.
+2. refill_batch = one quantum's worth of slots, clamped to [1, 32] -- a
+   cold miss can never create more than ~one fresh page beyond today's
+   path (1-slot classes get batch=1: cold cost identical to today).
+3. The free fast path's count>cap test doubles as lazy init (cap==0
+   forces the first push into the overflow helper, which initializes and
+   returns) -- a separate per-push init branch measured ~1.3ns on the
+   16-byte row.
+4. Open question 1 answered: page->class_id field (first cache line;
+   owner_thread_token moved offset 32 -> 40, flag-off local-path rows
+   confirmed unmoved).
+5. Open question 3 answered NO: a slot_count threshold
+   (HZ10_FRONT_CACHE_MIN_CLASS=17) measured strictly worse on mixed rows
+   (data-dependent branch mispredicts) AND on small-only rows -- see the
+   NO-GO ledger. The knob remains, default 0 (disabled, zero cost).
+6. New finding: the residual 65536 gap (2.4x, not ~1.5x) is L1 set
+   aliasing -- every slot a 1-slot class hands out is a 64KiB-aligned
+   page base, so all of them collide in one L1 set (ws sweep 8/16/32 ->
+   19.0/23.2/26.1ns with zero page-layer involvement). Candidate
+   follow-up: slot/page coloring for slot_count<=2 classes.
+7. The same-run public rows barely move because their interleaved
+   slot-replace shape almost never leaves the active page on the flag-off
+   path either; the front cache's win is bulk free/alloc cycling. The
+   remaining main_local0 gap vs tcmalloc is per-op entry cost (route ~43%
+   per HZ10PublicFreeStageCost-L0), owned by a future route/entry-trim
+   box, not by this one.
+
+Gate verdict: default stays OFF per this doc's own rollback rule
+(main_local0 >= 0.75 not met; small_local0 delta borderline vs the 3%
+bar). The lane is correct (all smokes/sanitizers/RSS gates green) and is
+the right substrate wherever working sets cycle in bulk.
 
 ## Open questions for reviewers
 

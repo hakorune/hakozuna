@@ -14,7 +14,13 @@ OUT="bench_results/${STAMP}_hz10_rss_guard"
 LOG="${OUT}/combined.log"
 mkdir -p "$OUT"
 
-make -C "$ROOT" bench-public-entry >/dev/null
+# HZ10_PUBLIC_ENTRY_BENCH: same opt-in binary override as
+# run_hz10_public_entry_vs_tcmalloc_same_run.sh, so build-flag lanes
+# (e.g. HZ10FrontCache-L1) can run this guard too; caller builds it.
+BENCH="${HZ10_PUBLIC_ENTRY_BENCH:-$ROOT/hz10_public_entry_bench}"
+if [[ -z "${HZ10_PUBLIC_ENTRY_BENCH:-}" ]]; then
+  make -C "$ROOT" bench-public-entry >/dev/null
+fi
 
 run_row() {
   local name="$1" min="$2" max="$3" remote="$4" limit="$5"
@@ -22,7 +28,7 @@ run_row() {
   HZ10_THREAD_EXIT_RECLAIM=1 HZ10_DUMP_CLASS_STATS=1 MODE=0 \
     THREADS="$THREADS" ITERS="$ITERS" RUNS="$RUNS" \
     MIN_SIZE="$min" MAX_SIZE="$max" REMOTE_PCT="$remote" \
-    "$ROOT/hz10_public_entry_bench" | tee -a "$LOG"
+    "$BENCH" | tee -a "$LOG"
 }
 
 run_row main_r50 16 32768 50 "$MAIN_LIMIT_KB"

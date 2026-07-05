@@ -44,6 +44,19 @@ typedef struct Hz10FreelistPage {
   uint32_t generation;    /* returned by hz10_pagemap_register() at create */
 
   /*
+   * Inert storage, same rule as owner_thread_token below: the creator's
+   * size-class index for this page (HZ10FrontCache-L1,
+   * docs/HZ10_FRONT_CACHE_DESIGN_L0.md), so a public free that already
+   * routed to this page can index per-class thread state without
+   * recomputing the class from slot_size. Box 2 never reads it. Placed
+   * here (not after the list pointers) so it shares the first cache line
+   * with base/local_free_head/slot_size/owner_thread_token -- note this
+   * moves owner_thread_token from offset 32 to 40, called out per the
+   * design doc and re-checked against the stage-cost bench.
+   */
+  uint32_t class_id;
+
+  /*
    * Inert storage for whoever creates this page (e.g. a multi-class public
    * entry module) to record "which thread owns me" -- Box 2 never reads or
    * interprets this itself, alloc()/free() do not touch it, and it plays no
@@ -189,6 +202,14 @@ void hz10_freelist_page_destroy(Hz10FreelistPage* page);
 static inline void hz10_freelist_page_set_owner_thread(Hz10FreelistPage* page,
                                                       void* token) {
   page->owner_thread_token = token;
+}
+
+/* Sets class_id (see the struct comment above). Same inert-storage rule as
+ * set_owner_thread: Box 2 itself never reads this. create() zero-fills it
+ * (calloc), so a caller that never sets it sees class_id == 0. */
+static inline void hz10_freelist_page_set_class_id(Hz10FreelistPage* page,
+                                                  uint32_t class_id) {
+  page->class_id = class_id;
 }
 
 /*

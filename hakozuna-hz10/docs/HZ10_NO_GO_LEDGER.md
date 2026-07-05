@@ -112,3 +112,26 @@ Decision:
 - Producer TLS staging remains out of scope until HZ10 has a producer-side
   quiescent flush contract; returning success before publication would break
   `accepted == drainable`.
+
+## 20260705 Front-Cache Slot-Count Threshold
+
+Status: `NO-GO`
+
+Evidence:
+
+- `bench_results/20260705T041052Z_hz10_front_cache_l1/notes.md`
+- HZ10_FRONT_CACHE_MIN_CLASS=17 (classes below 8192 bytes bypass the front
+  cache), same-session interleaved RUNS=6 medians:
+  - small_local0: 144.3M vs 152.6M (all-front) vs 154.7M (flag-off)
+  - main_local0: 153.3M vs 173.2M (all-front) vs 169.0M (flag-off)
+
+Decision:
+
+- Do not ship a per-class front-cache bypass threshold. On mixed-size rows
+  the branch is data-dependent (~25% of byte-uniform ops fall below class
+  17) and mispredicts its way to -9% on main_local0; even always-taken it
+  did not recover the flag-off small_local0 number.
+- The compile-time knob stays available for future measurement, default 0
+  (disabled, zero cost when 0).
+- If the small-class front-cache delta (-1.4%..-4.6% by session) must go
+  to zero, attack the front fast path itself, not a bypass branch.

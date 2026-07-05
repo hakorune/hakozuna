@@ -65,6 +65,13 @@ static inline void hz10_class_state_note_switch(Hz10ClassState* state,
 }
 #endif
 
+#if HZ10_ENABLE_FRONT_CACHE
+/* Defined with the rest of HZ10FrontCache-L1 below hz10_malloc()'s page
+ * layer; declared here because the lifecycle flush above it runs this as
+ * its phase 0. */
+static void hz10_front_cache_flush_all(void);
+#endif
+
 static void hz10_public_entry_reclaim_keep_page(Hz10PageSublist* survivors,
                                                 Hz10FreelistPage* page) {
   page->prev_in_owner_list = survivors->tail;
@@ -165,6 +172,12 @@ static void hz10_public_entry_reclaim_sublist_idle_pages(
 void hz10_public_entry_flush_thread_cache_quiescent(
     Hz10PublicEntryThreadReclaimStats* stats_out) {
   Hz10PublicEntryThreadReclaimStats stats = {0};
+#if HZ10_ENABLE_FRONT_CACHE
+  /* Phase 0 (HZ10FrontCache-L1): return every front-cached object to its
+   * page first, so the idle checks below see true free_count values --
+   * see the POSTCONDITION note in hz10_public_entry.h. */
+  hz10_front_cache_flush_all();
+#endif
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
     Hz10ClassState* state = &hz10_class_state[c];
     hz10_public_entry_reclaim_ready_idle_pages(&state->list, &stats);
@@ -184,17 +197,16 @@ void hz10_public_entry_flush_thread_cache_quiescent(
   }
 }
 
-void* hz10_malloc(size_t size) {
-  if (size == 0u) {
-    return NULL;
-  }
-  if (size > (size_t)HZ10_PAGE_QUANTUM) {
-    return hz10_large_alloc(size);
-  }
-  uint32_t class_id = hz10_size_class_for(size);
-  if (class_id >= HZ10_CLASS_COUNT) {
-    return NULL;
-  }
+/*
+ * The page-layer alloc body, exactly what hz10_malloc() ran directly
+ * before HZ10FrontCache-L1: active-page pop -> active drain ->
+ * find_with_capacity -> harvest_retired -> fresh pooled page. Split out
+ * (per docs/HZ10_FRONT_CACHE_DESIGN_L0.md) so the front cache's refill
+ * can call the page layer without recursing into the public front-cache
+ * entry point; with the flag off, hz10_malloc() is a plain tail call
+ * into this and behavior is unchanged.
+ */
+static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
   Hz10ClassState* state = &hz10_class_state[class_id];
 
   if (state->active) {
@@ -269,6 +281,7 @@ void* hz10_malloc(size_t size) {
     return NULL;
   }
   hz10_freelist_page_set_owner_thread(fresh, HZ10_THREAD_TOKEN);
+  hz10_freelist_page_set_class_id(fresh, class_id);
   hz10_class_pages_add(&state->list, fresh);
   hz10_class_state_note_switch(state, fresh, 0);
   state->active = fresh;
@@ -276,6 +289,254 @@ void* hz10_malloc(size_t size) {
   state->ops_since_activate += 1u;
 #endif
   return hz10_freelist_page_alloc(fresh); /* fresh page: never NULL */
+}
+
+#if HZ10_ENABLE_FRONT_CACHE
+
+/*
+ * HZ10FrontCache-L1 (docs/HZ10_FRONT_CACHE_DESIGN_L0.md): a per-thread,
+ * per-class OBJECT freelist in front of the page layer above. The load-
+ * bearing accounting rule: a slot in this cache counts as ALLOCATED from
+ * its page's point of view (refill decremented free_count exactly like a
+ * user alloc; only overflow/lifecycle flush increments it back, through
+ * hz10_freelist_page_free()). The fast paths below therefore must NOT
+ * call hz10_freelist_page_free() -- that is the page-layer boundary --
+ * and must keep the in-slot local-free marker in the same states the
+ * page freelist would (set while cached, cleared while handed out), so
+ * hz10_page_remote_free_claim()'s marker check rejects a foreign
+ * duplicate free of a cached slot exactly like a page-freelist slot.
+ *
+ * Capacity defaults deviate deliberately from the design doc's first
+ * proposal (128KiB/4/128): the gate bench's steady working sets
+ * (slot_count*32 pages, e.g. 64 objects of 24576/32768, 32 of 65536)
+ * must fit under cap or the front cache degenerates into push+flush
+ * overhead on top of today's page path -- the refill loop itself runs
+ * the same per-object page-layer calls as today, so the win comes from
+ * cache HITS, not from batching. 2MiB/class is the smallest power-of-two
+ * byte cap that covers those working sets; the object clamp keeps the
+ * count sane for tiny classes. HZ10FrontCacheCapacityTune-L0 owns
+ * revisiting these numbers with RSS columns.
+ */
+/* Classes below this id bypass the front cache entirely (page-centric
+ * path, exactly the flag-off behavior). Measured NO-GO
+ * (bench_results/20260705T041052Z_hz10_front_cache_l1): setting this to
+ * 17 to bypass small classes made the mixed rows worse, likely from the
+ * extra data-dependent branch. 0 is the default: no threshold, all
+ * classes front-cached when HZ10_ENABLE_FRONT_CACHE is on. Keep the knob
+ * only for future measurement. */
+#ifndef HZ10_FRONT_CACHE_MIN_CLASS
+#define HZ10_FRONT_CACHE_MIN_CLASS 0u
+#endif
+
+#ifndef HZ10_FRONT_CACHE_CLASS_BYTES
+#define HZ10_FRONT_CACHE_CLASS_BYTES (2u * 1024u * 1024u)
+#endif
+#ifndef HZ10_FRONT_CACHE_MIN_OBJECTS
+#define HZ10_FRONT_CACHE_MIN_OBJECTS 8u
+#endif
+#ifndef HZ10_FRONT_CACHE_MAX_OBJECTS
+#define HZ10_FRONT_CACHE_MAX_OBJECTS 4096u
+#endif
+/* Refill batch is capped at one quantum's worth of slots (and 32 objects)
+ * so a single cold malloc can never force the page layer to create more
+ * than about one fresh page beyond what today's path would -- for the
+ * 1-slot classes this makes refill_batch exactly 1, i.e. a cold miss
+ * costs the same as today and batching only ever happens where it is
+ * free. */
+#ifndef HZ10_FRONT_CACHE_REFILL_BYTES
+#define HZ10_FRONT_CACHE_REFILL_BYTES ((uint32_t)HZ10_PAGE_QUANTUM)
+#endif
+#ifndef HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS
+#define HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS 32u
+#endif
+
+typedef struct Hz10FrontCache {
+  void* head;            /* intrusive singly-linked object freelist */
+  uint32_t count;
+  uint32_t cap;          /* 0 == this class not initialized yet */
+  uint32_t refill_batch;
+  uint32_t slot_size;    /* cached here so the alloc fast path needs no
+                          * cross-TU hz10_size_class_slot_size() call */
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+  uint64_t hit_count;
+  uint64_t refill_count;
+  uint64_t refill_objects;
+  uint64_t flush_count;
+  uint64_t flush_objects;
+#endif
+} Hz10FrontCache;
+
+static _Thread_local Hz10FrontCache hz10_front_cache[HZ10_CLASS_COUNT];
+
+/* Marker helpers by slot_size, for call sites that have no page pointer
+ * in hand (refill push / front pop). Same layout rule as
+ * hz10_freelist_page_slot_marker_ptr(): second word, only if the slot is
+ * big enough to have one. */
+static inline void hz10_front_cache_set_marker(uint32_t slot_size,
+                                              void* ptr) {
+  if (slot_size >= (uint32_t)(2u * sizeof(void*))) {
+    *(uintptr_t*)((char*)ptr + sizeof(void*)) = HZ10_FREELIST_LOCAL_MARKER;
+  }
+}
+
+static inline void hz10_front_cache_clear_marker(uint32_t slot_size,
+                                                void* ptr) {
+  if (slot_size >= (uint32_t)(2u * sizeof(void*))) {
+    *(uintptr_t*)((char*)ptr + sizeof(void*)) = 0u;
+  }
+}
+
+static void hz10_front_cache_init(Hz10FrontCache* fc, uint32_t class_id) {
+  uint32_t slot_size = hz10_size_class_slot_size(class_id);
+  uint32_t cap = HZ10_FRONT_CACHE_CLASS_BYTES / slot_size;
+  if (cap < HZ10_FRONT_CACHE_MIN_OBJECTS) {
+    cap = HZ10_FRONT_CACHE_MIN_OBJECTS;
+  }
+  if (cap > HZ10_FRONT_CACHE_MAX_OBJECTS) {
+    cap = HZ10_FRONT_CACHE_MAX_OBJECTS;
+  }
+  uint32_t batch = HZ10_FRONT_CACHE_REFILL_BYTES / slot_size;
+  if (batch < 1u) {
+    batch = 1u;
+  }
+  if (batch > HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS) {
+    batch = HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS;
+  }
+  if (batch > cap) {
+    batch = cap;
+  }
+  fc->slot_size = slot_size;
+  fc->refill_batch = batch;
+  fc->cap = cap; /* last: cap != 0 is the "initialized" signal */
+}
+
+/* Returns down to target_count objects to their owning pages. Every
+ * object in a front cache belongs to a page this thread owns (only the
+ * owner-token fast path ever pushes here), so the page free below is
+ * plain owner-thread local-free work; the route re-lookup is the
+ * boundary cost the design doc accepts (~2.4ns/object, flush-only). */
+static void hz10_front_cache_flush_to_count(Hz10FrontCache* fc,
+                                           uint32_t target_count) {
+  while (fc->count > target_count) {
+    void* slot = fc->head;
+    fc->head = *(void**)slot;
+    fc->count -= 1u;
+    H10RouteResult route = hz10_pagemap_route(slot, HZ10_GENERATION_ANY);
+    if (route.kind != H10_ROUTE_VALID || !route.owner) {
+      /* Unreachable by the accounting rule (front-cached slots keep
+       * their page's free_count below slot_count, so the page cannot
+       * pass idle verification and be destroyed while this cache holds
+       * its slots). Fail closed -- drop the reference rather than write
+       * through a pointer the pagemap no longer vouches for. */
+      continue;
+    }
+    hz10_freelist_page_free((Hz10FreelistPage*)route.owner, slot);
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+    fc->flush_objects += 1u;
+#endif
+  }
+}
+
+static void* hz10_front_cache_refill_and_alloc(uint32_t class_id,
+                                              Hz10FrontCache* fc) {
+  if (fc->cap == 0u) {
+    hz10_front_cache_init(fc, class_id);
+  }
+  /* First object goes straight to the caller -- page alloc already
+   * cleared its marker, no front push/pop round trip. */
+  void* first = hz10_public_entry_alloc_from_page_layer(class_id);
+  if (!first) {
+    return NULL;
+  }
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+  fc->refill_count += 1u;
+  fc->refill_objects += 1u;
+#endif
+  for (uint32_t i = 1u; i < fc->refill_batch; ++i) {
+    void* extra = hz10_public_entry_alloc_from_page_layer(class_id);
+    if (!extra) {
+      break;
+    }
+    hz10_front_cache_set_marker(fc->slot_size, extra);
+    *(void**)extra = fc->head;
+    fc->head = extra;
+    fc->count += 1u;
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+    fc->refill_objects += 1u;
+#endif
+  }
+  return first;
+}
+
+/* The free fast path's single "count > cap" test doubles as the lazy-init
+ * check: an uninitialized class has cap == 0, so its very first push
+ * lands here (count 1 > cap 0), gets the class initialized, and -- since
+ * count is then far below the real cap -- skips the flush. This keeps
+ * the per-free branch count at exactly one instead of a separate
+ * cap==0 test per push (measured: the extra branch was visible on the
+ * 16/64-byte rows). */
+static void hz10_front_cache_overflow(Hz10FrontCache* fc,
+                                     uint32_t class_id) {
+  if (fc->cap == 0u) {
+    hz10_front_cache_init(fc, class_id);
+    if (fc->count <= fc->cap) {
+      return;
+    }
+  }
+  hz10_front_cache_flush_to_count(fc, fc->cap / 2u);
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+  fc->flush_count += 1u;
+#endif
+}
+
+/* Owner-thread boundary flush of every class's front cache, phase 0 of
+ * hz10_public_entry_flush_thread_cache_quiescent() below. */
+static void hz10_front_cache_flush_all(void) {
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10FrontCache* fc = &hz10_front_cache[c];
+    if (fc->cap != 0u && fc->count != 0u) {
+      hz10_front_cache_flush_to_count(fc, 0u);
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+      fc->flush_count += 1u;
+#endif
+    }
+  }
+}
+
+#endif /* HZ10_ENABLE_FRONT_CACHE */
+
+void* hz10_malloc(size_t size) {
+  if (size == 0u) {
+    return NULL;
+  }
+  if (size > (size_t)HZ10_PAGE_QUANTUM) {
+    return hz10_large_alloc(size);
+  }
+  uint32_t class_id = hz10_size_class_for(size);
+  if (class_id >= HZ10_CLASS_COUNT) {
+    return NULL;
+  }
+#if HZ10_ENABLE_FRONT_CACHE
+#if HZ10_FRONT_CACHE_MIN_CLASS > 0
+  if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
+    return hz10_public_entry_alloc_from_page_layer(class_id);
+  }
+#endif
+  Hz10FrontCache* fc = &hz10_front_cache[class_id];
+  void* slot = fc->head;
+  if (slot) {
+    fc->head = *(void**)slot;
+    fc->count -= 1u;
+    hz10_front_cache_clear_marker(fc->slot_size, slot);
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+    fc->hit_count += 1u;
+#endif
+    return slot;
+  }
+  return hz10_front_cache_refill_and_alloc(class_id, fc);
+#else
+  return hz10_public_entry_alloc_from_page_layer(class_id);
+#endif
 }
 
 int hz10_free(void* ptr) {
@@ -295,8 +556,31 @@ int hz10_free(void* ptr) {
     return 0;
   }
   if (page->owner_thread_token == HZ10_THREAD_TOKEN) {
+#if HZ10_ENABLE_FRONT_CACHE
+    /* Front-cache push, NOT hz10_freelist_page_free() -- see the
+     * HZ10FrontCache-L1 block comment above: the slot stays allocated
+     * from the page's point of view until overflow/lifecycle flush
+     * returns it through the page-layer boundary. */
+    uint32_t class_id = page->class_id;
+#if HZ10_FRONT_CACHE_MIN_CLASS > 0
+    if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
+      hz10_freelist_page_free(page, ptr);
+      return 1;
+    }
+#endif
+    Hz10FrontCache* fc = &hz10_front_cache[class_id];
+    hz10_freelist_page_mark_local_free(page, ptr);
+    *(void**)ptr = fc->head;
+    fc->head = ptr;
+    fc->count += 1u;
+    if (fc->count > fc->cap) { /* also the lazy-init entry, see overflow() */
+      hz10_front_cache_overflow(fc, class_id);
+    }
+    return 1;
+#else
     hz10_freelist_page_free(page, ptr);
     return 1;
+#endif
   }
   /* claim() then publish(), not a single hz10_page_remote_free() call,
    * with hz10_retired_ready_note_remote_free() run in between -- see
@@ -382,4 +666,31 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
       list->active_ops_served_immediate_count;
   stats_out->second_active_check_count = list->second_active_check_count;
   stats_out->second_active_hit_count = list->second_active_hit_count;
+}
+
+void hz10_public_entry_front_cache_stats(uint32_t class_id,
+                                         Hz10FrontCacheStats* stats_out) {
+  if (!stats_out) {
+    return;
+  }
+  *stats_out = (Hz10FrontCacheStats){0};
+#if HZ10_ENABLE_FRONT_CACHE
+  if (class_id >= HZ10_CLASS_COUNT) {
+    return;
+  }
+  const Hz10FrontCache* fc = &hz10_front_cache[class_id];
+  stats_out->count = fc->count;
+  stats_out->cap = fc->cap;
+  stats_out->refill_batch = fc->refill_batch;
+  stats_out->slot_size = fc->slot_size;
+#if HZ10_ENABLE_FRONT_CACHE_STATS
+  stats_out->hit_count = fc->hit_count;
+  stats_out->refill_count = fc->refill_count;
+  stats_out->refill_objects = fc->refill_objects;
+  stats_out->flush_count = fc->flush_count;
+  stats_out->flush_objects = fc->flush_objects;
+#endif
+#else
+  (void)class_id;
+#endif
 }
