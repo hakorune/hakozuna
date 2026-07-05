@@ -794,3 +794,7 @@ slot_count1_r90:    0.990 (-1.0%)
 Read: remote-main gains are real, but the global default violates the
 small_local0 regression gate. Keep front cache opt-in until there is a
 small-class-safe shape or selective policy.
+
+HZ10PreloadShim-D4 initial macro lane: `make bench-macro-preload`; initial
+log `bench_results/20260705T201126Z_hz10_macro_preload_matrix/`, details in
+`docs/HZ10_PRELOAD_SHIM_DESIGN_L0.md`.

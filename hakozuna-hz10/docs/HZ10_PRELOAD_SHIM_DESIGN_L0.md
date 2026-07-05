@@ -198,6 +198,54 @@ public-entry/freelist/pagemap smokes: green
 standalone check: green
 ```
 
+## D4 initial macro lane record
+
+DONE 20260706: `scripts/run_hz10_macro_preload_matrix.sh` defines the
+first macro preload matrix and `bench-macro-preload` runs it. This is not
+the final mimalloc-bench suite yet; it is the always-available lane that
+proves HZ10 can produce real LD_PRELOAD wall/RSS rows against other
+allocators.
+
+Current workloads:
+
+```text
+python_alloc: PYTHONMALLOC=malloc python allocation churn, measured with
+              /usr/bin/time wall_sec + max_rss_kb.
+redis_setget: starts redis-server under each allocator and runs
+              redis-benchmark SET/GET; records client wall/max RSS and
+              server RSS.
+allocators:   glibc, hz10, tcmalloc if found, mimalloc only when an
+              explicit/source-build candidate is found (do not use the
+              known-bad Ubuntu libmimalloc2.0 package).
+```
+
+Initial run:
+`bench_results/20260705T201126Z_hz10_macro_preload_matrix/`
+with `RUNS=3 REDIS_OPS=20000 REDIS_CLIENTS=32 PYTHON_LOOPS=80`.
+
+Median result:
+
+```text
+workload      allocator  wall_sec  max_rss_kb  wall/glibc
+python_alloc  glibc        1.230       92400      1.000
+python_alloc  hz10         0.900      116904      0.732
+python_alloc  tcmalloc     0.840      104576      0.683
+python_alloc  mimalloc     0.810      100224      0.659
+redis_setget  glibc        0.540        8192      1.000
+redis_setget  hz10         0.540        8192      1.000
+redis_setget  tcmalloc     0.540        8192      1.000
+redis_setget  mimalloc     0.570        8320      1.056
+redis server RSS: glibc 6824K, hz10 7580K, tcmalloc 10916K, mimalloc 6884K
+```
+
+Read: D4 is operational. HZ10 is clearly faster than glibc on the Python
+malloc-forced churn, but still behind tcmalloc/mimalloc and with higher
+RSS on that row. The short Redis SET/GET lane is too flat to rank speed,
+but it does show HZ10 server RSS below tcmalloc and modestly above
+glibc/mimalloc. Next D4 work is to add the real mimalloc-bench subset or
+longer macro rows; do not promote this two-workload smoke as the final
+headline table.
+
 ## Open questions for reviewers
 
 ```text

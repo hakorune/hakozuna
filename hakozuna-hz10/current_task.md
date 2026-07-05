@@ -788,6 +788,23 @@ status:
                  shim API, foreign smoke, ASan/UBSan shim API, core
                  public-entry/freelist/pagemap smokes, standalone.
                  NEXT: D4 macro bench lane definition and first run.
+                 D4 INITIAL DONE 20260706: added
+                 scripts/run_hz10_macro_preload_matrix.sh /
+                 bench-macro-preload. Matrix runs glibc,hz10,tcmalloc,
+                 and source-build mimalloc if found; workloads are
+                 PYTHONMALLOC=malloc python allocation churn and
+                 redis-server+redis-benchmark SET/GET. First run log:
+                 bench_results/
+                   20260705T201126Z_hz10_macro_preload_matrix/
+                 Median (RUNS=3): python_alloc wall glibc 1.23s,
+                 hz10 0.90s, tcmalloc 0.84s, mimalloc 0.81s; RSS
+                 hz10 116.9MB vs glibc 92.4MB/tcmalloc 104.6MB/
+                 mimalloc 100.2MB. redis_setget speed flat at ~0.54s;
+                 server RSS hz10 7.6MB vs glibc 6.8MB, tcmalloc
+                 10.9MB, mimalloc 6.9MB. Read: macro lane is
+                 operational, but this is a smoke/first evidence row,
+                 not the final headline table. NEXT: add real
+                 mimalloc-bench subset or longer macro rows.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.
