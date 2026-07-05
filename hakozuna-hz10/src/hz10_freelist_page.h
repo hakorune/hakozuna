@@ -84,9 +84,10 @@ typedef struct Hz10FreelistPage {
    * free instead pushes onto one of remote_free_head's stripes (a Treiber
    * stack, single CAS) and the owner drains all stripes into
    * local_free_head at its own pace. Splitting into HZ10_REMOTE_STRIPE_COUNT
-   * independent stacks spreads concurrent remote-free CAS traffic across
-   * that many cache lines instead of one shared one -- see
-   * hz10_remote_stack.c for the measured contention this addresses.
+   * independent stacks spreads list heads logically; the current compact
+   * struct layout does not cache-line-pad them, so this is not a cache-line
+   * spreading guarantee. HZ10RemoteGapAttribution-L0 recorded that point
+   * before opening any locality-shaped follow-up.
    * pending_bits (one bit per slot) is set by a successful remote push and
    * cleared at drain, so a second remote free of the same slot before it
    * drains is rejected as a duplicate instead of corrupting the freelist.

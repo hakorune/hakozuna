@@ -198,3 +198,32 @@ Decision:
   experiments, but do not enable it for the current all-class front cache.
 - The next speed box should be remote-gap attribution, not another unmeasured
   front-cache storage change.
+
+## 20260705 Drain Micro-Trim
+
+Status: `NO-GO`
+
+Evidence:
+
+- `bench_results/20260705T120506Z_hz10_remote_gap_attribution_l0/notes.md`
+  (`F1 attempted same-day: NO-GO, reverted`).
+- Prototype shortcut avoided the per-slot hardware division in
+  `hz10_page_drain_remote()` for slot_count 1/2.
+- First main_r50 A/B looked like +12%, but did not reproduce.
+- Repeated alternating A/B (`5` alternations x `RUNS=6`, n=30/side):
+  base median 13.76M ops/s, F1 median 13.30M ops/s, ratio 0.966.
+- The row itself varied roughly 11.1M-16.0M ops/s (+/-18%) on the same
+  machine because remote rows spend ~30% of wall time in futex sleep/wake.
+- Isolated `bench-remote-stack-drain` slightly regressed the multi-slot path
+  the shortcut cannot help: owner_drain base ~213-228M ops/s vs F1
+  ~206-217M ops/s.
+
+Decision:
+
+- Do not land the slot_count 1/2 drain-division shortcut.
+- The division is too small a contributor (~2% of the r50 row) to survive
+  the remote-row noise floor, and the extra compares can hurt the multi-slot
+  path.
+- Future remote A/Bs need either n>=30/side with alternation or a direct
+  perf-counter endpoint. For HZ10PendingStripeColocate-L0, cache-miss/op is
+  the primary gate and ops/s is secondary.

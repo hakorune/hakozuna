@@ -561,6 +561,34 @@ status:
                  do not turn it on for all front-cache classes. Recorded
                  in docs/HZ10_NO_GO_LEDGER.md. NEXT: remote gap
                  attribution is the cleaner next box.
+                 HYPOTHESIS CORRECTION this result forces (fable5,
+                 20260705): the original triage claimed the array shape
+                 would ALSO delete the small-class front-cache delta
+                 (blaming the dependent *head pop load) and thereby
+                 unlock front default-ON. Refuted -- removing that load
+                 made 16/64B WORSE, so the small-class front delta is
+                 push-side line traffic/bookkeeping, not the pop load
+                 chain. Consequences:
+                   - front default-ON no longer has a pending mechanism
+                     fix; it is purely a measurement decision now. If
+                     wanted: HZ10FrontCacheDefaultOn-AB-L0, interleaved
+                     high-N same-session A/B (RUNS>=10, binaries
+                     alternated to kill session drift) of intrusive
+                     front ON vs OFF across the full row matrix; GO if
+                     the main-row gains (+3-4% measured) outweigh a
+                     small_local0 delta that read only -1.4% when
+                     measured interleaved. Independent of, and lower
+                     priority than, B.
+                   - the hybrid (array for slot_count<=2 only) is NOT
+                     recommended without new evidence: it reintroduces
+                     a data-dependent per-op storage branch on mixed
+                     rows -- the same shape the MIN_CLASS threshold
+                     NO-GO measured at -9% main_local0 -- and on
+                     interleaved rows the large classes are not
+                     aliasing-bound (slot_count1_local0 already ~5.5
+                     ns/op), so the branch buys nothing where it costs.
+                     The bulk-lane aliasing win stays available through
+                     the opt-in array lane as evidence.
               B. HZ10RemoteGapAttribution-L0 -- measurement-only,
                  before any publication-V2/pending design is opened.
                  The remote rows (0.48-0.56, 4 of 9 rows) are now the
@@ -582,6 +610,56 @@ status:
                  locality-shaped fix; do not skip to a CAS redesign.
               Order after A: run B next; open no remote behavior change
               until B reports.
+              DONE: HZ10RemoteGapAttribution-L0, 20260705.
+              log: bench_results/
+                20260705T120506Z_hz10_remote_gap_attribution_l0/notes.md
+              (perf-counter matrix r0/r50/r90 x hz10/tcmalloc, perf
+              profiles, same-session event rates, and the shared-line
+              arithmetic). VERDICT: publication-V2 as a CAS replacement
+              is NOT indicated -- CAS contention has no room in the
+              numbers. The r90 gap (~75ns/op) decomposes as ~25% inbox/
+              futex backpressure amplification (candidate E measured and
+              CLOSED: ~30% futex share in BOTH allocators, but per-op
+              the slower allocator pays 2x -- harness-coupled, shrinks
+              with any allocator win), ~40% per-object shared-line
+              protocol traffic (+5.1 LLC misses/op, exactly matching
+              the ~5.4 lines/object the protocol touches: pending word
+              + stripe head + peek/exchange + pending clear + slot
+              line), ~25-30% extra instructions/branches (+422 ins/op:
+              drain loop incl. a hardware div per merged slot, 1.11
+              find pages visited/op). Also found while auditing: the 4
+              remote stripes are 32 contiguous bytes = ONE cache line,
+              so the struct comment's line-spreading claim is not what
+              the layout does (only matters for multi-producer-per-page
+              rows, i.e. small_remote).
+              NEXT (locality-shaped, contract-free, in order):
+                F1 HZ10DrainMicroTrim-L0 -- DONE SAME DAY, NO-GO,
+                   REVERTED and recorded in docs/HZ10_NO_GO_LEDGER.md
+                   (notes.md F1 section in the attribution log dir):
+                   the per-slot div is ~2% of the r50 row,
+                   beneath the row's own +/-18% noise floor, and the
+                   shortcut's extra compares slightly regress the
+                   isolated multi-slot drain bench (slot_count=1024
+                   owner_drain ~213-228M -> ~206-217M ops/s). Do not
+                   reopen without a new mechanism.
+                   DURABLE MEASUREMENT LESSON from the attempt: the
+                   remote rows swing +/-18% run-to-run BECAUSE ~30% of
+                   the row is futex sleep/wake timing; any future
+                   remote A/B needs n>=30/side with alternation OR a
+                   perf-counter endpoint. For F2 the primary gate must
+                   be cache-miss/op (its claim -- "cuts ~2 of ~5.4
+                   shared lines per object" -- is directly visible
+                   there at far lower variance); ops/s is secondary.
+                F2 HZ10PendingStripeColocate-L0 -- inline the pending
+                   word (slot_count<=64 needs one uint64) into
+                   Hz10FreelistPage adjacent to remote_free_head so
+                   producer fetch_or+CAS and owner clear+exchange share
+                   ONE line instead of two; placement only, pending
+                   semantics untouched; watch small_remote rows for the
+                   multi-producer false-sharing side. Gate on
+                   cache-miss/op first (see F1 lesson above).
+                F3 only after F2: reassess whether any batched
+                   handoff contract discussion is still needed.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
