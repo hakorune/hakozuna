@@ -2,6 +2,7 @@
 #include "hz10_class_pages.h"
 #include "hz10_large_alloc.h"
 #include "hz10_pagemap.h"
+#include "hz10_platform.h"
 #include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
 #include "hz10_retired_ready.h"
@@ -23,12 +24,23 @@ typedef struct Hz10ClassState {
 #endif
 } Hz10ClassState;
 
-static _Thread_local Hz10ClassState hz10_class_state[HZ10_CLASS_COUNT];
-static _Thread_local char hz10_thread_token_storage;
-/* &hz10_thread_token_storage is a genuinely distinct address per thread
- * (each thread gets its own TLS instance) -- a standard, portable way to
- * get a per-thread identity token without inventing a thread-id concept. */
-#define HZ10_THREAD_TOKEN ((void*)&hz10_thread_token_storage)
+typedef struct Hz10ThreadOwner { Hz10ClassState classes[HZ10_CLASS_COUNT]; }
+    Hz10ThreadOwner;
+
+static _Thread_local Hz10ThreadOwner* hz10_current_owner;
+
+static Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
+  Hz10ThreadOwner* owner = hz10_current_owner;
+  if (owner) return owner;
+  owner = (Hz10ThreadOwner*)hz10_platform_reserve_rw(sizeof(*owner));
+  if (!owner) return NULL;
+  hz10_current_owner = owner;
+  return owner;
+}
+
+static inline Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
+  return hz10_current_owner;
+}
 
 #if HZ10_ENABLE_TWO_SLOT_STATS
 /* Called right before state->active is reassigned to `next_active`.
@@ -135,8 +147,12 @@ static inline void hz10_public_entry_note_owner_local_free(
       page->free_count == page->slot_count &&
       page->owner_list_kind == HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED &&
       class_id < HZ10_CLASS_COUNT) {
+    Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+    if (!owner) {
+      return;
+    }
     (void)hz10_class_pages_reclaim_retired_idle_after_local_free(
-        &hz10_class_state[class_id].list, page);
+        &owner->classes[class_id].list, page);
   }
 #else
   (void)class_id;
@@ -197,8 +213,15 @@ void hz10_public_entry_flush_thread_cache_quiescent(
    * see the POSTCONDITION note in hz10_public_entry.h. */
   hz10_front_cache_flush_all();
 #endif
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (!owner) {
+    if (stats_out) {
+      *stats_out = stats;
+    }
+    return;
+  }
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
-    Hz10ClassState* state = &hz10_class_state[c];
+    Hz10ClassState* state = &owner->classes[c];
     hz10_public_entry_reclaim_ready_idle_pages(&state->list, &stats);
     hz10_public_entry_reclaim_sublist_idle_pages(&state->list.active, &stats,
                                                  0);
@@ -226,7 +249,11 @@ void hz10_public_entry_flush_thread_cache_quiescent(
  * into this and behavior is unchanged.
  */
 static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
-  Hz10ClassState* state = &hz10_class_state[class_id];
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner();
+  if (!owner) {
+    return NULL;
+  }
+  Hz10ClassState* state = &owner->classes[class_id];
 
   if (state->active) {
     void* ptr = hz10_freelist_page_alloc(state->active);
@@ -299,7 +326,7 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
   if (!fresh) {
     return NULL;
   }
-  hz10_freelist_page_set_owner_thread(fresh, HZ10_THREAD_TOKEN);
+  hz10_freelist_page_set_owner_thread(fresh, owner);
   hz10_freelist_page_set_class_id(fresh, class_id);
   hz10_class_pages_add(&state->list, fresh);
   hz10_class_state_note_switch(state, fresh, 0);
@@ -312,30 +339,13 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
 
 #if HZ10_ENABLE_FRONT_CACHE
 
-/*
- * HZ10FrontCache-L1 (docs/HZ10_FRONT_CACHE_DESIGN_L0.md): a per-thread,
- * per-class OBJECT freelist in front of the page layer above. The load-
- * bearing accounting rule: a slot in this cache counts as ALLOCATED from
- * its page's point of view (refill decremented free_count exactly like a
- * user alloc; only overflow/lifecycle flush increments it back, through
- * hz10_freelist_page_free()). The fast paths below therefore must NOT
- * call hz10_freelist_page_free() -- that is the page-layer boundary --
- * and must keep the in-slot local-free marker in the same states the
- * page freelist would (set while cached, cleared while handed out), so
- * hz10_page_remote_free_claim()'s marker check rejects a foreign
- * duplicate free of a cached slot exactly like a page-freelist slot.
- *
- * Capacity defaults deviate deliberately from the design doc's first
- * proposal (128KiB/4/128): the gate bench's steady working sets
- * (slot_count*32 pages, e.g. 64 objects of 24576/32768, 32 of 65536)
- * must fit under cap or the front cache degenerates into push+flush
- * overhead on top of today's page path -- the refill loop itself runs
- * the same per-object page-layer calls as today, so the win comes from
- * cache HITS, not from batching. 2MiB/class is the smallest power-of-two
- * byte cap that covers those working sets; the object clamp keeps the
- * count sane for tiny classes. HZ10FrontCacheCapacityTune-L0 owns
- * revisiting these numbers with RSS columns.
- */
+/* HZ10FrontCache-L1: a per-thread, per-class object freelist in front of
+ * the page layer. A cached slot still counts as allocated from its page's
+ * point of view; only overflow/lifecycle flush returns it through
+ * hz10_freelist_page_free(). Keep the in-slot local-free marker in the
+ * same states as the page freelist so remote duplicate-free rejection
+ * stays unchanged. See docs/HZ10_FRONT_CACHE_DESIGN_L0.md for the capacity
+ * rationale and A/B record. */
 /* Classes below this id bypass the front cache entirely (page-centric
  * path, exactly the flag-off behavior). Measured NO-GO
  * (bench_results/20260705T041052Z_hz10_front_cache_l1): setting this to
@@ -618,7 +628,8 @@ int hz10_free(void* ptr) {
   if (!page) {
     return 0;
   }
-  if (page->owner_thread_token == HZ10_THREAD_TOKEN) {
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (owner && hz10_freelist_page_owner_thread(page) == owner) {
 #if HZ10_ENABLE_FRONT_CACHE
     /* Front-cache push, NOT hz10_freelist_page_free() -- see the
      * HZ10FrontCache-L1 block comment above: the slot stays allocated
@@ -688,7 +699,12 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
     *stats_out = (Hz10ClassPageListStats){0};
     return;
   }
-  const Hz10ClassPageList* list = &hz10_class_state[class_id].list;
+  const Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (!owner) {
+    *stats_out = (Hz10ClassPageListStats){0};
+    return;
+  }
+  const Hz10ClassPageList* list = &owner->classes[class_id].list;
   stats_out->active_length = list->active.length;
   stats_out->retired_length = list->retired.length;
   stats_out->max_retired_length = list->max_retired_length;

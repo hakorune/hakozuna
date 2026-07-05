@@ -132,8 +132,9 @@ typedef struct Hz10ClassPageListStats {
 } Hz10ClassPageListStats;
 
 /*
- * Diagnostic accessor, calling thread's own state only (per-class lists
- * are thread-local, see hz10_public_entry.c): fills *stats_out with the
+ * Diagnostic accessor, calling thread's own owner record only (per-class
+ * lists are reached through thread-local owner state, see
+ * hz10_public_entry.c): fills *stats_out with the
  * current length and lifetime eviction/reclaim counters (src/
  * hz10_class_pages.h) for class_id's page list, without disturbing them.
  * class_id >= HZ10_CLASS_COUNT zero-fills *stats_out rather than
@@ -182,8 +183,8 @@ typedef struct Hz10PublicEntryThreadReclaimStats {
 
 /*
  * HZ10LifecycleFlushContract-L1: an explicit, non-destructor lifecycle
- * flush for the CALLING thread's own TLS state (hz10_class_state in
- * src/hz10_public_entry.c). This is a contract, not a convenience call --
+ * flush for the CALLING thread's own owner record state
+ * (src/hz10_public_entry.c). This is a contract, not a convenience call --
  * calling it outside the precondition below corrupts live allocator state
  * instead of merely wasting work.
  *

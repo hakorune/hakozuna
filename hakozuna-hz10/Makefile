@@ -5,7 +5,8 @@
 	bench-remote-rmw-micro \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
-	smoke-public-entry bench-public-entry bench-public-entry-active-scan \
+	smoke-public-entry smoke-public-entry-owner bench-public-entry \
+	bench-public-entry-active-scan \
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
 	bench-public-entry-remote-batch-locality bench-public-entry-stage-cost \
 	bench-public-entry-local-path \
@@ -62,6 +63,7 @@ SMOKE_CLASS_PAGES_SRC := $(ROOT)/tests/hz10_class_pages_smoke.c $(CLASS_PAGES_SR
 
 PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_retired_ready.c $(ROOT)/src/hz10_size_class.c $(ROOT)/src/hz10_large_alloc.c $(POOLED_PAGE_SRC)
 SMOKE_PUBLIC_ENTRY_SRC := $(ROOT)/tests/hz10_public_entry_smoke.c $(PUBLIC_ENTRY_SRC)
+SMOKE_PUBLIC_ENTRY_OWNER_SRC := $(ROOT)/tests/hz10_public_entry_owner_smoke.c $(PUBLIC_ENTRY_SRC)
 BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY_SRC)
 BENCH_REMOTE_BATCH_LOCALITY_SRC := $(ROOT)/bench/hz10_public_entry_remote_batch_locality_bench.c $(PUBLIC_ENTRY_SRC)
 STAGE_COST_SRC := $(ROOT)/bench/hz10_public_entry_stage_cost_bench.c $(ROOT)/src/hz10_retired_ready.c $(POOLED_PAGE_SRC)
@@ -173,8 +175,15 @@ smoke-size-class: $(ROOT)/hz10_size_class_smoke
 $(ROOT)/hz10_public_entry_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
-smoke-public-entry: $(ROOT)/hz10_public_entry_smoke
+$(ROOT)/hz10_public_entry_owner_smoke: $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-owner: $(ROOT)/hz10_public_entry_owner_smoke
+	$(ROOT)/hz10_public_entry_owner_smoke
+
+smoke-public-entry: $(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_owner_smoke
 	$(ROOT)/hz10_public_entry_smoke
+	$(ROOT)/hz10_public_entry_owner_smoke
 
 $(ROOT)/hz10_public_entry_retired_local_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
@@ -256,10 +265,12 @@ smoke-tsan-aslr-off:
 		"$(ROOT)/hz10_pagemap_route_smoke" \
 		"$(ROOT)/hz10_pagemap_route_diff_smoke" \
 		"$(ROOT)/hz10_public_entry_smoke" \
+		"$(ROOT)/hz10_public_entry_owner_smoke" \
 		"$(ROOT)/hz10_public_entry_front_smoke"
 	arch=$$(uname -m); \
 	for bin in hz10_pagemap_route_smoke hz10_pagemap_route_diff_smoke \
-		hz10_public_entry_smoke hz10_public_entry_front_smoke; do \
+		hz10_public_entry_smoke hz10_public_entry_owner_smoke \
+		hz10_public_entry_front_smoke; do \
 		echo "== $$bin (TSan, ASLR off) =="; \
 		setarch "$$arch" -R "$(ROOT)/$$bin" || exit $$?; \
 	done
@@ -366,7 +377,8 @@ clean:
 		$(ROOT)/hz10_multiclass_remote_bench $(ROOT)/hz10_remote_rmw_microbench \
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
-		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_retired_local_smoke \
+		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_owner_smoke \
+		$(ROOT)/hz10_public_entry_retired_local_smoke \
 		$(ROOT)/hz10_public_entry_bench $(ROOT)/hz10_public_entry_retired_local_bench \
 		$(ROOT)/hz10_public_entry_active_scan_bench \
 		$(ROOT)/hz10_public_entry_active_mtf_bench \

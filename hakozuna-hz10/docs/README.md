@@ -47,6 +47,10 @@ HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md:
   orphaned active owner-thread pages explain 94.2-94.5% of sampled HZ10
   current RSS and points to the next ownership/handoff design
 
+HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md:
+  design record for the thread-exit RSS fix: persistent owner records first,
+  then orphan active-page adoption; destructor reclaim remains forbidden
+
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,
   division-free interior check, size-class inline, record-carried owner

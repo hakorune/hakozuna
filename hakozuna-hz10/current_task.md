@@ -26,7 +26,8 @@ status:
       HZ10 current RSS, with retired_pages=0.
 
   Active next box:
-    HZ10ThreadExitOwnershipHandoff-Design-L0.
+    HZ10OrphanActiveAdoption-L1, after the persistent owner-record prep
+    lands green.
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design
@@ -34,6 +35,13 @@ status:
     destruction or ownership transfer. Candidate families are explicit
     thread-exit API, safe orphan ownership handoff, or conservative orphan
     quarantine with eventual reclaim.
+
+  Latest design verdict:
+    - Use persistent owner records instead of TLS-address owner tokens.
+      HZ10PersistentOwnerRecord-L1 is implemented as a prep box.
+    - Then implement opt-in orphan active-page adoption.
+    - Do not adopt/reclaim retired pages in the first implementation box.
+    - Do not destroy pages from a pthread destructor.
 
   Lane SSOT:
     docs/HZ10_LANES_INDEX.md

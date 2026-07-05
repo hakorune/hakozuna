@@ -84,7 +84,7 @@ typedef struct Hz10FreelistPage {
    * decide same-thread (fast local free) vs. foreign-thread (Box 3 remote
    * free) without Box 2 needing to know what a "thread" is.
    */
-  void* owner_thread_token;
+  _Atomic(void*) owner_thread_token;
 
   /*
    * Also inert storage, same rule as owner_thread_token: a doubly-linked
@@ -229,7 +229,13 @@ void hz10_freelist_page_destroy(Hz10FreelistPage* page);
  * Box 2 itself; a higher-level module calls this once right after create. */
 static inline void hz10_freelist_page_set_owner_thread(Hz10FreelistPage* page,
                                                       void* token) {
-  page->owner_thread_token = token;
+  atomic_store_explicit(&page->owner_thread_token, token,
+                        memory_order_release);
+}
+
+static inline void* hz10_freelist_page_owner_thread(
+    const Hz10FreelistPage* page) {
+  return atomic_load_explicit(&page->owner_thread_token, memory_order_acquire);
 }
 
 /* Sets class_id (see the struct comment above). Same inert-storage rule as

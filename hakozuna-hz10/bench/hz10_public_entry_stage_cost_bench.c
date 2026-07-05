@@ -194,7 +194,7 @@ static void worker_timed(StageMode mode, WorkerPage* wp, void* token,
       break;
     }
     case STAGE_LOCAL_FREE: {
-      if (wp->page->owner_thread_token == token) {
+      if (hz10_freelist_page_owner_thread(wp->page) == token) {
         hz10_freelist_page_free(wp->page, wp->ptr);
       } else {
         *local_failed += 1u;

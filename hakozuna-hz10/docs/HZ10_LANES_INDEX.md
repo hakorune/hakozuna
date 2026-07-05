@@ -40,6 +40,7 @@ HZ10ThreadExitOwnershipHandoff-Design-L0
 
 Input:
   docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md
+  docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md
   bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
 
 Known fact:
@@ -51,15 +52,21 @@ Design constraint:
   Do not add automatic quiescent flush. The existing flush contract forbids
   destructor reclaim until remote-free races into dying-owner pages are
   proven safe.
+
+Current design verdict:
+  Persistent owner-record prep is implemented. Next is opt-in orphan
+  active-page adoption. Do not destroy pages from a pthread destructor.
 ```
 
 Candidate design families to review:
 
 ```text
-1. explicit thread-exit API for applications/benchmarks that can provide a
-   true quiescent boundary;
-2. ownership handoff of abandoned pages to a safe global orphan owner;
-3. conservative orphan quarantine with remote-free-safe eventual reclaim.
+1. HZ10PersistentOwnerRecord-L1:
+   replace TLS-address owner tokens with persistent owner record pointers;
+2. HZ10OrphanActiveAdoption-L1:
+   enqueue exited owners' active pages and let later owners adopt/reuse them;
+3. later, separate box only:
+   retired-page transfer/reclaim with ready-stack safety.
 ```
 
 ## Build Artifacts
@@ -145,6 +152,11 @@ Retired local idle reclaim:
 Remote publication V2 / F3:
   Closed for now by spin-lane attribution. Main remaining macro issue is
   thread-exit ownership, not CAS replacement.
+
+Thread-exit reclaim:
+  Destructor reclaim is forbidden. The live design path is persistent owner
+  identity plus orphan active-page adoption; see
+  docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md.
 ```
 
 ## Source Ownership Map

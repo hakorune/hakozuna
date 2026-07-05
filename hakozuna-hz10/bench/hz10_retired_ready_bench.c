@@ -115,8 +115,9 @@ static void poll_list_remove(PollList* list, PollNode* node) {
  * the module comment on the documented concurrent-push-vs-destroy gap).
  * Not reclaimable until the flag reads 1, regardless of free_count. */
 static int producer_done(const Hz10FreelistPage* page) {
-  return atomic_load_explicit((_Atomic(int)*)page->owner_thread_token,
-                              memory_order_acquire);
+  return atomic_load_explicit(
+      (_Atomic(int)*)hz10_freelist_page_owner_thread(page),
+      memory_order_acquire);
 }
 
 /* Owner-only: budgeted cursor walk, destroy on idle -- same shape as
@@ -210,8 +211,9 @@ static void* producer_worker(void* raw) {
      * without needing the same guard. */
     void* last_ptr = arg->ptrs[2u * i + (HZ10_RR_SLOT_COUNT - 1u)];
     int ok = hz10_page_remote_free(page, last_ptr, HZ10_GENERATION_ANY);
-    atomic_store_explicit((_Atomic(int)*)page->owner_thread_token, 1,
-                          memory_order_release);
+    atomic_store_explicit(
+        (_Atomic(int)*)hz10_freelist_page_owner_thread(page), 1,
+        memory_order_release);
     if (ok && arg->event_driven) {
       hz10_retired_ready_note_remote_free(page);
     }
@@ -277,8 +279,8 @@ int main(void) {
     /* Repurposed as inert per-page bookkeeping for this bench only (see
      * Hz10FreelistPage's own doc comment on owner_thread_token) -- not a
      * real thread token here. */
-    pp->owner_thread_token = (void*)&poll_done_flags[i];
-    ep->owner_thread_token = (void*)&event_done_flags[i];
+    hz10_freelist_page_set_owner_thread(pp, (void*)&poll_done_flags[i]);
+    hz10_freelist_page_set_owner_thread(ep, (void*)&event_done_flags[i]);
 
     poll_list_prepend(&poll_list, pp);
     hz10_retired_ready_mark(ep, &event_stack, HZ10_RR_SLOT_COUNT);
