@@ -125,6 +125,20 @@ static void hz10_public_entry_reclaim_ready_idle_pages(
   }
 }
 
+static inline void hz10_public_entry_note_owner_local_free(
+    uint32_t class_id, Hz10FreelistPage* page) {
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+  if (page && page->free_count == page->slot_count &&
+      class_id < HZ10_CLASS_COUNT) {
+    (void)hz10_class_pages_reclaim_retired_idle_after_local_free(
+        &hz10_class_state[class_id].list, page);
+  }
+#else
+  (void)class_id;
+  (void)page;
+#endif
+}
+
 static void hz10_public_entry_reclaim_sublist_idle_pages(
     Hz10PageSublist* sub, Hz10PublicEntryThreadReclaimStats* stats,
     int is_retired) {
@@ -444,7 +458,9 @@ static void hz10_front_cache_flush_to_count(Hz10FrontCache* fc,
        * through a pointer the pagemap no longer vouches for. */
       continue;
     }
-    hz10_freelist_page_free((Hz10FreelistPage*)route.owner, slot);
+    Hz10FreelistPage* page = (Hz10FreelistPage*)route.owner;
+    hz10_freelist_page_free(page, slot);
+    hz10_public_entry_note_owner_local_free(page->class_id, page);
 #if HZ10_ENABLE_FRONT_CACHE_STATS
     fc->flush_objects += 1u;
 #endif
@@ -598,6 +614,7 @@ int hz10_free(void* ptr) {
 #if HZ10_FRONT_CACHE_MIN_CLASS > 0
     if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
       hz10_freelist_page_free(page, ptr);
+      hz10_public_entry_note_owner_local_free(class_id, page);
       return 1;
     }
 #endif
@@ -616,6 +633,7 @@ int hz10_free(void* ptr) {
     return 1;
 #else
     hz10_freelist_page_free(page, ptr);
+    hz10_public_entry_note_owner_local_free(page->class_id, page);
     return 1;
 #endif
   }
@@ -662,6 +680,8 @@ void hz10_public_entry_class_list_stats(uint32_t class_id,
       list->retired_reclaimed_by_ready_count;
   stats_out->retired_promoted_by_ready_count =
       list->retired_promoted_by_ready_count;
+  stats_out->retired_reclaimed_by_local_free_count =
+      list->retired_reclaimed_by_local_free_count;
   stats_out->ready_false_positive_count = list->ready_false_positive_count;
   stats_out->ready_push_count = atomic_load_explicit(
       &list->ready.push_count, memory_order_relaxed);

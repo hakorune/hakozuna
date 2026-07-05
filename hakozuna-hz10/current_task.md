@@ -860,6 +860,65 @@ status:
                  `HZ10_SHIM_EXIT_STATS=1` and use class_totals/page_bytes,
                  metadata_live, and pool_cached_bytes to split the
                  remaining RSS gap before changing retention policy.
+                 HZ10RetiredLocalIdleReclaim-L0 PROTOTYPE 20260706:
+                 fable5's exit-stats diagnosis reproduced. Single-thread
+                 python_alloc leaves many fully idle retired pages because
+                 ready is remote-free-driven and local free has no retired
+                 notification path. Implemented opt-in build flag
+                 `HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1` plus
+                 `make preload-retired-local`: after owner local free,
+                 if free_count == slot_count, scan only this class's
+                 retired list for that page; if present, apply the same
+                 retired_ready_on_stack skip + hz10_retired_ready_cancel()
+                 guard as harvest, then unlink+destroy. Active pages are
+                 untouched. Smoke target `smoke-public-entry-retired-local`
+                 is green. Probe log:
+                 bench_results/
+                   20260706T220000Z_hz10_retired_local_idle_reclaim_l0/
+                 THREADS n/a, python_alloc loops=80 RUNS=3:
+                   default median-ish: max_rss ~116.8MB, active_pages=684,
+                     retired_pages=933, page_bytes=105.97MB, pool_reuse=230,
+                     reclaimed_sweep=419, reclaimed_local_free=0.
+                   opt-in: max_rss ~113.1MB, active_pages=684,
+                     retired_pages=2, page_bytes=44.96MB, pool_reuse=696,
+                     reclaimed_sweep=0, reclaimed_local_free=1807.
+                 Read: structural win is real (retired backlog collapses),
+                 but maxrss only moves ~3.6MB in this short probe because
+                 high-water includes earlier churn. NEXT: full gates before
+                 default discussion: public-entry micro matrix, rss-guard,
+                 best-fit/uniform python rows with exit-stats, and likely
+                 fine-class+retired-local combined shim lane.
+                 DONE 20260706 (fable5): residual decomposed. log:
+                 bench_results/
+                   20260706T213000Z_hz10_retention_residual_attribution/
+                   notes.md
+                 Best-fit row exit snapshot (maxrss 95.1MB): active 591
+                 pages / 38.7MB (live ~36MB -- healthy), RETIRED 708
+                 pages / 46.4MB, pool 3.3MB, metadata 1.4MB. Lifetime
+                 counters give the mechanism: evictions 24,022 vs sweep
+                 reclaims 948 and ready reclaims 0 -- the ready queue is
+                 remote-free driven and NEVER FIRES under single-threaded
+                 local churn, and retired pages hoard their quanta so
+                 the pool starves (reuse 858) and churn peaks are paid
+                 with fresh mmap. This is a structural hole: local frees
+                 that make a retired page fully idle have no notification
+                 path.
+                 NEXT BOX: HZ10RetiredLocalIdleReclaim-L0 -- on the
+                 local free path (and front flush), when free_count
+                 reaches slot_count and the page is retired, feed the
+                 existing guarded reclaim machinery (A/B: ready-stack
+                 push vs owner-inline unlink+destroy; hot-path cost is
+                 one rarely-taken compare of two already-loaded fields).
+                 Must respect the retired_ready on_stack/cancel guards
+                 exactly like harvest (hz10_retired_ready.h bugs 1-3).
+                 Gates: retired_pages -> ~0 and pool_reuse way up on
+                 this row, maxrss on best-fit + uniform python rows,
+                 full micro matrix, rss-guard, lifecycle smokes.
+                 AFTER IT: expanded macro matrix (larson-class thread
+                 churn) prices the v0 no-destructor liability AND
+                 decides fine-classes-in-shim-build; together the two
+                 RSS fixes (rounding + retention) should move python
+                 117MB toward the glibc band while keeping the wall win.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.

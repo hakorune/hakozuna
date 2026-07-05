@@ -399,6 +399,60 @@ static int check_thread_reclaim_leaves_busy_page(void) {
   return 0;
 }
 
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+static int check_retired_local_idle_reclaim(void) {
+  const size_t size = 49152u;
+  const uint32_t class_id = hz10_size_class_for(size);
+  if (class_id >= HZ10_CLASS_COUNT) {
+    fprintf(stderr, "retired_local_idle: no class for probe size\n");
+    return 1;
+  }
+
+  void* retired_slot = hz10_malloc(size);
+  if (!retired_slot) {
+    fprintf(stderr, "retired_local_idle: initial malloc failed\n");
+    return 1;
+  }
+  for (uint32_t i = 0; i < HZ10_CLASS_PAGES_SCAN_LIMIT; ++i) {
+    void* ptr = hz10_malloc(size);
+    if (!ptr) {
+      fprintf(stderr, "retired_local_idle: filler %u failed\n", i);
+      return 1;
+    }
+  }
+
+  Hz10ClassPageListStats before;
+  hz10_public_entry_class_list_stats(class_id, &before);
+  if (before.retired_length == 0u) {
+    fprintf(stderr, "retired_local_idle: expected one retired page before free\n");
+    return 1;
+  }
+
+  if (!hz10_free(retired_slot)) {
+    fprintf(stderr, "retired_local_idle: local free failed\n");
+    return 1;
+  }
+
+  Hz10ClassPageListStats after;
+  hz10_public_entry_class_list_stats(class_id, &after);
+  if (after.retired_reclaimed_by_local_free_count !=
+      before.retired_reclaimed_by_local_free_count + 1u) {
+    fprintf(stderr,
+            "retired_local_idle: local-free reclaim counter did not advance "
+            "(before=%llu after=%llu)\n",
+            (unsigned long long)before.retired_reclaimed_by_local_free_count,
+            (unsigned long long)after.retired_reclaimed_by_local_free_count);
+    return 1;
+  }
+  if (after.retired_length + 1u != before.retired_length) {
+    fprintf(stderr,
+            "retired_local_idle: retired_length %u -> %u, expected -1\n",
+            before.retired_length, after.retired_length);
+    return 1;
+  }
+  return 0;
+}
+#endif
 /* Case 5: basic large-object path (src/hz10_large_alloc.h) -- sizes at and
  * beyond HZ10_PAGE_QUANTUM+1 must now succeed (they used to be rejected
  * outright), the full requested range must be genuinely writable (not just
@@ -727,6 +781,11 @@ int main(void) {
   if (check_cross_thread_free()) {
     return 11;
   }
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+  if (check_retired_local_idle_reclaim()) {
+    return 15;
+  }
+#endif
 #if HZ10_ENABLE_FRONT_CACHE
   if (check_front_cache_accounting_and_lifecycle()) {
     return 13;

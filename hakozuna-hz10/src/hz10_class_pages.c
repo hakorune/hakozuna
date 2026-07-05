@@ -351,3 +351,38 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
   list->retired_sweep_cursor = node;
   return NULL;
 }
+
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+int hz10_class_pages_reclaim_retired_idle_after_local_free(
+    Hz10ClassPageList* list, Hz10FreelistPage* page) {
+  if (!list || !page || page->free_count != page->slot_count) {
+    return 0;
+  }
+
+  Hz10FreelistPage* found = NULL;
+  for (Hz10FreelistPage* node = list->retired.head; node;
+       node = node->next_in_owner_list) {
+    if (node == page) {
+      found = node;
+      break;
+    }
+  }
+  if (!found) {
+    return 0;
+  }
+
+  if (atomic_load_explicit(&page->retired_ready_on_stack,
+                           memory_order_acquire)) {
+    return 0;
+  }
+  if (!hz10_retired_ready_cancel(page)) {
+    list->sweep_cancel_lost_race_count += 1u;
+    return 0;
+  }
+
+  hz10_class_pages_retired_remove(list, page);
+  list->retired_reclaimed_by_local_free_count += 1u;
+  hz10_pooled_page_destroy(page);
+  return 1;
+}
+#endif

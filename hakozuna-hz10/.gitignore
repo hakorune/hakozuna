@@ -10,6 +10,7 @@
 /hz10_bounded_page_pool_bench
 /hz10_class_pages_smoke
 /hz10_public_entry_smoke
+/hz10_public_entry_retired_local_smoke
 /hz10_public_entry_bench
 /hz10_public_entry_active_scan_bench
 /hz10_public_entry_active_mtf_bench

@@ -9,13 +9,14 @@
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
 	bench-public-entry-remote-batch-locality bench-public-entry-stage-cost \
 	bench-public-entry-local-path \
+	smoke-public-entry-retired-local \
 	smoke-public-entry-front bench-public-entry-front \
 	bench-public-entry-local-path-front smoke-public-entry-front-array \
 	bench-public-entry-front-array bench-public-entry-local-path-front-array \
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload smoke-shim-api smoke-shim-foreign bench-macro-preload \
+	preload preload-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
@@ -172,6 +173,12 @@ $(ROOT)/hz10_public_entry_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 smoke-public-entry: $(ROOT)/hz10_public_entry_smoke
 	$(ROOT)/hz10_public_entry_smoke
 
+$(ROOT)/hz10_public_entry_retired_local_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-retired-local: $(ROOT)/hz10_public_entry_retired_local_smoke
+	$(ROOT)/hz10_public_entry_retired_local_smoke
+
 $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -182,6 +189,9 @@ $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 preload: $(ROOT)/libhz10.so
+
+preload-retired-local: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/hz10_shim_api_smoke: $(SMOKE_SHIM_API_SRC) $(ROOT)/libhz10.so $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_SHIM_API_SRC) $(LDFLAGS) -ldl $(LDLIBS)
@@ -329,7 +339,8 @@ clean:
 		$(ROOT)/hz10_multiclass_remote_bench $(ROOT)/hz10_remote_rmw_microbench \
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
-		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_bench \
+		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_retired_local_smoke \
+		$(ROOT)/hz10_public_entry_bench \
 		$(ROOT)/hz10_public_entry_active_scan_bench \
 		$(ROOT)/hz10_public_entry_active_mtf_bench \
 		$(ROOT)/hz10_public_entry_remote_batch_locality_bench \

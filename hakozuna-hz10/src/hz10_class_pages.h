@@ -168,6 +168,10 @@
 #define HZ10_ENABLE_TWO_SLOT_STATS 0
 #endif
 
+#ifndef HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+#define HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM 0
+#endif
+
 #define HZ10_CLASS_PAGES_SCAN_DEPTH_HIST_BUCKETS 6u
 
 /* Pages checked per hz10_class_pages_harvest_retired_capacity() call.
@@ -240,6 +244,11 @@ typedef struct Hz10ClassPageList {
                                               * via a `ready` candidate
                                               * (found partial capacity
                                               * on re-verify) */
+  uint64_t retired_reclaimed_by_local_free_count; /* destroyed inline by
+                                                  * the owner thread's
+                                                  * local free when that
+                                                  * free made a retired
+                                                  * page fully idle. */
   uint64_t ready_false_positive_count;  /* a `ready` candidate that,
                                         * on re-verify, was neither idle
                                         * nor partial -- left in `retired`
@@ -419,5 +428,21 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(Hz10ClassPageList* list);
  */
 Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
     Hz10ClassPageList* list);
+
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+/* Owner-thread-only L0 diagnostic/reclaim hook. Called after a local free
+ * has made page fully idle. If page is currently linked in list->retired,
+ * it is removed and destroyed with the same ready/on-stack + cancel guard
+ * used by harvest. Returns 1 if it destroyed page, 0 otherwise. */
+int hz10_class_pages_reclaim_retired_idle_after_local_free(
+    Hz10ClassPageList* list, Hz10FreelistPage* page);
+#else
+static inline int hz10_class_pages_reclaim_retired_idle_after_local_free(
+    Hz10ClassPageList* list, Hz10FreelistPage* page) {
+  (void)list;
+  (void)page;
+  return 0;
+}
+#endif
 
 #endif

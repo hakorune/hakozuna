@@ -307,6 +307,38 @@ Next macro step: rerun the `python_alloc` and best-fit residual probes with
 footprint, metadata slab footprint, and page-pool retention before opening
 any retention-policy box.
 
+## HZ10RetiredLocalIdleReclaim-L0 prototype record
+
+PROTOTYPE 20260706: exit-stats showed a local-churn-specific retention
+hole. The ready queue is remote-free-driven, so a single-thread local free
+that makes a retired page fully idle does not push any event. The budgeted
+sweep can eventually find such a page, but in `python_alloc` it does not
+keep up.
+
+The opt-in lane `HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1` adds exactly one
+owner-local hook: after `hz10_freelist_page_free()` updates `free_count`, if
+the page is fully idle, scan that class's retired list for the exact page.
+Only if the page is actually retired does the hook run the same
+load-bearing guards as harvest (`retired_ready_on_stack` skip plus
+`hz10_retired_ready_cancel()`), then unlink and destroy it. Active pages are
+not destroyed by this hook.
+
+Same-session `python_alloc` probe, `RUNS=3`, default vs opt-in:
+
+```text
+default:   retired_pages=933 page_bytes=105971712 pool_reuse=230
+           reclaimed_sweep=419 reclaimed_local_free=0 max_rss ~= 116.8MB
+opt-in:    retired_pages=2   page_bytes=44957696  pool_reuse=696
+           reclaimed_sweep=0   reclaimed_local_free=1807 max_rss ~= 113.1MB
+```
+
+Read: the structural win is real; the retired backlog collapses. The short
+probe's maxrss win is smaller than the exit footprint delta because maxrss
+records earlier fresh mapping churn. Keep this lane opt-in until it clears
+the full public-entry micro matrix, rss-guard, and the best-fit/uniform
+macro rows. Combine with `HZ10_ENABLE_FINE_SIZE_CLASSES=1` only as a
+separate shim/RSS experiment, not as a default allocator change.
+
 ## Open questions for reviewers
 
 ```text
