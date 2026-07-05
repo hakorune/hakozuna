@@ -688,3 +688,30 @@ large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   Re-verified main_local0/medium_local0 (which cap at 32768/65536, never
   reaching this new path): no regression.
 ```
+
+### HZ10PendingStripeColocate-L0
+
+Implemented 20260706 as a limited GO. The pending-bit contract did not
+change: `hz10_remote_stack.c` still claims and clears through
+`page->pending_bits[word]`. The placement changed so pages with
+`slot_count <= 64` point `pending_bits` at an inline
+`page->pending_inline_word` stored next to `remote_free_head`; larger pages
+keep the old heap-backed pending array.
+
+Measurement:
+`bench_results/20260706T163619Z_hz10_pending_stripe_colocate_l0/notes.md`.
+Baseline was a detached worktree at `efb3da65`, compared to the F2 working
+tree with `THREADS=4 ITERS=500000 RUNS=5 MODE=0`; primary endpoint was
+`cache-miss/op`.
+
+```text
+main_r50:       cache-miss/op 6.034 -> 5.732 (-5.0%)
+main_r90:       cache-miss/op 9.823 -> 9.164 (-6.7%)
+small_remote50: cache-miss/op 2.266 -> 2.309 (+1.9%)
+small_remote90: cache-miss/op 3.663 -> 3.715 (+1.4%)
+```
+
+Read: the main remote rows move in the intended direction, but the original
+"cuts two of ~5.4 lines/object" ceiling was too optimistic. The predicted
+small_remote false-sharing side exists but was small in this run. Treat this
+as a modest, contract-free locality cleanup, not as remote-row closure.

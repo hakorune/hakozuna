@@ -658,8 +658,27 @@ status:
                    semantics untouched; watch small_remote rows for the
                    multi-producer false-sharing side. Gate on
                    cache-miss/op first (see F1 lesson above).
-                F3 only after F2: reassess whether any batched
-                   handoff contract discussion is still needed.
+                   DONE 20260706 as LIMITED GO. log:
+                   bench_results/
+                     20260706T163619Z_hz10_pending_stripe_colocate_l0/
+                     notes.md
+                   Implementation: slot_count<=64 now uses
+                   page->pending_inline_word; slot_count>64 keeps the old
+                   heap-backed pending array. Claim/clear still go through
+                   page->pending_bits[word], so pending semantics and
+                   claim->note->publish ordering are unchanged. Added a
+                   smoke guard that <=64 uses inline and >64 uses heap.
+                   Perf gate (THREADS=4 ITERS=500000 RUNS=5, base
+                   efb3da65 vs F2): main_r50 cache-miss/op 6.034->5.732
+                   (-5.0%), main_r90 9.823->9.164 (-6.7%), L1d miss also
+                   down. The expected small_remote false-sharing side is
+                   present but small: cache-miss/op +1.9% r50, +1.4%
+                   r90; cycles mixed (-1.7%/+0.7%). Verdict: keep it as a
+                   contract-free main-remote locality win, but do NOT
+                   claim the original 5.4->3.4 line ceiling; actual
+                   observed win is modest.
+                F3 after F2: reassess remaining remote gap from the new
+                   baseline before opening any batched handoff contract.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

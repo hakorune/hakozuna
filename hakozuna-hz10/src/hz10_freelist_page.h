@@ -91,10 +91,15 @@ typedef struct Hz10FreelistPage {
    * pending_bits (one bit per slot) is set by a successful remote push and
    * cleared at drain, so a second remote free of the same slot before it
    * drains is rejected as a duplicate instead of corrupting the freelist.
+   * For the common slot_count<=64 case, the single pending word is stored
+   * inline next to remote_free_head to keep the producer claim/publish and
+   * owner drain/clear metadata on one shared line. Larger pages keep the
+   * old heap-backed pending array.
    * These fields are owned by hz10_remote_stack.c; hz10_freelist_page.c
    * only initializes/tears them down and drains once at destroy time.
    */
   _Atomic(void*) remote_free_head[HZ10_REMOTE_STRIPE_COUNT];
+  _Atomic(uint64_t) pending_inline_word;
   _Atomic(uint64_t)* pending_bits;
   uint32_t pending_words;   /* (slot_count + 63) / 64 */
   _Atomic(uint64_t) remote_push_count; /* debug-only successful publish */

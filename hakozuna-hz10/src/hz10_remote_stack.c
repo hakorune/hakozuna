@@ -18,10 +18,11 @@
  * guarantee that yet. Splitting remote_free_head into
  * HZ10_REMOTE_STRIPE_COUNT independent Treiber stacks, keyed by a hash of
  * the freeing thread, spreads the SAME number of CAS operations across
- * that many cache lines instead of contending one -- same measured problem,
- * without introducing a flush-guarantee gap. Revisit true batching later if
- * this isn't enough and a thread-lifecycle mechanism exists to hang a flush
- * guarantee on.
+ * independent list heads. The current page layout keeps those heads compact
+ * instead of cache-line-padding each stripe; HZ10RemoteGapAttribution-L0
+ * recorded that before the pending/stripe colocation box. Revisit true
+ * batching later if this isn't enough and a thread-lifecycle mechanism
+ * exists to hang a flush guarantee on.
  */
 static _Thread_local char hz10_remote_stripe_token_storage;
 

@@ -139,8 +139,8 @@ static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
 }
 
 /* Shared by hz10_freelist_page_create_with_base() and
- * ..._with_base_and_owner(): allocates the struct/pending_bits first (so a
- * self-referential owner tag has something to point at), then registers --
+ * ..._with_base_and_owner(): allocates the struct/pending_bits storage first
+ * (so a self-referential owner tag has something to point at), then registers --
  * with_owner picks which Box 1 registration call to make, so the caller
  * never pays for two registrations of the same page. */
 static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
@@ -173,13 +173,16 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
   }
 
   uint32_t pending_words = (slot_count + 63u) / 64u;
-  _Atomic(uint64_t)* pending_bits = calloc(pending_words, sizeof(*pending_bits));
-  if (!pending_bits) {
-    free(page);
-    if (owns_base) {
-      hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+  _Atomic(uint64_t)* pending_bits = &page->pending_inline_word;
+  if (pending_words > 1u) {
+    pending_bits = calloc(pending_words, sizeof(*pending_bits));
+    if (!pending_bits) {
+      free(page);
+      if (owns_base) {
+        hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+      }
+      return NULL;
     }
-    return NULL;
   }
 
   uint32_t generation =
@@ -187,7 +190,9 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
                                                     slot_count, page)
                 : hz10_pagemap_register(base, slot_size, slot_count);
   if (generation == 0u) {
-    free(pending_bits);
+    if (pending_bits != &page->pending_inline_word) {
+      free(pending_bits);
+    }
     free(page);
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
@@ -234,7 +239,9 @@ void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page) {
    * tests/README.md's HZ10RemoteStackDrain-L0 notes. */
   hz10_pagemap_release(page->base);
   void* base = page->base;
-  free(page->pending_bits);
+  if (page->pending_bits != &page->pending_inline_word) {
+    free(page->pending_bits);
+  }
   free(page);
   return base;
 }

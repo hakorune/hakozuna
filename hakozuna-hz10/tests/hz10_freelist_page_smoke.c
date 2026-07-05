@@ -159,6 +159,35 @@ static int check_pagemap_integration(void) {
   return failed;
 }
 
+/* Case 5: F2 pending storage shape. One-word pending state is inline in the
+ * page next to the remote heads; multi-word pending state stays heap-backed. */
+static int check_pending_storage_shape(void) {
+  Hz10FreelistPage* small = hz10_freelist_page_create(1024u, 64u);
+  Hz10FreelistPage* large = hz10_freelist_page_create(16u, 128u);
+  if (!small || !large) {
+    fprintf(stderr, "pending_storage: create failed\n");
+    hz10_freelist_page_destroy(small);
+    hz10_freelist_page_destroy(large);
+    return 1;
+  }
+
+  int failed = 0;
+  if (small->pending_words != 1u ||
+      small->pending_bits != &small->pending_inline_word) {
+    fprintf(stderr, "pending_storage: <=64 slots not using inline word\n");
+    failed = 1;
+  }
+  if (large->pending_words <= 1u ||
+      large->pending_bits == &large->pending_inline_word) {
+    fprintf(stderr, "pending_storage: >64 slots not using heap words\n");
+    failed = 1;
+  }
+
+  hz10_freelist_page_destroy(small);
+  hz10_freelist_page_destroy(large);
+  return failed;
+}
+
 int main(void) {
   hz10_pagemap_reset_for_tests();
 
@@ -182,6 +211,9 @@ int main(void) {
 
   if (check_pagemap_integration()) {
     return 5;
+  }
+  if (check_pending_storage_shape()) {
+    return 6;
   }
 
   puts("hz10_freelist_page_smoke ok");
