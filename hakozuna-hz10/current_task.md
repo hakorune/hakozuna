@@ -511,6 +511,21 @@ status:
             boundary (currently delegates to slow route), smoke-pagemap-
             route-diff as the fast/slow accept-set gate, and stage-cost
             route_fast output for the same measurement protocol.
+            E1 IMPLEMENTED 20260705: hz10_pagemap_route_local_fast()
+            now does the header-inline radix/record read, with root
+            acquire-load, slot_size acquire-load, remaining record fields
+            relaxed, and FLAG_LARGE falling through to slow route. hz10_free()
+            uses the fast route first for small/slotted pages and preserves
+            slow route for invalid diagnostics and large frees. Standard
+            stage-cost (THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10) measured
+            route median ~2.46ns vs route_fast median ~1.57ns (~0.89ns win).
+            Short same-run tcmalloc probe (THREADS=4 ITERS=200000 RUNS=3,
+            front bench) showed main_local0 ratio 0.556 and small_local0
+            0.748; main still needs E2/next box. ASan/UBSan smoke green;
+            TSan runtime still fails at process start with "unexpected memory
+            mapping", so no TSan signal was obtained in this environment.
+            NEXT: E2 reciprocal/division-free route, guarded by the existing
+            differential route smoke.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

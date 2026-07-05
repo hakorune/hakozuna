@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include <stdatomic.h>
 
 /*
  * HZ10PageMapRoute-L0: a 2-level radix address->page-metadata route.
@@ -26,6 +27,10 @@
 
 #define HZ10_ROOT_BITS 11u
 #define HZ10_LEAF_BITS 20u
+#define HZ10_ROOT_SIZE (1u << HZ10_ROOT_BITS)
+#define HZ10_LEAF_SIZE (1u << HZ10_LEAF_BITS)
+#define HZ10_ROOT_MASK (HZ10_ROOT_SIZE - 1u)
+#define HZ10_LEAF_MASK (HZ10_LEAF_SIZE - 1u)
 
 typedef enum H10RouteKind {
   H10_ROUTE_MISS = 0,
@@ -62,6 +67,21 @@ typedef struct H10RouteResult {
                    * (e.g. a small-class page vs. a large direct allocation,
                    * see src/hz10_large_alloc.h) without a second lookup. */
 } H10RouteResult;
+
+typedef struct H10PageRecord {
+  void* base;
+  void* owner;
+  uint32_t slot_size;
+  uint32_t slot_count;
+  uint32_t generation;
+  uint32_t flags;
+} H10PageRecord;
+
+typedef struct H10Leaf {
+  H10PageRecord entries[HZ10_LEAF_SIZE];
+} H10Leaf;
+
+extern _Atomic(H10Leaf*) hz10_pagemap_root[HZ10_ROOT_SIZE];
 
 /*
  * Lean route result for the public-entry local/free fast path. It is
@@ -137,17 +157,71 @@ int hz10_pagemap_release(void* base);
  */
 H10RouteResult hz10_pagemap_route(const void* ptr, uint32_t expected_generation);
 
+static inline uint32_t hz10_pagemap_page_index(uintptr_t addr) {
+  return (uint32_t)(addr >> HZ10_PAGE_SHIFT);
+}
+
+static inline uint32_t hz10_pagemap_root_index(uint32_t page_index) {
+  return (page_index >> HZ10_LEAF_BITS) & HZ10_ROOT_MASK;
+}
+
+static inline uint32_t hz10_pagemap_leaf_index(uint32_t page_index) {
+  return page_index & HZ10_LEAF_MASK;
+}
+
+static inline H10Leaf* hz10_pagemap_leaf_load(uint32_t root_idx) {
+  return atomic_load_explicit(&hz10_pagemap_root[root_idx],
+                              memory_order_acquire);
+}
+
 static inline int hz10_pagemap_route_local_fast(
     const void* ptr, H10RouteLocalResult* out) {
-  H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
-  if (route.kind != H10_ROUTE_VALID || route.flags != 0u) {
+  if (!ptr) {
     return 0;
   }
+
+  uintptr_t addr = (uintptr_t)ptr;
+  uint32_t page_index = hz10_pagemap_page_index(addr);
+  uint32_t root_idx = hz10_pagemap_root_index(page_index);
+  uint32_t leaf_idx = hz10_pagemap_leaf_index(page_index);
+
+  H10Leaf* leaf = hz10_pagemap_leaf_load(root_idx);
+  if (!leaf) {
+    return 0;
+  }
+
+  const H10PageRecord* rec = &leaf->entries[leaf_idx];
+  uint32_t slot_size = __atomic_load_n(&rec->slot_size, __ATOMIC_ACQUIRE);
+  if (slot_size == 0u) {
+    return 0;
+  }
+
+  void* base = __atomic_load_n(&rec->base, __ATOMIC_RELAXED);
+  void* owner = __atomic_load_n(&rec->owner, __ATOMIC_RELAXED);
+  uint32_t slot_count = __atomic_load_n(&rec->slot_count, __ATOMIC_RELAXED);
+  uint32_t generation = __atomic_load_n(&rec->generation, __ATOMIC_RELAXED);
+  uint32_t flags = __atomic_load_n(&rec->flags, __ATOMIC_RELAXED);
+  if (flags != 0u) {
+    return 0;
+  }
+
+  uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
+  uint64_t offset = (uint64_t)(addr - (uintptr_t)base);
+  if (offset >= span) {
+    return 0;
+  }
+  if ((offset & (HZ10_MIN_ALIGN - 1u)) != 0u) {
+    return 0;
+  }
+  if ((offset % slot_size) != 0u) {
+    return 0;
+  }
+
   if (out) {
-    out->owner = route.owner;
-    out->slot_size = route.slot_size;
-    out->generation = route.generation;
-    out->flags = route.flags;
+    out->owner = owner;
+    out->slot_size = slot_size;
+    out->generation = generation;
+    out->flags = flags;
   }
   return 1;
 }

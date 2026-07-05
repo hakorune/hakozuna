@@ -3,42 +3,8 @@
 
 #include <stdatomic.h>
 
-#define HZ10_ROOT_SIZE (1u << HZ10_ROOT_BITS)
-#define HZ10_LEAF_SIZE (1u << HZ10_LEAF_BITS)
-#define HZ10_ROOT_MASK (HZ10_ROOT_SIZE - 1u)
-#define HZ10_LEAF_MASK (HZ10_LEAF_SIZE - 1u)
-
-typedef struct H10PageRecord {
-  void* base;
-  void* owner;
-  uint32_t slot_size;
-  uint32_t slot_count;
-  uint32_t generation;
-  uint32_t flags;
-} H10PageRecord;
-
-typedef struct H10Leaf {
-  H10PageRecord entries[HZ10_LEAF_SIZE];
-} H10Leaf;
-
-static _Atomic(H10Leaf*) hz10_pagemap_root[HZ10_ROOT_SIZE];
+_Atomic(H10Leaf*) hz10_pagemap_root[HZ10_ROOT_SIZE];
 static hz10_platform_mutex_t hz10_pagemap_lock = HZ10_PLATFORM_MUTEX_INIT;
-
-static uint32_t hz10_pagemap_page_index(uintptr_t addr) {
-  return (uint32_t)(addr >> HZ10_PAGE_SHIFT);
-}
-
-static uint32_t hz10_pagemap_root_index(uint32_t page_index) {
-  return (page_index >> HZ10_LEAF_BITS) & HZ10_ROOT_MASK;
-}
-
-static uint32_t hz10_pagemap_leaf_index(uint32_t page_index) {
-  return page_index & HZ10_LEAF_MASK;
-}
-
-static H10Leaf* hz10_pagemap_leaf_load(uint32_t root_idx) {
-  return atomic_load_explicit(&hz10_pagemap_root[root_idx], memory_order_acquire);
-}
 
 /* Lazily mmap's the leaf backing this root slot. Demand-paging means only
  * the 4KiB pages actually touched by later register() calls ever cost RSS,
@@ -101,20 +67,23 @@ uint32_t hz10_pagemap_register_with_owner_and_flags(void* base,
 
   H10PageRecord* rec = &leaf->entries[leaf_idx];
   hz10_platform_mutex_lock(&hz10_pagemap_lock);
-  uint32_t generation = (rec->base == NULL && rec->generation == 0u)
+  void* old_base = __atomic_load_n(&rec->base, __ATOMIC_RELAXED);
+  uint32_t old_generation =
+      __atomic_load_n(&rec->generation, __ATOMIC_RELAXED);
+  uint32_t generation = (old_base == NULL && old_generation == 0u)
                             ? 1u
-                            : rec->generation + 1u;
-  rec->base = base;
-  rec->owner = owner;
-  rec->slot_count = slot_count;
-  rec->generation = generation;
-  rec->flags = flags;
+                            : old_generation + 1u;
+  __atomic_store_n(&rec->base, base, __ATOMIC_RELAXED);
+  __atomic_store_n(&rec->owner, owner, __ATOMIC_RELAXED);
+  __atomic_store_n(&rec->slot_count, slot_count, __ATOMIC_RELAXED);
+  __atomic_store_n(&rec->generation, generation, __ATOMIC_RELAXED);
+  __atomic_store_n(&rec->flags, flags, __ATOMIC_RELAXED);
   /* slot_size is written last: route() treats slot_size==0 as "absent" and
    * reads these fields without the lock, so publishing slot_size last keeps
    * a concurrent lock-free reader from ever seeing a half-written record as
    * present (this does not make route() fully race-free, see header notes,
    * but avoids the cheapest way to observe torn state). */
-  rec->slot_size = slot_size;
+  __atomic_store_n(&rec->slot_size, slot_size, __ATOMIC_RELEASE);
   hz10_platform_mutex_unlock(&hz10_pagemap_lock);
   return generation;
 }
@@ -150,11 +119,13 @@ int hz10_pagemap_release(void* base) {
   H10PageRecord* rec = &leaf->entries[leaf_idx];
   hz10_platform_mutex_lock(&hz10_pagemap_lock);
   int released = 0;
-  if (rec->base == base && rec->slot_size != 0u) {
+  void* rec_base = __atomic_load_n(&rec->base, __ATOMIC_RELAXED);
+  uint32_t slot_size = __atomic_load_n(&rec->slot_size, __ATOMIC_ACQUIRE);
+  if (rec_base == base && slot_size != 0u) {
     /* generation and base survive on purpose: a later register() at this
      * same address must be able to bump generation further, and a stale
      * route() against the pre-release generation must keep failing. */
-    rec->slot_size = 0u;
+    __atomic_store_n(&rec->slot_size, 0u, __ATOMIC_RELEASE);
     released = 1;
   }
   hz10_platform_mutex_unlock(&hz10_pagemap_lock);
@@ -202,17 +173,17 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
   /* Lock-free read: acceptable single-threaded-scope simplification for
    * L0, see header notes and current_task.md. */
   const H10PageRecord* rec = &leaf->entries[leaf_idx];
-  uint32_t slot_size = rec->slot_size;
+  uint32_t slot_size = __atomic_load_n(&rec->slot_size, __ATOMIC_ACQUIRE);
   if (slot_size == 0u) {
     return hz10_pagemap_result(H10_ROUTE_MISS, H10_REASON_LEAF_ABSENT, NULL,
                               0u, 0u, 0u, 0u, NULL, 0u);
   }
 
-  void* base = rec->base;
-  void* owner = rec->owner;
-  uint32_t slot_count = rec->slot_count;
-  uint32_t generation = rec->generation;
-  uint32_t flags = rec->flags;
+  void* base = __atomic_load_n(&rec->base, __ATOMIC_RELAXED);
+  void* owner = __atomic_load_n(&rec->owner, __ATOMIC_RELAXED);
+  uint32_t slot_count = __atomic_load_n(&rec->slot_count, __ATOMIC_RELAXED);
+  uint32_t generation = __atomic_load_n(&rec->generation, __ATOMIC_RELAXED);
+  uint32_t flags = __atomic_load_n(&rec->flags, __ATOMIC_RELAXED);
   uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
 
   /* Unsigned subtraction: a "before base" pointer wraps to a huge value and

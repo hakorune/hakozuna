@@ -543,15 +543,24 @@ int hz10_free(void* ptr) {
   if (!ptr) {
     return 1;
   }
-  H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
-  if (route.kind != H10_ROUTE_VALID) {
-    return 0;
+  H10RouteLocalResult local_route = {0};
+  Hz10FreelistPage* page = NULL;
+  uint32_t route_generation = 0u;
+  if (hz10_pagemap_route_local_fast(ptr, &local_route)) {
+    page = (Hz10FreelistPage*)local_route.owner;
+    route_generation = local_route.generation;
+  } else {
+    H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
+    if (route.kind != H10_ROUTE_VALID) {
+      return 0;
+    }
+    if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
+      hz10_large_free(route.page_base, route.slot_size);
+      return 1;
+    }
+    page = (Hz10FreelistPage*)route.owner;
+    route_generation = route.generation;
   }
-  if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
-    hz10_large_free(route.page_base, route.slot_size);
-    return 1;
-  }
-  Hz10FreelistPage* page = (Hz10FreelistPage*)route.owner;
   if (!page) {
     return 0;
   }
@@ -591,7 +600,7 @@ int hz10_free(void* ptr) {
    * to `page` can race a destroy the owner performs the instant it
    * observes this slot merged. */
   uint32_t slot_index;
-  if (!hz10_page_remote_free_claim(page, ptr, route.generation,
+  if (!hz10_page_remote_free_claim(page, ptr, route_generation,
                                   &slot_index)) {
     return 0;
   }
