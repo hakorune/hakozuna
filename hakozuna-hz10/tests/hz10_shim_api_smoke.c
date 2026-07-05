@@ -2,6 +2,7 @@
 
 #include <dlfcn.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <stdint.h>
 #include <signal.h>
 #include <stdio.h>
@@ -19,6 +20,7 @@ typedef int (*hz10_posix_memalign_fn)(void**, size_t, size_t);
 typedef void* (*hz10_aligned_alloc_fn)(size_t, size_t);
 typedef void* (*hz10_memalign_fn)(size_t, size_t);
 typedef uint64_t (*hz10_foreign_free_count_fn)(void);
+typedef void (*hz10_dump_exit_stats_fn)(void);
 
 typedef struct Hz10ShimApi {
   hz10_malloc_fn malloc_fn;
@@ -30,6 +32,7 @@ typedef struct Hz10ShimApi {
   hz10_aligned_alloc_fn aligned_alloc_fn;
   hz10_memalign_fn memalign_fn;
   hz10_foreign_free_count_fn foreign_free_count_fn;
+  hz10_dump_exit_stats_fn dump_exit_stats_fn;
 } Hz10ShimApi;
 
 static void* load_symbol(void* handle, const char* name) {
@@ -64,6 +67,8 @@ static Hz10ShimApi load_api(void) {
   api.memalign_fn = (hz10_memalign_fn)load_symbol(handle, "memalign");
   api.foreign_free_count_fn = (hz10_foreign_free_count_fn)load_symbol(
       handle, "hz10_shim_tolerated_foreign_free_count");
+  api.dump_exit_stats_fn = (hz10_dump_exit_stats_fn)load_symbol(
+      handle, "hz10_shim_dump_exit_stats");
   return api;
 }
 
@@ -238,11 +243,48 @@ static int check_unknown_free_policy(void) {
   return 0;
 }
 
+static int check_exit_stats_dump(const Hz10ShimApi* api) {
+  void* a = api->malloc_fn(100u);
+  void* b = api->malloc_fn(2049u);
+  if (!a || !b) {
+    fprintf(stderr, "shim_api: malloc for exit stats failed\n");
+    return 1;
+  }
+  api->dump_exit_stats_fn();
+  api->free_fn(a);
+  api->free_fn(b);
+  return 0;
+}
+
+static int child_exit_stats_dump(void) {
+  int devnull = open("/dev/null", O_WRONLY);
+  if (devnull >= 0) {
+    (void)dup2(devnull, STDERR_FILENO);
+    close(devnull);
+  }
+  Hz10ShimApi api = load_api();
+  return check_exit_stats_dump(&api);
+}
+
+static int check_exit_stats_dump_policy(void) {
+  pid_t pid = fork();
+  if (pid == 0) {
+    _exit(child_exit_stats_dump());
+  }
+  int status = 0;
+  if (pid < 0 || waitpid(pid, &status, 0) < 0 || !WIFEXITED(status) ||
+      WEXITSTATUS(status) != 0) {
+    fprintf(stderr, "shim_api: exit stats dump child failed\n");
+    return 1;
+  }
+  return 0;
+}
+
 int main(void) {
   Hz10ShimApi api = load_api();
   if (check_malloc_zero_and_usable(&api) || check_calloc(&api) ||
       check_realloc(&api) || check_alignment(&api) ||
-      check_unknown_free_policy()) {
+      check_unknown_free_policy() || check_exit_stats_dump_policy()) {
     return 1;
   }
   printf("hz10_shim_api_smoke ok\n");

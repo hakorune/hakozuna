@@ -839,6 +839,27 @@ status:
                  before touching retention policy; retention moves
                  current_rss (redis-class servers), not churn maxrss
                  peaks.
+                 HZ10ShimExitStats-L0 DONE 20260706. log:
+                 bench_results/
+                   20260706T210000Z_hz10_shim_exit_stats_l0/
+                 Implementation: `HZ10_SHIM_EXIT_STATS=1` on libhz10.so
+                 registers an atexit dump with parseable
+                 `hz10_shim_exit_stats` stderr lines. Summary reports
+                 tolerated foreign frees, page-pool cached/reuse/release/
+                 purge counters, and metadata slab capacity/live/free
+                 nodes; per-class lines report the exiting thread's TLS
+                 active/retired page-list snapshot and find/retire
+                 counters. Smoke: direct API dump child, LD_PRELOAD
+                 python probe, core shim/freelist/pool smokes all green.
+                 Caveat: class-list stats are TLS-local, so this sees the
+                 exit-handler thread, not already-exited workers. Good
+                 enough for single-thread `python_alloc` attribution;
+                 not a substitute for a future global thread-exit
+                 ownership/accounting design. NEXT: rerun the macro
+                 `python_alloc` / best-fit residual row with
+                 `HZ10_SHIM_EXIT_STATS=1` and use class_totals/page_bytes,
+                 metadata_live, and pool_cached_bytes to split the
+                 remaining RSS gap before changing retention policy.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.

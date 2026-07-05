@@ -274,6 +274,20 @@ Hz10FreelistPage* hz10_freelist_page_create_with_base_and_owner(
  * it or release it (hz10_platform_release(base, HZ10_PAGE_QUANTUM)). */
 void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page);
 
+typedef struct Hz10FreelistMetadataStats {
+  uint64_t slab_count;
+  uint64_t node_capacity;
+  uint64_t free_nodes;
+  uint64_t live_nodes;
+  uint32_t node_bytes;
+  uint32_t slab_bytes;
+} Hz10FreelistMetadataStats;
+
+/* Diagnostic-only snapshot for shim/macro RSS attribution. This walks the
+ * private metadata free list under its lock, so it is intentionally not a
+ * hot-path API. */
+void hz10_freelist_metadata_stats(Hz10FreelistMetadataStats* stats_out);
+
 /* LD_PRELOAD shim atfork hooks for this module's private metadata/quantum
  * reservoirs. See hz10_pagemap_atfork_* for the matching route locks. */
 void hz10_freelist_page_atfork_prepare(void);

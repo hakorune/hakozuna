@@ -269,6 +269,44 @@ add `HZ10ShimExitStats-L0`, an env-gated atexit per-class/pool dump, to
 split the remaining best-fit gap into live class occupancy, pool retention,
 and metadata before changing policy.
 
+## HZ10ShimExitStats-L0 implementation record
+
+DONE 20260706: `HZ10_SHIM_EXIT_STATS=1` on `libhz10.so` registers an
+atexit dump. Output is stderr-only and line-oriented:
+
+```text
+hz10_shim_exit_stats summary ...
+hz10_shim_exit_stats class=...
+hz10_shim_exit_stats class_totals ...
+```
+
+The summary line reports tolerated foreign frees, page-pool cached/reuse/
+release/purge counters, and private metadata slab capacity/live/free node
+counts. The per-class lines report the exiting thread's TLS page-list
+snapshot: active/retired page counts, eviction/retirement/reclaim counters,
+and find counters.
+
+This is deliberately a measurement box, not a retention policy change. Its
+main caveat is also explicit: `hz10_public_entry_class_list_stats()` is
+TLS-local, so the dump observes the thread running the exit handler. It is
+valid for the single-thread `python_alloc` attribution row, but it cannot
+account for pages abandoned by already-exited worker threads. That remains
+a separate ownership/thread-exit design.
+
+Probe log:
+`bench_results/20260706T210000Z_hz10_shim_exit_stats_l0/`.
+Small Python probe excerpt:
+
+```text
+metadata_slabs=2 metadata_capacity=132 metadata_live=82 metadata_free=50
+class_totals active_pages=82 retired_pages=0 page_bytes=5373952
+```
+
+Next macro step: rerun the `python_alloc` and best-fit residual probes with
+`HZ10_SHIM_EXIT_STATS=1`, then split the remaining RSS gap into live page
+footprint, metadata slab footprint, and page-pool retention before opening
+any retention-policy box.
+
 ## Open questions for reviewers
 
 ```text

@@ -54,6 +54,8 @@ _Static_assert(sizeof(Hz10FreelistPageMetaNode) <= HZ10_METADATA_SLAB_BYTES,
 
 static hz10_platform_mutex_t hz10_metadata_slab_lock = HZ10_PLATFORM_MUTEX_INIT;
 static Hz10FreelistPageMetaNode* hz10_metadata_free_list;
+static uint64_t hz10_metadata_slab_count;
+static uint64_t hz10_metadata_node_capacity;
 
 static int hz10_metadata_slab_refill_locked(void) {
   void* slab = hz10_platform_reserve_rw(HZ10_METADATA_SLAB_BYTES);
@@ -71,6 +73,8 @@ static int hz10_metadata_slab_refill_locked(void) {
     node->next = hz10_metadata_free_list;
     hz10_metadata_free_list = node;
   }
+  hz10_metadata_slab_count += 1u;
+  hz10_metadata_node_capacity += (uint64_t)count;
   return 1;
 }
 
@@ -307,6 +311,25 @@ void hz10_freelist_page_destroy(Hz10FreelistPage* page) {
   if (base) {
     hz10_platform_release(base, HZ10_PAGE_QUANTUM);
   }
+}
+
+void hz10_freelist_metadata_stats(Hz10FreelistMetadataStats* stats_out) {
+  if (!stats_out) {
+    return;
+  }
+  Hz10FreelistMetadataStats stats = {0};
+  hz10_platform_mutex_lock(&hz10_metadata_slab_lock);
+  stats.slab_count = hz10_metadata_slab_count;
+  stats.node_capacity = hz10_metadata_node_capacity;
+  for (Hz10FreelistPageMetaNode* node = hz10_metadata_free_list; node;
+       node = node->next) {
+    stats.free_nodes += 1u;
+  }
+  hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+  stats.live_nodes = stats.node_capacity - stats.free_nodes;
+  stats.node_bytes = (uint32_t)sizeof(Hz10FreelistPageMetaNode);
+  stats.slab_bytes = (uint32_t)HZ10_METADATA_SLAB_BYTES;
+  *stats_out = stats;
 }
 
 void hz10_freelist_page_atfork_prepare(void) {
