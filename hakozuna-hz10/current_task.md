@@ -462,6 +462,22 @@ status:
             local free per HZ10PublicFreeStageCost-L0), not page
             selection; this is the box that can move the aggregate
             ratio bars.
+            SCOPED 20260705 as docs/HZ10_ENTRY_TRIM_DESIGN_L0.md:
+            four candidates in fixed order -- E1 route header-inline
+            fast path (kills the cross-TU call + 48-byte sret of
+            H10RouteResult), E2 division-free interior/slot_index via
+            per-record reciprocal (slot_count==1 degenerates to
+            offset!=0), E3 size-class inline, E4 record-carried
+            owner_token/class_id so a front-lane local free never
+            touches the page struct line. Prep box HZ10EntryTrim-L0
+            adds a stage-cost route_fast stage and a DIFFERENTIAL
+            route smoke (fast vs slow over valid/interior/misaligned/
+            tail-slack/stale/unregistered) as the fail-closed gate
+            before any fast path lands. Honest target: main_local0
+            ~0.63-0.72 from this box alone (0.75 bar likely needs it
+            plus front-cache compounding). Review the doc's open
+            questions (LTO calibration first, E4 token release
+            ordering) before implementing.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

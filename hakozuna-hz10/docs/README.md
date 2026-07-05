@@ -25,4 +25,11 @@ HZ10_FRONT_CACHE_DESIGN_L0.md:
   review design for the opt-in per-thread per-class object front cache that
   attacks the slot_count 1-2 local-path gap without changing remote publish
   or retired/ready contracts
+
+HZ10_ENTRY_TRIM_DESIGN_L0.md:
+  review design for the per-op entry trim (route inline fast path,
+  division-free interior check, size-class inline, record-carried owner
+  token/class) that attacks the remaining main_local0/small_local0 gap the
+  front cache measurement isolated; fail-closed route validation preserved
+  via a differential route smoke
 ```
