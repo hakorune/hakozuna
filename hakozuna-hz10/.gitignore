@@ -29,6 +29,7 @@
 /hz10_public_entry_steady_state_bench
 /hz10_public_entry_thread_reuse_bench
 /hz10_shim_api_smoke
+/libhz10_fine.so
 bench_results/
 .external-disabled/
 

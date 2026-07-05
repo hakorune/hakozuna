@@ -380,6 +380,17 @@ remain resident after worker exit. Keep thread-exit ownership and automatic
 destructor ideas closed until the larson/current-RSS matrix produces a
 material median delta.
 
+Implementation result: the box landed and the first `RUNS=3` expanded
+matrix is in
+`bench_results/20260707T010000Z_hz10_macro_matrix_expand_l0/`. The
+`hz10+fine` column works, but the initial read is not favorable for broad
+fine-class shim adoption: it improves `python_alloc` RSS
+(`116812K -> 106576K`) while slightly worsening wall vs default HZ10 and
+worsening `larson`. The larson row produced the stronger signal: HZ10
+sampled current RSS was ~7.8GB, `hz10+fine` ~9.2GB, while glibc/tcmalloc/
+mimalloc were ~0.27-0.28GB. This opens a focused thread-churn/orphan
+attribution box before any ownership-handoff fix is designed.
+
 ## Open questions for reviewers
 
 ```text

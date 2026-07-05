@@ -226,3 +226,86 @@ docs/HZ10_NO_GO_LEDGER.md entries for any closed candidate
 
 Keep the implementation reversible: one Makefile artifact group and one
 runner expansion. No allocator semantic changes belong in this box.
+
+## Implementation Record 20260707
+
+Implemented:
+
+```text
+Makefile:
+  preload-fine -> libhz10_fine.so with soname libhz10_fine.so.
+  bench-macro-preload now depends on both libhz10.so and libhz10_fine.so.
+
+scripts/run_hz10_macro_preload_matrix.sh:
+  allocator column hz10+fine.
+  larson workload row, using local prebuilt larson_system when present.
+  sampled current_rss_kb for larson and redis server RSS rows.
+```
+
+Validation:
+
+```text
+make -B -C hakozuna-hz10 preload preload-fine smoke-shim-api smoke-shim-foreign
+bash -n scripts/run_hz10_macro_preload_matrix.sh
+short RUNS=1 matrix smoke with python/redis/larson
+```
+
+First expanded matrix:
+`bench_results/20260707T010000Z_hz10_macro_matrix_expand_l0/`
+with `RUNS=3`, `PYTHON_LOOPS=80`, `REDIS_OPS=20000`,
+`LARSON_SECONDS=2`, `LARSON_MIN=8`, `LARSON_MAX=128`,
+`LARSON_CHUNKS=128`, `LARSON_THREADS=4`.
+
+Median excerpt:
+
+```text
+workload      allocator   wall_sec  max/current_rss_kb  wall/glibc
+python_alloc  glibc         1.220          92016          1.000
+python_alloc  hz10          0.960         116812          0.787
+python_alloc  hz10+fine     0.990         106576          0.811
+python_alloc  tcmalloc      0.830         104448          0.680
+python_alloc  mimalloc      0.700         102540          0.574
+
+larson       glibc          4.145         272384          1.000
+larson       hz10           4.678        7817984          1.129
+larson       hz10+fine      4.722        9238144          1.139
+larson       tcmalloc       4.150         278912          1.001
+larson       mimalloc       4.161         283928          1.004
+
+redis_server_rss_kb:
+  glibc 6924, hz10 7576, hz10+fine 8160, tcmalloc 10924, mimalloc 10036
+```
+
+Larson throughput is recorded in `summary.tsv` as `larson_throughput`.
+Median-ish values from the first run set:
+
+```text
+glibc/tcmalloc/mimalloc: ~2.095M ops/s
+hz10:                   ~1.061M ops/s
+hz10+fine:              ~0.971M ops/s
+```
+
+Initial read:
+
+```text
+- The matrix plumbing works and gives side-by-side default/fine HZ10 rows.
+- Fine classes still improve python_alloc RSS by about 10MB, but they do not
+  look like a broad shim win: wall is slightly worse than default HZ10 on
+  python_alloc, redis server RSS is higher, and larson RSS/wall/throughput
+  are worse.
+- The larson current-RSS delta is much larger than the expected noise:
+  HZ10 is ~7.8GB vs external allocators around ~0.27-0.28GB in this shape.
+  This is enough to open a focused thread-churn/orphan attribution box, but
+  not yet enough to choose a fix.
+```
+
+Next box recommendation:
+
+```text
+HZ10LarsonThreadChurnAttribution-L0:
+  Keep the macro runner as the scale. Use HZ10_SHIM_EXIT_STATS and a
+  smaller larson shape sweep to split the 7-9GB RSS into live allocations,
+  owner-thread orphan pages, page-pool retention, metadata slabs, and class
+  rounding. Only after that decide whether thread-exit ownership handoff or
+  a larson-specific retention cap is the right fix.
+```

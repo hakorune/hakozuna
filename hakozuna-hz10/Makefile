@@ -16,7 +16,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-fine-size-classes preload-retired-local \
+	preload preload-fine preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
@@ -197,6 +197,11 @@ $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
 
 preload: $(ROOT)/libhz10.so
 
+$(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload-fine: $(ROOT)/libhz10_fine.so
+
 preload-fine-size-classes: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -215,7 +220,7 @@ smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
 smoke-shim-foreign: $(ROOT)/libhz10.so
 	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
-bench-macro-preload: $(ROOT)/libhz10.so
+bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
@@ -370,4 +375,5 @@ clean:
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \
 		$(ROOT)/hz10_public_entry_steady_state_bench \
 		$(ROOT)/hz10_public_entry_thread_reuse_bench \
-		$(ROOT)/libhz10.so $(ROOT)/hz10_shim_api_smoke
+		$(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so \
+		$(ROOT)/hz10_shim_api_smoke

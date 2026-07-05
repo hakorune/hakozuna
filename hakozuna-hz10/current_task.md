@@ -925,6 +925,25 @@ status:
                  semantics closed until larson/current-RSS evidence says
                  otherwise. Do not use thread_reuse_bench as the macro
                  row; it does not exit threads in the relevant shape.
+                 IMPLEMENTED 20260707: `preload-fine` now builds
+                 non-clobbering libhz10_fine.so; macro matrix has
+                 hz10+fine and larson rows plus sampled current_rss_kb.
+                 RUNS=3 log:
+                   bench_results/
+                     20260707T010000Z_hz10_macro_matrix_expand_l0/
+                 Median: python_alloc hz10 0.960s/116.8MB vs hz10+fine
+                 0.990s/106.6MB; redis server RSS hz10 7.6MB vs
+                 hz10+fine 8.2MB; larson current RSS glibc/tcmalloc/
+                 mimalloc ~272-284MB, hz10 ~7.8GB, hz10+fine ~9.2GB,
+                 throughput external ~2.095M ops/s vs hz10 ~1.061M and
+                 hz10+fine ~0.971M. Read: fine classes are not a broad
+                 shim default/opt-in win yet despite the python RSS gain;
+                 larson exposes a much larger thread-churn/orphan/retention
+                 problem. NEXT BOX: HZ10LarsonThreadChurnAttribution-L0:
+                 use the macro runner plus exit stats / smaller larson
+                 shape sweep to split RSS into live allocations,
+                 owner-thread orphan pages, pool retention, metadata, and
+                 class rounding before designing any handoff fix.
                  DONE 20260706 (fable5): residual decomposed. log:
                  bench_results/
                    20260706T213000Z_hz10_retention_residual_attribution/
