@@ -135,6 +135,31 @@ Rollback: the shim is additive (new .so); D1 is the only library
    change and is judged independently.
 ```
 
+## D1 implementation record
+
+DONE 20260706: `hz10_freelist_page.c` no longer calls libc
+`calloc/free` for page metadata. Page struct, multi-word pending bits,
+and tiny-class spread stripes now live in a private mmap-backed metadata
+node freelist. Public page layout and pending/spread semantics are
+unchanged; `pending_bits != &pending_inline_word` still means
+out-of-line storage, but that storage is allocator-private metadata
+rather than libc heap.
+
+Gates:
+
+```text
+smokes: pagemap route/diff, freelist page, remote drain, bounded pool,
+        class pages, size class, public entry, front, front-array,
+        retired-ready: green
+sanitizers: ASan/UBSan public page path smokes: green
+TSan: smoke-tsan-aslr-off: green
+standalone check: green
+rss guard: green
+flatness: alternating base/current n=30, THREADS=4 ITERS=200000,
+          all 9 public-entry rows within +/-2.4% median ops/s
+log: bench_results/20260705T194922Z_hz10_metadata_self_host_d1_alternating/
+```
+
 ## Open questions for reviewers
 
 ```text

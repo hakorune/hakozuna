@@ -159,8 +159,9 @@ static int check_pagemap_integration(void) {
   return failed;
 }
 
-/* Case 5: F2 pending storage shape. One-word pending state is inline in the
- * page next to the remote heads; multi-word pending state stays heap-backed. */
+/* Case 5: F2/D1 pending storage shape. One-word pending state is inline in
+ * the page next to the remote heads; multi-word pending state stays outside
+ * the public page struct, now backed by the private metadata slab. */
 static int check_pending_storage_shape(void) {
   Hz10FreelistPage* small = hz10_freelist_page_create(1024u, 64u);
   Hz10FreelistPage* tiny_many = hz10_freelist_page_create(16u, 128u);
@@ -187,7 +188,7 @@ static int check_pending_storage_shape(void) {
       tiny_many->pending_bits == &tiny_many->pending_inline_word ||
       medium_many->pending_words <= 1u ||
       medium_many->pending_bits == &medium_many->pending_inline_word) {
-    fprintf(stderr, "pending_storage: >64 slots not using heap words\n");
+    fprintf(stderr, "pending_storage: >64 slots not using metadata words\n");
     failed = 1;
   }
 #if HZ10_ENABLE_STRIPE_SPREAD

@@ -2,7 +2,7 @@
 #include "hz10_pagemap.h"
 #include "hz10_platform.h"
 
-#include <stdlib.h>
+#include <string.h>
 
 #if !defined(_WIN32)
 /*
@@ -35,6 +35,69 @@ static hz10_platform_mutex_t hz10_quantum_region_lock = HZ10_PLATFORM_MUTEX_INIT
 static _Atomic(char*) hz10_quantum_region_cursor;
 static _Atomic(char*) hz10_quantum_region_end;
 #endif
+
+enum {
+  HZ10_METADATA_PENDING_WORDS =
+      (HZ10_PAGE_QUANTUM / HZ10_MIN_ALIGN + 63u) / 64u,
+  HZ10_METADATA_SLAB_BYTES = HZ10_PAGE_QUANTUM
+};
+
+typedef struct Hz10FreelistPageMetaNode {
+  Hz10FreelistPage page;
+  _Atomic(uint64_t) pending_words_storage[HZ10_METADATA_PENDING_WORDS];
+  Hz10RemoteStripeLine spread_storage[HZ10_REMOTE_STRIPE_COUNT];
+  struct Hz10FreelistPageMetaNode* next;
+} Hz10FreelistPageMetaNode;
+
+_Static_assert(sizeof(Hz10FreelistPageMetaNode) <= HZ10_METADATA_SLAB_BYTES,
+               "HZ10 metadata node must fit in one metadata slab");
+
+static hz10_platform_mutex_t hz10_metadata_slab_lock = HZ10_PLATFORM_MUTEX_INIT;
+static Hz10FreelistPageMetaNode* hz10_metadata_free_list;
+
+static int hz10_metadata_slab_refill_locked(void) {
+  void* slab = hz10_platform_reserve_rw(HZ10_METADATA_SLAB_BYTES);
+  if (!slab) {
+    return 0;
+  }
+
+  size_t count =
+      (size_t)HZ10_METADATA_SLAB_BYTES / sizeof(Hz10FreelistPageMetaNode);
+  char* cursor = (char*)slab;
+  for (size_t i = 0; i < count; ++i) {
+    Hz10FreelistPageMetaNode* node =
+        (Hz10FreelistPageMetaNode*)(cursor +
+                                    i * sizeof(Hz10FreelistPageMetaNode));
+    node->next = hz10_metadata_free_list;
+    hz10_metadata_free_list = node;
+  }
+  return 1;
+}
+
+static Hz10FreelistPage* hz10_metadata_page_alloc(void) {
+  hz10_platform_mutex_lock(&hz10_metadata_slab_lock);
+  if (!hz10_metadata_free_list && !hz10_metadata_slab_refill_locked()) {
+    hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+    return NULL;
+  }
+  Hz10FreelistPageMetaNode* node = hz10_metadata_free_list;
+  hz10_metadata_free_list = node->next;
+  hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+
+  memset(node, 0, sizeof(*node));
+  return &node->page;
+}
+
+static void hz10_metadata_page_free(Hz10FreelistPage* page) {
+  if (!page) {
+    return;
+  }
+  Hz10FreelistPageMetaNode* node = (Hz10FreelistPageMetaNode*)page;
+  hz10_platform_mutex_lock(&hz10_metadata_slab_lock);
+  node->next = hz10_metadata_free_list;
+  hz10_metadata_free_list = node;
+  hz10_platform_mutex_unlock(&hz10_metadata_slab_lock);
+}
 
 /* Reserves an HZ10_PAGE_QUANTUM-aligned, HZ10_PAGE_QUANTUM-sized RW mapping.
  * Plain mmap only guarantees page-size alignment, not our 64KiB quantum, so
@@ -164,7 +227,7 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
     owns_base = 1;
   }
 
-  Hz10FreelistPage* page = calloc(1, sizeof(*page));
+  Hz10FreelistPage* page = hz10_metadata_page_alloc();
   if (!page) {
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
@@ -175,26 +238,11 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
   uint32_t pending_words = (slot_count + 63u) / 64u;
   _Atomic(uint64_t)* pending_bits = &page->pending_inline_word;
   if (pending_words > 1u) {
-    pending_bits = calloc(pending_words, sizeof(*pending_bits));
-    if (!pending_bits) {
-      free(page);
-      if (owns_base) {
-        hz10_platform_release(base, HZ10_PAGE_QUANTUM);
-      }
-      return NULL;
-    }
+    Hz10FreelistPageMetaNode* node = (Hz10FreelistPageMetaNode*)page;
+    pending_bits = node->pending_words_storage;
 #if HZ10_ENABLE_STRIPE_SPREAD
     if (slot_size <= HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE) {
-      page->remote_free_spread =
-          calloc(HZ10_REMOTE_STRIPE_COUNT, sizeof(*page->remote_free_spread));
-      if (!page->remote_free_spread) {
-        free(pending_bits);
-        free(page);
-        if (owns_base) {
-          hz10_platform_release(base, HZ10_PAGE_QUANTUM);
-        }
-        return NULL;
-      }
+      page->remote_free_spread = node->spread_storage;
     }
 #endif
   }
@@ -204,11 +252,7 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
                                                     slot_count, page)
                 : hz10_pagemap_register(base, slot_size, slot_count);
   if (generation == 0u) {
-    if (pending_bits != &page->pending_inline_word) {
-      free(pending_bits);
-    }
-    free(page->remote_free_spread);
-    free(page);
+    hz10_metadata_page_free(page);
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
     }
@@ -254,11 +298,7 @@ void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page) {
    * tests/README.md's HZ10RemoteStackDrain-L0 notes. */
   hz10_pagemap_release(page->base);
   void* base = page->base;
-  if (page->pending_bits != &page->pending_inline_word) {
-    free(page->pending_bits);
-  }
-  free(page->remote_free_spread);
-  free(page);
+  hz10_metadata_page_free(page);
   return base;
 }
 

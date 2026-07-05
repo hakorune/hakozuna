@@ -763,6 +763,19 @@ status:
                  the ownership-handoff design opens next). Deliverables
                  D1-D4 and gates in the doc; review its open questions
                  before implementing.
+                 D1 DONE 20260706: hz10_freelist_page.c metadata
+                 self-hosting landed as library-only prep. Page struct,
+                 multi-word pending bits, and tiny spread stripes now
+                 come from a private mmap-backed metadata node freelist;
+                 libc calloc/free are gone from src/ allocator metadata
+                 creation. Gates green: full smoke set, ASan/UBSan,
+                 TSan, standalone check, rss-guard. Public-entry
+                 flatness was checked with alternating base/current
+                 n=30 (THREADS=4 ITERS=200000); all 9 rows within
+                 +/-2.4% median ops/s. log:
+                 bench_results/
+                   20260705T194922Z_hz10_metadata_self_host_d1_alternating/
+                 NEXT: D2 shim target/API smoke.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.
