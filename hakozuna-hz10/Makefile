@@ -18,6 +18,7 @@
 	bench-public-entry-thread-reuse \
 	preload preload-fine preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
+	bench-larson-thread-churn-attribution \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
@@ -222,6 +223,9 @@ smoke-shim-foreign: $(ROOT)/libhz10.so
 
 bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
+
+bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
+	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
 # The smoke lane adds the event counters; the bench lanes build with the

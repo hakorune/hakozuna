@@ -38,6 +38,11 @@ HZ10_MACRO_MATRIX_EXPAND_L0.md:
   decide fine-class shim adoption and whether thread-exit ownership work
   should open
 
+HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md:
+  diagnostic design for splitting the larson macro RSS blow-up into
+  per-thread orphan pages, live working set, page-pool retention, metadata,
+  and class-policy effects before any thread-exit ownership fix is designed
+
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,
   division-free interior check, size-class inline, record-carried owner

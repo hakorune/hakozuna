@@ -391,6 +391,15 @@ sampled current RSS was ~7.8GB, `hz10+fine` ~9.2GB, while glibc/tcmalloc/
 mimalloc were ~0.27-0.28GB. This opens a focused thread-churn/orphan
 attribution box before any ownership-handoff fix is designed.
 
+The attribution box confirmed the cause: see
+`docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md` and
+`bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/`.
+In the small larson sweep, summed exiting-thread page bytes explained
+94.2-94.5% of sampled HZ10 current RSS, with `retired_pages=0`. The issue
+is orphaned active owner-thread pages, not page-pool retention or metadata.
+The next box should design ownership/handoff semantics; automatic quiescent
+flush remains forbidden until remote-free safety is proven.
+
 ## Open questions for reviewers
 
 ```text

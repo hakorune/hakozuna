@@ -16,6 +16,14 @@
 #include <unistd.h>
 
 static _Atomic(uint64_t) hz10_shim_foreign_free_count;
+static int hz10_shim_process_exit_stats;
+static int hz10_shim_thread_exit_stats;
+static int hz10_shim_exit_stats_classes;
+static pthread_once_t hz10_shim_thread_stats_once = PTHREAD_ONCE_INIT;
+static pthread_key_t hz10_shim_thread_stats_key;
+static int hz10_shim_thread_stats_key_ready;
+static char hz10_shim_thread_stats_marker;
+static _Thread_local int hz10_shim_in_stats_dump;
 
 static int hz10_shim_is_power_of_two(size_t value) {
   return value != 0u && (value & (value - 1u)) == 0u;
@@ -41,6 +49,16 @@ static int hz10_shim_exit_stats_enabled(void) {
   return value && value[0] == '1' && value[1] == '\0';
 }
 
+static int hz10_shim_thread_exit_stats_enabled(void) {
+  const char* value = getenv("HZ10_SHIM_THREAD_EXIT_STATS");
+  return value && value[0] == '1' && value[1] == '\0';
+}
+
+static int hz10_shim_exit_stats_classes_enabled(void) {
+  const char* value = getenv("HZ10_SHIM_EXIT_STATS_CLASSES");
+  return !(value && value[0] == '0' && value[1] == '\0');
+}
+
 static void hz10_shim_write_all(const char* text, size_t len);
 
 static void hz10_shim_writef(const char* fmt, ...) {
@@ -60,6 +78,10 @@ static void hz10_shim_writef(const char* fmt, ...) {
 }
 
 void hz10_shim_dump_exit_stats(void) {
+  if (hz10_shim_in_stats_dump) {
+    return;
+  }
+  hz10_shim_in_stats_dump = 1;
   uint64_t foreign_frees = atomic_load_explicit(&hz10_shim_foreign_free_count,
                                                 memory_order_relaxed);
   Hz10FreelistMetadataStats metadata = {0};
@@ -116,23 +138,25 @@ void hz10_shim_dump_exit_stats(void) {
     sweep_reclaimed += stats.retired_reclaimed_by_sweep_count;
     local_free_reclaimed += stats.retired_reclaimed_by_local_free_count;
 
-    hz10_shim_writef(
-        "hz10_shim_exit_stats class=%u slot_size=%u slot_count=%u "
-        "active_pages=%u retired_pages=%u max_retired=%u "
-        "evictions=%llu retired=%llu reclaimed_ready=%llu "
-        "reclaimed_sweep=%llu reclaimed_local_free=%llu "
-        "find_calls=%llu find_misses=%llu find_pages_visited=%llu\n",
-        (unsigned)c, (unsigned)slot_size, (unsigned)slot_count,
-        (unsigned)stats.active_length, (unsigned)stats.retired_length,
-        (unsigned)stats.max_retired_length,
-        (unsigned long long)stats.eviction_count,
-        (unsigned long long)stats.retired_count,
-        (unsigned long long)stats.retired_reclaimed_by_ready_count,
-        (unsigned long long)stats.retired_reclaimed_by_sweep_count,
-        (unsigned long long)stats.retired_reclaimed_by_local_free_count,
-        (unsigned long long)stats.find_call_count,
-        (unsigned long long)stats.find_miss_count,
-        (unsigned long long)stats.find_pages_visited_count);
+    if (hz10_shim_exit_stats_classes) {
+      hz10_shim_writef(
+          "hz10_shim_exit_stats class=%u slot_size=%u slot_count=%u "
+          "active_pages=%u retired_pages=%u max_retired=%u "
+          "evictions=%llu retired=%llu reclaimed_ready=%llu "
+          "reclaimed_sweep=%llu reclaimed_local_free=%llu "
+          "find_calls=%llu find_misses=%llu find_pages_visited=%llu\n",
+          (unsigned)c, (unsigned)slot_size, (unsigned)slot_count,
+          (unsigned)stats.active_length, (unsigned)stats.retired_length,
+          (unsigned)stats.max_retired_length,
+          (unsigned long long)stats.eviction_count,
+          (unsigned long long)stats.retired_count,
+          (unsigned long long)stats.retired_reclaimed_by_ready_count,
+          (unsigned long long)stats.retired_reclaimed_by_sweep_count,
+          (unsigned long long)stats.retired_reclaimed_by_local_free_count,
+          (unsigned long long)stats.find_call_count,
+          (unsigned long long)stats.find_miss_count,
+          (unsigned long long)stats.find_pages_visited_count);
+    }
   }
 
   hz10_shim_writef(
@@ -148,12 +172,42 @@ void hz10_shim_dump_exit_stats(void) {
       (unsigned long long)ready_reclaimed,
       (unsigned long long)sweep_reclaimed,
       (unsigned long long)local_free_reclaimed);
+  hz10_shim_in_stats_dump = 0;
+}
+
+static void hz10_shim_thread_stats_destructor(void* value) {
+  if (!value || !hz10_shim_thread_exit_stats) {
+    return;
+  }
+  hz10_shim_dump_exit_stats();
+}
+
+static void hz10_shim_init_thread_stats_key(void) {
+  hz10_shim_thread_stats_key_ready =
+      pthread_key_create(&hz10_shim_thread_stats_key,
+                         hz10_shim_thread_stats_destructor) == 0;
+}
+
+static void hz10_shim_mark_thread_for_stats(void) {
+  if (!hz10_shim_thread_exit_stats || hz10_shim_in_stats_dump) {
+    return;
+  }
+  (void)pthread_once(&hz10_shim_thread_stats_once,
+                     hz10_shim_init_thread_stats_key);
+  if (hz10_shim_thread_stats_key_ready &&
+      pthread_getspecific(hz10_shim_thread_stats_key) == NULL) {
+    (void)pthread_setspecific(hz10_shim_thread_stats_key,
+                              &hz10_shim_thread_stats_marker);
+  }
 }
 
 __attribute__((constructor)) static void hz10_shim_init(void) {
+  hz10_shim_process_exit_stats = hz10_shim_exit_stats_enabled();
+  hz10_shim_thread_exit_stats = hz10_shim_thread_exit_stats_enabled();
+  hz10_shim_exit_stats_classes = hz10_shim_exit_stats_classes_enabled();
   (void)pthread_atfork(hz10_shim_atfork_prepare, hz10_shim_atfork_parent,
                        hz10_shim_atfork_child);
-  if (hz10_shim_exit_stats_enabled()) {
+  if (hz10_shim_process_exit_stats) {
     (void)atexit(hz10_shim_dump_exit_stats);
   }
 }
@@ -208,10 +262,12 @@ static void* hz10_shim_aligned_alloc_impl(size_t alignment, size_t size) {
 }
 
 static void* hz10_shim_malloc_impl(size_t size) {
+  hz10_shim_mark_thread_for_stats();
   return hz10_malloc(hz10_shim_request_size(size));
 }
 
 static void hz10_shim_free_impl(void* ptr, const char* api) {
+  hz10_shim_mark_thread_for_stats();
   if (!ptr) {
     return;
   }

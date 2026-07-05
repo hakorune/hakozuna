@@ -944,6 +944,32 @@ status:
                  shape sweep to split RSS into live allocations,
                  owner-thread orphan pages, pool retention, metadata, and
                  class rounding before designing any handoff fix.
+                 SCOPED 20260707: see
+                 docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md. This is
+                 a measurement-only box. Add dump-only
+                 HZ10_SHIM_THREAD_EXIT_STATS=1 so worker-thread TLS page
+                 stats are visible at pthread exit; do NOT call
+                 quiescent flush, drain remote frees, or reclaim pages from
+                 a destructor. Then sweep smaller larson shapes to split
+                 current RSS into summed thread page_bytes, page pool,
+                 metadata, and class-policy effects.
+                 IMPLEMENTED 20260707: dump-only thread-exit stats and
+                 larson attribution runner landed. log:
+                   bench_results/
+                     20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
+                 RUNS=1 sweep, threads=1/2/4, chunks=32/64/128,
+                 seconds=1. `attribution_summary.tsv` shows HZ10 thread
+                 page_bytes explain 94.2-94.5% of sampled current RSS in
+                 every HZ10 row. retired_pages=0. Example: hz10 4t/32c
+                 current 5329.6MB, thread_page 5020.8MB; hz10+fine
+                 4t/32c current 5433.6MB, thread_page 5133.2MB. Read:
+                 the larson RSS is not pool/metadata/retired backlog; it
+                 is orphaned ACTIVE owner-thread pages from short-lived
+                 worker threads. Fine classes worsen larson RSS and
+                 throughput, so keep fine as python/RSS diagnostic only.
+                 NEXT: design a thread-exit ownership/handoff box. Do not
+                 implement automatic quiescent flush; the design must first
+                 prove how remote frees into dying-owner pages remain safe.
                  DONE 20260706 (fable5): residual decomposed. log:
                  bench_results/
                    20260706T213000Z_hz10_retention_residual_attribution/
