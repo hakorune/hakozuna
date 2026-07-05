@@ -164,13 +164,34 @@ Costs to design around, not hand-wave:
   the same pagemap lock (extra lock round-trip per page create, slow path).
 - release()/generation semantics must stamp the token dead (NULL) so a
   stale record can never token-match a recycled address between release
-  and re-register. The generation check already guards the re-register
-  case; NULLing the token on release closes the release window without
-  adding a fast-path branch. Ordering rule if E4 lands: registration writes
-  owner_token/class_id before publishing `slot_size`, and release writes
-  owner_token=NULL before clearing `slot_size` to 0. A reader that sees
-  `slot_size==0` bails out; a reader that sees a half-release with a NULL
-  token takes the conservative non-local path instead of falsely matching.
+  and re-register.
+  CORRECTED after review #1 (the original store-ordering argument here was
+  unsound): H10PageRecord fields are plain non-atomic, so a lock-free
+  reader has no acquire edge and the compiler may hoist the token load
+  above the slot_size load -- "reader sees slot_size first" is not a
+  property today's C can express, and "a NULL-token reader takes the
+  non-local path" is NOT conservative (that path dereferences
+  route.owner, which can be a page mid-destroy -- a pre-existing L0
+  lock-free-read hole this doc must not cite as a safety net). The
+  correct safety argument for the false-local-match property is
+  different: a token equal to thread T's HZ10_THREAD_TOKEN is only ever
+  written by T itself (registration runs on the owner thread), and
+  per-location coherence guarantees T never reads a value older than its
+  own last write -- so NULL-on-release, written by T when T destroys its
+  own page, permanently hides T's stale token from T regardless of store
+  order. If E4 lands it must also: make slot_size an _Atomic with
+  release-store/acquire-load (token/class relaxed atomics), and state
+  the residual pre-existing hole that a dead thread's recycled TLS token
+  address could match an orphaned page (exists today through
+  page->owner_thread_token; E4 neither fixes nor worsens it).
+
+DEFERRED per review #1: E4 is NO-GO for this box. Its win is
+front-cache-lane-only while HZ10_ENABLE_FRONT_CACHE is default OFF, the
+box's own target arithmetic already excludes it, and it is the only
+candidate that touches the lock-free reader's correctness envelope.
+Rebundle it with the front-cache default-ON push, carrying the corrected
+invariant above and the register/release hammer smoke from the gates
+section.
 
 ### Explicitly out of scope for this box
 
@@ -201,59 +222,156 @@ than stretching the numbers.
 
 ## Box plan and gates
 
+Order revised per review #1 and the LTO calibration (see the review
+section below): Step 0 LTO -> E3 -> E1 -> E2; E4 deferred out of this box.
+E3 before E1 because it is zero-risk, independent, and validates the
+measurement protocol cheaply; E2 after E1 stays as originally reasoned
+(the div is partially hidden by call overhead today, so measuring E2
+pre-E1 would understate it). E1 and E2 stay separate revertable commits.
+
 ```text
-HZ10EntryTrim-L0 (measurement prep, first):
+Step 0 (DONE 20260705): LTO calibration -- see review section for
+  numbers. Follow-through: make -flto the default for the production/
+  bench allocator builds (a Makefile change, its own tiny commit,
+  measured with the standard same-run protocol) BEFORE E1, so E1's A/B
+  baseline already includes the free win. Scope the Makefile change to
+  the normal optimized allocator/bench lane; sanitizer/TSan lanes remain
+  explicit compiler-mode gates and must be re-run after the flag change
+  instead of assumed equivalent.
+
+HZ10EntryTrim-L0 (measurement prep, before E1/E2):
   - extend the stage-cost bench with a "route_fast" stage so E1/E2 are
     measured by the same protocol as the 2.37ns baseline
     (THREADS=4 PAGES=4096 REPEAT=20000 RUNS=10, medians).
   - add the differential route smoke BEFORE any fast path exists:
-    for a matrix of registered pages (every class, plus large_alloc,
-    plus released/re-registered generations), compare slow-path route()
-    against the fast path over valid pointers, interior/misaligned/
-    tail-slack/stale probes, and unregistered addresses. This smoke is
-    the fail-closed gate for every E-box; it must pass byte-for-byte
-    (same accept set, same owner/flags/generation for accepted ptrs).
+    for a matrix of registered pages, compare slow-path route() against
+    the fast path; it must pass byte-for-byte (same accept set, same
+    owner/flags/generation for accepted ptrs) -- BOTH directions: no
+    false accepts AND no false rejects (review finding 2: a valid
+    pointer rejected as INTERIOR by an inexact reciprocal is a leak or
+    abort in an LD_PRELOAD shim; this smoke is the primary gate for
+    that, not redundancy). Matrix must cover:
+      every class; arbitrary non-class slot_size values (register()
+      accepts any uint32 divisor and large_alloc registers rounded
+      sizes); slot_count==1 multi-quantum registrations INCLUDING
+      probes into quanta >= 2 (must reproduce today's MISS, and must
+      take the offset!=0 branch, never the 32-bit magic path, for
+      64-bit offsets); released/re-registered generations; NULL;
+      root-absent addresses; offset == span exact boundary; interior/
+      misaligned/tail-slack/stale probes; unregistered addresses.
 
-E1 -> E2 -> E3 as separate commits, each gated on:
+E3, then E1, then E2, as separate commits, each gated on:
   - differential smoke + full existing smokes + ASan/UBSan, flag-off AND
     front lanes
+  - TSan run of the existing multi-thread smokes (new gate, review
+    finding 6): E1 inlines the record loads into caller loops and
+    deletes today's call-boundary compiler barrier, a race class the
+    single-threaded differential smoke cannot see. E1 REQUIREMENT, not
+    implementer's choice: the inline path loads slot_size with
+    atomic_load_explicit(acquire) and the remaining record fields
+    relaxed -- on x86 this compiles to the same plain loads plus
+    compiler ordering, zero-cost insurance. (Reconfirm TSan runs in
+    this environment first; current_task.md records a prior TSan
+    runtime failure here.)
   - stage-cost route (and route_fast) medians
   - local-path per class (the 5-class table) both lanes
   - same-run matrix RUNS=10: gate is "main_local0 and small_local0 move
-    toward tcmalloc, remote rows unchanged"; keep per-box deltas honest,
-    no combined-run attribution
+    toward tcmalloc, remote rows unchanged, large rows not regressed";
+    keep per-box deltas honest, no combined-run attribution
   - rollback: each box is a small, revertable commit; E1/E2 keep the .c
     slow path as the semantic authority so reverting is deleting the
     inline path, not restoring semantics
 
-E4 last, front lane only, judged on same-run + RSS columns
-  (record-size growth) + the record-lifetime release/token rule above.
+E1 stated decisions (review findings 3, 8):
+  - FLAG_LARGE routes return 0 from the inline path and fall through to
+    the slow .c route (large frees are rare and munmap-bound); the out
+    struct therefore does NOT carry page_base. Gate: large-row
+    non-regression in the same-run matrix.
+  - the inline path serves GENERATION_ANY callers only (both real call
+    sites); expected_generation != ANY stays slow-path-only, stated in
+    the signature contract.
+
+E2 stated decision (review finding 5): the fast path snapshots
+  slot_size/slot_inv/slot_shift ONCE per route and never re-reads --
+  today's %-and-/ are self-consistent off one slot_size load; E2
+  introduces multi-field consistency for the first time and a
+  release+re-register race between reads must at worst reject (never
+  mis-accept), which single-snapshot plus multiply-back guarantees.
+
+E4: deferred out of this box entirely (see the DEFERRED note in the E4
+  section). When rebundled with front-cache default-ON, its gates are
+  the same-run + RSS columns plus a NEW register/release/route hammer
+  smoke under TSan+ASan (threads continuously register/release/
+  re-register a fixed base set while readers route stale pointers) --
+  the static differential smoke cannot exercise token lifetime at all.
 ```
 
-## Open questions for reviewers
+## Open questions (status after review #1 + LTO calibration)
 
 ```text
-1. E1's header surface: export the root array directly (fastest, ugliest)
-   or a static-inline accessor around an extern pointer? Any measurable
-   difference under -fPIC for the eventual LD_PRELOAD .so build?
-2. E2 exactness: is the multiply-back verification (slot_index * slot_size
-   != offset) kept permanently as the interior check (self-verifying, no
-   correctness dependence on the magic constants), or replaced by a
-   proven-magic scheme? Recommendation: keep multiply-back -- it makes the
-   magic constants performance-only, never correctness-bearing.
-3. E4 token lifetime: is NULL-on-release sufficient, or does a token need
-   its own generation? (Claim: sufficient if register publishes
-   token/class before slot_size, and release clears token before slot_size.
-   Verify this ordering argument in review against the existing lock-free
-   route reader model.)
-4. Should E3 also inline hz10_size_class_slot_size() for the front-cache
-   init/refill paths, or is that slow-path-only and not worth header
-   surface?
-5. Does -flto on the production .so build (not just benches) make E1
-   partially redundant? Worth one calibration run before implementing:
-   if LTO alone recovers most of R1/R2, E1 becomes "enable LTO for the
-   preload build" plus a much smaller header change.
+1. OPEN. E1's header surface: export the root array directly (fastest,
+   ugliest) or a static-inline accessor around an extern pointer? Any
+   measurable difference under -fPIC for the eventual LD_PRELOAD .so
+   build? Implementer measures both, picks by number.
+2. ANSWERED-with-correction (review finding 2): keep multiply-back, but
+   the original claim was half wrong -- multiply-back prevents false
+   ACCEPTS only; an inexact magic still causes false REJECTS of valid
+   pointers. The magic constants ARE correctness-bearing in that
+   direction, and the exhaustive differential smoke is the primary gate
+   for it, not belt-and-suspenders.
+3. SUPERSEDED (review finding 1): the ordering claim was unsound; see
+   the corrected token-uniqueness/coherence argument and the atomics
+   requirement in the E4 section. E4 itself is deferred out of this box.
+4. OPEN, low stakes. E3 may inline hz10_size_class_slot_size() too if
+   the header stays small; slow-path-only callers do not justify it on
+   their own.
+5. ANSWERED by measurement, 20260705 (Step 0): LTO alone is worth
+   +5.6-7.6% on the local public-entry rows. See the review section.
 ```
+
+## Review #1 verdict and applied changes, 2026-07-05
+
+Independent agent review (fresh context, instructed to attack):
+
+```text
+overall plan:  GO-with-changes
+E1 route inline:      GO-with-changes (atomics + large-path decision)
+E2 reciprocal:        GO-with-changes (false-reject correction + smoke
+                      matrix expansion + single-snapshot rule)
+E3 size-class inline: GO as written
+E4 record fatten:     NO-GO for this box; defer to the front-cache
+                      default-ON push with the corrected invariant
+```
+
+All findings applied to this doc in place: the E4 safety argument was
+replaced (the original store-ordering claim was unsound for plain
+non-atomic fields; the sound argument is token uniqueness + per-location
+coherence + NULL-on-release), open question 2 corrected (multiply-back
+does not make magics correctness-free -- false rejects), E1 gained the
+acquire-load requirement and the FLAG_LARGE fall-through decision, the
+differential smoke matrix gained arbitrary-slot_size / multi-quantum /
+boundary cases, and TSan plus a register/release hammer smoke entered
+the gates. Review also confirmed: no Load-Bearing Constraint and no
+NO-GO ledger entry is touched by E1-E3.
+
+Step 0 LTO calibration, measured same day (interleaved RUNS=6 medians,
+front lane, plus stage-cost RUNS=5):
+
+```text
+stage-cost route:      2.41ns with -flto vs 2.37-2.44 without -- the
+                       isolated stage does not move (call overhead
+                       pipelines away in a route-only loop)
+main_local0:           168.8M -> 178.3M ops/s (+5.6%)
+small_local0:          147.2M -> 158.4M ops/s (+7.6%)
+slot_count1_local0:    183.3M -> 185.7M ops/s (+1.3%)
+```
+
+Read: in the real entry paths (not the isolated stage), cross-TU call
+removal is worth +5-8% on local rows for one build flag. Follow-through
+is a Makefile commit making -flto the default optimized allocator build,
+landed and measured BEFORE E1 so E1's baseline includes it; E1's
+remaining headroom (forcing the inline + lean result shape + acquire
+ordering) is then measured honestly against that.
 
 ## Relationship to the standing plans
 

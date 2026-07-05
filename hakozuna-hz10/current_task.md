@@ -475,9 +475,25 @@ status:
             tail-slack/stale/unregistered) as the fail-closed gate
             before any fast path lands. Honest target: main_local0
             ~0.63-0.72 from this box alone (0.75 bar likely needs it
-            plus front-cache compounding). Review the doc's open
-            questions (LTO calibration first, E4 token release
-            ordering) before implementing.
+            plus front-cache compounding).
+            REVIEWED 20260705 (independent agent review #1, applied to
+            the doc in place): overall GO-with-changes; E3 GO as
+            written; E1/E2 GO-with-changes (E1 must use acquire-load on
+            slot_size + FLAG_LARGE falls through to the slow path; E2's
+            multiply-back does NOT make the magic constants correctness-
+            free -- false REJECTS are possible, so the differential
+            smoke is the primary gate and its matrix now covers
+            arbitrary slot_size / multi-quantum / boundary cases); E4
+            NO-GO for this box, deferred to the front-cache default-ON
+            push with a corrected safety argument (the original store-
+            ordering claim was unsound). TSan gate added.
+            Step 0 LTO calibration DONE same day: -flto alone is worth
+            +5.6-7.6% on local rows (numbers in the doc's review
+            section). Implementation order is now:
+            (0) Makefile commit: -flto default for optimized allocator/
+                bench builds, measured separately from sanitizer lanes ->
+            (1) E3 size-class inline -> (2) prep smokes/route_fast ->
+            (3) E1 -> (4) E2. E4 out of this box.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
