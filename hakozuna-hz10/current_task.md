@@ -494,6 +494,13 @@ status:
                 bench builds, measured separately from sanitizer lanes ->
             (1) E3 size-class inline -> (2) prep smokes/route_fast ->
             (3) E1 -> (4) E2. E4 out of this box.
+            STEP 0 IMPLEMENTED 20260705: Makefile now defines
+            OPT_CFLAGS=$(CFLAGS) -flto and uses it for optimized bench/
+            allocator lanes; DEBUG_CFLAGS smoke lanes stay separate.
+            This is intentionally a Makefile-centered box before E3;
+            stage-cost bench also got a zero-init hygiene fix because
+            LTO made its maybe-uninitialized warning visible under
+            -Werror.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

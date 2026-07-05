@@ -189,7 +189,7 @@ static void worker_timed(StageMode mode, WorkerPage* wp, void* token,
       break;
     }
     case STAGE_CLASSIFY: {
-      uint32_t slot_index;
+      uint32_t slot_index = 0u;
       int ok = hz10_page_classify_for_remote_probe(
           wp->page, wp->ptr, HZ10_GENERATION_ANY, &slot_index);
       if (!ok) {
@@ -199,7 +199,7 @@ static void worker_timed(StageMode mode, WorkerPage* wp, void* token,
       break;
     }
     case STAGE_CLAIM: {
-      uint32_t slot_index;
+      uint32_t slot_index = 0u;
       if (!hz10_page_remote_free_claim(wp->page, wp->ptr, HZ10_GENERATION_ANY,
                                       &slot_index)) {
         *local_failed += 1u;

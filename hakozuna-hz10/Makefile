@@ -22,14 +22,10 @@ LDLIBS ?= -pthread
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 INC := -I$(ROOT)/include -I$(ROOT)/src
 DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS
-# -flto: without it, hz10_pagemap_route() (a real cross-TU call from
-# bench/hz10_pagemap_route_bench.c into src/hz10_pagemap.c) never gets
-# inlined the way the in-process hash-probe baseline (defined statically in
-# the same bench TU) does -- that asymmetry alone was worth ~30% in earlier
-# measurement, in the hash baseline's favor, for reasons that have nothing
-# to do with either lookup algorithm. LTO removes that bias so the bench
-# compares the two mechanisms on equal footing.
-BENCH_CFLAGS := $(CFLAGS) -flto
+# HZ10EntryTrim Step 0: LTO is part of the optimized allocator/bench lane.
+# Keep DEBUG_CFLAGS separate so smoke/sanitizer/TSan-style compiler modes stay
+# explicit gates instead of inheriting optimizer-mode assumptions.
+OPT_CFLAGS := $(CFLAGS) -flto
 
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 PAGEMAP_SRC := $(ROOT)/src/hz10_pagemap.c $(ROOT)/src/hz10_platform.c
@@ -74,7 +70,7 @@ smoke-pagemap-route: $(ROOT)/hz10_pagemap_route_smoke
 	$(ROOT)/hz10_pagemap_route_smoke
 
 $(ROOT)/hz10_pagemap_route_bench: $(BENCH_PAGEMAP_SRC) $(HEADERS)
-	$(CC) $(BENCH_CFLAGS) $(INC) -o $@ $(BENCH_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_PAGEMAP_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-pagemap-route: $(ROOT)/hz10_pagemap_route_bench
 	$(ROOT)/hz10_pagemap_route_bench
@@ -86,7 +82,7 @@ smoke-freelist-page: $(ROOT)/hz10_freelist_page_smoke
 	$(ROOT)/hz10_freelist_page_smoke
 
 $(ROOT)/hz10_freelist_page_bench: $(BENCH_FREELIST_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_FREELIST_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_FREELIST_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-freelist-page: $(ROOT)/hz10_freelist_page_bench
 	$(ROOT)/hz10_freelist_page_bench
@@ -98,31 +94,31 @@ smoke-remote-stack-drain: $(ROOT)/hz10_remote_stack_drain_smoke
 	$(ROOT)/hz10_remote_stack_drain_smoke
 
 $(ROOT)/hz10_remote_stack_drain_bench: $(BENCH_REMOTE_STACK_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_STACK_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_STACK_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-remote-stack-drain: $(ROOT)/hz10_remote_stack_drain_bench
 	$(ROOT)/hz10_remote_stack_drain_bench
 
 $(ROOT)/hz10_multiclass_remote_bench: $(BENCH_MULTICLASS_REMOTE_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_MULTICLASS_REMOTE_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_MULTICLASS_REMOTE_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-multiclass-remote: $(ROOT)/hz10_multiclass_remote_bench
 	$(ROOT)/hz10_multiclass_remote_bench
 
 $(ROOT)/hz10_remote_rmw_microbench: $(BENCH_REMOTE_RMW_MICRO_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_RMW_MICRO_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_RMW_MICRO_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-remote-rmw-micro: $(ROOT)/hz10_remote_rmw_microbench
 	$(ROOT)/hz10_remote_rmw_microbench
 
 $(ROOT)/hz10_public_entry_stage_cost_bench: $(STAGE_COST_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(STAGE_COST_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(STAGE_COST_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-stage-cost: $(ROOT)/hz10_public_entry_stage_cost_bench
 	$(ROOT)/hz10_public_entry_stage_cost_bench
 
 $(ROOT)/hz10_public_entry_local_path_bench: $(LOCAL_PATH_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(LOCAL_PATH_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(LOCAL_PATH_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-local-path: $(ROOT)/hz10_public_entry_local_path_bench
 	$(ROOT)/hz10_public_entry_local_path_bench
@@ -134,7 +130,7 @@ smoke-bounded-page-pool: $(ROOT)/hz10_bounded_page_pool_smoke
 	$(ROOT)/hz10_bounded_page_pool_smoke
 
 $(ROOT)/hz10_bounded_page_pool_bench: $(BENCH_POOLED_PAGE_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_POOLED_PAGE_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_POOLED_PAGE_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-bounded-page-pool: $(ROOT)/hz10_bounded_page_pool_bench
 	$(ROOT)/hz10_bounded_page_pool_bench
@@ -161,7 +157,7 @@ smoke-public-entry: $(ROOT)/hz10_public_entry_smoke
 	$(ROOT)/hz10_public_entry_smoke
 
 $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
@@ -178,37 +174,37 @@ smoke-public-entry-front: $(ROOT)/hz10_public_entry_front_smoke
 	$(ROOT)/hz10_public_entry_front_smoke
 
 $(ROOT)/hz10_public_entry_front_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-front: $(ROOT)/hz10_public_entry_front_bench
 	$(ROOT)/hz10_public_entry_front_bench
 
 $(ROOT)/hz10_public_entry_local_path_front_bench: $(LOCAL_PATH_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(LOCAL_PATH_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(FRONT_CACHE_FLAG) $(INC) -o $@ $(LOCAL_PATH_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-local-path-front: $(ROOT)/hz10_public_entry_local_path_front_bench
 	$(ROOT)/hz10_public_entry_local_path_front_bench
 
 $(ROOT)/hz10_public_entry_active_scan_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-active-scan: $(ROOT)/hz10_public_entry_active_scan_bench
 	$(ROOT)/hz10_public_entry_active_scan_bench
 
 $(ROOT)/hz10_public_entry_active_mtf_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_ACTIVE_MTF=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_ACTIVE_MTF=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-active-mtf: $(ROOT)/hz10_public_entry_active_mtf_bench
 	$(ROOT)/hz10_public_entry_active_mtf_bench
 
 $(ROOT)/hz10_public_entry_two_slot_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_TWO_SLOT_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) -DHZ10_ENABLE_ACTIVE_SCAN_STATS=1 -DHZ10_ENABLE_TWO_SLOT_STATS=1 $(INC) -o $@ $(BENCH_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-two-slot: $(ROOT)/hz10_public_entry_two_slot_bench
 	$(ROOT)/hz10_public_entry_two_slot_bench
 
 $(ROOT)/hz10_public_entry_remote_batch_locality_bench: $(BENCH_REMOTE_BATCH_LOCALITY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_BATCH_LOCALITY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_REMOTE_BATCH_LOCALITY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-remote-batch-locality: $(ROOT)/hz10_public_entry_remote_batch_locality_bench
 	$(ROOT)/hz10_public_entry_remote_batch_locality_bench
@@ -216,7 +212,7 @@ bench-public-entry-remote-batch-locality: $(ROOT)/hz10_public_entry_remote_batch
 CLASS_PAGES_SCAN_BENCH_SRC := $(ROOT)/bench/hz10_class_pages_scan_bench.c $(PUBLIC_ENTRY_SRC)
 
 $(ROOT)/hz10_class_pages_scan_bench: $(CLASS_PAGES_SCAN_BENCH_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(CLASS_PAGES_SCAN_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(CLASS_PAGES_SCAN_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 
 RETIRED_READY_SRC := $(ROOT)/src/hz10_retired_ready.c $(REMOTE_STACK_SRC)
 SMOKE_RETIRED_READY_SRC := $(ROOT)/tests/hz10_retired_ready_smoke.c $(RETIRED_READY_SRC)
@@ -229,7 +225,7 @@ smoke-retired-ready: $(ROOT)/hz10_retired_ready_smoke
 	$(ROOT)/hz10_retired_ready_smoke
 
 $(ROOT)/hz10_retired_ready_bench: $(BENCH_RETIRED_READY_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(BENCH_RETIRED_READY_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_RETIRED_READY_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-retired-ready: $(ROOT)/hz10_retired_ready_bench
 	$(ROOT)/hz10_retired_ready_bench
@@ -237,7 +233,7 @@ bench-retired-ready: $(ROOT)/hz10_retired_ready_bench
 STEADY_STATE_BENCH_SRC := $(ROOT)/bench/hz10_public_entry_steady_state_bench.c $(PUBLIC_ENTRY_SRC)
 
 $(ROOT)/hz10_public_entry_steady_state_bench: $(STEADY_STATE_BENCH_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(STEADY_STATE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(STEADY_STATE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-steady-state: $(ROOT)/hz10_public_entry_steady_state_bench
 	$(ROOT)/hz10_public_entry_steady_state_bench
@@ -245,7 +241,7 @@ bench-public-entry-steady-state: $(ROOT)/hz10_public_entry_steady_state_bench
 THREAD_REUSE_BENCH_SRC := $(ROOT)/bench/hz10_public_entry_thread_reuse_bench.c $(PUBLIC_ENTRY_SRC)
 
 $(ROOT)/hz10_public_entry_thread_reuse_bench: $(THREAD_REUSE_BENCH_SRC) $(HEADERS)
-	$(CC) $(CFLAGS) $(INC) -o $@ $(THREAD_REUSE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(THREAD_REUSE_BENCH_SRC) $(LDFLAGS) $(LDLIBS)
 
 bench-public-entry-thread-reuse: $(ROOT)/hz10_public_entry_thread_reuse_bench
 	$(ROOT)/hz10_public_entry_thread_reuse_bench
