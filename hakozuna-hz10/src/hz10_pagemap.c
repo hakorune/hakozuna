@@ -200,6 +200,22 @@ H10RouteResult hz10_pagemap_route(const void* ptr,
                               slot_size, slot_count, 0u, generation, owner,
                               flags);
   }
+  if (slot_count == 1u) {
+    if (offset != 0u) {
+      return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_INTERIOR, base,
+                                slot_size, slot_count, 0u, generation, owner,
+                                flags);
+    }
+    if (expected_generation != HZ10_GENERATION_ANY &&
+        expected_generation != generation) {
+      return hz10_pagemap_result(H10_ROUTE_INVALID,
+                                H10_REASON_GENERATION_STALE, base, slot_size,
+                                slot_count, 0u, generation, owner, flags);
+    }
+    return hz10_pagemap_result(H10_ROUTE_VALID, H10_REASON_NONE, base,
+                              slot_size, slot_count, 0u, generation, owner,
+                              flags);
+  }
   if ((offset % slot_size) != 0u) {
     return hz10_pagemap_result(H10_ROUTE_INVALID, H10_REASON_INTERIOR, base,
                               slot_size, slot_count, 0u, generation, owner,

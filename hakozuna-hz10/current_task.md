@@ -524,8 +524,14 @@ status:
             0.748; main still needs E2/next box. ASan/UBSan smoke green;
             TSan runtime still fails at process start with "unexpected memory
             mapping", so no TSan signal was obtained in this environment.
-            NEXT: E2 reciprocal/division-free route, guarded by the existing
-            differential route smoke.
+            E2a IMPLEMENTED 20260705: slot_count==1 now skips route
+            division entirely in both slow and fast route paths after
+            preserving the existing tail-slack/misaligned/interior order
+            (valid pointer is base only; offset!=0 is interior). Differential
+            route smoke, public-entry smokes, standalone, and ASan/UBSan
+            smoke are green. NEXT: E2b reciprocal/division-free route for
+            multi-slot records, guarded by the existing differential route
+            smoke.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

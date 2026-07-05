@@ -213,7 +213,11 @@ static inline int hz10_pagemap_route_local_fast(
   if ((offset & (HZ10_MIN_ALIGN - 1u)) != 0u) {
     return 0;
   }
-  if ((offset % slot_size) != 0u) {
+  if (slot_count == 1u) {
+    if (offset != 0u) {
+      return 0;
+    }
+  } else if ((offset % slot_size) != 0u) {
     return 0;
   }
 
