@@ -161,3 +161,40 @@ Decision:
   division they remove on this path.
 - Keep the exhaustive differential route smoke; it is the right gate if a
   future division-free shape is attempted without growing the hot record.
+
+## 20260705 Front-Cache Dense Array For All Classes
+
+Status: `NO-GO as the all-class/default front-cache representation`
+
+Evidence:
+
+- Prototype added the opt-in lane `HZ10_ENABLE_FRONT_CACHE_ARRAY=1` and make
+  targets:
+  - `smoke-public-entry-front-array`
+  - `bench-public-entry-front-array`
+  - `bench-public-entry-local-path-front-array`
+- The array lane keeps the existing front-cache marker/accounting contract:
+  cached slots still count as allocated from the page's point of view, and
+  overflow/lifecycle flush returns them through the page layer.
+- Correctness checks passed during the probe: public-entry front smokes,
+  standalone check, ASan/UBSan smoke, and the local TSan gate through
+  `smoke-tsan-aslr-off`.
+- Local-path comparison in the same session (`THREADS=4 RUNS=3`) showed a
+  split result:
+  - 65536-byte alloc_free improved: intrusive front median ~25.1ns -> array
+    ~16.6ns.
+  - Small classes regressed: 16B ~12.9ns -> ~13.9ns, 64B ~17.6ns -> ~21.4ns.
+
+Decision:
+
+- Do not make dense array storage the default representation for all
+  front-cache classes.
+- The measured reason is class-dependent: for small classes, the intrusive
+  link reuses the same slot cache line already touched for the local-free
+  marker, while the array adds a separate TLS-array line; for 64KiB
+  slot_count=1 classes, the array removes the aliasing-dependent `*head`
+  load and is materially faster.
+- Keep the opt-in array lane for future large-class-only or hybrid-front
+  experiments, but do not enable it for the current all-class front cache.
+- The next speed box should be remote-gap attribution, not another unmeasured
+  front-cache storage change.

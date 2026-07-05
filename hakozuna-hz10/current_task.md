@@ -537,14 +537,66 @@ status:
             stage-cost route_fast from the E1 baseline ~1.57ns to ~1.81ns
             median and enlarged H10PageRecord 32B -> 48B. Do not land this
             shape; recorded in docs/HZ10_NO_GO_LEDGER.md. The strengthened
-            exhaustive differential smoke stays as a future guard. NEXT:
-            leave route reciprocal alone; choose between slot coloring for
-            slot_count<=2 and remote/publication work based on the target row.
+            exhaustive differential smoke stays as a future guard.
+            NEXT-ATTACK TRIAGE, 20260705 (post E1/E2a/E3/LTO, latest
+            same-run 20260705T100038Z ran the DEFAULT lane at
+            main_local0 0.556 / small_local0 0.748 / remote rows
+            0.48-0.56):
+              A. HZ10FrontCacheArray-L1 -- IMPLEMENTED AS OPT-IN AND
+                 CLOSED AS ALL-CLASS NO-GO, 20260705. Added
+                 HZ10_ENABLE_FRONT_CACHE_ARRAY and make lanes
+                 smoke/bench-public-entry-front-array plus
+                 bench-public-entry-local-path-front-array. It preserves
+                 marker/accounting and passes smokes/sanitizers, but the
+                 all-class array shape is not a default candidate:
+                 local-path RUNS=3 showed 65536 alloc_free improves
+                 (front intrusive median ~25.1ns -> array ~16.6ns in
+                 this session), while 16/64B regress materially
+                 (16B ~12.9ns -> ~13.9ns, 64B ~17.6ns -> ~21.4ns).
+                 Diagnosis: for small classes the old intrusive link
+                 reuses the slot line already touched for the marker,
+                 while the array adds a separate TLS-array line; for
+                 64KiB slots it does remove the aliasing head load. Keep
+                 the opt-in lane for future large-class/hybrid tests, but
+                 do not turn it on for all front-cache classes. Recorded
+                 in docs/HZ10_NO_GO_LEDGER.md. NEXT: remote gap
+                 attribution is the cleaner next box.
+              B. HZ10RemoteGapAttribution-L0 -- measurement-only,
+                 before any publication-V2/pending design is opened.
+                 The remote rows (0.48-0.56, 4 of 9 rows) are now the
+                 largest aggregate gap, but the existing evidence
+                 disagrees on WHY: the RMW microbench's ~40ns is
+                 all-threads-on-one-page contention, while
+                 HZ10RemotePublishBatchLocality-L0 measured ~95% of
+                 real-row publications as same-page run length 1
+                 (spread out, likely UNcontended) and stage-cost puts
+                 uncontended claim+publish at ~5.7-7.7ns. So the real
+                 r50/r90 loss is unattributed between: cold-line
+                 misses touching foreign pages' stripe/pending words,
+                 owner drain merge cost, alloc-side churn under remote
+                 pressure (3.4-4.8 pages visited/find, measured), and
+                 route. Method: perf-counter same-row comparison
+                 (cache-misses, mem_load_retired local/remote lines if
+                 available) hz10 vs tcmalloc, plus existing opt-in
+                 counters. Output decides publication-V2 vs a
+                 locality-shaped fix; do not skip to a CAS redesign.
+              Order after A: run B next; open no remote behavior change
+              until B reports.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero
             page-layer involvement), an address-layout property tcmalloc
             does not share.
+            BLOCKED-as-address-coloring, 20260705 next-attack triage:
+            tail slack per class is 24576x2 -> 16KiB, 49152x1 -> 16KiB,
+            but 32768x2 -> 0 and 65536x1 -> 0. The two WORST aliasing
+            classes have zero in-quantum room to color, so address
+            coloring needs a multi-quantum page redesign (pagemap's
+            multi-slot registrations are single-quantum by contract) --
+            park that. The storage-side replacement attack
+            (HZ10FrontCacheArray-L1) was tried as an all-class opt-in lane
+            and closed as default NO-GO; it remains useful only as future
+            large-class/hybrid evidence.
         (3) HZ10FrontCacheCapacityTune-L0 -- shipped caps are
             2MiB/8/4096 (deviation from the doc's first proposal, reason
             recorded there); revisit with RSS columns before any

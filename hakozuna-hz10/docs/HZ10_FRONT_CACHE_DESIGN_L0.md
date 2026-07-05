@@ -352,6 +352,43 @@ Gate verdict: default stays OFF per this doc's own rollback rule
 bar). The lane is correct (all smokes/sanitizers/RSS gates green) and is
 the right substrate wherever working sets cycle in bulk.
 
+## FrontCacheArray probe, 2026-07-05
+
+The proposed follow-up for the 65536-byte aliasing row was implemented as an
+opt-in storage lane, not a replacement for the default intrusive front cache:
+
+```text
+flag:   HZ10_ENABLE_FRONT_CACHE_ARRAY=1
+targets:
+  smoke-public-entry-front-array
+  bench-public-entry-front-array
+  bench-public-entry-local-path-front-array
+```
+
+Shape: the front cache stores a dense TLS pointer array and uses
+`slots[--count]` for pop / `slots[count++] = p` for push. The page-accounting
+and marker rules are unchanged; this is only a storage representation swap
+inside the existing front-cache box.
+
+Result: `NO-GO` as an all-class/default representation. Local-path RUNS=3 in
+the same session showed the intended 65536-byte win but unacceptable small
+class regressions:
+
+```text
+alloc_free median, front intrusive -> front array:
+  16B:    ~12.9ns -> ~13.9ns
+  64B:    ~17.6ns -> ~21.4ns
+  65536B: ~25.1ns -> ~16.6ns
+```
+
+Read: for small classes, the intrusive link is not a separate miss source
+because it reuses the slot line already touched for the local-free marker.
+The array lane adds a TLS-array line on every push/pop. For 64KiB slots, the
+old intrusive pop follows a 64KiB-aligned slot head and inherits the L1 set
+aliasing problem, so dense storage helps. Keep the opt-in lane for future
+large-class-only or hybrid front-cache probes, but do not turn it on for all
+classes. This decision is recorded in `docs/HZ10_NO_GO_LEDGER.md`.
+
 ## Open questions for reviewers
 
 ```text

@@ -349,9 +349,18 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
 #ifndef HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS
 #define HZ10_FRONT_CACHE_MAX_REFILL_OBJECTS 32u
 #endif
+#ifndef HZ10_ENABLE_FRONT_CACHE_ARRAY
+#define HZ10_ENABLE_FRONT_CACHE_ARRAY 0
+#endif
 
 typedef struct Hz10FrontCache {
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+  /* HZ10FrontCacheArray-L1: dense LIFO storage. The +1 preserves the
+   * existing push-then-overflow boundary when cap == MAX_OBJECTS. */
+  void* slots[HZ10_FRONT_CACHE_MAX_OBJECTS + 1u];
+#else
   void* head;            /* intrusive singly-linked object freelist */
+#endif
   uint32_t count;
   uint32_t cap;          /* 0 == this class not initialized yet */
   uint32_t refill_batch;
@@ -418,9 +427,14 @@ static void hz10_front_cache_init(Hz10FrontCache* fc, uint32_t class_id) {
 static void hz10_front_cache_flush_to_count(Hz10FrontCache* fc,
                                            uint32_t target_count) {
   while (fc->count > target_count) {
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+    fc->count -= 1u;
+    void* slot = fc->slots[fc->count];
+#else
     void* slot = fc->head;
     fc->head = *(void**)slot;
     fc->count -= 1u;
+#endif
     H10RouteResult route = hz10_pagemap_route(slot, HZ10_GENERATION_ANY);
     if (route.kind != H10_ROUTE_VALID || !route.owner) {
       /* Unreachable by the accounting rule (front-cached slots keep
@@ -458,8 +472,12 @@ static void* hz10_front_cache_refill_and_alloc(uint32_t class_id,
       break;
     }
     hz10_front_cache_set_marker(fc->slot_size, extra);
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+    fc->slots[fc->count] = extra;
+#else
     *(void**)extra = fc->head;
     fc->head = extra;
+#endif
     fc->count += 1u;
 #if HZ10_ENABLE_FRONT_CACHE_STATS
     fc->refill_objects += 1u;
@@ -523,10 +541,16 @@ void* hz10_malloc(size_t size) {
   }
 #endif
   Hz10FrontCache* fc = &hz10_front_cache[class_id];
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+  if (fc->count != 0u) {
+    fc->count -= 1u;
+    void* slot = fc->slots[fc->count];
+#else
   void* slot = fc->head;
   if (slot) {
     fc->head = *(void**)slot;
     fc->count -= 1u;
+#endif
     hz10_front_cache_clear_marker(fc->slot_size, slot);
 #if HZ10_ENABLE_FRONT_CACHE_STATS
     fc->hit_count += 1u;
@@ -579,8 +603,12 @@ int hz10_free(void* ptr) {
 #endif
     Hz10FrontCache* fc = &hz10_front_cache[class_id];
     hz10_freelist_page_mark_local_free(page, ptr);
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+    fc->slots[fc->count] = ptr;
+#else
     *(void**)ptr = fc->head;
     fc->head = ptr;
+#endif
     fc->count += 1u;
     if (fc->count > fc->cap) { /* also the lazy-init entry, see overflow() */
       hz10_front_cache_overflow(fc, class_id);
