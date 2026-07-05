@@ -679,6 +679,72 @@ status:
                    observed win is modest.
                 F3 after F2: reassess remaining remote gap from the new
                    baseline before opening any batched handoff contract.
+              NEXT-ATTACK TRIAGE after F2 (fable5, 20260706):
+              The bench inbox is a pthread-mutex queue (bench/
+              hz10_public_entry_bench.c Hz10BenchInbox) -- at r90, ~90%
+              of ops take a mutex lock/unlock on BOTH producer and
+              consumer sides. That is the measured ~30% futex share,
+              the 2x per-op amplification against the slower allocator,
+              AND the +/-18% noise floor that already cost F1 a false
+              +12% reading. Candidate E is not fully closed until the
+              remote rows can be measured without it. Order:
+              1. HZ10InboxShape-L0 (measurement infra, small): add an
+                 opt-in lock-light inbox variant to the public-entry
+                 bench (bounded MPSC/SPSC ring, relaxed atomics +
+                 bounded spin/yield; env HZ10_BENCH_INBOX=spin). Keep
+                 the mutex inbox as the default/reference lane. Run the
+                 full remote matrix hz10 vs tcmalloc under BOTH inbox
+                 shapes. Outputs: (a) the true allocator-only remote
+                 ratio (hz10 currently pays 2x per-op futex, so its
+                 ratio should improve more than tcmalloc's -- how much
+                 decides everything downstream), (b) a low-noise lane
+                 for every future remote A/B, replacing the n>=30
+                 alternation tax, (c) the input F3 needs.
+                 DONE 20260706 as opt-in measurement lane. log:
+                 bench_results/20260706T165929Z_hz10_inbox_shape_l0/
+                   notes.md
+                 Implementation: `HZ10_BENCH_INBOX=spin` selects a
+                 bounded MPSC ring per destination inbox; default remains
+                 the original mutex lane. Spin cap defaults to the same
+                 worst-case capacity as mutex, rounded to pow2; too-small
+                 explicit caps can stall and are experiment-only.
+                 Matrix THREADS=4 ITERS=500000 RUNS=3, hz10/tcmalloc:
+                   main_r50 ratio 0.529 mutex -> 0.851 spin
+                   main_r90 ratio 0.659 mutex -> 0.727 spin
+                   small_remote50 ratio 0.657 mutex -> 0.598 spin
+                   small_remote90 ratio 0.679 mutex -> 0.624 spin
+                   slot_count1_r90 ratio 0.547 mutex -> 0.763 spin
+                 Read: candidate E is real for main remote rows, and old
+                 mutex ratios understate hz10 there. But spin is not a
+                 universal low-noise lane (tcmalloc spread was high on
+                 small/slot rows), so future remote A/B still needs
+                 row-specific counters/alternation. Do not open F3 from
+                 old mutex rows alone; reassess remaining prize on spin
+                 main rows plus perf counters.
+              2. HZ10FrontCacheDefaultOn-AB-L0 (zero-code decision,
+                 can run any time): n>=30 alternated full-matrix A/B of
+                 HZ10_ENABLE_FRONT_CACHE on vs off; GO flips the
+                 default and unlocks the deferred E4 + capacity-tune
+                 bundle. Expected +3-4% main rows if the small_local0
+                 delta stays within its interleaved reading (-1.4%).
+              3. F3 batched-handoff contract discussion ONLY IF (1)
+                 still shows a large allocator-side remote gap under
+                 the lock-light inbox; if hz10 lands ~0.65-0.7+ there,
+                 the remaining prize is too small for a contract
+                 change and the next frontier moves to
+                 productization instead.
+              4. Strategic option once (1)-(3) settle:
+                 HZ10PreloadShim-L0 -- a real LD_PRELOAD .so
+                 (malloc/free/calloc/realloc/aligned_alloc + thread
+                 lifecycle hook policy) so hz10 can run mimalloc-bench
+                 style macro workloads and real apps; moves the
+                 evidence class beyond this repo's microbench rows.
+                 The malloc(0)/realloc semantics and the quiescent
+                 flush contract are the known design items to resolve
+                 there.
+              small_remote watch item from F2 stays open: +1.4-1.9%
+              cache-miss/op false-sharing cost; only worth a padded
+              variant if small_remote rows become a target.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

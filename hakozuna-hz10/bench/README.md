@@ -715,3 +715,34 @@ Read: the main remote rows move in the intended direction, but the original
 "cuts two of ~5.4 lines/object" ceiling was too optimistic. The predicted
 small_remote false-sharing side exists but was small in this run. Treat this
 as a modest, contract-free locality cleanup, not as remote-row closure.
+
+### HZ10InboxShape-L0
+
+Implemented 20260706 as an opt-in measurement lane. The default public-entry
+bench still uses its historical pthread-mutex inbox. Setting
+`HZ10_BENCH_INBOX=spin` switches to a bounded MPSC ring per destination
+inbox; producer push uses a relaxed ticket, waits on a per-slot sequence
+number, stores the pointer, and publishes with release. The owner drains
+ready slots with acquire loads. The spin capacity defaults to the same
+worst-case capacity used by the mutex lane, rounded to a power of two; an
+explicit `HZ10_BENCH_INBOX_CAP` is experiment-only because too-small caps can
+stall if all workers are trying to push into full peer queues.
+
+Measurement:
+`bench_results/20260706T165929Z_hz10_inbox_shape_l0/notes.md`.
+`THREADS=4 ITERS=500000 RUNS=3`, remote rows only, hz10 vs real tcmalloc:
+
+```text
+row               mutex hz10/tcmalloc   spin hz10/tcmalloc
+main_r50                 0.529                 0.851
+main_r90                 0.659                 0.727
+small_remote50           0.657                 0.598
+small_remote90           0.679                 0.624
+slot_count1_r90          0.547                 0.763
+```
+
+Read: the mutex inbox was materially depressing main remote ratios; candidate
+E is real there. The spin lane is not a universal low-noise oracle, because
+tcmalloc spread was high on several spin rows and small_remote ratios
+worsened. Use this lane to size the main-row harness effect and pair future
+remote decisions with perf counters or alternated A/B where needed.

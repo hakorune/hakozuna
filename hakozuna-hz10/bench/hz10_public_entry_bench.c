@@ -3,9 +3,11 @@
 #include "../src/hz10_platform.h"
 #include "../src/hz10_public_entry.h"
 #include "../src/hz10_size_class.h"
+#include "hz10_public_entry_inbox.h"
 
 #include <pthread.h>
 #include <stdatomic.h>
+#include <string.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,45 +28,6 @@
  * (see scripts/run_hz10_pagemap_vs_hz9_same_run.sh's pattern) -- not
  * wired up in this C binary, which only ever links hz10_* and libc.
  */
-
-typedef struct Hz10BenchInbox {
-  hz10_platform_mutex_t lock;
-  void** items;
-  size_t count;
-  size_t capacity;
-} Hz10BenchInbox;
-
-static void hz10_bench_inbox_init(Hz10BenchInbox* box, size_t capacity) {
-  hz10_platform_mutex_init(&box->lock);
-  box->items = calloc(capacity, sizeof(*box->items));
-  box->count = 0;
-  box->capacity = capacity;
-}
-
-static void hz10_bench_inbox_destroy(Hz10BenchInbox* box) {
-  hz10_platform_mutex_destroy(&box->lock);
-  free(box->items);
-}
-
-static void hz10_bench_inbox_push(Hz10BenchInbox* box, void* ptr) {
-  hz10_platform_mutex_lock(&box->lock);
-  if (box->count < box->capacity) {
-    box->items[box->count++] = ptr;
-  }
-  hz10_platform_mutex_unlock(&box->lock);
-}
-
-/* free_fn is either hz10_free (cast to match) or a libc-free wrapper, so
- * the same inbox plumbing serves both mech=hz10 and mech=system_malloc. */
-static void hz10_bench_inbox_drain(Hz10BenchInbox* box,
-                                  void (*free_fn)(void*)) {
-  hz10_platform_mutex_lock(&box->lock);
-  for (size_t i = 0; i < box->count; ++i) {
-    free_fn(box->items[i]);
-  }
-  box->count = 0;
-  hz10_platform_mutex_unlock(&box->lock);
-}
 
 static void hz10_bench_free_hz10(void* ptr) {
   (void)hz10_free(ptr);
@@ -101,6 +64,11 @@ static uint64_t hz10_bench_env_u64(const char* name, uint64_t fallback) {
     return fallback;
   }
   return strtoull(value, NULL, 10);
+}
+
+static int hz10_bench_env_is(const char* name, const char* expected) {
+  const char* value = getenv(name);
+  return value && strcmp(value, expected) == 0;
 }
 
 static long hz10_bench_maxrss_kb(void) {
@@ -657,12 +625,14 @@ static int hz10_bench_run(const char* mech, int use_hz10, uint32_t threads,
   if (work_seconds <= 0.0) { work_seconds = 1e-9; }
   uint64_t ops = iters * (uint64_t)threads; printf(
       "hz10_public_entry mech=%s threads=%u iters_per_thread=%llu ops=%llu "
-      "run=%u/%u min_size=%zu max_size=%zu remote_pct=%u seconds=%.6f "
+      "run=%u/%u inbox=%s min_size=%zu max_size=%zu remote_pct=%u "
+      "seconds=%.6f "
       "ops_per_s=%.2f work_loop_seconds=%.6f work_loop_ops_per_s=%.2f "
       "work_loop_plus_flush_seconds=%.6f work_loop_plus_flush_ops_per_s=%.2f "
       "post_rss_kb=%ld current_rss_kb=%ld\n",
       mech, threads, (unsigned long long)iters, (unsigned long long)ops, run,
-      runs, min_size, max_size, remote_pct, seconds, (double)ops / seconds,
+      runs, hz10_bench_use_spin_inbox ? "spin" : "mutex", min_size, max_size,
+      remote_pct, seconds, (double)ops / seconds,
       work_seconds, (double)ops / work_seconds, seconds,
       (double)ops / seconds, hz10_bench_maxrss_kb(), hz10_bench_current_rss_kb());
 
@@ -769,6 +739,13 @@ int main(void) {
       hz10_bench_env_u64("HZ10_DUMP_CLASS_STATS", 0ull) != 0ull;
   hz10_bench_thread_exit_reclaim =
       hz10_bench_env_u64("HZ10_THREAD_EXIT_RECLAIM", 0ull) != 0ull;
+  hz10_bench_use_spin_inbox = hz10_bench_env_is("HZ10_BENCH_INBOX", "spin");
+  hz10_bench_spin_inbox_capacity =
+      (size_t)hz10_bench_env_u64("HZ10_BENCH_INBOX_CAP", 0ull);
+  if (hz10_bench_spin_inbox_capacity != 0u &&
+      hz10_bench_spin_inbox_capacity < 1024u) {
+    hz10_bench_spin_inbox_capacity = 1024u;
+  }
 
   if (threads == 0u || min_size == 0u || max_size < min_size) {
     fprintf(stderr, "invalid THREADS/MIN_SIZE/MAX_SIZE\n");
