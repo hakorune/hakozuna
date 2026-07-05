@@ -145,7 +145,8 @@ void hz10_page_remote_free_publish(Hz10FreelistPage* page, void* ptr) {
    * other remote free of this same slot is concurrently doing the same
    * thing, and the owner thread never writes to a slot that isn't in
    * local_free_head. */
-  _Atomic(void*)* stack = &page->remote_free_head[hz10_remote_pick_stripe()];
+  _Atomic(void*)* stack =
+      hz10_freelist_page_remote_head(page, hz10_remote_pick_stripe());
   void* old_head = atomic_load_explicit(stack, memory_order_relaxed);
   do {
     *(void**)ptr = old_head;
@@ -168,7 +169,7 @@ int hz10_page_remote_free(Hz10FreelistPage* page, void* ptr,
 uint32_t hz10_page_drain_remote(Hz10FreelistPage* page) {
   uint32_t merged = 0u;
   for (uint32_t s = 0u; s < HZ10_REMOTE_STRIPE_COUNT; ++s) {
-    _Atomic(void*)* stack = &page->remote_free_head[s];
+    _Atomic(void*)* stack = hz10_freelist_page_remote_head(page, s);
 
     /* Relaxed peek before paying for the exchange: a caller that scans
      * many candidate pages (src/hz10_class_pages.h) calls this on pages

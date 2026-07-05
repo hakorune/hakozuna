@@ -183,6 +183,20 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
       }
       return NULL;
     }
+#if HZ10_ENABLE_STRIPE_SPREAD
+    if (slot_size <= HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE) {
+      page->remote_free_spread =
+          calloc(HZ10_REMOTE_STRIPE_COUNT, sizeof(*page->remote_free_spread));
+      if (!page->remote_free_spread) {
+        free(pending_bits);
+        free(page);
+        if (owns_base) {
+          hz10_platform_release(base, HZ10_PAGE_QUANTUM);
+        }
+        return NULL;
+      }
+    }
+#endif
   }
 
   uint32_t generation =
@@ -193,6 +207,7 @@ static Hz10FreelistPage* hz10_freelist_page_create_common(void* base,
     if (pending_bits != &page->pending_inline_word) {
       free(pending_bits);
     }
+    free(page->remote_free_spread);
     free(page);
     if (owns_base) {
       hz10_platform_release(base, HZ10_PAGE_QUANTUM);
@@ -242,6 +257,7 @@ void* hz10_freelist_page_destroy_reclaim_base(Hz10FreelistPage* page) {
   if (page->pending_bits != &page->pending_inline_word) {
     free(page->pending_bits);
   }
+  free(page->remote_free_spread);
   free(page);
   return base;
 }

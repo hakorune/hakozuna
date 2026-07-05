@@ -5,6 +5,13 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#ifndef HZ10_ENABLE_STRIPE_SPREAD
+#define HZ10_ENABLE_STRIPE_SPREAD 1
+#endif
+#ifndef HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE
+#define HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE 64u
+#endif
+
 #define HZ10_FREELIST_LOCAL_MARKER \
   ((uintptr_t)UINT64_C(0x4831304c46524545)) /* "H10LFREE" */
 
@@ -15,6 +22,12 @@
  * hz10_remote_stack.h, because the array size has to be known wherever
  * Hz10FreelistPage itself is defined. */
 #define HZ10_REMOTE_STRIPE_COUNT 4u
+#define HZ10_CACHE_LINE_BYTES 64u
+
+typedef struct Hz10RemoteStripeLine {
+  _Atomic(void*) head;
+  unsigned char pad[HZ10_CACHE_LINE_BYTES - sizeof(_Atomic(void*))];
+} Hz10RemoteStripeLine;
 
 /*
  * HZ10ThreadLocalFreelistPage-L0: Layer 0 of the HZ10 design -- one class,
@@ -94,11 +107,15 @@ typedef struct Hz10FreelistPage {
    * For the common slot_count<=64 case, the single pending word is stored
    * inline next to remote_free_head to keep the producer claim/publish and
    * owner drain/clear metadata on one shared line. Larger pages keep the
-   * old heap-backed pending array.
+   * old heap-backed pending array. Tiny high-slot-count classes
+   * (slot_size<=HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE) also move the stripe
+   * heads into a separate 64B-strided array so small-class producer
+   * contention does not false-share one compact stripe-head line.
    * These fields are owned by hz10_remote_stack.c; hz10_freelist_page.c
    * only initializes/tears them down and drains once at destroy time.
    */
   _Atomic(void*) remote_free_head[HZ10_REMOTE_STRIPE_COUNT];
+  Hz10RemoteStripeLine* remote_free_spread; /* tiny slot_count>64, else NULL */
   _Atomic(uint64_t) pending_inline_word;
   _Atomic(uint64_t)* pending_bits;
   uint32_t pending_words;   /* (slot_count + 63) / 64 */
@@ -216,6 +233,13 @@ static inline void hz10_freelist_page_set_owner_thread(Hz10FreelistPage* page,
 static inline void hz10_freelist_page_set_class_id(Hz10FreelistPage* page,
                                                   uint32_t class_id) {
   page->class_id = class_id;
+}
+
+static inline _Atomic(void*)* hz10_freelist_page_remote_head(
+    Hz10FreelistPage* page, uint32_t stripe) {
+  return page->remote_free_spread
+             ? &page->remote_free_spread[stripe].head
+             : &page->remote_free_head[stripe];
 }
 
 /*

@@ -745,6 +745,61 @@ status:
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.
+              DONE: spin-lane attribution mini-pass, 20260706 (fable5).
+              log: bench_results/
+                20260706T171050Z_hz10_spin_lane_attribution/notes.md
+              Same-session spin-lane perf matrix (ratios not comparable
+              across sessions -- tcmalloc measured unusually fast this
+              one; counter DELTAS are the deliverable):
+                r50:  cyc +155, ins +127, cache-miss +2.2 /op
+                r90:  cyc +338, ins +291, cache-miss +4.7 /op
+                sr90: cyc +228, ins +105, cache-miss +3.7 /op
+              Read: main rows' residual = mixed instruction diet
+              (find/scan/drain under remote pressure) + ~3 line
+              round-trips per object that F2's colocation could not
+              remove (it merged ADJACENT same-side accesses; the
+              producer->owner->slot alternation remains). small_remote
+              is different in kind: small instruction delta, large miss
+              delta = producer concentration/false sharing on few pages
+              (4 stripe heads on one line + heap pending line) -- the
+              F2 watch item graduates to the primary small_remote
+              mechanism.
+              DECISIONS:
+                - F3 stays CLOSED: nothing in the residual needs a
+                  contract change; the indicated work is contract-free.
+                - NEXT implementation box: HZ10StripeSpread-L0 -- for
+                  slot_count > 64 pages (exact complement of F2's
+                  split), place the 4 stripe heads on separate cache
+                  lines with the heap pending words distributed
+                  alongside; keep F2's compact colocated layout for
+                  slot_count <= 64. Primary gate: cache-miss/op on
+                  small_remote50/90 spin lane; guard: main rows
+                  unchanged by construction.
+                  DONE 20260706 as a narrowed GO. log:
+                  bench_results/20260706T171730Z_hz10_stripe_spread_l0/
+                    notes.md
+                  Implementation was narrowed from the first proposal:
+                  spread stripes only for `slot_count>64 && slot_size<=64`.
+                  The all-slot_count>64 prototype improved small_remote
+                  but made the main_r50 guard noisy; the narrowed shape
+                  directly targets the small_remote false-sharing row and
+                  leaves other large-slot-count classes compact. Perf gate
+                  (spin inbox, THREADS=4 ITERS=500000 RUNS=5, no_spread
+                  vs spread):
+                    small_remote50 cache-miss/op 5.080->4.849 (-4.5%),
+                      cycles/op -4.2%, median ops/s +4.8%.
+                    small_remote90 cache-miss/op 8.318->7.992 (-3.9%),
+                      cycles/op -4.8%, median ops/s +3.8%.
+                    main guards: r50 cache-miss/op -0.2%, cycles +1.0%;
+                      r90 cache-miss/op +0.0%, cycles +0.7%.
+                  Verdict: keep; targeted layout cleanup, not full
+                  remote closure.
+                - THEN HZ10FrontCacheDefaultOn-AB-L0 (queue position
+                  unchanged): with remote reading 0.6-0.85
+                  allocator-only, the LOCAL rows (main_local0 ~0.56)
+                  are again the largest honest gap and front
+                  default-ON is the only measured-but-unharvested
+                  lever there.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

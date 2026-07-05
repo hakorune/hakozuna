@@ -746,3 +746,28 @@ E is real there. The spin lane is not a universal low-noise oracle, because
 tcmalloc spread was high on several spin rows and small_remote ratios
 worsened. Use this lane to size the main-row harness effect and pair future
 remote decisions with perf counters or alternated A/B where needed.
+
+### HZ10StripeSpread-L0
+
+Implemented 20260706 as a narrowed GO. `slot_count <= 64` keeps F2's compact
+colocated pending/stripe layout. For `slot_count > 64 && slot_size <= 64`,
+the 4 remote stripe heads move into a 64B-strided heap array; other
+large-slot-count pages stay compact. The first all-`slot_count>64` prototype
+helped small_remote but made the main_r50 guard noisy, so the landed shape
+targets only the small-class false-sharing mechanism.
+
+Measurement:
+`bench_results/20260706T171730Z_hz10_stripe_spread_l0/notes.md`.
+`HZ10_BENCH_INBOX=spin THREADS=4 ITERS=500000 RUNS=5 MODE=0`, no-spread
+build (`-DHZ10_ENABLE_STRIPE_SPREAD=0`) vs default spread build:
+
+```text
+small_remote50: cache-miss/op 5.080 -> 4.849 (-4.5%), ops +4.8%
+small_remote90: cache-miss/op 8.318 -> 7.992 (-3.9%), ops +3.8%
+main_r50 guard: cache-miss/op 6.644 -> 6.632 (-0.2%), cycles +1.0%
+main_r90 guard: cache-miss/op 11.514 -> 11.518 (+0.0%), cycles +0.7%
+```
+
+Read: this removes a measurable small_remote false-sharing cost without
+moving the main-row counter guard. It is a targeted layout cleanup, not a
+full remote-row closure.
