@@ -347,6 +347,95 @@ status:
       mechanism with another, unproven to net positive. Do not open
       either remote-publication redesign branch before HZ10LocalPathTrim-
       L0's own measurement pass reports back.
+      DONE: HZ10LocalPathTrim-L0 measurement, 20260705.
+      log: bench_results/20260705T013024Z_hz10_local_path_trim_l0/combined.log
+      New opt-in bench, `make bench-public-entry-local-path`
+      (bench/hz10_public_entry_local_path_bench.c): fixed-size (not
+      mixed-random) local0 rows by class, split into alloc_free/
+      free_only/alloc_only phases against a warm, steady-state working
+      set (WARMUP_ROUNDS cycles the whole set before timing starts). No
+      cross-thread barriers needed -- REMOTE_PCT=0 by construction, every
+      thread's timing is independent, same reasoning as the existing
+      public-entry bench. Also prints sizeof/offsetof for
+      Hz10FreelistPage, answering one of the doc's open design questions
+      directly: owner_thread_token (offset 32) and every field
+      hz10_freelist_page_free()'s local-free fast path needs (base,
+      local_free_head, generation) are all inside the first 40 bytes --
+      same first cache line, not a separate one, on this build.
+      CORRECTNESS FIX during implementation: the first working version
+      used a fixed WORKING_SET=4096 for every class. For small-slot_count
+      classes (class 20/21's 2 slots, the slot_count=1 isolating class's
+      1 slot), that meant thousands of DISTINCT pages -- eviction-on-add
+      (src/hz10_class_pages.c) pushed most of them into `retired` during
+      setup, and the timed alloc phase fell through find_with_capacity()'s
+      bounded active-list scan into harvest's budgeted (4-per-call)
+      retired sweep, which could not keep up and started paying for
+      genuinely fresh pages (real mmap) every few calls -- the bench hung
+      past a 5-minute timeout on class_size=65536. This was re-measuring
+      already-documented pool/scan-limit churn (current_task.md's
+      "slot_count=1 isolation gap" and "class_pages bounded scan"
+      sections), not the steady-state warm cost this box wants. Fixed by
+      clamping working_set to slot_count*32 pages per class
+      (clamp_working_set_to_pages()), keeping every class's working set
+      inside one warm, uncontested active-list window.
+      THREADS=4 WORKING_SET=4096 (clamped) ROUNDS=2000 WARMUP_ROUNDS=5
+      RUNS=10 median, alloc_free mode, ns/op:
+        class_size=16   (working_set=4096): hz10=13.97  system_malloc=20.36
+        class_size=64   (working_set=4096): hz10=16.90  system_malloc=21.74
+        class_size=24576(working_set=64):   hz10=58.41  system_malloc=1999.30
+        class_size=32768(working_set=64):   hz10=60.88  system_malloc=2023.46
+        class_size=65536(working_set=32):   hz10=99.93  system_malloc=2112.46
+      IMPORTANT CAVEAT caught before drawing any conclusion: the
+      system_malloc numbers above are plain glibc, not real tcmalloc --
+      glibc's large-allocation path does not amortize a fixed-size
+      repeated pattern the way its small-bin tcache does, so the
+      "hz10 beats system_malloc by 20-35x" reading for the large classes
+      is really "glibc is pathological here," not an hz10 win. Re-ran the
+      same three large classes and the two small ones through the same
+      bench with LD_PRELOAD=libtcmalloc_minimal.so.4 (THREADS=4
+      WORKING_SET=4096/64/32 ROUNDS=2000 WARMUP_ROUNDS=5 RUNS=3,
+      alloc_free), and the picture reverses completely:
+        class_size=16:    hz10=13.97ns  tcmalloc~9.2-9.5ns   (hz10 ~1.4-1.5x slower)
+        class_size=64:    hz10=16.90ns  tcmalloc~11.4-11.6ns (hz10 ~1.4-1.5x slower)
+        class_size=24576: hz10=58.41ns  tcmalloc~11.0-12.0ns (hz10 ~5x slower)
+        class_size=32768: hz10=60.88ns  tcmalloc~10.1-11.0ns (hz10 ~5-6x slower)
+        class_size=65536: hz10=99.93ns  tcmalloc~9.2-9.7ns   (hz10 ~10x slower)
+      This directly answers the doc's open question ("do class 20/21 and
+      slot_count1 account for most local0 loss, or is the loss uniform"):
+      NOT uniform. The gap widens sharply as slot_count shrinks -- small
+      classes are a moderate ~1.4-1.5x behind tcmalloc, large/small-
+      slot_count classes are 5-10x behind.
+      Follow-up check on WHY: swept WORKING_SET (still class_size=24576,
+      alloc_free) at 2/8/32/128 (clamped to 64) items -- ns/op rose
+      monotonically with page count (~24-33ns at working_set=2, one
+      page, no scanning possible, up to ~57-62ns at working_set=64/32
+      pages). This is consistent with, not a new discovery beyond, the
+      already-concluded HZ10ActiveScanCost-L0 investigation thread
+      (current_task.md, above): find_with_capacity()'s active-list scan
+      cost for 2-slot classes, already measured via internal counters and
+      already NO-GO'd for both move-to-front and second-active-page
+      cache fixes. This box's contribution is confirming that same,
+      already-understood cost directly against real tcmalloc (5-10x,
+      not just an internal ns/page-scanned counter) rather than finding a
+      new mechanism.
+      Decision: do NOT reopen a cache-policy fix for this (MTF and
+      second-active are both already NO-GO, see the HZ10ActiveScanCost-L0
+      entries above, for the same underlying cost this box just
+      re-confirmed from a different angle). Route/local-free
+      specialization (this box's original candidate A angle) is NOT the
+      dominant local0 cost for large classes -- even the near-zero-scan
+      working_set=2 case is a small fraction of the full gap. The
+      remaining, larger local0 lever for classes 20/21/slot_count1 is a
+      structural one (a different page-selection/refill design for
+      small-slot_count classes), not yet scoped, and sits in the same
+      "needs a bigger design, not proven safe yet" category as the
+      pending-bit redesign on the remote side. Small classes (16/64,
+      ~1.4-1.5x behind tcmalloc) remain the more tractable near-term
+      target if further local0 work is wanted, via ordinary route/
+      local-free micro-optimization -- but that gap is modest, not the
+      dominant driver of main_local0's 0.556 aggregate ratio the way
+      classes 20/21 are once the working set spans more than a
+      one-page, no-scan case.
 
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as

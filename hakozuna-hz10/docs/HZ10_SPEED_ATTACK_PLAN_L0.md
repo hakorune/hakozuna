@@ -454,3 +454,21 @@ synchronization bug in the first bench version made the whole remote path
 look artificially expensive) is exactly the kind of mistake this plan's
 "decision-grade attribution" bar was written to catch before implementing
 behavior changes.
+
+HZ10LocalPathTrim-L0's own measurement pass is also done (bench/README.md
+and current_task.md have the full numbers). Fixed-size local0 rows by class,
+against real tcmalloc (not just glibc, which is pathological for large
+repeated-size allocations and gives a misleading reading): small classes
+(16/64 bytes) are a moderate ~1.4-1.5x behind tcmalloc; classes matching
+20/21 and the slot_count=1 isolating class are 5-10x behind, and that gap
+grows with the number of distinct pages a working set spans. This is not a
+new cost -- it is the same active-list scan cost the earlier
+HZ10ActiveScanCost-L0 line already measured and already found NO-GO fixes
+for (move-to-front, second-active cache), now confirmed directly against
+real tcmalloc instead of only via internal counters. Do not reopen a
+cache-policy fix for it. The remaining local0 lever for these classes is a
+structural page-selection/refill redesign, not yet scoped -- put it in the
+same category as the deferred pending-bit redesign: real, understood, and
+deliberately not attempted without a dedicated design pass. Small classes'
+more modest ~1.4-1.5x gap remains the more tractable ordinary
+route/local-free target if further local0 work is wanted next.

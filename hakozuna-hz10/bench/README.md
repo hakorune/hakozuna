@@ -620,6 +620,54 @@ frees). The next implementation box is HZ10LocalPathTrim-L0, not either
 remote-publication redesign branch in docs/HZ10_SPEED_ATTACK_PLAN_L0.md --
 those only attack the smaller ~1.67ns remote-specific remainder.
 
+Local path trim (HZ10LocalPathTrim-L0), measurement phase:
+`bench_results/20260705T013024Z_hz10_local_path_trim_l0/combined.log`.
+New opt-in `make bench-public-entry-local-path`
+(bench/hz10_public_entry_local_path_bench.c): fixed-size (not mixed
+random-size) local0 rows by class, alloc_free/free_only/alloc_only phases
+against a warm, steady-state working set, no cross-thread barriers needed
+(REMOTE_PCT=0 by construction). Also settles one open design question
+directly: `owner_thread_token` and every field the local-free fast path
+needs are all within the first 40 bytes of `Hz10FreelistPage` -- same
+cache line, not a separate one.
+
+THREADS=4 WORKING_SET=4096 (clamped per-class to <=32 pages, see the
+bench's own comment for why -- an earlier version without the clamp hung
+past 5 minutes on class_size=65536, re-measuring the already-documented
+slot_count=1/scan-limit churn rather than steady-state warm cost) ROUNDS=2000
+WARMUP_ROUNDS=5 RUNS=10, alloc_free mode median:
+
+```text
+class_size   hz10_ns   system_malloc(glibc)_ns   real_tcmalloc_ns (separate LD_PRELOAD run)
+16             13.97           20.36                   ~9.2-9.5
+64             16.90           21.74                   ~11.4-11.6
+24576          58.41         1999.30                   ~11.0-12.0
+32768          60.88         2023.46                   ~10.1-11.0
+65536          99.93         2112.46                    ~9.2-9.7
+```
+
+Important caveat caught before drawing any conclusion: the huge hz10-vs-
+system_malloc win on the large classes is glibc being pathological for a
+fixed-size repeated pattern, not an hz10 strength -- real tcmalloc (via
+LD_PRELOAD) reverses it completely. Against real tcmalloc, small classes
+are a moderate ~1.4-1.5x behind; large/small-slot_count classes (matching
+class 20/21 and the slot_count=1 isolating class) are 5-10x behind. This
+directly answers "is the local0 loss uniform across classes": no.
+
+Follow-up swept WORKING_SET (2/8/32/128 items, class_size=24576 fixed):
+ns/op rose monotonically with page count (~24-33ns at working_set=2, one
+page, no scanning possible, up to ~57-62ns at 32-64 pages). This is the
+same active-list scan cost the HZ10ActiveScanCost-L0 line above already
+measured and already NO-GO'd fixes for (move-to-front, second-active
+cache) -- this box confirms it directly against real tcmalloc rather than
+finding a new mechanism. Decision: do not reopen a cache-policy fix here.
+The remaining large-class local0 lever is a structural page-selection/
+refill redesign for small-slot_count classes, not yet scoped -- similar in
+kind to the deferred pending-bit redesign on the remote side. Small
+classes remain the more tractable near-term target if further local0 work
+is wanted, but that gap (~1.4-1.5x) is modest next to classes 20/21's
+5-6x.
+
 large-object path (src/hz10_large_alloc.{h,c}): size > HZ10_PAGE_QUANTUM
   now succeeds instead of returning NULL, via a dedicated direct-mmap
   path (see current_task.md for the design and a real Box 1 bug this
