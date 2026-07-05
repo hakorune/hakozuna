@@ -232,6 +232,12 @@ status:
       than raw ns/op, add small_local0 and slot_count1_local0 to the baseline
       refresh, and close the harness/inbox-shape concern before trusting the
       stage result.
+      fable5 review, 20260705: applied. Local-path branch is now first-class
+      (candidate shapes + open questions), reclassification is documented as
+      a claim_ns sub-breakdown rather than a separate additivity term,
+      stats-dump diagnostics are explicitly separated from tcmalloc ratio
+      runs, and the stage-cost protocol now follows the RMW microbench style
+      (THREADS/PAGES/REPEAT/RUNS recorded).
 
     HZ10ActiveScanCost-L0 and its follow-on boxes (HZ10ActiveHitDepthByClass-L0,
     HZ10ActiveMoveToFront-AB-L0, HZ10TwoSlotActivePattern-L0) are CONCLUDED as

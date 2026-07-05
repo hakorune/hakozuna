@@ -50,6 +50,20 @@ weak isolated one-page timings. Existing route and RMW benches already cover
 important isolated cases; the new box must explain how those pieces add up in
 the integrated public-free path.
 
+Reviewer feedback 2026-07-05, fable5:
+
+```text
+plan verdict:
+  direction still GO
+
+required doc fixes:
+  make the local-path branch as deep as the remote branches
+  state that reclassification is a claim_ns sub-breakdown, not a fifth
+    additivity term
+  split stats-dump diagnostics from tcmalloc ratio runs
+  specify the stage-cost measurement protocol
+```
+
 ## Load-Bearing Constraints
 
 Do not weaken these without a separate correctness design:
@@ -179,6 +193,23 @@ PAGES-style cache dispersion. Avoid timing every production operation with
 always-on clock reads. Use compile-time opt-in counters or a separate bench
 binary.
 
+Protocol:
+
+```text
+THREADS=4
+PAGES=4096 or larger for route/cache dispersion
+REPEAT=20000 or larger, matching hz10_remote_rmw_microbench style
+RUNS=5 for wiring, RUNS=10 for a decision
+
+record every run:
+  THREADS PAGES REPEAT RUNS
+  remote_pct or local_pct used for weighted output
+```
+
+This box is closer to `hz10_remote_rmw_microbench` than to fixed-iteration
+`hz10_public_entry_bench`: it is measuring small ns/op stages and needs enough
+repeat count to make the timer overhead irrelevant.
+
 Required output:
 
 ```text
@@ -208,6 +239,12 @@ frequency-weighted contribution:
   total_weighted_ns_per_logical_free
 ```
 
+Important accounting rule: `remote claim classification recomputation` is an
+internal breakdown of `claim_ns`, because `hz10_page_remote_free_claim()` calls
+`hz10_page_classify_for_remote()` internally. Do not add it as a separate
+fifth additivity term, or `interaction_delta` will be inflated by double
+counting.
+
 Decision: pick the first implementation box from the largest weighted
 contribution, not the largest raw ns/op stage. `route` runs on every
 `hz10_free(ptr)`, while claim/note/publish only run on remote frees. At r50,
@@ -220,7 +257,10 @@ capture.
 Harness check: before trusting the stage result, verify the same-run
 hz10-vs-tcmalloc script uses the same operation stream and thread assignment
 for both allocators and that timed allocator sections do not include external
-inbox lock work. This is the cheap way to close candidate E.
+inbox lock work. This is the cheap way to close candidate E. Also keep stats
+dump and tcmalloc ratio runs separate: `HZ10_DUMP_CLASS_STATS=1` adds hz10-only
+work inside the measured public-entry window, so using it in the same run as a
+tcmalloc ratio would create the harness asymmetry this check is meant to avoid.
 
 ### Branch After 2A. HZ10OwnerTokenFastState-Design-L0
 
@@ -300,6 +340,30 @@ active page refill frequency for large classes
 bench touch pattern
 ```
 
+Candidate shapes:
+
+```text
+route result fastening:
+  avoid repeating work already proven by hz10_pagemap_route() where a
+  same-call path can safely carry route results forward
+
+route/local-free specialization:
+  separate a public-free local fast lane from the remote claim/publish lane,
+  while preserving fail-closed route validation for untrusted pointers
+
+class-local warm-page prefetch or cache:
+  reduce mixed-size active-page misses only if fixed-size warm rows prove
+  page selection/refill dominates
+
+large-class local refill tuning:
+  target class 20/21 and slot_count1 local rows if baseline refresh shows
+  local0 deltas are concentrated there
+
+cold-start amortization:
+  attack pagemap/page-create setup only if pre-warmed local rows are close to
+  tcmalloc but normal local rows are not
+```
+
 Recommended measurement:
 
 ```text
@@ -308,6 +372,21 @@ alloc-only from warm active page
 free-only local route+free
 random-size local0 with pre-warmed pages
 route bench comparison with PAGES round-robin
+```
+
+Open design questions for reviewers:
+
+```text
+If route dominates, can any metadata from hz10_pagemap_route() be carried into
+  claim/local-free without weakening stale/interior/misaligned rejection?
+Is owner_thread_token on a separate cache line from the route entry in the hot
+  local-free path, and is that the real local0 ceiling?
+Do class 20/21 and slot_count1 account for most local0 loss, or is the loss
+  uniform across classes?
+Does pre-warming pages collapse the local gap, proving cold-start/pagemap
+  setup rather than steady-state fast path?
+Can fixed-size warm active-page alloc/free approach tcmalloc, or is the basic
+  intrusive-page substrate itself the ceiling?
 ```
 
 Decision: if local free route dominates, optimize public route/free. If alloc
