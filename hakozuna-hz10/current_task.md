@@ -800,6 +800,27 @@ status:
                   are again the largest honest gap and front
                   default-ON is the only measured-but-unharvested
                   lever there.
+                  SCOPE 20260706: run interleaved front OFF(default
+                  build) vs front ON (`-DHZ10_ENABLE_FRONT_CACHE=1`) A/B
+                  before touching the default. Gate: full public-entry
+                  row matrix, same-session tcmalloc pairing where useful,
+                  no material small_local0 regression, RSS guard remains
+                  green. If GO, flip the public header default and keep
+                  `-DHZ10_ENABLE_FRONT_CACHE=0` as the rollback lane.
+                  DONE 20260706 as NO-GO for default ON. log:
+                  bench_results/
+                    20260706T180832Z_hz10_front_default_on_ab_l0/notes.md
+                  Full public-entry matrix, THREADS=4 ITERS=500000,
+                  10 off/on alternations per row:
+                    main_local0 0.978 (-2.2%), main_r50 1.089 (+8.9%),
+                    main_r90 1.080 (+8.0%), medium_local0 1.008 (+0.8%),
+                    small_local0 0.948 (-5.2%), small_remote50 1.016
+                    (+1.6%), small_remote90 0.983 (-1.7%),
+                    slot_count1_local0 1.028 (+2.8%),
+                    slot_count1_r90 0.990 (-1.0%).
+                  Verdict: keep front cache opt-in. Remote main wins are
+                  real, but the all-row default violates the small_local0
+                  regression gate. Recorded in docs/HZ10_NO_GO_LEDGER.md.
         (2) slot/page coloring for slot_count<=2 classes -- the residual
             65536 gap (2.4x not 1.5x) is L1 set aliasing of 64KiB-aligned
             page-base slots (ws sweep 8/16/32 -> 19/23/26ns with zero

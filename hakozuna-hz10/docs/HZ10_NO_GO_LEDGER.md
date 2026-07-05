@@ -227,3 +227,33 @@ Decision:
 - Future remote A/Bs need either n>=30/side with alternation or a direct
   perf-counter endpoint. For HZ10PendingStripeColocate-L0, cache-miss/op is
   the primary gate and ops/s is secondary.
+
+## 20260706 Front Cache Default-On
+
+Status: `NO-GO as a global default`
+
+Evidence:
+
+- `bench_results/20260706T180832Z_hz10_front_default_on_ab_l0/notes.md`
+- Full public-entry matrix, `THREADS=4 ITERS=500000`, 10 off/on alternations
+  per row, front ON built with `-DHZ10_ENABLE_FRONT_CACHE=1`.
+- Median front ON / OFF:
+  - main_local0: 0.978 (-2.2%)
+  - main_r50: 1.089 (+8.9%)
+  - main_r90: 1.080 (+8.0%)
+  - medium_local0: 1.008 (+0.8%)
+  - small_local0: 0.948 (-5.2%)
+  - small_remote50: 1.016 (+1.6%)
+  - small_remote90: 0.983 (-1.7%)
+  - slot_count1_local0: 1.028 (+2.8%)
+  - slot_count1_r90: 0.990 (-1.0%)
+
+Decision:
+
+- Do not flip `HZ10_ENABLE_FRONT_CACHE` to default ON.
+- The remote-main gains are real, but the all-row default violates the
+  small_local0 regression gate and also regresses main_local0 in this
+  interleaved session.
+- Keep the front cache opt-in for bulk/local-path and targeted experiments.
+  Reopen only with a small-class-safe shape or a selective policy that avoids
+  reintroducing the measured threshold-branch regression.

@@ -771,3 +771,26 @@ main_r90 guard: cache-miss/op 11.514 -> 11.518 (+0.0%), cycles +0.7%
 Read: this removes a measurable small_remote false-sharing cost without
 moving the main-row counter guard. It is a targeted layout cleanup, not a
 full remote-row closure.
+
+### HZ10FrontCacheDefaultOn-AB-L0
+
+Measured 20260706 and closed as default `NO-GO`. The front-cache lane remains
+opt-in. Protocol: full public-entry matrix, `THREADS=4 ITERS=500000`, 10
+off/on alternations per row. Front ON was built with
+`-DHZ10_ENABLE_FRONT_CACHE=1`; OFF was the default build.
+
+```text
+main_local0:        0.978 (-2.2%)
+main_r50:           1.089 (+8.9%)
+main_r90:           1.080 (+8.0%)
+medium_local0:      1.008 (+0.8%)
+small_local0:       0.948 (-5.2%)
+small_remote50:     1.016 (+1.6%)
+small_remote90:     0.983 (-1.7%)
+slot_count1_local0: 1.028 (+2.8%)
+slot_count1_r90:    0.990 (-1.0%)
+```
+
+Read: remote-main gains are real, but the global default violates the
+small_local0 regression gate. Keep front cache opt-in until there is a
+small-class-safe shape or selective policy.
