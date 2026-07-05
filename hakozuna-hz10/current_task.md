@@ -805,6 +805,36 @@ status:
                  operational, but this is a smoke/first evidence row,
                  not the final headline table. NEXT: add real
                  mimalloc-bench subset or longer macro rows.
+                 MACRO RSS ATTRIBUTION DONE 20260706 (fable5): the
+                 python_alloc RSS excess is now decomposed. log:
+                 bench_results/
+                   20260706T190000Z_hz10_macro_rss_attribution/notes.md
+                 Two experiments: (1) front-cache shim on this row is
+                 NO-GO (wall slightly worse, RSS identical -- small
+                 classes, interleaved churn); (2) fit-boundary A/B:
+                 sizes just OVER class edges give hz10 +49.2% RSS vs
+                 glibc, sizes just UNDER give +10.8%. The ~34MB swing
+                 IS class rounding, matching the arithmetic (uniform
+                 1..4096 over the current table = +16.6% expected =
+                 ~+14MB of the row's +24.5MB; residual ~+9MB =
+                 retention/pool/metadata).
+                 NEXT after this attribution, in order:
+                   - HZ10ClassGranularity-L1 (primary): quarter-step
+                     classes (2^k x {1,1.25,1.5,1.75}) in the 64..8192
+                     band ONLY -- above 8192 quarter classes waste
+                     quantum tail instead (40960 = 1 slot + 37.5%
+                     slack), so the big band waits for a multi-quantum
+                     page design. Expected: uniform overhead +16.6% ->
+                     ~+11%, worst case +50% -> +25%. Class count 24 ->
+                     ~36. Gates MUST include small-working-set rows and
+                     the full micro matrix (more classes spread working
+                     sets over more pages -- RSS can regress on tiny
+                     footprints), plus this python row's maxrss.
+                   - HZ10ShimExitStats-L0 (secondary): env-gated atexit
+                     per-class/pool dump to decompose the ~+9MB
+                     best-fit residual before touching retention
+                     policy; retention moves current_rss (redis-class
+                     servers), not churn maxrss peaks.
               small_remote watch item from F2 stays open: +1.4-1.9%
               cache-miss/op false-sharing cost; only worth a padded
               variant if small_remote rows become a target.
