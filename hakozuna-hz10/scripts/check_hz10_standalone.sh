@@ -44,11 +44,28 @@ fi
 echo "[hz10-standalone] checking local build products are ignored"
 if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   for product in hz10_pagemap_route_smoke hz10_pagemap_route_bench \
+      hz10_pagemap_route_diff_smoke \
       hz10_freelist_page_smoke hz10_freelist_page_bench \
       hz10_remote_stack_drain_smoke hz10_remote_stack_drain_bench \
+      hz10_multiclass_remote_bench hz10_remote_rmw_microbench \
       hz10_bounded_page_pool_smoke hz10_bounded_page_pool_bench \
-      hz10_public_entry_smoke hz10_public_entry_bench \
-      libhz10.so hz10_shim_api_smoke; do
+      hz10_class_pages_smoke hz10_public_entry_smoke \
+      hz10_public_entry_retired_local_smoke \
+      hz10_public_entry_retired_local_bench hz10_public_entry_bench \
+      hz10_public_entry_active_scan_bench \
+      hz10_public_entry_active_mtf_bench \
+      hz10_public_entry_remote_batch_locality_bench \
+      hz10_public_entry_stage_cost_bench \
+      hz10_public_entry_local_path_bench \
+      hz10_public_entry_front_smoke hz10_public_entry_front_array_smoke \
+      hz10_public_entry_front_bench hz10_public_entry_front_array_bench \
+      hz10_public_entry_local_path_front_bench \
+      hz10_public_entry_local_path_front_array_bench \
+      hz10_public_entry_two_slot_bench hz10_class_pages_scan_bench \
+      hz10_size_class_smoke hz10_retired_ready_smoke \
+      hz10_retired_ready_bench hz10_public_entry_steady_state_bench \
+      hz10_public_entry_thread_reuse_bench \
+      libhz10.so libhz10_fine.so hz10_shim_api_smoke; do
     if ! git -C "$ROOT" check-ignore -q "$product"; then
       echo "[hz10-standalone] expected local build product ignored: ${product}" >&2
       exit 1

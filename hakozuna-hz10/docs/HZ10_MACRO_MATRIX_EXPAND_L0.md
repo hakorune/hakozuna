@@ -1,6 +1,6 @@
 # HZ10MacroMatrixExpand-L0
 
-Status: scoped design, not implemented.
+Status: implemented and measured; opened larson thread-churn attribution.
 
 Purpose: move the next decision from micro rows to a product-shaped
 LD_PRELOAD matrix. This single box should answer both pending questions:
@@ -19,10 +19,10 @@ change allocator policy or thread-exit ownership.
 The recent RSS work closed the obvious micro-tuning loops:
 
 ```text
-fine classes:       NO-GO as allocator default; useful macro/RSS opt-in.
+fine classes:       NO-GO as allocator default; python/RSS diagnostic only.
 retired-local hook: NO-GO as default; diagnostic/footprint lane only.
 front cache:        opt-in only; not a fix for python_alloc RSS.
-F3 handoff:         closed until macro/thread-churn evidence proves value.
+thread-exit handoff: opened as a design question by larson attribution.
 ```
 
 The remaining questions require macro evidence. `python_alloc` already

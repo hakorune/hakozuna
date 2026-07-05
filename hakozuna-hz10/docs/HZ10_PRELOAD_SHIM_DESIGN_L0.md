@@ -357,9 +357,11 @@ remain the stronger measured RSS lever; expand the macro matrix and price
 thread-churn/no-destructor behavior before opening another local-free
 retention tweak.
 
-## HZ10MacroMatrixExpand-L0 scoped next box
+## HZ10MacroMatrixExpand/Larson record
 
-SCOPED 20260707: see `docs/HZ10_MACRO_MATRIX_EXPAND_L0.md`.
+SCOPED and IMPLEMENTED 20260707: see
+`docs/HZ10_MACRO_MATRIX_EXPAND_L0.md` and
+`docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md`.
 
 The next D4 box is not another allocator micro-optimization. It expands the
 macro matrix so one run can answer two open decisions:
@@ -403,21 +405,15 @@ flush remains forbidden until remote-free safety is proven.
 ## Open questions for reviewers
 
 ```text
-1. free() of a pointer from a DIFFERENT thread's dead owner: already
-   safe (remote path), but should the shim ever drain orphan pages
-   opportunistically (any thread may NOT: drain is owner-only by
-   contract)? v0 says no; confirm nobody expects otherwise.
-2. Is abort-on-foreign-free too aggressive for D3's program set?
-   (dlopen'd libraries with static ctors predating the shim shouldn't
-   exist under LD_PRELOAD, but PYTHONMALLOC / interpreter arenas may
-   surprise; the tolerate env exists for exactly this triage.)
-3. aligned_alloc via the large path: acceptable v0 waste, or do mid
-   alignments (32..4096) deserve a class-side story before macro runs
-   (some workloads memalign heavily)? Recommendation: measure in D4
-   first.
-4. Does D1's fixed-size metadata node (~1KiB for the worst-case
-   pending+spread) waste too much for tiny-slot_count pages, or is
-   page-count times 1KiB trivially acceptable (it is ~1.6% of a
-   64KiB quantum)? Recommendation: accept, revisit only if D4's RSS
-   columns say otherwise.
+1. ACTIVE DESIGN QUESTION: free() of a pointer from a different thread's
+   dead owner is accepted through the remote path, but automatic orphan
+   drain is still forbidden because drain is owner-only. The next box is
+   ownership/handoff design, not destructor flush.
+2. ANSWERED FOR NOW: abort-on-foreign-free remains the fail-closed default;
+   `HZ10_SHIM_TOLERATE_FOREIGN=1` is the compatibility triage lane.
+3. STILL OPEN: aligned_alloc via the large path is acceptable v0 waste.
+   Revisit only if macro rows with aligned-heavy workloads make it visible.
+4. STILL OPEN BUT NOT CURRENT BOTTLENECK: metadata node overhead was not the
+   larson driver; active orphan pages explained ~94-95% of sampled RSS.
+   Revisit only if future macro attribution points back to metadata.
 ```

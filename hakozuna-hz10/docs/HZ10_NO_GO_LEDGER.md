@@ -282,13 +282,22 @@ Evidence:
   key local regression:
   - main_local0: ~0.77x
   - small_local0: ~0.93x
+- Later macro-matrix evidence confirmed that the fine table is not a broad
+  shim/product opt-in either:
+  - `bench_results/20260707T010000Z_hz10_macro_matrix_expand_l0/`
+  - `python_alloc` RSS improved (`hz10` 116.8MB -> `hz10+fine` 106.6MB),
+    but wall time was slightly worse than default HZ10.
+  - Redis server RSS worsened (`hz10` 7.6MB -> `hz10+fine` 8.2MB).
+  - Larson worsened materially: sampled current RSS about 7.8GB -> 9.2GB,
+    and throughput about 1.061M -> 0.971M ops/s.
 
 Decision:
 
 - Do not enable fine size classes by default.
-- Keep `HZ10_ENABLE_FINE_SIZE_CLASSES=1` as an opt-in macro/RSS probe lane.
-  It preserves the useful evidence that class rounding drives a large part
-  of `python_alloc` RSS, while making rollback immediate.
+- Keep `HZ10_ENABLE_FINE_SIZE_CLASSES=1` as an opt-in python/RSS diagnostic
+  lane, not as a broad shim recommendation. It preserves the useful evidence
+  that class rounding drives a large part of `python_alloc` RSS, while
+  making rollback immediate.
 - Reopen only with a policy that avoids spreading interleaved/local
   workloads across too many live classes/pages, or with a macro-specific
   shim mode justified by product-level measurements.

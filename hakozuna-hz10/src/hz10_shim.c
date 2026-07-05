@@ -49,6 +49,12 @@ static int hz10_shim_exit_stats_enabled(void) {
   return value && value[0] == '1' && value[1] == '\0';
 }
 
+/* Measurement-only env knobs:
+ * - HZ10_SHIM_EXIT_STATS=1 dumps process-exit stats.
+ * - HZ10_SHIM_THREAD_EXIT_STATS=1 dumps per-thread stats from a pthread
+ *   destructor. It is diagnostic only, never reclaim.
+ * - HZ10_SHIM_EXIT_STATS_CLASSES=0 suppresses per-class rows; summaries and
+ *   class_totals still print. Default is class rows ON for small probes. */
 static int hz10_shim_thread_exit_stats_enabled(void) {
   const char* value = getenv("HZ10_SHIM_THREAD_EXIT_STATS");
   return value && value[0] == '1' && value[1] == '\0';
@@ -179,6 +185,9 @@ static void hz10_shim_thread_stats_destructor(void* value) {
   if (!value || !hz10_shim_thread_exit_stats) {
     return;
   }
+  /* Dump-only. Do not call hz10_public_entry_flush_thread_cache_quiescent()
+   * or destroy pages here: pthread exit is not a proven quiescent boundary
+   * for remote frees into this thread's pages. */
   hz10_shim_dump_exit_stats();
 }
 
@@ -254,6 +263,9 @@ static void* hz10_shim_aligned_alloc_impl(size_t alignment, size_t size) {
   if (alignment <= (size_t)HZ10_MIN_ALIGN) {
     return hz10_malloc(request);
   }
+  /* v0 alignment story: route alignments above the small-class minimum
+   * through the large path, which is 64KiB quantum aligned. Requests above
+   * that quantum are rejected until a dedicated aligned path exists. */
   if (alignment > (size_t)HZ10_PAGE_QUANTUM) {
     errno = ENOMEM;
     return NULL;

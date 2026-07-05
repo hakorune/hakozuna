@@ -6,6 +6,7 @@
 /hz10_remote_stack_drain_smoke
 /hz10_remote_stack_drain_bench
 /hz10_multiclass_remote_bench
+/hz10_remote_rmw_microbench
 /hz10_bounded_page_pool_smoke
 /hz10_bounded_page_pool_bench
 /hz10_class_pages_smoke
@@ -22,6 +23,9 @@
 /hz10_public_entry_front_smoke
 /hz10_public_entry_front_bench
 /hz10_public_entry_local_path_front_bench
+/hz10_public_entry_front_array_smoke
+/hz10_public_entry_front_array_bench
+/hz10_public_entry_local_path_front_array_bench
 /hz10_class_pages_scan_bench
 /hz10_size_class_smoke
 /hz10_retired_ready_smoke

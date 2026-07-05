@@ -17,7 +17,8 @@
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
 	preload preload-fine preload-fine-size-classes preload-retired-local \
-	preload-fine-retired-local smoke-shim-api smoke-shim-foreign bench-macro-preload \
+	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
+	bench-macro-preload bench-macro-matrix \
 	bench-larson-thread-churn-attribution \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
@@ -198,11 +199,13 @@ $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
 
 preload: $(ROOT)/libhz10.so
 
+# Stable sibling preload artifacts for side-by-side macro matrix rows.
 $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 
+# Manual probe lanes below intentionally clobber libhz10.so.
 preload-fine-size-classes: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -223,6 +226,8 @@ smoke-shim-foreign: $(ROOT)/libhz10.so
 
 bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
+
+bench-macro-matrix: bench-macro-preload
 
 bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
 	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh

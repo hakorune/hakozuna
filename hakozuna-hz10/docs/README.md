@@ -14,6 +14,11 @@ HZ10_NO_GO_LEDGER.md:
 HZ10_DEBUG_NOTES.md:
   rare bug records, race fixes, and future load-bearing guard notes
 
+HZ10_LANES_INDEX.md:
+  current restart and lane SSOT: active next box, shim artifacts,
+  macro/diagnostic targets, env knobs, opt-in research flags, and source
+  ownership map
+
 HZ10_REMOTE_PUBLISH_BATCH_CONTRACT_L0.md:
   contract and allowed shapes for future remote-free publish batching work
 
@@ -33,15 +38,14 @@ HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   replaces the micro rows as headline evidence
 
 HZ10_MACRO_MATRIX_EXPAND_L0.md:
-  scoped design for the next macro evidence box: non-clobbering HZ10 shim
-  library variants, an hz10+fine allocator column, and a larson row to
-  decide fine-class shim adoption and whether thread-exit ownership work
-  should open
+  implemented macro evidence box: non-clobbering HZ10 shim library
+  variants, an hz10+fine allocator column, and a larson row; concluded
+  fine classes are not a broad shim win and opened thread-exit attribution
 
 HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md:
-  diagnostic design for splitting the larson macro RSS blow-up into
-  per-thread orphan pages, live working set, page-pool retention, metadata,
-  and class-policy effects before any thread-exit ownership fix is designed
+  completed diagnostic box for splitting larson macro RSS; confirmed
+  orphaned active owner-thread pages explain 94.2-94.5% of sampled HZ10
+  current RSS and points to the next ownership/handoff design
 
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,

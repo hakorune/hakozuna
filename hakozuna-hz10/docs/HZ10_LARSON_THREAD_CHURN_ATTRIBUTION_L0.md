@@ -1,6 +1,6 @@
 # HZ10LarsonThreadChurnAttribution-L0
 
-Status: scoped, implementation in progress.
+Status: complete; H1 confirmed; next box is ownership/handoff design.
 
 Purpose: explain the expanded macro matrix larson result before designing a
 fix. The first `HZ10MacroMatrixExpand-L0` run showed:
