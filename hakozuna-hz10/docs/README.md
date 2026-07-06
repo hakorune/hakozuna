@@ -45,6 +45,10 @@ HZ10_SHIM_THREAD_STATS_COMPILE_GATE_L0.md:
   final small shim-speed design; compiles dump-only per-thread exit stats out
   of the default preload lane and keeps them in a diagnostic sibling library
 
+HZ10_SH6_SPEED_CLOSURE_RSS_HEADLINE_L0.md:
+  decision record that closes the sh6bench speed loop at ~78% of tcmalloc and
+  shifts the product headline back to RSS wins in the macro matrix
+
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
   reads and owner-record extraction while keeping first-touch owner allocation

@@ -28,11 +28,18 @@ status:
     - bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
 
   Current read:
+    - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
+      Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
+      for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,
+      already past the original 70%+ "not first target" line. Do not open
+      another sh6bench micro-speed box without a new macro-level reason.
+      Product headline moves back to RSS and macro evidence breadth.
     - Macro width RUNS=5 now covers 7 rows: python_alloc, redis_setget,
       larson, xmalloc_test, cache_scratch, mstress, sh6bench.
-      HZ10 is competitive on python/redis/larson/cache/xmalloc, with strong
-      RSS on xmalloc/mstress/sh6. Honest remaining wall misses: mstress and
-      sh6bench vs tcmalloc/mimalloc.
+      HZ10 is competitive on python/redis/larson/cache/xmalloc, with headline
+      RSS wins on xmalloc_test and mstress and controlled larson thread-churn
+      RSS. Remaining speed gaps are evidence context, not the next default
+      optimization target.
     - Shim default now includes fine size classes plus orphan + partial
       adoption. Corrected same-matrix RUNS=3 showed python_alloc RSS
       116,756 -> 106,788 KiB with unchanged wall, larson RSS
@@ -124,6 +131,7 @@ status:
       in `libhz10_thread_stats.so` for attribution. After this, close the
       sh6bench speed loop and return the product story to RSS/macro breadth.
       Implemented GO: sh6bench guard median 0.410s, python/mstress/larson flat.
+      Decision record: docs/HZ10_SH6_SPEED_CLOSURE_RSS_HEADLINE_L0.md.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +

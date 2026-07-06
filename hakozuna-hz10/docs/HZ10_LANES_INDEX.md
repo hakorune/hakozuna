@@ -18,8 +18,11 @@ only in a named implementation box with A/B evidence.
 
 ```text
 Default HZ10:
-  Good: faster than HZ8, competitive with mimalloc on several micro rows,
-        strong RSS on many public-entry rows.
+  Headline: RSS-differentiated macro allocator. sh6bench speed loop is closed:
+        latest HZ10 guard is 0.410s, about 78% of the latest tcmalloc
+        comparator for this row, above the original 70%+ non-primary target.
+        Next default work should broaden RSS/macro evidence, not reopen small
+        sh6bench instruction boxes.
   Shim default: `make preload` builds libhz10.so with orphan + partial orphan
         adoption and the fine size-class table enabled. This fixes the
         larson/thread-churn RSS cliff and cuts python_alloc RSS in the
@@ -27,9 +30,11 @@ Default HZ10:
         for isolated public-entry/front-cache research boxes.
   Macro width L0: RUNS=5 over 7 rows makes the product-lane claim broader:
         competitive on python_alloc / redis_setget / larson / cache_scratch /
-        xmalloc_test, strong RSS on xmalloc_test / mstress / sh6bench, and
-        visible remaining wall-time misses on mstress and sh6bench vs
-        tcmalloc/mimalloc.
+        xmalloc_test; strong RSS on xmalloc_test / mstress / sh6bench.
+        `xmalloc_test` is the clearest headline: HZ10 13,184 KiB vs glibc
+        198,784 KiB and tcmalloc 195,968 KiB at the same wall-time band.
+        `mstress` RSS is also lowest in the broad guard; larson is in the same
+        current-RSS band as tcmalloc/mimalloc under thread churn.
   Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
         every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
         LD_PRELOAD library -- never dlopen'd/unloaded after process
