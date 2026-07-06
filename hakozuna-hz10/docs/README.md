@@ -75,9 +75,9 @@ HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md:
   index that bypasses global pagemap lookup only on guarded owner-local hits
 
 HZ10_MALLOC_ACTIVE_PAGE_VECTOR_DESIGN_L0.md:
-  next malloc-side speed design after the owner-index NO-GO; an opt-in hot
-  active-page vector that caches `owner->classes[class].active` without
-  changing page-list authority or free/remote/adoption contracts
+  NO-GO malloc-side speed box; the hot active-page vector achieved the
+  intended codegen but did not improve the sh6bench guard enough to justify
+  growing each thread owner
 
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition

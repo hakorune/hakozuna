@@ -116,8 +116,8 @@ status:
       HZ10Sh6PostNoGoAttribution-L0 re-profiled clean `libhz10.so`:
       hz10/tcmalloc sh6bench is cycles 1.39x and instructions 1.47x with
       high IPC, so the remaining gap is still instruction volume. Next scoped
-      design is HZ10MallocActivePageVector-L0, an opt-in malloc-side cache of
-      `owner->classes[class].active`; record:
+      box HZ10MallocActivePageVector-L0 is now NO-GO: codegen target hit, but
+      RUNS=5 guard kept sh6bench at 0.420s median. Prototype reverted; record:
       docs/HZ10_MALLOC_ACTIVE_PAGE_VECTOR_DESIGN_L0.md.
 
   Implementation lane:

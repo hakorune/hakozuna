@@ -451,3 +451,29 @@ Decision:
   footprint costs more than the avoided pagemap route on the target macro row.
 - Reopen only with a same-build shape that does not grow the owner hot
   footprint or add a data-dependent lookup before the existing route.
+
+## 20260707 Malloc Active Page Vector
+
+Status: `NO-GO; prototype reverted`
+
+Evidence:
+
+- `docs/HZ10_MALLOC_ACTIVE_PAGE_VECTOR_DESIGN_L0.md`
+- `bench_results/20260707T_active_page_vector_l0_sh6_ab/`
+- `bench_results/20260707T_active_page_vector_l0_guard/`
+- Prototype added `active_pages[HZ10_CLASS_COUNT]` to `Hz10ThreadOwner`,
+  synchronized at every `state->active` assignment, and used it only in the
+  malloc fast path. `Hz10ClassState` and page lists stayed authoritative.
+- Codegen target was achieved: the malloc fast path's large class-state stride
+  became a scale-8 active-vector load.
+- Performance did not meet the gate:
+  - focused sh6 pass: `0.420s -> 0.410s`, but only ~2.4%.
+  - guard pass: sh6bench median stayed `0.420s -> 0.420s`.
+  - python/mstress had small favorable movement, larson was flat, RSS was flat.
+
+Decision:
+
+- Do not keep the active-vector lane or grow `Hz10ThreadOwner` for this.
+- Reopen only with a same-build/same-layout shape that avoids owner footprint
+  growth, or with a lower-noise macro harness showing a durable >3% sh6bench
+  median win.

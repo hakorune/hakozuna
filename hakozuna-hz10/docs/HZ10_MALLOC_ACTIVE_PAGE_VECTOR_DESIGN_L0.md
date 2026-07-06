@@ -1,6 +1,6 @@
 # HZ10MallocActivePageVector-L0
 
-Status: DESIGN.
+Status: NO-GO. Prototype reverted.
 
 ## Question
 
@@ -20,6 +20,35 @@ the active pointer plus the full class page lists and counters. The fast path
 only needs the active page pointer. This box tests whether keeping a dense
 active-page vector next to the owner record is worth the added footprint and
 maintenance.
+
+## Result
+
+The prototype achieved the intended codegen: the malloc fast path changed from
+the large `Hz10ClassState` stride sequence to a scale-8
+`active_pages[class_id]` load. Correctness gates passed, including the default
+public-entry smoke, shim API/foreign-free smoke, and an active-vector smoke
+compiled with orphan + partial adoption + fine classes + the vector flag.
+
+Performance did not meet the gate:
+
+```text
+RUNS=5, ALLOCATORS_CSV=hz10,hz10-active-vector
+
+focused sh6 pass:
+  sh6bench      0.420s -> 0.410s
+  python_alloc  0.840s -> 0.840s
+  redis_setget  0.540s -> 0.540s
+
+guard pass:
+  sh6bench      0.420s -> 0.420s
+  python_alloc  0.850s -> 0.840s
+  larson        4.175s -> 4.178s
+  mstress       0.220s -> 0.210s
+```
+
+The secondary movement is too small and too rounded to justify growing every
+thread owner by `HZ10_CLASS_COUNT * sizeof(void*)`. The implementation was
+reverted; keep this document as the design and NO-GO record.
 
 ## Proposed Shape
 
@@ -112,6 +141,9 @@ GO requires:
 
 NO-GO if it repeats the owner-index pattern: visible hit-path/codegen success
 but macro wall or RSS regressions.
+
+That is the measured outcome for L0: visible codegen success, no durable
+primary-row macro win.
 
 ## Relationship To NO-GO Boxes
 
