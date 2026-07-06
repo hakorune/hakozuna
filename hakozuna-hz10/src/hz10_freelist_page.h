@@ -74,6 +74,7 @@ typedef struct Hz10FreelistPage {
   uint32_t class_id;
   uint32_t owner_list_kind;
   uint32_t adopted_count;
+  uint64_t orphaned_at_ns; /* diagnostic/policy timestamp set at registry publish */
 
   /*
    * Inert storage for whoever creates this page (e.g. a multi-class public

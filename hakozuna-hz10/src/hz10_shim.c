@@ -2,6 +2,7 @@
 #include "hz10_large_alloc.h"
 #include "hz10_page_pool.h"
 #include "hz10_pagemap.h"
+#include "hz10_platform.h"
 #include "hz10_public_entry.h"
 #include "hz10_public_entry_owner.h"
 #include "hz10_size_class.h"
@@ -22,6 +23,7 @@
 
 static _Atomic(uint64_t) hz10_shim_foreign_free_count;
 static int hz10_shim_process_exit_stats;
+static int hz10_shim_orphan_registry_probe;
 #if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
 static int hz10_shim_thread_exit_stats;
 #endif
@@ -59,8 +61,15 @@ static int hz10_shim_exit_stats_enabled(void) {
   return value && value[0] == '1' && value[1] == '\0';
 }
 
+static int hz10_shim_orphan_registry_probe_enabled(void) {
+  const char* value = getenv("HZ10_SHIM_ORPHAN_REGISTRY_PROBE");
+  return value && value[0] == '1' && value[1] == '\0';
+}
+
 /* Measurement-only env knobs:
  * - HZ10_SHIM_EXIT_STATS=1 dumps process-exit stats.
+ * - HZ10_SHIM_ORPHAN_REGISTRY_PROBE=1 dumps orphan-registry depth,
+ *   idle/live-pinned split, hidden pending frees, and age buckets.
  * - HZ10_SHIM_THREAD_EXIT_STATS=1 dumps per-thread stats from a pthread
  *   destructor only in libhz10_thread_stats.so. The default preload lane
  *   compiles this path out and ignores the env knob.
@@ -269,6 +278,70 @@ void hz10_shim_dump_exit_stats(void) {
       (unsigned long long)orphan_reject_no_capacity,
       (unsigned long long)orphan_repush, (unsigned long long)orphan_depth,
       (unsigned long long)orphan_max_depth_sum);
+  hz10_shim_in_stats_dump = 0;
+}
+
+static void hz10_shim_dump_orphan_registry_probe(void) {
+  if (hz10_shim_in_stats_dump) {
+    return;
+  }
+  hz10_shim_in_stats_dump = 1;
+  uint64_t now_ns = hz10_platform_now_ns();
+  uint64_t total_depth = 0u;
+  uint64_t total_idle = 0u;
+  uint64_t total_live = 0u;
+  uint64_t total_hidden = 0u;
+  uint64_t total_age_lt_100ms = 0u;
+  uint64_t total_age_lt_1s = 0u;
+  uint64_t total_age_lt_4s = 0u;
+  uint64_t total_age_lt_16s = 0u;
+  uint64_t total_age_ge_16s = 0u;
+
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10OrphanRegistryProbeClassStats stats = {0};
+    hz10_public_entry_orphan_registry_probe_class_stats(c, now_ns, &stats);
+    if (stats.depth == 0u) {
+      continue;
+    }
+    total_depth += stats.depth;
+    total_idle += stats.idle_pages;
+    total_live += stats.live_pinned_pages;
+    total_hidden += stats.hidden_pending_slots;
+    total_age_lt_100ms += stats.age_lt_100ms;
+    total_age_lt_1s += stats.age_lt_1s;
+    total_age_lt_4s += stats.age_lt_4s;
+    total_age_lt_16s += stats.age_lt_16s;
+    total_age_ge_16s += stats.age_ge_16s;
+    hz10_shim_writef(
+        "hz10_shim_orphan_registry_probe class=%u slot_size=%u "
+        "slot_count=%u depth=%llu idle_pages=%llu live_pinned_pages=%llu "
+        "hidden_pending_slots=%llu age_lt_100ms=%llu age_lt_1s=%llu "
+        "age_lt_4s=%llu age_lt_16s=%llu age_ge_16s=%llu\n",
+        (unsigned)c, (unsigned)hz10_size_class_slot_size(c),
+        (unsigned)hz10_size_class_slot_count(c),
+        (unsigned long long)stats.depth,
+        (unsigned long long)stats.idle_pages,
+        (unsigned long long)stats.live_pinned_pages,
+        (unsigned long long)stats.hidden_pending_slots,
+        (unsigned long long)stats.age_lt_100ms,
+        (unsigned long long)stats.age_lt_1s,
+        (unsigned long long)stats.age_lt_4s,
+        (unsigned long long)stats.age_lt_16s,
+        (unsigned long long)stats.age_ge_16s);
+  }
+
+  hz10_shim_writef(
+      "hz10_shim_orphan_registry_probe totals depth=%llu idle_pages=%llu "
+      "live_pinned_pages=%llu hidden_pending_slots=%llu "
+      "age_lt_100ms=%llu age_lt_1s=%llu age_lt_4s=%llu "
+      "age_lt_16s=%llu age_ge_16s=%llu\n",
+      (unsigned long long)total_depth, (unsigned long long)total_idle,
+      (unsigned long long)total_live, (unsigned long long)total_hidden,
+      (unsigned long long)total_age_lt_100ms,
+      (unsigned long long)total_age_lt_1s,
+      (unsigned long long)total_age_lt_4s,
+      (unsigned long long)total_age_lt_16s,
+      (unsigned long long)total_age_ge_16s);
   hz10_shim_in_stats_dump = 0;
 }
 
@@ -526,6 +599,8 @@ static inline void hz10_shim_mark_thread_for_stats_fast(void) {
 
 __attribute__((constructor)) static void hz10_shim_init(void) {
   hz10_shim_process_exit_stats = hz10_shim_exit_stats_enabled();
+  hz10_shim_orphan_registry_probe =
+      hz10_shim_orphan_registry_probe_enabled();
 #if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
   hz10_shim_thread_exit_stats = hz10_shim_thread_exit_stats_enabled();
 #endif
@@ -535,6 +610,9 @@ __attribute__((constructor)) static void hz10_shim_init(void) {
                        hz10_shim_atfork_child);
   if (hz10_shim_process_exit_stats) {
     (void)atexit(hz10_shim_dump_exit_stats);
+  }
+  if (hz10_shim_orphan_registry_probe) {
+    (void)atexit(hz10_shim_dump_orphan_registry_probe);
   }
   if (hz10_shim_census_sec != 0u) {
     pthread_t thread;

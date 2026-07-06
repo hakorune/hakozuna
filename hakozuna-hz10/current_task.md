@@ -37,11 +37,13 @@ status:
       docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
     - HZ10PostRssResidualAttribution-L0 measured the HZ10 post-RSS gap on
       those HZ8 public rows. Active/retired/pool/metadata explain only a few
-      MiB; orphan registry depth explains the gap direction (e.g. r90 rows
-      publish thousands of 64KiB adoption candidates). Next clean RSS box is
-      HZ10OrphanRegistryTrimPolicy-L0, guarded by both HZ8 public rows and
-      larson/thread-churn macro rows. Record:
-      docs/HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md.
+      MiB; orphan registry depth explains the gap direction. IdleAgeProbe-L0
+      then split the registry: remote-heavy rows are mostly live-pinned with
+      hidden pending frees, while local rows are fully idle. Do not land broad
+      idle trim as the next default RSS fix. Next clean RSS fork is either
+      narrow explicit-quiescent/local idle trim or a remote-heavy drain/adopt
+      policy. Records: docs/HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md and
+      docs/HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md.
     - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
       Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
       for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,

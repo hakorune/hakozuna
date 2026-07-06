@@ -45,10 +45,10 @@ Default HZ10:
         HZ10 macro probe rows, so do not mix the two scopes. Record:
         docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
   HZ10 post-RSS residual:
-        HZ10PostRssResidualAttribution-L0 measured the gap on HZ8 public
-        rows. Live active/retired pages, page pool, and metadata are only a
-        few MiB; dominant retained capacity is orphan registry depth. Next
-        RSS box: HZ10OrphanRegistryTrimPolicy-L0. Record: docs/HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md.
+        PostRssResidual-L0 found orphan registry depth dominates; IdleAgeProbe-L0
+        showed remote-heavy rows are live-pinned/hidden-pending, not idle, so
+        broad idle trim is deferred. Local rows are fully idle. Records:
+        HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md / HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md.
   Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
         every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
         LD_PRELOAD library -- never dlopen'd/unloaded after process

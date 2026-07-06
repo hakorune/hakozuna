@@ -60,6 +60,12 @@ HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md:
   opening a clean orphan-registry trim policy box rather than a geometry
   rewrite
 
+HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md:
+  review design and probe result for trimming orphan-registry retention;
+  IdleAgeProbe-L0 showed remote-heavy rows are live-pinned/hidden-pending
+  rather than fully idle, so broad idle-only trim is deferred while local or
+  explicit-quiescent trim remains a possible narrow RSS box
+
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
   reads and owner-record extraction while keeping first-touch owner allocation

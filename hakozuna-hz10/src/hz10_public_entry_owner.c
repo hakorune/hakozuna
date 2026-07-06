@@ -117,8 +117,27 @@ static void hz10_orphan_stats_depth_sub(uint32_t class_id, uint64_t value) {
       memory_order_relaxed);
 }
 
+static uint64_t hz10_orphan_hidden_pending_slots(Hz10FreelistPage* page) {
+  uint64_t total = 0u;
+  for (uint32_t i = 0; i < page->pending_words; ++i) {
+    uint64_t word =
+        atomic_load_explicit(&page->pending_bits[i], memory_order_acquire);
+    total += (uint64_t)__builtin_popcountll(word);
+  }
+  return total;
+}
+
+static void hz10_orphan_note_published_at(Hz10PageSublist* sub,
+                                          uint64_t now_ns) {
+  for (Hz10FreelistPage* page = sub->head; page;
+       page = page->next_in_owner_list) {
+    page->orphaned_at_ns = now_ns;
+  }
+}
+
 static void hz10_orphan_append_active(uint32_t class_id, Hz10PageSublist* sub) {
   if (!sub->head) return;
+  hz10_orphan_note_published_at(sub, hz10_platform_now_ns());
   uint32_t length = sub->length;
   Hz10PageSublist* dst = &hz10_orphan_active[class_id];
   if (dst->tail) {
@@ -364,5 +383,42 @@ void hz10_public_entry_orphan_adoption_class_stats(
       atomic_load_explicit(&stats->max_depth, memory_order_relaxed);
 #else
   (void)class_id;
+#endif
+}
+
+void hz10_public_entry_orphan_registry_probe_class_stats(
+    uint32_t class_id, uint64_t now_ns,
+    Hz10OrphanRegistryProbeClassStats* out) {
+  if (!out) return;
+  *out = (Hz10OrphanRegistryProbeClassStats){0};
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+  if (class_id >= HZ10_CLASS_COUNT) return;
+  hz10_platform_mutex_lock(&hz10_orphan_lock);
+  for (Hz10FreelistPage* page = hz10_orphan_active[class_id].head; page;
+       page = page->next_in_owner_list) {
+    out->depth += 1u;
+    if (page->free_count == page->slot_count) {
+      out->idle_pages += 1u;
+    } else {
+      out->live_pinned_pages += 1u;
+    }
+    out->hidden_pending_slots += hz10_orphan_hidden_pending_slots(page);
+    uint64_t age_ns = now_ns - page->orphaned_at_ns;
+    if (age_ns < UINT64_C(100000000)) {
+      out->age_lt_100ms += 1u;
+    } else if (age_ns < UINT64_C(1000000000)) {
+      out->age_lt_1s += 1u;
+    } else if (age_ns < UINT64_C(4000000000)) {
+      out->age_lt_4s += 1u;
+    } else if (age_ns < UINT64_C(16000000000)) {
+      out->age_lt_16s += 1u;
+    } else {
+      out->age_ge_16s += 1u;
+    }
+  }
+  hz10_platform_mutex_unlock(&hz10_orphan_lock);
+#else
+  (void)class_id;
+  (void)now_ns;
 #endif
 }

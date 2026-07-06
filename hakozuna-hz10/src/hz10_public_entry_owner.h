@@ -49,6 +49,18 @@ typedef struct Hz10OrphanAdoptionClassStats {
   uint64_t max_depth;
 } Hz10OrphanAdoptionClassStats;
 
+typedef struct Hz10OrphanRegistryProbeClassStats {
+  uint64_t depth;
+  uint64_t idle_pages;
+  uint64_t live_pinned_pages;
+  uint64_t hidden_pending_slots;
+  uint64_t age_lt_100ms;
+  uint64_t age_lt_1s;
+  uint64_t age_lt_4s;
+  uint64_t age_lt_16s;
+  uint64_t age_ge_16s;
+} Hz10OrphanRegistryProbeClassStats;
+
 #define HZ10_THREAD_OWNER_STATE_LIVE 1u
 #define HZ10_THREAD_OWNER_STATE_EXITED 2u
 
@@ -76,6 +88,9 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);
 void hz10_public_entry_orphan_adoption_class_stats(
     uint32_t class_id, Hz10OrphanAdoptionClassStats* out);
+void hz10_public_entry_orphan_registry_probe_class_stats(
+    uint32_t class_id, uint64_t now_ns,
+    Hz10OrphanRegistryProbeClassStats* out);
 void hz10_public_entry_owner_exit_flush_front_cache(void);
 
 #endif
