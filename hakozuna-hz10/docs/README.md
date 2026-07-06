@@ -50,10 +50,15 @@ HZ10_SH6_SPEED_CLOSURE_RSS_HEADLINE_L0.md:
   shifts the product headline back to RSS wins in the macro matrix
 
 HZ10_HZ8_MACRO_RSS_CHECK_L0.md:
-  decision record for the HZ8 vs HZ10 product-lane RSS question; HZ8 remains
-  an older native/reference allocator, but HZ10 is the recommended LD_PRELOAD
-  macro/product allocator after HZ8 showed python RSS blow-up and macro
-  compatibility failures
+  corrected decision record for the HZ8 vs HZ10 scope question; HZ8 remains
+  the mature low-RSS public allocator, while HZ10 remains the active
+  macro/shim hardening line and should not yet be described as replacing HZ8
+
+HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md:
+  attribution record for the HZ10 vs HZ8 post-RSS gap on HZ8 public-matrix
+  rows; shows the remaining gap is dominated by orphan-registry retention,
+  opening a clean orphan-registry trim policy box rather than a geometry
+  rewrite
 
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS

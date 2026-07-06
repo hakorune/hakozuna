@@ -35,6 +35,13 @@ status:
       macro/shim hardening line, but HZ8 is still the RSS recommendation in
       its intended public matrix. Record:
       docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
+    - HZ10PostRssResidualAttribution-L0 measured the HZ10 post-RSS gap on
+      those HZ8 public rows. Active/retired/pool/metadata explain only a few
+      MiB; orphan registry depth explains the gap direction (e.g. r90 rows
+      publish thousands of 64KiB adoption candidates). Next clean RSS box is
+      HZ10OrphanRegistryTrimPolicy-L0, guarded by both HZ8 public rows and
+      larson/thread-churn macro rows. Record:
+      docs/HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md.
     - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
       Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
       for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,
