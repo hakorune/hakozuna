@@ -22,7 +22,7 @@
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
 	preload preload-base preload-fine preload-front preload-coarse \
-	preload-orphan-adoption preload-orphan-partial \
+	preload-orphan-adoption preload-orphan-partial preload-thread-stats \
 	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
 	bench-macro-preload bench-macro-matrix \
@@ -268,6 +268,11 @@ $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 
+$(ROOT)/libhz10_thread_stats.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_SHIM_THREAD_EXIT_STATS=1 $(INC) -shared -Wl,-soname,libhz10_thread_stats.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+preload-thread-stats: $(ROOT)/libhz10_thread_stats.so
+
 $(ROOT)/libhz10_front.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 $(INC) -shared -Wl,-soname,libhz10_front.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -310,12 +315,12 @@ smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
 smoke-shim-foreign: $(ROOT)/libhz10.so
 	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
-bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_thread_stats.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
 
 bench-macro-matrix: bench-macro-preload
 
-bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_thread_stats.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).

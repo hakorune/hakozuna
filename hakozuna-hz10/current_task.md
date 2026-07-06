@@ -119,6 +119,11 @@ status:
       box HZ10MallocActivePageVector-L0 is now NO-GO: codegen target hit, but
       RUNS=5 guard kept sh6bench at 0.420s median. Prototype reverted; record:
       docs/HZ10_MALLOC_ACTIVE_PAGE_VECTOR_DESIGN_L0.md.
+      Active final shim-speed box: HZ10ShimThreadStatsCompileGate-L0. Compile
+      dump-only per-thread exit stats out of default `libhz10.so`; keep them
+      in `libhz10_thread_stats.so` for attribution. After this, close the
+      sh6bench speed loop and return the product story to RSS/macro breadth.
+      Implemented GO: sh6bench guard median 0.410s, python/mstress/larson flat.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +

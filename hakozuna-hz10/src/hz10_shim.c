@@ -16,15 +16,23 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
+#define HZ10_ENABLE_SHIM_THREAD_EXIT_STATS 0
+#endif
+
 static _Atomic(uint64_t) hz10_shim_foreign_free_count;
 static int hz10_shim_process_exit_stats;
+#if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
 static int hz10_shim_thread_exit_stats;
+#endif
 static int hz10_shim_exit_stats_classes;
 static unsigned hz10_shim_census_sec;
+#if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
 static pthread_once_t hz10_shim_thread_stats_once = PTHREAD_ONCE_INIT;
 static pthread_key_t hz10_shim_thread_stats_key;
 static int hz10_shim_thread_stats_key_ready;
 static char hz10_shim_thread_stats_marker;
+#endif
 static _Thread_local int hz10_shim_in_stats_dump;
 
 static int hz10_shim_is_power_of_two(size_t value) {
@@ -54,13 +62,16 @@ static int hz10_shim_exit_stats_enabled(void) {
 /* Measurement-only env knobs:
  * - HZ10_SHIM_EXIT_STATS=1 dumps process-exit stats.
  * - HZ10_SHIM_THREAD_EXIT_STATS=1 dumps per-thread stats from a pthread
- *   destructor. It is diagnostic only, never reclaim.
+ *   destructor only in libhz10_thread_stats.so. The default preload lane
+ *   compiles this path out and ignores the env knob.
  * - HZ10_SHIM_EXIT_STATS_CLASSES=0 suppresses per-class rows; summaries and
  *   class_totals still print. Default is class rows ON for small probes. */
+#if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
 static int hz10_shim_thread_exit_stats_enabled(void) {
   const char* value = getenv("HZ10_SHIM_THREAD_EXIT_STATS");
   return value && value[0] == '1' && value[1] == '\0';
 }
+#endif
 
 static int hz10_shim_exit_stats_classes_enabled(void) {
   const char* value = getenv("HZ10_SHIM_EXIT_STATS_CLASSES");
@@ -472,6 +483,7 @@ static void* hz10_shim_census_thread(void* arg) {
   return NULL;
 }
 
+#if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
 static void hz10_shim_thread_stats_destructor(void* value) {
   if (!value || !hz10_shim_thread_exit_stats) {
     return;
@@ -507,10 +519,16 @@ static inline void hz10_shim_mark_thread_for_stats_fast(void) {
     hz10_shim_mark_thread_for_stats_slow();
   }
 }
+#else
+static inline void hz10_shim_mark_thread_for_stats_fast(void) {
+}
+#endif
 
 __attribute__((constructor)) static void hz10_shim_init(void) {
   hz10_shim_process_exit_stats = hz10_shim_exit_stats_enabled();
+#if HZ10_ENABLE_SHIM_THREAD_EXIT_STATS
   hz10_shim_thread_exit_stats = hz10_shim_thread_exit_stats_enabled();
+#endif
   hz10_shim_exit_stats_classes = hz10_shim_exit_stats_classes_enabled();
   hz10_shim_census_sec = hz10_shim_census_seconds();
   (void)pthread_atfork(hz10_shim_atfork_prepare, hz10_shim_atfork_parent,

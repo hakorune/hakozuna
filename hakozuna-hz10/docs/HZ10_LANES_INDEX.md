@@ -93,6 +93,7 @@ Default HZ10:
   HZ10SizeClassSmallLookup-L0 is NO-GO; correct but no macro win, reverted.
   HZ10OwnerLocalPageIndex-L0 is NO-GO; high-hit macro regression.
   HZ10MallocActivePageVector-L0 is NO-GO; codegen hit, sh6 guard flat.
+  HZ10ShimThreadStatsCompileGate-L0 is GO; close small sh6 speed loop.
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
   Rollback/diagnostic sibling for the former no-orphan shim default.
@@ -382,35 +383,15 @@ Decision:
   validation and avoids growing `H10PageRecord`.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
+  Split dump-only thread-exit stats marking into a hot unlikely branch plus a
+  noinline slow helper. Diagnostic stats still printed; perf no longer showed
+  `hz10_shim_mark_thread_for_stats*`; hz10-only sh6bench moved 0.700s ->
+  0.660s. Log: bench_results/20260707T_shim_stats_fast_guard_l0/
 
-Input:
-  bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
-  docs/HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md
-
-Question:
-  Can the preload product path stop paying for dump-only
-  `HZ10_SHIM_THREAD_EXIT_STATS` setup on every malloc/free?
-
-Design:
-  Split `hz10_shim_mark_thread_for_stats()` into a hot guard and a cold slow
-  helper. Preferred shape is a direct unlikely branch at shim call sites:
-  `if (__builtin_expect(hz10_shim_thread_exit_stats, 0)) slow_mark();`.
-  The slow helper keeps the existing `hz10_shim_in_stats_dump`,
-  `pthread_once`, `pthread_getspecific`, and `pthread_setspecific` logic.
-
-Gate:
-  smoke-shim-api, smoke-shim-foreign, standalone-check, and a
-  `HZ10_SHIM_THREAD_EXIT_STATS=1` threaded diagnostic smoke must stay green.
-  RUNS=5 macro subset (`ALLOCATORS_CSV=hz10`) should show no regression; a
-  sh6bench win is expected if the ~5% perf attribution is real.
-
-Result:
-  GO. Codegen shows malloc/free fast paths as one branch around the noinline
-  slow helper; diagnostic thread-exit stats still print. perf on sh6bench no
-  longer shows `hz10_shim_mark_thread_for_stats*` in the filtered flat profile.
-  RUNS=5 hz10-only macro moved sh6bench 0.700s -> 0.660s versus the TLS-fix
-  full-retry median, with python_alloc 0.900s -> 0.880s and no material RSS
-  movement. Log: bench_results/20260707T_shim_stats_fast_guard_l0/
+HZ10ShimThreadStatsCompileGate-L0   (implemented, GO)
+  Default `libhz10.so` compiles out dump-only thread-exit stats; diagnostic
+  `libhz10_thread_stats.so` keeps them. RUNS=5 guard: sh6bench 0.410s,
+  python/mstress/larson flat. Close small sh6 speed loop after this box.
 
 HZ10FineAdoptionInteractionBug-L0   (resolved/not reproduced after clean
   rebuild; keep counters for future triage -- see
