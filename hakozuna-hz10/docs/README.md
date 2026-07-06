@@ -56,6 +56,16 @@ HZ10_SHIM_NO_STACK_PROTECTOR_L0.md:
   deleted the expected canary instructions but regressed sh6bench/python wall
   time, so the Makefile change was reverted
 
+HZ10_FREE_FAST_LEAF_SPLIT_L0.md:
+  GO codegen-shape box; splits `hz10_free()` slow route/large/remote paths out
+  of the common local-free body, removing the fast-path frame/canary/call and
+  moving sh6bench to 0.44s in the full macro guard
+
+HZ10_MALLOC_FAST_LEAF_SPLIT_L0.md:
+  GO codegen-shape box; splits `hz10_malloc()` page-layer miss work out of the
+  common active-page pop body, removing the malloc fast-path frame/canary/call
+  and moving sh6bench to 0.42s in the full macro guard
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

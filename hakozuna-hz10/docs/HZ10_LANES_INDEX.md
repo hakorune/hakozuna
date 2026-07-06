@@ -78,6 +78,18 @@ Default HZ10:
         0.470s -> 0.490s and python_alloc 0.850s -> 0.870s. Keep the
         diagnostic flag default-off only. Log:
         bench_results/20260707T_route_div_skip_diag_l0/
+  Free fast leaf split:
+        HZ10FreeFastLeafSplit-L0 is GO. `hz10_free()` now has no fast-path
+        frame/canary/call; semantics unchanged. RUNS=5: sh6bench 0.470s ->
+        0.450s hz10-only, and post-binding full guard 0.480s -> 0.440s. Logs:
+        bench_results/20260707T_free_fast_leaf_split_l0/
+        bench_results/20260707T_free_fast_leaf_split_l0_full/
+  Malloc fast leaf split:
+        HZ10MallocFastLeafSplit-L0 is GO. `hz10_malloc()` now has no fast-path
+        frame/canary/call; semantics unchanged. RUNS=5: sh6bench 0.450s ->
+        0.430s hz10-only, and full guard 0.440s -> 0.420s. Logs:
+        bench_results/20260707T_malloc_fast_leaf_split_l0/
+        bench_results/20260707T_malloc_fast_leaf_split_l0_full/
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.

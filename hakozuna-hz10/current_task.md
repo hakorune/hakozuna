@@ -91,6 +91,12 @@ status:
       Unsafe diagnostic `HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK=1` removed
       the hot local-fast `div/idiv` from `hz10_free`, but RUNS=5 regressed
       sh6bench 0.470s -> 0.490s and python_alloc 0.850s -> 0.870s.
+    - HZ10FreeFastLeafSplit-L0 is GO. Splitting slow route/large/remote paths
+      out of `hz10_free()` removed the fast-path stack frame/canary and moved
+      sh6bench 0.470s -> 0.450s hz10-only, 0.480s -> 0.440s full guard.
+    - HZ10MallocFastLeafSplit-L0 is GO. Splitting page-layer miss work out of
+      `hz10_malloc()` removed the malloc fast-path frame and moved sh6bench
+      0.450s -> 0.430s hz10-only, 0.440s -> 0.420s full guard.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -98,12 +104,10 @@ status:
 
   Active next box:
     Productization follow-up:
-      Stack-protector removal and local route division skip are both closed
-      NO-GO. Do not open reciprocal route work without a new route hypothesis
-      that preserves fail-closed validation and avoids growing H10PageRecord.
-      Next attack should come from fresh perf attribution inside
-      hz10_malloc/free, likely metadata update / marker dependency shape, not
-      another single-instruction removal guess.
+      HZ10FreeFastLeafSplit-L0 and HZ10MallocFastLeafSplit-L0 are both GO.
+      The low-risk function-shape ladder is now spent. Next speed work should
+      be a design box for route/class-state instruction reduction, likely
+      per-owner local-free page indexing or size-class/class-state addressing.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -252,6 +256,23 @@ status:
       sh6bench 0.470s -> 0.490s and python_alloc 0.850s -> 0.870s; larson,
       mstress, and RSS stayed flat. Log:
       bench_results/20260707T_route_div_skip_diag_l0/
+    - HZ10FreeFastLeafSplit-L0:
+      Split `hz10_free()` into a frame-free local-fast body plus noinline
+      slow route and remote helpers. Objdump shows no fast-path stack frame,
+      canary, or call. Gates green. RUNS=5 hz10-only: sh6bench 0.450s,
+      python_alloc 0.860s, larson 4.176s, mstress 0.210s. Full guard:
+      sh6bench hz10 0.440s vs tcmalloc 0.320s and mimalloc 0.270s. Logs:
+      bench_results/20260707T_free_fast_leaf_split_l0/ and
+      bench_results/20260707T_free_fast_leaf_split_l0_full/
+    - HZ10MallocFastLeafSplit-L0:
+      Split `hz10_malloc()` page-layer allocation into an inline active-page
+      pop and noinline slow helper for first-touch/drain/find/harvest/adopt/
+      fresh page work. Objdump shows no malloc fast-path frame/canary/call.
+      Gates green. RUNS=5 hz10-only: sh6bench 0.430s, python_alloc 0.860s,
+      larson 4.180s, mstress 0.210s. Full guard: sh6bench hz10 0.420s vs
+      tcmalloc 0.320s and mimalloc 0.280s. Logs:
+      bench_results/20260707T_malloc_fast_leaf_split_l0/ and
+      bench_results/20260707T_malloc_fast_leaf_split_l0_full/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

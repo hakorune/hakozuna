@@ -213,16 +213,9 @@ void hz10_public_entry_flush_thread_cache_quiescent(
   }
 }
 
-/*
- * The page-layer alloc body, exactly what hz10_malloc() ran directly
- * before HZ10FrontCache-L1: active-page pop -> active drain ->
- * find_with_capacity -> harvest_retired -> fresh pooled page. Split out
- * (per docs/HZ10_FRONT_CACHE_DESIGN_L0.md) so the front cache's refill
- * can call the page layer without recursing into the public front-cache
- * entry point; with the flag off, hz10_malloc() is a plain tail call
- * into this and behavior is unchanged.
- */
-static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
+/* Slow page-layer miss path: drain/find/harvest/adopt/fresh page. */
+static __attribute__((noinline)) void*
+hz10_public_entry_alloc_from_page_layer_slow(uint32_t class_id) {
   Hz10ThreadOwner* owner = hz10_public_entry_current_owner();
   if (!owner) {
     return NULL;
@@ -255,14 +248,7 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
     }
   }
 
-  /* The active page (if any) is exhausted even after draining. Before
-   * paying for a fresh page, scan every other page this thread has ever
-   * created for this class -- src/hz10_class_pages.h drains each
-   * candidate as it checks it, so a page that looked exhausted earlier
-   * but has since received a remote free is recovered instead of staying
-   * lost forever. This replaces Box 5's original abandon-on-exhaustion
-   * policy, which measured 15-17x slower than system malloc on
-   * remote-heavy rows (current_task.md). */
+  /* Active exhausted: scan tracked pages before paying for a fresh one. */
   Hz10FreelistPage* found = hz10_class_pages_find_with_capacity(&state->list);
   if (found) {
     hz10_class_state_note_switch(state, found, 1);
@@ -273,13 +259,7 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
     return hz10_freelist_page_alloc(found);
   }
 
-  /* Genuine miss: about to pay for a fresh page below, so this is exactly
-   * the moment a retired-list harvest pays off most -- a page found idle
-   * right here is destroyed and returned to Box 4's pool, and one found
-   * with only partial capacity is promoted straight back into `active`
-   * and handed back below, skipping the fresh-page cost entirely. Slow
-   * path only, bounded cost (HZ10_CLASS_PAGES_SWEEP_BUDGET), never on the
-   * hot per-op alloc path above -- see src/hz10_class_pages.h. */
+  /* Genuine miss: harvest a bounded retired budget before fresh mmap. */
   Hz10FreelistPage* harvested =
       hz10_class_pages_harvest_retired_capacity(&state->list);
   if (harvested) {
@@ -307,8 +287,6 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
 
   uint32_t slot_size = hz10_size_class_slot_size(class_id);
   uint32_t slot_count = hz10_size_class_slot_count(class_id);
-  /* _with_owner registers the owner tag in the same pagemap call instead
-   * of a second one afterward -- see hz10_pooled_page.h. */
   Hz10FreelistPage* fresh =
       hz10_pooled_page_create_with_owner(slot_size, slot_count);
   if (!fresh) {
@@ -324,6 +302,26 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
   state->ops_since_activate += 1u;
 #endif
   return hz10_freelist_page_alloc(fresh); /* fresh page: never NULL */
+}
+
+static inline void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (!owner) {
+    return hz10_public_entry_alloc_from_page_layer_slow(class_id);
+  }
+  Hz10ClassState* state = &owner->classes[class_id];
+  if (!state->active) {
+    return hz10_public_entry_alloc_from_page_layer_slow(class_id);
+  }
+  void* ptr = hz10_freelist_page_alloc(state->active);
+  if (!ptr) {
+    return hz10_public_entry_alloc_from_page_layer_slow(class_id);
+  }
+  hz10_class_pages_note_active_cache_hit(&state->list);
+#if HZ10_ENABLE_TWO_SLOT_STATS
+  state->ops_since_activate += 1u;
+#endif
+  return ptr;
 }
 
 #if HZ10_ENABLE_FRONT_CACHE
@@ -583,93 +581,48 @@ void* hz10_malloc(size_t size) {
 #endif
 }
 
-int hz10_free(void* ptr) {
-  if (!ptr) {
-    return 1;
-  }
-  H10RouteLocalResult local_route = {0};
-  Hz10FreelistPage* page = NULL;
-  uint32_t route_generation = 0u;
-#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-  uint32_t route_slot_size = 0u;
-#endif
-  if (hz10_pagemap_route_local_fast(ptr, &local_route)) {
-    page = (Hz10FreelistPage*)local_route.owner;
-    route_generation = local_route.generation;
-#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-    route_slot_size = local_route.slot_size;
-#endif
-  } else {
-    H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
-    if (route.kind != H10_ROUTE_VALID) {
-      return 0;
-    }
-    if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
-      hz10_large_free(route.page_base, route.slot_size);
-      return 1;
-    }
-    page = (Hz10FreelistPage*)route.owner;
-    route_generation = route.generation;
-#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-    route_slot_size = route.slot_size;
-#endif
-  }
-  if (!page) {
-    return 0;
-  }
-  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
-  if (owner && hz10_freelist_page_owner_thread(page) ==
-                   hz10_public_entry_owner_record(owner)) {
+static inline int hz10_public_entry_free_local_page(Hz10FreelistPage* page,
+                                                    void* ptr) {
 #if HZ10_ENABLE_FRONT_CACHE
-    /* Front-cache push, NOT hz10_freelist_page_free() -- see the
-     * HZ10FrontCache-L1 block comment above: the slot stays allocated
-     * from the page's point of view until overflow/lifecycle flush
-     * returns it through the page-layer boundary. */
-    uint32_t class_id = page->class_id;
+  /* Front-cache push, NOT hz10_freelist_page_free() -- see the
+   * HZ10FrontCache-L1 block comment above: the slot stays allocated
+   * from the page's point of view until overflow/lifecycle flush
+   * returns it through the page-layer boundary. */
+  uint32_t class_id = page->class_id;
 #if HZ10_FRONT_CACHE_MIN_CLASS > 0
-    if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
-      hz10_freelist_page_free(page, ptr);
-#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-      if (route_slot_size >= HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE &&
-          route_slot_size <= HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE) {
-        hz10_public_entry_note_owner_local_free(class_id, page);
-      }
-#endif
-      return 1;
-    }
-#endif
-    Hz10FrontCache* fc = &hz10_front_cache[class_id];
-    hz10_freelist_page_mark_local_free(page, ptr);
-#if HZ10_ENABLE_FRONT_CACHE_ARRAY
-    fc->slots[fc->count] = ptr;
-#else
-    *(void**)ptr = fc->head;
-    fc->head = ptr;
-#endif
-    fc->count += 1u;
-    if (fc->count > fc->cap) { /* also the lazy-init entry, see overflow() */
-      hz10_front_cache_overflow(fc, class_id);
-    }
-    return 1;
-#else
+  if (class_id < HZ10_FRONT_CACHE_MIN_CLASS) {
     hz10_freelist_page_free(page, ptr);
 #if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
-    if (route_slot_size >= HZ10_RETIRED_LOCAL_IDLE_MIN_SLOT_SIZE &&
-        route_slot_size <= HZ10_RETIRED_LOCAL_IDLE_MAX_SLOT_SIZE) {
-      hz10_public_entry_note_owner_local_free(page->class_id, page);
-    }
+    hz10_public_entry_note_owner_local_free(class_id, page);
 #endif
     return 1;
-#endif
   }
-  /* claim() then publish(), not a single hz10_page_remote_free() call,
-   * with hz10_retired_ready_note_remote_free() run in between -- see
-   * src/hz10_remote_stack.h's module comment for why this gap has to
-   * exist: note_remote_free() (cheap, a no-op unless `page` is currently
-   * tracked by HZ10RetiredReadyQueue-L0) needs a point to run BEFORE this
-   * slot becomes visible to the owner's drain, or its own reads/writes
-   * to `page` can race a destroy the owner performs the instant it
-   * observes this slot merged. */
+#endif
+  Hz10FrontCache* fc = &hz10_front_cache[class_id];
+  hz10_freelist_page_mark_local_free(page, ptr);
+#if HZ10_ENABLE_FRONT_CACHE_ARRAY
+  fc->slots[fc->count] = ptr;
+#else
+  *(void**)ptr = fc->head;
+  fc->head = ptr;
+#endif
+  fc->count += 1u;
+  if (fc->count > fc->cap) { /* also the lazy-init entry, see overflow() */
+    hz10_front_cache_overflow(fc, class_id);
+  }
+  return 1;
+#else
+  hz10_freelist_page_free(page, ptr);
+#if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+  hz10_public_entry_note_owner_local_free(page->class_id, page);
+#endif
+  return 1;
+#endif
+}
+
+static __attribute__((noinline)) int hz10_public_entry_free_remote_slow(
+    Hz10FreelistPage* page, void* ptr, uint32_t route_generation) {
+  /* Preserve claim -> ready note -> publish ordering. */
   uint32_t slot_index;
   if (!hz10_page_remote_free_claim(page, ptr, route_generation,
                                   &slot_index)) {
@@ -678,6 +631,56 @@ int hz10_free(void* ptr) {
   hz10_retired_ready_note_remote_free(page);
   hz10_page_remote_free_publish(page, ptr);
   return 1;
+}
+
+static __attribute__((noinline)) int hz10_public_entry_free_slow_route(
+    void* ptr) {
+  H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
+  if (route.kind != H10_ROUTE_VALID) {
+    return 0;
+  }
+  if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
+    hz10_large_free(route.page_base, route.slot_size);
+    return 1;
+  }
+
+  Hz10FreelistPage* page = (Hz10FreelistPage*)route.owner;
+  if (!page) {
+    return 0;
+  }
+
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (owner && hz10_freelist_page_owner_thread(page) ==
+                   hz10_public_entry_owner_record(owner)) {
+    return hz10_public_entry_free_local_page(page, ptr);
+  }
+
+  return hz10_public_entry_free_remote_slow(page, ptr, route.generation);
+}
+
+int hz10_free(void* ptr) {
+  if (!ptr) {
+    return 1;
+  }
+
+  H10RouteLocalResult local_route;
+  if (!hz10_pagemap_route_local_fast(ptr, &local_route)) {
+    return hz10_public_entry_free_slow_route(ptr);
+  }
+
+  Hz10FreelistPage* page = (Hz10FreelistPage*)local_route.owner;
+  if (!page) {
+    return 0;
+  }
+
+  Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+  if (owner && hz10_freelist_page_owner_thread(page) ==
+                   hz10_public_entry_owner_record(owner)) {
+    return hz10_public_entry_free_local_page(page, ptr);
+  }
+
+  return hz10_public_entry_free_remote_slow(page, ptr,
+                                           local_route.generation);
 }
 
 void hz10_public_entry_class_list_stats(uint32_t class_id,
