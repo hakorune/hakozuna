@@ -58,8 +58,9 @@ status:
       shim path. Split RUNS=5 refresh: sh6bench improved 0.810s -> 0.690s
       vs prior macro-width median, larson stayed competitor-range, RSS
       unchanged. A single all-in-one refresh attempt hit one hz10 larson
-      SIGSEGV, but standalone larson 5/5 and hz10-only macro 5/5 passed;
-      keep as watch item, not blocker.
+      SIGSEGV, but standalone larson 5/5, short sequence repro 20/20,
+      hz10-only macro 5/5, and a full all-allocator retry all passed.
+      Treat as unreproduced watch item, not blocker.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -163,7 +164,8 @@ status:
         hz10 larson 4.177s / 282,624 KiB vs tcmalloc 4.147s /
         279,040 KiB and mimalloc 4.148s / 283,980 KiB.
       One all-in-one matrix attempt saw hz10 larson run=2 SIGSEGV; follow-up
-      standalone larson 5/5 and hz10-only matrix 5/5 passed. Log:
+      standalone larson 5/5, short sequence repro 20/20, hz10-only matrix
+      5/5, and full matrix retry passed. Log:
       bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
 
   Required design constraint:

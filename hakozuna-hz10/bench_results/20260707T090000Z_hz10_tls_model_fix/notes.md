@@ -139,10 +139,13 @@ refresh attempt hit a single SIGSEGV in `hz10` larson run 2. Follow-up checks:
 standalone hz10 larson, same args: 5/5 pass
 ALLOCATORS_CSV=hz10 RUNS=5 macro matrix: pass
 ALLOCATORS_CSV=tcmalloc,mimalloc RUNS=5 macro matrix: pass
+short sequence repro (glibc larson, hz10 larson, hz10 larson): 20/20 pass
+full all-allocator RUNS=5 matrix retry: pass
 ```
 
-Treat the failed all-in-one refresh as a watch item, not a blocker for the TLS
-codegen fix. The direct HZ10 lane and larson repro both passed after it.
+Treat the failed all-in-one refresh as unreproduced. It is recorded as a
+watch item, but it is not a blocker for the TLS codegen fix or for proceeding
+to the next box.
 
 Refreshed split-matrix medians:
 
@@ -161,11 +164,24 @@ Compared with the prior macro-width median, HZ10 sh6bench improved
 `0.810s -> 0.690s` with essentially unchanged RSS. The row is still behind
 tcmalloc/mimalloc, but the TLS fix is a real product-lane win.
 
+Full retry median summary:
+
+```text
+workload       glibc wall/RSS         hz10 wall/RSS          tcmalloc wall/RSS       mimalloc wall/RSS
+python_alloc   1.160s /  91,924 KiB   0.900s / 106,772 KiB   0.830s / 104,448 KiB   0.700s / 102,412 KiB
+redis_setget   0.550s /   8,064 KiB   0.550s /   8,064 KiB   0.550s /   8,064 KiB   0.550s /   8,192 KiB
+larson         4.142s / 272,384 KiB   4.186s / 283,776 KiB   4.147s / 279,040 KiB   4.148s / 284,148 KiB
+xmalloc_test   2.040s / 198,560 KiB   2.000s /  13,312 KiB   2.030s / 195,968 KiB   2.000s /  20,576 KiB
+cache_scratch  1.090s /   3,456 KiB   1.090s /   3,968 KiB   1.100s /   7,680 KiB   1.100s /   5,724 KiB
+mstress        0.210s / 362,320 KiB   0.220s / 204,268 KiB   0.160s / 219,008 KiB   0.220s / 328,080 KiB
+sh6bench       0.930s / 424,576 KiB   0.700s / 320,896 KiB   0.320s / 271,616 KiB   0.270s / 272,720 KiB
+```
+
 ## Next
 
 1. Investigate the one all-in-one matrix hz10 larson SIGSEGV only if it
-   repeats. The direct repros passed (standalone larson 5/5, hz10-only macro
-   5/5), so do not block the TLS fix on it.
+   repeats. Direct repros and a full matrix retry passed, so do not block the
+   TLS fix on it.
 2. `hz10_shim_mark_thread_for_stats` at 5.1% self on EVERY malloc/free
    is suspicious if exit-stats aren't requested for this run -- worth a
    quick look at whether it can be a single cached branch instead of a
