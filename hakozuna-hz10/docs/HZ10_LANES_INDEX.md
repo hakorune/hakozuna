@@ -30,11 +30,16 @@ hz10-base:
   Built as libhz10_base.so via `make preload-base`.
   Rollback/diagnostic sibling for the former no-orphan shim default.
 
+hz10-coarse:
+  Built as libhz10_coarse.so via `make preload-coarse`.
+  Rollback sibling for the current default: orphan + partial adoption, but
+  without fine size classes. This is the clean A/B lane when fine-class
+  regressions are suspected.
+
 hz10+fine:
   Built as libhz10_fine.so via `make preload-fine`.
-  Tracks the current default's adoption flags plus the fine size-class table.
-  Since the default now includes fine classes, this is a redundant sibling kept
-  for matrix continuity.
+  Compatibility artifact for older matrix names. It intentionally tracks the
+  current default and should not be treated as a separate candidate.
 
 hz10+orphan:
   Built as libhz10_orphan.so via `make preload-orphan-adoption`.
@@ -48,10 +53,8 @@ hz10+orphan:
 
 hz10+orphan-partial:
   Built as libhz10_orphan_partial.so via `make preload-orphan-partial`.
-  Opt-in sibling for HZ10PartialOrphanAdoption-L1:
-  `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` plus
-  `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`. This is now also the coarse
-  size-class rollback sibling for the shim default.
+  Compatibility name for the old partial-adoption candidate. Prefer
+  hz10-coarse / libhz10_coarse.so for current rollback work.
   First larson 4t/128c RUNS=3 probe: current RSS 2,817,024 KiB ->
   733,568 KiB and throughput 2.069M -> 2.085M vs idle-only. Census
   orphan_unadopted collapsed from 32,329 pages / 2.118GB to 3 pages / 196KiB.
@@ -229,26 +232,30 @@ Candidate design families to review:
 
 ```text
 make preload
-  Builds libhz10.so, default HZ10 shim. As of HZ10PartialOrphanAdoption-L1,
-  this enables HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 and
-  HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1.
+  Builds libhz10.so, default HZ10 shim. This enables
+  HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1,
+  HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1, and
+  HZ10_ENABLE_FINE_SIZE_CLASSES=1.
+
+make preload-coarse
+  Builds libhz10_coarse.so, the current rollback for fine-class changes:
+  orphan + partial adoption are enabled, fine size classes are not.
 
 make preload-base
   Builds libhz10_base.so, the former no-orphan shim default for rollback and
   A/B measurement.
 
 make preload-fine
-  Builds libhz10_fine.so, non-clobbering sibling with
-  HZ10_ENABLE_FINE_SIZE_CLASSES=1.
+  Builds libhz10_fine.so, compatibility artifact that intentionally tracks
+  the current default.
 
 make preload-orphan-adoption
   Builds libhz10_orphan.so, non-clobbering sibling with
   HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1.
 
 make preload-orphan-partial
-  Builds libhz10_orphan_partial.so, non-clobbering sibling with
-  HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 and
-  HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1.
+  Builds libhz10_orphan_partial.so, compatibility name for the old partial
+  adoption candidate. Prefer preload-coarse for current rollback work.
 
 make preload-fine-size-classes
 make preload-retired-local
@@ -262,10 +269,10 @@ make preload-fine-retired-local
 ```text
 make bench-macro-matrix
   Runs scripts/run_hz10_macro_preload_matrix.sh.
-  Allocators by default: glibc, hz10, hz10-base, hz10+fine, hz10+orphan,
-  hz10+orphan-partial, tcmalloc if found, source mimalloc if found. Use
-  `ALLOCATORS_CSV=...` to split high-RSS larson rows away from normal macro
-  guard rows.
+  Allocators by default: glibc, hz10, hz10-coarse, hz10-base, hz10+orphan,
+  tcmalloc if found, source mimalloc if found. Compatibility names
+  hz10+fine and hz10+orphan-partial are still accepted through
+  `ALLOCATORS_CSV=...`.
   Workloads: python_alloc, redis_setget, larson.
 
 make bench-macro-preload

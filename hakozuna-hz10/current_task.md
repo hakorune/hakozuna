@@ -27,7 +27,7 @@ status:
       adoption. Corrected same-matrix RUNS=3 showed python_alloc RSS
       116,756 -> 106,788 KiB with unchanged wall, larson RSS
       288,256 -> 281,856 KiB with unchanged wall, and redis unchanged.
-      Coarse rollback remains `libhz10_orphan_partial.so`.
+      Coarse rollback is `libhz10_coarse.so` (`make preload-coarse`).
     - retired-local reclaim remains NO-GO as default and opt-in research only.
     - Opt-in hz10+orphan adopts only fully idle orphan ACTIVE pages. It does
       not destroy pages from pthread destructors and does not transfer retired
@@ -50,14 +50,14 @@ status:
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
-      partial adoption. Source compile-time defaults remain off; this is a shim
-      default, not a public-entry/front-cache default.
+      partial adoption + fine size classes. Source compile-time defaults
+      remain off; this is a shim default, not a public-entry/front-cache
+      default.
+    - Keep coarse rollback as `libhz10_coarse.so` via `make preload-coarse`.
     - Keep no-orphan rollback as `libhz10_base.so` via `make preload-base`.
     - Keep existing hz10+orphan idle-only as `libhz10_orphan.so`.
-    - Add partial page adoption as sibling `libhz10_orphan_partial.so`
-      (`HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` +
-      `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`) so idle-only and partial can
-      be A/B measured without clobbering.
+    - `libhz10_fine.so` and `libhz10_orphan_partial.so` remain compatibility
+      artifacts for older matrix names; they are not active decision lanes.
     - Q1 audit result: existing idle adoption pops a page from the registry
       before probing/draining; it does not drain in-place while the page is
       still registry-linked. Partial lane still transfers owner before drain.
@@ -105,7 +105,7 @@ status:
       python_alloc hz10 0.930s / 116,756 KiB vs hz10+fine 0.930s /
       106,788 KiB; larson hz10 4.176s / 288,256 KiB vs hz10+fine 4.173s /
       281,856 KiB; redis unchanged. `make preload` now builds fine by
-      default; coarse partial rollback is `libhz10_orphan_partial.so`. Log:
+      default; coarse rollback is `libhz10_coarse.so`. Log:
       bench_results/20260707T_fine_default_candidate_matrix/
 
   Required design constraint:
@@ -138,7 +138,7 @@ TSan on this Ubuntu 22.04 / GCC 11 / Linux 6.8 box needs ASLR off:
   runs it through `setarch $(uname -m) -R`.
 
 Common local gates:
-  make -B -C hakozuna-hz10 preload preload-fine smoke-shim-api smoke-shim-foreign
+  make -B -C hakozuna-hz10 preload preload-coarse smoke-shim-api smoke-shim-foreign
   make -C hakozuna-hz10 hz10-standalone-check
   git diff --check
 ```

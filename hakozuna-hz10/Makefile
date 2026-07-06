@@ -19,7 +19,8 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-base preload-fine preload-orphan-adoption preload-orphan-partial \
+	preload preload-base preload-fine preload-coarse \
+	preload-orphan-adoption preload-orphan-partial \
 	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
 	bench-macro-preload bench-macro-matrix \
@@ -232,12 +233,8 @@ $(ROOT)/libhz10_base.so: $(SHIM_SRC) $(HEADERS)
 
 preload-base: $(ROOT)/libhz10_base.so
 
-# Sibling of the CURRENT default shim (orphan + partial adoption) plus the
-# fine size-class table -- it exists to answer "would fine classes help the
-# default shim", so it must track the default's adoption flags. It was
-# briefly left on the pre-adoption flag set, which made its larson row read
-# ~9.2GB (the old abandoned-page pathology), poisoning the fine-vs-default
-# comparison.
+# Compatibility sibling for older scripts that named the fine candidate
+# explicitly. It intentionally tracks the current default.
 $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -248,6 +245,14 @@ $(ROOT)/libhz10_orphan.so: $(SHIM_SRC) $(HEADERS)
 
 preload-orphan-adoption: $(ROOT)/libhz10_orphan.so
 
+# Coarse rollback for the current shim default: orphan + partial adoption,
+# but without fine size classes.
+$(ROOT)/libhz10_coarse.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_coarse.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload-coarse: $(ROOT)/libhz10_coarse.so
+
+# Compatibility name for the old partial-adoption candidate.
 $(ROOT)/libhz10_orphan_partial.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan_partial.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -272,12 +277,12 @@ smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
 smoke-shim-foreign: $(ROOT)/libhz10.so
 	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
-bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
 
 bench-macro-matrix: bench-macro-preload
 
-bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
