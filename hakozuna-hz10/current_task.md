@@ -109,8 +109,8 @@ status:
       intended small-size arithmetic in objdump and kept smoke green, but
       gave no hz10-only sh6bench win and worsened the full guard vs the latest
       reference. The code was reverted. Next speed work should be a larger
-      structural design box: active-page/class-state addressing or per-owner
-      local-free page indexing.
+      structural design box. Current design candidate:
+      docs/HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +

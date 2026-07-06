@@ -90,8 +90,8 @@ Default HZ10:
         0.430s hz10-only, and full guard 0.440s -> 0.420s. Logs:
         bench_results/20260707T_malloc_fast_leaf_split_l0/
         bench_results/20260707T_malloc_fast_leaf_split_l0_full/
-  Size-class small lookup: HZ10SizeClassSmallLookup-L0 is NO-GO. Correct and
-        visible in objdump, but did not beat the macro guard; code reverted.
+  HZ10SizeClassSmallLookup-L0 is NO-GO; correct but no macro win, reverted.
+  Next: HZ10OwnerLocalPageIndex-L0; pagemap remains fallback/authority.
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
