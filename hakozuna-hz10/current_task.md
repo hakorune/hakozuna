@@ -78,6 +78,12 @@ status:
       118.302M misses vs tcmalloc 9.235B / 18.310B / 139.042M. A probe build
       with `-Wl,-Bsymbolic-functions` removed internal `@plt` edges and moved
       sh6bench from 0.51s to about 0.47s.
+    - HZ10ShimInternalBinding-L0 is GO. All preload `libhz10*.so` artifacts
+      use `-Wl,-Bsymbolic-functions`, keeping exported malloc/free
+      interposition intact but binding internal HZ10 calls locally. RUNS=5:
+      sh6bench 0.510s -> 0.470s, python_alloc 0.860s -> 0.850s,
+      larson/mstress/RSS flat. Full all-allocator guard: sh6bench 0.480s,
+      python_alloc 0.850s, larson 4.187s / 284,404 KiB.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -85,10 +91,10 @@ status:
 
   Active next box:
     Productization follow-up:
-      HZ10ShimInternalBinding-L0: decide between `-Wl,-Bsymbolic-functions`
-      for preload libraries and hidden internal malloc/free entry points for
-      shim wrappers. Keep it scoped to entry/binding. Do not mix route
-      validation or page metadata changes into this box.
+      Remaining sh6bench gap is now inside `hz10_malloc/free`: fine size-class
+      lookup, pagemap local route, marker writes, and metadata updates. Take
+      the next attribution there; do not revisit shim wrapper/linker overhead
+      unless new evidence appears.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -214,6 +220,15 @@ status:
       not optimize it first. Bsymbolic probe gives a small concrete next win:
       sh6bench 0.51s -> 0.46-0.48s. Log:
       bench_results/20260707T_sh6bench_perf_attribution_l0/
+    - HZ10ShimInternalBinding-L0:
+      Added preload-only `SHIM_LDFLAGS := $(LDFLAGS)
+      -Wl,-Bsymbolic-functions` for all `libhz10*.so` artifacts. Codegen and
+      perf confirm internal `hz10_malloc/free/page_drain_remote @plt` edges
+      are gone; dynamic malloc/free exports remain. Gates green. RUNS=5
+      hz10-only: sh6bench 0.470s / 321,024 KiB, python_alloc 0.850s /
+      106,664 KiB, larson 4.183s / 283,008 KiB, mstress unchanged. Log:
+      bench_results/20260707T_shim_internal_binding_l0/ and full guard:
+      bench_results/20260707T_shim_internal_binding_l0_full/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

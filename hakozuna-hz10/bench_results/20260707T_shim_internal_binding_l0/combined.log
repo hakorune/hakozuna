@@ -1,0 +1,151 @@
+# HZ10 macro preload matrix
+# generated=20260706T073313Z
+# RUNS=5 REDIS_OPS=20000 REDIS_CLIENTS=32 PYTHON_LOOPS=80
+# RUN_LARSON=1 LARSON_SECONDS=2 LARSON_MIN=8 LARSON_MAX=128 LARSON_CHUNKS=128 LARSON_ROUNDS=1 LARSON_SEED=12345 LARSON_THREADS=4
+# RUN_XMALLOC=1 XMALLOC_WORKERS=4 XMALLOC_SECONDS=2 XMALLOC_SIZE=-1
+# RUN_CACHE_SCRATCH=1 CACHE_SCRATCH_THREADS=4 CACHE_SCRATCH_ITERATIONS=5000 CACHE_SCRATCH_OBJECT_SIZE=256 CACHE_SCRATCH_REPETITIONS=5000 CACHE_SCRATCH_CONCURRENCY=4
+# RUN_MSTRESS=1 MSTRESS_THREADS=8 MSTRESS_SCALE=80 MSTRESS_ITER=3
+# RUN_SH6BENCH=1 SH6_CALL_COUNT=100000 SH6_MIN_BLOCK=1 SH6_MAX_BLOCK=1000 SH6_THREADS=4
+# hz10=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10.so
+# hz10_front=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_front.so
+# hz10_coarse=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_coarse.so
+# hz10_base=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_base.so
+# hz10_fine_compat=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_fine.so
+# hz10_orphan=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_orphan.so
+# hz10_orphan_partial_compat=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_orphan_partial.so
+# tcmalloc=/lib/x86_64-linux-gnu/libtcmalloc_minimal.so.4
+# mimalloc=/mnt/workdisk/public_share/hakmem/mimalloc-install/lib/libmimalloc.so.2.2
+# larson=/mnt/workdisk/public_share/hakmem/larson_system
+# xmalloc_test=/mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/xmalloc-test
+# cache_scratch=/mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/cache-scratch
+# mstress=/mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/mstress
+# sh6bench=/mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/sh6bench
+# allocators=hz10
+## workload=python_alloc allocator=hz10 run=1
+wall_sec=0.86 max_rss_kb=106664
+## workload=redis_setget allocator=hz10 run=1
+wall_sec=0.54 max_rss_kb=8064
+## workload=larson allocator=hz10 run=1
+wall_sec=4.164 sampled_current_rss_kb=284416 rc=0
+## workload=xmalloc_test allocator=hz10 run=1
+wall_sec=2.00 max_rss_kb=13696
+## workload=cache_scratch allocator=hz10 run=1
+wall_sec=1.10 max_rss_kb=3968
+## workload=mstress allocator=hz10 run=1
+wall_sec=0.21 max_rss_kb=206000
+## workload=sh6bench allocator=hz10 run=1
+wall_sec=0.47 max_rss_kb=322048
+## workload=python_alloc allocator=hz10 run=2
+wall_sec=0.84 max_rss_kb=106948
+## workload=redis_setget allocator=hz10 run=2
+wall_sec=0.54 max_rss_kb=8192
+## workload=larson allocator=hz10 run=2
+wall_sec=4.183 sampled_current_rss_kb=289024 rc=0
+## workload=xmalloc_test allocator=hz10 run=2
+wall_sec=2.00 max_rss_kb=13184
+## workload=cache_scratch allocator=hz10 run=2
+wall_sec=1.11 max_rss_kb=4096
+## workload=mstress allocator=hz10 run=2
+wall_sec=0.21 max_rss_kb=203236
+## workload=sh6bench allocator=hz10 run=2
+wall_sec=0.49 max_rss_kb=318208
+## workload=python_alloc allocator=hz10 run=3
+wall_sec=0.85 max_rss_kb=106796
+## workload=redis_setget allocator=hz10 run=3
+wall_sec=0.54 max_rss_kb=8192
+## workload=larson allocator=hz10 run=3
+wall_sec=4.183 sampled_current_rss_kb=282368 rc=0
+## workload=xmalloc_test allocator=hz10 run=3
+wall_sec=2.00 max_rss_kb=13312
+## workload=cache_scratch allocator=hz10 run=3
+wall_sec=1.09 max_rss_kb=3968
+## workload=mstress allocator=hz10 run=3
+wall_sec=0.21 max_rss_kb=204556
+## workload=sh6bench allocator=hz10 run=3
+wall_sec=0.47 max_rss_kb=321024
+## workload=python_alloc allocator=hz10 run=4
+wall_sec=0.86 max_rss_kb=106576
+## workload=redis_setget allocator=hz10 run=4
+wall_sec=0.54 max_rss_kb=8064
+## workload=larson allocator=hz10 run=4
+wall_sec=4.188 sampled_current_rss_kb=283008 rc=0
+## workload=xmalloc_test allocator=hz10 run=4
+wall_sec=2.00 max_rss_kb=13056
+## workload=cache_scratch allocator=hz10 run=4
+wall_sec=1.09 max_rss_kb=3968
+## workload=mstress allocator=hz10 run=4
+wall_sec=0.21 max_rss_kb=201384
+## workload=sh6bench allocator=hz10 run=4
+wall_sec=0.47 max_rss_kb=320128
+## workload=python_alloc allocator=hz10 run=5
+wall_sec=0.85 max_rss_kb=106644
+## workload=redis_setget allocator=hz10 run=5
+wall_sec=0.55 max_rss_kb=8064
+## workload=larson allocator=hz10 run=5
+wall_sec=4.172 sampled_current_rss_kb=281728 rc=0
+## workload=xmalloc_test allocator=hz10 run=5
+wall_sec=2.00 max_rss_kb=13056
+## workload=cache_scratch allocator=hz10 run=5
+wall_sec=1.10 max_rss_kb=3968
+## workload=mstress allocator=hz10 run=5
+wall_sec=0.21 max_rss_kb=206724
+## workload=sh6bench allocator=hz10 run=5
+wall_sec=0.47 max_rss_kb=321152
+
+## summary
+workload	allocator	run	wall_sec	max_rss_kb	current_rss_kb	extra
+python_alloc	hz10	1	0.86	106664	-	-
+redis_setget	hz10	1	0.54	8064	-	-
+redis_server_rss_kb	hz10	1	-	NA	NA	server
+larson	hz10	1	4.164	284416	284416	seconds=2,min=8,max=128,chunks=128,rounds=1,seed=12345,threads=4
+larson_throughput	hz10	1	-	-	-	2095612
+xmalloc_test	hz10	1	2.00	13696	-	-
+cache_scratch	hz10	1	1.10	3968	-	-
+mstress	hz10	1	0.21	206000	-	-
+sh6bench	hz10	1	0.47	322048	-	-
+python_alloc	hz10	2	0.84	106948	-	-
+redis_setget	hz10	2	0.54	8192	-	-
+redis_server_rss_kb	hz10	2	-	NA	NA	server
+larson	hz10	2	4.183	289024	289024	seconds=2,min=8,max=128,chunks=128,rounds=1,seed=12345,threads=4
+larson_throughput	hz10	2	-	-	-	2095610
+xmalloc_test	hz10	2	2.00	13184	-	-
+cache_scratch	hz10	2	1.11	4096	-	-
+mstress	hz10	2	0.21	203236	-	-
+sh6bench	hz10	2	0.49	318208	-	-
+python_alloc	hz10	3	0.85	106796	-	-
+redis_setget	hz10	3	0.54	8192	-	-
+redis_server_rss_kb	hz10	3	-	NA	NA	server
+larson	hz10	3	4.183	282368	282368	seconds=2,min=8,max=128,chunks=128,rounds=1,seed=12345,threads=4
+larson_throughput	hz10	3	-	-	-	2095612
+xmalloc_test	hz10	3	2.00	13312	-	-
+cache_scratch	hz10	3	1.09	3968	-	-
+mstress	hz10	3	0.21	204556	-	-
+sh6bench	hz10	3	0.47	321024	-	-
+python_alloc	hz10	4	0.86	106576	-	-
+redis_setget	hz10	4	0.54	8064	-	-
+redis_server_rss_kb	hz10	4	-	NA	NA	server
+larson	hz10	4	4.188	283008	283008	seconds=2,min=8,max=128,chunks=128,rounds=1,seed=12345,threads=4
+larson_throughput	hz10	4	-	-	-	2095544
+xmalloc_test	hz10	4	2.00	13056	-	-
+cache_scratch	hz10	4	1.09	3968	-	-
+mstress	hz10	4	0.21	201384	-	-
+sh6bench	hz10	4	0.47	320128	-	-
+python_alloc	hz10	5	0.85	106644	-	-
+redis_setget	hz10	5	0.55	8064	-	-
+redis_server_rss_kb	hz10	5	-	NA	NA	server
+larson	hz10	5	4.172	281728	281728	seconds=2,min=8,max=128,chunks=128,rounds=1,seed=12345,threads=4
+larson_throughput	hz10	5	-	-	-	2095617
+xmalloc_test	hz10	5	2.00	13056	-	-
+cache_scratch	hz10	5	1.10	3968	-	-
+mstress	hz10	5	0.21	206724	-	-
+sh6bench	hz10	5	0.47	321152	-	-
+
+## median summary
+workload	allocator	median_wall_sec	median_max_rss_kb	median_current_rss_kb	wall_vs_glibc
+cache_scratch	hz10	1.100	3968	-	-
+larson	hz10	4.183	283008	283008	-
+mstress	hz10	0.210	204556	-	-
+python_alloc	hz10	0.850	106664	-	-
+redis_setget	hz10	0.540	8064	-	-
+sh6bench	hz10	0.470	321024	-	-
+xmalloc_test	hz10	2.000	13184	-	-

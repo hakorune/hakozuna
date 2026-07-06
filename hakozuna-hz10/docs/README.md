@@ -46,6 +46,11 @@ HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   reads and owner-record extraction while keeping first-touch owner allocation
   and pthread-key registration in a hidden noinline slow helper
 
+HZ10_SHIM_INTERNAL_BINDING_L0.md:
+  preload-only linker binding box; uses `-Wl,-Bsymbolic-functions` for
+  `libhz10*.so` so internal HZ10 calls avoid PLT/interposition while exported
+  malloc/free interposition remains intact
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

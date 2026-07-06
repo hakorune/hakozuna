@@ -50,6 +50,11 @@ OPT_CFLAGS := $(CFLAGS) -flto
 # already get local-exec for free) -- measured +13-15% wall on that row
 # with zero RSS or correctness change.
 SHIM_CFLAGS := $(OPT_CFLAGS) -fno-builtin -ftls-model=initial-exec
+# Bind calls to functions defined inside libhz10*.so locally. This is scoped to
+# the preload artifacts only: host-program malloc/free interposition remains
+# exported, while internal hz10_malloc/hz10_free/page helper calls avoid PLT
+# indirection. See HZ10ShimInternalBinding-L0.
+SHIM_LDFLAGS := $(LDFLAGS) -Wl,-Bsymbolic-functions
 TSAN_DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS -fsanitize=thread -fno-omit-frame-pointer
 TSAN_LDFLAGS := $(LDFLAGS) -fsanitize=thread
 
@@ -246,55 +251,55 @@ bench-public-entry: $(ROOT)/hz10_public_entry_bench
 # table. The coarse partial-adoption sibling remains available as
 # libhz10_orphan_partial.so for immediate A/B rollback.
 $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload: $(ROOT)/libhz10.so
 
 # Stable sibling preload artifacts for side-by-side macro matrix rows.
 $(ROOT)/libhz10_base.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) $(INC) -shared -Wl,-soname,libhz10_base.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) $(INC) -shared -Wl,-soname,libhz10_base.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-base: $(ROOT)/libhz10_base.so
 
 # Compatibility sibling for older scripts that named the fine candidate
 # explicitly. It intentionally tracks the current default.
 $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 
 $(ROOT)/libhz10_front.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 $(INC) -shared -Wl,-soname,libhz10_front.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 $(INC) -shared -Wl,-soname,libhz10_front.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-front: $(ROOT)/libhz10_front.so
 
 $(ROOT)/libhz10_orphan.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-orphan-adoption: $(ROOT)/libhz10_orphan.so
 
 # Coarse rollback for the current shim default: orphan + partial adoption,
 # but without fine size classes.
 $(ROOT)/libhz10_coarse.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_coarse.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_coarse.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-coarse: $(ROOT)/libhz10_coarse.so
 
 # Compatibility name for the old partial-adoption candidate.
 $(ROOT)/libhz10_orphan_partial.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan_partial.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan_partial.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-orphan-partial: $(ROOT)/libhz10_orphan_partial.so
 
 # Manual probe lanes below intentionally clobber libhz10.so.
 preload-fine-size-classes: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-retired-local: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-fine-retired-local: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 $(ROOT)/hz10_shim_api_smoke: $(SMOKE_SHIM_API_SRC) $(ROOT)/libhz10.so $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -o $@ $(SMOKE_SHIM_API_SRC) $(LDFLAGS) -ldl $(LDLIBS)

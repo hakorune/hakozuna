@@ -55,6 +55,15 @@ Default HZ10:
         Remaining sharp wall gap is sh6bench (HZ10 0.510s vs tcmalloc 0.320s
         and mimalloc 0.250s). Log:
         bench_results/20260707T_shim_speed_stack_macro_refresh_l0/
+  Shim internal binding:
+        `libhz10*.so` now links with `-Wl,-Bsymbolic-functions`, scoped to
+        preload artifacts only. Internal HZ10 calls no longer route through
+        PLT/interposition edges, while exported malloc/free/calloc/realloc
+        still interpose the host program. hz10-only RUNS=5: sh6bench 0.510s
+        -> 0.470s, python_alloc 0.860s -> 0.850s, larson/mstress/RSS flat.
+        Full all-allocator guard keeps HZ10 in the same macro band:
+        sh6bench 0.480s, python_alloc 0.850s, larson 4.187s / 284,404 KiB.
+        Log: bench_results/20260707T_shim_internal_binding_l0/
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -261,6 +270,39 @@ NEXT:
   preload library builds or add hidden internal malloc/free entry points for
   the shim wrappers. Keep the box scoped to entry/binding; do not mix it with
   route validation or page metadata changes.
+
+HZ10ShimInternalBinding-L0   (implemented, GO)
+
+Input:
+  docs/HZ10_SHIM_INTERNAL_BINDING_L0.md
+  bench_results/20260707T_shim_internal_binding_l0/
+
+Result:
+  Added `SHIM_LDFLAGS := $(LDFLAGS) -Wl,-Bsymbolic-functions` and used it for
+  every `libhz10*.so` preload artifact. Codegen confirms internal
+  `hz10_malloc@plt`, `hz10_free@plt`, and `hz10_page_drain_remote@plt` edges
+  are gone; dynamic exports still include `malloc`, `free`, `calloc`,
+  `realloc`, `hz10_malloc`, and `hz10_free`.
+
+Gate:
+  preload sibling rebuilds, smoke-shim-api, smoke-shim-foreign, and
+  hz10-standalone-check are green. RUNS=5 hz10-only macro:
+    sh6bench 0.510s -> 0.470s,
+    python_alloc 0.860s -> 0.850s,
+    larson 4.179s -> 4.183s,
+    mstress 0.210s -> 0.210s,
+    RSS flat.
+  Full all-allocator RUNS=5 guard:
+    python_alloc hz10 0.850s vs glibc 1.210s, tcmalloc 0.830s, mimalloc 0.690s
+    larson hz10 4.187s / 284,404 KiB vs tcmalloc 4.153s / 278,784 KiB
+    mstress hz10 0.210s / 204,416 KiB vs tcmalloc 0.160s / 218,368 KiB
+    sh6bench hz10 0.480s / 318,976 KiB vs tcmalloc 0.320s and mimalloc 0.250s
+
+NEXT:
+  The remaining sh6bench gap is inside `hz10_malloc/free` and the host binary
+  `malloc@plt/free@plt` boundary. Next attribution should compare fine
+  size-class lookup, pagemap local route, marker writes, and metadata updates
+  rather than revisiting shim wrapper/linker overhead.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 
