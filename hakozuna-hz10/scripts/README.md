@@ -23,6 +23,12 @@ run_hz10_rss_guard.sh:
   short lifecycle-flush RSS guard; checks current_rss_kb plus busy reclaim
   counters for main_r50, main_r90, and slot_count1_r90
 
+run_hz10_hz8_public_purge_matrix.sh:
+  formal HZ8-public-row RSS lane for HZ10's explicit orphan purge API. Builds
+  the HZ8 `bench_matrix_malloc.c` harness twice under OUTDIR (baseline and a
+  dlsym-patched purge copy), then runs HZ10 via LD_PRELOAD and compares
+  post_rss medians. Does not modify HZ8 source files.
+
 run_hz10_larson_thread_churn_attribution.sh:
   macro attribution runner for HZ10LarsonThreadChurnAttribution-L0; sweeps
   small larson shapes for glibc/hz10/hz10-coarse/hz10-base/hz10+orphan and
@@ -46,6 +52,11 @@ Common knobs:
 ```text
 OUTDIR:
   Override result directory.
+
+HZ10_EXT_ROOT:
+  Parent directory for optional sibling checkouts such as HZ8 or HZ9.
+  Defaults to `.external-disabled`; set this explicitly for HZ8/HZ9
+  comparison lanes.
 
 RUNS:
   Number of repeated runs; use medians for noisy rows.

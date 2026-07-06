@@ -48,7 +48,7 @@ Default HZ10:
         Orphan registry depth dominates. IdleAgeProbe-L0 deferred broad idle
         trim; DrainPotential-L0 proved remote-heavy residual is
         freed-but-undrained: temporary-owner drain made remote rows drain-idle
-        with zero truly-live pages. ExplicitQuiescentOrphanPurge-L0 is GO: manual purge moved main_r90 RSS 95.3MB -> 7.0MB. Record: HZ10_EXPLICIT_QUIESCENT_ORPHAN_PURGE_L0.md.
+        with zero truly-live pages. ExplicitQuiescentOrphanPurge-L0 is GO: formal purge lane moved main_r90 RSS 99.1MB -> 8.2MB. Record: HZ10_EXPLICIT_QUIESCENT_ORPHAN_PURGE_L0.md.
   Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
         every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
         LD_PRELOAD library -- never dlopen'd/unloaded after process

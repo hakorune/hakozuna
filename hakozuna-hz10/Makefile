@@ -26,7 +26,7 @@
 	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
 	bench-macro-preload bench-macro-matrix \
-	bench-larson-thread-churn-attribution \
+	bench-larson-thread-churn-attribution bench-hz8-public-purge-matrix \
 	hz10-rss-guard hz10-standalone-check smoke-tsan-aslr-off
 
 CC ?= gcc
@@ -458,6 +458,9 @@ hz10-standalone-check:
 
 hz10-rss-guard:
 	$(ROOT)/scripts/run_hz10_rss_guard.sh
+
+bench-hz8-public-purge-matrix:
+	$(ROOT)/scripts/run_hz10_hz8_public_purge_matrix.sh
 
 clean:
 	rm -f $(ROOT)/hz10_pagemap_route_smoke $(ROOT)/hz10_pagemap_route_bench \

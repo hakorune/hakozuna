@@ -79,32 +79,32 @@ are reported and the old pointer no longer routes to the same page.
 
 ## Measurement
 
-Temporary HZ8 matrix harness copy using `dlsym(RTLD_DEFAULT, ...)` to call the
-preloaded HZ10 API immediately before `post_rss` sampling:
+Formal HZ10 lane:
 
 ```text
 THREADS=16 ITERS=50000 RUNS=3
 allocator: HZ10 libhz10.so via LD_PRELOAD
+script: scripts/run_hz10_hz8_public_purge_matrix.sh
 ```
 
 Median:
 
 ```text
 row                         baseline RSS  purge RSS   delta
-small_interleaved_remote90   44.96MB       5.72MB    -39.24MB
-main_interleaved_r90         95.29MB       6.99MB    -88.30MB
-medium_interleaved_r50       73.27MB      14.47MB    -58.80MB
-main_local0                  35.26MB       3.77MB    -31.49MB
-medium_local0                 6.55MB       3.09MB     -3.46MB
+small_interleaved_remote90   41.81MB       5.85MB    -35.96MB
+main_interleaved_r90         99.09MB       8.22MB    -90.87MB
+medium_interleaved_r50       70.12MB       7.38MB    -62.75MB
+main_local0                  35.26MB       3.99MB    -31.27MB
+medium_local0                 6.42MB       3.18MB     -3.24MB
 ```
 
-Work throughput is measured before the purge point; the small ops/s deltas in
-the A/B table are run-order noise, not hot-path cost.
+Work throughput is measured before the purge point; small ops/s deltas in the
+A/B table are run-order noise, not hot-path cost.
 
 Record:
 
 ```text
-bench_results/20260707T_hz10_explicit_orphan_purge_l0/
+bench_results/20260707T_hz10_hz8_public_purge_matrix_l0/
 ```
 
 Verdict: GO. The explicit API is the correct mechanism for post-workload RSS

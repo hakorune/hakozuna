@@ -1,0 +1,12 @@
+box=HZ10ExplicitQuiescentOrphanPurge-L0 formal matrix lane
+date_utc=2026-07-06T21:51:07Z
+hz10_sha=23a7b81fc9b9782881cd98142ec3efcc0c175291
+hz8_sha=23a7b81fc9b9782881cd98142ec3efcc0c175291
+runs=3
+threads=16
+iters=50000
+rows=small_interleaved_remote90,main_interleaved_r90,medium_interleaved_r50,main_local0,medium_local0
+hz10_lib=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10.so
+base_bin=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/bench_results/20260707T_hz10_hz8_public_purge_matrix_l0/bench_matrix_malloc_base
+purge_bin=/mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/bench_results/20260707T_hz10_hz8_public_purge_matrix_l0/bench_matrix_malloc_hz10_purge
+note=purge lane calls hz10_public_entry_purge_orphan_registry_quiescent(NULL) immediately before post_rss sampling via dlsym(RTLD_DEFAULT).

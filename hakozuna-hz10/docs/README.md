@@ -74,7 +74,8 @@ HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md:
 HZ10_EXPLICIT_QUIESCENT_ORPHAN_PURGE_L0.md:
   implemented explicit global-quiescent API that drains orphan ACTIVE pages
   under a temporary owner, destroys pages that become fully idle, and keeps
-  non-idle pages registered for later adoption
+  non-idle pages registered for later adoption; formal HZ8 public-row lane is
+  `scripts/run_hz10_hz8_public_purge_matrix.sh`
 
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
