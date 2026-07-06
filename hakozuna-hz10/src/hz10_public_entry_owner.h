@@ -52,9 +52,25 @@ typedef struct Hz10OrphanAdoptionClassStats {
 #define HZ10_THREAD_OWNER_STATE_LIVE 1u
 #define HZ10_THREAD_OWNER_STATE_EXITED 2u
 
-Hz10ThreadOwner* hz10_public_entry_current_owner(void);
-Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void);
-Hz10OwnerRecord* hz10_public_entry_owner_record(const Hz10ThreadOwner* owner);
+extern __attribute__((visibility("hidden"))) _Thread_local
+    Hz10ThreadOwner* hz10_current_owner;
+__attribute__((visibility("hidden"))) Hz10ThreadOwner*
+hz10_public_entry_current_owner_slow(void);
+
+static inline Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
+  Hz10ThreadOwner* owner = hz10_current_owner;
+  return owner ? owner : hz10_public_entry_current_owner_slow();
+}
+
+static inline Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
+  return hz10_current_owner;
+}
+
+static inline Hz10OwnerRecord* hz10_public_entry_owner_record(
+    const Hz10ThreadOwner* owner) {
+  return owner ? owner->record : NULL;
+}
+
 uint32_t hz10_public_entry_owner_state(const Hz10OwnerRecord* owner);
 Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);

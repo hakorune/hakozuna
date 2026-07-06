@@ -41,6 +41,11 @@ HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md:
   `HZ10_SHIM_THREAD_EXIT_STATS` marker setup behind a cold guard so normal
   preload malloc/free does not pay for diagnostic-only thread-exit stats
 
+HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
+  shim speed follow-up after the stats fast guard; inlines safe owner TLS
+  reads and owner-record extraction while keeping first-touch owner allocation
+  and pthread-key registration in a hidden noinline slow helper
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

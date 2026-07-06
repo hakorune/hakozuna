@@ -40,6 +40,14 @@ Default HZ10:
         small python_alloc win, larson unaffected (as expected). Macro
         matrix numbers above predate this fix; refresh before citing
         exact sh6bench/mstress deltas going forward.
+  Shim hot-call trimming:
+        HZ10ShimStatsFastGuard-L0 moved diagnostic thread-exit stats setup
+        behind a cold guard. HZ10ShimOwnerLookupInline-L0 then inlined the
+        safe owner TLS reads and owner-record extraction while keeping the
+        first-touch owner allocation path hidden/noinline. Latest hz10-only
+        RUNS=5 medians: sh6bench 0.510s, python_alloc 0.860s, larson 4.179s
+        / 283,768 KiB current RSS. Refresh the all-allocator RUNS=5 macro
+        before citing final competitor ratios.
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -161,6 +169,38 @@ NEXT:
      next attribution target on sh6bench/mstress if they still lag
      materially after a matrix refresh -- likely inlining/flattening
      candidates now that the TLS-model cost is out of the way.
+
+HZ10ShimOwnerLookupInline-L0   (implemented, GO)
+
+Input:
+  docs/HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md
+  bench_results/20260707T_shim_owner_lookup_inline_l0/
+
+Question:
+  Can the preload product path stop paying exported owner-lookup helper calls
+  on every hot malloc/free path after the TLS model fix and stats fast guard?
+
+Design:
+  Inline only safe reads in `hz10_public_entry_owner.h`: the current owner TLS
+  pointer, the nullable owner-record field load, and the fast current-owner
+  path. Keep first-touch owner allocation and pthread-key destructor
+  registration in `hz10_public_entry_current_owner_slow()`, hidden and
+  noinline.
+
+Result:
+  GO. `nm -D libhz10.so` no longer exports
+  `hz10_public_entry_current_owner*`, `hz10_public_entry_owner_record`, or the
+  TLS owner symbol. `readelf -r` still shows initial-exec `R_X86_64_TPOFF64`
+  TLS relocations, and perf sh6bench no longer reports the owner-lookup wrapper
+  names in the filtered flat profile. Functional gates and
+  `smoke-tsan-aslr-off` are green. RUNS=5 hz10-only macro:
+    sh6bench 0.660s -> 0.510s vs the previous stats-fast-guard median,
+    python_alloc 0.880s -> 0.860s, larson 4.182s -> 4.179s, RSS flat.
+
+NEXT:
+  Refresh the all-allocator RUNS=5 macro matrix with TLS model fix, stats fast
+  guard, and owner lookup inline all present. Then use perf on any remaining
+  sh6bench/mstress gap instead of opening another routing box by intuition.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 

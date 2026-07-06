@@ -61,18 +61,23 @@ status:
       SIGSEGV, but standalone larson 5/5, short sequence repro 20/20,
       hz10-only macro 5/5, and a full all-allocator retry all passed.
       Treat as unreproduced watch item, not blocker.
+    - HZ10ShimStatsFastGuard-L0 and HZ10ShimOwnerLookupInline-L0 are GO.
+      The stats guard removed diagnostic-only thread-exit stats work from the
+      normal preload path. Owner lookup inline then removed hot owner helper
+      call boundaries while keeping first-touch allocation/destructor
+      registration in a hidden noinline slow path. Latest hz10-only RUNS=5:
+      sh6bench 0.510s, python_alloc 0.860s, larson 4.179s / 283,768 KiB.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    Productization follow-up after macro-width L0, front-handoff L0, and
-    shim TLS model fix:
-      HZ10ShimStatsFastGuard-L0 is implemented and GO. Next speed design, if
-      continuing, is HZ10ShimOwnerLookupInline-L0: perf after stats guard still
-      shows owner lookup wrappers near the top of sh6bench. Keep it separate
-      from stats cleanup because owner lookup touches allocator routing.
+    Productization follow-up:
+      Refresh the all-allocator RUNS=5 macro matrix after the TLS model fix,
+      stats fast guard, and owner lookup inline. If sh6bench/mstress still lag
+      materially, take a new perf attribution before opening another routing
+      or ownership box.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -175,6 +180,15 @@ status:
       sh6bench profile. RUNS=5 hz10-only: sh6bench 0.700s -> 0.660s vs the
       TLS-fix full-retry median, python_alloc 0.900s -> 0.880s, RSS flat.
       Log: bench_results/20260707T_shim_stats_fast_guard_l0/
+    - HZ10ShimOwnerLookupInline-L0:
+      Inlined current-owner TLS reads and owner-record extraction in the
+      header; first-touch owner allocation and pthread-key registration remain
+      in hidden noinline `hz10_public_entry_current_owner_slow()`. `nm -D`
+      exports no owner lookup wrappers, perf sh6bench no longer reports those
+      wrapper names, and `smoke-tsan-aslr-off` is green. RUNS=5 hz10-only:
+      sh6bench 0.660s -> 0.510s vs the previous median, python_alloc 0.880s
+      -> 0.860s, larson 4.182s -> 4.179s, RSS flat. Log:
+      bench_results/20260707T_shim_owner_lookup_inline_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

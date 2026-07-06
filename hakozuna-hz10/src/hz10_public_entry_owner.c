@@ -14,7 +14,8 @@
 #define HZ10_OWNER_SLAB_BYTES HZ10_PAGE_QUANTUM
 #endif
 
-static _Thread_local Hz10ThreadOwner* hz10_current_owner;
+__attribute__((visibility("hidden"))) _Thread_local
+    Hz10ThreadOwner* hz10_current_owner;
 static hz10_platform_mutex_t hz10_owner_slab_lock = HZ10_PLATFORM_MUTEX_INIT;
 static char* hz10_owner_slab_cursor;
 static char* hz10_owner_slab_end;
@@ -237,22 +238,13 @@ static void hz10_owner_register_for_exit(Hz10ThreadOwner* owner) {
   }
 }
 
-Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
-  Hz10ThreadOwner* owner = hz10_current_owner;
-  if (owner) return owner;
-  owner = hz10_owner_alloc();
+__attribute__((noinline, visibility("hidden"))) Hz10ThreadOwner*
+hz10_public_entry_current_owner_slow(void) {
+  Hz10ThreadOwner* owner = hz10_owner_alloc();
   if (!owner) return NULL;
   hz10_current_owner = owner;
   hz10_owner_register_for_exit(owner);
   return owner;
-}
-
-Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
-  return hz10_current_owner;
-}
-
-Hz10OwnerRecord* hz10_public_entry_owner_record(const Hz10ThreadOwner* owner) {
-  return owner ? owner->record : NULL;
 }
 
 uint32_t hz10_public_entry_owner_state(const Hz10OwnerRecord* owner) {
