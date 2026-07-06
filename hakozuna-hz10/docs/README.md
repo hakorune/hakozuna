@@ -66,6 +66,10 @@ HZ10_MALLOC_FAST_LEAF_SPLIT_L0.md:
   common active-page pop body, removing the malloc fast-path frame/canary/call
   and moving sh6bench to 0.42s in the full macro guard
 
+HZ10_SIZE_CLASS_SMALL_LOOKUP_L0.md:
+  NO-GO size-class instruction-count box; a `size <= 1024` lookup table was
+  correct and visible in objdump, but did not improve the macro target
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

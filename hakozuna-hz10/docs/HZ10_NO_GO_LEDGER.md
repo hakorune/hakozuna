@@ -396,3 +396,30 @@ Decision:
   peak-RSS reducer. Local idle reclaim needs a lower-cost trigger or a
   page-state design that has no measurable effect on excluded local rows
   before it can reopen as a default candidate.
+
+## 20260707 Size Class Small Lookup
+
+Status: `NO-GO; prototype reverted`
+
+Evidence:
+
+- `docs/HZ10_SIZE_CLASS_SMALL_LOOKUP_L0.md`
+- `bench_results/20260707T_size_class_small_lookup_l0/`
+- `bench_results/20260707T_size_class_small_lookup_l0_full/`
+- Prototype replaced `hz10_size_class_for(size <= 1024)` with a 64-entry
+  lookup table and left larger sizes on the existing arithmetic path.
+- Correctness was fine: `smoke-size-class` exhaustively checked every byte
+  size from 1 through 65536. Codegen was also as intended: `hz10_malloc`
+  used the table on the small-size path and kept `bsr`/quarter arithmetic
+  only on larger sizes.
+- Performance did not justify the table:
+  - hz10-only RUNS=5: sh6bench stayed at 0.430s, python_alloc 0.840s.
+  - full RUNS=5: sh6bench was 0.440s vs the prior full reference 0.420s
+    after `HZ10MallocFastLeafSplit-L0`; python_alloc and larson were flat.
+
+Decision:
+
+- Do not add a small-size lookup table to `hz10_size_class_for()`.
+- The remaining sh6bench gap is not solved by this small instruction-count
+  edit. Next speed work should use a larger structural box such as
+  active-page/class-state addressing or per-owner local-free page indexing.

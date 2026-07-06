@@ -105,9 +105,12 @@ status:
   Active next box:
     Productization follow-up:
       HZ10FreeFastLeafSplit-L0 and HZ10MallocFastLeafSplit-L0 are both GO.
-      The low-risk function-shape ladder is now spent. Next speed work should
-      be a design box for route/class-state instruction reduction, likely
-      per-owner local-free page indexing or size-class/class-state addressing.
+      HZ10SizeClassSmallLookup-L0 is NO-GO: the lookup table removed the
+      intended small-size arithmetic in objdump and kept smoke green, but
+      gave no hz10-only sh6bench win and worsened the full guard vs the latest
+      reference. The code was reverted. Next speed work should be a larger
+      structural design box: active-page/class-state addressing or per-owner
+      local-free page indexing.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
