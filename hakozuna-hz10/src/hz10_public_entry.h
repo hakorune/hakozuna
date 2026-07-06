@@ -5,6 +5,7 @@
 #include <stdint.h>
 
 #include "hz10_class_pages.h"
+#include "hz10_orphan_registry_stats.h"
 
 /*
  * HZ10FrontCache-L1 (docs/HZ10_FRONT_CACHE_DESIGN_L0.md): opt-in build
@@ -241,5 +242,22 @@ typedef struct Hz10PublicEntryThreadReclaimStats {
  */
 void hz10_public_entry_flush_thread_cache_quiescent(
     Hz10PublicEntryThreadReclaimStats* stats_out);
+
+/*
+ * HZ10ExplicitQuiescentOrphanPurge-L0: explicit global-quiescent purge for
+ * orphan ACTIVE pages published by EXITED owners.
+ *
+ * PRECONDITION: the caller has joined/stopped all producer threads that could
+ * still free into orphan pages, drained its own handoff queues, and is at the
+ * same kind of benchmark/application boundary used for post-workload RSS
+ * sampling. This is never called from pthread destructors and never runs on
+ * the malloc/free hot path.
+ *
+ * The function drains orphan pages under a temporary owner token, destroys
+ * pages that become fully idle, and keeps non-idle pages registered in the
+ * orphan registry for later adoption. stats_out may be NULL.
+ */
+void hz10_public_entry_purge_orphan_registry_quiescent(
+    Hz10OrphanRegistryPurgeStats* stats_out);
 
 #endif

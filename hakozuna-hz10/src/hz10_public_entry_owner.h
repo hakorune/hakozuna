@@ -2,6 +2,7 @@
 #define HZ10_PUBLIC_ENTRY_OWNER_H
 
 #include "hz10_class_pages.h"
+#include "hz10_orphan_registry_stats.h"
 #include "hz10_size_class.h"
 
 #include <stdatomic.h>
@@ -104,6 +105,8 @@ void hz10_public_entry_orphan_registry_probe_class_stats(
     Hz10OrphanRegistryProbeClassStats* out);
 void hz10_public_entry_orphan_registry_drain_probe_class_stats(
     uint32_t class_id, Hz10OrphanRegistryDrainProbeClassStats* out);
+void hz10_public_entry_purge_orphan_registry_quiescent(
+    Hz10OrphanRegistryPurgeStats* stats_out);
 void hz10_public_entry_owner_exit_flush_front_cache(void);
 
 #endif

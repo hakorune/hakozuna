@@ -55,6 +55,63 @@ static int check_orphan_active_adoption_reuses_page(void) {
   }
   return 0;
 }
+
+typedef struct OrphanPurgeState {
+  void* ptrs[128];
+} OrphanPurgeState;
+
+static void* alloc_orphan_purge_thread(void* arg) {
+  OrphanPurgeState* state = (OrphanPurgeState*)arg;
+  for (uint32_t i = 0; i < 128u; ++i) {
+    state->ptrs[i] = hz10_malloc(64);
+    if (!state->ptrs[i]) {
+      return (void*)1;
+    }
+  }
+  return NULL;
+}
+
+static int check_orphan_registry_quiescent_purge_reclaims_drained_page(void) {
+  OrphanPurgeState state = {0};
+  pthread_t owner_thread;
+  void* ret = NULL;
+  if (pthread_create(&owner_thread, NULL, alloc_orphan_purge_thread, &state) ||
+      pthread_join(owner_thread, &ret) || ret) {
+    fprintf(stderr, "orphan_purge: owner setup failed\n");
+    return 1;
+  }
+
+  H10RouteResult before =
+      hz10_pagemap_route(state.ptrs[0], HZ10_GENERATION_ANY);
+  if (before.kind != H10_ROUTE_VALID || !before.owner) {
+    fprintf(stderr, "orphan_purge: route before free failed\n");
+    return 1;
+  }
+  for (uint32_t i = 0; i < 128u; ++i) {
+    if (!hz10_free(state.ptrs[i])) {
+      fprintf(stderr, "orphan_purge: remote free failed\n");
+      return 1;
+    }
+  }
+
+  Hz10OrphanRegistryPurgeStats stats = {0};
+  hz10_public_entry_purge_orphan_registry_quiescent(&stats);
+  if (stats.pages_reclaimed == 0u || stats.slots_merged < 128u) {
+    fprintf(stderr,
+            "orphan_purge: expected reclaim and merged slots, got pages=%llu "
+            "slots=%llu\n",
+            (unsigned long long)stats.pages_reclaimed,
+            (unsigned long long)stats.slots_merged);
+    return 1;
+  }
+  H10RouteResult after =
+      hz10_pagemap_route(state.ptrs[0], HZ10_GENERATION_ANY);
+  if (after.kind == H10_ROUTE_VALID && after.owner == before.owner) {
+    fprintf(stderr, "orphan_purge: page still routes after purge\n");
+    return 1;
+  }
+  return 0;
+}
 #endif
 
 #if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION
@@ -258,6 +315,9 @@ int main(void) {
 #if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
   if (check_orphan_active_adoption_reuses_page()) {
     return 3;
+  }
+  if (check_orphan_registry_quiescent_purge_reclaims_drained_page()) {
+    return 7;
   }
 #endif
 #if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION

@@ -71,6 +71,11 @@ HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md:
   remote-heavy orphan registry residual is freed-but-undrained capacity, so
   the follow-up is an explicit quiescent drain+destroy purge API
 
+HZ10_EXPLICIT_QUIESCENT_ORPHAN_PURGE_L0.md:
+  implemented explicit global-quiescent API that drains orphan ACTIVE pages
+  under a temporary owner, destroys pages that become fully idle, and keeps
+  non-idle pages registered for later adoption
+
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
   reads and owner-record extraction while keeping first-touch owner allocation

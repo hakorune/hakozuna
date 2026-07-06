@@ -41,11 +41,16 @@ status:
       then split the registry: remote-heavy rows are mostly live-pinned with
       hidden pending frees, while local rows are fully idle. DrainPotential-L0
       resolved that ambiguity: temporary-owner drain made remote-heavy rows
-      almost entirely drain-idle with zero truly-live pages. Next RSS box is
-      HZ10ExplicitQuiescentOrphanPurge-L0: caller-provided boundary, drain
-      registry pages, destroy fully idle pages, keep non-idle pages. Records:
-      docs/HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md and
-      bench_results/20260707T_hz10_orphan_registry_drain_potential_l0/.
+      almost entirely drain-idle with zero truly-live pages.
+      HZ10ExplicitQuiescentOrphanPurge-L0 is now implemented as a manual
+      global-quiescent API: drain registry pages, destroy fully idle pages,
+      keep non-idle pages. A temporary dlsym-patched HZ8 harness calling the
+      purge before post_rss moved median RSS sharply down:
+      small_r90 44.96MB -> 5.72MB, main_r90 95.29MB -> 6.99MB,
+      medium_r50 73.27MB -> 14.47MB, main_local0 35.26MB -> 3.77MB.
+      Promote this into a proper harness lane before product claims. Records:
+      docs/HZ10_EXPLICIT_QUIESCENT_ORPHAN_PURGE_L0.md and
+      bench_results/20260707T_hz10_explicit_orphan_purge_l0/.
     - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
       Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
       for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,

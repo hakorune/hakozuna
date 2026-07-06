@@ -1,6 +1,7 @@
 #include "hz10_public_entry_owner.h"
 
 #include "hz10_platform.h"
+#include "hz10_pooled_page.h"
 #include "hz10_remote_stack.h"
 
 #include <stdatomic.h>
@@ -186,6 +187,26 @@ static Hz10FreelistPage* hz10_orphan_pop_one(Hz10PageSublist* src) {
   page->prev_in_owner_list = NULL;
   page->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_NONE;
   return page;
+}
+
+static void hz10_orphan_unlink_active_locked(uint32_t class_id,
+                                             Hz10FreelistPage* page) {
+  Hz10PageSublist* src = &hz10_orphan_active[class_id];
+  if (page->prev_in_owner_list) {
+    page->prev_in_owner_list->next_in_owner_list = page->next_in_owner_list;
+  } else {
+    src->head = page->next_in_owner_list;
+  }
+  if (page->next_in_owner_list) {
+    page->next_in_owner_list->prev_in_owner_list = page->prev_in_owner_list;
+  } else {
+    src->tail = page->prev_in_owner_list;
+  }
+  src->length -= 1u;
+  page->next_in_owner_list = NULL;
+  page->prev_in_owner_list = NULL;
+  page->owner_list_kind = HZ10_FREELIST_PAGE_OWNER_LIST_NONE;
+  hz10_orphan_stats_depth_sub(class_id, 1u);
 }
 
 static Hz10FreelistPage* hz10_orphan_pop_class(uint32_t class_id) {
@@ -470,4 +491,60 @@ void hz10_public_entry_orphan_registry_drain_probe_class_stats(
 #else
   (void)class_id;
 #endif
+}
+
+void hz10_public_entry_purge_orphan_registry_quiescent(
+    Hz10OrphanRegistryPurgeStats* stats_out) {
+  Hz10OrphanRegistryPurgeStats stats = {0};
+  Hz10FreelistPage* destroy_head = NULL;
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+  atomic_store_explicit(&hz10_orphan_drain_probe_owner.state,
+                        HZ10_THREAD_OWNER_STATE_LIVE, memory_order_release);
+  hz10_platform_mutex_lock(&hz10_orphan_lock);
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10FreelistPage* page = hz10_orphan_active[c].head;
+    while (page) {
+      Hz10FreelistPage* next = page->next_in_owner_list;
+      stats.pages_seen += 1u;
+      Hz10OwnerRecord* old_owner =
+          (Hz10OwnerRecord*)hz10_freelist_page_owner_thread(page);
+      if (hz10_public_entry_owner_state(old_owner) !=
+          HZ10_THREAD_OWNER_STATE_EXITED) {
+        stats.pages_skipped_live_owner += 1u;
+        page = next;
+        continue;
+      }
+
+      hz10_freelist_page_set_owner_thread(page,
+                                          &hz10_orphan_drain_probe_owner);
+      uint32_t merged = hz10_page_drain_remote(page);
+      stats.slots_merged += merged;
+      if (merged > 0u) {
+        stats.pages_drained += 1u;
+      }
+
+      if (page->free_count == page->slot_count) {
+        hz10_orphan_unlink_active_locked(c, page);
+        page->next_in_owner_list = destroy_head;
+        destroy_head = page;
+        stats.pages_reclaimed += 1u;
+      } else {
+        hz10_freelist_page_set_owner_thread(page, old_owner);
+        stats.pages_busy += 1u;
+      }
+      page = next;
+    }
+  }
+  hz10_platform_mutex_unlock(&hz10_orphan_lock);
+#endif
+
+  while (destroy_head) {
+    Hz10FreelistPage* next = destroy_head->next_in_owner_list;
+    destroy_head->next_in_owner_list = NULL;
+    hz10_pooled_page_destroy(destroy_head);
+    destroy_head = next;
+  }
+  if (stats_out) {
+    *stats_out = stats;
+  }
 }
