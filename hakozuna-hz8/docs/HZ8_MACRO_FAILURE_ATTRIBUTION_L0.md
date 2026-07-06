@@ -206,11 +206,12 @@ meant the process ran until an external SIGTERM (the 211s in the original log).
 ## Small fix proposals (HZ8 opt-in lanes only; do NOT port to HZ10)
 
 ```text
-F1 (redis)   export malloc_usable_size from the HZ8 shim (return slot/span size
-             for HZ8-owned pointers; dlsym(RTLD_NEXT) for foreign), and add
-             posix_memalign/aligned_alloc/memalign for completeness. Mirrors
-             HZ10's shim surface. Default-on is reasonable since LD_PRELOAD
-             correctness requires it; gate with smokes + redis startup.
+F1 (redis)   DONE in `HZ8_PRELOAD_SHIM_SURFACE_F1.md`: export
+             malloc_usable_size from the HZ8 shim (return slot/span size for
+             HZ8-owned pointers; dlsym(RTLD_NEXT) for foreign), and add
+             posix_memalign/aligned_alloc/memalign for surface completeness.
+             Redis startup now reaches "ready to accept connections" under
+             LD_PRELOAD instead of crashing in jemalloc malloc_usable_size.
 F2 (larson)  add an opt-in graceful-commit-failure policy: instead of abort on
              h8_platform_commit ENOMEM, return NULL / fall back (the caller
              already handles NULL). Keeps fail-closed as default; opt-in for

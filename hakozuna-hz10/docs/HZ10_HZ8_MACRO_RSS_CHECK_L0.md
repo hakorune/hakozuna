@@ -22,6 +22,11 @@ python = LIMITATION (small-arena retention), redis = HARNESS MISMATCH
 BUG (owner-lifecycle/remote-free yield-spin livelock). HZ8 stays healthy on
 its own public matrix; fixes are proposed as HZ8 opt-in lanes only.
 
+Update: HZ8 `HZ8_PRELOAD_SHIM_SURFACE_F1.md` fixed the Redis allocator-split
+startup crash by exporting `malloc_usable_size` and alignment wrappers. This
+does not change the broader HZ8/HZ10 scope decision below; it only removes one
+macro-lane harness mismatch.
+
 HZ8's documented public claim is different:
 
 ```text

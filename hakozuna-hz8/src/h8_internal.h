@@ -406,6 +406,7 @@ H8RouteKind h8_route_inner(void* ptr);
 void* h8_malloc_inner(size_t size);
 void* h8_realloc_inner(void* ptr, size_t size);
 void h8_free_inner(void* ptr);
+bool h8_usable_size_inner(void* ptr, size_t* usable_out, bool* owned_out);
 size_t h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget);
 bool h8_span_pending_quiescent(H8Span* span);
 bool h8_span_repair_pending_mask(H8OwnerRecord* owner, H8Span* span);

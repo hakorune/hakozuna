@@ -473,6 +473,69 @@ static bool h8_small_usable_size(void* ptr, size_t* usable_out) {
   return true;
 }
 
+bool h8_usable_size_inner(void* ptr, size_t* usable_out, bool* owned_out) {
+  if (owned_out) {
+    *owned_out = false;
+  }
+  if (usable_out) {
+    *usable_out = 0;
+  }
+  if (!ptr) {
+    return false;
+  }
+  h8_init();
+  if (h8_arena_contains(ptr)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return h8_small_usable_size(ptr, usable_out);
+  }
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+  bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
+  bool direct_owned = false;
+  if (direct_maybe &&
+      h8_direct_large_usable_size_exact_inner(ptr, usable_out,
+                                              &direct_owned)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+  if (direct_owned) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return false;
+  }
+#endif
+  bool medium_owned = false;
+  if (h8_medium_usable_size_inner(ptr, usable_out, &medium_owned)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+  if (medium_owned) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return false;
+  }
+#if defined(H8_LARGE_DIRECT_OWNED_L1)
+  if (direct_maybe &&
+      h8_direct_large_usable_size_inner(ptr, usable_out, &direct_owned)) {
+    if (owned_out) {
+      *owned_out = true;
+    }
+    return true;
+  }
+  if (direct_owned && owned_out) {
+    *owned_out = true;
+  }
+#endif
+  return false;
+}
+
 void* h8_realloc_inner(void* ptr, size_t size) {
   if (!ptr) {
     return h8_malloc_inner(size);

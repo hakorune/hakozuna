@@ -1,5 +1,6 @@
 #include <dlfcn.h>
 #include <errno.h>
+#include <malloc.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -57,6 +58,11 @@ int main(void) {
       route(p + 63) != H8_ROUTE_INVALID) {
     fprintf(stderr, "small route classification failed\n");
     return 3;
+  }
+  if (malloc_usable_size(p) < 64 || malloc_usable_size(p + 1) != 0) {
+    fprintf(stderr, "small malloc_usable_size mismatch base=%zu interior=%zu\n",
+            malloc_usable_size(p), malloc_usable_size(p + 1));
+    return 24;
   }
 
   free_offset(p, 1);
@@ -124,6 +130,11 @@ int main(void) {
     fprintf(stderr, "medium malloc failed\n");
     return 16;
   }
+  if (malloc_usable_size(m) < 9000 || malloc_usable_size(m + 1) != 0) {
+    fprintf(stderr, "medium malloc_usable_size mismatch base=%zu interior=%zu\n",
+            malloc_usable_size(m), malloc_usable_size(m + 1));
+    return 25;
+  }
   memset(m, 0x5A, 9000);
   char* mgrow = realloc(m, 20000);
   if (!mgrow) {
@@ -173,6 +184,28 @@ int main(void) {
     return 23;
   }
   free(large);
+
+  void* aligned = NULL;
+  if (posix_memalign(&aligned, 64, 256) != 0 || !aligned ||
+      ((uintptr_t)aligned & 63u) != 0) {
+    fprintf(stderr, "posix_memalign failed aligned=%p\n", aligned);
+    return 26;
+  }
+  free(aligned);
+
+  void* aa = aligned_alloc(64, 256);
+  if (!aa || ((uintptr_t)aa & 63u) != 0) {
+    fprintf(stderr, "aligned_alloc failed ptr=%p\n", aa);
+    return 27;
+  }
+  free(aa);
+
+  void* ma = memalign(64, 256);
+  if (!ma || ((uintptr_t)ma & 63u) != 0) {
+    fprintf(stderr, "memalign failed ptr=%p\n", ma);
+    return 28;
+  }
+  free(ma);
 
   printf("preload_smoke ok\n");
   return 0;
