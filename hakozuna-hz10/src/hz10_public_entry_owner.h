@@ -61,6 +61,17 @@ typedef struct Hz10OrphanRegistryProbeClassStats {
   uint64_t age_ge_16s;
 } Hz10OrphanRegistryProbeClassStats;
 
+typedef struct Hz10OrphanRegistryDrainProbeClassStats {
+  uint64_t depth;
+  uint64_t already_idle_pages;
+  uint64_t drain_idle_pages;
+  uint64_t drain_capacity_pages;
+  uint64_t truly_live_pinned_pages;
+  uint64_t skipped_live_owner_pages;
+  uint64_t pending_before_slots;
+  uint64_t merged_slots;
+} Hz10OrphanRegistryDrainProbeClassStats;
+
 #define HZ10_THREAD_OWNER_STATE_LIVE 1u
 #define HZ10_THREAD_OWNER_STATE_EXITED 2u
 
@@ -91,6 +102,8 @@ void hz10_public_entry_orphan_adoption_class_stats(
 void hz10_public_entry_orphan_registry_probe_class_stats(
     uint32_t class_id, uint64_t now_ns,
     Hz10OrphanRegistryProbeClassStats* out);
+void hz10_public_entry_orphan_registry_drain_probe_class_stats(
+    uint32_t class_id, Hz10OrphanRegistryDrainProbeClassStats* out);
 void hz10_public_entry_owner_exit_flush_front_cache(void);
 
 #endif

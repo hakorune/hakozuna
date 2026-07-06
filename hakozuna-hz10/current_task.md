@@ -39,11 +39,13 @@ status:
       those HZ8 public rows. Active/retired/pool/metadata explain only a few
       MiB; orphan registry depth explains the gap direction. IdleAgeProbe-L0
       then split the registry: remote-heavy rows are mostly live-pinned with
-      hidden pending frees, while local rows are fully idle. Do not land broad
-      idle trim as the next default RSS fix. Next clean RSS fork is either
-      narrow explicit-quiescent/local idle trim or a remote-heavy drain/adopt
-      policy. Records: docs/HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md and
-      docs/HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md.
+      hidden pending frees, while local rows are fully idle. DrainPotential-L0
+      resolved that ambiguity: temporary-owner drain made remote-heavy rows
+      almost entirely drain-idle with zero truly-live pages. Next RSS box is
+      HZ10ExplicitQuiescentOrphanPurge-L0: caller-provided boundary, drain
+      registry pages, destroy fully idle pages, keep non-idle pages. Records:
+      docs/HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md and
+      bench_results/20260707T_hz10_orphan_registry_drain_potential_l0/.
     - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
       Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
       for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,

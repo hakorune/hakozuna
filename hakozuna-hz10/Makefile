@@ -88,7 +88,7 @@ BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY
 BENCH_REMOTE_BATCH_LOCALITY_SRC := $(ROOT)/bench/hz10_public_entry_remote_batch_locality_bench.c $(PUBLIC_ENTRY_SRC)
 STAGE_COST_SRC := $(ROOT)/bench/hz10_public_entry_stage_cost_bench.c $(ROOT)/src/hz10_retired_ready.c $(POOLED_PAGE_SRC)
 LOCAL_PATH_SRC := $(ROOT)/bench/hz10_public_entry_local_path_bench.c $(PUBLIC_ENTRY_SRC)
-SHIM_SRC := $(ROOT)/src/hz10_shim.c $(PUBLIC_ENTRY_SRC)
+SHIM_SRC := $(ROOT)/src/hz10_shim.c $(ROOT)/src/hz10_shim_orphan_probes.c $(PUBLIC_ENTRY_SRC)
 SMOKE_SHIM_API_SRC := $(ROOT)/tests/hz10_shim_api_smoke.c
 
 all: smoke-pagemap-route smoke-pagemap-route-diff bench-pagemap-route \

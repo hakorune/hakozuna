@@ -45,10 +45,10 @@ Default HZ10:
         HZ10 macro probe rows, so do not mix the two scopes. Record:
         docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
   HZ10 post-RSS residual:
-        PostRssResidual-L0 found orphan registry depth dominates; IdleAgeProbe-L0
-        showed remote-heavy rows are live-pinned/hidden-pending, not idle, so
-        broad idle trim is deferred. Local rows are fully idle. Records:
-        HZ10_POST_RSS_RESIDUAL_ATTRIBUTION_L0.md / HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md.
+        Orphan registry depth dominates. IdleAgeProbe-L0 deferred broad idle
+        trim; DrainPotential-L0 proved remote-heavy residual is
+        freed-but-undrained: temporary-owner drain made remote rows drain-idle
+        with zero truly-live pages. Next: HZ10ExplicitQuiescentOrphanPurge-L0. Record: HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md.
   Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
         every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
         LD_PRELOAD library -- never dlopen'd/unloaded after process

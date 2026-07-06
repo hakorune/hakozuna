@@ -69,6 +69,7 @@ static int hz10_owner_key_ready;
 #if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
 static hz10_platform_mutex_t hz10_orphan_lock = HZ10_PLATFORM_MUTEX_INIT;
 static Hz10PageSublist hz10_orphan_active[HZ10_CLASS_COUNT];
+static Hz10OwnerRecord hz10_orphan_drain_probe_owner;
 
 typedef struct Hz10OrphanAdoptionAtomicStats {
   _Atomic(uint64_t) published_pages;
@@ -420,5 +421,53 @@ void hz10_public_entry_orphan_registry_probe_class_stats(
 #else
   (void)class_id;
   (void)now_ns;
+#endif
+}
+
+void hz10_public_entry_orphan_registry_drain_probe_class_stats(
+    uint32_t class_id, Hz10OrphanRegistryDrainProbeClassStats* out) {
+  if (!out) return;
+  *out = (Hz10OrphanRegistryDrainProbeClassStats){0};
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+  if (class_id >= HZ10_CLASS_COUNT) return;
+  atomic_store_explicit(&hz10_orphan_drain_probe_owner.state,
+                        HZ10_THREAD_OWNER_STATE_LIVE, memory_order_release);
+  hz10_platform_mutex_lock(&hz10_orphan_lock);
+  for (Hz10FreelistPage* page = hz10_orphan_active[class_id].head; page;
+       page = page->next_in_owner_list) {
+    out->depth += 1u;
+    uint32_t free_before = page->free_count;
+    uint64_t pending_before = hz10_orphan_hidden_pending_slots(page);
+    out->pending_before_slots += pending_before;
+    if (free_before == page->slot_count) {
+      out->already_idle_pages += 1u;
+      continue;
+    }
+
+    Hz10OwnerRecord* old_owner =
+        (Hz10OwnerRecord*)hz10_freelist_page_owner_thread(page);
+    if (hz10_public_entry_owner_state(old_owner) !=
+        HZ10_THREAD_OWNER_STATE_EXITED) {
+      out->skipped_live_owner_pages += 1u;
+      continue;
+    }
+
+    hz10_freelist_page_set_owner_thread(page,
+                                        &hz10_orphan_drain_probe_owner);
+    uint32_t merged = hz10_page_drain_remote(page);
+    hz10_freelist_page_set_owner_thread(page, old_owner);
+    out->merged_slots += merged;
+
+    if (page->free_count == page->slot_count) {
+      out->drain_idle_pages += 1u;
+    } else if (merged > 0u) {
+      out->drain_capacity_pages += 1u;
+    } else {
+      out->truly_live_pinned_pages += 1u;
+    }
+  }
+  hz10_platform_mutex_unlock(&hz10_orphan_lock);
+#else
+  (void)class_id;
 #endif
 }

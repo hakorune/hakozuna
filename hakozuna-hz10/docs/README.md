@@ -66,6 +66,11 @@ HZ10_ORPHAN_REGISTRY_TRIM_POLICY_DESIGN_L0.md:
   rather than fully idle, so broad idle-only trim is deferred while local or
   explicit-quiescent trim remains a possible narrow RSS box
 
+HZ10_ORPHAN_REGISTRY_DRAIN_POTENTIAL_DESIGN_L0.md:
+  implemented opt-in drain-potential probe; temporary-owner drain showed the
+  remote-heavy orphan registry residual is freed-but-undrained capacity, so
+  the follow-up is an explicit quiescent drain+destroy purge API
+
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
   reads and owner-record extraction while keeping first-touch owner allocation
