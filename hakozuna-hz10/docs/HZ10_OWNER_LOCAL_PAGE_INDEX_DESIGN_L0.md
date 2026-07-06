@@ -1,6 +1,6 @@
 # HZ10OwnerLocalPageIndex-L0
 
-Status: design candidate. Do not implement until reviewed.
+Status: NO-GO. Prototype reverted.
 
 ## Goal
 
@@ -21,6 +21,48 @@ for the common owner-local case: the owner thread already has a live
 This box adds a per-owner page index as a cache for owned small pages. It is
 not a replacement for pagemap. The global pagemap remains the authority for
 unknown pointers, large allocations, foreign frees, and diagnostics.
+
+## Result
+
+The prototype implemented this guarded cache as an opt-in
+`libhz10_owner_index.so` lane plus a stats artifact. Correctness gates passed:
+owner-index smoke, default public-entry smoke, shim API/foreign-free smoke,
+and `hz10-standalone-check`.
+
+The stats artifact confirmed that the mechanism hit the intended path:
+
+```text
+short sh6bench stats probe:
+  owner_index_hit=183666044
+  owner_index_miss=141985
+  owner_index_guard_fail_owner=0
+  owner_index_guard_fail_generation=0
+  owner_index_guard_fail_interior=0
+  owner_index_insert=5289
+  owner_index_collision=654
+```
+
+The product A/B was a clear NO-GO:
+
+```text
+RUNS=5, ALLOCATORS_CSV=hz10,hz10-owner-index
+
+python_alloc:
+  hz10             0.840s / 106,688 KiB
+  hz10-owner-index 0.880s / 106,648 KiB
+
+sh6bench:
+  hz10             0.450s / 318,336 KiB
+  hz10-owner-index 0.520s / 320,000 KiB
+
+larson:
+  hz10             4.175s / 281,728 KiB current
+  hz10-owner-index 4.127s / 285,032 KiB current
+```
+
+The hit rate was high, but the extra owner-index branch, owner table load, and
+larger owner footprint cost more than the avoided pagemap route. The code was
+reverted; keep the archived design below as the proof and NO-GO record.
 
 ## Non-Goals
 

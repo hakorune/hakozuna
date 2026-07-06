@@ -423,3 +423,31 @@ Decision:
 - The remaining sh6bench gap is not solved by this small instruction-count
   edit. Next speed work should use a larger structural box such as
   active-page/class-state addressing or per-owner local-free page indexing.
+
+## 20260707 Owner-Local Page Index
+
+Status: `NO-GO; prototype reverted`
+
+Evidence:
+
+- `docs/HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md`
+- `bench_results/20260707T_owner_local_page_index_l0_ab/`
+- Prototype added a guarded per-owner page cache for local frees. It did not
+  replace pagemap as authority: owner token, generation, span, alignment, and
+  interior checks still had to pass before local free.
+- Correctness gates passed, and a stats probe showed the mechanism hit the
+  target path: `owner_index_hit=183666044`, `owner_index_miss=141985`, with
+  zero owner, generation, or interior guard failures in that short sh6bench
+  probe.
+- Performance failed:
+  - sh6bench RUNS=5: `hz10 0.450s` vs `hz10-owner-index 0.520s`.
+  - python_alloc RUNS=5: `hz10 0.840s` vs `hz10-owner-index 0.880s`.
+  - RSS was flat; the problem is wall time.
+
+Decision:
+
+- Do not keep the owner-local page index lane.
+- A high hit rate is not enough here: the extra branch/table load/owner
+  footprint costs more than the avoided pagemap route on the target macro row.
+- Reopen only with a same-build shape that does not grow the owner hot
+  footprint or add a data-dependent lookup before the existing route.

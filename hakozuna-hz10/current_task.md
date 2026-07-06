@@ -109,8 +109,10 @@ status:
       intended small-size arithmetic in objdump and kept smoke green, but
       gave no hz10-only sh6bench win and worsened the full guard vs the latest
       reference. The code was reverted. Next speed work should be a larger
-      structural design box. Current design candidate:
-      docs/HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md.
+      structural design box. HZ10OwnerLocalPageIndex-L0 is NO-GO:
+      high hit rate in sh6bench, but macro A/B regressed sh6bench
+      0.450s -> 0.520s and python_alloc 0.840s -> 0.880s. Code reverted;
+      record: docs/HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
