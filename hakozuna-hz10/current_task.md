@@ -82,6 +82,14 @@ status:
       `hz10` (`libhz10.so`, partial default) larson median 602,752 KiB vs
       `hz10-base` 9,216,704 KiB, with python/redis unchanged. Log:
       bench_results/20260706T010835Z_hz10_macro_preload_matrix/
+    - Bimodal follow-up check:
+      fable5's bad-mode 600MB is reproducible, but the reported ~1.8MB good
+      mode did not reproduce here. In a 600MB run, census sees only ~20MiB of
+      registered HZ10 page payload and 6 orphan pages. smaps shows glibc also
+      carries ~260MiB of 8MiB pthread stack VMAs; HZ10's extra ~317MiB is
+      persistent 1MiB owner-record slabs. Next box is owner-record footprint,
+      not adopt-k yet. Log:
+      bench_results/20260707T032300Z_hz10_larson_rss_attribution_check/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

@@ -72,6 +72,32 @@ retired-local:
 ## Active Next Box
 
 ```text
+HZ10OwnerRecordFootprint-L0
+
+Input:
+  bench_results/20260707T031500Z_hz10_larson_bimodal_discovery/notes.md
+  bench_results/20260707T032300Z_hz10_larson_rss_attribution_check/notes.md
+
+Verification result (codex, 20260707):
+  The bad-mode 600MB larson RSS is reproducible (clean 8/8, census 8/8),
+  but the reported ~1.8MB good mode did NOT reproduce on this checkout.
+  More importantly, the 600MB is not mostly orphan page payload:
+    - census at t=1s in a 600MB run: registered pages ~= 20MiB,
+      orphan_unadopted only 6 pages;
+    - smaps: 8MiB VMA mass ~= 260MiB appears in glibc too, so that is the
+      pthread stack-cache baseline behind glibc/tcmalloc's ~270-280MB;
+    - HZ10's extra ~=317MiB is 1MiB persistent owner-record slabs.
+
+Question:
+  How do we keep persistent owner identity without making the full
+  `Hz10ThreadOwner` class-state cache permanent per exited thread?
+  Candidate direction: split small persistent owner identity/token from
+  live-thread class state, or otherwise retire/compact owner records after
+  no pages reference them. This is an owner-record footprint box, not an
+  adoption policy box yet.
+
+Prior box (completed, kept for context):
+
 HZ10PartialOrphanAdoption-L1
 
 Input:
