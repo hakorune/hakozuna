@@ -15,6 +15,48 @@ static void* free_in_other_thread(void* arg) {
   return (void*)(intptr_t)hz10_free(ptr);
 }
 
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+static void* alloc_free_one_slot_thread(void* arg) {
+  void* ptr = hz10_malloc(65536);
+  if (!ptr || !hz10_free(ptr)) {
+    *(void**)arg = NULL;
+    return NULL;
+  }
+  *(void**)arg = ptr;
+  return NULL;
+}
+
+static void* alloc_one_slot_compare_thread(void* arg) {
+  void** ptrs = (void**)arg;
+  ptrs[1] = hz10_malloc(65536);
+  return NULL;
+}
+
+static int check_orphan_active_adoption_reuses_page(void) {
+  void* ptrs[2] = {NULL, NULL};
+  pthread_t owner_thread;
+  if (pthread_create(&owner_thread, NULL, alloc_free_one_slot_thread,
+                     &ptrs[0]) ||
+      pthread_join(owner_thread, NULL) || !ptrs[0]) {
+    fprintf(stderr, "orphan_adopt: owner setup failed\n");
+    return 1;
+  }
+
+  pthread_t adopter_thread;
+  if (pthread_create(&adopter_thread, NULL, alloc_one_slot_compare_thread,
+                     ptrs) ||
+      pthread_join(adopter_thread, NULL) || !ptrs[1]) {
+    fprintf(stderr, "orphan_adopt: adopter malloc failed\n");
+    return 1;
+  }
+  if (ptrs[1] != ptrs[0]) {
+    fprintf(stderr, "orphan_adopt: expected orphan slot reuse\n");
+    return 1;
+  }
+  return 0;
+}
+#endif
+
 static int check_exited_owner_token_not_reused_as_local(void) {
   for (int i = 0; i < 16; ++i) {
     void* ptr = NULL;
@@ -56,6 +98,11 @@ int main(void) {
   if (check_exited_owner_token_not_reused_as_local()) {
     return 2;
   }
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+  if (check_orphan_active_adoption_reuses_page()) {
+    return 3;
+  }
+#endif
   puts("hz10_public_entry_owner_smoke ok");
   return 0;
 }

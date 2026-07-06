@@ -13,8 +13,8 @@ run_hz10_shim_smoke.sh:
 run_hz10_macro_preload_matrix.sh:
   macro matrix lane (`make bench-macro-matrix`; legacy alias:
   `make bench-macro-preload`): python_alloc, redis_setget, and larson across
-  glibc, hz10, hz10+fine, tcmalloc if found, and source-build mimalloc if
-  found.
+  glibc, hz10, hz10+fine, hz10+orphan, tcmalloc if found, and source-build
+  mimalloc if found.
 
 run_hz10_rss_guard.sh:
   short lifecycle-flush RSS guard; checks current_rss_kb plus busy reclaim
@@ -22,8 +22,9 @@ run_hz10_rss_guard.sh:
 
 run_hz10_larson_thread_churn_attribution.sh:
   macro attribution runner for HZ10LarsonThreadChurnAttribution-L0; sweeps
-  small larson shapes and records sampled current RSS plus per-thread
-  `hz10_shim_exit_stats` lines under HZ10_SHIM_THREAD_EXIT_STATS=1
+  small larson shapes for glibc/hz10/hz10+fine/hz10+orphan and records
+  sampled current RSS plus per-thread `hz10_shim_exit_stats` lines under
+  HZ10_SHIM_THREAD_EXIT_STATS=1
 
 run_hz10_public_entry_vs_tcmalloc_same_run.sh:
   public-entry same-run comparison against tcmalloc. Keep stats dumps and

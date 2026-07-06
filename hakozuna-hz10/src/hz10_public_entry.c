@@ -2,45 +2,13 @@
 #include "hz10_class_pages.h"
 #include "hz10_large_alloc.h"
 #include "hz10_pagemap.h"
-#include "hz10_platform.h"
 #include "hz10_pooled_page.h"
+#include "hz10_public_entry_owner.h"
 #include "hz10_remote_stack.h"
 #include "hz10_retired_ready.h"
 #include "hz10_size_class.h"
 
 #include <stdatomic.h>
-
-typedef struct Hz10ClassState {
-  Hz10FreelistPage* active;  /* fast-path cache; always also in `list` */
-  Hz10ClassPageList list;    /* every page this thread ever made for the
-                              * class -- see src/hz10_class_pages.h */
-#if HZ10_ENABLE_TWO_SLOT_STATS
-  /* HZ10TwoSlotActivePattern-L0: the page that was active immediately
-   * before `active`, and how many allocs `active` has served since it
-   * became the active page -- see the counters' doc comment in
-   * src/hz10_class_pages.h. */
-  Hz10FreelistPage* prior_active;
-  uint64_t ops_since_activate;
-#endif
-} Hz10ClassState;
-
-typedef struct Hz10ThreadOwner { Hz10ClassState classes[HZ10_CLASS_COUNT]; }
-    Hz10ThreadOwner;
-
-static _Thread_local Hz10ThreadOwner* hz10_current_owner;
-
-static Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
-  Hz10ThreadOwner* owner = hz10_current_owner;
-  if (owner) return owner;
-  owner = (Hz10ThreadOwner*)hz10_platform_reserve_rw(sizeof(*owner));
-  if (!owner) return NULL;
-  hz10_current_owner = owner;
-  return owner;
-}
-
-static inline Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
-  return hz10_current_owner;
-}
 
 #if HZ10_ENABLE_TWO_SLOT_STATS
 /* Called right before state->active is reassigned to `next_active`.
@@ -315,6 +283,20 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
     state->ops_since_activate += 1u;
 #endif
     return hz10_freelist_page_alloc(harvested);
+  }
+
+  Hz10FreelistPage* adopted =
+      hz10_public_entry_try_adopt_orphan_active(class_id, owner);
+  if (adopted) {
+    hz10_class_state_note_switch(state, adopted, 0);
+    state->active = adopted;
+    void* ptr = hz10_freelist_page_alloc(adopted);
+    if (ptr) {
+#if HZ10_ENABLE_TWO_SLOT_STATS
+      state->ops_since_activate += 1u;
+#endif
+      return ptr;
+    }
   }
 
   uint32_t slot_size = hz10_size_class_slot_size(class_id);

@@ -28,6 +28,14 @@ hz10+fine:
   Helps python_alloc RSS, but worsens larson RSS/throughput.
   Keep as diagnostic/RSS probe, not broad shim default.
 
+hz10+orphan:
+  Built as libhz10_orphan.so via `make preload-orphan-adoption`.
+  Opt-in lane for `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1`.
+  Adopts only fully idle active pages from exited owner records; no destructor
+  page destruction, no retired transfer, no partial-page ownership transfer.
+  Short larson probe improved 4t/32c throughput from 0.35-0.37M ops/s to
+  ~1.034M ops/s and current RSS from 5.1-5.4GB to ~2.68GB.
+
 retired-local:
   HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1.
   Proves local retired backlog mechanism, but default NO-GO.
@@ -36,12 +44,13 @@ retired-local:
 ## Active Next Box
 
 ```text
-HZ10ThreadExitOwnershipHandoff-Design-L0
+HZ10OrphanActiveAdoption-L1 follow-up measurement
 
 Input:
   docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md
   docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md
   bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
+  bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
 
 Known fact:
   In the larson sweep, exiting-thread page bytes explain 94.2-94.5% of
@@ -54,8 +63,9 @@ Design constraint:
   proven safe.
 
 Current design verdict:
-  Persistent owner-record prep is implemented. Next is opt-in orphan
-  active-page adoption. Do not destroy pages from a pthread destructor.
+  Persistent owner-record prep and opt-in idle-active orphan adoption are
+  implemented. Next is the wider macro matrix with hz10+orphan before opening
+  partial-page handoff or any thread-lifecycle contract change.
 ```
 
 Candidate design families to review:
@@ -79,6 +89,10 @@ make preload-fine
   Builds libhz10_fine.so, non-clobbering sibling with
   HZ10_ENABLE_FINE_SIZE_CLASSES=1.
 
+make preload-orphan-adoption
+  Builds libhz10_orphan.so, non-clobbering sibling with
+  HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1.
+
 make preload-fine-size-classes
 make preload-retired-local
 make preload-fine-retired-local
@@ -91,8 +105,8 @@ make preload-fine-retired-local
 ```text
 make bench-macro-matrix
   Runs scripts/run_hz10_macro_preload_matrix.sh.
-  Allocators: glibc, hz10, hz10+fine, tcmalloc if found, source mimalloc if
-  found.
+  Allocators: glibc, hz10, hz10+fine, hz10+orphan, tcmalloc if found, source
+  mimalloc if found.
   Workloads: python_alloc, redis_setget, larson.
 
 make bench-macro-preload
@@ -136,6 +150,11 @@ HZ10_ENABLE_FINE_SIZE_CLASSES=1
 HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1
   Local retired idle reclaim hook. NO-GO as default; diagnostic footprint
   reducer only.
+
+HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1
+  Opt-in thread-churn lane. Exited threads publish active pages to an orphan
+  registry; later threads may adopt only fully idle pages. Default remains off
+  until the wider macro matrix is reviewed.
 ```
 
 ## Decision Ledger
@@ -155,7 +174,7 @@ Remote publication V2 / F3:
 
 Thread-exit reclaim:
   Destructor reclaim is forbidden. The live design path is persistent owner
-  identity plus orphan active-page adoption; see
+  identity plus opt-in idle-active orphan adoption; see
   docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md.
 ```
 
@@ -192,4 +211,9 @@ bench_results/20260707T010000Z_hz10_macro_matrix_expand_l0/
 bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
   Larson attribution: thread page bytes explain 94.2-94.5% of HZ10 current
   RSS; retired_pages=0.
+
+bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
+  Short hz10 vs hz10+orphan probe: 4t/32c throughput ~3x better and current
+  RSS roughly halved. Existing thread_page_bytes attribution overcounts
+  historical owner records after adoption, so use current RSS for this verdict.
 ```

@@ -169,9 +169,17 @@ adopting thread:
 4. allocates from it if capacity exists.
 ```
 
-If no capacity exists after drain, keep the page owned by the adopter and let
-the existing active-list eviction/retired machinery handle it later. Do not
-destroy it in the adoption box.
+Implementation note after the first larson probe: L1 is an idle-active
+adoption box, not a general orphan ownership-transfer box. The orphan registry
+may scan a small fixed budget, drain candidates, and only transfer owner
+identity for a page whose `free_count == slot_count` after the drain. A partial
+page stays on the orphan registry with its old persistent owner record.
+
+Reason: after owner transfer, frees performed by the adopting thread would use
+the same-thread local fast path. That is only correct if no live object from
+the exited owner's epoch remains on the page. Partial-page handoff needs a
+separate per-slot/epoch ownership design; do not smuggle it into this box. Do
+not destroy any orphan page in L1.
 
 ### 5. Retired Pages
 
@@ -278,8 +286,12 @@ Implemented:
 - `Hz10FreelistPage.owner_thread_token` is now an atomic pointer with
   helper load/store accessors.
 - `src/hz10_public_entry.c` no longer uses a TLS char address as the owner
-  token. Each thread lazily allocates an mmap-backed persistent owner record,
-  and pages store that record pointer as their owner identity.
+  token. Each thread lazily allocates a persistent owner record, and pages
+  store that record pointer as their owner identity.
+- Owner records are allocated from persistent 1MiB slab/bump regions instead
+  of one mmap per thread. This is load-bearing for larson-style short-lived
+  thread churn: the first orphan-adoption prototype hit vm.max_map_count fast
+  enough for `malloc(16)` to return NULL.
 - Per-class state moved from a `_Thread_local Hz10ClassState[]` array into
   the persistent owner record.
 - No orphan adoption, destructor handoff, page destruction, or reclaim policy
@@ -317,4 +329,89 @@ HZ10OrphanActiveAdoption-L1:
   add an opt-in pthread-exit handoff that enqueues active pages from exited
   owner records, then let later allocating threads adopt those active pages
   before creating fresh pages. Still no destructor page destruction.
+```
+
+## Orphan Active Adoption Implementation Record
+
+Implemented:
+
+```text
+- `src/hz10_public_entry_owner.{h,c}` owns the persistent owner record,
+  pthread/FLS destructor hook, and orphan-active registry.
+- `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` is an opt-in build lane. The default
+  allocator keeps the persistent owner-record prep but does not enqueue/adopt
+  orphan pages.
+- Exiting owner threads append only their ACTIVE page sublists to a global
+  per-class orphan registry. The destructor does not drain, reclaim, destroy,
+  unregister, or return pages to the pool.
+- Adoption runs only on malloc slow path after the current owner's active list
+  and retired harvest miss, before creating a fresh page.
+- Adoption scans a fixed small budget, drains remote frees on candidates, and
+  transfers owner identity only for fully idle pages
+  (`free_count == slot_count`). Partial pages remain orphan-owned.
+- `hz10_current_owner` is cleared in the pthread destructor before publishing
+  orphan pages, so any later frees from other thread-exit destructors use the
+  remote path instead of mutating orphan-visible pages as owner-local.
+```
+
+Why partial pages are not adopted in L1:
+
+```text
+After owner transfer, frees performed by the adopting thread take the local
+same-thread fast path. That is correct only if no live object from the exited
+owner's epoch remains on the page. Partial-page handoff needs per-slot or
+epoch ownership proof and is a separate box.
+```
+
+New artifacts:
+
+```text
+make smoke-public-entry-orphan-adoption
+make preload-orphan-adoption
+libhz10_orphan.so
+```
+
+Measured probe:
+
+```text
+bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
+THREADS=4 CHUNKS=32 RUNS=3 LARSON_SECONDS=1
+
+default hz10:
+  throughput 348k / 373k / 370k ops/s
+  current_rss 5.07GB / 5.43GB / 5.39GB
+
+hz10+orphan:
+  throughput 1.034M / 1.035M / 1.035M ops/s
+  current_rss 2.684GB / 2.685GB / 2.684GB
+```
+
+Debug note:
+
+```text
+The first release prototype crashed in larson because `malloc(16)` returned
+NULL. Reproduction with a malloc wrapper showed the failure before larson's
+first write to the returned pointer. Disabling adoption was stable 10/10;
+the owner-slab fix then made the adoption lane stable in 20/20 wrapper runs
+and 30/30 direct release runs.
+
+`thread_page_bytes` in the existing attribution script is no longer a valid
+RSS-explanation ratio for hz10+orphan: it sums persistent exited owner records
+as historical ownership state even after pages are adopted. Use current RSS
+and throughput for the L1 verdict until the attribution script gets an
+adoption-aware page ownership counter.
+```
+
+Validation:
+
+```text
+make -C hakozuna-hz10 smoke-public-entry smoke-public-entry-orphan-adoption
+make -C hakozuna-hz10 hz10-standalone-check
+make -C hakozuna-hz10 smoke-tsan-aslr-off
+make -B -C hakozuna-hz10 DEBUG_CFLAGS="... -fsanitize=address,undefined ..." \
+  LDFLAGS="-fsanitize=address,undefined" \
+  smoke-public-entry smoke-public-entry-orphan-adoption
+make -B -C hakozuna-hz10 preload preload-fine preload-orphan-adoption \
+  smoke-shim-api smoke-shim-foreign
+git diff --check
 ```

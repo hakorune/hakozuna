@@ -51,6 +51,7 @@ if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       hz10_bounded_page_pool_smoke hz10_bounded_page_pool_bench \
       hz10_class_pages_smoke hz10_public_entry_smoke \
       hz10_public_entry_owner_smoke \
+      hz10_public_entry_orphan_adoption_smoke \
       hz10_public_entry_retired_local_smoke \
       hz10_public_entry_retired_local_bench hz10_public_entry_bench \
       hz10_public_entry_active_scan_bench \

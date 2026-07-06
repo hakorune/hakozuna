@@ -5,7 +5,8 @@
 	bench-remote-rmw-micro \
 	smoke-bounded-page-pool bench-bounded-page-pool smoke-class-pages \
 	smoke-size-class \
-	smoke-public-entry smoke-public-entry-owner bench-public-entry \
+	smoke-public-entry smoke-public-entry-owner \
+	smoke-public-entry-orphan-adoption bench-public-entry \
 	bench-public-entry-active-scan \
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
 	bench-public-entry-remote-batch-locality bench-public-entry-stage-cost \
@@ -17,7 +18,8 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-fine preload-fine-size-classes preload-retired-local \
+	preload preload-fine preload-orphan-adoption \
+	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
 	bench-macro-preload bench-macro-matrix \
 	bench-larson-thread-churn-attribution \
@@ -61,7 +63,7 @@ BENCH_POOLED_PAGE_SRC := $(ROOT)/bench/hz10_bounded_page_pool_bench.c $(POOLED_P
 CLASS_PAGES_SRC := $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_retired_ready.c $(POOLED_PAGE_SRC)
 SMOKE_CLASS_PAGES_SRC := $(ROOT)/tests/hz10_class_pages_smoke.c $(CLASS_PAGES_SRC)
 
-PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_retired_ready.c $(ROOT)/src/hz10_size_class.c $(ROOT)/src/hz10_large_alloc.c $(POOLED_PAGE_SRC)
+PUBLIC_ENTRY_SRC := $(ROOT)/src/hz10_public_entry.c $(ROOT)/src/hz10_public_entry_owner.c $(ROOT)/src/hz10_class_pages.c $(ROOT)/src/hz10_retired_ready.c $(ROOT)/src/hz10_size_class.c $(ROOT)/src/hz10_large_alloc.c $(POOLED_PAGE_SRC)
 SMOKE_PUBLIC_ENTRY_SRC := $(ROOT)/tests/hz10_public_entry_smoke.c $(PUBLIC_ENTRY_SRC)
 SMOKE_PUBLIC_ENTRY_OWNER_SRC := $(ROOT)/tests/hz10_public_entry_owner_smoke.c $(PUBLIC_ENTRY_SRC)
 BENCH_PUBLIC_ENTRY_SRC := $(ROOT)/bench/hz10_public_entry_bench.c $(PUBLIC_ENTRY_SRC)
@@ -185,6 +187,12 @@ smoke-public-entry: $(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_ow
 	$(ROOT)/hz10_public_entry_smoke
 	$(ROOT)/hz10_public_entry_owner_smoke
 
+$(ROOT)/hz10_public_entry_orphan_adoption_smoke: $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-orphan-adoption: $(ROOT)/hz10_public_entry_orphan_adoption_smoke
+	$(ROOT)/hz10_public_entry_orphan_adoption_smoke
+
 $(ROOT)/hz10_public_entry_retired_local_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -214,6 +222,11 @@ $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 
+$(ROOT)/libhz10_orphan.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload-orphan-adoption: $(ROOT)/libhz10_orphan.so
+
 # Manual probe lanes below intentionally clobber libhz10.so.
 preload-fine-size-classes: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $(ROOT)/libhz10.so $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
@@ -233,12 +246,12 @@ smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
 smoke-shim-foreign: $(ROOT)/libhz10.so
 	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
-bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
+bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_orphan.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
 
 bench-macro-matrix: bench-macro-preload
 
-bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so
+bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_orphan.so
 	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
@@ -266,10 +279,12 @@ smoke-tsan-aslr-off:
 		"$(ROOT)/hz10_pagemap_route_diff_smoke" \
 		"$(ROOT)/hz10_public_entry_smoke" \
 		"$(ROOT)/hz10_public_entry_owner_smoke" \
+		"$(ROOT)/hz10_public_entry_orphan_adoption_smoke" \
 		"$(ROOT)/hz10_public_entry_front_smoke"
 	arch=$$(uname -m); \
 	for bin in hz10_pagemap_route_smoke hz10_pagemap_route_diff_smoke \
 		hz10_public_entry_smoke hz10_public_entry_owner_smoke \
+		hz10_public_entry_orphan_adoption_smoke \
 		hz10_public_entry_front_smoke; do \
 		echo "== $$bin (TSan, ASLR off) =="; \
 		setarch "$$arch" -R "$(ROOT)/$$bin" || exit $$?; \
@@ -378,6 +393,7 @@ clean:
 		$(ROOT)/hz10_bounded_page_pool_smoke $(ROOT)/hz10_bounded_page_pool_bench \
 		$(ROOT)/hz10_class_pages_smoke \
 		$(ROOT)/hz10_public_entry_smoke $(ROOT)/hz10_public_entry_owner_smoke \
+		$(ROOT)/hz10_public_entry_orphan_adoption_smoke \
 		$(ROOT)/hz10_public_entry_retired_local_smoke \
 		$(ROOT)/hz10_public_entry_bench $(ROOT)/hz10_public_entry_retired_local_bench \
 		$(ROOT)/hz10_public_entry_active_scan_bench \
@@ -396,5 +412,5 @@ clean:
 		$(ROOT)/hz10_retired_ready_smoke $(ROOT)/hz10_retired_ready_bench \
 		$(ROOT)/hz10_public_entry_steady_state_bench \
 		$(ROOT)/hz10_public_entry_thread_reuse_bench \
-		$(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so \
+		$(ROOT)/libhz10.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_orphan.so \
 		$(ROOT)/hz10_shim_api_smoke
