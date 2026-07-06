@@ -13,6 +13,15 @@ The first pass was too broad: it inserted HZ8 into the HZ10 macro preload
 matrix and treated failures on python/Redis/larson/xmalloc as a product-wide
 HZ8 verdict. That is not a fair representative lane for HZ8.
 
+The per-row root cause and classification (BUG / LIMITATION / HARNESS MISMATCH
+/ MEASUREMENT BUG) for those macro-lane failures is investigated on the HZ8
+side: see `hakozuna-hz8/docs/HZ8_MACRO_FAILURE_ATTRIBUTION_L0.md`. Summary:
+python = LIMITATION (small-arena retention), redis = HARNESS MISMATCH
+(allocator split vs redis-bundled jemalloc; HZ8 shim lacks
+`malloc_usable_size`), larson = LIMITATION + over-committed host, xmalloc =
+BUG (owner-lifecycle/remote-free yield-spin livelock). HZ8 stays healthy on
+its own public matrix; fixes are proposed as HZ8 opt-in lanes only.
+
 HZ8's documented public claim is different:
 
 ```text
