@@ -69,8 +69,56 @@ static int hz10_owner_key_ready;
 static hz10_platform_mutex_t hz10_orphan_lock = HZ10_PLATFORM_MUTEX_INIT;
 static Hz10PageSublist hz10_orphan_active[HZ10_CLASS_COUNT];
 
+typedef struct Hz10OrphanAdoptionAtomicStats {
+  _Atomic(uint64_t) published_pages;
+  _Atomic(uint64_t) pop_count;
+  _Atomic(uint64_t) adopt_count;
+  _Atomic(uint64_t) reject_class_count;
+  _Atomic(uint64_t) reject_state_count;
+  _Atomic(uint64_t) reject_no_capacity_count;
+  _Atomic(uint64_t) repush_count;
+  _Atomic(uint64_t) depth;
+  _Atomic(uint64_t) max_depth;
+} Hz10OrphanAdoptionAtomicStats;
+
+static Hz10OrphanAdoptionAtomicStats
+    hz10_orphan_adoption_stats[HZ10_CLASS_COUNT];
+
+static void hz10_orphan_stat_add(uint32_t class_id,
+                                 _Atomic(uint64_t)* counter,
+                                 uint64_t value) {
+  (void)class_id;
+  if (value == 0u) return;
+  (void)atomic_fetch_add_explicit(counter, value, memory_order_relaxed);
+}
+
+static void hz10_orphan_stats_depth_add(uint32_t class_id, uint64_t value) {
+  if (value == 0u || class_id >= HZ10_CLASS_COUNT) return;
+  Hz10OrphanAdoptionAtomicStats* stats =
+      &hz10_orphan_adoption_stats[class_id];
+  uint64_t depth =
+      atomic_fetch_add_explicit(&stats->depth, value, memory_order_relaxed) +
+      value;
+  uint64_t max_depth =
+      atomic_load_explicit(&stats->max_depth, memory_order_relaxed);
+  while (depth > max_depth &&
+         !atomic_compare_exchange_weak_explicit(&stats->max_depth,
+                                                &max_depth, depth,
+                                                memory_order_relaxed,
+                                                memory_order_relaxed)) {
+  }
+}
+
+static void hz10_orphan_stats_depth_sub(uint32_t class_id, uint64_t value) {
+  if (value == 0u || class_id >= HZ10_CLASS_COUNT) return;
+  (void)atomic_fetch_sub_explicit(
+      &hz10_orphan_adoption_stats[class_id].depth, value,
+      memory_order_relaxed);
+}
+
 static void hz10_orphan_append_active(uint32_t class_id, Hz10PageSublist* sub) {
   if (!sub->head) return;
+  uint32_t length = sub->length;
   Hz10PageSublist* dst = &hz10_orphan_active[class_id];
   if (dst->tail) {
     dst->tail->next_in_owner_list = sub->head;
@@ -79,8 +127,14 @@ static void hz10_orphan_append_active(uint32_t class_id, Hz10PageSublist* sub) {
     dst->head = sub->head;
   }
   dst->tail = sub->tail;
-  dst->length += sub->length;
+  dst->length += length;
   *sub = (Hz10PageSublist){0};
+  if (class_id < HZ10_CLASS_COUNT) {
+    Hz10OrphanAdoptionAtomicStats* stats =
+        &hz10_orphan_adoption_stats[class_id];
+    hz10_orphan_stat_add(class_id, &stats->published_pages, length);
+    hz10_orphan_stats_depth_add(class_id, length);
+  }
 }
 
 static void hz10_orphan_append_one(Hz10PageSublist* dst,
@@ -118,6 +172,12 @@ static Hz10FreelistPage* hz10_orphan_pop_class(uint32_t class_id) {
   hz10_platform_mutex_lock(&hz10_orphan_lock);
   page = hz10_orphan_pop_one(&hz10_orphan_active[class_id]);
   hz10_platform_mutex_unlock(&hz10_orphan_lock);
+  if (page) {
+    Hz10OrphanAdoptionAtomicStats* stats =
+        &hz10_orphan_adoption_stats[class_id];
+    hz10_orphan_stat_add(class_id, &stats->pop_count, 1u);
+    hz10_orphan_stats_depth_sub(class_id, 1u);
+  }
   return page;
 }
 
@@ -126,6 +186,12 @@ static void hz10_orphan_repush_class(uint32_t class_id,
   hz10_platform_mutex_lock(&hz10_orphan_lock);
   hz10_orphan_append_one(&hz10_orphan_active[class_id], page);
   hz10_platform_mutex_unlock(&hz10_orphan_lock);
+  if (class_id < HZ10_CLASS_COUNT) {
+    Hz10OrphanAdoptionAtomicStats* stats =
+        &hz10_orphan_adoption_stats[class_id];
+    hz10_orphan_stat_add(class_id, &stats->repush_count, 1u);
+    hz10_orphan_stats_depth_add(class_id, 1u);
+  }
 }
 #endif
 
@@ -202,9 +268,22 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
 #if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION
     Hz10OwnerRecord* old_owner =
         (Hz10OwnerRecord*)hz10_freelist_page_owner_thread(page);
-    if (page->class_id != class_id ||
-        hz10_public_entry_owner_state(old_owner) !=
-            HZ10_THREAD_OWNER_STATE_EXITED) {
+    if (page->class_id != class_id) {
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+      hz10_orphan_stat_add(
+          class_id,
+          &hz10_orphan_adoption_stats[class_id].reject_class_count, 1u);
+#endif
+      hz10_orphan_repush_class(class_id, page);
+      continue;
+    }
+    if (hz10_public_entry_owner_state(old_owner) !=
+        HZ10_THREAD_OWNER_STATE_EXITED) {
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+      hz10_orphan_stat_add(
+          class_id,
+          &hz10_orphan_adoption_stats[class_id].reject_state_count, 1u);
+#endif
       hz10_orphan_repush_class(class_id, page);
       continue;
     }
@@ -214,23 +293,41 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     hz10_page_drain_remote(page);
 
     if (page->local_free_head) {
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+      hz10_orphan_stat_add(
+          class_id, &hz10_orphan_adoption_stats[class_id].adopt_count, 1u);
+#endif
       hz10_freelist_page_note_adopted(page);
       hz10_class_pages_add(&adopter->classes[class_id].list, page);
       return page;
     }
 
     hz10_freelist_page_set_owner_thread(page, old_owner);
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+    hz10_orphan_stat_add(
+        class_id,
+        &hz10_orphan_adoption_stats[class_id].reject_no_capacity_count, 1u);
+#endif
     hz10_orphan_repush_class(class_id, page);
 #else
     hz10_page_drain_remote(page);
     if (page->free_count == page->slot_count) {
       hz10_freelist_page_set_owner_thread(
           page, hz10_public_entry_owner_record(adopter));
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+      hz10_orphan_stat_add(
+          class_id, &hz10_orphan_adoption_stats[class_id].adopt_count, 1u);
+#endif
       hz10_freelist_page_note_adopted(page);
       hz10_class_pages_add(&adopter->classes[class_id].list, page);
       return page;
     }
 
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+    hz10_orphan_stat_add(
+        class_id,
+        &hz10_orphan_adoption_stats[class_id].reject_no_capacity_count, 1u);
+#endif
     hz10_orphan_repush_class(class_id, page);
 #endif
   }
@@ -239,5 +336,35 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
   (void)class_id;
   (void)adopter;
   return NULL;
+#endif
+}
+
+void hz10_public_entry_orphan_adoption_class_stats(
+    uint32_t class_id, Hz10OrphanAdoptionClassStats* out) {
+  if (!out) return;
+  *out = (Hz10OrphanAdoptionClassStats){0};
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+  if (class_id >= HZ10_CLASS_COUNT) return;
+  Hz10OrphanAdoptionAtomicStats* stats =
+      &hz10_orphan_adoption_stats[class_id];
+  out->published_pages =
+      atomic_load_explicit(&stats->published_pages, memory_order_relaxed);
+  out->pop_count =
+      atomic_load_explicit(&stats->pop_count, memory_order_relaxed);
+  out->adopt_count =
+      atomic_load_explicit(&stats->adopt_count, memory_order_relaxed);
+  out->reject_class_count =
+      atomic_load_explicit(&stats->reject_class_count, memory_order_relaxed);
+  out->reject_state_count =
+      atomic_load_explicit(&stats->reject_state_count, memory_order_relaxed);
+  out->reject_no_capacity_count = atomic_load_explicit(
+      &stats->reject_no_capacity_count, memory_order_relaxed);
+  out->repush_count =
+      atomic_load_explicit(&stats->repush_count, memory_order_relaxed);
+  out->depth = atomic_load_explicit(&stats->depth, memory_order_relaxed);
+  out->max_depth =
+      atomic_load_explicit(&stats->max_depth, memory_order_relaxed);
+#else
+  (void)class_id;
 #endif
 }

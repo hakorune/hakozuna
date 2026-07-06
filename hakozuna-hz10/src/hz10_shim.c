@@ -124,6 +124,15 @@ void hz10_shim_dump_exit_stats(void) {
   uint64_t ready_reclaimed = 0u;
   uint64_t sweep_reclaimed = 0u;
   uint64_t local_free_reclaimed = 0u;
+  uint64_t orphan_published = 0u;
+  uint64_t orphan_popped = 0u;
+  uint64_t orphan_adopted = 0u;
+  uint64_t orphan_reject_class = 0u;
+  uint64_t orphan_reject_state = 0u;
+  uint64_t orphan_reject_no_capacity = 0u;
+  uint64_t orphan_repush = 0u;
+  uint64_t orphan_depth = 0u;
+  uint64_t orphan_max_depth_sum = 0u;
 
   hz10_shim_writef(
       "hz10_shim_exit_stats summary class_count=%u foreign_frees=%llu "
@@ -183,6 +192,47 @@ void hz10_shim_dump_exit_stats(void) {
     }
   }
 
+  for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+    Hz10OrphanAdoptionClassStats stats = {0};
+    hz10_public_entry_orphan_adoption_class_stats(c, &stats);
+    if (stats.published_pages == 0u && stats.pop_count == 0u &&
+        stats.adopt_count == 0u && stats.reject_class_count == 0u &&
+        stats.reject_state_count == 0u &&
+        stats.reject_no_capacity_count == 0u && stats.repush_count == 0u &&
+        stats.depth == 0u && stats.max_depth == 0u) {
+      continue;
+    }
+
+    orphan_published += stats.published_pages;
+    orphan_popped += stats.pop_count;
+    orphan_adopted += stats.adopt_count;
+    orphan_reject_class += stats.reject_class_count;
+    orphan_reject_state += stats.reject_state_count;
+    orphan_reject_no_capacity += stats.reject_no_capacity_count;
+    orphan_repush += stats.repush_count;
+    orphan_depth += stats.depth;
+    orphan_max_depth_sum += stats.max_depth;
+
+    if (hz10_shim_exit_stats_classes) {
+      hz10_shim_writef(
+          "hz10_shim_orphan_adoption_stats class=%u slot_size=%u "
+          "slot_count=%u published=%llu pop=%llu adopted=%llu "
+          "reject_class=%llu reject_state=%llu reject_no_capacity=%llu "
+          "repush=%llu depth=%llu max_depth=%llu\n",
+          (unsigned)c, (unsigned)hz10_size_class_slot_size(c),
+          (unsigned)hz10_size_class_slot_count(c),
+          (unsigned long long)stats.published_pages,
+          (unsigned long long)stats.pop_count,
+          (unsigned long long)stats.adopt_count,
+          (unsigned long long)stats.reject_class_count,
+          (unsigned long long)stats.reject_state_count,
+          (unsigned long long)stats.reject_no_capacity_count,
+          (unsigned long long)stats.repush_count,
+          (unsigned long long)stats.depth,
+          (unsigned long long)stats.max_depth);
+    }
+  }
+
   hz10_shim_writef(
       "hz10_shim_exit_stats class_totals active_pages=%llu "
       "retired_pages=%llu max_retired_sum=%llu page_bytes=%llu "
@@ -196,6 +246,18 @@ void hz10_shim_dump_exit_stats(void) {
       (unsigned long long)ready_reclaimed,
       (unsigned long long)sweep_reclaimed,
       (unsigned long long)local_free_reclaimed);
+  hz10_shim_writef(
+      "hz10_shim_orphan_adoption_stats totals published=%llu pop=%llu "
+      "adopted=%llu reject_class=%llu reject_state=%llu "
+      "reject_no_capacity=%llu repush=%llu depth=%llu max_depth_sum=%llu\n",
+      (unsigned long long)orphan_published,
+      (unsigned long long)orphan_popped,
+      (unsigned long long)orphan_adopted,
+      (unsigned long long)orphan_reject_class,
+      (unsigned long long)orphan_reject_state,
+      (unsigned long long)orphan_reject_no_capacity,
+      (unsigned long long)orphan_repush, (unsigned long long)orphan_depth,
+      (unsigned long long)orphan_max_depth_sum);
   hz10_shim_in_stats_dump = 0;
 }
 

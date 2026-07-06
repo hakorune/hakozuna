@@ -41,6 +41,18 @@ typedef struct Hz10ThreadOwner {
   Hz10ClassState classes[HZ10_CLASS_COUNT];
 } Hz10ThreadOwner;
 
+typedef struct Hz10OrphanAdoptionClassStats {
+  uint64_t published_pages;
+  uint64_t pop_count;
+  uint64_t adopt_count;
+  uint64_t reject_class_count;
+  uint64_t reject_state_count;
+  uint64_t reject_no_capacity_count;
+  uint64_t repush_count;
+  uint64_t depth;
+  uint64_t max_depth;
+} Hz10OrphanAdoptionClassStats;
+
 #define HZ10_THREAD_OWNER_STATE_LIVE 1u
 #define HZ10_THREAD_OWNER_STATE_EXITED 2u
 
@@ -50,5 +62,7 @@ Hz10OwnerRecord* hz10_public_entry_owner_record(const Hz10ThreadOwner* owner);
 uint32_t hz10_public_entry_owner_state(const Hz10OwnerRecord* owner);
 Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);
+void hz10_public_entry_orphan_adoption_class_stats(
+    uint32_t class_id, Hz10OrphanAdoptionClassStats* out);
 
 #endif

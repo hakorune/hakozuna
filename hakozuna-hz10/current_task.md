@@ -23,8 +23,11 @@ status:
     - bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
 
   Current read:
-    - hz10+fine improves python_alloc RSS but worsens larson RSS/throughput;
-      keep it diagnostic/python-RSS only, not a broad shim default.
+    - Shim default now includes fine size classes plus orphan + partial
+      adoption. Corrected same-matrix RUNS=3 showed python_alloc RSS
+      116,756 -> 106,788 KiB with unchanged wall, larson RSS
+      288,256 -> 281,856 KiB with unchanged wall, and redis unchanged.
+      Coarse rollback remains `libhz10_orphan_partial.so`.
     - retired-local reclaim remains NO-GO as default and opt-in research only.
     - Opt-in hz10+orphan adopts only fully idle orphan ACTIVE pages. It does
       not destroy pages from pthread destructors and does not transfer retired
@@ -32,24 +35,18 @@ status:
     - Short larson probe, THREADS=4 CHUNKS=32 RUNS=3:
       default hz10 throughput 0.35-0.37M ops/s, current RSS 5.1-5.4GB;
       hz10+orphan throughput ~1.034M ops/s, current RSS ~2.68GB.
-    - Macro gate, RUNS=3, LARSON_SECONDS=2, LARSON_CHUNKS=128:
-      hz10+orphan keeps python/redis behavior within noise of default hz10,
-      restores larson throughput to competitor range (~2.069M ops/s vs
-      tcmalloc/mimalloc ~2.095M), and cuts default larson RSS 9.19GB -> 2.69GB.
-      Verdict: narrow GO as opt-in research/product lane, default NO-GO because
-      larson RSS is still ~9.6x tcmalloc.
+    - Owner-record split moved default shim larson into competitor RSS range:
+      RUNS=3 macro showed hz10 289,536 KiB / 4.175s vs tcmalloc 279,040 KiB
+      / 4.141s and mimalloc 284,016 KiB / 4.145s.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    HZ10PartialOrphanAdoption-L1. Pagemap census confirmed the residual:
-    median orphan_unadopted=32,332 pages / 2.119GB, with 32,333 live slots and
-    5.466M free slots trapped. class 8 (384B) alone is 32,327 pages and almost
-    every page has exactly one live slot. hidden_free_slots=0, so this is not
-    an undrained remote-stack problem. Design/proof is recorded in
-    docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md.
+    Productization follow-up after fine-default flip: expand macro suite or
+    preload compatibility smokes. Do not open more micro allocator surgery
+    until the product lane has a broader workload read.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -96,6 +93,20 @@ status:
       Macro RUNS=3: larson hz10 289,536 KiB / 4.175s vs tcmalloc 279,040 KiB
       / 4.141s and mimalloc 284,016 KiB / 4.145s. TSan smoke green. Log:
       bench_results/20260706T013552Z_hz10_macro_preload_matrix/
+    - HZ10FineAdoptionInteractionBug-L0 follow-up:
+      Makefile corrected `libhz10_fine.so` to track the current shim default
+      flags plus fine classes. Added orphan-adoption exit counters
+      (published/pop/adopted/reject_class/reject_state/reject_no_capacity/
+      repush/depth/max_depth). Clean 8-run larson fine probe did not reproduce
+      adopted=0; all runs adopted ~294k pages and RSS stayed 281-291MB. Log:
+      bench_results/20260707T050000Z_hz10_owner_split_verification/notes.md
+    - HZ10ShimFineDefault-L0:
+      Fresh macro RUNS=3 made fine a shim-default GO. Median results:
+      python_alloc hz10 0.930s / 116,756 KiB vs hz10+fine 0.930s /
+      106,788 KiB; larson hz10 4.176s / 288,256 KiB vs hz10+fine 4.173s /
+      281,856 KiB; redis unchanged. `make preload` now builds fine by
+      default; coarse partial rollback is `libhz10_orphan_partial.so`. Log:
+      bench_results/20260707T_fine_default_candidate_matrix/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

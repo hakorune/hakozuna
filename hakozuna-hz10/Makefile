@@ -218,8 +218,11 @@ $(ROOT)/hz10_public_entry_bench: $(BENCH_PUBLIC_ENTRY_SRC) $(HEADERS)
 bench-public-entry: $(ROOT)/hz10_public_entry_bench
 	$(ROOT)/hz10_public_entry_bench
 
+# Current shim default: orphan + partial adoption plus the fine size-class
+# table. The coarse partial-adoption sibling remains available as
+# libhz10_orphan_partial.so for immediate A/B rollback.
 $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 preload: $(ROOT)/libhz10.so
 
@@ -229,8 +232,14 @@ $(ROOT)/libhz10_base.so: $(SHIM_SRC) $(HEADERS)
 
 preload-base: $(ROOT)/libhz10_base.so
 
+# Sibling of the CURRENT default shim (orphan + partial adoption) plus the
+# fine size-class table -- it exists to answer "would fine classes help the
+# default shim", so it must track the default's adoption flags. It was
+# briefly left on the pre-adoption flag set, which made its larson row read
+# ~9.2GB (the old abandoned-page pathology), poisoning the fine-vs-default
+# comparison.
 $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
-	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 $(INC) -shared -Wl,-soname,libhz10_fine.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 

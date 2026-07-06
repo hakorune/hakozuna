@@ -21,7 +21,8 @@ Default HZ10:
   Good: faster than HZ8, competitive with mimalloc on several micro rows,
         strong RSS on many public-entry rows.
   Shim default: `make preload` builds libhz10.so with orphan + partial orphan
-        adoption enabled. This fixes the larson/thread-churn RSS cliff in the
+        adoption and the fine size-class table enabled. This fixes the
+        larson/thread-churn RSS cliff and cuts python_alloc RSS in the
         LD_PRELOAD product lane while keeping source compile-time defaults off
         for isolated public-entry/front-cache research boxes.
 
@@ -31,8 +32,9 @@ hz10-base:
 
 hz10+fine:
   Built as libhz10_fine.so via `make preload-fine`.
-  Helps python_alloc RSS, but worsens larson RSS/throughput.
-  Keep as diagnostic/RSS probe, not broad shim default.
+  Tracks the current default's adoption flags plus the fine size-class table.
+  Since the default now includes fine classes, this is a redundant sibling kept
+  for matrix continuity.
 
 hz10+orphan:
   Built as libhz10_orphan.so via `make preload-orphan-adoption`.
@@ -48,8 +50,8 @@ hz10+orphan-partial:
   Built as libhz10_orphan_partial.so via `make preload-orphan-partial`.
   Opt-in sibling for HZ10PartialOrphanAdoption-L1:
   `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` plus
-  `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`. Keeps hz10+orphan idle-only as the
-  reference lane while testing partial-page ownership transfer.
+  `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`. This is now also the coarse
+  size-class rollback sibling for the shim default.
   First larson 4t/128c RUNS=3 probe: current RSS 2,817,024 KiB ->
   733,568 KiB and throughput 2.069M -> 2.085M vs idle-only. Census
   orphan_unadopted collapsed from 32,329 pages / 2.118GB to 3 pages / 196KiB.
@@ -72,6 +74,40 @@ retired-local:
 ## Active Next Box
 
 ```text
+HZ10FineAdoptionInteractionBug-L0   (resolved/not reproduced after clean
+  rebuild; keep counters for future triage -- see
+  bench_results/20260707T050000Z_hz10_owner_split_verification/notes.md)
+
+Post owner-split verification: larson bimodality/600MB is RESOLVED
+(8/8 runs 282-291MB; census confirms default adoption alive:
+adopted=283, orphan_unadopted=3 at t=1s). Two follow-on findings:
+  1. libhz10_fine.so was stale-wired without the adoption flags --
+     Makefile fixed so the fine sibling tracks the default's flags.
+     Every fine-vs-default larson comparison made since the default
+     flip was polluted by this (its 9.2GB was the pre-adoption
+     pathology).
+  2. A follow-up report claimed that, with corrected wiring, the fine
+     build's larson adoption never fired (census adopted=0, 79k orphan
+     pages / 4.94GB, throughput 0.94M). Codex added per-class adoption
+     counters to exit stats and reran a clean `libhz10_fine.so` rebuild.
+     The failure did NOT reproduce: larson fine 8/8 stayed in the
+     281-291MB RSS band with ~2.095M ops/s and ~294k successful adoptions
+     per run. Current verdict: stale artifact/build wiring is the likely
+     cause; keep the counters because they directly distinguish pop=0,
+     reject_class, reject_state, and no-capacity starvation.
+
+Next decision:
+  DONE. Fresh macro RUNS=3 matrix on the corrected sibling:
+    python_alloc: hz10 0.930s / 116,756 KiB; hz10+fine 0.930s / 106,788 KiB
+    larson:       hz10 4.176s / 288,256 KiB; hz10+fine 4.173s / 281,856 KiB
+    redis:        both 0.550s, RSS within one sample quantum
+  Verdict: GO for shim default fine classes. `make preload` now builds
+  orphan + partial adoption + fine classes; coarse rollback remains
+  `libhz10_orphan_partial.so`.
+
+Prior/adjacent box (largely resolved by commit 20448ec1, keep for its
+verification record):
+
 HZ10OwnerRecordFootprint-L0
 
 Input:
