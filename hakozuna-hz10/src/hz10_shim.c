@@ -320,8 +320,8 @@ static void hz10_shim_dump_census(void) {
         continue;
       }
       Hz10FreelistPage* page = (Hz10FreelistPage*)owner;
-      Hz10ThreadOwner* page_owner =
-          (Hz10ThreadOwner*)hz10_freelist_page_owner_thread(page);
+      Hz10OwnerRecord* page_owner =
+          (Hz10OwnerRecord*)hz10_freelist_page_owner_thread(page);
       uint32_t owner_state = hz10_public_entry_owner_state(page_owner);
       Hz10ShimCensusBucket bucket = HZ10_CENSUS_UNKNOWN;
       if (page->adopted_count != 0u) {

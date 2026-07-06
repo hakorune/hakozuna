@@ -90,6 +90,12 @@ status:
       persistent 1MiB owner-record slabs. Next box is owner-record footprint,
       not adopt-k yet. Log:
       bench_results/20260707T032300Z_hz10_larson_rss_attribution_check/
+    - HZ10OwnerRecordFootprint-L0 implemented:
+      page owner token is now a small persistent Hz10OwnerRecord; live
+      Hz10ThreadOwner class-state is released by the pthread-key destructor.
+      Macro RUNS=3: larson hz10 289,536 KiB / 4.175s vs tcmalloc 279,040 KiB
+      / 4.141s and mimalloc 284,016 KiB / 4.145s. TSan smoke green. Log:
+      bench_results/20260706T013552Z_hz10_macro_preload_matrix/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

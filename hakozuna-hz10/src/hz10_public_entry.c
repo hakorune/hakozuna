@@ -308,7 +308,8 @@ static void* hz10_public_entry_alloc_from_page_layer(uint32_t class_id) {
   if (!fresh) {
     return NULL;
   }
-  hz10_freelist_page_set_owner_thread(fresh, owner);
+  hz10_freelist_page_set_owner_thread(
+      fresh, hz10_public_entry_owner_record(owner));
   hz10_freelist_page_set_class_id(fresh, class_id);
   hz10_class_pages_add(&state->list, fresh);
   hz10_class_state_note_switch(state, fresh, 0);
@@ -611,7 +612,8 @@ int hz10_free(void* ptr) {
     return 0;
   }
   Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
-  if (owner && hz10_freelist_page_owner_thread(page) == owner) {
+  if (owner && hz10_freelist_page_owner_thread(page) ==
+                   hz10_public_entry_owner_record(owner)) {
 #if HZ10_ENABLE_FRONT_CACHE
     /* Front-cache push, NOT hz10_freelist_page_free() -- see the
      * HZ10FrontCache-L1 block comment above: the slot stays allocated

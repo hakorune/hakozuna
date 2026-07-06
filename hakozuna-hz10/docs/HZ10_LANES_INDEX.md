@@ -96,6 +96,17 @@ Question:
   no pages reference them. This is an owner-record footprint box, not an
   adoption policy box yet.
 
+Implementation verdict:
+  GO. Page owner token now points to a small persistent `Hz10OwnerRecord`;
+  the large live `Hz10ThreadOwner` class-state cache is separate and released
+  by the pthread-key destructor. Orphan registry publish remains opt-in, but
+  destructor registration is always enabled so source-default thread churn
+  does not retain live class-state storage. RUNS=3 macro:
+    larson hz10 289,536 KiB / 4.175s,
+    tcmalloc 279,040 KiB / 4.141s,
+    mimalloc 284,016 KiB / 4.145s.
+  Log: bench_results/20260706T013552Z_hz10_macro_preload_matrix/
+
 Prior box (completed, kept for context):
 
 HZ10PartialOrphanAdoption-L1

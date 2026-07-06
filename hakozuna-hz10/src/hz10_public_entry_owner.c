@@ -11,7 +11,7 @@
 #endif
 
 #ifndef HZ10_OWNER_SLAB_BYTES
-#define HZ10_OWNER_SLAB_BYTES (1024u * 1024u)
+#define HZ10_OWNER_SLAB_BYTES HZ10_PAGE_QUANTUM
 #endif
 
 static _Thread_local Hz10ThreadOwner* hz10_current_owner;
@@ -19,8 +19,8 @@ static hz10_platform_mutex_t hz10_owner_slab_lock = HZ10_PLATFORM_MUTEX_INIT;
 static char* hz10_owner_slab_cursor;
 static char* hz10_owner_slab_end;
 
-static Hz10ThreadOwner* hz10_owner_alloc(void) {
-  size_t owner_bytes = (sizeof(Hz10ThreadOwner) + 15u) & ~(size_t)15u;
+static Hz10OwnerRecord* hz10_owner_record_alloc(void) {
+  size_t owner_bytes = (sizeof(Hz10OwnerRecord) + 15u) & ~(size_t)15u;
   hz10_platform_mutex_lock(&hz10_owner_slab_lock);
   if (!hz10_owner_slab_cursor ||
       (size_t)(hz10_owner_slab_end - hz10_owner_slab_cursor) < owner_bytes) {
@@ -36,7 +36,7 @@ static Hz10ThreadOwner* hz10_owner_alloc(void) {
     hz10_owner_slab_cursor = (char*)slab;
     hz10_owner_slab_end = hz10_owner_slab_cursor + slab_bytes;
   }
-  Hz10ThreadOwner* owner = (Hz10ThreadOwner*)hz10_owner_slab_cursor;
+  Hz10OwnerRecord* owner = (Hz10OwnerRecord*)hz10_owner_slab_cursor;
   hz10_owner_slab_cursor += owner_bytes;
   hz10_platform_mutex_unlock(&hz10_owner_slab_lock);
   memset(owner, 0, sizeof(*owner));
@@ -45,10 +45,27 @@ static Hz10ThreadOwner* hz10_owner_alloc(void) {
   return owner;
 }
 
-#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+static Hz10ThreadOwner* hz10_owner_alloc(void) {
+  Hz10OwnerRecord* record = hz10_owner_record_alloc();
+  if (!record) {
+    return NULL;
+  }
+  Hz10ThreadOwner* owner =
+      (Hz10ThreadOwner*)hz10_platform_reserve_rw(sizeof(Hz10ThreadOwner));
+  if (!owner) {
+    atomic_store_explicit(&record->state, HZ10_THREAD_OWNER_STATE_EXITED,
+                          memory_order_release);
+    return NULL;
+  }
+  memset(owner, 0, sizeof(*owner));
+  owner->record = record;
+  return owner;
+}
+
 static hz10_platform_once_t hz10_owner_key_once = HZ10_PLATFORM_ONCE_INIT;
 static hz10_platform_thread_key_t hz10_owner_key;
 static int hz10_owner_key_ready;
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
 static hz10_platform_mutex_t hz10_orphan_lock = HZ10_PLATFORM_MUTEX_INIT;
 static Hz10PageSublist hz10_orphan_active[HZ10_CLASS_COUNT];
 
@@ -110,6 +127,7 @@ static void hz10_orphan_repush_class(uint32_t class_id,
   hz10_orphan_append_one(&hz10_orphan_active[class_id], page);
   hz10_platform_mutex_unlock(&hz10_orphan_lock);
 }
+#endif
 
 static void hz10_owner_destructor(void* value) {
   Hz10ThreadOwner* owner = (Hz10ThreadOwner*)value;
@@ -121,14 +139,17 @@ static void hz10_owner_destructor(void* value) {
      * in other destructors therefore go through the remote path. */
     hz10_current_owner = NULL;
   }
-  atomic_store_explicit(&owner->state, HZ10_THREAD_OWNER_STATE_EXITED,
+  atomic_store_explicit(&owner->record->state, HZ10_THREAD_OWNER_STATE_EXITED,
                         memory_order_release);
+#if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
   hz10_platform_mutex_lock(&hz10_orphan_lock);
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
     hz10_orphan_append_active(c, &owner->classes[c].list.active);
     owner->classes[c].active = NULL;
   }
   hz10_platform_mutex_unlock(&hz10_orphan_lock);
+#endif
+  hz10_platform_release(owner, sizeof(*owner));
 }
 
 static void hz10_owner_key_init(void) {
@@ -143,11 +164,6 @@ static void hz10_owner_register_for_exit(Hz10ThreadOwner* owner) {
     (void)hz10_platform_thread_setspecific(hz10_owner_key, owner);
   }
 }
-#else
-static inline void hz10_owner_register_for_exit(Hz10ThreadOwner* owner) {
-  (void)owner;
-}
-#endif
 
 Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
   Hz10ThreadOwner* owner = hz10_current_owner;
@@ -163,7 +179,11 @@ Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
   return hz10_current_owner;
 }
 
-uint32_t hz10_public_entry_owner_state(const Hz10ThreadOwner* owner) {
+Hz10OwnerRecord* hz10_public_entry_owner_record(const Hz10ThreadOwner* owner) {
+  return owner ? owner->record : NULL;
+}
+
+uint32_t hz10_public_entry_owner_state(const Hz10OwnerRecord* owner) {
   if (!owner) return 0u;
   return atomic_load_explicit(&owner->state, memory_order_acquire);
 }
@@ -180,8 +200,8 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     }
 
 #if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION
-    Hz10ThreadOwner* old_owner =
-        (Hz10ThreadOwner*)hz10_freelist_page_owner_thread(page);
+    Hz10OwnerRecord* old_owner =
+        (Hz10OwnerRecord*)hz10_freelist_page_owner_thread(page);
     if (page->class_id != class_id ||
         hz10_public_entry_owner_state(old_owner) !=
             HZ10_THREAD_OWNER_STATE_EXITED) {
@@ -189,7 +209,8 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
       continue;
     }
 
-    hz10_freelist_page_set_owner_thread(page, adopter);
+    hz10_freelist_page_set_owner_thread(page,
+                                        hz10_public_entry_owner_record(adopter));
     hz10_page_drain_remote(page);
 
     if (page->local_free_head) {
@@ -203,7 +224,8 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
 #else
     hz10_page_drain_remote(page);
     if (page->free_count == page->slot_count) {
-      hz10_freelist_page_set_owner_thread(page, adopter);
+      hz10_freelist_page_set_owner_thread(
+          page, hz10_public_entry_owner_record(adopter));
       hz10_freelist_page_note_adopted(page);
       hz10_class_pages_add(&adopter->classes[class_id].list, page);
       return page;

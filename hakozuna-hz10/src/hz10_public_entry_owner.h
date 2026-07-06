@@ -32,8 +32,12 @@ typedef struct Hz10ClassState {
 #endif
 } Hz10ClassState;
 
-typedef struct Hz10ThreadOwner {
+typedef struct Hz10OwnerRecord {
   _Atomic(uint32_t) state;
+} Hz10OwnerRecord;
+
+typedef struct Hz10ThreadOwner {
+  Hz10OwnerRecord* record;
   Hz10ClassState classes[HZ10_CLASS_COUNT];
 } Hz10ThreadOwner;
 
@@ -42,7 +46,8 @@ typedef struct Hz10ThreadOwner {
 
 Hz10ThreadOwner* hz10_public_entry_current_owner(void);
 Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void);
-uint32_t hz10_public_entry_owner_state(const Hz10ThreadOwner* owner);
+Hz10OwnerRecord* hz10_public_entry_owner_record(const Hz10ThreadOwner* owner);
+uint32_t hz10_public_entry_owner_state(const Hz10OwnerRecord* owner);
 Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);
 
