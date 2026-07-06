@@ -36,14 +36,13 @@ Default HZ10:
         `mstress` RSS is also lowest in the broad guard; larson is in the same
         current-RSS band as tcmalloc/mimalloc under thread churn.
   HZ8 comparison:
-        HZ10 is the recommended product/shim allocator. HZ8 was added as an
-        optional macro-matrix allocator column, but it is not a stronger
-        LD_PRELOAD macro RSS lane: python_alloc hit 4,325,240 KiB on the first
-        HZ8 run, Redis SIGSEGV'd, larson aborted with
-        `h8_platform_commit: Cannot allocate memory`, and xmalloc_test hung
-        past its 2s workload contract. The same no-Redis shape completed HZ10
-        RUNS=5 with python_alloc 106,796 KiB, xmalloc_test 13,184 KiB, and
-        larson 282,624 KiB current RSS. Record:
+        Scope corrected. Do not say HZ10 replaces HZ8 yet. HZ8 remains the
+        mature low-RSS public allocator line: on the HZ8 public same-run
+        harness, HZ8 kept post RSS at roughly 3-5MiB on the representative
+        rows where HZ10 kept roughly 6-94MiB. HZ10 is often faster and remains
+        the active macro/shim hardening line, but HZ8 is still the low-RSS
+        recommendation in its intended public matrix. HZ8 did fail several
+        HZ10 macro probe rows, so do not mix the two scopes. Record:
         docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
   Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
         every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
