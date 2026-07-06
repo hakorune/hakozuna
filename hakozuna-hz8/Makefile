@@ -1,5 +1,5 @@
 .PHONY: all clean smoke smoke-mediumupper48 safety-stress medium-lazy-saturation preload preload-smoke bench bench-activefulldefer8 bench-defer4mediumcapacity bench-defer8mediumcapacity bench-remoteactivefullbudget bench-mediumcapacitybudget bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-hz9mediumlocalmagshadow bench-release bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-hz9mediumlocalmagshadow bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy preload-mediumkeeprefillempty medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
-.PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache preload-largedirectshardedhotshadow preload-largedirectshardedhotcache bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache bench-release-largedirectshardedhotshadow bench-release-largedirectshardedhot128_32 bench-release-largedirectshardedhot128_64 bench-release-largedirectshardedhot192_32 bench-release-largedirectshardedhotcache
+.PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache preload-largedirectshardedhotshadow preload-largedirectshardedhotcache preload-remotespanlease bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache bench-release-largedirectshardedhotshadow bench-release-largedirectshardedhot128_32 bench-release-largedirectshardedhot128_64 bench-release-largedirectshardedhot192_32 bench-release-largedirectshardedhotcache
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -39,6 +39,8 @@ REMOTE_MICRO_SRC := $(ROOT)/bench/h8_remote_micro.c
 all: smoke preload bench
 
 preload: $(ROOT)/libhakozuna_hz8_preload.so
+
+preload-remotespanlease: $(ROOT)/libhakozuna_hz8_preload_remotespanlease.so
 
 preload-smoke: $(ROOT)/h8_preload_smoke $(ROOT)/libhakozuna_hz8_preload.so
 	LD_PRELOAD=$(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/h8_preload_smoke
@@ -230,6 +232,9 @@ remote-micro-release: $(ROOT)/h8_remote_micro_release
 
 $(ROOT)/libhakozuna_hz8_preload.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/libhakozuna_hz8_preload_remotespanlease.so: $(SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -DH8_REMOTE_SPAN_LEASE_PUBLISH_L1 -DH8_REMOTE_TRANSITION_BACKOFF_L1 -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/libhakozuna_hz8_preload_largedirectdefault.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)

@@ -438,6 +438,9 @@ void h8_free_inner(void* ptr) {
     h8_fail_invalid_free();
     return;
   }
+#if defined(H8_REMOTE_TRANSITION_BACKOFF_L1)
+  size_t transition_retries = 0;
+#endif
   for (;;) {
     H8PublishResult res = h8_remote_free_publish(ptr);
     if (res == H8_PUBLISH_OK) {
@@ -446,6 +449,13 @@ void h8_free_inner(void* ptr) {
     if (res != H8_PUBLISH_OWNER_TRANSITION) {
       break;
     }
+#if defined(H8_REMOTE_TRANSITION_BACKOFF_L1)
+    transition_retries++;
+    if ((transition_retries & 63u) == 0) {
+      h8_platform_sleep_ns(1000000ull);
+      continue;
+    }
+#endif
     h8_platform_yield();
   }
   h8_fail_invalid_free();

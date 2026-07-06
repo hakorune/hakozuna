@@ -404,6 +404,29 @@ h8_remote_free_publish_locked(H8Span* span, H8OwnerRecord* owner, size_t slot) {
   return H8_PUBLISH_OK;
 }
 
+#if defined(H8_REMOTE_SPAN_LEASE_PUBLISH_L1)
+static H8PublishResult h8_remote_free_publish_span_lease(H8Span* span,
+                                                         H8OwnerRecord* owner,
+                                                         H8OwnerWord expected,
+                                                         size_t slot) {
+  if (!h8_span_publish_enter(span)) {
+    H8_DEBUG_INC(owner_transition_count);
+    return H8_PUBLISH_OWNER_TRANSITION;
+  }
+  H8OwnerWord current = h8_span_owner_word_load(span);
+  if (current.slot != expected.slot ||
+      current.generation != expected.generation ||
+      h8_span_state_load(span) != H8_SPAN_OWNED_ACTIVE) {
+    h8_span_publish_exit(span);
+    H8_DEBUG_INC(owner_transition_count);
+    return H8_PUBLISH_OWNER_TRANSITION;
+  }
+  H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
+  h8_span_publish_exit(span);
+  return res;
+}
+#endif
+
 H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot) {
   H8_DEBUG_INC(remote_stage_enter);
   H8OwnerWord ow = h8_span_owner_word_load(span);
@@ -435,6 +458,10 @@ H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot) {
     H8_DEBUG_INC(remote_regular_admission_count);
     return h8_remote_free_publish_locked(span, owner, slot);
   }
+#if defined(H8_REMOTE_SPAN_LEASE_PUBLISH_L1)
+  H8_DEBUG_INC(remote_regular_admission_count);
+  return h8_remote_free_publish_span_lease(span, owner, ow, slot);
+#else
   if (!h8_owner_publish_enter(owner, ow.generation)) {
     H8_DEBUG_INC(owner_transition_count);
     H8_DEBUG_INC(remote_stage_regular_lease_fail);
@@ -445,6 +472,7 @@ H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot) {
   H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
   h8_owner_publish_exit(owner);
   return res;
+#endif
 }
 
 H8PublishResult h8_remote_free_publish(void* ptr) {

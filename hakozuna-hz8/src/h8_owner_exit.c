@@ -34,6 +34,9 @@ static void h8_owner_quiesce_span(H8Span* span) {
   if (h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
     h8_span_mark_orphan_quiescing(span);
   }
+#if defined(H8_REMOTE_SPAN_LEASE_PUBLISH_L1)
+  h8_span_wait_publishers_zero(span);
+#endif
 
   for (;;) {
     uint8_t qstate = atomic_load_explicit(&span->qstate, memory_order_acquire);

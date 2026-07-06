@@ -37,6 +37,7 @@ int h8_platform_mutex_unlock(h8_platform_mutex_t* mutex);
 int h8_platform_mutex_trylock(h8_platform_mutex_t* mutex);
 
 void h8_platform_yield(void);
+void h8_platform_sleep_ns(uint64_t ns);
 uint64_t h8_platform_now_ns(void);
 
 void* h8_platform_reserve(size_t bytes);

@@ -75,6 +75,11 @@ void h8_platform_yield(void) {
   }
 }
 
+void h8_platform_sleep_ns(uint64_t ns) {
+  DWORD ms = (DWORD)((ns + 999999ull) / 1000000ull);
+  Sleep(ms == 0 ? 1 : ms);
+}
+
 uint64_t h8_platform_now_ns(void) {
   static INIT_ONCE once = INIT_ONCE_STATIC_INIT;
   LARGE_INTEGER counter;
@@ -152,6 +157,13 @@ int h8_platform_mutex_trylock(h8_platform_mutex_t* mutex) {
 
 void h8_platform_yield(void) {
   sched_yield();
+}
+
+void h8_platform_sleep_ns(uint64_t ns) {
+  struct timespec ts;
+  ts.tv_sec = (time_t)(ns / 1000000000ull);
+  ts.tv_nsec = (long)(ns % 1000000000ull);
+  nanosleep(&ts, NULL);
 }
 
 uint64_t h8_platform_now_ns(void) {

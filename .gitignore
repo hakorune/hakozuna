@@ -10,6 +10,7 @@ bench_burst_idle*
 
 # HZ8 local build outputs
 hakozuna-hz8/libhakozuna_hz8_preload.so
+hakozuna-hz8/libhakozuna_hz8_preload*.so
 hakozuna-hz8/h8_smoke
 hakozuna-hz8/h8_smoke_mediumupper48
 hakozuna-hz8/h8_safety_stress
