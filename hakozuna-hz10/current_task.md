@@ -73,6 +73,11 @@ status:
       hz10 4.179s / 283,392 KiB vs tcmalloc 4.158s / 279,040 KiB and mimalloc
       4.161s / 283,872 KiB. The remaining clear wall gap is sh6bench:
       hz10 0.510s vs tcmalloc 0.320s and mimalloc 0.250s.
+    - HZ10Sh6benchPerfAttribution-L0: remaining sh6 gap is instruction/entry
+      shape, not cache misses. perf stat: hz10 15.553B cycles / 32.158B ins /
+      118.302M misses vs tcmalloc 9.235B / 18.310B / 139.042M. A probe build
+      with `-Wl,-Bsymbolic-functions` removed internal `@plt` edges and moved
+      sh6bench from 0.51s to about 0.47s.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -80,9 +85,10 @@ status:
 
   Active next box:
     Productization follow-up:
-      Take fresh perf attribution on the remaining sh6bench gap, and
-      secondarily mstress-vs-tcmalloc. Do not open another routing or
-      ownership box before attribution.
+      HZ10ShimInternalBinding-L0: decide between `-Wl,-Bsymbolic-functions`
+      for preload libraries and hidden internal malloc/free entry points for
+      shim wrappers. Keep it scoped to entry/binding. Do not mix route
+      validation or page metadata changes into this box.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -201,6 +207,13 @@ status:
       xmalloc_test 2.000s / 13,440 KiB, cache_scratch 1.100s / 3,968 KiB,
       mstress 0.210s / 204,012 KiB, sh6bench 0.510s / 319,488 KiB. Log:
       bench_results/20260707T_shim_speed_stack_macro_refresh_l0/
+    - HZ10Sh6benchPerfAttribution-L0:
+      perf stat/report/annotate on sh6bench and mstress. sh6bench gap is
+      instruction-count dominated; HZ10 has fewer cache misses than tcmalloc
+      but 1.76x instructions. mstress is mostly benchmark/kernel work, so do
+      not optimize it first. Bsymbolic probe gives a small concrete next win:
+      sh6bench 0.51s -> 0.46-0.48s. Log:
+      bench_results/20260707T_sh6bench_perf_attribution_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

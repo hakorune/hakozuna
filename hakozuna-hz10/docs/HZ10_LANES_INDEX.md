@@ -235,6 +235,33 @@ Read:
   microbench story: macro rows are competitor-band except the still-visible
   sh6bench gap. Next work should be attribution, not speculative routing.
 
+HZ10Sh6benchPerfAttribution-L0   (completed)
+
+Input:
+  bench_results/20260707T_sh6bench_perf_attribution_l0/
+
+Result:
+  sh6bench perf confirms the remaining HZ10 gap is instruction/entry-shape
+  dominated, not cache-miss dominated:
+    hz10     15.553B cycles, 32.158B instructions, 118.302M cache-misses
+    tcmalloc  9.235B cycles, 18.310B instructions, 139.042M cache-misses
+    mimalloc  7.772B cycles, 13.239B instructions,  73.196M cache-misses
+  HZ10 flat profile is now concentrated in `hz10_free`, `hz10_malloc`, the
+  preload `free`/`malloc` wrappers, and internal `@plt` edges. The old owner
+  lookup wrappers and stats-marker helpers are gone.
+
+Calibration:
+  `make -B preload LDFLAGS='-Wl,-Bsymbolic-functions'` moves sh6bench from
+  0.51s median to about 0.47s (five probe runs: 0.47/0.48/0.46/0.47/0.47)
+  and removes internal `hz10_malloc@plt`, `hz10_free@plt`, and
+  `hz10_page_drain_remote@plt` samples. This is a real but partial win.
+
+NEXT:
+  HZ10ShimInternalBinding-L0: either add `-Wl,-Bsymbolic-functions` to the
+  preload library builds or add hidden internal malloc/free entry points for
+  the shim wrappers. Keep the box scoped to entry/binding; do not mix it with
+  route validation or page metadata changes.
+
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 
 Input:

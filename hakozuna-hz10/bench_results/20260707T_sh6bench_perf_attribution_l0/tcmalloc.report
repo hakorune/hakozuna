@@ -1,0 +1,284 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 18K of event 'cycles:P'
+# Event count (approx.): 9236172828
+#
+# Overhead  Command   Shared Object                 Symbol
+# ........  ........  ............................  .............................................................................................
+#
+    30.48%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tc_malloc
+    27.96%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] operator delete[](void*)
+    22.41%  sh6bench  sh6bench                      [.] doBench
+     4.33%  sh6bench  sh6bench                      [.] malloc@plt
+     3.50%  sh6bench  sh6bench                      [.] free@plt
+     1.00%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::FetchFromOneSpans(int, void**, void**)
+     0.60%  sh6bench  [kernel.kallsyms]             [k] clear_page_erms
+     0.59%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::Populate()
+     0.57%  sh6bench  [kernel.kallsyms]             [k] native_queued_spin_lock_slowpath
+     0.34%  sh6bench  [kernel.kallsyms]             [k] do_anonymous_page
+     0.31%  sh6bench  [kernel.kallsyms]             [k] srso_alias_safe_ret
+     0.29%  sh6bench  [kernel.kallsyms]             [k] __handle_mm_fault
+     0.25%  sh6bench  [kernel.kallsyms]             [k] handle_mm_fault
+     0.21%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::RemoveRange(void**, void**, int)
+     0.19%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] SpinLock::SpinLoop()
+     0.19%  sh6bench  [kernel.kallsyms]             [k] do_user_addr_fault
+     0.17%  sh6bench  [kernel.kallsyms]             [k] srso_alias_return_thunk
+     0.17%  sh6bench  [kernel.kallsyms]             [k] cgroup_rstat_updated
+     0.16%  sh6bench  [kernel.kallsyms]             [k] __mem_cgroup_charge
+     0.15%  sh6bench  [kernel.kallsyms]             [k] __mod_memcg_lruvec_state
+     0.15%  sh6bench  [kernel.kallsyms]             [k] __mod_lruvec_state
+     0.15%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::FetchFromCentralCache(unsigned int, int, void* (*)(unsigned long))
+     0.14%  sh6bench  [kernel.kallsyms]             [k] native_irq_return_iret
+     0.13%  sh6bench  [kernel.kallsyms]             [k] rmqueue
+     0.13%  sh6bench  [kernel.kallsyms]             [k] get_mem_cgroup_from_mm
+     0.13%  sh6bench  [kernel.kallsyms]             [k] asm_exc_page_fault
+     0.12%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::SearchFreeAndLargeLists(unsigned long)
+     0.12%  sh6bench  [kernel.kallsyms]             [k] get_page_from_freelist
+     0.12%  sh6bench  [kernel.kallsyms]             [k] lock_vma_under_rcu
+     0.11%  sh6bench  [kernel.kallsyms]             [k] handle_pte_fault
+     0.11%  sh6bench  [kernel.kallsyms]             [k] __count_memcg_events
+     0.10%  sh6bench  [kernel.kallsyms]             [k] __alloc_pages
+     0.10%  sh6bench  [kernel.kallsyms]             [k] alloc_pages_mpol
+     0.10%  sh6bench  [kernel.kallsyms]             [k] mem_cgroup_commit_charge
+     0.10%  sh6bench  [kernel.kallsyms]             [k] __pte_offset_map_lock
+     0.09%  sh6bench  [kernel.kallsyms]             [k] __lruvec_stat_mod_folio
+     0.09%  sh6bench  [kernel.kallsyms]             [k] exc_page_fault
+     0.09%  sh6bench  [kernel.kallsyms]             [k] lru_gen_add_folio
+     0.08%  sh6bench  [kernel.kallsyms]             [k] mas_walk
+     0.08%  sh6bench  [kernel.kallsyms]             [k] audit_reset_context
+     0.08%  sh6bench  [kernel.kallsyms]             [k] __pte_offset_map
+     0.08%  sh6bench  [kernel.kallsyms]             [k] count_memcg_events.constprop.0
+     0.08%  sh6bench  [kernel.kallsyms]             [k] lru_add_fn
+     0.07%  sh6bench  [kernel.kallsyms]             [k] rmqueue_bulk
+     0.07%  sh6bench  [kernel.kallsyms]             [k] arch_exit_to_user_mode_prepare.constprop.0
+     0.07%  sh6bench  [kernel.kallsyms]             [k] free_unref_page_list
+     0.06%  sh6bench  [kernel.kallsyms]             [k] pte_offset_map_nolock
+     0.06%  sh6bench  [kernel.kallsyms]             [k] __rcu_read_unlock
+     0.06%  sh6bench  [kernel.kallsyms]             [k] folio_add_new_anon_rmap
+     0.06%  sh6bench  [kernel.kallsyms]             [k] sync_regs
+     0.06%  sh6bench  [kernel.kallsyms]             [k] post_alloc_hook
+     0.06%  sh6bench  [kernel.kallsyms]             [k] __mod_node_page_state
+     0.06%  sh6bench  [kernel.kallsyms]             [k] entry_SYSCALL_64
+     0.06%  sh6bench  [kernel.kallsyms]             [k] vma_alloc_folio
+     0.06%  sh6bench  [kernel.kallsyms]             [k] srso_alias_untrain_ret
+     0.05%  sh6bench  [kernel.kallsyms]             [k] zap_pte_range
+     0.05%  sh6bench  [kernel.kallsyms]             [k] irqentry_exit_to_user_mode
+     0.05%  sh6bench  [kernel.kallsyms]             [k] blk_cgroup_congested
+     0.05%  sh6bench  [kernel.kallsyms]             [k] alloc_anon_folio
+     0.05%  sh6bench  [kernel.kallsyms]             [k] uncharge_folio
+     0.05%  sh6bench  [kernel.kallsyms]             [k] error_entry
+     0.04%  sh6bench  [kernel.kallsyms]             [k] release_pages
+     0.04%  sh6bench  [kernel.kallsyms]             [k] try_charge_memcg
+     0.04%  sh6bench  [kernel.kallsyms]             [k] consume_stock
+     0.04%  sh6bench  [kernel.kallsyms]             [k] access_error
+     0.04%  sh6bench  [kernel.kallsyms]             [k] __free_one_page
+     0.04%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::ReleaseToSpans(void*)
+     0.04%  sh6bench  [kernel.kallsyms]             [k] __x64_sys_futex
+     0.04%  sh6bench  [kernel.kallsyms]             [k] __rcu_read_lock
+     0.04%  sh6bench  [kernel.kallsyms]             [k] __calc_delta.constprop.0
+     0.04%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::FetchFromOneSpansSafe(int, void**, void**)
+     0.04%  sh6bench  [kernel.kallsyms]             [k] _raw_spin_lock
+     0.04%  sh6bench  [kernel.kallsyms]             [k] folio_add_lru_vma
+     0.04%  sh6bench  [kernel.kallsyms]             [k] do_futex
+     0.04%  sh6bench  [kernel.kallsyms]             [k] get_futex_key
+     0.04%  sh6bench  [kernel.kallsyms]             [k] lru_gen_del_folio.constprop.0
+     0.03%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::Carve(tcmalloc::Span*, unsigned long)
+     0.03%  sh6bench  [kernel.kallsyms]             [k] syscall_exit_work
+     0.03%  sh6bench  [kernel.kallsyms]             [k] free_pcppages_bulk
+     0.03%  sh6bench  [kernel.kallsyms]             [k] scheduler_tick
+     0.03%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::PrependToFreeList(tcmalloc::Span*)
+     0.03%  sh6bench  [kernel.kallsyms]             [k] down_read_trylock
+     0.03%  sh6bench  [kernel.kallsyms]             [k] task_tick_fair
+     0.03%  sh6bench  [kernel.kallsyms]             [k] __rmqueue_pcplist
+     0.03%  sh6bench  [kernel.kallsyms]             [k] __irqentry_text_end
+     0.03%  sh6bench  libc.so.6                     [.] syscall
+     0.03%  sh6bench  [kernel.kallsyms]             [k] path_put
+     0.03%  sh6bench  [kernel.kallsyms]             [k] __update_load_avg_cfs_rq
+     0.03%  sh6bench  [kernel.kallsyms]             [k] irqentry_exit
+     0.03%  sh6bench  [kernel.kallsyms]             [k] __update_load_avg_se
+     0.03%  sh6bench  [kernel.kallsyms]             [k] update_curr
+     0.03%  sh6bench  [kernel.kallsyms]             [k] folio_batch_move_lru
+     0.03%  sh6bench  [kernel.kallsyms]             [k] percpu_counter_add_batch
+     0.03%  sh6bench  [kernel.kallsyms]             [k] memcg_check_events
+     0.03%  sh6bench  [kernel.kallsyms]             [k] policy_nodemask
+     0.02%  sh6bench  [kernel.kallsyms]             [k] __mem_cgroup_uncharge_list
+     0.02%  sh6bench  [kernel.kallsyms]             [k] folio_mapping
+     0.02%  sh6bench  [kernel.kallsyms]             [k] __sysvec_apic_timer_interrupt
+     0.02%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::DLL_Remove(tcmalloc::Span*)
+     0.02%  sh6bench  [kernel.kallsyms]             [k] syscall_exit_to_user_mode
+     0.02%  sh6bench  [kernel.kallsyms]             [k] irqentry_enter
+     0.02%  sh6bench  [kernel.kallsyms]             [k] set_ptes.constprop.0
+     0.02%  sh6bench  [kernel.kallsyms]             [k] syscall_exit_to_user_mode_prepare
+     0.02%  sh6bench  [kernel.kallsyms]             [k] futex_wake
+     0.02%  sh6bench  [kernel.kallsyms]             [k] entry_SYSCALL_64_after_hwframe
+     0.02%  sh6bench  [kernel.kallsyms]             [k] perf_adjust_freq_unthr_context
+     0.02%  sh6bench  [kernel.kallsyms]             [k] trigger_load_balance
+     0.02%  sh6bench  [kernel.kallsyms]             [k] trace_rss_stat
+     0.02%  sh6bench  [kernel.kallsyms]             [k] kthread_blkcg
+     0.02%  sh6bench  [kernel.kallsyms]             [k] x64_sys_call
+     0.02%  env       [kernel.kallsyms]             [k] srso_alias_safe_ret
+     0.02%  sh6bench  [kernel.kallsyms]             [k] do_syscall_64
+     0.02%  sh6bench  [kernel.kallsyms]             [k] update_rq_clock
+     0.02%  sh6bench  [kernel.kallsyms]             [k] pfn_pte
+     0.02%  sh6bench  [kernel.kallsyms]             [k] folio_remove_rmap_ptes
+     0.02%  sh6bench  [kernel.kallsyms]             [k] folio_add_lru
+     0.02%  sh6bench  [kernel.kallsyms]             [k] __hrtimer_run_queues
+     0.02%  sh6bench  [kernel.kallsyms]             [k] update_load_avg
+     0.02%  sh6bench  [kernel.kallsyms]             [k] vm_mmap_pgoff
+     0.02%  sh6bench  [kernel.kallsyms]             [k] try_to_wake_up
+     0.02%  sh6bench  [kernel.kallsyms]             [k] get_vma_policy
+     0.02%  sh6bench  [kernel.kallsyms]             [k] _find_first_bit
+     0.02%  sh6bench  [kernel.kallsyms]             [k] pte_mkwrite
+     0.02%  sh6bench  [kernel.kallsyms]             [k] unmap_vmas
+     0.02%  sh6bench  [kernel.kallsyms]             [k] update_curr_se
+     0.02%  sh6bench  [kernel.kallsyms]             [k] rwsem_optimistic_spin
+     0.02%  sh6bench  [kernel.kallsyms]             [k] __folio_throttle_swaprate
+     0.02%  sh6bench  [kernel.kallsyms]             [k] mem_cgroup_from_task
+     0.02%  sh6bench  [kernel.kallsyms]             [k] reweight_entity
+     0.02%  sh6bench  [kernel.kallsyms]             [k] hrtimer_active
+     0.02%  sh6bench  [kernel.kallsyms]             [k] pmd_val
+     0.02%  sh6bench  [kernel.kallsyms]             [k] rcu_sched_clock_irq
+     0.02%  sh6bench  ld-linux-x86-64.so.2          [.] _dl_relocate_object
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::SizeMap::Init()
+     0.01%  sh6bench  [kernel.kallsyms]             [k] hrtimer_run_queues
+     0.01%  sh6bench  [kernel.kallsyms]             [k] idr_alloc_u32
+     0.01%  sh6bench  [kernel.kallsyms]             [k] kernel_clone
+     0.01%  sh6bench  [kernel.kallsyms]             [k] change_protection
+     0.01%  sh6bench  [kernel.kallsyms]             [k] kfree
+     0.01%  sh6bench  [kernel.kallsyms]             [k] update_process_times
+     0.01%  sh6bench  [kernel.kallsyms]             [k] perf_event_task_tick
+     0.01%  sh6bench  [kernel.kallsyms]             [k] amd_clear_divider
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __audit_syscall_exit
+     0.01%  sh6bench  [kernel.kallsyms]             [k] ktime_get_update_offsets_now
+     0.01%  sh6bench  [kernel.kallsyms]             [k] page_counter_uncharge
+     0.01%  sh6bench  [kernel.kallsyms]             [k] futex_hash
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __x86_indirect_thunk_r14
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __memcg_slab_free_hook
+     0.01%  sh6bench  [kernel.kallsyms]             [k] perf_event_update_userpage
+     0.01%  sh6bench  [kernel.kallsyms]             [k] folio_prep_large_rmappable
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __hrtimer_next_event_base
+     0.01%  sh6bench  [kernel.kallsyms]             [k] account_process_tick
+     0.01%  sh6bench  [kernel.kallsyms]             [k] syscall_trace_enter
+     0.01%  sh6bench  [kernel.kallsyms]             [k] tick_program_event
+     0.01%  sh6bench  [kernel.kallsyms]             [k] acct_account_cputime
+     0.01%  sh6bench  [kernel.kallsyms]             [k] fpregs_assert_state_consistent
+     0.01%  sh6bench  [kernel.kallsyms]             [k] perf_iterate_ctx
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::New(unsigned long)
+     0.01%  sh6bench  [kernel.kallsyms]             [k] sched_clock_noinstr
+     0.01%  sh6bench  [kernel.kallsyms]             [k] page_counter_cancel
+     0.01%  sh6bench  [kernel.kallsyms]             [k] check_cpu_stall
+     0.01%  sh6bench  [kernel.kallsyms]             [k] syscall_return_via_sysret
+     0.01%  sh6bench  [kernel.kallsyms]             [k] _raw_spin_unlock_irqrestore
+     0.01%  sh6bench  [kernel.kallsyms]             [k] free_pages_and_swap_cache
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __mod_zone_page_state
+     0.01%  sh6bench  [kernel.kallsyms]             [k] timerqueue_add
+     0.01%  sh6bench  [kernel.kallsyms]             [k] arch_check_zapped_pte
+     0.01%  sh6bench  [kernel.kallsyms]             [k] ktime_get
+     0.01%  sh6bench  [kernel.kallsyms]             [k] rb_next
+     0.01%  sh6bench  [kernel.kallsyms]             [k] rcu_pending
+     0.01%  sh6bench  [kernel.kallsyms]             [k] update_min_vruntime
+     0.01%  sh6bench  [kernel.kallsyms]             [k] tick_nohz_highres_handler
+     0.01%  sh6bench  [kernel.kallsyms]             [k] rcu_core
+     0.01%  sh6bench  [kernel.kallsyms]             [k] irq_work_tick
+     0.01%  sh6bench  [kernel.kallsyms]             [k] perf_event_mmap_output
+     0.01%  sh6bench  [kernel.kallsyms]             [k] irq_enter_rcu
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __hrtimer_init
+     0.01%  sh6bench  [kernel.kallsyms]             [k] do_brk_flags
+     0.01%  sh6bench  [kernel.kallsyms]             [k] profile_tick
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] base::internal::SpinLockWake(int volatile*, bool)
+     0.01%  sh6bench  [kernel.kallsyms]             [k] inet_gro_receive
+     0.01%  sh6bench  [kernel.kallsyms]             [k] entry_SYSCALL_64_safe_stack
+     0.01%  sh6bench  [kernel.kallsyms]             [k] _raw_spin_unlock
+     0.01%  sh6bench  [kernel.kallsyms]             [k] raise_softirq
+     0.01%  sh6bench  [kernel.kallsyms]             [k] _copy_from_user
+     0.01%  sh6bench  [kernel.kallsyms]             [k] decay_load
+     0.01%  sh6bench  libc.so.6                     [.] __brk
+     0.01%  sh6bench  [kernel.kallsyms]             [k] cpu_util
+     0.01%  sh6bench  [kernel.kallsyms]             [k] hrtimer_interrupt
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __remove_hrtimer
+     0.01%  sh6bench  [kernel.kallsyms]             [k] cpuacct_charge
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] syscall@plt
+     0.01%  sh6bench  [kernel.kallsyms]             [k] update_cfs_group
+     0.01%  sh6bench  [kernel.kallsyms]             [k] pmd_huge
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::RemoveFromFreeList(tcmalloc::Span*)
+     0.01%  sh6bench  [kernel.kallsyms]             [k] up_read
+     0.01%  sh6bench  [kernel.kallsyms]             [k] avg_vruntime
+     0.01%  sh6bench  [kernel.kallsyms]             [k] pud_val
+     0.01%  sh6bench  [kernel.kallsyms]             [k] native_apic_mem_eoi
+     0.01%  sh6bench  [kernel.kallsyms]             [k] unroll_tree_refs
+     0.01%  sh6bench  [kernel.kallsyms]             [k] tick_sched_do_timer
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __enqueue_entity
+     0.01%  sh6bench  [kernel.kallsyms]             [k] pgd_none
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __audit_syscall_entry
+     0.01%  sh6bench  [kernel.kallsyms]             [k] native_set_pte
+     0.01%  sh6bench  [kernel.kallsyms]             [k] raw_spin_rq_lock_nested
+     0.01%  sh6bench  [kernel.kallsyms]             [k] mntput
+     0.01%  sh6bench  [kernel.kallsyms]             [k] account_system_time
+     0.01%  sh6bench  [kernel.kallsyms]             [k] _raw_spin_trylock
+     0.01%  sh6bench  [kernel.kallsyms]             [k] native_read_msr
+     0.01%  sh6bench  [kernel.kallsyms]             [k] sysvec_apic_timer_interrupt
+     0.01%  sh6bench  [kernel.kallsyms]             [k] mas_wr_store_entry.isra.0
+     0.01%  sh6bench  [kernel.kallsyms]             [k] sched_core_idle_cpu
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::DLL_Prepend(tcmalloc::Span*, tcmalloc::Span*)
+     0.01%  sh6bench  [kernel.kallsyms]             [k] native_sched_clock
+     0.01%  sh6bench  [kernel.kallsyms]             [k] ktime_add_safe
+     0.01%  sh6bench  [nf_conntrack]                [k] resolve_normal_ct
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __schedule
+     0.01%  sh6bench  [kernel.kallsyms]             [k] irq_work_run_list
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::NewSpan(unsigned long, unsigned long)
+     0.01%  sh6bench  [unknown]                     [k] 0xffffffffc02da592
+     0.01%  sh6bench  [kernel.kallsyms]             [k] page_counter_try_charge
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __raw_spin_lock_irqsave
+     0.01%  sh6bench  [kernel.kallsyms]             [k] p4d_offset
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::MergeIntoFreeList(tcmalloc::Span*)
+     0.01%  sh6bench  [kernel.kallsyms]             [k] __get_user_nocheck_4
+     0.01%  sh6bench  [kernel.kallsyms]             [k] irq_exit_rcu
+     0.01%  sh6bench  [kernel.kallsyms]             [k] clockevents_program_event
+     0.01%  sh6bench  [kernel.kallsyms]             [k] userfaultfd_unmap_complete
+     0.01%  sh6bench  [kernel.kallsyms]             [k] cpuacct_account_field
+     0.01%  sh6bench  [kernel.kallsyms]             [k] run_posix_cpu_timers
+     0.01%  sh6bench  [kernel.kallsyms]             [k] _raw_spin_lock_irqsave
+     0.01%  sh6bench  [kernel.kallsyms]             [k] timerqueue_del
+     0.01%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::AllocLarge(unsigned long)
+     0.00%  sh6bench  [kernel.kallsyms]             [k] psi_group_change
+     0.00%  sh6bench  [kernel.kallsyms]             [k] read_tsc
+     0.00%  sh6bench  [kernel.kallsyms]             [k] folio_add_file_rmap_ptes
+     0.00%  sh6bench  [kernel.kallsyms]             [k] free_unref_page_prepare
+     0.00%  sh6bench  [kernel.kallsyms]             [k] unmap_page_range
+     0.00%  sh6bench  [kernel.kallsyms]             [k] __get_user_8
+     0.00%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::Sampler::PickNextSamplingPoint()
+     0.00%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] perftools_pthread_setspecific(unsigned int, void*)
+     0.00%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::Init(unsigned long)
+     0.00%  env       [kernel.kallsyms]             [k] __rcu_read_unlock
+     0.00%  sh6bench  libtcmalloc_minimal.so.4.5.9  [.] TCMalloc_SystemAlloc(unsigned long, unsigned long*, unsigned long)
+     0.00%  sh6bench  [kernel.kallsyms]             [k] psi_task_switch
+     0.00%  sh6bench  [kernel.kallsyms]             [k] calculate_sigpending
+     0.00%  sh6bench  [kernel.kallsyms]             [k] restore_fpregs_from_fpstate
+     0.00%  sh6bench  [kernel.kallsyms]             [k] nmi_restore
+     0.00%  sh6bench  [kernel.kallsyms]             [k] blkcg_maybe_throttle_current
+     0.00%  sh6bench  [kernel.kallsyms]             [k] perf_pmu_nop_void
+     0.00%  sh6bench  [kernel.kallsyms]             [k] finish_task_switch.isra.0
+     0.00%  sh6bench  [kernel.kallsyms]             [k] pv_native_set_debugreg
+     0.00%  sh6bench  libc.so.6                     [.] clone3
+     0.00%  sh6bench  [kernel.kallsyms]             [k] recalc_sigpending
+     0.00%  sh6bench  [kernel.kallsyms]             [k] raw_spin_rq_unlock
+     0.00%  sh6bench  [kernel.kallsyms]             [k] __perf_event_task_sched_in
+     0.00%  sh6bench  [kernel.kallsyms]             [k] native_write_msr
+     0.00%  sh6bench  [kernel.kallsyms]             [k] perf_ibs_handle_irq
+     0.00%  perf-exe  [kernel.kallsyms]             [k] perf_event_update_userpage
+     0.00%  sh6bench  [kernel.kallsyms]             [k] perf_ctx_sched_task_cb
+     0.00%  sh6bench  [kernel.kallsyms]             [k] perf_ctx_enable
+     0.00%  sh6bench  [kernel.kallsyms]             [k] exc_nmi
+     0.00%  sh6bench  [kernel.kallsyms]             [k] sched_clock
+     0.00%  sh6bench  [kernel.kallsyms]             [k] ct_nmi_exit
+     0.00%  sh6bench  [kernel.kallsyms]             [k] perf_ibs_nmi_handler
+     0.00%  perf-exe  [kernel.kallsyms]             [k] native_sched_clock
+     0.00%  perf-exe  [kernel.kallsyms]             [k] native_write_msr
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#

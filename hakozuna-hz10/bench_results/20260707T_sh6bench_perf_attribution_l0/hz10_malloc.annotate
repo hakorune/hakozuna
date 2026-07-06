@@ -1,0 +1,343 @@
+ Percent |	Source code & Disassembly of libhz10.so for cycles:P (6938 samples, percent: local period)
+----------------------------------------------------------------------------------------------------------
+         :
+         :
+         :
+         : 3    Disassembly of section .text:
+         :
+         : 5    0000000000007340 <hz10_malloc>:
+         : 6    }
+         : 7    }
+         :
+         : 9    #endif /* HZ10_ENABLE_FRONT_CACHE */
+         :
+         : 11   void* hz10_malloc(size_t size) {
+    3.08 :   7340:   endbr64
+         : 13   if (size == 0u) {
+    1.84 :   7344:   test   %rdi,%rdi
+    0.00 :   7347:   je     7578 <hz10_malloc+0x238>
+         : 16   return NULL;
+         : 17   }
+         : 18   if (size > (size_t)HZ10_PAGE_QUANTUM) {
+    1.80 :   734d:   cmp    $0x10000,%rdi
+    0.00 :   7354:   ja     74a8 <hz10_malloc+0x168>
+         : 21   void* hz10_malloc(size_t size) {
+    2.96 :   735a:   push   %r14
+    2.83 :   735c:   push   %r13
+    1.73 :   735e:   push   %r12
+    2.49 :   7360:   push   %rbp
+    2.97 :   7361:   push   %rbx
+         : 27   * larger than the biggest class (HZ10_PAGE_QUANTUM). */
+         : 28   static inline uint32_t hz10_size_class_for(size_t size) {
+         : 29   if (size == 0u || size > (size_t)HZ10_PAGE_QUANTUM) {
+         : 30   return HZ10_CLASS_COUNT;
+         : 31   }
+         : 32   if (size <= 16u) {
+    2.93 :   7362:   cmp    $0x10,%rdi
+    0.00 :   7366:   jbe    73d0 <hz10_malloc+0x90>
+         : 35   return 0u;
+         : 36   }
+         : 37   if (size <= 32u) {
+    0.99 :   7368:   cmp    $0x20,%rdi
+    0.00 :   736c:   jbe    74b0 <hz10_malloc+0x170>
+         : 40   return 1u;
+         : 41   }
+         : 42   #if HZ10_ENABLE_FINE_SIZE_CLASSES
+         : 43   if (size <= 48u) {
+    1.18 :   7372:   cmp    $0x30,%rdi
+    0.00 :   7376:   jbe    7580 <hz10_malloc+0x240>
+         : 46   return 2u;
+         : 47   }
+         : 48   if (size <= 64u) {
+    0.52 :   737c:   cmp    $0x40,%rdi
+    0.00 :   7380:   jbe    75e8 <hz10_malloc+0x2a8>
+         : 51   * the 64-octave to class 7. */
+         : 52   if (size <= 8192u) {
+         : 53   unsigned long long rounded = (unsigned long long)size - 1ull;
+         : 54   unsigned bits = 64u - (unsigned)__builtin_clzll(rounded);
+         : 55   unsigned e = bits - 1u; /* 6..12 */
+         : 56   uint64_t low_pow = (uint64_t)1u << e;
+    0.39 :   7386:   movabs $0x8000000000000000,%rdx
+         : 58   if (size == 0u || size > (size_t)HZ10_PAGE_QUANTUM) {
+    0.72 :   7390:   lea    -0x1(%rdi),%rsi
+         : 60   unsigned bits = 64u - (unsigned)__builtin_clzll(rounded);
+    2.69 :   7394:   bsr    %rsi,%rax
+    0.19 :   7398:   xor    $0x3f,%rax
+         : 63   uint64_t low_pow = (uint64_t)1u << e;
+    0.19 :   739c:   mov    %eax,%ecx
+    0.26 :   739e:   shr    %cl,%rdx
+         : 66   if (size <= 8192u) {
+    0.25 :   73a1:   cmp    $0x2000,%rdi
+    0.00 :   73a8:   jbe    75b0 <hz10_malloc+0x270>
+         : 69   unsigned e = bits - 1u; /* 13..15 */
+         :
+         : 71   uint64_t low_pow = (uint64_t)1u << e;             /* 2^e */
+         : 72   uint64_t half_point = low_pow + (low_pow >> 1u);  /* 1.5 * 2^e */
+         : 73   uint32_t octave_pos = e - 13u;                    /* e=13 -> 0 */
+         : 74   uint32_t base_index = 32u + octave_pos * 2u;      /* 1.5x class */
+    0.00 :   73ae:   mov    $0x42,%r13d
+    0.00 :   73b4:   sub    %eax,%r13d
+         : 77   uint64_t half_point = low_pow + (low_pow >> 1u);  /* 1.5 * 2^e */
+    0.00 :   73b7:   mov    %rdx,%rax
+    0.00 :   73ba:   shr    %rax
+         : 80   uint32_t base_index = 32u + octave_pos * 2u;      /* 1.5x class */
+    0.00 :   73bd:   add    %r13d,%r13d
+         : 82   uint64_t half_point = low_pow + (low_pow >> 1u);  /* 1.5 * 2^e */
+    0.00 :   73c0:   add    %rdx,%rax
+         :
+         : 85   return (size <= (size_t)half_point) ? base_index : base_index + 1u;
+    0.00 :   73c3:   cmp    %rdi,%rax
+    0.00 :   73c6:   adc    $0x0,%r13d
+    0.00 :   73ca:   jmp    73d3 <hz10_malloc+0x93>
+    0.00 :   73cc:   nopl   0x0(%rax)
+         : 90   return 0u;
+    2.32 :   73d0:   xor    %r13d,%r13d
+         : 92   Hz10ThreadOwner* hz10_current_owner;
+         : 93   __attribute__((visibility("hidden"))) Hz10ThreadOwner*
+         : 94   hz10_public_entry_current_owner_slow(void);
+         :
+         : 96   static inline Hz10ThreadOwner* hz10_public_entry_current_owner(void) {
+         : 97   Hz10ThreadOwner* owner = hz10_current_owner;
+    1.78 :   73d3:   mov    0x3bde(%rip),%rax        # afb8 <_DYNAMIC+0x1e8>
+    1.88 :   73da:   mov    %fs:(%rax),%rbx
+         : 100  return owner ? owner : hz10_public_entry_current_owner_slow();
+    2.29 :   73de:   test   %rbx,%rbx
+    0.00 :   73e1:   je     7488 <hz10_malloc+0x148>
+         : 103  if (state->active) {
+    1.69 :   73e7:   mov    %r13d,%r12d
+    1.91 :   73ea:   lea    (%r12,%r12,2),%rax
+    1.84 :   73ee:   lea    (%r12,%rax,4),%rbp
+    1.68 :   73f2:   shl    $0x5,%rbp
+    1.83 :   73f6:   lea    (%rbx,%rbp,1),%r14
+    2.07 :   73fa:   mov    0x8(%r14),%rdi
+    1.92 :   73fe:   test   %rdi,%rdi
+    0.00 :   7401:   je     743d <hz10_malloc+0xfd>
+         : 112  uintptr_t* marker = hz10_freelist_page_slot_marker_ptr(page, ptr);
+         : 113  return marker && *marker == HZ10_FREELIST_LOCAL_MARKER;
+         : 114  }
+         :
+         : 116  static inline void* hz10_freelist_page_alloc(Hz10FreelistPage* page) {
+         : 117  void* slot = page->local_free_head;
+    2.47 :   7403:   mov    0x8(%rdi),%rax
+         : 119  if (!slot) {
+    2.03 :   7407:   test   %rax,%rax
+    0.00 :   740a:   je     7430 <hz10_malloc+0xf0>
+         : 122  return NULL;
+         : 123  }
+         : 124  page->local_free_head = *(void**)slot;
+    2.88 :   740c:   mov    (%rax),%rdx
+         : 126  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    2.57 :   740f:   cmpl   $0xf,0x10(%rdi)
+         : 128  page->local_free_head = *(void**)slot;
+    2.27 :   7413:   mov    %rdx,0x8(%rdi)
+         : 130  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    3.26 :   7417:   jbe    7421 <hz10_malloc+0xe1>
+         : 132  *marker = 0u;
+    1.80 :   7419:   movq   $0x0,0x8(%rax)
+         : 134  hz10_freelist_page_clear_local_free_marker(page, slot);
+         : 135  page->free_count -= 1u;
+    5.94 :   7421:   subl   $0x1,0x18(%rdi)
+         : 137  }
+         : 138  return hz10_front_cache_refill_and_alloc(class_id, fc);
+         : 139  #else
+         : 140  return hz10_public_entry_alloc_from_page_layer(class_id);
+         : 141  #endif
+         : 142  }
+    3.54 :   7425:   pop    %rbx
+    2.64 :   7426:   pop    %rbp
+    3.65 :   7427:   pop    %r12
+    3.06 :   7429:   pop    %r13
+    3.44 :   742b:   pop    %r14
+    4.48 :   742d:   ret
+    0.00 :   742e:   xchg   %ax,%ax
+         : 150  uint32_t merged = hz10_page_drain_remote(state->active);
+    0.13 :   7430:   call   3570 <hz10_page_drain_remote@plt>
+         : 152  if (merged > 0u) {
+    0.01 :   7435:   test   %eax,%eax
+    0.00 :   7437:   jne    7590 <hz10_malloc+0x250>
+         : 155  Hz10FreelistPage* found = hz10_class_pages_find_with_capacity(&state->list);
+    0.00 :   743d:   lea    0x10(%rbx,%rbp,1),%rbp
+    0.00 :   7442:   mov    %rbp,%rdi
+    0.01 :   7445:   call   3810 <hz10_class_pages_find_with_capacity@plt>
+    0.01 :   744a:   mov    %rax,%rdx
+         : 160  if (found) {
+    0.01 :   744d:   test   %rax,%rax
+    0.00 :   7450:   je     74c0 <hz10_malloc+0x180>
+         : 163  state->active = harvested;
+    0.00 :   7452:   mov    %rdx,0x8(%r14)
+         : 165  void* slot = page->local_free_head;
+    0.00 :   7456:   mov    0x8(%rdx),%rax
+         : 167  if (!slot) {
+    0.00 :   745a:   test   %rax,%rax
+    0.00 :   745d:   je     7499 <hz10_malloc+0x159>
+         : 170  page->local_free_head = *(void**)slot;
+    0.00 :   745f:   mov    (%rax),%rcx
+         : 172  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    0.01 :   7462:   cmpl   $0xf,0x10(%rdx)
+         : 174  page->local_free_head = *(void**)slot;
+    0.01 :   7466:   mov    %rcx,0x8(%rdx)
+         : 176  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    0.00 :   746a:   jbe    7474 <hz10_malloc+0x134>
+         : 178  *marker = 0u;
+    0.00 :   746c:   movq   $0x0,0x8(%rax)
+         : 180  page->free_count -= 1u;
+    0.04 :   7474:   subl   $0x1,0x18(%rdx)
+         : 182  }
+    0.00 :   7478:   pop    %rbx
+    0.00 :   7479:   pop    %rbp
+    0.01 :   747a:   pop    %r12
+    0.00 :   747c:   pop    %r13
+    0.00 :   747e:   pop    %r14
+    0.01 :   7480:   ret
+    0.00 :   7481:   nopl   0x0(%rax)
+    0.00 :   7488:   call   5a70 <hz10_public_entry_current_owner_slow>
+    0.00 :   748d:   mov    %rax,%rbx
+         : 192  if (!owner) {
+    0.00 :   7490:   test   %rax,%rax
+    0.00 :   7493:   jne    73e7 <hz10_malloc+0xa7>
+         : 195  return NULL;
+    0.00 :   7499:   xor    %eax,%eax
+         : 197  }
+    0.00 :   749b:   pop    %rbx
+    0.00 :   749c:   pop    %rbp
+    0.00 :   749d:   pop    %r12
+    0.00 :   749f:   pop    %r13
+    0.00 :   74a1:   pop    %r14
+    0.00 :   74a3:   ret
+    0.00 :   74a4:   nopl   0x0(%rax)
+         : 205  return hz10_large_alloc(size);
+    0.00 :   74a8:   jmp    3790 <hz10_large_alloc@plt>
+    0.00 :   74ad:   nopl   (%rax)
+         : 208  return 1u;
+    0.62 :   74b0:   mov    $0x1,%r13d
+    0.53 :   74b6:   jmp    73d3 <hz10_malloc+0x93>
+    0.00 :   74bb:   nopl   0x0(%rax,%rax,1)
+         : 212  hz10_class_pages_harvest_retired_capacity(&state->list);
+    0.00 :   74c0:   mov    %rbp,%rdi
+    0.00 :   74c3:   call   3610 <hz10_class_pages_harvest_retired_capacity@plt>
+    0.00 :   74c8:   mov    %rax,%rdx
+         : 216  if (harvested) {
+    0.00 :   74cb:   test   %rax,%rax
+    0.00 :   74ce:   jne    7452 <hz10_malloc+0x112>
+         : 219  hz10_public_entry_try_adopt_orphan_active(class_id, owner);
+    0.00 :   74d0:   mov    %rbx,%rsi
+    0.00 :   74d3:   mov    %r13d,%edi
+    0.00 :   74d6:   call   38a0 <hz10_public_entry_try_adopt_orphan_active@plt>
+    0.00 :   74db:   mov    %rax,%rdx
+         : 224  if (adopted) {
+    0.00 :   74de:   test   %rax,%rax
+    0.00 :   74e1:   je     74f8 <hz10_malloc+0x1b8>
+         : 227  state->active = adopted;
+    0.00 :   74e3:   mov    %rax,0x8(%r14)
+         : 229  void* slot = page->local_free_head;
+    0.00 :   74e7:   mov    0x8(%rax),%rax
+         : 231  if (!slot) {
+    0.00 :   74eb:   test   %rax,%rax
+    0.00 :   74ee:   jne    745f <hz10_malloc+0x11f>
+    0.00 :   74f4:   nopl   0x0(%rax)
+         :
+         : 236  static inline uint32_t hz10_size_class_slot_size(uint32_t class_id) {
+         : 237  if (class_id >= HZ10_CLASS_COUNT) {
+         : 238  return 0u;
+         : 239  }
+         : 240  return hz10_size_class_table[class_id];
+    0.00 :   74f8:   mov    0x3ad9(%rip),%rax        # afd8 <hz10_size_class_table@@Base+0x2818>
+         : 242  }
+         :
+         : 244  static inline uint32_t hz10_size_class_slot_count(uint32_t class_id) {
+         : 245  uint32_t slot_size = hz10_size_class_slot_size(class_id);
+         : 246  if (slot_size == 0u) {
+         : 247  return 0u;
+    0.00 :   74ff:   xor    %esi,%esi
+         : 249  return hz10_size_class_table[class_id];
+    0.00 :   7501:   mov    (%rax,%r12,4),%edi
+         : 251  if (slot_size == 0u) {
+    0.00 :   7505:   test   %edi,%edi
+    0.00 :   7507:   je     7514 <hz10_malloc+0x1d4>
+         : 254  }
+         : 255  return HZ10_PAGE_QUANTUM / slot_size;
+    0.00 :   7509:   mov    $0x10000,%eax
+    0.00 :   750e:   xor    %edx,%edx
+    0.00 :   7510:   div    %edi
+    0.00 :   7512:   mov    %eax,%esi
+         : 260  hz10_pooled_page_create_with_owner(slot_size, slot_count);
+    0.00 :   7514:   call   3910 <hz10_pooled_page_create_with_owner@plt>
+    0.00 :   7519:   mov    %rax,%r12
+         : 263  if (!fresh) {
+    0.00 :   751c:   test   %rax,%rax
+    0.00 :   751f:   je     7499 <hz10_malloc+0x159>
+         : 266  hz10_class_pages_add(&state->list, fresh);
+    0.00 :   7525:   mov    %r12,%rsi
+    0.00 :   7528:   mov    %rbp,%rdi
+         : 269  atomic_store_explicit(&page->owner_thread_token, token,
+    0.00 :   752b:   mov    (%rbx),%rax
+    0.00 :   752e:   mov    %rax,0x30(%r12)
+         : 272  page->class_id = class_id;
+    0.00 :   7533:   mov    %r13d,0x20(%r12)
+    0.00 :   7538:   call   3750 <hz10_class_pages_add@plt>
+         : 275  void* slot = page->local_free_head;
+    0.00 :   753d:   mov    0x8(%r12),%rax
+         : 277  state->active = fresh;
+    0.00 :   7542:   mov    %r12,0x8(%r14)
+         : 279  if (!slot) {
+    0.00 :   7546:   test   %rax,%rax
+    0.00 :   7549:   je     7499 <hz10_malloc+0x159>
+         : 282  page->local_free_head = *(void**)slot;
+    0.00 :   754f:   mov    (%rax),%rdx
+         : 284  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    0.00 :   7552:   cmpl   $0xf,0x10(%r12)
+         : 286  page->local_free_head = *(void**)slot;
+    0.00 :   7558:   mov    %rdx,0x8(%r12)
+         : 288  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    0.00 :   755d:   jbe    7567 <hz10_malloc+0x227>
+         : 290  *marker = 0u;
+    0.00 :   755f:   movq   $0x0,0x8(%rax)
+         : 292  page->free_count -= 1u;
+    0.00 :   7567:   subl   $0x1,0x18(%r12)
+         : 294  return slot;
+    0.00 :   756d:   jmp    7425 <hz10_malloc+0xe5>
+    0.00 :   7572:   nopw   0x0(%rax,%rax,1)
+         : 297  return NULL;
+    0.00 :   7578:   xor    %eax,%eax
+         : 299  }
+    0.00 :   757a:   ret
+    0.00 :   757b:   nopl   0x0(%rax,%rax,1)
+         : 302  return 2u;
+    0.39 :   7580:   mov    $0x2,%r13d
+    0.19 :   7586:   jmp    73d3 <hz10_malloc+0x93>
+    0.00 :   758b:   nopl   0x0(%rax,%rax,1)
+         : 306  ptr = hz10_freelist_page_alloc(state->active);
+    0.00 :   7590:   mov    0x8(%r14),%rdx
+         : 308  void* slot = page->local_free_head;
+    0.00 :   7594:   mov    0x8(%rdx),%rax
+         : 310  if (!slot) {
+    0.00 :   7598:   test   %rax,%rax
+    0.00 :   759b:   jne    745f <hz10_malloc+0x11f>
+    0.00 :   75a1:   jmp    743d <hz10_malloc+0xfd>
+    0.00 :   75a6:   cs nopw 0x0(%rax,%rax,1)
+         : 315  uint64_t quarter = low_pow >> 2u;
+    0.13 :   75b0:   mov    %rdx,%rcx
+    0.10 :   75b3:   shr    $0x2,%rcx
+         : 318  (uint32_t)((delta + quarter - 1u) >> quarter_shift);
+    0.14 :   75b7:   sub    %rdx,%rcx
+    0.24 :   75ba:   lea    (%rcx,%rsi,1),%rdx
+         : 321  unsigned quarter_shift = e - 2u;
+    0.38 :   75be:   mov    $0x3d,%ecx
+    0.20 :   75c3:   sub    %eax,%ecx
+         : 324  (uint32_t)((delta + quarter - 1u) >> quarter_shift);
+    0.41 :   75c5:   shr    %cl,%rdx
+         : 326  uint32_t base_index = 3u + (e - 6u) * 4u;
+    0.24 :   75c8:   mov    $0x39,%ecx
+    0.26 :   75cd:   sub    %eax,%ecx
+         : 329  return base_index + step;
+    0.26 :   75cf:   lea    0x3(%rdx,%rcx,4),%r13d
+         : 331  if (class_id >= HZ10_CLASS_COUNT) {
+    0.04 :   75d4:   cmp    $0x25,%r13d
+    0.00 :   75d8:   jbe    73d3 <hz10_malloc+0x93>
+         : 334  return NULL;
+    0.00 :   75de:   xor    %eax,%eax
+    0.00 :   75e0:   jmp    749b <hz10_malloc+0x15b>
+    0.00 :   75e5:   nopl   (%rax)
+         : 338  return 3u;
+    0.12 :   75e8:   mov    $0x3,%r13d
+    0.23 :   75ee:   jmp    73d3 <hz10_malloc+0x93>

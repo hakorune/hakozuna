@@ -1,0 +1,210 @@
+# To display the perf.data header info, please use --header/--header-only options.
+#
+#
+# Total Lost Samples: 0
+#
+# Samples: 3K of event 'cycles:P'
+# Event count (approx.): 2018012907
+#
+# Overhead  Command  Shared Object                 Symbol
+# ........  .......  ............................  .....................................................................................................
+#
+    37.96%  mstress  mstress                       [.] stress
+    25.55%  mstress  mstress                       [.] alloc_items
+     2.93%  mstress  [kernel.kallsyms]             [k] clear_page_erms
+     2.45%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::ReleaseToSpans(void*)
+     1.71%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::FetchFromOneSpans(int, void**, void**)
+     1.58%  mstress  libtcmalloc_minimal.so.4.5.9  [.] operator delete[](void*)
+     1.39%  mstress  libtcmalloc_minimal.so.4.5.9  [.] SpinLock::SpinLoop()
+     1.00%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tc_malloc
+     0.92%  mstress  [kernel.kallsyms]             [k] cgroup_rstat_updated
+     0.83%  mstress  [kernel.kallsyms]             [k] srso_alias_safe_ret
+     0.83%  mstress  [kernel.kallsyms]             [k] __handle_mm_fault
+     0.71%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::ReleaseToCentralCache(tcmalloc::ThreadCache::FreeList*, unsigned int, int)
+     0.70%  mstress  [kernel.kallsyms]             [k] __mod_lruvec_state
+     0.66%  mstress  [kernel.kallsyms]             [k] __mod_memcg_lruvec_state
+     0.65%  mstress  [kernel.kallsyms]             [k] do_anonymous_page
+     0.58%  mstress  [kernel.kallsyms]             [k] get_page_from_freelist
+     0.54%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::ReleaseListToSpans(void*)
+     0.51%  mstress  [kernel.kallsyms]             [k] srso_alias_return_thunk
+     0.51%  mstress  [kernel.kallsyms]             [k] native_queued_spin_lock_slowpath
+     0.48%  mstress  [kernel.kallsyms]             [k] handle_mm_fault
+     0.47%  mstress  [kernel.kallsyms]             [k] asm_exc_page_fault
+     0.44%  mstress  [kernel.kallsyms]             [k] post_alloc_hook
+     0.44%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::RemoveRange(void**, void**, int)
+     0.43%  mstress  [kernel.kallsyms]             [k] mem_cgroup_commit_charge
+     0.42%  mstress  [kernel.kallsyms]             [k] __lruvec_stat_mod_folio
+     0.42%  mstress  [kernel.kallsyms]             [k] __mem_cgroup_charge
+     0.41%  mstress  [kernel.kallsyms]             [k] vma_alloc_folio
+     0.41%  mstress  [kernel.kallsyms]             [k] do_user_addr_fault
+     0.40%  mstress  [kernel.kallsyms]             [k] __alloc_pages
+     0.39%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::FetchFromCentralCache(unsigned int, int, void* (*)(unsigned long))
+     0.38%  mstress  [kernel.kallsyms]             [k] native_irq_return_iret
+     0.34%  mstress  [kernel.kallsyms]             [k] lru_add_fn
+     0.31%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::InsertRange(void*, void*, int)
+     0.31%  mstress  [kernel.kallsyms]             [k] blk_cgroup_congested
+     0.31%  mstress  [kernel.kallsyms]             [k] __pte_offset_map
+     0.30%  mstress  [kernel.kallsyms]             [k] __free_one_page
+     0.29%  mstress  [kernel.kallsyms]             [k] rmqueue
+     0.28%  mstress  [kernel.kallsyms]             [k] entry_SYSCALL_64
+     0.28%  mstress  [kernel.kallsyms]             [k] try_charge_memcg
+     0.28%  mstress  mstress                       [.] free@plt
+     0.27%  mstress  [kernel.kallsyms]             [k] lock_vma_under_rcu
+     0.27%  mstress  [kernel.kallsyms]             [k] __mod_node_page_state
+     0.26%  mstress  [kernel.kallsyms]             [k] get_mem_cgroup_from_mm
+     0.26%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::Populate()
+     0.25%  mstress  [kernel.kallsyms]             [k] irqentry_exit
+     0.25%  mstress  [kernel.kallsyms]             [k] __count_memcg_events
+     0.25%  mstress  [kernel.kallsyms]             [k] __pte_offset_map_lock
+     0.24%  mstress  [kernel.kallsyms]             [k] alloc_pages_mpol
+     0.23%  mstress  [kernel.kallsyms]             [k] lru_gen_add_folio
+     0.23%  mstress  [kernel.kallsyms]             [k] handle_pte_fault
+     0.21%  mstress  [kernel.kallsyms]             [k] count_memcg_events.constprop.0
+     0.20%  mstress  [kernel.kallsyms]             [k] uncharge_folio
+     0.19%  mstress  [kernel.kallsyms]             [k] lru_gen_del_folio.constprop.0
+     0.19%  mstress  [kernel.kallsyms]             [k] arch_exit_to_user_mode_prepare.constprop.0
+     0.18%  mstress  [kernel.kallsyms]             [k] exc_page_fault
+     0.18%  mstress  [kernel.kallsyms]             [k] zap_pte_range
+     0.17%  mstress  [kernel.kallsyms]             [k] rwsem_optimistic_spin
+     0.17%  mstress  [kernel.kallsyms]             [k] rmqueue_bulk
+     0.16%  mstress  [kernel.kallsyms]             [k] policy_nodemask
+     0.15%  mstress  libc.so.6                     [.] syscall
+     0.15%  mstress  mstress                       [.] malloc@plt
+     0.14%  mstress  [kernel.kallsyms]             [k] irqentry_exit_to_user_mode
+     0.14%  mstress  [kernel.kallsyms]             [k] sync_regs
+     0.13%  mstress  [kernel.kallsyms]             [k] _raw_spin_trylock
+     0.13%  mstress  [kernel.kallsyms]             [k] __rcu_read_unlock
+     0.13%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::SearchFreeAndLargeLists(unsigned long)
+     0.13%  mstress  [kernel.kallsyms]             [k] __rmqueue_pcplist
+     0.12%  mstress  [kernel.kallsyms]             [k] mas_walk
+     0.11%  mstress  libc.so.6                     [.] __memset_avx2_unaligned_erms
+     0.10%  mstress  [kernel.kallsyms]             [k] alloc_anon_folio
+     0.10%  mstress  [kernel.kallsyms]             [k] error_entry
+     0.10%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::RegisterSizeClass(tcmalloc::Span*, unsigned int)
+     0.10%  mstress  [kernel.kallsyms]             [k] folio_add_lru_vma
+     0.10%  mstress  [kernel.kallsyms]             [k] consume_stock
+     0.10%  mstress  [kernel.kallsyms]             [k] free_unref_page_list
+     0.10%  mstress  [kernel.kallsyms]             [k] irqentry_enter
+     0.10%  mstress  [kernel.kallsyms]             [k] free_unref_page_prepare
+     0.09%  mstress  [kernel.kallsyms]             [k] folio_add_lru
+     0.09%  mstress  [kernel.kallsyms]             [k] folio_batch_move_lru
+     0.08%  mstress  [kernel.kallsyms]             [k] folio_prep_large_rmappable
+     0.08%  mstress  [kernel.kallsyms]             [k] release_pages
+     0.08%  mstress  [kernel.kallsyms]             [k] __update_load_avg_se
+     0.07%  mstress  [kernel.kallsyms]             [k] __rcu_read_lock
+     0.07%  mstress  [kernel.kallsyms]             [k] __irqentry_text_end
+     0.07%  mstress  [kernel.kallsyms]             [k] asm_sysvec_apic_timer_interrupt
+     0.07%  mstress  [kernel.kallsyms]             [k] run_posix_cpu_timers
+     0.07%  mstress  [kernel.kallsyms]             [k] sched_use_asym_prio
+     0.07%  mstress  [kernel.kallsyms]             [k] perf_adjust_freq_unthr_context
+     0.07%  env      [kernel.kallsyms]             [k] srso_alias_safe_ret
+     0.07%  mstress  [kernel.kallsyms]             [k] read_tsc
+     0.07%  mstress  [kernel.kallsyms]             [k] reweight_entity
+     0.07%  mstress  [kernel.kallsyms]             [k] amd_clear_divider
+     0.07%  mstress  [kernel.kallsyms]             [k] pte_mkwrite
+     0.07%  mstress  [kernel.kallsyms]             [k] task_tick_fair
+     0.06%  mstress  [kernel.kallsyms]             [k] memcg_check_events
+     0.06%  mstress  [kernel.kallsyms]             [k] set_pte_range
+     0.06%  mstress  [kernel.kallsyms]             [k] __get_user_8
+     0.06%  mstress  [kernel.kallsyms]             [k] __next_zones_zonelist
+     0.06%  mstress  ld-linux-x86-64.so.2          [.] _dl_relocate_object
+     0.06%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::CentralFreeList::MakeCacheSpace()
+     0.06%  mstress  [kernel.kallsyms]             [k] folio_add_new_anon_rmap
+     0.06%  mstress  ld-linux-x86-64.so.2          [.] _dl_lookup_symbol_x
+     0.06%  env      [kernel.kallsyms]             [k] __x64_sys_getrandom
+     0.06%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::AllocLarge(unsigned long)
+     0.06%  mstress  [kernel.kallsyms]             [k] audit_reset_context
+     0.06%  mstress  [kernel.kallsyms]             [k] up_read
+     0.05%  mstress  [kernel.kallsyms]             [k] rcu_pending
+     0.05%  mstress  [kernel.kallsyms]             [k] inherit_event.constprop.0
+     0.05%  mstress  [kernel.kallsyms]             [k] free_pages_and_swap_cache
+     0.05%  mstress  [kernel.kallsyms]             [k] psi_group_change
+     0.05%  mstress  [kernel.kallsyms]             [k] free_pcppages_bulk
+     0.05%  mstress  [kernel.kallsyms]             [k] raise_softirq
+     0.05%  mstress  [kernel.kallsyms]             [k] rcu_note_context_switch
+     0.05%  mstress  [kernel.kallsyms]             [k] ktime_get
+     0.04%  mstress  [kernel.kallsyms]             [k] __memcg_kmem_charge_page
+     0.04%  mstress  [kernel.kallsyms]             [k] dequeue_task_fair
+     0.04%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::NewSpan(unsigned long, unsigned long)
+     0.04%  mstress  [kernel.kallsyms]             [k] alloc_perf_context
+     0.04%  mstress  [kernel.kallsyms]             [k] schedule
+     0.04%  mstress  [kernel.kallsyms]             [k] pud_val
+     0.04%  mstress  [kernel.kallsyms]             [k] __audit_syscall_entry
+     0.04%  mstress  [kernel.kallsyms]             [k] cpuacct_account_field
+     0.04%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::Carve(tcmalloc::Span*, unsigned long)
+     0.04%  mstress  [kernel.kallsyms]             [k] sched_clock
+     0.04%  mstress  [kernel.kallsyms]             [k] __perf_event_task_sched_in
+     0.04%  mstress  [kernel.kallsyms]             [k] __cgroup_account_cputime_field
+     0.04%  mstress  [kernel.kallsyms]             [k] acct_account_cputime
+     0.04%  mstress  [kernel.kallsyms]             [k] rb_erase
+     0.04%  mstress  [kernel.kallsyms]             [k] obj_cgroup_uncharge
+     0.04%  mstress  [kernel.kallsyms]             [k] lapic_next_event
+     0.04%  mstress  [kernel.kallsyms]             [k] __folio_throttle_swaprate
+     0.03%  mstress  [kernel.kallsyms]             [k] update_load_avg
+     0.03%  mstress  [kernel.kallsyms]             [k] __raw_spin_lock_irqsave
+     0.03%  mstress  [kernel.kallsyms]             [k] folio_remove_rmap_ptes
+     0.03%  mstress  [kernel.kallsyms]             [k] task_work_run
+     0.03%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::Scavenge()
+     0.03%  mstress  [kernel.kallsyms]             [k] access_error
+     0.03%  mstress  [kernel.kallsyms]             [k] __tlb_remove_page_size
+     0.03%  mstress  [kernel.kallsyms]             [k] pte_offset_map_nolock
+     0.03%  mstress  [kernel.kallsyms]             [k] futex_wake
+     0.03%  mstress  [kernel.kallsyms]             [k] update_cfs_group
+     0.03%  mstress  mstress                       [.] main
+     0.03%  mstress  [kernel.kallsyms]             [k] run_rebalance_domains
+     0.03%  mstress  [kernel.kallsyms]             [k] set_ptes.constprop.0
+     0.03%  mstress  [kernel.kallsyms]             [k] sched_clock_tick
+     0.03%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::MergeIntoFreeList(tcmalloc::Span*)
+     0.03%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::PageHeap::IncrementalScavenge(unsigned long)
+     0.03%  mstress  [kernel.kallsyms]             [k] __cgroup_account_cputime
+     0.03%  mstress  [kernel.kallsyms]             [k] get_vma_policy
+     0.03%  mstress  [kernel.kallsyms]             [k] kthread_blkcg
+     0.03%  mstress  [kernel.kallsyms]             [k] kmem_cache_free
+     0.03%  mstress  [kernel.kallsyms]             [k] sched_clock_noinstr
+     0.03%  mstress  libc.so.6                     [.] __libc_thread_freeres
+     0.03%  mstress  [kernel.kallsyms]             [k] cond_accept_memory
+     0.03%  mstress  [kernel.kallsyms]             [k] hrtimer_interrupt
+     0.03%  mstress  [kernel.kallsyms]             [k] _copy_from_user
+     0.03%  mstress  [kernel.kallsyms]             [k] default_send_IPI_single_phys
+     0.03%  mstress  [kernel.kallsyms]             [k] mas_next_slot
+     0.02%  mstress  [kernel.kallsyms]             [k] tick_sched_do_timer
+     0.02%  mstress  ld-linux-x86-64.so.2          [.] _dl_runtime_resolve_xsavec
+     0.01%  env      [kernel.kallsyms]             [k] obj_cgroup_uncharge_pages
+     0.00%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::CreateCacheIfNecessary()
+     0.00%  mstress  libc.so.6                     [.] __sbrk
+     0.00%  mstress  [kernel.kallsyms]             [k] kfree
+     0.00%  mstress  [kernel.kallsyms]             [k] entry_SYSCALL_64_after_hwframe
+     0.00%  mstress  [kernel.kallsyms]             [k] native_set_pte
+     0.00%  mstress  libtcmalloc_minimal.so.4.5.9  [.] tcmalloc::ThreadCache::Init(unsigned long)
+     0.00%  mstress  [kernel.kallsyms]             [k] page_counter_uncharge
+     0.00%  env      [kernel.kallsyms]             [k] mas_next_slot
+     0.00%  mstress  [kernel.kallsyms]             [k] restore_fpregs_from_fpstate
+     0.00%  mstress  [kernel.kallsyms]             [k] finish_task_switch.isra.0
+     0.00%  mstress  [kernel.kallsyms]             [k] _raw_spin_lock_irq
+     0.00%  mstress  [kernel.kallsyms]             [k] calculate_sigpending
+     0.00%  mstress  [kernel.kallsyms]             [k] schedule_tail
+     0.00%  mstress  [kernel.kallsyms]             [k] perf_pmu_nop_void
+     0.00%  mstress  [kernel.kallsyms]             [k] perf_ibs_handle_irq
+     0.00%  mstress  [kernel.kallsyms]             [k] syscall_exit_to_user_mode_prepare
+     0.00%  mstress  [kernel.kallsyms]             [k] syscall_exit_work
+     0.00%  mstress  [kernel.kallsyms]             [k] nmi_restore
+     0.00%  mstress  [kernel.kallsyms]             [k] mem_cgroup_handle_over_high
+     0.00%  mstress  [kernel.kallsyms]             [k] pv_native_set_debugreg
+     0.00%  mstress  [kernel.kallsyms]             [k] blkcg_maybe_throttle_current
+     0.00%  mstress  [kernel.kallsyms]             [k] ret_from_fork_asm
+     0.00%  mstress  [kernel.kallsyms]             [k] __free_pages
+     0.00%  mstress  [kernel.kallsyms]             [k] sysvec_reschedule_ipi
+     0.00%  mstress  [kernel.kallsyms]             [k] recalc_sigpending
+     0.00%  mstress  [kernel.kallsyms]             [k] end_repeat_nmi
+     0.00%  mstress  [kernel.kallsyms]             [k] perf_ctx_sched_task_cb
+     0.00%  mstress  [kernel.kallsyms]             [k] native_write_msr
+     0.00%  mstress  [kernel.kallsyms]             [k] perf_event_update_userpage
+     0.00%  perf-ex  [kernel.kallsyms]             [k] nmi_restore
+     0.00%  mstress  [kernel.kallsyms]             [k] perf_ibs_nmi_handler
+     0.00%  perf-ex  [kernel.kallsyms]             [k] perf_event_update_userpage
+     0.00%  perf-ex  [kernel.kallsyms]             [k] native_write_msr
+
+
+#
+# (Cannot load tips.txt file, please install perf!)
+#
