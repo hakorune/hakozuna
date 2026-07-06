@@ -12,6 +12,7 @@ status:
     - HZ10LarsonThreadChurnAttribution-L0
     - HZ10PersistentOwnerRecord-L1
     - HZ10OrphanActiveAdoption-L1
+    - HZ10FrontAdoptionHandoff-L0
 
   Current evidence:
     - docs/HZ10_MACRO_MATRIX_EXPAND_L0.md
@@ -22,6 +23,7 @@ status:
     - bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
     - bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
     - bench_results/20260707T_hz10_macro_width_l0/
+    - bench_results/20260707T_front_adoption_handoff_l0/
 
   Current read:
     - Macro width RUNS=5 now covers 7 rows: python_alloc, redis_setget,
@@ -44,16 +46,21 @@ status:
     - Owner-record split moved default shim larson into competitor RSS range:
       RUNS=3 macro showed hz10 289,536 KiB / 4.175s vs tcmalloc 279,040 KiB
       / 4.141s and mimalloc 284,016 KiB / 4.145s.
+    - HZ10FrontAdoptionHandoff-L0 made front cache safe to combine with
+      orphan + partial adoption by flushing the exiting owner's TLS front
+      cache before EXITED publish. The handoff is GO, but shim default is
+      NO-GO: RUNS=5 `hz10-front` regressed python_alloc and mstress while
+      barely improving sh6bench. Keep `libhz10_front.so` as opt-in.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    Productization follow-up after macro-width L0: either add 1-2 real app
-    compatibility/perf rows, or start paper/write-up extraction. Do not open
-    more micro allocator surgery until the product lane asks a sharper
-    question.
+    Productization follow-up after macro-width L0 and front-handoff L0:
+    front default is closed for now. Either add 1-2 real app compatibility/
+    perf rows, or start paper/write-up extraction. Do not open more micro
+    allocator surgery until the product lane asks a sharper question.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -63,6 +70,9 @@ status:
     - Keep coarse rollback as `libhz10_coarse.so` via `make preload-coarse`.
     - Keep no-orphan rollback as `libhz10_base.so` via `make preload-base`.
     - Keep existing hz10+orphan idle-only as `libhz10_orphan.so`.
+    - Keep front-cache product probe as `libhz10_front.so` via
+      `make preload-front`; it is not a default candidate after the first
+      RUNS=5 gate.
     - `libhz10_fine.so` and `libhz10_orphan_partial.so` remain compatibility
       artifacts for older matrix names; they are not active decision lanes.
     - Q1 audit result: existing idle adoption pops a page from the registry
@@ -121,6 +131,16 @@ status:
       rows. Remaining wall-time deltas are mstress and sh6bench vs
       tcmalloc/mimalloc. Log:
       bench_results/20260707T_hz10_macro_width_l0/
+    - HZ10FrontAdoptionHandoff-L0:
+      Removed the front+orphan compile guard and added owner-exit front-cache
+      flush before EXITED publish. Added `libhz10_front.so` and front+orphan+
+      partial smoke lanes. RUNS=5 A/B:
+        python_alloc hz10 0.930s / 106,716 KiB vs hz10-front 1.000s /
+        107,820 KiB;
+        mstress 0.210s / 205,872 KiB vs 0.230s / 207,628 KiB;
+        sh6bench 0.810s / 320,256 KiB vs 0.800s / 321,792 KiB.
+      Verdict: handoff GO, opt-in lane GO, default NO-GO. Log:
+      bench_results/20260707T_front_adoption_handoff_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

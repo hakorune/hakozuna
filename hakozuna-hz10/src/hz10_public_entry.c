@@ -52,6 +52,12 @@ static inline void hz10_class_state_note_switch(Hz10ClassState* state,
 static void hz10_front_cache_flush_all(void);
 #endif
 
+void hz10_public_entry_owner_exit_flush_front_cache(void) {
+#if HZ10_ENABLE_FRONT_CACHE
+  hz10_front_cache_flush_all();
+#endif
+}
+
 static void hz10_public_entry_reclaim_keep_page(Hz10PageSublist* survivors,
                                                 Hz10FreelistPage* page) {
   page->prev_in_owner_list = survivors->tail;

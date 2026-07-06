@@ -1,0 +1,15 @@
+workload	allocator	median_wall_sec	median_max_rss_kb	median_current_rss_kb	wall_vs_glibc
+cache_scratch	hz10	1.090	3968	-	-
+cache_scratch	hz10-front	1.110	3968	-	-
+larson	hz10	4.172	287360	287360	-
+larson	hz10-front	4.183	284160	284160	-
+mstress	hz10	0.210	205872	-	-
+mstress	hz10-front	0.230	207628	-	-
+python_alloc	hz10	0.930	106716	-	-
+python_alloc	hz10-front	1.000	107820	-	-
+redis_setget	hz10	0.550	8192	-	-
+redis_setget	hz10-front	0.550	8192	-	-
+sh6bench	hz10	0.810	320256	-	-
+sh6bench	hz10-front	0.800	321792	-	-
+xmalloc_test	hz10	2.000	14336	-	-
+xmalloc_test	hz10-front	2.000	13696	-	-

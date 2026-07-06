@@ -15,7 +15,7 @@ run_hz10_macro_preload_matrix.sh:
   `make bench-macro-preload`): python_alloc, redis_setget, larson,
   xmalloc_test, cache_scratch, mstress, and sh6bench across glibc, hz10,
   hz10-coarse, hz10-base, hz10+orphan, tcmalloc if found, and source-build
-  mimalloc if found. Compatibility names `hz10+fine` and
+  mimalloc if found. Opt-in/compatibility names `hz10-front`, `hz10+fine` and
   `hz10+orphan-partial` are still accepted via `ALLOCATORS_CSV`. Set
   `ALLOCATORS_CSV=glibc,hz10,tcmalloc` to run a filtered matrix.
 
@@ -26,7 +26,8 @@ run_hz10_rss_guard.sh:
 run_hz10_larson_thread_churn_attribution.sh:
   macro attribution runner for HZ10LarsonThreadChurnAttribution-L0; sweeps
   small larson shapes for glibc/hz10/hz10-coarse/hz10-base/hz10+orphan and
-  records sampled current RSS plus per-thread
+  accepts opt-in `hz10-front` via `ALLOCATORS_CSV`; records sampled current
+  RSS plus per-thread
   `hz10_shim_exit_stats` lines under HZ10_SHIM_THREAD_EXIT_STATS=1
 
 run_hz10_public_entry_vs_tcmalloc_same_run.sh:

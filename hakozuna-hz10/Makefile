@@ -7,6 +7,8 @@
 	smoke-size-class \
 	smoke-public-entry smoke-public-entry-owner \
 	smoke-public-entry-orphan-adoption smoke-public-entry-orphan-partial \
+	smoke-public-entry-orphan-partial-front \
+	smoke-public-entry-owner-orphan-partial-front \
 	bench-public-entry \
 	bench-public-entry-active-scan \
 	bench-public-entry-active-mtf bench-public-entry-two-slot \
@@ -19,7 +21,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-base preload-fine preload-coarse \
+	preload preload-base preload-fine preload-front preload-coarse \
 	preload-orphan-adoption preload-orphan-partial \
 	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
@@ -201,6 +203,18 @@ $(ROOT)/hz10_public_entry_orphan_partial_smoke: $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) 
 smoke-public-entry-orphan-partial: $(ROOT)/hz10_public_entry_orphan_partial_smoke
 	$(ROOT)/hz10_public_entry_orphan_partial_smoke
 
+$(ROOT)/hz10_public_entry_orphan_partial_front_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 -DHZ10_ENABLE_FRONT_CACHE_STATS=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-orphan-partial-front: $(ROOT)/hz10_public_entry_orphan_partial_front_smoke
+	$(ROOT)/hz10_public_entry_orphan_partial_front_smoke
+
+$(ROOT)/hz10_public_entry_owner_orphan_partial_front_smoke: $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 -DHZ10_ENABLE_FRONT_CACHE_STATS=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_OWNER_SRC) $(LDFLAGS) $(LDLIBS)
+
+smoke-public-entry-owner-orphan-partial-front: $(ROOT)/hz10_public_entry_owner_orphan_partial_front_smoke
+	$(ROOT)/hz10_public_entry_owner_orphan_partial_front_smoke
+
 $(ROOT)/hz10_public_entry_retired_local_smoke: $(SMOKE_PUBLIC_ENTRY_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) -DHZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1 $(INC) -o $@ $(SMOKE_PUBLIC_ENTRY_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -240,6 +254,11 @@ $(ROOT)/libhz10_fine.so: $(SHIM_SRC) $(HEADERS)
 
 preload-fine: $(ROOT)/libhz10_fine.so
 
+$(ROOT)/libhz10_front.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_FRONT_CACHE=1 $(INC) -shared -Wl,-soname,libhz10_front.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
+
+preload-front: $(ROOT)/libhz10_front.so
+
 $(ROOT)/libhz10_orphan.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 $(INC) -shared -Wl,-soname,libhz10_orphan.so -o $@ $(SHIM_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -277,12 +296,12 @@ smoke-shim-api: $(ROOT)/hz10_shim_api_smoke $(ROOT)/libhz10.so
 smoke-shim-foreign: $(ROOT)/libhz10.so
 	$(ROOT)/scripts/run_hz10_shim_smoke.sh
 
-bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-macro-preload: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_macro_preload_matrix.sh
 
 bench-macro-matrix: bench-macro-preload
 
-bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
+bench-larson-thread-churn-attribution: $(ROOT)/libhz10.so $(ROOT)/libhz10_base.so $(ROOT)/libhz10_fine.so $(ROOT)/libhz10_front.so $(ROOT)/libhz10_coarse.so $(ROOT)/libhz10_orphan.so $(ROOT)/libhz10_orphan_partial.so
 	$(ROOT)/scripts/run_hz10_larson_thread_churn_attribution.sh
 
 # HZ10FrontCache-L1 opt-in lanes (docs/HZ10_FRONT_CACHE_DESIGN_L0.md).
@@ -312,12 +331,16 @@ smoke-tsan-aslr-off:
 		"$(ROOT)/hz10_public_entry_owner_smoke" \
 		"$(ROOT)/hz10_public_entry_orphan_adoption_smoke" \
 		"$(ROOT)/hz10_public_entry_orphan_partial_smoke" \
+		"$(ROOT)/hz10_public_entry_orphan_partial_front_smoke" \
+		"$(ROOT)/hz10_public_entry_owner_orphan_partial_front_smoke" \
 		"$(ROOT)/hz10_public_entry_front_smoke"
 	arch=$$(uname -m); \
 	for bin in hz10_pagemap_route_smoke hz10_pagemap_route_diff_smoke \
 		hz10_public_entry_smoke hz10_public_entry_owner_smoke \
 		hz10_public_entry_orphan_adoption_smoke \
 		hz10_public_entry_orphan_partial_smoke \
+		hz10_public_entry_orphan_partial_front_smoke \
+		hz10_public_entry_owner_orphan_partial_front_smoke \
 		hz10_public_entry_front_smoke; do \
 		echo "== $$bin (TSan, ASLR off) =="; \
 		setarch "$$arch" -R "$(ROOT)/$$bin" || exit $$?; \

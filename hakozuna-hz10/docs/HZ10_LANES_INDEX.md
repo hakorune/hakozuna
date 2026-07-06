@@ -46,6 +46,17 @@ hz10+fine:
   Compatibility artifact for older matrix names. It intentionally tracks the
   current default and should not be treated as a separate candidate.
 
+hz10-front:
+  Built as libhz10_front.so via `make preload-front`.
+  Opt-in sibling for orphan + partial adoption + fine classes + front cache.
+  HZ10FrontAdoptionHandoff-L0 proved the owner-exit handoff boundary:
+  pthread destructor flushes the exiting owner's TLS front cache back to its
+  pages before EXITED publish, so orphan adoption no longer loses
+  front-cached capacity. The lane is safe to build and measure, but default
+  NO-GO on the first RUNS=5 macro gate:
+    python_alloc 0.930s -> 1.000s, mstress 0.210s -> 0.230s,
+    sh6bench only 0.810s -> 0.800s. Keep as attribution lane.
+
 hz10+orphan:
   Built as libhz10_orphan.so via `make preload-orphan-adoption`.
   Opt-in lane for `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1`.
@@ -128,6 +139,25 @@ RUNS=5 median verdict:
   and xmalloc_test. It has a strong RSS story on xmalloc_test, mstress, and
   sh6bench. Remaining wall-time misses are mstress and sh6bench against
   tcmalloc/mimalloc; keep these as product-lane deltas, not default blockers.
+
+HZ10FrontAdoptionHandoff-L0
+
+Input:
+  docs/HZ10_FRONT_ADOPTION_HANDOFF_DESIGN_L0.md
+  bench_results/20260707T_front_adoption_handoff_l0/
+
+Implementation:
+  Removed the guard that forbade `HZ10_ENABLE_FRONT_CACHE` together with
+  orphan adoption. Added a narrow owner-exit hook in `hz10_public_entry.c`
+  and call it from `hz10_owner_destructor()` before EXITED publish. Added
+  `libhz10_front.so`, `preload-front`, `hz10-front`, and front+orphan+partial
+  smoke lanes.
+
+RUNS=5 median verdict:
+  Handoff safety is GO and the opt-in lane remains useful for attribution.
+  Shim default is NO-GO: python_alloc regressed 0.930s -> 1.000s, mstress
+  regressed 0.210s -> 0.230s, and the intended sh6bench win was only
+  0.810s -> 0.800s. Do not enable front cache in `make preload`.
 
 Prior/adjacent box (largely resolved by commit 20448ec1, keep for its
 verification record):
@@ -270,6 +300,11 @@ make preload-fine
   Builds libhz10_fine.so, compatibility artifact that intentionally tracks
   the current default.
 
+make preload-front
+  Builds libhz10_front.so, opt-in front-cache sibling with orphan + partial
+  adoption and fine classes. Safe to measure after
+  HZ10FrontAdoptionHandoff-L0, but not the shim default.
+
 make preload-orphan-adoption
   Builds libhz10_orphan.so, non-clobbering sibling with
   HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1.
@@ -292,7 +327,7 @@ make bench-macro-matrix
   Runs scripts/run_hz10_macro_preload_matrix.sh.
   Allocators by default: glibc, hz10, hz10-coarse, hz10-base, hz10+orphan,
   tcmalloc if found, source mimalloc if found. Compatibility names
-  hz10+fine and hz10+orphan-partial are still accepted through
+  hz10-front, hz10+fine, and hz10+orphan-partial are still accepted through
   `ALLOCATORS_CSV=...`.
   Workloads: python_alloc, redis_setget, larson, xmalloc_test,
   cache_scratch, mstress, sh6bench.
@@ -355,6 +390,11 @@ HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1
   partial orphan page by registry pop, owner transfer, remote drain, and
   normal class-list insertion when the page has free capacity. Default off;
   measured through the hz10+orphan-partial sibling lane.
+
+HZ10_ENABLE_FRONT_CACHE=1
+  Per-thread per-class object front cache. Safe with orphan adoption only
+  after HZ10FrontAdoptionHandoff-L0's owner-exit front flush. Keep opt-in:
+  `hz10-front` macro A/B did not justify shim-default enablement.
 ```
 
 ## Decision Ledger
@@ -377,6 +417,10 @@ Thread-exit reclaim:
   identity plus orphan active/partial adoption in the shim default; see
   docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md and
   docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md.
+
+Front cache default:
+  docs/HZ10_FRONT_ADOPTION_HANDOFF_DESIGN_L0.md
+  Status: handoff GO, default NO-GO. Keep `hz10-front` as an opt-in lane.
 ```
 
 ## Source Ownership Map
@@ -430,4 +474,8 @@ bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
   32,327 pages and 2.118GB. Verdict: residual RSS is partial-orphan trapped
   capacity, not metadata, page pool, or undrained remote frees. Next is
   partial-page adoption design, not another census.
+
+bench_results/20260707T_front_adoption_handoff_l0/
+  HZ10FrontAdoptionHandoff-L0 macro A/B. `hz10-front` is safe but not a
+  default win: python_alloc and mstress regress, sh6bench barely improves.
 ```

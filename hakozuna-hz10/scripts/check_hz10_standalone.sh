@@ -68,8 +68,10 @@ if git -C "$ROOT" rev-parse --is-inside-work-tree >/dev/null 2>&1; then
       hz10_size_class_smoke hz10_retired_ready_smoke \
       hz10_retired_ready_bench hz10_public_entry_steady_state_bench \
       hz10_public_entry_thread_reuse_bench \
+      hz10_public_entry_orphan_partial_front_smoke \
+      hz10_public_entry_owner_orphan_partial_front_smoke \
       libhz10.so libhz10_coarse.so libhz10_base.so libhz10_fine.so \
-      libhz10_orphan.so \
+      libhz10_front.so libhz10_orphan.so \
       libhz10_orphan_partial.so hz10_shim_api_smoke; do
     if ! git -C "$ROOT" check-ignore -q "$product"; then
       echo "[hz10-standalone] expected local build product ignored: ${product}" >&2

@@ -31,6 +31,11 @@ HZ10_FRONT_CACHE_DESIGN_L0.md:
   attacks the slot_count 1-2 local-path gap without changing remote publish
   or retired/ready contracts
 
+HZ10_FRONT_ADOPTION_HANDOFF_DESIGN_L0.md:
+  implemented owner-exit handoff that flushes front-cache slots back to pages
+  before orphan publish; the handoff is correct, but RUNS=5 macro A/B keeps
+  front cache as an opt-in `hz10-front` lane rather than the shim default
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

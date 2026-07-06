@@ -16,7 +16,7 @@ LARSON_SEED="${LARSON_SEED:-12345}"
 ALLOCATORS_CSV="${ALLOCATORS_CSV:-glibc,hz10,hz10-coarse,hz10-base,hz10+orphan}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" preload preload-coarse preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
+make -C "${ROOT}" preload preload-front preload-coarse preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
 
 log="${OUTDIR}/combined.log"
 summary="${OUTDIR}/summary.tsv"
@@ -56,6 +56,7 @@ lib_for_allocator() {
   case "$1" in
     glibc) printf '%s\n' "" ;;
     hz10) printf '%s\n' "${ROOT}/libhz10.so" ;;
+    hz10-front) printf '%s\n' "${ROOT}/libhz10_front.so" ;;
     hz10-coarse) printf '%s\n' "${ROOT}/libhz10_coarse.so" ;;
     hz10-base) printf '%s\n' "${ROOT}/libhz10_base.so" ;;
     hz10+fine) printf '%s\n' "${ROOT}/libhz10_fine.so" ;;

@@ -198,6 +198,12 @@ static void hz10_orphan_repush_class(uint32_t class_id,
 static void hz10_owner_destructor(void* value) {
   Hz10ThreadOwner* owner = (Hz10ThreadOwner*)value;
   if (!owner) return;
+  /* HZ10FrontAdoptionHandoff-L0: return owner-local front-cache slots to
+   * their pages before the owner record becomes EXITED and before active
+   * pages are published to the orphan registry. This is not destructor
+   * reclaim; it only makes page free_count reflect the exiting owner's TLS
+   * front cache so later adoption sees true capacity. */
+  hz10_public_entry_owner_exit_flush_front_cache();
   if (hz10_current_owner == owner) {
     /* pthread key destructors can run before other thread-exit destructors.
      * After the active lists become globally orphan-visible, this exiting

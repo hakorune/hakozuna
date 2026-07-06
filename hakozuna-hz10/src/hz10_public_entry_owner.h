@@ -19,10 +19,6 @@
 #error "HZ10 partial orphan adoption requires HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION"
 #endif
 
-#if HZ10_ENABLE_FRONT_CACHE && HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
-#error "HZ10 orphan active adoption does not yet support front cache handoff"
-#endif
-
 typedef struct Hz10ClassState {
   Hz10FreelistPage* active;
   Hz10ClassPageList list;
@@ -64,5 +60,6 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);
 void hz10_public_entry_orphan_adoption_class_stats(
     uint32_t class_id, Hz10OrphanAdoptionClassStats* out);
+void hz10_public_entry_owner_exit_flush_front_cache(void);
 
 #endif
