@@ -64,6 +64,12 @@ Default HZ10:
         Full all-allocator guard keeps HZ10 in the same macro band:
         sh6bench 0.480s, python_alloc 0.850s, larson 4.187s / 284,404 KiB.
         Log: bench_results/20260707T_shim_internal_binding_l0/
+  Stack-protector removal:
+        HZ10ShimNoStackProtector-L0 is NO-GO. Removing stack canaries from
+        preload builds deleted the expected `%fs:0x28` canary instructions in
+        `hz10_free`, but regressed the target row: sh6bench 0.470s -> 0.490s
+        and python_alloc 0.850s -> 0.870s. Makefile change reverted. Log:
+        bench_results/20260707T_shim_no_stack_protector_l0/
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -303,6 +309,27 @@ NEXT:
   `malloc@plt/free@plt` boundary. Next attribution should compare fine
   size-class lookup, pagemap local route, marker writes, and metadata updates
   rather than revisiting shim wrapper/linker overhead.
+
+HZ10ShimNoStackProtector-L0   (NO-GO)
+
+Input:
+  docs/HZ10_SHIM_NO_STACK_PROTECTOR_L0.md
+  bench_results/20260707T_shim_no_stack_protector_l0/
+
+Result:
+  Functional gates passed and `objdump --disassemble=hz10_free` confirmed the
+  canary instructions were gone. However, RUNS=5 hz10-only macro regressed:
+    sh6bench 0.470s -> 0.490s
+    python_alloc 0.850s -> 0.870s
+    larson/mstress/RSS flat
+
+Verdict:
+  NO-GO. The Makefile change was reverted. Treat stack-protector removal as a
+  closed codegen trap; the samples were real, but wall time got worse.
+
+NEXT:
+  Move to the next measured target: runtime division in pagemap local route /
+  interior validation.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 

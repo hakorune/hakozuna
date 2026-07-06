@@ -1,0 +1,261 @@
+ Percent |	Source code & Disassembly of libhz10.so for cycles:P (10284 samples, percent: local period)
+-----------------------------------------------------------------------------------------------------------
+         :
+         :
+         :
+         : 3    Disassembly of section .text:
+         :
+         : 5    0000000000005810 <hz10_free>:
+         : 6    #else
+         : 7    return hz10_public_entry_alloc_from_page_layer(class_id);
+         : 8    #endif
+         : 9    }
+         :
+         : 11   int hz10_free(void* ptr) {
+    1.30 :   5810:   endbr64
+         : 13   if (!ptr) {
+         : 14   return 1;
+    1.32 :   5814:   mov    $0x1,%eax
+         : 16   if (!ptr) {
+    1.35 :   5819:   test   %rdi,%rdi
+    0.00 :   581c:   je     5950 <hz10_free+0x140>
+         : 19   int hz10_free(void* ptr) {
+    1.25 :   5822:   push   %r12
+         : 21   * expected_generation == HZ10_GENERATION_ANY skips the generation check.
+         : 22   */
+         : 23   H10RouteResult hz10_pagemap_route(const void* ptr, uint32_t expected_generation);
+         :
+         : 25   static inline uint32_t hz10_pagemap_page_index(uintptr_t addr) {
+         : 26   return (uint32_t)(addr >> HZ10_PAGE_SHIFT);
+    1.05 :   5824:   mov    %rdi,%rax
+    1.30 :   5827:   push   %rbp
+    1.20 :   5828:   shr    $0x10,%rax
+    1.12 :   582c:   mov    %rdi,%rbp
+         : 31   }
+         :
+         : 33   static inline uint32_t hz10_pagemap_root_index(uint32_t page_index) {
+         : 34   return (page_index >> HZ10_LEAF_BITS) & HZ10_ROOT_MASK;
+    1.31 :   582f:   mov    %eax,%edx
+    1.04 :   5831:   shr    $0x14,%edx
+    2.19 :   5834:   sub    $0x38,%rsp
+         : 38   static inline uint32_t hz10_pagemap_leaf_index(uint32_t page_index) {
+         : 39   return page_index & HZ10_LEAF_MASK;
+         : 40   }
+         :
+         : 42   static inline H10Leaf* hz10_pagemap_leaf_load(uint32_t root_idx) {
+         : 43   return atomic_load_explicit(&hz10_pagemap_root[root_idx],
+    1.04 :   5838:   mov    0x57a9(%rip),%rcx        # afe8 <hz10_pagemap_root@@Base-0x158>
+    2.04 :   583f:   and    $0x7ff,%edx
+    1.85 :   5845:   mov    (%rcx,%rdx,8),%rdx
+         : 47   uint32_t page_index = hz10_pagemap_page_index(addr);
+         : 48   uint32_t root_idx = hz10_pagemap_root_index(page_index);
+         : 49   uint32_t leaf_idx = hz10_pagemap_leaf_index(page_index);
+         :
+         : 51   H10Leaf* leaf = hz10_pagemap_leaf_load(root_idx);
+         : 52   if (!leaf) {
+    1.18 :   5849:   test   %rdx,%rdx
+    0.00 :   584c:   jne    58e0 <hz10_free+0xd0>
+         : 55   route_generation = local_route.generation;
+         : 56   #if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+         : 57   route_slot_size = local_route.slot_size;
+         : 58   #endif
+         : 59   } else {
+         : 60   H10RouteResult route = hz10_pagemap_route(ptr, HZ10_GENERATION_ANY);
+    0.00 :   5852:   xor    %edx,%edx
+    0.00 :   5854:   mov    %rsp,%rdi
+    0.00 :   5857:   mov    %rbp,%rsi
+    0.00 :   585a:   call   4010 <hz10_pagemap_route>
+         : 65   if (route.kind != H10_ROUTE_VALID) {
+         : 66   return 0;
+    0.00 :   585f:   xor    %eax,%eax
+         : 68   if (route.kind != H10_ROUTE_VALID) {
+    0.00 :   5861:   cmpl   $0x1,(%rsp)
+    0.00 :   5865:   jne    58d4 <hz10_free+0xc4>
+         : 71   }
+         : 72   if (route.flags == HZ10_PAGEMAP_FLAG_LARGE) {
+    0.00 :   5867:   cmpl   $0x1,0x28(%rsp)
+    0.00 :   586c:   je     59a0 <hz10_free+0x190>
+         : 75   hz10_large_free(route.page_base, route.slot_size);
+         : 76   return 1;
+         : 77   }
+         : 78   page = (Hz10FreelistPage*)route.owner;
+    0.00 :   5872:   mov    0x20(%rsp),%r12
+         : 80   route_generation = route.generation;
+    0.00 :   5877:   mov    0x1c(%rsp),%r8d
+         : 82   #if HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM
+         : 83   route_slot_size = route.slot_size;
+         : 84   #endif
+         : 85   }
+         : 86   if (!page) {
+    1.48 :   587c:   test   %r12,%r12
+    0.00 :   587f:   je     5958 <hz10_free+0x148>
+         : 89   Hz10ThreadOwner* owner = hz10_current_owner;
+         : 90   return owner ? owner : hz10_public_entry_current_owner_slow();
+         : 91   }
+         :
+         : 93   static inline Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
+         : 94   return hz10_current_owner;
+    1.37 :   5885:   mov    0x5734(%rip),%rax        # afc0 <_DYNAMIC+0x1e8>
+    1.07 :   588c:   mov    %fs:(%rax),%rax
+         : 97   return 0;
+         : 98   }
+         : 99   Hz10ThreadOwner* owner = hz10_public_entry_current_owner_if_any();
+         : 100  if (owner && hz10_freelist_page_owner_thread(page) ==
+    2.31 :   5890:   test   %rax,%rax
+    0.00 :   5893:   je     58a3 <hz10_free+0x93>
+         : 103  memory_order_release);
+         : 104  }
+         :
+         : 106  static inline void* hz10_freelist_page_owner_thread(
+         : 107  const Hz10FreelistPage* page) {
+         : 108  return atomic_load_explicit(&page->owner_thread_token, memory_order_acquire);
+    1.08 :   5895:   mov    0x30(%r12),%rdx
+    2.41 :   589a:   cmp    %rdx,(%rax)
+    0.00 :   589d:   je     5968 <hz10_free+0x158>
+         : 112  * tracked by HZ10RetiredReadyQueue-L0) needs a point to run BEFORE this
+         : 113  * slot becomes visible to the owner's drain, or its own reads/writes
+         : 114  * to `page` can race a destroy the owner performs the instant it
+         : 115  * observes this slot merged. */
+         : 116  uint32_t slot_index;
+         : 117  if (!hz10_page_remote_free_claim(page, ptr, route_generation,
+    0.00 :   58a3:   mov    %rsp,%rcx
+    0.00 :   58a6:   mov    %r8d,%edx
+    0.00 :   58a9:   mov    %rbp,%rsi
+    0.00 :   58ac:   mov    %r12,%rdi
+    0.00 :   58af:   call   3cf0 <hz10_page_remote_free_claim>
+    0.00 :   58b4:   test   %eax,%eax
+    0.00 :   58b6:   je     5958 <hz10_free+0x148>
+         : 125  &slot_index)) {
+         : 126  return 0;
+         : 127  }
+         : 128  hz10_retired_ready_note_remote_free(page);
+    0.00 :   58bc:   mov    %r12,%rdi
+    0.00 :   58bf:   call   3c20 <hz10_retired_ready_note_remote_free>
+         : 131  hz10_page_remote_free_publish(page, ptr);
+    0.00 :   58c4:   mov    %rbp,%rsi
+    0.00 :   58c7:   mov    %r12,%rdi
+    0.00 :   58ca:   call   3d90 <hz10_page_remote_free_publish>
+         : 135  return 1;
+    0.00 :   58cf:   mov    $0x1,%eax
+         : 137  }
+    2.43 :   58d4:   add    $0x38,%rsp
+    2.26 :   58d8:   pop    %rbp
+    2.29 :   58d9:   pop    %r12
+    5.03 :   58db:   ret
+    0.00 :   58dc:   nopl   0x0(%rax)
+         : 143  return 0;
+         : 144  }
+         :
+         : 146  const H10PageRecord* rec = &leaf->entries[leaf_idx];
+         : 147  uint32_t slot_size = __atomic_load_n(&rec->slot_size, __ATOMIC_ACQUIRE);
+    1.14 :   58e0:   and    $0xfffff,%eax
+    1.11 :   58e5:   shl    $0x5,%rax
+    1.12 :   58e9:   mov    0x10(%rdx,%rax,1),%ecx
+         : 151  if (slot_size == 0u) {
+    1.12 :   58ed:   test   %ecx,%ecx
+    0.00 :   58ef:   je     5852 <hz10_free+0x42>
+         : 154  return 0;
+         : 155  }
+         :
+         : 157  void* base = __atomic_load_n(&rec->base, __ATOMIC_RELAXED);
+    0.95 :   58f5:   mov    (%rdx,%rax,1),%rdi
+         : 159  void* owner = __atomic_load_n(&rec->owner, __ATOMIC_RELAXED);
+    1.18 :   58f9:   mov    0x8(%rdx,%rax,1),%r12
+         : 161  uint32_t slot_count = __atomic_load_n(&rec->slot_count, __ATOMIC_RELAXED);
+    4.90 :   58fe:   mov    0x14(%rdx,%rax,1),%esi
+         : 163  uint32_t generation = __atomic_load_n(&rec->generation, __ATOMIC_RELAXED);
+    1.03 :   5902:   mov    0x18(%rdx,%rax,1),%r8d
+         : 165  uint32_t flags = __atomic_load_n(&rec->flags, __ATOMIC_RELAXED);
+    1.12 :   5907:   mov    0x1c(%rdx,%rax,1),%eax
+         : 167  if (flags != 0u) {
+    1.21 :   590b:   test   %eax,%eax
+    0.00 :   590d:   jne    5852 <hz10_free+0x42>
+         : 170  return 0;
+         : 171  }
+         :
+         : 173  uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
+    1.07 :   5913:   mov    %esi,%edx
+         : 175  uint64_t offset = (uint64_t)(addr - (uintptr_t)base);
+    1.05 :   5915:   mov    %rbp,%rax
+         : 177  uint64_t span = (uint64_t)slot_size * (uint64_t)slot_count;
+    1.14 :   5918:   imul   %rcx,%rdx
+         : 179  uint64_t offset = (uint64_t)(addr - (uintptr_t)base);
+    2.46 :   591c:   sub    %rdi,%rax
+         : 181  if (offset >= span) {
+    2.36 :   591f:   cmp    %rax,%rdx
+    0.00 :   5922:   jbe    5852 <hz10_free+0x42>
+         : 184  return 0;
+         : 185  }
+         : 186  if ((offset & (HZ10_MIN_ALIGN - 1u)) != 0u) {
+    1.93 :   5928:   test   $0xf,%al
+    0.00 :   592a:   jne    5852 <hz10_free+0x42>
+         : 189  return 0;
+         : 190  }
+         : 191  if (slot_count == 1u) {
+    1.27 :   5930:   cmp    $0x1,%esi
+    0.00 :   5933:   je     59c0 <hz10_free+0x1b0>
+         : 194  if (offset != 0u) {
+         : 195  return 0;
+         : 196  }
+         : 197  } else if ((offset % slot_size) != 0u) {
+    2.43 :   5939:   xor    %edx,%edx
+    3.50 :   593b:   div    %rcx
+    6.60 :   593e:   test   %rdx,%rdx
+    0.00 :   5941:   je     587c <hz10_free+0x6c>
+    0.00 :   5947:   jmp    5852 <hz10_free+0x42>
+    0.00 :   594c:   nopl   0x0(%rax)
+    0.00 :   5950:   ret
+    0.00 :   5951:   nopl   0x0(%rax)
+    0.00 :   5958:   add    $0x38,%rsp
+         : 207  return 0;
+    0.00 :   595c:   xor    %eax,%eax
+         : 209  }
+    0.00 :   595e:   pop    %rbp
+    0.00 :   595f:   pop    %r12
+    0.00 :   5961:   ret
+    0.00 :   5962:   nopw   0x0(%rax,%rax,1)
+         : 214  */
+         :
+         : 216  /* Same-thread fast path. Plain loads/stores only. NULL if empty. */
+         : 217  static inline uintptr_t* hz10_freelist_page_slot_marker_ptr(
+         : 218  const Hz10FreelistPage* page, void* ptr) {
+         : 219  if (page->slot_size < (uint32_t)(2u * sizeof(void*))) {
+    1.08 :   5968:   cmpl   $0xf,0x10(%r12)
+    2.34 :   596e:   jbe    597e <hz10_free+0x16e>
+         :
+         : 223  static inline void hz10_freelist_page_mark_local_free(
+         : 224  const Hz10FreelistPage* page, void* ptr) {
+         : 225  uintptr_t* marker = hz10_freelist_page_slot_marker_ptr(page, ptr);
+         : 226  if (marker) {
+         : 227  *marker = HZ10_FREELIST_LOCAL_MARKER;
+    1.25 :   5970:   movabs $0x4831304c46524545,%rax
+    1.37 :   597a:   mov    %rax,0x8(%rbp)
+         : 230  /* Same-thread fast path. Plain loads/stores only. Caller must pass a
+         : 231  * pointer this page actually handed out and has not already freed. */
+         : 232  static inline void hz10_freelist_page_free(Hz10FreelistPage* page,
+         : 233  void* ptr) {
+         : 234  hz10_freelist_page_mark_local_free(page, ptr);
+         : 235  *(void**)ptr = page->local_free_head;
+    2.46 :   597e:   mov    0x8(%r12),%rax
+    2.53 :   5983:   mov    %rax,0x0(%rbp)
+         : 238  return 1;
+    1.15 :   5987:   mov    $0x1,%eax
+         : 240  page->local_free_head = ptr;
+         : 241  page->free_count += 1u;
+    3.31 :   598c:   addl   $0x1,0x18(%r12)
+         : 243  page->local_free_head = ptr;
+    2.19 :   5992:   mov    %rbp,0x8(%r12)
+    1.35 :   5997:   jmp    58d4 <hz10_free+0xc4>
+    0.00 :   599c:   nopl   0x0(%rax)
+         : 247  hz10_large_free(route.page_base, route.slot_size);
+    0.00 :   59a0:   mov    0x10(%rsp),%esi
+    0.00 :   59a4:   mov    0x8(%rsp),%rdi
+    0.00 :   59a9:   call   57d0 <hz10_large_free>
+         : 251  return 1;
+    0.00 :   59ae:   mov    $0x1,%eax
+    0.00 :   59b3:   jmp    58d4 <hz10_free+0xc4>
+    0.00 :   59b8:   nopl   0x0(%rax,%rax,1)
+         : 255  if (offset != 0u) {
+    0.00 :   59c0:   test   %rax,%rax
+    0.00 :   59c3:   je     587c <hz10_free+0x6c>
+    0.00 :   59c9:   jmp    5852 <hz10_free+0x42>

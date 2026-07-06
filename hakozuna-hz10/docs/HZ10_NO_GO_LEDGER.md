@@ -4,6 +4,35 @@ Durable ledger for HZ10 boxes that were measured or reasoned to a stop. Keep
 the active restart surface in `current_task.md`; put closed negative decisions
 here so they do not need to be rediscovered.
 
+## 20260707 Shim Stack-Protector Removal
+
+Status: `NO-GO`
+
+Evidence:
+
+- `bench_results/20260707T_shim_no_stack_protector_l0/notes.md`
+- Motivation was valid: post-internal-binding `hz10_free` annotate showed
+  visible stack-canary instructions (`%fs:0x28`) from fallback route-result
+  stack storage.
+- Probe added `-fno-stack-protector` to `SHIM_CFLAGS` only.
+- Functional gates passed:
+  `preload`, preload siblings, `smoke-shim-api`, `smoke-shim-foreign`,
+  `hz10-standalone-check`.
+- Codegen gate passed: canary instructions disappeared from `hz10_free`.
+- RUNS=5 hz10-only macro regressed the target:
+  - sh6bench: `0.470s -> 0.490s`
+  - python_alloc: `0.850s -> 0.870s`
+  - larson/mstress/RSS stayed flat or within noise.
+
+Decision:
+
+- Do not add `-fno-stack-protector` to HZ10 preload builds.
+- The canary samples were real, but removing them changed code layout/register
+  allocation enough to hurt wall time.
+- The Makefile change was reverted; keep this as a codegen trap.
+- Next measured target is runtime division in pagemap local route / interior
+  validation, not another stack-protector attempt without new evidence.
+
 ## 20260705 Pending-Bit Correctness Design
 
 Status: `NO-GO for now`

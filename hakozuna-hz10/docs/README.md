@@ -51,6 +51,11 @@ HZ10_SHIM_INTERNAL_BINDING_L0.md:
   `libhz10*.so` so internal HZ10 calls avoid PLT/interposition while exported
   malloc/free interposition remains intact
 
+HZ10_SHIM_NO_STACK_PROTECTOR_L0.md:
+  NO-GO preload product-lane codegen box; removing compiler stack canaries
+  deleted the expected canary instructions but regressed sh6bench/python wall
+  time, so the Makefile change was reverted
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

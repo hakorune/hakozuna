@@ -84,6 +84,9 @@ status:
       sh6bench 0.510s -> 0.470s, python_alloc 0.860s -> 0.850s,
       larson/mstress/RSS flat. Full all-allocator guard: sh6bench 0.480s,
       python_alloc 0.850s, larson 4.187s / 284,404 KiB.
+    - HZ10ShimNoStackProtector-L0 is NO-GO. Canary removal worked at codegen
+      level, but RUNS=5 regressed sh6bench 0.470s -> 0.490s and python_alloc
+      0.850s -> 0.870s. Makefile change reverted.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -91,10 +94,9 @@ status:
 
   Active next box:
     Productization follow-up:
-      Remaining sh6bench gap is now inside `hz10_malloc/free`: fine size-class
-      lookup, pagemap local route, marker writes, and metadata updates. Take
-      the next attribution there; do not revisit shim wrapper/linker overhead
-      unless new evidence appears.
+      Next measured target is runtime division in pagemap local route /
+      interior validation. Stack-protector removal is closed NO-GO; do not
+      revisit without new code-layout evidence.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -229,6 +231,12 @@ status:
       106,664 KiB, larson 4.183s / 283,008 KiB, mstress unchanged. Log:
       bench_results/20260707T_shim_internal_binding_l0/ and full guard:
       bench_results/20260707T_shim_internal_binding_l0_full/
+    - HZ10ShimNoStackProtector-L0:
+      Added `-fno-stack-protector` to `SHIM_CFLAGS` as a probe. Functional
+      gates passed and canary instructions disappeared from `hz10_free`, but
+      target wall regressed: sh6bench 0.490s, python_alloc 0.870s. Reverted
+      Makefile change; keep docs/log as NO-GO. Log:
+      bench_results/20260707T_shim_no_stack_protector_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design
