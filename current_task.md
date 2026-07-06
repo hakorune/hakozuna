@@ -9,13 +9,13 @@ Primary family:
   HZ8 allocator development and benchmarking
 
 Current direction:
-  Keep HZ8 MediumRun-v1.1 frozen as the balanced default.
+  HZ8 is the public recommended balanced allocator line. Current default is
+  HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
+  hardening. Public prep wording was refreshed in README / release drafts;
+  remaining publish work is tag/release packaging, not allocator behavior.
   HZ9 is now the separate throughput research lane.
   HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ10LocalPageSubstrate in hakozuna-hz10/: Box1-6 plus follow-ons committed.
-                Local ~60-70% of tcmalloc; remote ~40-50% after Box6 recovery.
-                Done: drain marker, remote striping, finer classes, large path,
-                pool decommit, batched quantum reservation. Next: final R10/RSS.
+  HZ10 in hakozuna-hz10/: macro/shim research candidate; not HZ8 replacement.
   Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
                 Segment metadata is static on fast path, per-slot state stays
                 entry-local, small/guard/control allocations bypass ProductEntry

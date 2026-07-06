@@ -36,13 +36,17 @@ Hakozuna allocator research: HZ3-style local fast-path structure, HZ4-style
 owner-stable remote free, HZ5-style pressure and retention control, and
 HZ6-style fail-closed ownership and route safety.
 
-The current default is HZ8-v2 / KeepRefill.  KeepRefill addresses the previous
+The current default is HZ8-v2 / KeepRefill plus the preload-surface and remote
+span-lease publish hardening fixes.  KeepRefill addresses the previous
 remote-heavy cliff by keeping owner-local medium refill candidates active-live
-after remote collection drains them.  The public benchmark interpretation is
-deliberately balanced: HZ8 emphasizes low post-workload RSS, fail-closed pointer
-ownership, cross-thread free correctness, and practical throughput.  It is not
-claimed to universally outperform tcmalloc on every local-only or throughput
-row.
+after remote collection drains them.  The preload surface exports
+malloc_usable_size and aligned allocation entrypoints for common LD_PRELOAD
+hosts, while span-level remote publish leasing plus bounded transition backoff
+fixes the observed xmalloc-style remote publish livelock.  The public benchmark
+interpretation is deliberately balanced: HZ8 emphasizes low post-workload RSS,
+fail-closed pointer ownership, cross-thread free correctness, LD_PRELOAD
+compatibility, and practical throughput.  It is not claimed to universally
+outperform tcmalloc on every local-only or throughput row.
 
 LargeDirectOwned and ShardedHotCache are included as opt-in evidence lanes, not
 as default behavior.  LargeDirectOwned shows that the cross128 weakness is
@@ -58,6 +62,10 @@ Main components include:
   documentation
 - hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md: paper-facing
   Ubuntu/Linux x86_64 public matrix snapshot
+- hakozuna-hz8/docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md: LD_PRELOAD surface fix
+  for malloc_usable_size and aligned allocation entrypoints
+- hakozuna-hz8/docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md: default xmalloc
+  remote publish livelock fix and public RSS guard
 - hakozuna-hz8/scripts/: public benchmark matrix helpers
 - hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md: release and paper preparation
   checklist

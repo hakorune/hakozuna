@@ -55,6 +55,8 @@ Before publishing, verify:
 [ ] Description says balanced allocator, not fastest allocator.
 [ ] Description mentions low RSS, fail-closed ownership, and remote-heavy
     KeepRefill control.
+[ ] Description mentions the preload surface and remote span-lease publish
+    hardening without turning them into universal performance claims.
 [ ] Description does not claim universal tcmalloc superiority.
 [ ] Windows is described as bring-up/evidence only.
 [ ] RUNS / THREADS / ITERS / platform / RSS are present in paper-facing tables.
@@ -70,4 +72,3 @@ Before publishing, verify:
 [ ] Review CITATION.cff if Zenodo provides a preferred HZ8 citation.
 [ ] Create or update the GitHub release body from GITHUB_RELEASE_hz8.md.
 ```
-

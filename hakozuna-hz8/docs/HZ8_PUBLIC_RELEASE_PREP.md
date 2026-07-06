@@ -3,7 +3,8 @@
 Status: public-release preparation / paper input.
 
 HZ8 is the recommended Hakozuna allocator line.  The current default is
-HZ8-v2 / KeepRefill, with HZ8-v1.1 kept as the frozen comparison baseline.
+HZ8-v2 / KeepRefill plus the preload-surface and remote span-lease publish
+hardening fixes, with HZ8-v1.1 kept as the frozen comparison baseline.
 
 LargeDirectOwned and LargeDirectShardedHotCache-L1 are not release defaults.
 They are opt-in evidence lanes showing that the `cross128_r90` weakness is
@@ -25,7 +26,9 @@ Use this wording:
 HZ8 is a balanced allocator line combining low post-workload RSS,
 fail-closed ownership, cross-thread free correctness, and practical throughput.
 The HZ8-v2 KeepRefill default removes the prior remote-heavy cliff while
-staying far below mimalloc RSS on the reported remote-heavy rows.
+staying far below mimalloc RSS on the reported remote-heavy rows. The current
+default also fixes the redis `malloc_usable_size` preload split and the
+xmalloc remote publish livelock observed during macro-lane hardening.
 ```
 
 Do not use these claims:
@@ -132,6 +135,8 @@ cross128 / LargeDirect:
 [x] CITATION.cff is reviewed once a Zenodo DOI exists.
 [x] GitHub release body links the HZ8 Zenodo record once available.
 [x] LargeDirect / ShardedHot are described as opt-in evidence, not defaults.
+[x] Redis preload surface mismatch is documented and fixed in F1.
+[x] xmalloc remote publish livelock is fixed in the default preload lane.
 [ ] Generated binaries are excluded from the source release unless explicitly
     attached as separate artifacts.
 ```

@@ -30,13 +30,15 @@ and practical throughput.
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill
+  HZ8 v2 / KeepRefill + remote span-lease publish
 
 recommended default:
   yes
 
 release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+  docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
+  docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
   docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
@@ -55,7 +57,9 @@ windows bring-up lane:
 ```
 
 HZ8-v2 keeps the HZ8-v1.1 balanced base and promotes KeepRefill as the default
-remote-heavy pressure fix:
+remote-heavy pressure fix. The current source default also includes the
+post-macro hardening fixes that made the preload surface and xmalloc-style
+remote storm usable:
 
 ```text
 small:
@@ -74,6 +78,8 @@ remote free:
   active-full Defer4 remote-pressure collection
   medium capacity collect budgeting
   owner-local refill-candidate empty-run keep-live
+  span-lease remote publish instead of owner-wide publish lease
+  bounded transition backoff under OWNER_TRANSITION retry storms
 
 residency:
   budgeted empty-resident retention
@@ -83,6 +89,7 @@ residency:
 
 compatibility:
   pure LD_PRELOAD malloc/free/calloc/realloc surface
+  malloc_usable_size + aligned allocation entrypoints for common preload hosts
 ```
 
 ## Which HZ Should Users Pick?
@@ -135,6 +142,14 @@ MediumKeepRefillEmpty-L1
   make bench-mediumkeeprefillempty
   make bench-release-mediumkeeprefillempty
   make preload-mediumkeeprefillempty
+
+RemoteSpanLeasePublish-L0
+  docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
+  default preload fix for the xmalloc remote publish livelock
+
+PreloadShimSurface-F1
+  docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
+  malloc_usable_size / aligned allocation surface for LD_PRELOAD hosts
 ```
 
 It keeps owner-local refill-candidate medium runs active-live after remote

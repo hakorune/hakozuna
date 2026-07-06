@@ -15,7 +15,7 @@ Part of the [hakorune](https://github.com/hakorune) project.
 
 ## Variants
 
-- **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Default for most workloads.
+- **hz3 (hakozuna)**: Local-heavy performance + minimal RSS footprint. Historical local-heavy public profile.
 - **hz4 (hakozuna-mt)**: Message-passing, remote-heavy scaling (best at high thread counts).
 - **HZ5 (hakozuna-hz5)**: Linux research sidecar for low-RSS, fail-closed,
   descriptor-owned profile families. It is not the default general allocator.
@@ -26,7 +26,8 @@ Part of the [hakorune](https://github.com/hakorune) project.
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
   `v2`, `v3`, and `v4`.
 - **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
-  is HZ8-v2 / KeepRefill.
+  is HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
+  hardening.
 - **HZ9 (hakozuna-hz9)**: standalone experimental throughput line. It keeps
   HZ8 as the frozen balanced line and develops new HZ9 behavior only under
   `hakozuna-hz9/`.
@@ -55,6 +56,8 @@ In short:
 - **HZ6 is contract-first with selected/default and profile-only lanes.**
 - **HZ8 is the recommended balanced allocator line.**
 - **HZ9 is the separate throughput research line; it is not the HZ8 default.**
+- **HZ10 is a newer macro/shim research candidate; it has not replaced HZ8 as
+  the public recommendation.**
 
 ## Architecture Difference / アーキテクチャの違い
 

@@ -55,15 +55,11 @@ explicit release tier with platform, compiler, ABI, and safety-mode notes.
 
 ## Variant Distribution Scope
 
-### HZ3
+### HZ3 / HZ4
 
-`hz3` is the default local-heavy profile and remains the safest public default
-for general source distribution.
-
-### HZ4
-
-`hz4` is the remote-heavy / high-thread profile. It remains a public profile
-with build and benchmark entrypoints.
+`hz3` and `hz4` remain public source profiles and historical comparison lines.
+They are still useful for local-heavy and remote-heavy experiments, but the
+current recommended public allocator line is HZ8.
 
 ### HZ5
 
@@ -82,6 +78,30 @@ Current HZ5 distribution rules:
 - HZ5 source/artifact releases may include benchmark summaries, lane manifests,
   smoke commands, and paper tables.
 - HZ5 releases do not ship prebuilt binaries by default.
+
+### HZ8
+
+HZ8 is the current recommended balanced allocator line for public source
+releases. The release claim is low post-workload RSS, fail-closed ownership,
+cross-thread free correctness, LD_PRELOAD compatibility, and practical
+throughput. Do not describe it as a universal tcmalloc replacement.
+
+Current HZ8 source releases should include:
+
+- `hakozuna-hz8/` source
+- HZ8 English/Japanese READMEs
+- HZ8 public matrix and release-prep documentation
+- HZ8 preload-surface and remote span-lease publish hardening notes
+
+Generated HZ8 preload DSOs and benchmark binaries remain local build outputs
+unless a release explicitly attaches platform artifacts.
+
+### HZ9 / HZ10
+
+HZ9 and HZ10 are research/candidate lines. They may be included as source and
+evidence in repository snapshots, but they should not be presented as the
+recommended public allocator unless a later release defines and validates that
+promotion separately.
 
 ## Release Checklist
 

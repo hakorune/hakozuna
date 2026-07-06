@@ -31,13 +31,15 @@ HZ8はtcmallocのようなthroughput-only allocatorではありません。
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill
+  HZ8 v2 / KeepRefill + remote span-lease publish
 
 recommended default:
   yes
 
 release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+  docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
+  docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
   docs/HZ8_V1_1_RELEASE.md
   docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
@@ -56,7 +58,9 @@ windows bring-up lane:
 ```
 
 HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy
-pressure fixとしてdefault化しています。
+pressure fixとしてdefault化しています。現行defaultには、LD_PRELOAD host
+互換性のための`malloc_usable_size` / aligned allocation surfaceと、xmalloc型の
+remote publish stormを止めるspan-lease remote publish / bounded backoffも含みます。
 
 ```text
 small:
@@ -75,6 +79,8 @@ remote free:
   active-full Defer4 remote-pressure collection
   medium capacity collect budgeting
   owner-local refill-candidate empty-run keep-live
+  span-lease remote publish instead of owner-wide publish lease
+  bounded transition backoff under OWNER_TRANSITION retry storms
 
 residency:
   budgeted empty-resident retention
@@ -84,6 +90,7 @@ residency:
 
 compatibility:
   pure LD_PRELOAD malloc/free/calloc/realloc surface
+  malloc_usable_size + aligned allocation entrypoints for common preload hosts
 ```
 
 ## ユーザーはどれを選ぶべきか
@@ -131,6 +138,14 @@ MediumKeepRefillEmpty-L1
   make bench-mediumkeeprefillempty
   make bench-release-mediumkeeprefillempty
   make preload-mediumkeeprefillempty
+
+RemoteSpanLeasePublish-L0
+  docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
+  default preload fix for the xmalloc remote publish livelock
+
+PreloadShimSurface-F1
+  docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
+  malloc_usable_size / aligned allocation surface for LD_PRELOAD hosts
 ```
 
 remote collectでmedium runが空になったとき、owner-local refill candidateなら
