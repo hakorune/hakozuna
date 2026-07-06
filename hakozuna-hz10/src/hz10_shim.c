@@ -488,8 +488,9 @@ static void hz10_shim_init_thread_stats_key(void) {
                          hz10_shim_thread_stats_destructor) == 0;
 }
 
-static void hz10_shim_mark_thread_for_stats(void) {
-  if (!hz10_shim_thread_exit_stats || hz10_shim_in_stats_dump) {
+__attribute__((noinline)) static void
+hz10_shim_mark_thread_for_stats_slow(void) {
+  if (hz10_shim_in_stats_dump) {
     return;
   }
   (void)pthread_once(&hz10_shim_thread_stats_once,
@@ -498,6 +499,12 @@ static void hz10_shim_mark_thread_for_stats(void) {
       pthread_getspecific(hz10_shim_thread_stats_key) == NULL) {
     (void)pthread_setspecific(hz10_shim_thread_stats_key,
                               &hz10_shim_thread_stats_marker);
+  }
+}
+
+static inline void hz10_shim_mark_thread_for_stats_fast(void) {
+  if (__builtin_expect(hz10_shim_thread_exit_stats, 0)) {
+    hz10_shim_mark_thread_for_stats_slow();
   }
 }
 
@@ -573,12 +580,12 @@ static void* hz10_shim_aligned_alloc_impl(size_t alignment, size_t size) {
 }
 
 static void* hz10_shim_malloc_impl(size_t size) {
-  hz10_shim_mark_thread_for_stats();
+  hz10_shim_mark_thread_for_stats_fast();
   return hz10_malloc(hz10_shim_request_size(size));
 }
 
 static void hz10_shim_free_impl(void* ptr, const char* api) {
-  hz10_shim_mark_thread_for_stats();
+  hz10_shim_mark_thread_for_stats_fast();
   if (!ptr) {
     return;
   }

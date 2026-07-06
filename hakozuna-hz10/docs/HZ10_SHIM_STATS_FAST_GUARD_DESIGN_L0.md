@@ -31,11 +31,11 @@ Move the hot-path decision to one predictable guard and split the work into a
 cold slow helper:
 
 ```text
-hz10_shim_mark_thread_for_stats_fast():
+static inline hz10_shim_mark_thread_for_stats_fast():
   if (likely(!hz10_shim_thread_exit_stats)) return
   hz10_shim_mark_thread_for_stats_slow()
 
-hz10_shim_mark_thread_for_stats_slow():
+noinline hz10_shim_mark_thread_for_stats_slow():
   if (hz10_shim_in_stats_dump) return
   pthread_once(...)
   if key ready and no marker:
@@ -49,11 +49,19 @@ S1. static inline fast guard in hz10_shim.c
     Minimal change. Keeps the same call sites but lets the compiler inline
     the disabled case into one global load + branch.
 
-S2. macro or direct branch at call sites
+S2. static inline fast wrapper + noinline slow helper
     Stronger codegen guarantee:
-      if (__builtin_expect(hz10_shim_thread_exit_stats, 0))
-        hz10_shim_mark_thread_for_stats_slow();
-    This makes the product hot path visibly free of a function call.
+      static inline fast wrapper:
+        if (__builtin_expect(hz10_shim_thread_exit_stats, 0))
+          slow();
+      noinline slow helper:
+        pthread_once / getspecific / setspecific
+    This keeps call sites clean and makes the product hot path visibly free of
+    a stats function call. `noinline` matters under `-flto`: without it, the
+    compiler may inline the pthread_* slow body back into malloc/free. That is
+    probably still correct with the unlikely branch, but it weakens the
+    objdump check. `noinline` turns the intended shape into a codegen
+    guarantee.
 
 S3. optional compile-time no-stats preload sibling
     Not recommended for this box. It adds lane complexity for a runtime
@@ -61,7 +69,8 @@ S3. optional compile-time no-stats preload sibling
 ```
 
 Preferred implementation: S2. The boundary is clear: product path sees only a
-single unlikely branch; diagnostic path remains centralized in one slow helper.
+single unlikely branch through a `static inline` wrapper; diagnostic path
+remains centralized in one `noinline` slow helper.
 
 ## Correctness Contract
 
@@ -92,9 +101,13 @@ Codegen checks:
 
 ```text
 objdump -d libhz10.so:
-  malloc/free wrappers should not call hz10_shim_mark_thread_for_stats_* when
-  `hz10_shim_thread_exit_stats` is false; the disabled path should be one
-  branch around the slow helper.
+  malloc/free wrappers should not contain pthread_once / pthread_getspecific /
+  pthread_setspecific bodies. The disabled path should be one branch around a
+  call to the noinline slow helper.
+
+nm -D libhz10.so:
+  hz10_shim_mark_thread_for_stats_slow is not exported; it remains an
+  internal implementation detail.
 ```
 
 Functional gates:
@@ -113,6 +126,11 @@ Performance gates:
 RUNS=5 ALLOCATORS_CSV=hz10:
   sh6bench, python_alloc, mstress from bench-macro-matrix
 
+perf check on sh6bench:
+  hz10_shim_mark_thread_for_stats* should disappear from the flat profile or
+  fall to noise level. This directly proves that the measured ~5% self-time
+  attribution was real and recovered.
+
 Expected:
   sh6bench small win if the perf attribution is real;
   no RSS movement;
@@ -124,8 +142,10 @@ GO:
 ```text
 1. smoke/standalone green;
 2. thread-exit stats diagnostic still works;
-3. sh6bench improves or stays flat;
-4. no macro row regresses materially.
+3. objdump confirms the slow pthread_* body is not in the malloc/free wrapper;
+4. perf confirms `hz10_shim_mark_thread_for_stats*` is gone or noise-level;
+5. sh6bench improves or stays flat;
+6. no macro row regresses materially.
 ```
 
 NO-GO:

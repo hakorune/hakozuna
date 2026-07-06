@@ -69,12 +69,10 @@ status:
   Active next box:
     Productization follow-up after macro-width L0, front-handoff L0, and
     shim TLS model fix:
-      HZ10ShimStatsFastGuard-L0 is designed in
-      docs/HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md. Implement this next:
-      move `HZ10_SHIM_THREAD_EXIT_STATS` marker setup behind a cold slow
-      helper so normal preload malloc/free pays only one unlikely branch.
-      If sh6bench/mstress remain strategic after that, owner lookup wrapper
-      flattening is the next attribution target.
+      HZ10ShimStatsFastGuard-L0 is implemented and GO. Next speed design, if
+      continuing, is HZ10ShimOwnerLookupInline-L0: perf after stats guard still
+      shows owner lookup wrappers near the top of sh6bench. Keep it separate
+      from stats cleanup because owner lookup touches allocator routing.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -169,6 +167,14 @@ status:
       standalone larson 5/5, short sequence repro 20/20, hz10-only matrix
       5/5, and full matrix retry passed. Log:
       bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
+    - HZ10ShimStatsFastGuard-L0:
+      Split diagnostic thread-exit stats marking into one hot unlikely branch
+      and a noinline slow helper. Diagnostic `HZ10_SHIM_THREAD_EXIT_STATS=1`
+      still prints; objdump shows malloc/free branch around the slow helper;
+      perf no longer shows `hz10_shim_mark_thread_for_stats*` in filtered
+      sh6bench profile. RUNS=5 hz10-only: sh6bench 0.700s -> 0.660s vs the
+      TLS-fix full-retry median, python_alloc 0.900s -> 0.880s, RSS flat.
+      Log: bench_results/20260707T_shim_stats_fast_guard_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

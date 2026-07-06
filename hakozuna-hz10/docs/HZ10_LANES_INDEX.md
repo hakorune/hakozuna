@@ -162,7 +162,7 @@ NEXT:
      materially after a matrix refresh -- likely inlining/flattening
      candidates now that the TLS-model cost is out of the way.
 
-HZ10ShimStatsFastGuard-L0   (designed, next small speed box)
+HZ10ShimStatsFastGuard-L0   (implemented, GO)
 
 Input:
   bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
@@ -184,6 +184,14 @@ Gate:
   `HZ10_SHIM_THREAD_EXIT_STATS=1` threaded diagnostic smoke must stay green.
   RUNS=5 macro subset (`ALLOCATORS_CSV=hz10`) should show no regression; a
   sh6bench win is expected if the ~5% perf attribution is real.
+
+Result:
+  GO. Codegen shows malloc/free fast paths as one branch around the noinline
+  slow helper; diagnostic thread-exit stats still print. perf on sh6bench no
+  longer shows `hz10_shim_mark_thread_for_stats*` in the filtered flat profile.
+  RUNS=5 hz10-only macro moved sh6bench 0.700s -> 0.660s versus the TLS-fix
+  full-retry median, with python_alloc 0.900s -> 0.880s and no material RSS
+  movement. Log: bench_results/20260707T_shim_stats_fast_guard_l0/
 
 HZ10FineAdoptionInteractionBug-L0   (resolved/not reproduced after clean
   rebuild; keep counters for future triage -- see
