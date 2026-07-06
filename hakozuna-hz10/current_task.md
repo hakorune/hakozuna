@@ -31,15 +31,22 @@ status:
     - Short larson probe, THREADS=4 CHUNKS=32 RUNS=3:
       default hz10 throughput 0.35-0.37M ops/s, current RSS 5.1-5.4GB;
       hz10+orphan throughput ~1.034M ops/s, current RSS ~2.68GB.
+    - Macro gate, RUNS=3, LARSON_SECONDS=2, LARSON_CHUNKS=128:
+      hz10+orphan keeps python/redis behavior within noise of default hz10,
+      restores larson throughput to competitor range (~2.069M ops/s vs
+      tcmalloc/mimalloc ~2.095M), and cuts default larson RSS 9.19GB -> 2.69GB.
+      Verdict: narrow GO as opt-in research/product lane, default NO-GO because
+      larson RSS is still ~9.6x tcmalloc.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    Run the wider macro matrix with hz10+orphan, then decide whether the
-    remaining larson RSS gap needs partial-page handoff or a different
-    thread-lifecycle design.
+    HZ10OrphanResidualAttribution-L0: measure why hz10+orphan still keeps
+    ~2.69GB on larson while glibc/tcmalloc/mimalloc are ~0.27-0.28GB. Do not
+    open partial-page handoff until this residual is split into active-orphan,
+    persistent-owner, metadata, page-pool, and unreachable-live components.
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

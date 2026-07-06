@@ -35,6 +35,8 @@ hz10+orphan:
   page destruction, no retired transfer, no partial-page ownership transfer.
   Short larson probe improved 4t/32c throughput from 0.35-0.37M ops/s to
   ~1.034M ops/s and current RSS from 5.1-5.4GB to ~2.68GB.
+  Macro gate verdict: narrow GO as opt-in lane, default NO-GO. Throughput is
+  competitor-range on larson, but RSS is still ~9.6x tcmalloc.
 
 retired-local:
   HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1.
@@ -44,13 +46,14 @@ retired-local:
 ## Active Next Box
 
 ```text
-HZ10OrphanActiveAdoption-L1 follow-up measurement
+HZ10OrphanResidualAttribution-L0
 
 Input:
   docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md
   docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md
   bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
   bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
+  bench_results/20260706T002949Z_hz10_orphan_macro_gate_l1/
 
 Known fact:
   In the larson sweep, exiting-thread page bytes explain 94.2-94.5% of
@@ -64,8 +67,9 @@ Design constraint:
 
 Current design verdict:
   Persistent owner-record prep and opt-in idle-active orphan adoption are
-  implemented. Next is the wider macro matrix with hz10+orphan before opening
-  partial-page handoff or any thread-lifecycle contract change.
+  implemented. The macro gate makes orphan adoption a narrow GO as an opt-in
+  lane, but not default. Next split the remaining 2.69GB larson RSS before
+  opening partial-page handoff or any thread-lifecycle contract change.
 ```
 
 Candidate design families to review:
@@ -216,4 +220,9 @@ bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
   Short hz10 vs hz10+orphan probe: 4t/32c throughput ~3x better and current
   RSS roughly halved. Existing thread_page_bytes attribution overcounts
   historical owner records after adoption, so use current RSS for this verdict.
+
+bench_results/20260706T002949Z_hz10_orphan_macro_gate_l1/
+  Macro gate: python/redis unchanged within noise; larson throughput matches
+  glibc/tcmalloc/mimalloc range, but RSS is still 2.69GB vs competitor
+  ~0.27-0.28GB. Verdict: opt-in narrow GO, default NO-GO.
 ```

@@ -386,6 +386,38 @@ hz10+orphan:
   current_rss 2.684GB / 2.685GB / 2.684GB
 ```
 
+Macro gate:
+
+```text
+bench_results/20260706T002949Z_hz10_orphan_macro_gate_l1/
+RUNS=3 PYTHON_LOOPS=80 REDIS_OPS=20000 LARSON_SECONDS=2
+LARSON_CHUNKS=128 LARSON_THREADS=4
+
+python_alloc median:
+  hz10 0.980s / 116.8MB
+  hz10+orphan 0.950s / 116.6MB
+
+redis_setget median:
+  hz10 0.540s / 8.2MB
+  hz10+orphan 0.550s / 8.2MB
+
+larson median:
+  hz10 1.249M ops/s / 9.19GB
+  hz10+orphan 2.069M ops/s / 2.69GB
+  tcmalloc 2.095M ops/s / 0.279GB
+  mimalloc 2.096M ops/s / 0.284GB
+```
+
+Verdict:
+
+```text
+HZ10OrphanActiveAdoption-L1 is a narrow GO as an opt-in lane: it fixes the
+larson throughput collapse and removes about 71% of the default HZ10 larson
+RSS in this gate, without visible python/redis regression. It is not a default
+GO: the remaining larson RSS is still ~9.6x tcmalloc, so the next box is
+residual attribution, not partial-page handoff by intuition.
+```
+
 Debug note:
 
 ```text

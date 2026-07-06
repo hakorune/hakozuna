@@ -252,7 +252,7 @@ extra_only = []
 with open(summary_path, newline="") as f:
     for row in csv.DictReader(f, delimiter="\t"):
         if row["wall_sec"] == "-":
-            if row["max_rss_kb"] != "-":
+            if row["max_rss_kb"] not in ("-", "NA", ""):
                 rss_only.append(row)
             else:
                 extra_only.append(row)
