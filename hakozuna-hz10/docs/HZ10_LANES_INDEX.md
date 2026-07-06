@@ -25,6 +25,11 @@ Default HZ10:
         larson/thread-churn RSS cliff and cuts python_alloc RSS in the
         LD_PRELOAD product lane while keeping source compile-time defaults off
         for isolated public-entry/front-cache research boxes.
+  Macro width L0: RUNS=5 over 7 rows makes the product-lane claim broader:
+        competitive on python_alloc / redis_setget / larson / cache_scratch /
+        xmalloc_test, strong RSS on xmalloc_test / mstress / sh6bench, and
+        visible remaining wall-time misses on mstress and sh6bench vs
+        tcmalloc/mimalloc.
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -107,6 +112,22 @@ Next decision:
   Verdict: GO for shim default fine classes. `make preload` now builds
   orphan + partial adoption + fine classes; coarse rollback remains
   `libhz10_orphan_partial.so`.
+
+HZ10MacroWidth-L0
+
+Input:
+  bench_results/20260707T_hz10_macro_width_l0/
+
+Implementation:
+  Added four product-lane rows to scripts/run_hz10_macro_preload_matrix.sh:
+    xmalloc_test, cache_scratch, mstress, sh6bench.
+  Each row has an individual RUN_* skip knob, matching RUN_LARSON.
+
+RUNS=5 median verdict:
+  HZ10 is competitive on python_alloc, redis_setget, larson, cache_scratch,
+  and xmalloc_test. It has a strong RSS story on xmalloc_test, mstress, and
+  sh6bench. Remaining wall-time misses are mstress and sh6bench against
+  tcmalloc/mimalloc; keep these as product-lane deltas, not default blockers.
 
 Prior/adjacent box (largely resolved by commit 20448ec1, keep for its
 verification record):
@@ -273,7 +294,8 @@ make bench-macro-matrix
   tcmalloc if found, source mimalloc if found. Compatibility names
   hz10+fine and hz10+orphan-partial are still accepted through
   `ALLOCATORS_CSV=...`.
-  Workloads: python_alloc, redis_setget, larson.
+  Workloads: python_alloc, redis_setget, larson, xmalloc_test,
+  cache_scratch, mstress, sh6bench.
 
 make bench-macro-preload
   Backward-compatible alias target for the same macro matrix lane.

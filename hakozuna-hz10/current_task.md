@@ -21,8 +21,14 @@ status:
     - bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
     - bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
     - bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
+    - bench_results/20260707T_hz10_macro_width_l0/
 
   Current read:
+    - Macro width RUNS=5 now covers 7 rows: python_alloc, redis_setget,
+      larson, xmalloc_test, cache_scratch, mstress, sh6bench.
+      HZ10 is competitive on python/redis/larson/cache/xmalloc, with strong
+      RSS on xmalloc/mstress/sh6. Honest remaining wall misses: mstress and
+      sh6bench vs tcmalloc/mimalloc.
     - Shim default now includes fine size classes plus orphan + partial
       adoption. Corrected same-matrix RUNS=3 showed python_alloc RSS
       116,756 -> 106,788 KiB with unchanged wall, larson RSS
@@ -44,9 +50,10 @@ status:
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    Productization follow-up after fine-default flip: expand macro suite or
-    preload compatibility smokes. Do not open more micro allocator surgery
-    until the product lane has a broader workload read.
+    Productization follow-up after macro-width L0: either add 1-2 real app
+    compatibility/perf rows, or start paper/write-up extraction. Do not open
+    more micro allocator surgery until the product lane asks a sharper
+    question.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -107,6 +114,13 @@ status:
       281,856 KiB; redis unchanged. `make preload` now builds fine by
       default; coarse rollback is `libhz10_coarse.so`. Log:
       bench_results/20260707T_fine_default_candidate_matrix/
+    - HZ10MacroWidth-L0:
+      Added xmalloc_test, cache_scratch, mstress, and sh6bench rows to the
+      macro matrix. RUNS=5 over glibc/hz10/tcmalloc/mimalloc shows HZ10 in
+      the competitive band on 5/7 wall rows and strong RSS on the new stress
+      rows. Remaining wall-time deltas are mstress and sh6bench vs
+      tcmalloc/mimalloc. Log:
+      bench_results/20260707T_hz10_macro_width_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

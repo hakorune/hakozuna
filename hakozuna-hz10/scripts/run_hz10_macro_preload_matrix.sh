@@ -11,6 +11,10 @@ REDIS_OPS="${REDIS_OPS:-20000}"
 REDIS_CLIENTS="${REDIS_CLIENTS:-32}"
 PYTHON_LOOPS="${PYTHON_LOOPS:-80}"
 RUN_LARSON="${RUN_LARSON:-1}"
+RUN_XMALLOC="${RUN_XMALLOC:-1}"
+RUN_CACHE_SCRATCH="${RUN_CACHE_SCRATCH:-1}"
+RUN_MSTRESS="${RUN_MSTRESS:-1}"
+RUN_SH6BENCH="${RUN_SH6BENCH:-1}"
 LARSON_SECONDS="${LARSON_SECONDS:-2}"
 LARSON_MIN="${LARSON_MIN:-8}"
 LARSON_MAX="${LARSON_MAX:-128}"
@@ -18,6 +22,21 @@ LARSON_CHUNKS="${LARSON_CHUNKS:-128}"
 LARSON_ROUNDS="${LARSON_ROUNDS:-1}"
 LARSON_SEED="${LARSON_SEED:-12345}"
 LARSON_THREADS="${LARSON_THREADS:-4}"
+XMALLOC_WORKERS="${XMALLOC_WORKERS:-4}"
+XMALLOC_SECONDS="${XMALLOC_SECONDS:-2}"
+XMALLOC_SIZE="${XMALLOC_SIZE:--1}"
+CACHE_SCRATCH_THREADS="${CACHE_SCRATCH_THREADS:-4}"
+CACHE_SCRATCH_ITERATIONS="${CACHE_SCRATCH_ITERATIONS:-5000}"
+CACHE_SCRATCH_OBJECT_SIZE="${CACHE_SCRATCH_OBJECT_SIZE:-256}"
+CACHE_SCRATCH_REPETITIONS="${CACHE_SCRATCH_REPETITIONS:-5000}"
+CACHE_SCRATCH_CONCURRENCY="${CACHE_SCRATCH_CONCURRENCY:-4}"
+MSTRESS_THREADS="${MSTRESS_THREADS:-8}"
+MSTRESS_SCALE="${MSTRESS_SCALE:-80}"
+MSTRESS_ITER="${MSTRESS_ITER:-3}"
+SH6_CALL_COUNT="${SH6_CALL_COUNT:-100000}"
+SH6_MIN_BLOCK="${SH6_MIN_BLOCK:-1}"
+SH6_MAX_BLOCK="${SH6_MAX_BLOCK:-1000}"
+SH6_THREADS="${SH6_THREADS:-4}"
 BASE_PORT="${BASE_PORT:-6399}"
 
 mkdir -p "${OUTDIR}"
@@ -57,6 +76,24 @@ find_larson_bin() {
   for path in \
     /mnt/workdisk/public_share/hakmem/larson_system \
     /mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/larson; do
+    if [[ -x "${path}" ]]; then
+      printf '%s\n' "${path}"
+      return 0
+    fi
+  done
+  return 1
+}
+
+find_mimalloc_bench_bin() {
+  local name="$1"
+  if [[ -n "${MIMALLOC_BENCH_DIR:-}" && -x "${MIMALLOC_BENCH_DIR}/${name}" ]]; then
+    printf '%s\n' "${MIMALLOC_BENCH_DIR}/${name}"
+    return 0
+  fi
+  local path
+  for path in \
+    "/mnt/workdisk/public_share/hakmem/mimalloc-bench/out/bench/${name}" \
+    "/mnt/workdisk/public_share/hakmem/mimalloc-bench/build/bench/${name}"; do
     if [[ -x "${path}" ]]; then
       printf '%s\n' "${path}"
       return 0
@@ -106,12 +143,20 @@ if [[ -n "${ALLOCATORS_CSV:-}" ]]; then
 fi
 
 larson_bin="$(find_larson_bin || true)"
+xmalloc_bin="$(find_mimalloc_bench_bin xmalloc-test || true)"
+cache_scratch_bin="$(find_mimalloc_bench_bin cache-scratch || true)"
+mstress_bin="$(find_mimalloc_bench_bin mstress || true)"
+sh6bench_bin="$(find_mimalloc_bench_bin sh6bench || true)"
 
 {
   echo "# HZ10 macro preload matrix"
   echo "# generated=${STAMP}"
   echo "# RUNS=${RUNS} REDIS_OPS=${REDIS_OPS} REDIS_CLIENTS=${REDIS_CLIENTS} PYTHON_LOOPS=${PYTHON_LOOPS}"
   echo "# RUN_LARSON=${RUN_LARSON} LARSON_SECONDS=${LARSON_SECONDS} LARSON_MIN=${LARSON_MIN} LARSON_MAX=${LARSON_MAX} LARSON_CHUNKS=${LARSON_CHUNKS} LARSON_ROUNDS=${LARSON_ROUNDS} LARSON_SEED=${LARSON_SEED} LARSON_THREADS=${LARSON_THREADS}"
+  echo "# RUN_XMALLOC=${RUN_XMALLOC} XMALLOC_WORKERS=${XMALLOC_WORKERS} XMALLOC_SECONDS=${XMALLOC_SECONDS} XMALLOC_SIZE=${XMALLOC_SIZE}"
+  echo "# RUN_CACHE_SCRATCH=${RUN_CACHE_SCRATCH} CACHE_SCRATCH_THREADS=${CACHE_SCRATCH_THREADS} CACHE_SCRATCH_ITERATIONS=${CACHE_SCRATCH_ITERATIONS} CACHE_SCRATCH_OBJECT_SIZE=${CACHE_SCRATCH_OBJECT_SIZE} CACHE_SCRATCH_REPETITIONS=${CACHE_SCRATCH_REPETITIONS} CACHE_SCRATCH_CONCURRENCY=${CACHE_SCRATCH_CONCURRENCY}"
+  echo "# RUN_MSTRESS=${RUN_MSTRESS} MSTRESS_THREADS=${MSTRESS_THREADS} MSTRESS_SCALE=${MSTRESS_SCALE} MSTRESS_ITER=${MSTRESS_ITER}"
+  echo "# RUN_SH6BENCH=${RUN_SH6BENCH} SH6_CALL_COUNT=${SH6_CALL_COUNT} SH6_MIN_BLOCK=${SH6_MIN_BLOCK} SH6_MAX_BLOCK=${SH6_MAX_BLOCK} SH6_THREADS=${SH6_THREADS}"
   echo "# hz10=${ROOT}/libhz10.so"
   echo "# hz10_coarse=${ROOT}/libhz10_coarse.so"
   echo "# hz10_base=${ROOT}/libhz10_base.so"
@@ -121,6 +166,10 @@ larson_bin="$(find_larson_bin || true)"
   echo "# tcmalloc=${tcmalloc_lib:-SKIP}"
   echo "# mimalloc=${mimalloc_lib:-SKIP}"
   echo "# larson=${larson_bin:-SKIP}"
+  echo "# xmalloc_test=${xmalloc_bin:-SKIP}"
+  echo "# cache_scratch=${cache_scratch_bin:-SKIP}"
+  echo "# mstress=${mstress_bin:-SKIP}"
+  echo "# sh6bench=${sh6bench_bin:-SKIP}"
   echo "# allocators=${alloc_names[*]}"
 } >>"${log}"
 
@@ -259,6 +308,69 @@ run_larson() {
   fi
 }
 
+run_xmalloc_test() {
+  [[ "${RUN_XMALLOC}" == "1" ]] || return 0
+  [[ -n "${xmalloc_bin}" ]] || return 0
+  local allocator="$1"
+  local lib="$2"
+  local run="$3"
+  local -a env_cmd=(env HZ10_SHIM_TOLERATE_FOREIGN=1)
+  if [[ -n "${lib}" ]]; then
+    env_cmd+=(LD_PRELOAD="${lib}")
+  fi
+  run_timed xmalloc_test "${allocator}" "${run}" "${env_cmd[@]}" \
+    "${xmalloc_bin}" -w "${XMALLOC_WORKERS}" -t "${XMALLOC_SECONDS}" \
+    -s "${XMALLOC_SIZE}"
+}
+
+run_cache_scratch() {
+  [[ "${RUN_CACHE_SCRATCH}" == "1" ]] || return 0
+  [[ -n "${cache_scratch_bin}" ]] || return 0
+  local allocator="$1"
+  local lib="$2"
+  local run="$3"
+  local -a env_cmd=(env HZ10_SHIM_TOLERATE_FOREIGN=1)
+  if [[ -n "${lib}" ]]; then
+    env_cmd+=(LD_PRELOAD="${lib}")
+  fi
+  run_timed cache_scratch "${allocator}" "${run}" "${env_cmd[@]}" \
+    "${cache_scratch_bin}" "${CACHE_SCRATCH_THREADS}" \
+    "${CACHE_SCRATCH_ITERATIONS}" "${CACHE_SCRATCH_OBJECT_SIZE}" \
+    "${CACHE_SCRATCH_REPETITIONS}" "${CACHE_SCRATCH_CONCURRENCY}"
+}
+
+run_mstress() {
+  [[ "${RUN_MSTRESS}" == "1" ]] || return 0
+  [[ -n "${mstress_bin}" ]] || return 0
+  local allocator="$1"
+  local lib="$2"
+  local run="$3"
+  local -a env_cmd=(env HZ10_SHIM_TOLERATE_FOREIGN=1)
+  if [[ -n "${lib}" ]]; then
+    env_cmd+=(LD_PRELOAD="${lib}")
+  fi
+  run_timed mstress "${allocator}" "${run}" "${env_cmd[@]}" \
+    "${mstress_bin}" "${MSTRESS_THREADS}" "${MSTRESS_SCALE}" \
+    "${MSTRESS_ITER}"
+}
+
+run_sh6bench() {
+  [[ "${RUN_SH6BENCH}" == "1" ]] || return 0
+  [[ -n "${sh6bench_bin}" ]] || return 0
+  local allocator="$1"
+  local lib="$2"
+  local run="$3"
+  local input="${OUTDIR}/sh6bench_${allocator}_${run}.in"
+  printf '%s\n%s\n%s\n%s\n' "${SH6_CALL_COUNT}" "${SH6_MIN_BLOCK}" \
+    "${SH6_MAX_BLOCK}" "${SH6_THREADS}" >"${input}"
+  local -a env_cmd=(env HZ10_SHIM_TOLERATE_FOREIGN=1)
+  if [[ -n "${lib}" ]]; then
+    env_cmd+=(LD_PRELOAD="${lib}")
+  fi
+  run_timed sh6bench "${allocator}" "${run}" "${env_cmd[@]}" \
+    "${sh6bench_bin}" "${input}"
+}
+
 for i in "${!alloc_names[@]}"; do
   name="${alloc_names[$i]}"
   lib="${alloc_libs[$i]}"
@@ -266,6 +378,10 @@ for i in "${!alloc_names[@]}"; do
     run_python_alloc "${name}" "${lib}" "${run}"
     run_redis_setget "${name}" "${lib}" "${run}"
     run_larson "${name}" "${lib}" "${run}"
+    run_xmalloc_test "${name}" "${lib}" "${run}"
+    run_cache_scratch "${name}" "${lib}" "${run}"
+    run_mstress "${name}" "${lib}" "${run}"
+    run_sh6bench "${name}" "${lib}" "${run}"
   done
 done
 

@@ -12,9 +12,10 @@ run_hz10_shim_smoke.sh:
 
 run_hz10_macro_preload_matrix.sh:
   macro matrix lane (`make bench-macro-matrix`; legacy alias:
-  `make bench-macro-preload`): python_alloc, redis_setget, and larson across
-  glibc, hz10, hz10-coarse, hz10-base, hz10+orphan, tcmalloc if found, and
-  source-build mimalloc if found. Compatibility names `hz10+fine` and
+  `make bench-macro-preload`): python_alloc, redis_setget, larson,
+  xmalloc_test, cache_scratch, mstress, and sh6bench across glibc, hz10,
+  hz10-coarse, hz10-base, hz10+orphan, tcmalloc if found, and source-build
+  mimalloc if found. Compatibility names `hz10+fine` and
   `hz10+orphan-partial` are still accepted via `ALLOCATORS_CSV`. Set
   `ALLOCATORS_CSV=glibc,hz10,tcmalloc` to run a filtered matrix.
 
@@ -60,6 +61,9 @@ LARSON_BIN:
 
 RUN_LARSON:
   Set to 0 to skip larson inside the macro matrix.
+
+RUN_XMALLOC / RUN_CACHE_SCRATCH / RUN_MSTRESS / RUN_SH6BENCH:
+  Set an individual extended macro row to 0 to skip it.
 
 BASE_PORT:
   Redis base port for macro matrix runs.

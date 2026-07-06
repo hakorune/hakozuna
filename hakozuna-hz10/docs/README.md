@@ -42,6 +42,12 @@ HZ10_MACRO_MATRIX_EXPAND_L0.md:
   variants, an hz10+fine allocator column, and a larson row; concluded
   fine classes are not a broad shim win and opened thread-exit attribution
 
+HZ10MacroWidth-L0:
+  current product-lane evidence lives in HZ10_LANES_INDEX.md and
+  bench_results/20260707T_hz10_macro_width_l0/. The macro matrix now covers
+  python_alloc, redis_setget, larson, xmalloc_test, cache_scratch, mstress,
+  and sh6bench across glibc/hz10/tcmalloc/mimalloc.
+
 HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md:
   completed diagnostic box for splitting larson macro RSS; confirmed
   orphaned active owner-thread pages explain 94.2-94.5% of sampled HZ10
