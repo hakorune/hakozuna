@@ -66,3 +66,6 @@ dump.rdb
 
 # Private development docs (not for public)
 /private/
+
+# Local agent/worktree state
+/.claude/
