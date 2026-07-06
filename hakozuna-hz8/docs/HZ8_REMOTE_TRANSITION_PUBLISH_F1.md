@@ -1,6 +1,6 @@
 # HZ8RemoteTransitionPublish-F1
 
-Status: implemented; smoke-clean; xmalloc repro confirmation pending.
+Status: NO-GO. Smoke-clean, but xmalloc repro stayed frozen. Code reverted.
 
 ## Purpose
 
@@ -87,9 +87,9 @@ hangs in a yield-spin loop.
 NO-GO if the transition assist must publish without a span lease, without
 matching owner generation, or after the span has left `OWNED_ACTIVE`.
 
-## Result So Far
+## Result
 
-Implemented in `h8_remote_free_publish_known()`:
+Prototype implemented in `h8_remote_free_publish_known()`:
 
 ```text
 owner lifecycle lease failure
@@ -108,7 +108,41 @@ make -C hakozuna-hz8 smoke preload-smoke
 make -C hakozuna-hz10 hz10-standalone-check
 ```
 
-`xmalloc-test` was not available in this checkout/PATH during implementation,
-so the original macro repro gate is still pending. The box should be treated
-as a targeted correctness fix for the identified transition spin, not as a
-fully closed xmalloc verdict until that row is rerun.
+External rerun of the original xmalloc repro was negative:
+
+```text
+glibc baseline:       rc=0,   2.05s, 198MB, completed
+HZ8 with prototype:   rc=137, 15.0s, 1.79MB, no progress
+```
+
+Perf stayed on the same shape:
+
+```text
+h8_owner_lifecycle_enter       8.71%
+h8_remote_free_publish_known   5.45%
+h8_span_collect_remote         4.56%
+h8_owner_lifecycle_exit        3.52%
+kernel do_sched_yield          2.44%
+```
+
+Verdict: NO-GO. The one-shot transition assist did not break the livelock.
+The prototype was reverted from `h8_remote_inbox.c`.
+
+## Follow-Up
+
+The next xmalloc box should not retry this shape. The hot frame is owner
+lifecycle acquisition itself, not merely the outer `h8_free_inner()` retry
+loop. A better next box is an attribution/repair design for owner lifecycle
+lease contention:
+
+```text
+- count owner_lifecycle_enter retry/yield depth per free
+- identify whether progress is blocked by owner exit, pending collection, or
+  repeated owner reuse
+- add a real escape path only after the blocked state is named
+```
+
+Possible escape paths are queueing the remote free to a durable owner/orphan
+queue, futex/blocking wait under sustained transition, or making publish
+owner-lease-free by construction. Each needs a separate proof; none should be
+mixed into this reverted NO-GO box.
