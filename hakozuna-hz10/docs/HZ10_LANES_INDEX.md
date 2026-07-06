@@ -38,6 +38,18 @@ hz10+orphan:
   Macro gate verdict: narrow GO as opt-in lane, default NO-GO. Throughput is
   competitor-range on larson, but RSS is still ~9.6x tcmalloc.
 
+hz10+orphan-partial:
+  Built as libhz10_orphan_partial.so via `make preload-orphan-partial`.
+  Opt-in sibling for HZ10PartialOrphanAdoption-L1:
+  `HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` plus
+  `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`. Keeps hz10+orphan idle-only as the
+  reference lane while testing partial-page ownership transfer.
+  First larson 4t/128c RUNS=3 probe: current RSS 2,817,024 KiB ->
+  733,568 KiB and throughput 2.069M -> 2.085M vs idle-only. Census
+  orphan_unadopted collapsed from 32,329 pages / 2.118GB to 3 pages / 196KiB.
+  Result log:
+  bench_results/20260706T005939Z_hz10_larson_thread_churn_attribution_l0/
+
 retired-local:
   HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1.
   Proves local retired backlog mechanism, but default NO-GO.
@@ -46,7 +58,7 @@ retired-local:
 ## Active Next Box
 
 ```text
-HZ10PartialOrphanAdoption-Design-L0
+HZ10PartialOrphanAdoption-L1
 
 Input:
   docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md
@@ -70,8 +82,20 @@ Current design verdict:
   implemented. The macro gate makes orphan adoption a narrow GO as an opt-in
   lane, but not default. The pagemap census confirmed the residual is
   partial-orphan trapped capacity, dominated by 384B pages with one live slot.
-  Next design partial-page handoff; do not implement until the ownership proof
-  is explicit.
+  DESIGN WRITTEN 20260707 (fable5):
+  docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md -- transfer protocol
+  T1-T5 with proof obligations P1-P7 (registry-pop exclusivity; dead-owner
+  happens-before via EXITED-then-release-publish; the free-path owner
+  compare needs NO added ordering by the self-write/coherence argument;
+  in-flight claim/publish is owner-agnostic; adopter-holds-own-object and
+  reentrancy; destruction isolation; front-lane compatibility). Review its
+  open questions -- especially Q1: if today's idle-adoption scan probes
+  (drains) pages in-place in the registry without pop-exclusivity, that
+  is a latent O4 violation this box must fix first.
+  AUDIT RESULT: today's idle-adoption path pops the page from the registry
+  before drain/probe; no in-place registry drain was found. The partial lane
+  still uses the stricter T1-T5 shape: pop, transfer owner, drain, then link
+  into the adopter's class list only if the page has free capacity.
 
 Method sharpening (fable5 review, 20260707):
   1. Use a PAGEMAP CENSUS, not TLS exit-stats: dead owners' pages are
@@ -128,6 +152,11 @@ make preload-orphan-adoption
   Builds libhz10_orphan.so, non-clobbering sibling with
   HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1.
 
+make preload-orphan-partial
+  Builds libhz10_orphan_partial.so, non-clobbering sibling with
+  HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 and
+  HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1.
+
 make preload-fine-size-classes
 make preload-retired-local
 make preload-fine-retired-local
@@ -140,8 +169,8 @@ make preload-fine-retired-local
 ```text
 make bench-macro-matrix
   Runs scripts/run_hz10_macro_preload_matrix.sh.
-  Allocators: glibc, hz10, hz10+fine, hz10+orphan, tcmalloc if found, source
-  mimalloc if found.
+  Allocators: glibc, hz10, hz10+fine, hz10+orphan, hz10+orphan-partial,
+  tcmalloc if found, source mimalloc if found.
   Workloads: python_alloc, redis_setget, larson.
 
 make bench-macro-preload
@@ -196,6 +225,12 @@ HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1
   Opt-in thread-churn lane. Exited threads publish active pages to an orphan
   registry; later threads may adopt only fully idle pages. Default remains off
   until the wider macro matrix is reviewed.
+
+HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1
+  Requires HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1. Lets an adopter take a
+  partial orphan page by registry pop, owner transfer, remote drain, and
+  normal class-list insertion when the page has free capacity. Default off;
+  measured through the hz10+orphan-partial sibling lane.
 ```
 
 ## Decision Ledger

@@ -11,6 +11,14 @@
 #define HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION 0
 #endif
 
+#ifndef HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION
+#define HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION 0
+#endif
+
+#if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION && !HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
+#error "HZ10 partial orphan adoption requires HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION"
+#endif
+
 #if HZ10_ENABLE_FRONT_CACHE && HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
 #error "HZ10 orphan active adoption does not yet support front cache handoff"
 #endif

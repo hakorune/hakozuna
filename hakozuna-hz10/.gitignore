@@ -13,6 +13,7 @@
 /hz10_public_entry_smoke
 /hz10_public_entry_owner_smoke
 /hz10_public_entry_orphan_adoption_smoke
+/hz10_public_entry_orphan_partial_smoke
 /hz10_public_entry_retired_local_smoke
 /hz10_public_entry_retired_local_bench
 /hz10_public_entry_bench

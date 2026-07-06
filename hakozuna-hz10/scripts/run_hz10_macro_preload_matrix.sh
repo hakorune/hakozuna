@@ -21,7 +21,7 @@ LARSON_THREADS="${LARSON_THREADS:-4}"
 BASE_PORT="${BASE_PORT:-6399}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" preload preload-fine preload-orphan-adoption >/dev/null
+make -C "${ROOT}" preload preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
 
 log="${OUTDIR}/combined.log"
 summary="${OUTDIR}/summary.tsv"
@@ -65,8 +65,8 @@ find_larson_bin() {
   return 1
 }
 
-declare -a alloc_names=("glibc" "hz10" "hz10+fine" "hz10+orphan")
-declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_fine.so" "${ROOT}/libhz10_orphan.so")
+declare -a alloc_names=("glibc" "hz10" "hz10+fine" "hz10+orphan" "hz10+orphan-partial")
+declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_fine.so" "${ROOT}/libhz10_orphan.so" "${ROOT}/libhz10_orphan_partial.so")
 
 tcmalloc_lib="$(hz10_bench_find_tcmalloc_lib || true)"
 if [[ -n "${tcmalloc_lib}" ]]; then
@@ -90,6 +90,7 @@ larson_bin="$(find_larson_bin || true)"
   echo "# hz10=${ROOT}/libhz10.so"
   echo "# hz10_fine=${ROOT}/libhz10_fine.so"
   echo "# hz10_orphan=${ROOT}/libhz10_orphan.so"
+  echo "# hz10_orphan_partial=${ROOT}/libhz10_orphan_partial.so"
   echo "# tcmalloc=${tcmalloc_lib:-SKIP}"
   echo "# mimalloc=${mimalloc_lib:-SKIP}"
   echo "# larson=${larson_bin:-SKIP}"

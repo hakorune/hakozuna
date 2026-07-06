@@ -51,6 +51,11 @@ HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md:
   design record for the thread-exit RSS fix: persistent owner records first,
   then orphan active-page adoption; destructor reclaim remains forbidden
 
+HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md:
+  design + ownership proof (P1-P7) for adopting partial orphan pages so
+  new allocations fill trapped free capacity; the census-backed fix for
+  larson's remaining 2.1GB of one-live-slot pages
+
 HZ10_ENTRY_TRIM_DESIGN_L0.md:
   review design for the per-op entry trim (route inline fast path,
   division-free interior check, size-class inline, record-carried owner

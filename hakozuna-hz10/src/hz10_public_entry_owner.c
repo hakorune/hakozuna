@@ -96,6 +96,21 @@ static Hz10FreelistPage* hz10_orphan_pop_one(Hz10PageSublist* src) {
   return page;
 }
 
+static Hz10FreelistPage* hz10_orphan_pop_class(uint32_t class_id) {
+  Hz10FreelistPage* page;
+  hz10_platform_mutex_lock(&hz10_orphan_lock);
+  page = hz10_orphan_pop_one(&hz10_orphan_active[class_id]);
+  hz10_platform_mutex_unlock(&hz10_orphan_lock);
+  return page;
+}
+
+static void hz10_orphan_repush_class(uint32_t class_id,
+                                     Hz10FreelistPage* page) {
+  hz10_platform_mutex_lock(&hz10_orphan_lock);
+  hz10_orphan_append_one(&hz10_orphan_active[class_id], page);
+  hz10_platform_mutex_unlock(&hz10_orphan_lock);
+}
+
 static void hz10_owner_destructor(void* value) {
   Hz10ThreadOwner* owner = (Hz10ThreadOwner*)value;
   if (!owner) return;
@@ -157,28 +172,46 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter) {
 #if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
   if (!adopter || class_id >= HZ10_CLASS_COUNT) return NULL;
-  hz10_platform_mutex_lock(&hz10_orphan_lock);
-  Hz10PageSublist* src = &hz10_orphan_active[class_id];
-  Hz10FreelistPage* page = NULL;
   uint32_t scan_budget = HZ10_ORPHAN_ACTIVE_ADOPT_SCAN_BUDGET;
   for (uint32_t scanned = 0u; scanned < scan_budget; ++scanned) {
-    page = hz10_orphan_pop_one(src);
+    Hz10FreelistPage* page = hz10_orphan_pop_class(class_id);
     if (!page) {
       break;
     }
 
+#if HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION
+    Hz10ThreadOwner* old_owner =
+        (Hz10ThreadOwner*)hz10_freelist_page_owner_thread(page);
+    if (page->class_id != class_id ||
+        hz10_public_entry_owner_state(old_owner) !=
+            HZ10_THREAD_OWNER_STATE_EXITED) {
+      hz10_orphan_repush_class(class_id, page);
+      continue;
+    }
+
+    hz10_freelist_page_set_owner_thread(page, adopter);
+    hz10_page_drain_remote(page);
+
+    if (page->local_free_head) {
+      hz10_freelist_page_note_adopted(page);
+      hz10_class_pages_add(&adopter->classes[class_id].list, page);
+      return page;
+    }
+
+    hz10_freelist_page_set_owner_thread(page, old_owner);
+    hz10_orphan_repush_class(class_id, page);
+#else
     hz10_page_drain_remote(page);
     if (page->free_count == page->slot_count) {
       hz10_freelist_page_set_owner_thread(page, adopter);
       hz10_freelist_page_note_adopted(page);
       hz10_class_pages_add(&adopter->classes[class_id].list, page);
-      hz10_platform_mutex_unlock(&hz10_orphan_lock);
       return page;
     }
 
-    hz10_orphan_append_one(src, page);
+    hz10_orphan_repush_class(class_id, page);
+#endif
   }
-  hz10_platform_mutex_unlock(&hz10_orphan_lock);
   return NULL;
 #else
   (void)class_id;

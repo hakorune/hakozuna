@@ -44,12 +44,31 @@ status:
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    HZ10PartialOrphanAdoption-Design-L0. Pagemap census confirmed the residual:
+    HZ10PartialOrphanAdoption-L1. Pagemap census confirmed the residual:
     median orphan_unadopted=32,332 pages / 2.119GB, with 32,333 live slots and
     5.466M free slots trapped. class 8 (384B) alone is 32,327 pages and almost
     every page has exactly one live slot. hidden_free_slots=0, so this is not
-    an undrained remote-stack problem. Do not implement yet; design the
-    partial-page ownership proof first.
+    an undrained remote-stack problem. Design/proof is recorded in
+    docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md.
+
+  Implementation lane:
+    - Keep existing hz10+orphan idle-only as `libhz10_orphan.so`.
+    - Add partial page adoption as sibling `libhz10_orphan_partial.so`
+      (`HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` +
+      `HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1`) so idle-only and partial can
+      be A/B measured without clobbering.
+    - Q1 audit result: existing idle adoption pops a page from the registry
+      before probing/draining; it does not drain in-place while the page is
+      still registry-linked. Partial lane still transfers owner before drain.
+    - Probe RUNS=3, larson 4t/128c/2s:
+      hz10+orphan median current RSS 2,817,024 KiB, throughput 2.069M;
+      hz10+orphan-partial median current RSS 733,568 KiB, throughput 2.085M.
+      Census orphan_unadopted collapsed from 32,329 pages / 2.118GB to
+      3 pages / 196KiB. Log:
+      bench_results/20260706T005939Z_hz10_larson_thread_churn_attribution_l0/
+    - Guard: short python/redis macro check (RUNS=1, RUN_LARSON=0) shows
+      hz10+orphan-partial within noise of hz10+orphan for those non-thread-
+      churn rows. TSan smoke including orphan-partial is green.
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design
@@ -64,7 +83,8 @@ status:
     - HZ10OrphanActiveAdoption-L1 is implemented as an opt-in sibling
       preload lane (`libhz10_orphan.so`).
     - Adopt only idle active orphan pages (`free_count == slot_count`);
-      partial-page handoff is out of scope.
+      partial-page handoff is a separate sibling lane under active
+      implementation.
     - Do not destroy pages from a pthread destructor.
 
   Lane SSOT:
