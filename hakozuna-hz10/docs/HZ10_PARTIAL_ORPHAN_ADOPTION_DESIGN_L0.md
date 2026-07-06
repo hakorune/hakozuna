@@ -217,9 +217,29 @@ class 8 adopted pages        0                       273
 class 8 adopted live slots   0                       32,583
 ```
 
-Verdict: GO as opt-in sibling lane. Keep default and idle-only orphan lane
-unchanged until python/redis guard rows and the broader macro matrix are
-reviewed.
+Default-candidate matrix RUNS=3:
+
+```text
+python_alloc idle-only partial: 0.920s / 116,848 KiB
+python_alloc partial:           0.940s / 116,876 KiB
+redis_setget idle-only partial: 0.540s / 8,064 KiB client
+redis_setget partial:           0.540s / 8,064 KiB client
+larson idle-only partial:       4.305s / 2,687,104 KiB
+larson partial:                 4.215s /   601,216 KiB
+```
+
+Verdict: GO for LD_PRELOAD shim default. Source compile-time defaults stay off
+so public-entry and front-cache research lanes remain isolated; `make preload`
+now builds `libhz10.so` with orphan + partial adoption, and `make preload-base`
+builds the former no-orphan shim as `libhz10_base.so`.
+
+Shim default confirmation RUNS=2:
+
+```text
+larson hz10      4.181s /   602,752 KiB
+larson hz10-base 4.205s / 9,216,704 KiB
+python/redis     unchanged within this short confirmation
+```
 
 ## Open questions for reviewers
 

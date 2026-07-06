@@ -13,8 +13,9 @@ run_hz10_shim_smoke.sh:
 run_hz10_macro_preload_matrix.sh:
   macro matrix lane (`make bench-macro-matrix`; legacy alias:
   `make bench-macro-preload`): python_alloc, redis_setget, and larson across
-  glibc, hz10, hz10+fine, hz10+orphan, hz10+orphan-partial, tcmalloc if found,
-  and source-build mimalloc if found.
+  glibc, hz10, hz10-base, hz10+fine, hz10+orphan, hz10+orphan-partial,
+  tcmalloc if found, and source-build mimalloc if found. Set
+  `ALLOCATORS_CSV=glibc,hz10,tcmalloc` to run a filtered matrix.
 
 run_hz10_rss_guard.sh:
   short lifecycle-flush RSS guard; checks current_rss_kb plus busy reclaim
@@ -22,7 +23,7 @@ run_hz10_rss_guard.sh:
 
 run_hz10_larson_thread_churn_attribution.sh:
   macro attribution runner for HZ10LarsonThreadChurnAttribution-L0; sweeps
-  small larson shapes for glibc/hz10/hz10+fine/hz10+orphan/
+  small larson shapes for glibc/hz10/hz10-base/hz10+fine/hz10+orphan/
   hz10+orphan-partial and records sampled current RSS plus per-thread
   `hz10_shim_exit_stats` lines under HZ10_SHIM_THREAD_EXIT_STATS=1
 
@@ -48,6 +49,10 @@ RUNS:
 
 MIMALLOC_LIB:
   Explicit source-build mimalloc .so for macro matrix runs.
+
+ALLOCATORS_CSV:
+  Comma-separated allocator subset for macro matrix runs. Useful for splitting
+  high-RSS larson rows from normal guard rows.
 
 LARSON_BIN:
   Explicit larson executable for macro/attribution runs.

@@ -13,10 +13,10 @@ LARSON_MIN="${LARSON_MIN:-8}"
 LARSON_MAX="${LARSON_MAX:-128}"
 LARSON_ROUNDS="${LARSON_ROUNDS:-1}"
 LARSON_SEED="${LARSON_SEED:-12345}"
-ALLOCATORS_CSV="${ALLOCATORS_CSV:-glibc,hz10,hz10+fine,hz10+orphan,hz10+orphan-partial}"
+ALLOCATORS_CSV="${ALLOCATORS_CSV:-glibc,hz10,hz10-base,hz10+fine,hz10+orphan,hz10+orphan-partial}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" preload preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
+make -C "${ROOT}" preload preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
 
 log="${OUTDIR}/combined.log"
 summary="${OUTDIR}/summary.tsv"
@@ -56,6 +56,7 @@ lib_for_allocator() {
   case "$1" in
     glibc) printf '%s\n' "" ;;
     hz10) printf '%s\n' "${ROOT}/libhz10.so" ;;
+    hz10-base) printf '%s\n' "${ROOT}/libhz10_base.so" ;;
     hz10+fine) printf '%s\n' "${ROOT}/libhz10_fine.so" ;;
     hz10+orphan) printf '%s\n' "${ROOT}/libhz10_orphan.so" ;;
     hz10+orphan-partial) printf '%s\n' "${ROOT}/libhz10_orphan_partial.so" ;;

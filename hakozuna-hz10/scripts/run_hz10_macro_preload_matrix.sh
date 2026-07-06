@@ -21,7 +21,7 @@ LARSON_THREADS="${LARSON_THREADS:-4}"
 BASE_PORT="${BASE_PORT:-6399}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" preload preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
+make -C "${ROOT}" preload preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
 
 log="${OUTDIR}/combined.log"
 summary="${OUTDIR}/summary.tsv"
@@ -65,8 +65,8 @@ find_larson_bin() {
   return 1
 }
 
-declare -a alloc_names=("glibc" "hz10" "hz10+fine" "hz10+orphan" "hz10+orphan-partial")
-declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_fine.so" "${ROOT}/libhz10_orphan.so" "${ROOT}/libhz10_orphan_partial.so")
+declare -a alloc_names=("glibc" "hz10" "hz10-base" "hz10+fine" "hz10+orphan" "hz10+orphan-partial")
+declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_base.so" "${ROOT}/libhz10_fine.so" "${ROOT}/libhz10_orphan.so" "${ROOT}/libhz10_orphan_partial.so")
 
 tcmalloc_lib="$(hz10_bench_find_tcmalloc_lib || true)"
 if [[ -n "${tcmalloc_lib}" ]]; then
@@ -80,6 +80,29 @@ if [[ -n "${mimalloc_lib}" ]]; then
   alloc_libs+=("${mimalloc_lib}")
 fi
 
+if [[ -n "${ALLOCATORS_CSV:-}" ]]; then
+  declare -a all_alloc_names=("${alloc_names[@]}")
+  declare -a all_alloc_libs=("${alloc_libs[@]}")
+  alloc_names=()
+  alloc_libs=()
+  IFS=',' read -r -a requested_allocators <<<"${ALLOCATORS_CSV}"
+  for requested in "${requested_allocators[@]}"; do
+    found=0
+    for i in "${!all_alloc_names[@]}"; do
+      if [[ "${all_alloc_names[$i]}" == "${requested}" ]]; then
+        alloc_names+=("${all_alloc_names[$i]}")
+        alloc_libs+=("${all_alloc_libs[$i]}")
+        found=1
+        break
+      fi
+    done
+    if [[ "${found}" -ne 1 ]]; then
+      echo "unknown or unavailable allocator in ALLOCATORS_CSV: ${requested}" >&2
+      exit 2
+    fi
+  done
+fi
+
 larson_bin="$(find_larson_bin || true)"
 
 {
@@ -88,12 +111,14 @@ larson_bin="$(find_larson_bin || true)"
   echo "# RUNS=${RUNS} REDIS_OPS=${REDIS_OPS} REDIS_CLIENTS=${REDIS_CLIENTS} PYTHON_LOOPS=${PYTHON_LOOPS}"
   echo "# RUN_LARSON=${RUN_LARSON} LARSON_SECONDS=${LARSON_SECONDS} LARSON_MIN=${LARSON_MIN} LARSON_MAX=${LARSON_MAX} LARSON_CHUNKS=${LARSON_CHUNKS} LARSON_ROUNDS=${LARSON_ROUNDS} LARSON_SEED=${LARSON_SEED} LARSON_THREADS=${LARSON_THREADS}"
   echo "# hz10=${ROOT}/libhz10.so"
+  echo "# hz10_base=${ROOT}/libhz10_base.so"
   echo "# hz10_fine=${ROOT}/libhz10_fine.so"
   echo "# hz10_orphan=${ROOT}/libhz10_orphan.so"
   echo "# hz10_orphan_partial=${ROOT}/libhz10_orphan_partial.so"
   echo "# tcmalloc=${tcmalloc_lib:-SKIP}"
   echo "# mimalloc=${mimalloc_lib:-SKIP}"
   echo "# larson=${larson_bin:-SKIP}"
+  echo "# allocators=${alloc_names[*]}"
 } >>"${log}"
 
 run_timed() {

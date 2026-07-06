@@ -20,8 +20,14 @@ only in a named implementation box with A/B evidence.
 Default HZ10:
   Good: faster than HZ8, competitive with mimalloc on several micro rows,
         strong RSS on many public-entry rows.
-  Bad: larson/thread-churn RSS is dominated by abandoned active pages from
-       short-lived owner threads.
+  Shim default: `make preload` builds libhz10.so with orphan + partial orphan
+        adoption enabled. This fixes the larson/thread-churn RSS cliff in the
+        LD_PRELOAD product lane while keeping source compile-time defaults off
+        for isolated public-entry/front-cache research boxes.
+
+hz10-base:
+  Built as libhz10_base.so via `make preload-base`.
+  Rollback/diagnostic sibling for the former no-orphan shim default.
 
 hz10+fine:
   Built as libhz10_fine.so via `make preload-fine`.
@@ -49,6 +55,14 @@ hz10+orphan-partial:
   orphan_unadopted collapsed from 32,329 pages / 2.118GB to 3 pages / 196KiB.
   Result log:
   bench_results/20260706T005939Z_hz10_larson_thread_churn_attribution_l0/
+  Default-candidate matrix RUNS=3:
+  bench_results/20260706T010511Z_hz10_macro_preload_matrix/
+  python/redis were within noise of idle-only; larson current RSS fell from
+  2,687,104 KiB to 601,216 KiB with throughput still competitor-range.
+  Shim default confirmation RUNS=2:
+  bench_results/20260706T010835Z_hz10_macro_preload_matrix/
+  `hz10` now maps to the partial default and reports 602,752 KiB larson RSS
+  vs 9,216,704 KiB for `hz10-base`.
 
 retired-local:
   HZ10_ENABLE_RETIRED_LOCAL_IDLE_RECLAIM=1.
@@ -142,7 +156,13 @@ Candidate design families to review:
 
 ```text
 make preload
-  Builds libhz10.so, default HZ10 shim.
+  Builds libhz10.so, default HZ10 shim. As of HZ10PartialOrphanAdoption-L1,
+  this enables HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 and
+  HZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1.
+
+make preload-base
+  Builds libhz10_base.so, the former no-orphan shim default for rollback and
+  A/B measurement.
 
 make preload-fine
   Builds libhz10_fine.so, non-clobbering sibling with
@@ -169,8 +189,10 @@ make preload-fine-retired-local
 ```text
 make bench-macro-matrix
   Runs scripts/run_hz10_macro_preload_matrix.sh.
-  Allocators: glibc, hz10, hz10+fine, hz10+orphan, hz10+orphan-partial,
-  tcmalloc if found, source mimalloc if found.
+  Allocators by default: glibc, hz10, hz10-base, hz10+fine, hz10+orphan,
+  hz10+orphan-partial, tcmalloc if found, source mimalloc if found. Use
+  `ALLOCATORS_CSV=...` to split high-RSS larson rows away from normal macro
+  guard rows.
   Workloads: python_alloc, redis_setget, larson.
 
 make bench-macro-preload
@@ -250,8 +272,9 @@ Remote publication V2 / F3:
 
 Thread-exit reclaim:
   Destructor reclaim is forbidden. The live design path is persistent owner
-  identity plus opt-in idle-active orphan adoption; see
-  docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md.
+  identity plus orphan active/partial adoption in the shim default; see
+  docs/HZ10_THREAD_EXIT_OWNERSHIP_HANDOFF_DESIGN_L0.md and
+  docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md.
 ```
 
 ## Source Ownership Map

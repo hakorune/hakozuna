@@ -52,6 +52,10 @@ status:
     docs/HZ10_PARTIAL_ORPHAN_ADOPTION_DESIGN_L0.md.
 
   Implementation lane:
+    - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
+      partial adoption. Source compile-time defaults remain off; this is a shim
+      default, not a public-entry/front-cache default.
+    - Keep no-orphan rollback as `libhz10_base.so` via `make preload-base`.
     - Keep existing hz10+orphan idle-only as `libhz10_orphan.so`.
     - Add partial page adoption as sibling `libhz10_orphan_partial.so`
       (`HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1` +
@@ -69,6 +73,15 @@ status:
     - Guard: short python/redis macro check (RUNS=1, RUN_LARSON=0) shows
       hz10+orphan-partial within noise of hz10+orphan for those non-thread-
       churn rows. TSan smoke including orphan-partial is green.
+    - Default-candidate matrix RUNS=3 (filtered allocators) shows partial vs
+      idle-only: python 0.940s vs 0.920s / same RSS, redis same wall/RSS,
+      larson 601,216 KiB vs 2,687,104 KiB with throughput still competitor-
+      range. Log:
+      bench_results/20260706T010511Z_hz10_macro_preload_matrix/
+    - Shim default confirmation RUNS=2:
+      `hz10` (`libhz10.so`, partial default) larson median 602,752 KiB vs
+      `hz10-base` 9,216,704 KiB, with python/redis unchanged. Log:
+      bench_results/20260706T010835Z_hz10_macro_preload_matrix/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design
