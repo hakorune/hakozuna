@@ -220,9 +220,12 @@ F3 (larson)  investigate a decommit-under-pressure path for the small arena
              (decommit idle spans when arena_committed exceeds a budget). This
              is the retention lever shared with python. RESEARCH box, not a
              quick fix -- measure with the dump knob first.
-F4 (xmalloc) bound/backoff the sched_yield spin in owner-lifecycle/remote-free
-             (or switch to a futex under sustained contention) so it cannot
-             livelock. Needs the exact yield loop located first.
+F4 (xmalloc) IN PROGRESS in `HZ8_REMOTE_TRANSITION_PUBLISH_F1.md`: the exact
+             unbounded yield loop was located in the remote-free
+             OWNER_TRANSITION retry. HZ8 now tries a span-publish-lease
+             transition assist before returning OWNER_TRANSITION. Smokes are
+             green; the xmalloc repro row still needs rerun where
+             `xmalloc-test` is available.
 Diagnostics  keep HZ8_DUMP_STATS (this box) and add an owner-slot-occupancy /
              remote-queue-depth dump to support F2/F4 diagnosis.
 ```

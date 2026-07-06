@@ -438,6 +438,20 @@ H8PublishResult h8_remote_free_publish_known(H8Span* span, size_t slot) {
   if (!h8_owner_publish_enter(owner, ow.generation)) {
     H8_DEBUG_INC(owner_transition_count);
     H8_DEBUG_INC(remote_stage_regular_lease_fail);
+    H8CtlWord ctl = h8_ctl_unpack(
+        atomic_load_explicit(&owner->control, memory_order_acquire));
+    if (ctl.generation == ow.generation &&
+        (ctl.state != H8_OWNER_ALIVE || ctl.publish_closed) &&
+        h8_span_publish_enter(span)) {
+      H8OwnerWord current = h8_span_owner_word_load(span);
+      if (current.slot == ow.slot && current.generation == ow.generation &&
+          h8_span_state_load(span) == H8_SPAN_OWNED_ACTIVE) {
+        H8PublishResult res = h8_remote_free_publish_locked(span, owner, slot);
+        h8_span_publish_exit(span);
+        return res;
+      }
+      h8_span_publish_exit(span);
+    }
     return H8_PUBLISH_OWNER_TRANSITION;
   }
   H8_DEBUG_INC(remote_stage_regular_lease_ok);
