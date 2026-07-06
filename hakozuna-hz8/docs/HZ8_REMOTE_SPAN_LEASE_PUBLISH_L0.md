@@ -1,6 +1,6 @@
 # HZ8RemoteSpanLeasePublish-L0
 
-Status: implemented + measured; GO as opt-in lane, not yet default.
+Status: implemented + measured; GO, default-enabled after guard.
 
 ## Purpose
 
@@ -28,7 +28,7 @@ and owner exit/handoff already has span-level close/wait machinery.
 
 ## Mechanism
 
-Opt-in flag:
+Feature flags:
 
 ```text
 H8_REMOTE_SPAN_LEASE_PUBLISH_L1
@@ -50,7 +50,7 @@ release span publish lease
 If any check fails, return `OWNER_TRANSITION` and keep the existing fallback
 behavior.
 
-The opt-in build also adds bounded backoff to the remaining
+The build also adds bounded backoff to the remaining
 `OWNER_TRANSITION` retry loop: after every 64 transition retries, sleep briefly
 instead of immediately calling `sched_yield()` again. This is intentionally
 limited to the xmalloc experiment lane.
@@ -77,16 +77,21 @@ This does not create ownerless publish:
 - handoff still requires h8_span_handoff_quiescent()
 ```
 
-The opt-in lane exists because replacing owner-wide lease with span-wide lease
-is a contract change. It must prove itself on xmalloc and smokes before any
-default discussion.
+This started as an opt-in lane because replacing the owner-wide lease with a
+span-wide lease is a contract change. After the xmalloc repro, smokes, and
+public RSS guard passed, the two flags moved into `HZ8_DEFAULT_CFLAGS`.
 
 ## Build Lane
 
 ```text
+make -C hakozuna-hz8 preload
 make -C hakozuna-hz8 preload-remotespanlease
+libhakozuna_hz8_preload.so
 libhakozuna_hz8_preload_remotespanlease.so
 ```
+
+`preload-remotespanlease` remains as a compatibility alias for the measured
+lane; it now uses the same default flags as `preload`.
 
 ## Gates
 
@@ -127,8 +132,9 @@ xmalloc:
 
 ```text
 glibc baseline: rc=0, completed
-HZ8 default:    rc=137, killed at 15s
-HZ8 spanlease:  5/5 completed, elapsed about 2.00s, maxrss 13-19MiB
+old HZ8 default: rc=137, killed at 15s
+spanlease lane:  5/5 completed, elapsed about 2.00s, maxrss 13-19MiB
+new HZ8 default: 5/5 completed, elapsed about 2.00s, maxrss 14-18MiB
 ```
 
 Representative opt-in runs:
@@ -152,13 +158,24 @@ main_local0                  3,538,944 B
 medium_local0                2,883,584 B
 ```
 
+Default enablement public-row RSS guard, same bench, RUNS=3:
+
+```text
+row                         median post RSS
+small_interleaved_remote90   3,031,040 B
+main_interleaved_r90         4,784,128 B
+medium_interleaved_r50       4,104,192 B
+main_local0                  3,670,016 B
+medium_local0                3,014,656 B
+```
+
 Record:
 
 ```text
 bench_results/20260707T_hz8_remote_span_lease_publish_l0/
+bench_results/20260707T_hz8_remote_span_lease_default_l0/
 ```
 
-Verdict: GO as opt-in. This fixes the observed xmalloc freeze in the
-span-lease lane while preserving the public-row low-RSS behavior. Default
-enablement should be a separate box because this changes the remote publish
-ownership proof from owner-wide lease to span-wide lease.
+Verdict: GO as default. This fixes the observed xmalloc freeze while preserving
+the public-row low-RSS behavior. `libhakozuna_hz8_preload_remotespanlease.so`
+remains as a measured compatibility lane, not a separate behavior.

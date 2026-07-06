@@ -228,13 +228,13 @@ F4 (xmalloc) NO-GO in `HZ8_REMOTE_TRANSITION_PUBLISH_F1.md`: a one-shot
              another repair.
 Diagnostics  keep HZ8_DUMP_STATS (this box) and add an owner-slot-occupancy /
              remote-queue-depth dump to support F2/F4 diagnosis.
-F4b (xmalloc) GO as opt-in in `HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md`:
+F4b (xmalloc) GO as default in `HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md`:
              replace the owner-wide remote publish lease with a span publish
-             lease in `libhakozuna_hz8_preload_remotespanlease.so`, plus
+             lease in the default preload build, plus
              bounded transition backoff. xmalloc completed 5/5 instead of
              15s freeze, and the HZ8 public-row RSS guard stayed in the
-             2.9-4.8MiB post-RSS band. Default enablement remains a separate
-             decision box.
+             2.9-4.8MiB post-RSS band. The remotespanlease preload target
+             remains as a compatibility alias for the measured lane.
 ```
 
 Each is a separate small box with its own gate (HZ8 smokes + standalone + the
