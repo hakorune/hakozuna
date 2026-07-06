@@ -13,6 +13,7 @@ status:
     - HZ10PersistentOwnerRecord-L1
     - HZ10OrphanActiveAdoption-L1
     - HZ10FrontAdoptionHandoff-L0
+    - HZ10ShimTlsModelFix-L0
 
   Current evidence:
     - docs/HZ10_MACRO_MATRIX_EXPAND_L0.md
@@ -24,6 +25,7 @@ status:
     - bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
     - bench_results/20260707T_hz10_macro_width_l0/
     - bench_results/20260707T_front_adoption_handoff_l0/
+    - bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
 
   Current read:
     - Macro width RUNS=5 now covers 7 rows: python_alloc, redis_setget,
@@ -51,16 +53,25 @@ status:
       cache before EXITED publish. The handoff is GO, but shim default is
       NO-GO: RUNS=5 `hz10-front` regressed python_alloc and mstress while
       barely improving sh6bench. Keep `libhz10_front.so` as opt-in.
+    - HZ10ShimTlsModelFix-L0 is GO. `SHIM_CFLAGS` now uses
+      `-ftls-model=initial-exec`, removing `__tls_get_addr` from the preload
+      shim path. Split RUNS=5 refresh: sh6bench improved 0.810s -> 0.690s
+      vs prior macro-width median, larson stayed competitor-range, RSS
+      unchanged. A single all-in-one refresh attempt hit one hz10 larson
+      SIGSEGV, but standalone larson 5/5 and hz10-only macro 5/5 passed;
+      keep as watch item, not blocker.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    Productization follow-up after macro-width L0 and front-handoff L0:
-    front default is closed for now. Either add 1-2 real app compatibility/
-    perf rows, or start paper/write-up extraction. Do not open more micro
-    allocator surgery until the product lane asks a sharper question.
+    Productization follow-up after macro-width L0, front-handoff L0, and
+    shim TLS model fix: inspect `hz10_shim_mark_thread_for_stats`, which
+    profiling saw at ~5% self even when exit-stats are not requested. Keep
+    it as a small, opt-in-free code-path box. If sh6bench/mstress remain
+    strategic after that, owner lookup wrapper flattening is the next
+    attribution target.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -141,6 +152,19 @@ status:
         sh6bench 0.810s / 320,256 KiB vs 0.800s / 321,792 KiB.
       Verdict: handoff GO, opt-in lane GO, default NO-GO. Log:
       bench_results/20260707T_front_adoption_handoff_l0/
+    - HZ10ShimTlsModelFix-L0:
+      Added `-ftls-model=initial-exec` to `SHIM_CFLAGS` for all preload
+      library variants. `nm -D libhz10*.so` no longer shows `__tls_get_addr`;
+      `readelf -r libhz10.so` shows `R_X86_64_TPOFF64` TLS relocations.
+      Gates green: all preload variants `-B` rebuilt, smoke-shim-api,
+      smoke-shim-foreign, standalone-check. Split RUNS=5 medians:
+        hz10 sh6bench 0.690s / 320,896 KiB vs tcmalloc 0.320s /
+        271,360 KiB and mimalloc 0.250s / 273,704 KiB;
+        hz10 larson 4.177s / 282,624 KiB vs tcmalloc 4.147s /
+        279,040 KiB and mimalloc 4.148s / 283,980 KiB.
+      One all-in-one matrix attempt saw hz10 larson run=2 SIGSEGV; follow-up
+      standalone larson 5/5 and hz10-only matrix 5/5 passed. Log:
+      bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

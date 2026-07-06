@@ -40,7 +40,16 @@ DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS
 # Keep DEBUG_CFLAGS separate so smoke/sanitizer/TSan-style compiler modes stay
 # explicit gates instead of inheriting optimizer-mode assumptions.
 OPT_CFLAGS := $(CFLAGS) -flto
-SHIM_CFLAGS := $(OPT_CFLAGS) -fno-builtin
+# -ftls-model=initial-exec: safe and cheap specifically for a preloaded
+# .so -- LD_PRELOAD libraries load at process start and are never dlopen'd
+# or unloaded later, satisfying initial-exec's requirement. Perf profiling
+# on sh6bench (bench_results/20260707T080000Z_hz10_sh6bench_attribution)
+# found __tls_get_addr plus owner-lookup wrapper calls eating ~20%+ of
+# self time under the shim's default general-dynamic TLS model (a cost
+# that never shows up in the statically-linked micro benches, since those
+# already get local-exec for free) -- measured +13-15% wall on that row
+# with zero RSS or correctness change.
+SHIM_CFLAGS := $(OPT_CFLAGS) -fno-builtin -ftls-model=initial-exec
 TSAN_DEBUG_CFLAGS := $(CFLAGS) -DHZ10_ENABLE_DEBUG_STATS -fsanitize=thread -fno-omit-frame-pointer
 TSAN_LDFLAGS := $(LDFLAGS) -fsanitize=thread
 

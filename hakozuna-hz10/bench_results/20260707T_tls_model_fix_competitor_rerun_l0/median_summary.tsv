@@ -1,0 +1,15 @@
+workload	allocator	median_wall_sec	median_max_rss_kb	median_current_rss_kb	wall_vs_glibc
+cache_scratch	mimalloc	1.100	5724	-	-
+cache_scratch	tcmalloc	1.090	7552	-	-
+larson	mimalloc	4.148	283980	283980	-
+larson	tcmalloc	4.147	279040	279040	-
+mstress	mimalloc	0.200	333964	-	-
+mstress	tcmalloc	0.160	216576	-	-
+python_alloc	mimalloc	0.680	102508	-	-
+python_alloc	tcmalloc	0.840	104448	-	-
+redis_setget	mimalloc	0.550	8064	-	-
+redis_setget	tcmalloc	0.550	8064	-	-
+sh6bench	mimalloc	0.250	273704	-	-
+sh6bench	tcmalloc	0.320	271360	-	-
+xmalloc_test	mimalloc	2.000	22608	-	-
+xmalloc_test	tcmalloc	2.030	196096	-	-

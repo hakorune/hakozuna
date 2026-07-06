@@ -30,6 +30,16 @@ Default HZ10:
         xmalloc_test, strong RSS on xmalloc_test / mstress / sh6bench, and
         visible remaining wall-time misses on mstress and sh6bench vs
         tcmalloc/mimalloc.
+  Shim TLS model fix (HZ10ShimTlsModelFix-L0): `SHIM_CFLAGS` now builds
+        every `libhz10*.so` with `-ftls-model=initial-exec` (safe for any
+        LD_PRELOAD library -- never dlopen'd/unloaded after process
+        start). Perf attribution on sh6bench found the shim's default
+        general-dynamic TLS model plus three owner-lookup wrapper calls
+        eating >20% of self time, invisible in the static micro-benches.
+        Measured -13 to -15% wall on sh6bench (0.79-0.84s -> 0.69-0.73s),
+        small python_alloc win, larson unaffected (as expected). Macro
+        matrix numbers above predate this fix; refresh before citing
+        exact sh6bench/mstress deltas going forward.
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -93,6 +103,65 @@ retired-local:
 ## Active Next Box
 
 ```text
+HZ10ShimTlsModelFix-L0   (fable5, 20260707 -- landed)
+
+Input:
+  bench_results/20260707T070000Z_hz10_speed_headroom_probe/notes.md
+    (superseded finding, see correction below)
+  bench_results/20260707T080000Z_hz10_sh6bench_attribution/
+  bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
+
+CORRECTION of a prior probe: the "front cache gives +17-20% on
+sh6bench" claim in the 070000Z notes used a stale scratch `.so` from
+2026-07-06 (predates owner-record/orphan-adoption entirely -- `nm -D`
+confirms zero orphan/owner symbols); the live compile attempt with
+current flags had failed against the (then-still-present) front/orphan
+guard, and the leftover binary was mistaken for a fresh result. A clean
+three-way A/B after the guard's removal (default / front+fine /
+front+coarse, sh6bench, 3 runs each) shows NO meaningful difference
+(0.81/0.82/0.82s) -- this CONFIRMS HZ10FrontAdoptionHandoff-L0's
+default-front NO-GO and rules out a fine/coarse interaction bug. Do not
+cite the 070000Z front-cache number.
+
+Real mechanism, found via perf attribution (sh6bench, hz10 vs tcmalloc
+vs mimalloc): hz10 pays ~2.5x tcmalloc's INSTRUCTION count for the same
+work while its cache-misses are actually LOWER than tcmalloc's -- not a
+memory/locality gap. Flat profile: `__tls_get_addr` (+ @plt) plus three
+owner-lookup wrapper functions (`hz10_public_entry_current_owner`,
+`_if_any`, `_owner_record`) total >20% of self time. Root cause: the
+shim's `.so` defaults to the slow general-dynamic TLS access model,
+invisible in this project's statically-linked micro-benches (which
+already get the fast local-exec model for free) -- a genuinely
+shim-specific cost that only the macro/product lane could expose.
+
+Fix: `-ftls-model=initial-exec` added to `SHIM_CFLAGS`. Safe because
+LD_PRELOAD libraries load at process start and are never dlopen'd/
+unloaded later -- exactly initial-exec's requirement. Applies to every
+`libhz10*.so` variant.
+
+Measured (3-5 runs each, `make -B` full shim rebuild):
+  sh6bench:     0.79-0.84s -> 0.69-0.73s   (-13 to -15%)
+  larson RSS:   285.8-289.8MB -> 282.7-287.9MB (no change, expected --
+                larson's hot loop amortizes TLS lookups per entry far
+                more than sh6bench's smaller per-call working set does)
+  python_alloc: 0.51-0.53s -> 0.49-0.50s   (small, consistent)
+Gates: smoke-shim-api, smoke-shim-foreign (fail-closed abort still
+  fires), hz10-standalone-check all green after rebuilding every shim
+  variant. RSS unaffected everywhere (pure codegen change) -- zero risk.
+
+NEXT:
+  1. Refresh the full RUNS=5 macro matrix now that every shim ships the
+     fix, before deciding what (if anything) still needs attacking on
+     sh6bench/mstress -- this was a fixed 3-5 run spot-check, not the
+     full harness.
+  2. `hz10_shim_mark_thread_for_stats` at ~5% self time on EVERY
+     malloc/free (not just when exit-stats are requested) looks like a
+     quick follow-up win independent of the TLS fix.
+  3. The owner-lookup wrapper trio (~20% combined, item above) is the
+     next attribution target on sh6bench/mstress if they still lag
+     materially after a matrix refresh -- likely inlining/flattening
+     candidates now that the TLS-model cost is out of the way.
+
 HZ10FineAdoptionInteractionBug-L0   (resolved/not reproduced after clean
   rebuild; keep counters for future triage -- see
   bench_results/20260707T050000Z_hz10_owner_split_verification/notes.md)
