@@ -67,6 +67,12 @@ status:
       call boundaries while keeping first-touch allocation/destructor
       registration in a hidden noinline slow path. Latest hz10-only RUNS=5:
       sh6bench 0.510s, python_alloc 0.860s, larson 4.179s / 283,768 KiB.
+    - Full all-allocator RUNS=5 after the TLS/stats/owner-inline speed stack:
+      HZ10 is faster than glibc on python_alloc, xmalloc_test, mstress, and
+      sh6bench; parity on redis/cache/larson. Larson is now competitor-range:
+      hz10 4.179s / 283,392 KiB vs tcmalloc 4.158s / 279,040 KiB and mimalloc
+      4.161s / 283,872 KiB. The remaining clear wall gap is sh6bench:
+      hz10 0.510s vs tcmalloc 0.320s and mimalloc 0.250s.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -74,10 +80,9 @@ status:
 
   Active next box:
     Productization follow-up:
-      Refresh the all-allocator RUNS=5 macro matrix after the TLS model fix,
-      stats fast guard, and owner lookup inline. If sh6bench/mstress still lag
-      materially, take a new perf attribution before opening another routing
-      or ownership box.
+      Take fresh perf attribution on the remaining sh6bench gap, and
+      secondarily mstress-vs-tcmalloc. Do not open another routing or
+      ownership box before attribution.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -189,6 +194,13 @@ status:
       sh6bench 0.660s -> 0.510s vs the previous median, python_alloc 0.880s
       -> 0.860s, larson 4.182s -> 4.179s, RSS flat. Log:
       bench_results/20260707T_shim_owner_lookup_inline_l0/
+    - HZ10ShimSpeedStackMacroRefresh-L0:
+      Full all-allocator RUNS=5 after TLS model fix, stats fast guard, and
+      owner lookup inline. HZ10 medians: python_alloc 0.870s / 106,728 KiB,
+      redis_setget 0.540s / 8,064 KiB, larson 4.179s / 283,392 KiB current,
+      xmalloc_test 2.000s / 13,440 KiB, cache_scratch 1.100s / 3,968 KiB,
+      mstress 0.210s / 204,012 KiB, sh6bench 0.510s / 319,488 KiB. Log:
+      bench_results/20260707T_shim_speed_stack_macro_refresh_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

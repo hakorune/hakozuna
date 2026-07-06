@@ -46,8 +46,15 @@ Default HZ10:
         safe owner TLS reads and owner-record extraction while keeping the
         first-touch owner allocation path hidden/noinline. Latest hz10-only
         RUNS=5 medians: sh6bench 0.510s, python_alloc 0.860s, larson 4.179s
-        / 283,768 KiB current RSS. Refresh the all-allocator RUNS=5 macro
-        before citing final competitor ratios.
+        / 283,768 KiB current RSS.
+  Shim speed stack macro refresh:
+        Full RUNS=5 all-allocator refresh after the TLS/stats/owner-inline
+        stack: HZ10 is faster than glibc on python_alloc, xmalloc_test,
+        mstress, and sh6bench; parity on redis_setget/cache_scratch/larson;
+        larson is competitor-range at 4.179s / 283,392 KiB current RSS.
+        Remaining sharp wall gap is sh6bench (HZ10 0.510s vs tcmalloc 0.320s
+        and mimalloc 0.250s). Log:
+        bench_results/20260707T_shim_speed_stack_macro_refresh_l0/
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -198,9 +205,35 @@ Result:
     python_alloc 0.880s -> 0.860s, larson 4.182s -> 4.179s, RSS flat.
 
 NEXT:
-  Refresh the all-allocator RUNS=5 macro matrix with TLS model fix, stats fast
-  guard, and owner lookup inline all present. Then use perf on any remaining
-  sh6bench/mstress gap instead of opening another routing box by intuition.
+  The all-allocator RUNS=5 macro refresh is complete. Use perf on the
+  remaining sh6bench gap, and secondarily the mstress-vs-tcmalloc gap, before
+  opening another routing or ownership box.
+
+HZ10ShimSpeedStackMacroRefresh-L0   (completed)
+
+Input:
+  bench_results/20260707T_shim_speed_stack_macro_refresh_l0/
+
+Result:
+  Full RUNS=5 after HZ10ShimTlsModelFix-L0,
+  HZ10ShimStatsFastGuard-L0, and HZ10ShimOwnerLookupInline-L0:
+    python_alloc:  glibc 1.220s, hz10 0.870s, tcmalloc 0.820s, mimalloc 0.700s
+    redis_setget:  glibc 0.540s, hz10 0.540s, tcmalloc 0.550s, mimalloc 0.540s
+    larson:        glibc 4.140s / 272,384 KiB,
+                   hz10 4.179s / 283,392 KiB,
+                   tcmalloc 4.158s / 279,040 KiB,
+                   mimalloc 4.161s / 283,872 KiB
+    xmalloc_test:  glibc 2.040s / 198,360 KiB,
+                   hz10 2.000s / 13,440 KiB
+    cache_scratch: all main allocators 1.09-1.10s; hz10 RSS 3,968 KiB
+    mstress:       hz10 0.210s / 204,012 KiB vs tcmalloc 0.160s / 224,384 KiB
+    sh6bench:      hz10 0.510s / 319,488 KiB vs tcmalloc 0.320s and
+                   mimalloc 0.250s
+
+Read:
+  The speed stack is the new product-lane baseline. HZ10 is no longer just a
+  microbench story: macro rows are competitor-band except the still-visible
+  sh6bench gap. Next work should be attribution, not speculative routing.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 
