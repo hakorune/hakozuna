@@ -113,6 +113,12 @@ status:
       high hit rate in sh6bench, but macro A/B regressed sh6bench
       0.450s -> 0.520s and python_alloc 0.840s -> 0.880s. Code reverted;
       record: docs/HZ10_OWNER_LOCAL_PAGE_INDEX_DESIGN_L0.md.
+      HZ10Sh6PostNoGoAttribution-L0 re-profiled clean `libhz10.so`:
+      hz10/tcmalloc sh6bench is cycles 1.39x and instructions 1.47x with
+      high IPC, so the remaining gap is still instruction volume. Next scoped
+      design is HZ10MallocActivePageVector-L0, an opt-in malloc-side cache of
+      `owner->classes[class].active`; record:
+      docs/HZ10_MALLOC_ACTIVE_PAGE_VECTOR_DESIGN_L0.md.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +

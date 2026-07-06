@@ -91,8 +91,8 @@ Default HZ10:
         bench_results/20260707T_malloc_fast_leaf_split_l0/
         bench_results/20260707T_malloc_fast_leaf_split_l0_full/
   HZ10SizeClassSmallLookup-L0 is NO-GO; correct but no macro win, reverted.
-  HZ10OwnerLocalPageIndex-L0 is NO-GO; high hit rate but macro regression.
-
+  HZ10OwnerLocalPageIndex-L0 is NO-GO; high-hit macro regression.
+  Active: HZ10MallocActivePageVector-L0 after post-NO-GO sh6 attribution.
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
   Rollback/diagnostic sibling for the former no-orphan shim default.
