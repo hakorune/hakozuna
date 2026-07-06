@@ -73,6 +73,7 @@ typedef struct Hz10FreelistPage {
    */
   uint32_t class_id;
   uint32_t owner_list_kind;
+  uint32_t adopted_count;
 
   /*
    * Inert storage for whoever creates this page (e.g. a multi-class public
@@ -244,6 +245,10 @@ static inline void* hz10_freelist_page_owner_thread(
 static inline void hz10_freelist_page_set_class_id(Hz10FreelistPage* page,
                                                   uint32_t class_id) {
   page->class_id = class_id;
+}
+
+static inline void hz10_freelist_page_note_adopted(Hz10FreelistPage* page) {
+  page->adopted_count += 1u;
 }
 
 static inline _Atomic(void*)* hz10_freelist_page_remote_head(

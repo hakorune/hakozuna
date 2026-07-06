@@ -46,7 +46,7 @@ retired-local:
 ## Active Next Box
 
 ```text
-HZ10OrphanResidualAttribution-L0
+HZ10PartialOrphanAdoption-Design-L0
 
 Input:
   docs/HZ10_LARSON_THREAD_CHURN_ATTRIBUTION_L0.md
@@ -68,8 +68,39 @@ Design constraint:
 Current design verdict:
   Persistent owner-record prep and opt-in idle-active orphan adoption are
   implemented. The macro gate makes orphan adoption a narrow GO as an opt-in
-  lane, but not default. Next split the remaining 2.69GB larson RSS before
-  opening partial-page handoff or any thread-lifecycle contract change.
+  lane, but not default. The pagemap census confirmed the residual is
+  partial-orphan trapped capacity, dominated by 384B pages with one live slot.
+  Next design partial-page handoff; do not implement until the ownership proof
+  is explicit.
+
+Method sharpening (fable5 review, 20260707):
+  1. Use a PAGEMAP CENSUS, not TLS exit-stats: dead owners' pages are
+     invisible to per-thread stats, but every live page is registered in
+     the pagemap. An opt-in sampler (env HZ10_SHIM_CENSUS_SEC=N, stderr
+     lines, racy-read tolerant with a generation double-check per record:
+     read gen, read fields, re-read gen, skip on change) walks mapped
+     leaves during larson STEADY STATE (not exit) and buckets every page:
+       owner-live active / owner-live retired / orphan-unadopted /
+       adopted / pool-cached / metadata,
+     each with a per-class LIVE-SLOT UTILIZATION HISTOGRAM
+     (slot_count - free_count, plus a "hidden free" peek: undrained
+     stripe/pending population on orphan pages).
+  2. Prediction to falsify: idle-only adoption skips every partial orphan
+     page, and larson's steady state (long-lived objects scattered across
+     dying threads' pages) manufactures exactly those -- expect
+     partial-orphan trapped capacity to dominate the 2.4GB excess over
+     tcmalloc. The "hidden free" sub-bucket separately prices whether
+     adoption-scan should drain candidates before the idle check.
+  3. The utilization histogram IS the partial-adoption pricing tool,
+     before any design: reclaimable-now = sum of free capacity in
+     partial orphans; density-over-time = adoption lets new owners fill
+     holes, so even high-utilization pages converge. If the histogram
+     says most trapped bytes sit in pages with very few live slots, a
+     cheaper alternative also becomes measurable: quantum-granular
+     MADV_DONTNEED on free slots is NOT possible (slots < page granule
+     mostly), so partial ADOPTION is the only shape that recovers this
+     without moving live objects -- state that conclusion only if the
+     histogram supports it.
 ```
 
 Candidate design families to review:
@@ -140,6 +171,12 @@ HZ10_SHIM_THREAD_EXIT_STATS=1
 HZ10_SHIM_EXIT_STATS_CLASSES=0
   Suppress per-class lines while keeping summary/class_totals lines. Use for
   larson-style high-churn attribution.
+
+HZ10_SHIM_CENSUS_SEC=N
+  One-shot steady-state pagemap census after N seconds. Diagnostic only.
+  Walks registered pagemap records with a generation double-check and emits
+  `hz10_shim_census` lines to stderr. This is the SSOT for orphan residual
+  attribution; TLS exit-stats cannot see dead-owner pages after adoption.
 
 HZ10_SHIM_TOLERATE_FOREIGN=1
   Triage compatibility mode for unknown/foreign frees under LD_PRELOAD.
@@ -225,4 +262,12 @@ bench_results/20260706T002949Z_hz10_orphan_macro_gate_l1/
   Macro gate: python/redis unchanged within noise; larson throughput matches
   glibc/tcmalloc/mimalloc range, but RSS is still 2.69GB vs competitor
   ~0.27-0.28GB. Verdict: opt-in narrow GO, default NO-GO.
+
+bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
+  Pagemap census RUNS=3 on hz10+orphan larson 4t/128c:
+  orphan_unadopted median 32,332 pages / 2.119GB, live_slots 32,333,
+  free_slots 5.466M, hidden_free_slots 0. class 8 (384B) contributes
+  32,327 pages and 2.118GB. Verdict: residual RSS is partial-orphan trapped
+  capacity, not metadata, page pool, or undrained remote frees. Next is
+  partial-page adoption design, not another census.
 ```

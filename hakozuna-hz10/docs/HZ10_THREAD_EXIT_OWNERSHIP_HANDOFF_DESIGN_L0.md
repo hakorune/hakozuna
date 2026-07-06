@@ -418,6 +418,63 @@ GO: the remaining larson RSS is still ~9.6x tcmalloc, so the next box is
 residual attribution, not partial-page handoff by intuition.
 ```
 
+## Orphan Residual Census Record
+
+`HZ10OrphanResidualAttribution-L0` implemented the measurement side as an
+opt-in shim sampler:
+
+```text
+HZ10_SHIM_CENSUS_SEC=N
+```
+
+The sampler starts a detached thread from the shim constructor, sleeps N
+seconds, then walks live pagemap records during workload steady state. Each
+record is read with a generation double-check:
+
+```text
+read generation
+read slot_size / owner / flags
+read generation again
+skip if generation changed
+```
+
+This deliberately replaces TLS exit-stats for residual attribution: after
+orphan adoption, exited owner records are historical state and cannot answer
+"which registered pages still consume RSS now?"
+
+Measured census:
+
+```text
+bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
+RUNS=3, hz10+orphan, larson 4 threads, 128 chunks/thread, 2 seconds
+
+run throughput:
+  2.069M / 2.069M / 2.069M ops/s
+max_rss:
+  2.688GB / 2.687GB / 2.687GB
+
+median census buckets:
+  owner_live_active: 7 pages, 0.459MB, live_slots 517
+  adopted: 139 pages, 9.11MB, live_slots 1,719
+  orphan_unadopted: 32,332 pages, 2.119GB, live_slots 32,333,
+                    free_slots 5.466M, hidden_free_slots 0
+
+dominant class:
+  orphan_unadopted class 8, slot_size 384, slot_count 170:
+    32,327 pages, 2.118GB, live_slots 32,327, free_slots 5.463M,
+    hidden_free_slots 0
+```
+
+Verdict:
+
+```text
+The fable5 prediction is confirmed. The remaining RSS is not page-pool,
+metadata, or undrained remote-free capacity. It is partial orphan pages with
+almost exactly one live slot per 64KiB quantum. Idle-only adoption can never
+recover these pages. Partial-page adoption has a measured GB-scale theoretical
+target, but it needs a separate ownership proof before implementation.
+```
+
 Debug note:
 
 ```text

@@ -4,6 +4,7 @@
 #include "hz10_class_pages.h"
 #include "hz10_size_class.h"
 
+#include <stdatomic.h>
 #include <stdint.h>
 
 #ifndef HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
@@ -24,11 +25,16 @@ typedef struct Hz10ClassState {
 } Hz10ClassState;
 
 typedef struct Hz10ThreadOwner {
+  _Atomic(uint32_t) state;
   Hz10ClassState classes[HZ10_CLASS_COUNT];
 } Hz10ThreadOwner;
 
+#define HZ10_THREAD_OWNER_STATE_LIVE 1u
+#define HZ10_THREAD_OWNER_STATE_EXITED 2u
+
 Hz10ThreadOwner* hz10_public_entry_current_owner(void);
 Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void);
+uint32_t hz10_public_entry_owner_state(const Hz10ThreadOwner* owner);
 Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter);
 

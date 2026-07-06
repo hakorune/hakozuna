@@ -3,6 +3,7 @@
 #include "hz10_page_pool.h"
 #include "hz10_pagemap.h"
 #include "hz10_public_entry.h"
+#include "hz10_public_entry_owner.h"
 #include "hz10_size_class.h"
 
 #include <errno.h>
@@ -19,6 +20,7 @@ static _Atomic(uint64_t) hz10_shim_foreign_free_count;
 static int hz10_shim_process_exit_stats;
 static int hz10_shim_thread_exit_stats;
 static int hz10_shim_exit_stats_classes;
+static unsigned hz10_shim_census_sec;
 static pthread_once_t hz10_shim_thread_stats_once = PTHREAD_ONCE_INIT;
 static pthread_key_t hz10_shim_thread_stats_key;
 static int hz10_shim_thread_stats_key_ready;
@@ -65,10 +67,26 @@ static int hz10_shim_exit_stats_classes_enabled(void) {
   return !(value && value[0] == '0' && value[1] == '\0');
 }
 
+static unsigned hz10_shim_census_seconds(void) {
+  const char* value = getenv("HZ10_SHIM_CENSUS_SEC");
+  if (!value || !value[0]) {
+    return 0u;
+  }
+  char* end = NULL;
+  unsigned long parsed = strtoul(value, &end, 10);
+  if (end == value || (end && *end != '\0') || parsed == 0ul) {
+    return 0u;
+  }
+  if (parsed > 3600ul) {
+    parsed = 3600ul;
+  }
+  return (unsigned)parsed;
+}
+
 static void hz10_shim_write_all(const char* text, size_t len);
 
 static void hz10_shim_writef(const char* fmt, ...) {
-  char buf[512];
+  char buf[1024];
   va_list ap;
   va_start(ap, fmt);
   int n = vsnprintf(buf, sizeof(buf), fmt, ap);
@@ -181,6 +199,217 @@ void hz10_shim_dump_exit_stats(void) {
   hz10_shim_in_stats_dump = 0;
 }
 
+typedef enum Hz10ShimCensusBucket {
+  HZ10_CENSUS_LIVE_ACTIVE = 0,
+  HZ10_CENSUS_LIVE_RETIRED = 1,
+  HZ10_CENSUS_ORPHAN_ACTIVE = 2,
+  HZ10_CENSUS_ORPHAN_RETIRED = 3,
+  HZ10_CENSUS_ADOPTED = 4,
+  HZ10_CENSUS_UNKNOWN = 5,
+  HZ10_CENSUS_BUCKET_COUNT = 6
+} Hz10ShimCensusBucket;
+
+typedef struct Hz10ShimCensusClassBucket {
+  uint64_t pages;
+  uint64_t page_bytes;
+  uint64_t slot_capacity;
+  uint64_t live_slots;
+  uint64_t free_slots;
+  uint64_t hidden_free_slots;
+  uint64_t util_hist[8];
+} Hz10ShimCensusClassBucket;
+
+typedef struct Hz10ShimCensusTotals {
+  Hz10ShimCensusClassBucket by_class[HZ10_CENSUS_BUCKET_COUNT]
+                                    [HZ10_CLASS_COUNT];
+  uint64_t large_pages;
+  uint64_t skipped_records;
+} Hz10ShimCensusTotals;
+
+static const char* hz10_shim_census_bucket_name(
+    Hz10ShimCensusBucket bucket) {
+  switch (bucket) {
+    case HZ10_CENSUS_LIVE_ACTIVE:
+      return "owner_live_active";
+    case HZ10_CENSUS_LIVE_RETIRED:
+      return "owner_live_retired";
+    case HZ10_CENSUS_ORPHAN_ACTIVE:
+      return "orphan_unadopted";
+    case HZ10_CENSUS_ORPHAN_RETIRED:
+      return "orphan_retired";
+    case HZ10_CENSUS_ADOPTED:
+      return "adopted";
+    default:
+      return "unknown";
+  }
+}
+
+static uint32_t hz10_shim_census_popcount_pending(Hz10FreelistPage* page) {
+  uint32_t total = 0u;
+  for (uint32_t i = 0; i < page->pending_words; ++i) {
+    uint64_t word =
+        atomic_load_explicit(&page->pending_bits[i], memory_order_acquire);
+    total += (uint32_t)__builtin_popcountll(word);
+  }
+  if (total > page->slot_count) {
+    total = page->slot_count;
+  }
+  return total;
+}
+
+static uint32_t hz10_shim_census_util_bucket(uint32_t live_slots,
+                                             uint32_t slot_count) {
+  if (live_slots == 0u) return 0u;
+  if (live_slots == 1u) return 1u;
+  if (live_slots <= 3u) return 2u;
+  if (live_slots <= 7u) return 3u;
+  if (live_slots <= 15u) return 4u;
+  if (live_slots <= 63u) return 5u;
+  if (live_slots == slot_count) return 7u;
+  return 6u;
+}
+
+static void hz10_shim_census_add_page(Hz10ShimCensusTotals* totals,
+                                      Hz10ShimCensusBucket bucket,
+                                      Hz10FreelistPage* page) {
+  uint32_t class_id = page->class_id;
+  if (class_id >= HZ10_CLASS_COUNT) {
+    bucket = HZ10_CENSUS_UNKNOWN;
+    class_id = 0u;
+  }
+  Hz10ShimCensusClassBucket* cell = &totals->by_class[bucket][class_id];
+  uint32_t free_count = page->free_count;
+  if (free_count > page->slot_count) {
+    free_count = page->slot_count;
+  }
+  uint32_t live_slots = page->slot_count - free_count;
+  uint32_t hidden_free = hz10_shim_census_popcount_pending(page);
+  cell->pages += 1u;
+  cell->page_bytes += HZ10_PAGE_QUANTUM;
+  cell->slot_capacity += page->slot_count;
+  cell->live_slots += live_slots;
+  cell->free_slots += free_count;
+  cell->hidden_free_slots += hidden_free;
+  cell->util_hist[hz10_shim_census_util_bucket(live_slots,
+                                               page->slot_count)] += 1u;
+}
+
+static void hz10_shim_dump_census(void) {
+  Hz10ShimCensusTotals totals = {0};
+  for (uint32_t r = 0; r < HZ10_ROOT_SIZE; ++r) {
+    H10Leaf* leaf = hz10_pagemap_leaf_load(r);
+    if (!leaf) {
+      continue;
+    }
+    for (uint32_t i = 0; i < HZ10_LEAF_SIZE; ++i) {
+      H10PageRecord* rec = &leaf->entries[i];
+      uint32_t gen0 = __atomic_load_n(&rec->generation, __ATOMIC_ACQUIRE);
+      uint32_t slot_size = __atomic_load_n(&rec->slot_size, __ATOMIC_ACQUIRE);
+      if (slot_size == 0u) {
+        continue;
+      }
+      void* owner = __atomic_load_n(&rec->owner, __ATOMIC_RELAXED);
+      uint32_t flags = __atomic_load_n(&rec->flags, __ATOMIC_RELAXED);
+      uint32_t gen1 = __atomic_load_n(&rec->generation, __ATOMIC_ACQUIRE);
+      if (gen0 != gen1 || !owner) {
+        totals.skipped_records += 1u;
+        continue;
+      }
+      if (flags != 0u) {
+        totals.large_pages += 1u;
+        continue;
+      }
+      Hz10FreelistPage* page = (Hz10FreelistPage*)owner;
+      Hz10ThreadOwner* page_owner =
+          (Hz10ThreadOwner*)hz10_freelist_page_owner_thread(page);
+      uint32_t owner_state = hz10_public_entry_owner_state(page_owner);
+      Hz10ShimCensusBucket bucket = HZ10_CENSUS_UNKNOWN;
+      if (page->adopted_count != 0u) {
+        bucket = HZ10_CENSUS_ADOPTED;
+      } else if (owner_state == HZ10_THREAD_OWNER_STATE_LIVE) {
+        bucket = page->owner_list_kind == HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED
+                     ? HZ10_CENSUS_LIVE_RETIRED
+                     : HZ10_CENSUS_LIVE_ACTIVE;
+      } else if (owner_state == HZ10_THREAD_OWNER_STATE_EXITED) {
+        bucket = page->owner_list_kind == HZ10_FREELIST_PAGE_OWNER_LIST_RETIRED
+                     ? HZ10_CENSUS_ORPHAN_RETIRED
+                     : HZ10_CENSUS_ORPHAN_ACTIVE;
+      }
+      hz10_shim_census_add_page(&totals, bucket, page);
+    }
+  }
+
+  Hz10FreelistMetadataStats metadata = {0};
+  hz10_freelist_metadata_stats(&metadata);
+  uint32_t pool_cached = hz10_page_pool_cached_count();
+
+  uint64_t total_pages = 0u;
+  uint64_t total_page_bytes = 0u;
+  for (uint32_t b = 0; b < HZ10_CENSUS_BUCKET_COUNT; ++b) {
+    for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+      Hz10ShimCensusClassBucket* cell = &totals.by_class[b][c];
+      total_pages += cell->pages;
+      total_page_bytes += cell->page_bytes;
+    }
+  }
+
+  hz10_shim_writef(
+      "hz10_shim_census summary pages=%llu page_bytes=%llu "
+      "large_pages=%llu skipped_records=%llu pool_cached=%u "
+      "pool_cached_bytes=%llu metadata_slabs=%llu metadata_bytes=%llu "
+      "metadata_live_nodes=%llu metadata_free_nodes=%llu\n",
+      (unsigned long long)total_pages,
+      (unsigned long long)total_page_bytes,
+      (unsigned long long)totals.large_pages,
+      (unsigned long long)totals.skipped_records, (unsigned)pool_cached,
+      (unsigned long long)pool_cached * (unsigned long long)HZ10_PAGE_QUANTUM,
+      (unsigned long long)metadata.slab_count,
+      (unsigned long long)metadata.slab_count *
+          (unsigned long long)metadata.slab_bytes,
+      (unsigned long long)metadata.live_nodes,
+      (unsigned long long)metadata.free_nodes);
+
+  for (uint32_t b = 0; b < HZ10_CENSUS_BUCKET_COUNT; ++b) {
+    for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
+      Hz10ShimCensusClassBucket* cell = &totals.by_class[b][c];
+      if (cell->pages == 0u) {
+        continue;
+      }
+      hz10_shim_writef(
+          "hz10_shim_census bucket=%s class=%u slot_size=%u slot_count=%u "
+          "pages=%llu page_bytes=%llu slot_capacity=%llu live_slots=%llu "
+          "free_slots=%llu hidden_free_slots=%llu "
+          "hist_live_0=%llu hist_live_1=%llu hist_live_2_3=%llu "
+          "hist_live_4_7=%llu hist_live_8_15=%llu hist_live_16_63=%llu "
+          "hist_live_64_plus=%llu hist_live_full=%llu\n",
+          hz10_shim_census_bucket_name((Hz10ShimCensusBucket)b),
+          (unsigned)c, (unsigned)hz10_size_class_slot_size(c),
+          (unsigned)hz10_size_class_slot_count(c),
+          (unsigned long long)cell->pages,
+          (unsigned long long)cell->page_bytes,
+          (unsigned long long)cell->slot_capacity,
+          (unsigned long long)cell->live_slots,
+          (unsigned long long)cell->free_slots,
+          (unsigned long long)cell->hidden_free_slots,
+          (unsigned long long)cell->util_hist[0],
+          (unsigned long long)cell->util_hist[1],
+          (unsigned long long)cell->util_hist[2],
+          (unsigned long long)cell->util_hist[3],
+          (unsigned long long)cell->util_hist[4],
+          (unsigned long long)cell->util_hist[5],
+          (unsigned long long)cell->util_hist[6],
+          (unsigned long long)cell->util_hist[7]);
+    }
+  }
+}
+
+static void* hz10_shim_census_thread(void* arg) {
+  unsigned seconds = (unsigned)(uintptr_t)arg;
+  sleep(seconds);
+  hz10_shim_dump_census();
+  return NULL;
+}
+
 static void hz10_shim_thread_stats_destructor(void* value) {
   if (!value || !hz10_shim_thread_exit_stats) {
     return;
@@ -214,10 +443,18 @@ __attribute__((constructor)) static void hz10_shim_init(void) {
   hz10_shim_process_exit_stats = hz10_shim_exit_stats_enabled();
   hz10_shim_thread_exit_stats = hz10_shim_thread_exit_stats_enabled();
   hz10_shim_exit_stats_classes = hz10_shim_exit_stats_classes_enabled();
+  hz10_shim_census_sec = hz10_shim_census_seconds();
   (void)pthread_atfork(hz10_shim_atfork_prepare, hz10_shim_atfork_parent,
                        hz10_shim_atfork_child);
   if (hz10_shim_process_exit_stats) {
     (void)atexit(hz10_shim_dump_exit_stats);
+  }
+  if (hz10_shim_census_sec != 0u) {
+    pthread_t thread;
+    if (pthread_create(&thread, NULL, hz10_shim_census_thread,
+                       (void*)(uintptr_t)hz10_shim_census_sec) == 0) {
+      (void)pthread_detach(thread);
+    }
   }
 }
 

@@ -20,6 +20,7 @@ status:
     - bench_results/20260707T010000Z_hz10_macro_matrix_expand_l0/
     - bench_results/20260707T013000Z_hz10_larson_thread_churn_attribution_l0/
     - bench_results/20260706T002553Z_hz10_orphan_active_adoption_l1_probe/
+    - bench_results/20260706T004353Z_hz10_orphan_residual_census_l0/
 
   Current read:
     - hz10+fine improves python_alloc RSS but worsens larson RSS/throughput;
@@ -43,10 +44,12 @@ status:
       persistent 1MiB slab/bump allocator.
 
   Active next box:
-    HZ10OrphanResidualAttribution-L0: measure why hz10+orphan still keeps
-    ~2.69GB on larson while glibc/tcmalloc/mimalloc are ~0.27-0.28GB. Do not
-    open partial-page handoff until this residual is split into active-orphan,
-    persistent-owner, metadata, page-pool, and unreachable-live components.
+    HZ10PartialOrphanAdoption-Design-L0. Pagemap census confirmed the residual:
+    median orphan_unadopted=32,332 pages / 2.119GB, with 32,333 live slots and
+    5.466M free slots trapped. class 8 (384B) alone is 32,327 pages and almost
+    every page has exactly one live slot. hidden_free_slots=0, so this is not
+    an undrained remote-stack problem. Do not implement yet; design the
+    partial-page ownership proof first.
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

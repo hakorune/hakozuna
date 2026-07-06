@@ -69,4 +69,9 @@ HZ10_SHIM_THREAD_EXIT_STATS=1:
 
 HZ10_SHIM_EXIT_STATS_CLASSES=0:
   Suppress per-class rows while preserving summary/class_totals rows.
+
+HZ10_SHIM_CENSUS_SEC=N:
+  One-shot steady-state pagemap census after N seconds. Emits
+  `hz10_shim_census` lines to stderr; use this for orphan residual attribution
+  instead of TLS exit-stats.
 ```

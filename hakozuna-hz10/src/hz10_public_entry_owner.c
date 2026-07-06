@@ -3,6 +3,7 @@
 #include "hz10_platform.h"
 #include "hz10_remote_stack.h"
 
+#include <stdatomic.h>
 #include <string.h>
 
 #ifndef HZ10_ORPHAN_ACTIVE_ADOPT_SCAN_BUDGET
@@ -39,6 +40,8 @@ static Hz10ThreadOwner* hz10_owner_alloc(void) {
   hz10_owner_slab_cursor += owner_bytes;
   hz10_platform_mutex_unlock(&hz10_owner_slab_lock);
   memset(owner, 0, sizeof(*owner));
+  atomic_store_explicit(&owner->state, HZ10_THREAD_OWNER_STATE_LIVE,
+                        memory_order_release);
   return owner;
 }
 
@@ -103,6 +106,8 @@ static void hz10_owner_destructor(void* value) {
      * in other destructors therefore go through the remote path. */
     hz10_current_owner = NULL;
   }
+  atomic_store_explicit(&owner->state, HZ10_THREAD_OWNER_STATE_EXITED,
+                        memory_order_release);
   hz10_platform_mutex_lock(&hz10_orphan_lock);
   for (uint32_t c = 0; c < HZ10_CLASS_COUNT; ++c) {
     hz10_orphan_append_active(c, &owner->classes[c].list.active);
@@ -143,6 +148,11 @@ Hz10ThreadOwner* hz10_public_entry_current_owner_if_any(void) {
   return hz10_current_owner;
 }
 
+uint32_t hz10_public_entry_owner_state(const Hz10ThreadOwner* owner) {
+  if (!owner) return 0u;
+  return atomic_load_explicit(&owner->state, memory_order_acquire);
+}
+
 Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     uint32_t class_id, Hz10ThreadOwner* adopter) {
 #if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
@@ -160,6 +170,7 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
     hz10_page_drain_remote(page);
     if (page->free_count == page->slot_count) {
       hz10_freelist_page_set_owner_thread(page, adopter);
+      hz10_freelist_page_note_adopted(page);
       hz10_class_pages_add(&adopter->classes[class_id].list, page);
       hz10_platform_mutex_unlock(&hz10_orphan_lock);
       return page;
