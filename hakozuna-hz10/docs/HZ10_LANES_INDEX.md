@@ -162,6 +162,29 @@ NEXT:
      materially after a matrix refresh -- likely inlining/flattening
      candidates now that the TLS-model cost is out of the way.
 
+HZ10ShimStatsFastGuard-L0   (designed, next small speed box)
+
+Input:
+  bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
+  docs/HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md
+
+Question:
+  Can the preload product path stop paying for dump-only
+  `HZ10_SHIM_THREAD_EXIT_STATS` setup on every malloc/free?
+
+Design:
+  Split `hz10_shim_mark_thread_for_stats()` into a hot guard and a cold slow
+  helper. Preferred shape is a direct unlikely branch at shim call sites:
+  `if (__builtin_expect(hz10_shim_thread_exit_stats, 0)) slow_mark();`.
+  The slow helper keeps the existing `hz10_shim_in_stats_dump`,
+  `pthread_once`, `pthread_getspecific`, and `pthread_setspecific` logic.
+
+Gate:
+  smoke-shim-api, smoke-shim-foreign, standalone-check, and a
+  `HZ10_SHIM_THREAD_EXIT_STATS=1` threaded diagnostic smoke must stay green.
+  RUNS=5 macro subset (`ALLOCATORS_CSV=hz10`) should show no regression; a
+  sh6bench win is expected if the ~5% perf attribution is real.
+
 HZ10FineAdoptionInteractionBug-L0   (resolved/not reproduced after clean
   rebuild; keep counters for future triage -- see
   bench_results/20260707T050000Z_hz10_owner_split_verification/notes.md)

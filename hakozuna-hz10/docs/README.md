@@ -36,6 +36,11 @@ HZ10_FRONT_ADOPTION_HANDOFF_DESIGN_L0.md:
   before orphan publish; the handoff is correct, but RUNS=5 macro A/B keeps
   front cache as an opt-in `hz10-front` lane rather than the shim default
 
+HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md:
+  next shim speed design after the TLS model fix; moves
+  `HZ10_SHIM_THREAD_EXIT_STATS` marker setup behind a cold guard so normal
+  preload malloc/free does not pay for diagnostic-only thread-exit stats
+
 HZ10_PRELOAD_SHIM_DESIGN_L0.md:
   review design for the LD_PRELOAD shim (libhz10.so): interposition
   surface semantics, metadata self-hosting to break malloc recursion,

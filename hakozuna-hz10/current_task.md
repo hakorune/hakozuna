@@ -68,11 +68,13 @@ status:
 
   Active next box:
     Productization follow-up after macro-width L0, front-handoff L0, and
-    shim TLS model fix: inspect `hz10_shim_mark_thread_for_stats`, which
-    profiling saw at ~5% self even when exit-stats are not requested. Keep
-    it as a small, opt-in-free code-path box. If sh6bench/mstress remain
-    strategic after that, owner lookup wrapper flattening is the next
-    attribution target.
+    shim TLS model fix:
+      HZ10ShimStatsFastGuard-L0 is designed in
+      docs/HZ10_SHIM_STATS_FAST_GUARD_DESIGN_L0.md. Implement this next:
+      move `HZ10_SHIM_THREAD_EXIT_STATS` marker setup behind a cold slow
+      helper so normal preload malloc/free pays only one unlikely branch.
+      If sh6bench/mstress remain strategic after that, owner lookup wrapper
+      flattening is the next attribution target.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
