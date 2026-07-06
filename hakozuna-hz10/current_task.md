@@ -28,6 +28,14 @@ status:
     - bench_results/20260707T090000Z_hz10_tls_model_fix/notes.md
 
   Current read:
+    - HZ10Hz8MacroRssCheck-L0 answers the HZ8 vs HZ10 recommendation
+      question for the product/shim lane: keep recommending HZ10. HZ8 may
+      remain an older native/reference allocator, but in LD_PRELOAD macro
+      checks it showed python_alloc 4.3GB RSS on the first run, Redis
+      SIGSEGV, larson abort, and xmalloc-test hang. HZ10 completed the same
+      no-Redis macro shape RUNS=5 with python_alloc 106,796 KiB,
+      xmalloc_test 13,184 KiB, larson 282,624 KiB current RSS. Record:
+      docs/HZ10_HZ8_MACRO_RSS_CHECK_L0.md.
     - HZ10Sh6SpeedClosureRssHeadline-L0 closes the small sh6bench speed loop.
       Latest hz10-only guard is 0.410s; the latest broad tcmalloc comparator
       for this row is 0.320s, so HZ10 is about 78% of tcmalloc throughput,

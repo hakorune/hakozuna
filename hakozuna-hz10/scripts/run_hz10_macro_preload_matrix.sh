@@ -9,6 +9,7 @@ OUTDIR="${OUTDIR:-${ROOT}/bench_results/${STAMP}_hz10_macro_preload_matrix}"
 RUNS="${RUNS:-3}"
 REDIS_OPS="${REDIS_OPS:-20000}"
 REDIS_CLIENTS="${REDIS_CLIENTS:-32}"
+RUN_REDIS="${RUN_REDIS:-1}"
 PYTHON_LOOPS="${PYTHON_LOOPS:-80}"
 RUN_LARSON="${RUN_LARSON:-1}"
 RUN_XMALLOC="${RUN_XMALLOC:-1}"
@@ -119,6 +120,12 @@ if [[ -n "${mimalloc_lib}" ]]; then
   alloc_libs+=("${mimalloc_lib}")
 fi
 
+hz8_lib="$(hz10_bench_find_hz8_preload_lib || true)"
+if [[ -n "${hz8_lib}" ]]; then
+  compat_alloc_names+=("hz8")
+  compat_alloc_libs+=("${hz8_lib}")
+fi
+
 if [[ -n "${ALLOCATORS_CSV:-}" ]]; then
   declare -a all_alloc_names=("${alloc_names[@]}" "${compat_alloc_names[@]}")
   declare -a all_alloc_libs=("${alloc_libs[@]}" "${compat_alloc_libs[@]}")
@@ -151,7 +158,7 @@ sh6bench_bin="$(find_mimalloc_bench_bin sh6bench || true)"
 {
   echo "# HZ10 macro preload matrix"
   echo "# generated=${STAMP}"
-  echo "# RUNS=${RUNS} REDIS_OPS=${REDIS_OPS} REDIS_CLIENTS=${REDIS_CLIENTS} PYTHON_LOOPS=${PYTHON_LOOPS}"
+  echo "# RUNS=${RUNS} RUN_REDIS=${RUN_REDIS} REDIS_OPS=${REDIS_OPS} REDIS_CLIENTS=${REDIS_CLIENTS} PYTHON_LOOPS=${PYTHON_LOOPS}"
   echo "# RUN_LARSON=${RUN_LARSON} LARSON_SECONDS=${LARSON_SECONDS} LARSON_MIN=${LARSON_MIN} LARSON_MAX=${LARSON_MAX} LARSON_CHUNKS=${LARSON_CHUNKS} LARSON_ROUNDS=${LARSON_ROUNDS} LARSON_SEED=${LARSON_SEED} LARSON_THREADS=${LARSON_THREADS}"
   echo "# RUN_XMALLOC=${RUN_XMALLOC} XMALLOC_WORKERS=${XMALLOC_WORKERS} XMALLOC_SECONDS=${XMALLOC_SECONDS} XMALLOC_SIZE=${XMALLOC_SIZE}"
   echo "# RUN_CACHE_SCRATCH=${RUN_CACHE_SCRATCH} CACHE_SCRATCH_THREADS=${CACHE_SCRATCH_THREADS} CACHE_SCRATCH_ITERATIONS=${CACHE_SCRATCH_ITERATIONS} CACHE_SCRATCH_OBJECT_SIZE=${CACHE_SCRATCH_OBJECT_SIZE} CACHE_SCRATCH_REPETITIONS=${CACHE_SCRATCH_REPETITIONS} CACHE_SCRATCH_CONCURRENCY=${CACHE_SCRATCH_CONCURRENCY}"
@@ -167,6 +174,7 @@ sh6bench_bin="$(find_mimalloc_bench_bin sh6bench || true)"
   echo "# hz10_orphan_partial_compat=${ROOT}/libhz10_orphan_partial.so"
   echo "# tcmalloc=${tcmalloc_lib:-SKIP}"
   echo "# mimalloc=${mimalloc_lib:-SKIP}"
+  echo "# hz8=${hz8_lib:-SKIP}"
   echo "# larson=${larson_bin:-SKIP}"
   echo "# xmalloc_test=${xmalloc_bin:-SKIP}"
   echo "# cache_scratch=${cache_scratch_bin:-SKIP}"
@@ -254,6 +262,7 @@ PY
 }
 
 run_redis_setget() {
+  [[ "${RUN_REDIS}" == "1" ]] || return 0
   command -v redis-server >/dev/null || return 0
   command -v redis-benchmark >/dev/null || return 0
   local allocator="$1"

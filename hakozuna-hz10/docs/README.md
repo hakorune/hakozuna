@@ -49,6 +49,12 @@ HZ10_SH6_SPEED_CLOSURE_RSS_HEADLINE_L0.md:
   decision record that closes the sh6bench speed loop at ~78% of tcmalloc and
   shifts the product headline back to RSS wins in the macro matrix
 
+HZ10_HZ8_MACRO_RSS_CHECK_L0.md:
+  decision record for the HZ8 vs HZ10 product-lane RSS question; HZ8 remains
+  an older native/reference allocator, but HZ10 is the recommended LD_PRELOAD
+  macro/product allocator after HZ8 showed python RSS blow-up and macro
+  compatibility failures
+
 HZ10_SHIM_OWNER_LOOKUP_INLINE_DESIGN_L0.md:
   shim speed follow-up after the stats fast guard; inlines safe owner TLS
   reads and owner-record extraction while keeping first-touch owner allocation
