@@ -70,6 +70,14 @@ Default HZ10:
         `hz10_free`, but regressed the target row: sh6bench 0.470s -> 0.490s
         and python_alloc 0.850s -> 0.870s. Makefile change reverted. Log:
         bench_results/20260707T_shim_no_stack_protector_l0/
+  Local route division skip:
+        HZ10RouteDivSkipDiag-L0 is NO-GO for opening reciprocal route work
+        now. An unsafe diagnostic build skipped the local-fast
+        `offset % slot_size` interior check and removed the hot `div/idiv`
+        from `hz10_free`, but RUNS=5 hz10-only macro regressed sh6bench
+        0.470s -> 0.490s and python_alloc 0.850s -> 0.870s. Keep the
+        diagnostic flag default-off only. Log:
+        bench_results/20260707T_route_div_skip_diag_l0/
 
 hz10-base:
   Built as libhz10_base.so via `make preload-base`.
@@ -328,8 +336,36 @@ Verdict:
   closed codegen trap; the samples were real, but wall time got worse.
 
 NEXT:
-  Move to the next measured target: runtime division in pagemap local route /
-  interior validation.
+  The immediate next measured target was HZ10RouteDivSkipDiag-L0 below; it
+  closed reciprocal-route work for now.
+
+HZ10RouteDivSkipDiag-L0   (NO-GO)
+
+Input:
+  docs/HZ10_ROUTE_DIV_SKIP_DIAG_L0.md
+  bench_results/20260707T_route_div_skip_diag_l0/
+
+Question:
+  Is the local-fast runtime `offset % slot_size` division in `hz10_free` a
+  real removable wall-time cost, enough to justify another reciprocal-route
+  implementation?
+
+Diagnostic:
+  `HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK=1` skips only the local-fast
+  multi-slot modulo check. This is intentionally unsafe and weakens
+  fail-closed pointer validation; it is measurement-only and default off.
+
+Result:
+  NO-GO. The diagnostic build removed the hot `div/idiv` from `hz10_free`, but
+  RUNS=5 hz10-only macro regressed the target:
+    sh6bench 0.470s -> 0.490s
+    python_alloc 0.850s -> 0.870s
+    larson/mstress/RSS flat
+
+Decision:
+  Do not spend implementation budget on another reciprocal route shape now.
+  Future route work needs a broader instruction-path hypothesis that preserves
+  validation and avoids growing `H10PageRecord`.
 
 HZ10ShimStatsFastGuard-L0   (implemented, GO)
 

@@ -32,6 +32,14 @@
 #define HZ10_ROOT_MASK (HZ10_ROOT_SIZE - 1u)
 #define HZ10_LEAF_MASK (HZ10_LEAF_SIZE - 1u)
 
+/* Diagnostic only: skips the local-fast interior slot alignment modulo check.
+ * This weakens fail-closed pointer validation and must never be enabled in a
+ * product/default lane. It exists to isolate the runtime division cost before
+ * attempting another reciprocal-route implementation. */
+#ifndef HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK
+#define HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK 0
+#endif
+
 typedef enum H10RouteKind {
   H10_ROUTE_MISS = 0,
   H10_ROUTE_VALID = 1,
@@ -217,7 +225,8 @@ static inline int hz10_pagemap_route_local_fast(
     if (offset != 0u) {
       return 0;
     }
-  } else if ((offset % slot_size) != 0u) {
+  } else if (!HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK &&
+             (offset % slot_size) != 0u) {
     return 0;
   }
 

@@ -87,6 +87,10 @@ status:
     - HZ10ShimNoStackProtector-L0 is NO-GO. Canary removal worked at codegen
       level, but RUNS=5 regressed sh6bench 0.470s -> 0.490s and python_alloc
       0.850s -> 0.870s. Makefile change reverted.
+    - HZ10RouteDivSkipDiag-L0 is NO-GO for opening reciprocal route work now.
+      Unsafe diagnostic `HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK=1` removed
+      the hot local-fast `div/idiv` from `hz10_free`, but RUNS=5 regressed
+      sh6bench 0.470s -> 0.490s and python_alloc 0.850s -> 0.870s.
     - The first adoption prototype crashed because persistent owner records
       were one mmap per short-lived thread and larson exhausted vm.max_map_count
       fast enough for malloc(16) to return NULL. Owner records now come from a
@@ -94,9 +98,12 @@ status:
 
   Active next box:
     Productization follow-up:
-      Next measured target is runtime division in pagemap local route /
-      interior validation. Stack-protector removal is closed NO-GO; do not
-      revisit without new code-layout evidence.
+      Stack-protector removal and local route division skip are both closed
+      NO-GO. Do not open reciprocal route work without a new route hypothesis
+      that preserves fail-closed validation and avoids growing H10PageRecord.
+      Next attack should come from fresh perf attribution inside
+      hz10_malloc/free, likely metadata update / marker dependency shape, not
+      another single-instruction removal guess.
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
@@ -237,6 +244,14 @@ status:
       target wall regressed: sh6bench 0.490s, python_alloc 0.870s. Reverted
       Makefile change; keep docs/log as NO-GO. Log:
       bench_results/20260707T_shim_no_stack_protector_l0/
+    - HZ10RouteDivSkipDiag-L0:
+      Added default-off unsafe diagnostic
+      `HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK=1` to skip only the local-fast
+      multi-slot `offset % slot_size` interior check. Codegen removed the hot
+      `div/idiv` from `hz10_free`, but RUNS=5 hz10-only macro regressed
+      sh6bench 0.470s -> 0.490s and python_alloc 0.850s -> 0.870s; larson,
+      mstress, and RSS stayed flat. Log:
+      bench_results/20260707T_route_div_skip_diag_l0/
 
   Required design constraint:
     Do NOT implement automatic quiescent flush/destructor reclaim. The design

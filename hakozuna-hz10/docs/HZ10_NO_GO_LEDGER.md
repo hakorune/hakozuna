@@ -4,6 +4,33 @@ Durable ledger for HZ10 boxes that were measured or reasoned to a stop. Keep
 the active restart surface in `current_task.md`; put closed negative decisions
 here so they do not need to be rediscovered.
 
+## 20260707 Local Route Division Skip Diagnostic
+
+Status: `NO-GO for reciprocal route work now`
+
+Evidence:
+
+- `docs/HZ10_ROUTE_DIV_SKIP_DIAG_L0.md`
+- `bench_results/20260707T_route_div_skip_diag_l0/`
+- Probe added `HZ10_DIAG_SKIP_LOCAL_INTERIOR_MOD_CHECK=1`, default off, to skip
+  only the local-fast multi-slot `offset % slot_size` interior check.
+- This is an unsafe diagnostic lane: it weakens fail-closed pointer validation
+  and is not a product candidate.
+- Codegen gate passed for the diagnostic build: the hot `div/idiv` disappeared
+  from `hz10_free`.
+- RUNS=5 hz10-only macro did not improve:
+  - sh6bench: `0.470s -> 0.490s`
+  - python_alloc: `0.850s -> 0.870s`
+  - larson/mstress/RSS stayed flat or within noise.
+
+Decision:
+
+- Do not implement another reciprocal-route box now.
+- The division sample was real, but removing the check did not move wall time
+  in the right direction.
+- Reopen route work only with a broader instruction-path hypothesis that keeps
+  validation intact and does not grow `H10PageRecord`.
+
 ## 20260707 Shim Stack-Protector Removal
 
 Status: `NO-GO`
