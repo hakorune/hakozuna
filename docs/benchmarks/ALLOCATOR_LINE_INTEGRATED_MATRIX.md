@@ -22,6 +22,16 @@ RUNS=10 THREADS=16 ITERS=50000 \
   hakozuna-hz8/scripts/run_hz8_v11_same_run_matrix.sh
 ```
 
+Latest measured snapshot:
+
+```text
+docs/benchmarks/20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/
+```
+
+Read: HZ8 remains the low-post-RSS public recommendation; HZ10 is measurable in
+the same harness and is faster on several remote/interleaved rows, but with much
+higher post RSS in this snapshot.
+
 For a cheaper smoke:
 
 ```bash

@@ -217,6 +217,9 @@ RUNS=10 THREADS=16 ITERS=50000 \
 
 Guide: `docs/benchmarks/ALLOCATOR_LINE_INTEGRATED_MATRIX.md`
 
+Latest integrated snapshot:
+`docs/benchmarks/20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md`
+
 The MT table below is a `RUNS=10`, `T=16` unified rerun on 2026-05-26 using the
 same machine and runner for `hz3`, `hz4`, `mimalloc`, `tcmalloc`, and HZ5 rows.
 The redis-like row remains from the 2026-02-18 paper snapshot.
@@ -342,8 +345,9 @@ Selected-small decision evidence:
 ## HZ8 Paper-Ready Snapshot (2026-06-30, Ubuntu x86_64)
 
 HZ8 is the recommended balanced allocator line.  The current public default is
-HZ8-v2 / KeepRefill.  The HZ8 paper-facing matrix is intentionally interpreted
-as a throughput/RSS tradeoff, not as a universal tcmalloc replacement claim.
+HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
+hardening.  The HZ8 paper-facing matrix is intentionally interpreted as a
+throughput/RSS tradeoff, not as a universal tcmalloc replacement claim.
 
 Snapshot:
 

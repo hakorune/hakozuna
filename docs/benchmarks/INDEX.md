@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [Allocator line integrated matrix: HZ3/HZ4/HZ8/HZ10, 2026-07-07](./20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md)
 - [Windows HZ6 Larson appcap-only baseline, 2026-06-29](./windows/paper/20260629_045702_paper_larson_windows.md)
 - [Linux x86_64 HZ6 remote allocator compare full R10, 2026-06-21](./2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md)
 - [Linux x86_64 HZ6 Toy2 adaptive descriptor segment, 2026-06-20](./2026-06-20_LINUX_X86_64_HZ6_TOY2_ADAPTIVE_DESCRIPTOR_SEGMENT.md)
