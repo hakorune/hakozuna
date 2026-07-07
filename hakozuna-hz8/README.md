@@ -26,6 +26,19 @@ HZ8 is not intended to beat tcmalloc on every local-only hot-path benchmark.
 Its value is the combination of safety, RSS recovery, remote-free correctness,
 and practical throughput.
 
+## Paper
+
+```text
+HZ8 paper DOI:
+  https://doi.org/10.5281/zenodo.21084279
+
+HZ8 paper Zenodo record:
+  https://zenodo.org/records/21084279
+
+Paper-facing Ubuntu/Linux x86_64 matrix:
+  docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+```
+
 ## Status
 
 ```text

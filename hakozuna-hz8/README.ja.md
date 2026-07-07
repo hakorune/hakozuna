@@ -27,6 +27,19 @@ HZ8はtcmallocのようなthroughput-only allocatorではありません。
 価値は、**安全性・RSS回復・remote free correctness・実用速度のバランス**
 にあります。
 
+## 論文
+
+```text
+HZ8 論文 DOI:
+  https://doi.org/10.5281/zenodo.21084279
+
+HZ8 論文 Zenodo record:
+  https://zenodo.org/records/21084279
+
+論文向け Ubuntu/Linux x86_64 matrix:
+  docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+```
+
 ## 現在の状態
 
 ```text
