@@ -52,6 +52,12 @@ HZ11_STATIC_CONST_SIZE_TABLE_L1.md:
   NO-GO record for replacing the runtime-filled size-class table with a const
   .rodata table; correct but slower on the speed-ceiling lane
 
+HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md:
+  design document for the tcmalloc-shaped middle-end (batch transfer cache +
+  central span source); replaces the per-object returned-list sink; targets
+  remote/mixed rows (main_r50/r90) where per-object mutex contention is the
+  bottleneck; implementation is a separate box
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
