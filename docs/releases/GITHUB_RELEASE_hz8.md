@@ -13,6 +13,8 @@ as the recommended Hakozuna allocator line.
 - HZ8-v1.1 remains the frozen comparison baseline.
 - LargeDirectOwned and ShardedHotCache are opt-in evidence lanes, not defaults.
 - HZ9 remains an opt-in throughput research lane, not a release default.
+- HZ10 is included as an active speed/RSS-aware research line, but it is not
+  promoted as the HZ8 public recommendation.
 
 ## Zenodo / DOI
 
@@ -70,6 +72,13 @@ large/direct boundary, but it has a larger RSS tradeoff and is not the default.
 ShardedHotCache-L1 is kept as HOLD/future-work evidence; it does not yet provide
 a default-quality throughput/RSS Pareto point.
 
+The repository also includes the HZ10 research line.  HZ10's lazy page-init
+default improves local-row throughput and RSS substantially in the integrated
+matrix, but HZ8 remains the release recommendation for balanced low post-RSS.
+Use the integrated HZ10 snapshot as comparative evidence, not as a replacement
+claim:
+docs/benchmarks/20260707_allocator_line_integrated_hz10_bump_default/README.md
+
 Highlights:
 
 - HZ8 source under hakozuna-hz8/
@@ -80,6 +89,8 @@ Highlights:
 - Opt-in LargeDirect / ShardedHot evidence targets
 - Fail-closed ownership and route contract documentation
 - Public benchmark matrix scripts and release notes
+- Integrated HZ-line comparison including HZ10:
+  docs/benchmarks/20260707_allocator_line_integrated_hz10_bump_default/README.md
 - Paper-facing Ubuntu/Linux x86_64 matrix snapshot:
   hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
 - HZ8 public release preparation notes:

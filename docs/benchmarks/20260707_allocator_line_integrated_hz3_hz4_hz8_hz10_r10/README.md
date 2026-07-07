@@ -2,6 +2,10 @@
 
 Status: measured same-run snapshot.
 
+Note: this raw same-run snapshot predates `HZ10BumpDefaultGate-L1`. The current
+README-facing summary with HZ10's bump-init default is
+`../20260707_allocator_line_integrated_hz10_bump_default/README.md`.
+
 ## Conditions
 
 ```text
