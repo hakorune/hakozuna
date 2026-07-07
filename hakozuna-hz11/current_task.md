@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11CacheLayout-L1
+  HZ11SizeTableStaticInit-L1
 
 Goal:
   keep HZ11 as a speed-first research line and measure the remaining local
@@ -23,6 +23,7 @@ docs/README.md
 docs/HZ11_TLS_FAST_PATH_L1.md
 docs/HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md
 docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
+docs/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -45,13 +46,12 @@ HZ11CacheByteAccountingGate-L1:
 Open `HZ11CacheLayout-L1`.
 
 ```text
-Plan:
-  add HZ11_CACHE_SOA=1 sibling lanes on top of TLSFastPath + no-bytes
-  replace class_cache AoS addressing with class_items/class_counts SOA
-  measure fixed64 against hz11-token-nobytes and tcmalloc
+HZ11CacheLayout-L1:
+  NO-GO for instruction-count gate.
+  token no-bytes 101.2 -> SOA 98.3 instr/op (~3 win, target >=4)
+  token ops/s improved, so keep as speed-ceiling sibling.
 
-Gate:
-  token-soa <= 96 instr/op
-  token-soa ops/s >= 158M
-  span-soa improves over span-nobytes
+Next:
+  HZ11SizeTableStaticInit-L1
+  remove the runtime size_table_ready check from malloc hit path
 ```

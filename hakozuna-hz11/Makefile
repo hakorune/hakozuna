@@ -1,7 +1,8 @@
 .PHONY: all smoke bench-fixed-local preload preload-span preload-token-stats \
         preload-span-stats preload-token-top preload-span-top \
         preload-token-tlsfast preload-span-tlsfast \
-        preload-token-nobytes preload-span-nobytes hz11-standalone-check clean
+        preload-token-nobytes preload-span-nobytes \
+        preload-token-soa preload-span-soa hz11-standalone-check clean
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -26,7 +27,8 @@ BENCH_SRC := $(ROOT)/bench/hz11_fixed_local_bench.c
 # Binary targets are relative so `make hz11_fixed_local_bench` works.
 all: smoke preload preload-span preload-token-stats preload-span-stats \
      preload-token-top preload-span-top preload-token-tlsfast preload-span-tlsfast \
-     preload-token-nobytes preload-span-nobytes
+     preload-token-nobytes preload-span-nobytes \
+     preload-token-soa preload-span-soa
 
 # --- smoke binaries (speed + stats, token + span) ---
 
@@ -60,11 +62,18 @@ hz11_thread_cache_smoke_nobytes: $(SMOKE_SRC) $(HEADERS)
 hz11_thread_cache_smoke_span_nobytes: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+hz11_thread_cache_smoke_soa: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
+hz11_thread_cache_smoke_span_soa: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 smoke: hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
         hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
         hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top \
         hz11_thread_cache_smoke_tlsfast hz11_thread_cache_smoke_span_tlsfast \
-        hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes
+        hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes \
+        hz11_thread_cache_smoke_soa hz11_thread_cache_smoke_span_soa
 	./hz11_thread_cache_smoke
 	./hz11_thread_cache_smoke_span
 	./hz11_thread_cache_smoke_stats
@@ -75,6 +84,8 @@ smoke: hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
 	./hz11_thread_cache_smoke_span_tlsfast
 	./hz11_thread_cache_smoke_nobytes
 	./hz11_thread_cache_smoke_span_nobytes
+	./hz11_thread_cache_smoke_soa
+	./hz11_thread_cache_smoke_span_soa
 
 hz11_fixed_local_bench: $(BENCH_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_SRC) $(LDFLAGS) $(LDLIBS)
@@ -118,6 +129,13 @@ libhz11_nobytes.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_nobytes.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 $(INC) -shared -Wl,-soname,libhz11_span_nobytes.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11CacheLayout-L1: SOA class cache (speed-ceiling lane).
+libhz11_soa.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 $(INC) -shared -Wl,-soname,libhz11_soa.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_soa.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 $(INC) -shared -Wl,-soname,libhz11_span_soa.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 preload: libhz11.so
 preload-span: libhz11_span.so
 preload-token-stats: libhz11_stats.so
@@ -128,6 +146,8 @@ preload-token-tlsfast: libhz11_tlsfast.so
 preload-span-tlsfast: libhz11_span_tlsfast.so
 preload-token-nobytes: libhz11_nobytes.so
 preload-span-nobytes: libhz11_span_nobytes.so
+preload-token-soa: libhz11_soa.so
+preload-span-soa: libhz11_span_soa.so
 
 hz11-standalone-check:
 	./scripts/check_hz11_standalone.sh
@@ -138,8 +158,10 @@ clean:
 	      hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top \
 	      hz11_thread_cache_smoke_tlsfast hz11_thread_cache_smoke_span_tlsfast \
 	      hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes \
+	      hz11_thread_cache_smoke_soa hz11_thread_cache_smoke_span_soa \
 	      hz11_fixed_local_bench libhz11.so libhz11_span.so \
 	      libhz11_stats.so libhz11_span_stats.so \
 	      libhz11_top.so libhz11_span_top.so \
 	      libhz11_tlsfast.so libhz11_span_tlsfast.so \
-	      libhz11_nobytes.so libhz11_span_nobytes.so
+	      libhz11_nobytes.so libhz11_span_nobytes.so \
+	      libhz11_soa.so libhz11_span_soa.so

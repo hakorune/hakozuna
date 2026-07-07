@@ -57,6 +57,20 @@
 #define HZ11_CACHE_BYTE_ACCOUNTING 1
 #endif
 
+/* HZ11CacheLayout-L1: SOA (structure-of-arrays) class cache.
+ * Splits the AoS H11ClassCache[13] into two parallel arrays with power-of-2
+ * strides (256B items + 4B counts), eliminating the *264 address chain.
+ * Only valid with TLS_FASTPATH + no-bytes (speed-ceiling lane). */
+#ifndef HZ11_CACHE_SOA
+#define HZ11_CACHE_SOA 0
+#endif
+#if HZ11_CACHE_SOA && HZ11_CACHE_TOPPTR
+#error "HZ11_CACHE_SOA and HZ11_CACHE_TOPPTR are alternative cache-shape lanes"
+#endif
+#if HZ11_CACHE_SOA && HZ11_CACHE_BYTE_ACCOUNTING
+#error "HZ11_CACHE_SOA is only defined for the no-bytes speed-ceiling lane"
+#endif
+
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;
@@ -83,7 +97,12 @@ typedef struct H11SpanCurrent {
 #endif
 
 typedef struct H11ThreadCache {
-  H11ClassCache class_cache[HZ11_CLASS_COUNT];
+#if HZ11_CACHE_SOA
+  void* class_items[HZ11_CLASS_COUNT][HZ11_CACHE_CAP]; /* stride 256B per class */
+  uint32_t class_counts[HZ11_CLASS_COUNT];             /* stride 4B per class */
+#else
+  H11ClassCache class_cache[HZ11_CLASS_COUNT];          /* stride 264B (AoS) */
+#endif
 #if !HZ11_CLASSIFY_SPAN
   H11Token tokens[HZ11_TOKEN_COUNT];
 #else
@@ -177,6 +196,15 @@ static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
   if (class_id >= HZ11_CLASS_COUNT) {
     return NULL;
   }
+#if HZ11_CACHE_SOA
+  uint32_t cnt = tc->class_counts[class_id];
+  if (cnt == 0u) {
+    return NULL;
+  }
+  cnt -= 1u;
+  tc->class_counts[class_id] = cnt;
+  return tc->class_items[class_id][cnt];
+#else
   H11ClassCache* cc = &tc->class_cache[class_id];
 #if HZ11_CACHE_TOPPTR
   if (cc->top == cc->items) {
@@ -197,10 +225,20 @@ static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
 #endif
   return p;
 #endif
+#endif /* HZ11_CACHE_SOA */
 }
 
 static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
+#if HZ11_CACHE_SOA
+  uint32_t cnt = tc->class_counts[class_id];
+  if (cnt < HZ11_CACHE_CAP) {
+    tc->class_items[class_id][cnt] = ptr;
+    tc->class_counts[class_id] = cnt + 1u;
+    return;
+  }
+  hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
+#else
   H11ClassCache* cc = &tc->class_cache[class_id];
 #if HZ11_CACHE_TOPPTR
 #if HZ11_CACHE_BYTE_ACCOUNTING
@@ -235,6 +273,7 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
 #endif
   hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
 #endif
+#endif /* HZ11_CACHE_SOA */
 }
 
 #endif /* HZ11_THREAD_CACHE_H */
