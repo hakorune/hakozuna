@@ -27,5 +27,7 @@ libhz11_span_soa.so
 libhz11_span_transfer.so
 libhz11_span_transfer_diag.so
 libhz11_span_transfer_cap.so
+libhz11_span_return.so
 hz11_thread_cache_smoke_span_transfer
+hz11_thread_cache_smoke_span_return
 *.o

@@ -147,13 +147,17 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
       H11SpanCurrent* cs = &tc->current[class_id];
       while (n < HZ11_TRANSFER_BATCH) {
         if (!cs->base || cs->bump_index >= cs->slot_count) {
-          char* base = (char*)hz11_span_carve_for_class(class_id);
+          char* base = (char*)hz11_span_return_pop_reusable_span(class_id);
+          if (!base) {
+            base = (char*)hz11_span_carve_for_class(class_id);
+          }
           if (!base) {
             break;
           }
           cs->base = base;
           cs->bump_index = 0u;
           cs->slot_count = (uint32_t)(HZ11_SPAN_BYTES / slot);
+          hz11_span_return_register_active_span(class_id, base, cs->slot_count);
         }
         tmp[n++] = cs->base + (size_t)cs->bump_index++ * slot;
       }

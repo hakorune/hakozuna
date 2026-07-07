@@ -18,7 +18,9 @@ static void hz11_dump_stats_atexit(void) {
           "cached_bytes=%zu "
           "refill_xfer=%llu refill_central=%llu refill_span=%llu "
           "xfer_hit=%llu xfer_miss=%llu xfer_insert=%llu xfer_spill=%llu "
-          "central_hit=%llu central_miss=%llu central_insert=%llu\n",
+          "central_hit=%llu central_miss=%llu central_insert=%llu "
+          "span_return=%llu span_reuse=%llu central_full_span=%llu "
+          "central_partial_span=%llu central_objects=%llu\n",
           (unsigned long long)s.malloc_count, (unsigned long long)s.malloc_hit,
           (unsigned long long)s.refill_count, (unsigned long long)s.free_count,
           (unsigned long long)s.token_hit, (unsigned long long)s.token_miss,
@@ -37,7 +39,12 @@ static void hz11_dump_stats_atexit(void) {
           (unsigned long long)s.transfer_insert_spill,
           (unsigned long long)s.central_remove_hit,
           (unsigned long long)s.central_remove_miss,
-          (unsigned long long)s.central_insert);
+          (unsigned long long)s.central_insert,
+          (unsigned long long)s.span_return_count,
+          (unsigned long long)s.span_reuse_count,
+          (unsigned long long)s.central_full_span_count,
+          (unsigned long long)s.central_partial_span_count,
+          (unsigned long long)s.central_objects);
   if (getenv("HZ11_DUMP_CENTRAL_CLASSES") != NULL) {
     hz11_central_stack_dump_class_stats();
   }

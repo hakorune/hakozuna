@@ -4,6 +4,7 @@
         preload-token-nobytes preload-span-nobytes \
         preload-token-soa preload-span-soa \
         preload-span-transfer preload-span-transfer-diag preload-span-transfer-cap \
+        preload-span-return \
         hz11-standalone-check clean
 
 CC ?= gcc
@@ -75,13 +76,16 @@ hz11_thread_cache_smoke_span_soa: $(SMOKE_SRC) $(HEADERS)
 hz11_thread_cache_smoke_span_transfer: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+hz11_thread_cache_smoke_span_return: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_SPAN_RETURN=1 -DHZ11_CENTRAL_CAP=65536 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 smoke: hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
         hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
         hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top \
         hz11_thread_cache_smoke_tlsfast hz11_thread_cache_smoke_span_tlsfast \
         hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes \
         hz11_thread_cache_smoke_soa hz11_thread_cache_smoke_span_soa \
-        hz11_thread_cache_smoke_span_transfer
+        hz11_thread_cache_smoke_span_transfer hz11_thread_cache_smoke_span_return
 	./hz11_thread_cache_smoke
 	./hz11_thread_cache_smoke_span
 	./hz11_thread_cache_smoke_stats
@@ -95,6 +99,7 @@ smoke: hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
 	./hz11_thread_cache_smoke_soa
 	./hz11_thread_cache_smoke_span_soa
 	./hz11_thread_cache_smoke_span_transfer
+	./hz11_thread_cache_smoke_span_return
 
 hz11_fixed_local_bench: $(BENCH_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_SRC) $(LDFLAGS) $(LDLIBS)
@@ -157,6 +162,10 @@ libhz11_span_transfer_diag.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_transfer_cap.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=$(HZ11_CENTRAL_CAP_AB) $(INC) -shared -Wl,-soname,libhz11_span_transfer_cap.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11CentralFreeListSpanReturn-L1: opt-in span-aware central free list.
+libhz11_span_return.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_SPAN_RETURN=1 -DHZ11_CENTRAL_CAP=65536 $(INC) -shared -Wl,-soname,libhz11_span_return.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 preload: libhz11.so
 preload-span: libhz11_span.so
 preload-token-stats: libhz11_stats.so
@@ -172,6 +181,7 @@ preload-span-soa: libhz11_span_soa.so
 preload-span-transfer: libhz11_span_transfer.so
 preload-span-transfer-diag: libhz11_span_transfer_diag.so
 preload-span-transfer-cap: libhz11_span_transfer_cap.so
+preload-span-return: libhz11_span_return.so
 
 hz11-standalone-check:
 	./scripts/check_hz11_standalone.sh
@@ -183,7 +193,7 @@ clean:
 	      hz11_thread_cache_smoke_tlsfast hz11_thread_cache_smoke_span_tlsfast \
 	      hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes \
 	      hz11_thread_cache_smoke_soa hz11_thread_cache_smoke_span_soa \
-	      hz11_thread_cache_smoke_span_transfer \
+	      hz11_thread_cache_smoke_span_transfer hz11_thread_cache_smoke_span_return \
 	      hz11_fixed_local_bench libhz11.so libhz11_span.so \
 	      libhz11_stats.so libhz11_span_stats.so \
 	      libhz11_top.so libhz11_span_top.so \
@@ -191,4 +201,4 @@ clean:
 	      libhz11_nobytes.so libhz11_span_nobytes.so \
 	      libhz11_soa.so libhz11_span_soa.so \
 	      libhz11_span_transfer.so libhz11_span_transfer_diag.so \
-	      libhz11_span_transfer_cap.so
+	      libhz11_span_transfer_cap.so libhz11_span_return.so

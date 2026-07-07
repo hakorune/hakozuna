@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11MacroFailureAttribution-L1 (measured MIXED)
+  HZ11CentralFreeListSpanReturn-L1 (measured NO-GO)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
@@ -29,6 +29,7 @@ docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_MACRO_SPEED_LANE_GATE_L1.md
 docs/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
+docs/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
@@ -142,15 +143,48 @@ HZ11MacroFailureAttribution-L1:
   Decision:
     do not promote a larger fixed central stack as policy. Move to
     CentralFreeList/span-return design.
+
+HZ11CentralFreeListSpanReturn-L1:
+  implementation and gate added:
+    docs/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
+    hakozuna-hz11/scripts/run_hz11_span_return_gate.sh
+  Purpose:
+    add a new opt-in sibling, libhz11_span_return.so, behind
+    HZ11_CENTRAL_SPAN_RETURN=1. Do not change libhz11_span_transfer.so.
+  Boundary:
+    span-return metadata and counters must stay on transfer/central/refill cold
+    paths. Do not touch fixed-local malloc/free hit path.
+  Required policy:
+    track central_free_count and transfer_count by span, detect central-only
+    full spans, move them to a reusable span stack, and check reusable spans
+    before arena bump carve.
+  Gate rows:
+    python_alloc, mstress, larson, sh6bench, xmalloc_test against tcmalloc,
+    hz11-span-transfer, and hz11-span-return.
+  Output:
+    bench_results/hz11_span_return_20260707T225952Z/summary.md
+  Verdict:
+    NO-GO for macro promotion.
+  Key results:
+    python_alloc: span-return passes 3/3 where span-transfer aborts; RSS 1.140x
+      tcmalloc; span_return=1578
+    mstress: span-return passes 3/3 where span-transfer aborts; RSS 1.226x
+      tcmalloc; span_return=873, span_reuse=639
+    larson: RSS unchanged vs transfer and 2.348x tcmalloc; span_return=0
+    sh6bench: RSS unchanged vs transfer and 1.314x tcmalloc; wall regresses
+      4.562s -> 17.805s vs span-transfer; span_return=0
+    xmalloc_test: no >5% wall regression and RSS remains low
+  Decision:
+    keep libhz11_span_return.so as an attribution lane only. Do not promote it.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  HZ11CentralFreeListSpanReturn-L1:
-    replace the simple retained-object central stack with a policy that can
-    return fully free spans or otherwise cap central retained memory.
+  HZ11SpanSourceAttribution-L1:
+    larson reaches span_create=65536 with no central return activity; attribute
+    span source/current-span/pageheap policy and sh6bench span-return overhead.
   Keep transfer as remote/mixed microbench lane only until macro correctness is stable.
 
 Candidate cleanup:

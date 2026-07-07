@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "hz11_span.h"
 #include "hz11_size_class.h"
 
 /* HZ11TransferCacheCentralSpan-L1: batch middle-end for the span lane.
@@ -31,6 +32,14 @@
 #define HZ11_CENTRAL_CLASS_DIAG 0
 #endif
 
+#ifndef HZ11_CENTRAL_SPAN_RETURN
+#define HZ11_CENTRAL_SPAN_RETURN 0
+#endif
+
+#ifndef HZ11_REUSABLE_SPAN_CAP
+#define HZ11_REUSABLE_SPAN_CAP 4096u
+#endif
+
 #if HZ11_TRANSFER_CENTRAL_SPAN
 
 /* Batch remove: pop up to max_n objects from the transfer cache.
@@ -56,6 +65,17 @@ uint64_t hz11_central_remove_miss_count_load(void);
 uint64_t hz11_central_insert_count_load(void);
 void hz11_central_stack_dump_class_stats(void);
 
+void* hz11_span_return_pop_reusable_span(uint8_t class_id);
+void hz11_span_return_register_active_span(uint8_t class_id, void* base,
+                                           uint32_t slot_count);
+uint64_t hz11_span_return_count_load(void);
+uint64_t hz11_span_reuse_count_load(void);
+uint64_t hz11_central_full_span_count_load(void);
+uint64_t hz11_central_partial_span_count_load(void);
+uint64_t hz11_central_object_count_load(void);
+uint64_t hz11_span_return_by_class_load(uint8_t class_id);
+uint64_t hz11_central_high_water_by_class_load(uint8_t class_id);
+
 #else
 
 /* Stubs: compile to nothing when the flag is off. */
@@ -79,6 +99,24 @@ static inline uint64_t hz11_central_remove_hit_count_load(void) { return 0u; }
 static inline uint64_t hz11_central_remove_miss_count_load(void) { return 0u; }
 static inline uint64_t hz11_central_insert_count_load(void) { return 0u; }
 static inline void hz11_central_stack_dump_class_stats(void) {}
+static inline void* hz11_span_return_pop_reusable_span(uint8_t c) {
+  (void)c; return NULL;
+}
+static inline void hz11_span_return_register_active_span(uint8_t c, void* b,
+                                                         uint32_t s) {
+  (void)c; (void)b; (void)s;
+}
+static inline uint64_t hz11_span_return_count_load(void) { return 0u; }
+static inline uint64_t hz11_span_reuse_count_load(void) { return 0u; }
+static inline uint64_t hz11_central_full_span_count_load(void) { return 0u; }
+static inline uint64_t hz11_central_partial_span_count_load(void) { return 0u; }
+static inline uint64_t hz11_central_object_count_load(void) { return 0u; }
+static inline uint64_t hz11_span_return_by_class_load(uint8_t c) {
+  (void)c; return 0u;
+}
+static inline uint64_t hz11_central_high_water_by_class_load(uint8_t c) {
+  (void)c; return 0u;
+}
 
 #endif
 

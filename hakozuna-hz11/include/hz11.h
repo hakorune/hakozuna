@@ -50,6 +50,12 @@ typedef struct H11Stats {
   uint64_t central_remove_hit;
   uint64_t central_remove_miss;
   uint64_t central_insert;
+  /* HZ11CentralFreeListSpanReturn-L1 counters */
+  uint64_t span_return_count;
+  uint64_t span_reuse_count;
+  uint64_t central_full_span_count;
+  uint64_t central_partial_span_count;
+  uint64_t central_objects;
 } H11Stats;
 
 void hz11_stats(H11Stats* out);

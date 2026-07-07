@@ -253,6 +253,11 @@ void hz11_stats(H11Stats* out) {
   out->central_remove_hit = hz11_central_remove_hit_count_load();
   out->central_remove_miss = hz11_central_remove_miss_count_load();
   out->central_insert = hz11_central_insert_count_load();
+  out->span_return_count = hz11_span_return_count_load();
+  out->span_reuse_count = hz11_span_reuse_count_load();
+  out->central_full_span_count = hz11_central_full_span_count_load();
+  out->central_partial_span_count = hz11_central_partial_span_count_load();
+  out->central_objects = hz11_central_object_count_load();
 #else
   out->refill_from_transfer = 0;
   out->refill_from_central = 0;
@@ -264,5 +269,10 @@ void hz11_stats(H11Stats* out) {
   out->central_remove_hit = 0;
   out->central_remove_miss = 0;
   out->central_insert = 0;
+  out->span_return_count = 0;
+  out->span_reuse_count = 0;
+  out->central_full_span_count = 0;
+  out->central_partial_span_count = 0;
+  out->central_objects = 0;
 #endif
 }

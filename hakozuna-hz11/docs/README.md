@@ -72,6 +72,11 @@ HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md:
   and mstress aborts to central stack class pressure, then records that
   cap-only does not solve larson/sh6bench RSS
 
+HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md:
+  implemented opt-in transfer sibling, `libhz11_span_return.so`, with span-aware
+  central free list metadata, reusable span stack, counters, macro gate results,
+  and a NO-GO macro promotion verdict
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
