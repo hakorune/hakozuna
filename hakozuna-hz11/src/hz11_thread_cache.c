@@ -170,7 +170,7 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) {
   H11ClassCache* cc = &tc->class_cache[class_id];
   size_t slot = hz11_class_slot_size(class_id);
-  tc->flush_items += cc->count;
+  HZ11_COUNT_ADD(tc->flush_items, cc->count);
   for (uint32_t i = 0; i < cc->count; ++i) {
 #if HZ11_CLASSIFY_SPAN
     /* arena pointers are NOT system pointers: move to the returned-object sink,
@@ -188,12 +188,12 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
   }
   tc->cached_bytes -= slot * cc->count;
   cc->count = 0;
-  tc->flush_count += 1u;
+  HZ11_COUNT_INC(tc->flush_count);
 }
 
 void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
-  tc->overflow_count += 1u;
+  HZ11_COUNT_INC(tc->overflow_count);
   hz11_thread_cache_flush_class(tc, class_id);
   if (class_id < HZ11_CLASS_COUNT) {
     H11ClassCache* cc = &tc->class_cache[class_id];
@@ -205,7 +205,10 @@ void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
 }
 
 void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
-  tc->refill_count += 1u;
+#if !HZ11_CLASSIFY_SPAN && !HZ11_ENABLE_HOT_COUNTERS
+  (void)tc; /* token lane: tc only used for the now-compiled-out refill_count */
+#endif
+  HZ11_COUNT_INC(tc->refill_count);
 #if HZ11_CLASSIFY_SPAN
   /* 1. per-class returned-object sink first (reuse before carving a fresh span) */
   void* reused = hz11_returned_pop(class_id);

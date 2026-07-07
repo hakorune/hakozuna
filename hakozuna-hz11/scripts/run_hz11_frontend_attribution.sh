@@ -18,6 +18,8 @@ source "$REPO_ROOT/hakozuna-hz10/bench/lib/hz10_bench_common.sh"
 HZ10_LIB="$REPO_ROOT/hakozuna-hz10/libhz10.so"
 HZ11_LIB="$ROOT/libhz11.so"
 HZ11_SPAN_LIB="$ROOT/libhz11_span.so"
+HZ11_STATS_LIB="$ROOT/libhz11_stats.so"
+HZ11_SPAN_STATS_LIB="$ROOT/libhz11_span_stats.so"
 TC_LIB="${TCMALLOC_LIB:-$(hz10_bench_find_tcmalloc_lib || true)}"
 MI_LIB="${MIMALLOC_LIB:-}"
 for m in \
@@ -47,9 +49,11 @@ allocators+=("glibc|")
 [[ -n "$MI_LIB" ]] && allocators+=("mimalloc|$MI_LIB")
 [[ -f "$HZ10_LIB" ]] && allocators+=("hz10|$HZ10_LIB")
 [[ -f "$HZ11_LIB" ]] && allocators+=("hz11-token|$HZ11_LIB")
+[[ -f "$HZ11_STATS_LIB" ]] && allocators+=("hz11-token-stats|$HZ11_STATS_LIB")
 [[ -f "$HZ11_SPAN_LIB" ]] && allocators+=("hz11-span|$HZ11_SPAN_LIB")
+[[ -f "$HZ11_SPAN_STATS_LIB" ]] && allocators+=("hz11-span-stats|$HZ11_SPAN_STATS_LIB")
 
-make -C "$ROOT" preload preload-span hz11_fixed_local_bench >/dev/null 2>&1
+make -C "$ROOT" preload preload-span preload-token-stats preload-span-stats hz11_fixed_local_bench >/dev/null 2>&1
 BIN="$ROOT/hz11_fixed_local_bench"
 
 # --- helpers ---

@@ -57,7 +57,9 @@ fi
 
 echo "[hz11-standalone] checking local build products are ignored"
 for product in hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
-               hz11_fixed_local_bench libhz11.so libhz11_span.so; do
+               hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
+               hz11_fixed_local_bench libhz11.so libhz11_span.so \
+               libhz11_stats.so libhz11_span_stats.so; do
   if ! grep -q "^${product}\$" .gitignore 2>/dev/null; then
     echo "[hz11-standalone] build product ${product} not in .gitignore" >&2
     exit 1

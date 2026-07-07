@@ -17,6 +17,21 @@
 #define HZ11_CLASSIFY_SPAN 0
 #endif
 
+/* HZ11StatsCompileGate-L1: hot-path counter increments are compile-time opt-in.
+ * Default OFF (speed lane). Diagnostic siblings (libhz11_stats.so etc.) build
+ * with -DHZ11_ENABLE_HOT_COUNTERS=1. NO runtime branch -- the macros expand to
+ * ((void)0) when off, so the compiler eliminates the increment entirely. */
+#ifndef HZ11_ENABLE_HOT_COUNTERS
+#define HZ11_ENABLE_HOT_COUNTERS 0
+#endif
+#if HZ11_ENABLE_HOT_COUNTERS
+#define HZ11_COUNT_INC(x) ((x) += 1u)
+#define HZ11_COUNT_ADD(x, n) ((x) += (n))
+#else
+#define HZ11_COUNT_INC(x) ((void)0)
+#define HZ11_COUNT_ADD(x, n) ((void)0)
+#endif
+
 #define HZ11_CACHE_CAP 32u
 #define HZ11_MAX_CACHED_BYTES (2u * 1024u * 1024u)
 

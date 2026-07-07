@@ -11,14 +11,14 @@ void* hz11_malloc(size_t size) {
     return hz11_sys_malloc(size);
   }
   uint8_t class_id = hz11_size_class(size);
-  tc->malloc_count += 1u;
+  HZ11_COUNT_INC(tc->malloc_count);
 #if HZ11_CLASSIFY_SPAN
   if (class_id == HZ11_LARGE_CLASS) {
     return hz11_sys_malloc(size); /* large: system; free misses arena -> sys_free */
   }
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
-    tc->malloc_hit += 1u;
+    HZ11_COUNT_INC(tc->malloc_hit);
     return p;
   }
   return hz11_thread_cache_refill(tc, class_id); /* returned/bump/carve */
@@ -32,7 +32,7 @@ void* hz11_malloc(size_t size) {
   }
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
-    tc->malloc_hit += 1u;
+    HZ11_COUNT_INC(tc->malloc_hit);
     /* Cache hit: the token was set when first refilled and is not deleted on
      * free, so it is already present. Skip the redundant token_set. */
     return p;
@@ -59,15 +59,15 @@ void hz11_free(void* ptr) {
   if (hz11_span_classify(ptr, &class_id)) {
     H11ThreadCache* tc = hz11_thread_cache_get();
     if (tc) {
-      tc->free_count += 1u;
-      tc->direct_hit_count += 1u;
+      HZ11_COUNT_INC(tc->free_count);
+      HZ11_COUNT_INC(tc->direct_hit_count);
       hz11_thread_cache_push(tc, class_id, ptr);
       return;
     }
   }
   H11ThreadCache* tc = hz11_thread_cache_get();
   if (tc) {
-    tc->direct_miss_count += 1u;
+    HZ11_COUNT_INC(tc->direct_miss_count);
   }
   /* arena-miss / uncarved / foreign / large: sys_free is correct (system ptr). */
   hz11_sys_free(ptr);
@@ -75,8 +75,8 @@ void hz11_free(void* ptr) {
   H11ThreadCache* tc = hz11_thread_cache_get();
   uint8_t class_id;
   if (tc && hz11_token_lookup(tc, ptr, &class_id)) {
-    tc->free_count += 1u;
-    tc->token_hit += 1u;
+    HZ11_COUNT_INC(tc->free_count);
+    HZ11_COUNT_INC(tc->token_hit);
     if (class_id == HZ11_LARGE_CLASS) {
       hz11_sys_free(ptr);
       return;
@@ -85,7 +85,7 @@ void hz11_free(void* ptr) {
     return;
   }
   if (tc) {
-    tc->token_miss += 1u;
+    HZ11_COUNT_INC(tc->token_miss);
   }
   hz11_sys_free(ptr); /* cross-thread / evicted / foreign */
 #endif

@@ -102,15 +102,24 @@ int main(void) {
   void* pz = hz11_realloc(pn, 0);
   CHECK(pz == NULL, "realloc(p,0) returns NULL");
 
-  /* 6. counter sanity (lane-aware) */
+  /* 6. counter sanity (lane-aware + counters-flag-aware).
+   *   When HZ11_ENABLE_HOT_COUNTERS is off (speed lane), all hot counters are
+   *   compile-time eliminated and read as zero. Only the correctness checks
+   *   above (alloc/free/reuse/realloc/large) must pass in BOTH lanes. */
   H11Stats s;
   hz11_stats(&s);
+#if HZ11_ENABLE_HOT_COUNTERS
   CHECK(s.malloc_count > 0, "stats: malloc_count");
   CHECK(s.free_count > 0, "stats: free_count");
 #if HZ11_CLASSIFY_SPAN
   CHECK(s.direct_hit_count > 0, "stats: direct_hit (LIFO exercised)");
 #else
   CHECK(s.token_hit > 0, "stats: token_hit (LIFO exercised)");
+#endif
+#else
+  /* speed lane: hot counters are zero by design -- verify they ARE zero */
+  CHECK(s.malloc_count == 0, "stats: malloc_count zero (counters off)");
+  CHECK(s.free_count == 0, "stats: free_count zero (counters off)");
 #endif
   fprintf(stderr,
           "hz11_thread_cache_smoke[%s] stats: malloc=%llu hit=%llu refill=%llu "
