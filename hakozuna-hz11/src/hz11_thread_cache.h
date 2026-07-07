@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "hz11_size_class.h"
 #include "hz11_sys_alloc.h"
+#include "hz11_token_table.h"
 
 /* Per-thread front-end cache. Hot-path helpers below are static inline so
  * malloc/free do not pay a call per helper; only the cold paths (init, refill,
@@ -82,11 +83,6 @@ typedef struct H11ClassCache {
 
 #if !HZ11_CLASSIFY_SPAN
 /* L0 token lane. */
-#define HZ11_TOKEN_COUNT 1024u /* power of two */
-typedef struct H11Token {
-  void* ptr;
-  uint8_t class_id;
-} H11Token;
 #else
 /* L1 span lane: per-thread current span per class (bump source). */
 #include "hz11_span.h"
@@ -149,37 +145,6 @@ static inline H11ThreadCache* hz11_thread_cache_get(void) {
 }
 
 #if !HZ11_CLASSIFY_SPAN
-static inline size_t hz11_token_hash(const void* ptr) {
-  uintptr_t x = (uintptr_t)ptr;
-  x ^= x >> 33;
-  x *= 0xff51afd7ed558ccdULL;
-  x ^= x >> 33;
-  return (size_t)(x & (HZ11_TOKEN_COUNT - 1u));
-}
-
-static inline void hz11_token_set(H11ThreadCache* tc, void* ptr,
-                                  uint8_t class_id) {
-  size_t i = hz11_token_hash(ptr);
-  tc->tokens[i].ptr = ptr;
-  tc->tokens[i].class_id = class_id;
-}
-
-static inline int hz11_token_lookup(H11ThreadCache* tc, void* ptr,
-                                    uint8_t* class_id_out) {
-  size_t i = hz11_token_hash(ptr);
-  if (tc->tokens[i].ptr == ptr) {
-    *class_id_out = tc->tokens[i].class_id;
-    return 1;
-  }
-  return 0;
-}
-
-static inline void hz11_token_invalidate(H11ThreadCache* tc, void* ptr) {
-  size_t i = hz11_token_hash(ptr);
-  if (tc->tokens[i].ptr == ptr) {
-    tc->tokens[i].ptr = NULL;
-  }
-}
 #endif /* !HZ11_CLASSIFY_SPAN */
 
 static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,

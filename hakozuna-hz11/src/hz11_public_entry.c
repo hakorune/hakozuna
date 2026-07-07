@@ -28,7 +28,7 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   if (class_id == HZ11_LARGE_CLASS) {
     void* p = hz11_sys_malloc(size);
     if (p) {
-      hz11_token_set(tc, p, HZ11_LARGE_CLASS);
+      hz11_token_set(tc->tokens, p, HZ11_LARGE_CLASS);
     }
     return p;
   }
@@ -41,7 +41,7 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   if (!p) {
     return NULL;
   }
-  hz11_token_set(tc, p, class_id);
+  hz11_token_set(tc->tokens, p, class_id);
   return p;
 #endif
 }
@@ -70,7 +70,7 @@ static inline void hz11_free_fast_with_tc(H11ThreadCache* tc, void* ptr) {
   hz11_sys_free(ptr);
 #else
   uint8_t class_id;
-  if (hz11_token_lookup(tc, ptr, &class_id)) {
+  if (hz11_token_lookup(tc->tokens, ptr, &class_id)) {
     HZ11_COUNT_INC(tc->free_count);
     HZ11_COUNT_INC(tc->token_hit);
     if (class_id == HZ11_LARGE_CLASS) {
@@ -130,7 +130,7 @@ void* hz11_malloc(size_t size) {
   if (class_id == HZ11_LARGE_CLASS) {
     void* p = hz11_sys_malloc(size);
     if (p) {
-      hz11_token_set(tc, p, HZ11_LARGE_CLASS);
+      hz11_token_set(tc->tokens, p, HZ11_LARGE_CLASS);
     }
     return p;
   }
@@ -145,7 +145,7 @@ void* hz11_malloc(size_t size) {
   if (!p) {
     return NULL;
   }
-  hz11_token_set(tc, p, class_id);
+  hz11_token_set(tc->tokens, p, class_id);
   return p;
 #endif
 #endif
@@ -187,7 +187,7 @@ void hz11_free(void* ptr) {
 #else
   H11ThreadCache* tc = hz11_thread_cache_get();
   uint8_t class_id;
-  if (tc && hz11_token_lookup(tc, ptr, &class_id)) {
+  if (tc && hz11_token_lookup(tc->tokens, ptr, &class_id)) {
     HZ11_COUNT_INC(tc->free_count);
     HZ11_COUNT_INC(tc->token_hit);
     if (class_id == HZ11_LARGE_CLASS) {
@@ -234,16 +234,16 @@ void* hz11_realloc(void* ptr, size_t size) {
 #else
   H11ThreadCache* tc = hz11_thread_cache_get();
   uint8_t old_class;
-  int had_token = (tc != NULL) && hz11_token_lookup(tc, ptr, &old_class);
+  int had_token = (tc != NULL) && hz11_token_lookup(tc->tokens, ptr, &old_class);
   void* np = hz11_sys_realloc(ptr, size); /* L0 backing is system malloc */
   if (!np) {
     return NULL; /* failure: old ptr + token stay valid */
   }
   if (tc) {
     if (had_token) {
-      hz11_token_invalidate(tc, ptr);
+      hz11_token_invalidate(tc->tokens, ptr);
     }
-    hz11_token_set(tc, np, hz11_size_class(size));
+    hz11_token_set(tc->tokens, np, hz11_size_class(size));
   }
   return np;
 #endif

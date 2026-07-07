@@ -48,6 +48,10 @@ HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
 
+HZ11_TOKEN_HELPERS_SPLIT_L0.md:
+  cleanup box that moves token-table types and inline helpers out of
+  hz11_thread_cache.h
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence
