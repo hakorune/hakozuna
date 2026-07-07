@@ -96,12 +96,23 @@ Current HZ8 source releases should include:
 Generated HZ8 preload DSOs and benchmark binaries remain local build outputs
 unless a release explicitly attaches platform artifacts.
 
-### HZ9 / HZ10
+### HZ9 / HZ10 / HZ11
 
-HZ9 and HZ10 are research/candidate lines. They may be included as source and
-evidence in repository snapshots, but they should not be presented as the
-recommended public allocator unless a later release defines and validates that
-promotion separately.
+HZ9, HZ10, and HZ11 are research/candidate lines. They may be included as
+source and evidence in repository snapshots, but they should not be presented
+as the recommended public allocator unless a later release defines and
+validates that promotion separately.
+
+```text
+HZ9:
+  archived throughput research evidence
+
+HZ10:
+  active speed/RSS-aware research candidate
+
+HZ11:
+  design-only speed-first tcmalloc-competitor line
+```
 
 ## Release Checklist
 

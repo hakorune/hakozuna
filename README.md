@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9 / hakozuna-hz10
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9 / hakozuna-hz10 / hakozuna-hz11
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
@@ -34,6 +34,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **HZ10 (hakozuna-hz10)**: macro/shim research candidate. It is now included
   in the integrated benchmark matrix, but has not replaced HZ8 as the public
   recommendation.
+- **HZ11 (hakozuna-hz11)**: design-only speed-first research line for a
+  tcmalloc-style front-end / transfer-cache / span allocator. It is not a
+  faster HZ10 and it does not replace HZ8.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
@@ -51,6 +54,7 @@ metadata and ownership models:
 | HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | the current public allocator line |
 | HZ9 | archived standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | frozen design evidence under `hakozuna-hz9/` |
 | HZ10 | macro/shim speed research | page-based fail-closed substrate + preload shim + orphan adoption work | the speed-oriented research candidate under `hakozuna-hz10/` |
+| HZ11 | speed-first tcmalloc competitor design | front-end cache + transfer cache + central spans + checked-mode diagnostics | design-only speed line under `hakozuna-hz11/` |
 
 In short:
 
@@ -62,12 +66,16 @@ In short:
 - **HZ9 is archived throughput research evidence; it is not the HZ8 default.**
 - **HZ10 is a newer macro/shim research candidate; it has not replaced HZ8 as
   the public recommendation.**
+- **HZ11 is a design-only speed-first line; it intentionally separates
+  tcmalloc-class speed mode from HZ8/HZ10 correctness and reclaim semantics.**
 
 Hakozuna is not trying to be the fastest allocator on every local hot-path
 benchmark. HZ8 is the recommended balanced line for low post-workload RSS,
 fail-closed ownership boundaries, and cross-thread free correctness. HZ10 is
 the active research line for faster allocator substrates that keep explicit
 route, ownership, and reclamation boundaries; it is not the public default yet.
+HZ11 is a separate speed-first design line for testing a tcmalloc-shaped
+front-end/middle-end/backend allocator inside the Hakozuna family.
 
 ## Architecture Difference / アーキテクチャの違い
 
@@ -90,6 +98,17 @@ HZ9:
   remote frees still route through segment metadata and pending-bit owner drain.
   RSS may be heavier than HZ8, but retention must stay explicit and bounded.
   New active speed/RSS-aware allocator work has moved to HZ10.
+
+HZ10:
+  Active speed/RSS-aware research candidate.
+  Keeps route, ownership, orphan adoption, and explicit reclaim boundaries in
+  scope while measuring how far that shape can approach tcmalloc-class speed.
+
+HZ11:
+  Design-only speed-first line.
+  Uses a tcmalloc-style front-end cache, transfer cache, central spans, and
+  pageheap as the starting point. HZ8/HZ10-style diagnostics belong to checked
+  lanes, not the default speed hot path.
 ```
 
 Japanese summary:
@@ -111,6 +130,16 @@ HZ9:
   remote freeはsegment routeとpending-bit owner drainで回収する。
   RSSはHZ8より重くてもよいが、retentionは明示cap付きで扱う。
   新しいactiveなspeed/RSS-aware allocator workはHZ10へ移した。
+
+HZ10:
+  activeなspeed/RSS-aware研究候補。
+  route、ownership、orphan adoption、明示reclaim境界を残したまま、
+  tcmalloc級速度へどこまで近づけるかを測る。
+
+HZ11:
+  design-onlyのspeed-firstライン。
+  tcmalloc型のfront-end cache、transfer cache、central span、pageheapを
+  出発点にする。HZ8/HZ10型の診断はchecked laneへ分離する。
 ```
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply
