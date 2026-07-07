@@ -28,9 +28,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
   is HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
   hardening.
-- **HZ9 (hakozuna-hz9)**: standalone experimental throughput line. It keeps
-  HZ8 as the frozen balanced line and develops new HZ9 behavior only under
-  `hakozuna-hz9/`.
+- **HZ9 (hakozuna-hz9)**: archived standalone throughput research line. It
+  remains in-tree as design evidence, but active speed/RSS-aware work has moved
+  to HZ10.
 - **HZ10 (hakozuna-hz10)**: macro/shim research candidate. It is now included
   in the integrated benchmark matrix, but has not replaced HZ8 as the public
   recommendation.
@@ -49,7 +49,7 @@ metadata and ownership models:
 | HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | the active Windows/Linux successor line |
 | HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
 | HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | the current public allocator line |
-| HZ9 | standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | the experimental successor lane under `hakozuna-hz9/` |
+| HZ9 | archived standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | frozen design evidence under `hakozuna-hz9/` |
 | HZ10 | macro/shim speed research | page-based fail-closed substrate + preload shim + orphan adoption work | the speed-oriented research candidate under `hakozuna-hz10/` |
 
 In short:
@@ -59,7 +59,7 @@ In short:
 - **HZ5 is ownership/policy-first.**
 - **HZ6 is contract-first with selected/default and profile-only lanes.**
 - **HZ8 is the recommended balanced allocator line.**
-- **HZ9 is the separate throughput research line; it is not the HZ8 default.**
+- **HZ9 is archived throughput research evidence; it is not the HZ8 default.**
 - **HZ10 is a newer macro/shim research candidate; it has not replaced HZ8 as
   the public recommendation.**
 
@@ -85,10 +85,11 @@ HZ8:
   pending bitmap, qstate, owner queue, and owner-exit hard drain.
 
 HZ9:
-  Throughput-first experimental line.
+  Archived throughput-first experimental line.
   Medium/main local reuse is owned by TLS per-class ProductEntry state, while
   remote frees still route through segment metadata and pending-bit owner drain.
   RSS may be heavier than HZ8, but retention must stay explicit and bounded.
+  New active speed/RSS-aware allocator work has moved to HZ10.
 ```
 
 Japanese summary:
@@ -105,10 +106,11 @@ HZ8:
   owner-exit hard drainをmedium run側の共有authorityとして持つ。
 
 HZ9:
-  throughput-firstの実験ライン。
+  archived throughput-firstの実験ライン。
   medium/mainのローカル再利用はTLS per-class ProductEntryが持ち、
   remote freeはsegment routeとpending-bit owner drainで回収する。
   RSSはHZ8より重くてもよいが、retentionは明示cap付きで扱う。
+  新しいactiveなspeed/RSS-aware allocator workはHZ10へ移した。
 ```
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply

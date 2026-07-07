@@ -1,14 +1,15 @@
-# HZ9 Next Substrate
+# HZ9 Next Substrate Archive
 
-This is the active design gate for the next HZ9 local substrate. Historical
-measurements are archived in `HZ9_LANE_HISTORY.md` and the per-lane evidence
-docs.
+This was the design gate for the next HZ9 local substrate. HZ9 is now archived
+as throughput research evidence; active speed/RSS-aware allocator work has
+moved to `../../hakozuna-hz10/`. Historical measurements remain in
+`HZ9_LANE_HISTORY.md` and the per-lane evidence docs.
 
-## Current Active Gate
+## Frozen Gate
 
 ```text
 HZ9SegmentLocalCache-L0:
-  current no-behavior substrate scaffold
+  frozen no-behavior substrate scaffold
   segment-backed local slots, not HZ8 medium-run objects
   remote-contaminated segments leave LOCAL state
   owner-drain retires remote-contaminated segments in L0

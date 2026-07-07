@@ -12,7 +12,7 @@ as the recommended Hakozuna allocator line.
   hardening is the current default.
 - HZ8-v1.1 remains the frozen comparison baseline.
 - LargeDirectOwned and ShardedHotCache are opt-in evidence lanes, not defaults.
-- HZ9 remains an opt-in throughput research lane, not a release default.
+- HZ9 remains archived throughput research evidence, not a release default.
 - HZ10 is included as an active speed/RSS-aware research line, but it is not
   promoted as the HZ8 public recommendation.
 

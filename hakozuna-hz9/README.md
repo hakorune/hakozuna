@@ -1,5 +1,10 @@
 # Hakozuna HZ9
 
+Archive status: HZ9 is frozen as standalone throughput research evidence. Keep
+the source, scripts, and measurement records for design history, but do not open
+new HZ9 behavior boxes unless the project explicitly resumes this line. Active
+speed/RSS-aware allocator work has moved to `../hakozuna-hz10/`.
+
 HZ9 is a standalone experimental throughput-first allocator line derived from
 HZ8.
 
@@ -12,7 +17,7 @@ cache architecture.
 
 ```text
 state:
-  standalone experimental implementation lane
+  archived standalone experimental implementation lane
 
 default allocator:
   not HZ9
@@ -25,7 +30,7 @@ current implementation base:
 
 previous box:
   HZ9StandaloneSingleFolderClosure-L1
-  closed enough for local HZ9 development
+  closed enough for local HZ9 development before archive
 
 held evidence:
   HZ9MediumTLSObjectCache-L0
@@ -34,29 +39,25 @@ held evidence:
   HZ9LocalArenaRemoteSeenActiveOnly-L1
 
 current direction:
-  ProductEntry-L0 is active
+  HZ9Archive-L0 freezes ProductEntry-L0 as evidence
   Phase 2 substrate and Phase 3 pointer-token work are held as evidence
   medium/main local reuse uses TLS per-class ProductEntry state
   remote frees claim segment pending bits and owner drain merges them back
   segment lifecycle/cache caps are part of the performance/RSS contract
   HZ8 remains the public balanced line; HZ9 is not the HZ8 default
 
-next evidence work:
-  read docs/HZ9_PHASES.md before opening another lane
-  read ../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md before
-  starting a new substrate
-  use honest ProductEntry and matrix measurements, not fused-only ceilings
-  keep same-thread local fast path entry-local
-  keep foreign/invalid/miss classification on route authority
-  verify owner-drain, lifecycle release, and RSS caps in R10 gates
+archive rule:
+  no further HZ9 behavior work by default
+  keep docs and measurements as historical design evidence
+  if resumed, read docs/HZ9_PHASES.md and open a new explicit unarchive box
   keep source/docs/scripts under the 800-line active-file limit
 ```
 
 ## Next-Design Target
 
 HZ9 ProductEntry is useful evidence, but the next large substrate should not be
-another cache around the HZ8/HZ9 public path. The current target is documented
-in `../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md`.
+another cache around the HZ8/HZ9 public path. Active successor work is now in
+`../hakozuna-hz10/`.
 
 ```text
 goal:

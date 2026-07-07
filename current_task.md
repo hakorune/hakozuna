@@ -13,43 +13,18 @@ Current direction:
   HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
   hardening. Public prep wording was refreshed in README / release drafts;
   remaining publish work is tag/release packaging, not allocator behavior.
-  HZ9 is now the separate throughput research lane.
-  HZ9 development must remain self-contained in hakozuna-hz9/.
-  HZ10 in hakozuna-hz10/: macro/shim research candidate; not HZ8 replacement.
-  Current HZ9 read: ProductEntry-L0 is wired into the real medium public path.
-                Segment metadata is static on fast path, per-slot state stays
-                entry-local, small/guard/control allocations bypass ProductEntry
-                where required, and remote pending bits drain into owner
-                entry-local free bits instead of dropping dirty segments.
-                Direct/API gates beat in-tree HZ8 API, but LD_PRELOAD local can
-                still flip vs frozen HZ8; public boundary is the current risk.
-                Product preload uses hidden visibility + initial-exec TLS as a
-                modest build-hygiene win, not a tcmalloc-70% path.
-  Active HZ9 order:
-                1. same-run R10 matrix: hz8_ref vs hz9_product, RSS/counters.
-                2. release-pressure/lifecycle evidence with segment_release.
-                3. promotion-ready docs: throughput-first, bounded-RSS tradeoff.
-                4. ProductEntryHotPath-L1 drain-off/global-fast-counter is
-                   NO-GO; next stats must be TLS/sampled/off-hot.
-                5. PreloadBoundaryThin-L1 and mediumfreecache are not local tcmalloc-gap fixes.
-  Prior HZ9 read: HZ9SubstrateCostMatrix-L0.
-                SlabDirectUse is remote/profile evidence.
-                LocalArena phase8 is broad NO-GO.
-                OwnerPage purelocal is closest local substrate so far, but
-                still loses medium_local0 and small_remote90.
-                OwnerPage ownerfast-bits / disabled-fast-reject prove local
-                RMW and disabled-class tax, but variants are not stable default
-                candidates; keep them as attribution only.
-                OwnerPage bits/shadow helpers are split out; keep active source
-                files under the 800-line rule before new experiments.
+  HZ9 in hakozuna-hz9/ is now frozen archived throughput research evidence.
+  HZ9 ProductEntry-L0 and substrate probes remain useful design history, but
+  no new HZ9 behavior boxes are active unless an explicit unarchive box is
+  opened.
+  HZ10 in hakozuna-hz10/: active macro/shim speed/RSS-aware research candidate;
+  not HZ8 replacement.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
   HZ8 is the balanced default line.
-  HZ9 builds, smokes, and records evidence from hakozuna-hz9/ itself.
-  Next HZ9 behavior development should avoid per-allocation owner-page tax,
-                broad no-use route/layout contamination, and unsafe pure-local
-                mutation on mixed remote rows.
+  HZ9 is archived as evidence, not an active line.
+  HZ10 is the active research line for speed/RSS-aware allocator work.
 ```
 
 ## Read First
@@ -59,7 +34,7 @@ Current strength:
   hakozuna-hz8/current_task.md
   hakozuna-hz8/README.md
 
-HZ9 experimental orientation:
+HZ9 archived orientation:
   hakozuna-hz9/README.md
   hakozuna-hz9/docs/HZ9_PHASES.md
   hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md

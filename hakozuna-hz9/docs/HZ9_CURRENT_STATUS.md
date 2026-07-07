@@ -1,7 +1,9 @@
-# HZ9 Current Status
+# HZ9 Archived Status
 
-Short orientation ledger for the standalone HZ9 line. Keep long lane history
-in `docs/HZ9_LANE_HISTORY.md` and detailed owner-page design in
+Archived orientation ledger for the standalone HZ9 line. HZ9 is frozen as
+throughput research evidence; active speed/RSS-aware allocator work has moved
+to `../../hakozuna-hz10/`. Keep long lane history in
+`docs/HZ9_LANE_HISTORY.md` and detailed owner-page design in
 `docs/HZ9_OWNER_LOCAL_PAGE_POOL_L0.md`.
 
 ## Current Direction
@@ -13,13 +15,13 @@ HZ8:
   paper / Windows / release lane
 
 HZ9:
-  separate throughput-first experimental line
+  archived throughput-first experimental line
   owns behavior code under hakozuna-hz9/
   keeps HZ8 remote safety boundaries where useful
   may accept higher RSS only under an explicit page/cache contract
 
-HZ10 candidate:
-  design target only
+HZ10:
+  active speed/RSS-aware research line
   documented in ../../hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
   thread-local intrusive freelist pages + O(1) pagemap route + remote stack
   owner-drain
@@ -42,18 +44,18 @@ remote page creation can be blocked, but entry/body cost still regresses local
 and remote medium rows.
 ```
 
-## Active Box
+## Frozen Box
 
 ```text
 HZ9ProductEntry GuardBypass/Lifecycle
 
 status:
   HZ8 remains the frozen balanced default
-  HZ9 remains a standalone throughput research tree
+  HZ9 remains a standalone archived throughput research tree
   OwnerPage / SlabPage / LocalArena behavior lanes are evidence/profile only
   Phase 2 substrate lanes are closed/evidence-only
   Phase 3 Pointer-Token Public Entry is the substrate stem
-  Phase 4 ProductEntry integration is active as focused evidence
+  Phase 4 ProductEntry integration is frozen as focused evidence
 
 current design:
   docs/HZ9_PHASES.md
@@ -69,6 +71,7 @@ phase gate:
   Layer1/Layer2 route and ledger fallback stay out of the hot loop
 
 next-design gate:
+  closed unless an explicit HZ9 unarchive box is opened
   do not chase tcmalloc 70% local as the first goal
   first meaningful local target is >=2.0x HZ8 or 250M+ local0 with RSS <=2x
   HZ8 and remote rows >=1.2x HZ8
@@ -433,7 +436,7 @@ Recommended next implementation order:
 ```text
 1. Keep OwnerPage / SlabPage / LocalArena / StaticLocalPage as evidence lanes.
 
-2. Continue HZ9SegmentLocalCache-L0 as the active no-behavior substrate lane:
+2. HZ9SegmentLocalCache-L0 was the active no-behavior substrate lane:
      smoke-hz9segmentlocalcache
      bench-hz9segmentlocalcache-api
      run_hz9_segment_api_sweep.sh
