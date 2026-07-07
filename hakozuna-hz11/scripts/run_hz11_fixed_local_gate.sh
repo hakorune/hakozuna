@@ -11,7 +11,8 @@ REPO_ROOT="$(cd "$ROOT/.." && pwd)"
 source "$REPO_ROOT/hakozuna-hz10/bench/lib/hz10_bench_common.sh"
 
 HZ10_LIB="$REPO_ROOT/hakozuna-hz10/libhz10.so"
-HZ11_LIB="$ROOT/libhz11.so"
+HZ11_LIB="$ROOT/libhz11.so"          # L0 token lane
+HZ11_SPAN_LIB="$ROOT/libhz11_span.so" # L1 span/direct-index lane
 TC_LIB="${TCMALLOC_LIB:-$(hz10_bench_find_tcmalloc_lib || true)}"
 MI_LIB="${MIMALLOC_LIB:-}"
 for m in \
@@ -33,7 +34,8 @@ allocators=()
 [[ -n "$TC_LIB" ]] && allocators+=("tcmalloc|$TC_LIB")
 [[ -n "$MI_LIB" ]] && allocators+=("mimalloc|$MI_LIB")
 [[ -f "$HZ10_LIB" ]] && allocators+=("hz10|$HZ10_LIB")
-[[ -f "$HZ11_LIB" ]] && allocators+=("hz11|$HZ11_LIB")
+[[ -f "$HZ11_LIB" ]] && allocators+=("hz11-token|$HZ11_LIB")
+[[ -f "$HZ11_SPAN_LIB" ]] && allocators+=("hz11-span|$HZ11_SPAN_LIB")
 
 make -C "$ROOT" hz11_fixed_local_bench >/dev/null
 BIN="$ROOT/hz11_fixed_local_bench"
@@ -77,16 +79,22 @@ for slot in $SLOTS; do
 done
 
 echo
-echo "## tcmalloc-ratio gate (decisive: fixed64 >= tc*0.95; L0 expects to miss)"
+echo "## tcmalloc-ratio (gate: fixed64 hz11-span >= tc*0.95)"
 for slot in $SLOTS; do
   tc_ops="${measured_ops["fixed${slot}|tcmalloc"]:-}"
-  hz11_ops="${measured_ops["fixed${slot}|hz11"]:-}"
-  if [[ -n "$tc_ops" && -n "$hz11_ops" ]]; then
-    ratio=$(awk -v a="$hz11_ops" -v b="$tc_ops" 'BEGIN{printf "%.3f", a/b}')
-    printf 'fixed%-4s hz11/tcmalloc=%s\n' "$slot" "$ratio"
+  tk_ops="${measured_ops["fixed${slot}|hz11-token"]:-}"
+  sp_ops="${measured_ops["fixed${slot}|hz11-span"]:-}"
+  if [[ -n "$tc_ops" && -n "$sp_ops" ]]; then
+    sr=$(awk -v a="$sp_ops" -v b="$tc_ops" 'BEGIN{printf "%.3f", a/b}')
+    if [[ -n "$tk_ops" ]]; then
+      tr=$(awk -v a="$tk_ops" -v b="$tc_ops" 'BEGIN{printf "%.3f", a/b}')
+      printf 'fixed%-4s span/tc=%s  token/tc=%s\n' "$slot" "$sr" "$tr"
+    else
+      printf 'fixed%-4s span/tc=%s\n' "$slot" "$sr"
+    fi
   fi
 done
 
 echo
-echo "## hz11 counters (fixed64) + RSS"
-SLOT_SIZE=64 ITERS="$ITERS" HZ11_DUMP_STATS=1 LD_PRELOAD="$HZ11_LIB" "$BIN" 2>&1 >/dev/null | grep exit_stats || true
+echo "## hz11-span counters (fixed64)"
+SLOT_SIZE=64 ITERS="$ITERS" HZ11_DUMP_STATS=1 LD_PRELOAD="$HZ11_SPAN_LIB" "$BIN" 2>&1 >/dev/null | grep exit_stats || true

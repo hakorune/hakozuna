@@ -28,10 +28,13 @@ void* hz11_memalign(size_t alignment, size_t size);
 typedef struct H11Stats {
   uint64_t malloc_count;
   uint64_t malloc_hit;      /* cache pop */
-  uint64_t refill_count;    /* cache miss -> sys_malloc */
+  uint64_t refill_count;    /* cache miss -> refill (sys_malloc in L0; returned/bump/carve in span lane) */
   uint64_t free_count;
-  uint64_t token_hit;       /* free exact-token hit (same-thread) */
-  uint64_t token_miss;      /* free token miss -> sys_free */
+  uint64_t token_hit;       /* L0 token lane: free exact-token hit */
+  uint64_t token_miss;      /* L0 token lane: free token miss -> sys_free */
+  uint64_t direct_hit_count;  /* L1 span lane: free direct-index classify hit */
+  uint64_t direct_miss_count; /* L1 span lane: free arena-miss -> sys_free */
+  uint64_t span_create_count; /* L1 span lane: spans carved (global) */
   uint64_t overflow_count;  /* push triggered a flush */
   uint64_t flush_count;
   uint64_t flush_items;

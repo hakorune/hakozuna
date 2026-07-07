@@ -12,11 +12,15 @@ static void hz11_dump_stats_atexit(void) {
   hz11_stats(&s);
   fprintf(stderr,
           "hz11_shim_exit_stats malloc=%llu hit=%llu refill=%llu free=%llu "
-          "token_hit=%llu token_miss=%llu overflow=%llu flush=%llu "
-          "flush_items=%llu cached_bytes=%zu\n",
+          "token_hit=%llu token_miss=%llu direct_hit=%llu direct_miss=%llu "
+          "span_create=%llu overflow=%llu flush=%llu flush_items=%llu "
+          "cached_bytes=%zu\n",
           (unsigned long long)s.malloc_count, (unsigned long long)s.malloc_hit,
           (unsigned long long)s.refill_count, (unsigned long long)s.free_count,
           (unsigned long long)s.token_hit, (unsigned long long)s.token_miss,
+          (unsigned long long)s.direct_hit_count,
+          (unsigned long long)s.direct_miss_count,
+          (unsigned long long)s.span_create_count,
           (unsigned long long)s.overflow_count,
           (unsigned long long)s.flush_count,
           (unsigned long long)s.flush_items, s.cached_bytes);

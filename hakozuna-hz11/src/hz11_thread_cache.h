@@ -5,35 +5,62 @@
 #include <stdint.h>
 #include "hz11_size_class.h"
 
-/* Per-thread front-end cache + pointer->class token table (L0).
- * Hot-path helpers below are static inline so malloc/free do not pay a call per
- * helper; only the cold paths (init, refill, overflow flush, dlsym resolver) are
- * out-of-line in hz11_thread_cache.c. */
+/* Per-thread front-end cache. Hot-path helpers below are static inline so
+ * malloc/free do not pay a call per helper; only the cold paths (init, refill,
+ * overflow flush, dlsym resolver) are out-of-line in hz11_thread_cache.c.
+ *
+ * Two classify lanes, selected by HZ11_CLASSIFY_SPAN:
+ *  - 0 (L0, default): system-malloc backing + pointer->class token table.
+ *  - 1 (L1): HZ11 arena/span backing + direct-index classify (hz11_span.h). */
+
+#ifndef HZ11_CLASSIFY_SPAN
+#define HZ11_CLASSIFY_SPAN 0
+#endif
 
 #define HZ11_CACHE_CAP 32u
-#define HZ11_TOKEN_COUNT 1024u                        /* power of two */
 #define HZ11_MAX_CACHED_BYTES (2u * 1024u * 1024u)
-
-typedef struct H11Token {
-  void* ptr;
-  uint8_t class_id;
-} H11Token;
 
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;
 } H11ClassCache;
 
+#if !HZ11_CLASSIFY_SPAN
+/* L0 token lane. */
+#define HZ11_TOKEN_COUNT 1024u /* power of two */
+typedef struct H11Token {
+  void* ptr;
+  uint8_t class_id;
+} H11Token;
+#else
+/* L1 span lane: per-thread current span per class (bump source). */
+#include "hz11_span.h"
+typedef struct H11SpanCurrent {
+  char* base;
+  uint32_t bump_index;
+  uint32_t slot_count;
+} H11SpanCurrent;
+#endif
+
 typedef struct H11ThreadCache {
   H11ClassCache class_cache[HZ11_CLASS_COUNT];
+#if !HZ11_CLASSIFY_SPAN
   H11Token tokens[HZ11_TOKEN_COUNT];
+#else
+  H11SpanCurrent current[HZ11_CLASS_COUNT];
+#endif
   size_t cached_bytes;
   uint64_t malloc_count;
   uint64_t malloc_hit;
   uint64_t refill_count;
   uint64_t free_count;
+#if !HZ11_CLASSIFY_SPAN
   uint64_t token_hit;
   uint64_t token_miss;
+#else
+  uint64_t direct_hit_count;
+  uint64_t direct_miss_count;
+#endif
   uint64_t overflow_count;
   uint64_t flush_count;
   uint64_t flush_items;
@@ -71,6 +98,7 @@ static inline H11ThreadCache* hz11_thread_cache_get(void) {
   return hz11_thread_cache_init_slow();
 }
 
+#if !HZ11_CLASSIFY_SPAN
 static inline size_t hz11_token_hash(const void* ptr) {
   uintptr_t x = (uintptr_t)ptr;
   x ^= x >> 33;
@@ -102,6 +130,7 @@ static inline void hz11_token_invalidate(H11ThreadCache* tc, void* ptr) {
     tc->tokens[i].ptr = NULL;
   }
 }
+#endif /* !HZ11_CLASSIFY_SPAN */
 
 static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
                                           uint8_t class_id) {

@@ -160,6 +160,9 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
   }
   H11ThreadCache* tc = (H11ThreadCache*)raw;
   memset(tc, 0, sizeof(*tc));
+#if HZ11_CLASSIFY_SPAN
+  hz11_span_init(); /* ensure the arena is mapped before any span carve */
+#endif
   hz11_tls = tc;
   return tc;
 }
@@ -169,7 +172,18 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
   size_t slot = hz11_class_slot_size(class_id);
   tc->flush_items += cc->count;
   for (uint32_t i = 0; i < cc->count; ++i) {
+#if HZ11_CLASSIFY_SPAN
+    /* arena pointers are NOT system pointers: move to the returned-object sink,
+     * never sys_free. (Arena-outside ptrs should not be in the cache, but route
+     * them to sys_free defensively.) */
+    if (hz11_arena_contains(cc->items[i])) {
+      hz11_returned_push(class_id, cc->items[i]);
+    } else {
+      hz11_sys_free(cc->items[i]);
+    }
+#else
     hz11_sys_free(cc->items[i]);
+#endif
     cc->items[i] = NULL;
   }
   tc->cached_bytes -= slot * cc->count;
@@ -192,5 +206,28 @@ void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
 
 void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   tc->refill_count += 1u;
+#if HZ11_CLASSIFY_SPAN
+  /* 1. per-class returned-object sink first (reuse before carving a fresh span) */
+  void* reused = hz11_returned_pop(class_id);
+  if (reused) {
+    return reused;
+  }
+  /* 2. bump from the per-thread current span */
+  size_t slot = hz11_class_slot_size(class_id);
+  H11SpanCurrent* cs = &tc->current[class_id];
+  if (cs->base && cs->bump_index < cs->slot_count) {
+    return cs->base + (size_t)cs->bump_index++ * slot;
+  }
+  /* 3. current span exhausted (or none yet): carve a fresh 64 KiB span */
+  char* base = (char*)hz11_span_carve_for_class(class_id);
+  if (!base) {
+    return hz11_sys_malloc(slot); /* arena full -- fall back (bench never hits) */
+  }
+  cs->base = base;
+  cs->bump_index = 0;
+  cs->slot_count = (uint32_t)(HZ11_SPAN_BYTES / slot);
+  return cs->base + (size_t)cs->bump_index++ * slot;
+#else
   return hz11_sys_malloc(hz11_class_slot_size(class_id));
+#endif
 }
