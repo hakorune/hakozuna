@@ -13,10 +13,16 @@ This project follows a release-tag workflow (`vX.Y.Z`) and keeps BREAKING change
   release.
 - `docs/DISTRIBUTION.md` as the release-shape hub for source archives,
   paper/artifact snapshots, and optional local build outputs.
+- HZ8 public release wording and Zenodo/GitHub release drafts for the current
+  recommended balanced allocator line.
+- HZ8 preload hardening notes covering the expanded LD_PRELOAD surface and the
+  default remote span-lease publish/backoff fix for xmalloc-style remote storms.
 
 ### Changed
 - Clarified that HZ5 is a profile family and paper-facing source/artifact
   track, not a default general allocator or prebuilt binary package.
+- Clarified that HZ8 is the current public recommendation, while HZ9/HZ10
+  remain research/candidate lines unless a later release promotes them.
 
 ### BREAKING
 - None.
