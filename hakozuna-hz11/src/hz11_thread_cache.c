@@ -164,18 +164,39 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
   hz11_span_init(); /* ensure the arena is mapped before any span carve */
 #endif
   hz11_tls = tc;
+#if HZ11_CACHE_TOPPTR
+  for (uint32_t c = 0u; c < HZ11_CLASS_COUNT; ++c) {
+    tc->class_cache[c].top = tc->class_cache[c].items;
+  }
+#endif
   return tc;
 }
 
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) {
   H11ClassCache* cc = &tc->class_cache[class_id];
   size_t slot = hz11_class_slot_size(class_id);
+#if HZ11_CACHE_TOPPTR
+  void** p = cc->items;
+  uint32_t n = (uint32_t)(cc->top - cc->items);
+  HZ11_COUNT_ADD(tc->flush_items, n);
+  while (p < cc->top) {
+#if HZ11_CLASSIFY_SPAN
+    if (hz11_arena_contains(*p)) {
+      hz11_returned_push(class_id, *p);
+    } else {
+      hz11_sys_free(*p);
+    }
+#else
+    hz11_sys_free(*p);
+#endif
+    ++p;
+  }
+  cc->top = cc->items;
+  tc->cached_bytes -= slot * n;
+#else
   HZ11_COUNT_ADD(tc->flush_items, cc->count);
   for (uint32_t i = 0; i < cc->count; ++i) {
 #if HZ11_CLASSIFY_SPAN
-    /* arena pointers are NOT system pointers: move to the returned-object sink,
-     * never sys_free. (Arena-outside ptrs should not be in the cache, but route
-     * them to sys_free defensively.) */
     if (hz11_arena_contains(cc->items[i])) {
       hz11_returned_push(class_id, cc->items[i]);
     } else {
@@ -188,6 +209,7 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
   }
   tc->cached_bytes -= slot * cc->count;
   cc->count = 0;
+#endif
   HZ11_COUNT_INC(tc->flush_count);
 }
 
@@ -197,8 +219,13 @@ void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
   hz11_thread_cache_flush_class(tc, class_id);
   if (class_id < HZ11_CLASS_COUNT) {
     H11ClassCache* cc = &tc->class_cache[class_id];
+#if HZ11_CACHE_TOPPTR
+    *cc->top++ = ptr;
+    tc->cached_bytes += hz11_class_slot_size(class_id);
+#else
     cc->items[cc->count++] = ptr;
     tc->cached_bytes += hz11_class_slot_size(class_id);
+#endif
   } else {
     hz11_sys_free(ptr);
   }

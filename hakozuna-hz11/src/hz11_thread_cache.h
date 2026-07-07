@@ -35,9 +35,19 @@
 #define HZ11_CACHE_CAP 32u
 #define HZ11_MAX_CACHED_BYTES (2u * 1024u * 1024u)
 
+/* HZ11CacheShape-L1: pointer-top pop/push (A/B vs count-indexed).
+ * Default OFF (count-indexed). Sibling .so lanes build with
+ * -DHZ11_CACHE_TOPPTR=1 to use a moving void** top pointer instead. */
+#ifndef HZ11_CACHE_TOPPTR
+#define HZ11_CACHE_TOPPTR 0
+#endif
+
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;
+#if HZ11_CACHE_TOPPTR
+  void** top;  /* pointer-top: init to items; top==items means empty */
+#endif
 } H11ClassCache;
 
 #if !HZ11_CLASSIFY_SPAN
@@ -153,17 +163,36 @@ static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
     return NULL;
   }
   H11ClassCache* cc = &tc->class_cache[class_id];
+#if HZ11_CACHE_TOPPTR
+  if (cc->top == cc->items) {
+    return NULL;
+  }
+  void* p = *--cc->top;
+  tc->cached_bytes -= hz11_class_slot_size(class_id);
+  return p;
+#else
   if (cc->count == 0u) {
     return NULL;
   }
   void* p = cc->items[--cc->count];
   tc->cached_bytes -= hz11_class_slot_size(class_id);
   return p;
+#endif
 }
 
 static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
   H11ClassCache* cc = &tc->class_cache[class_id];
+#if HZ11_CACHE_TOPPTR
+  size_t slot = hz11_class_slot_size(class_id);
+  if (cc->top < cc->items + HZ11_CACHE_CAP &&
+      tc->cached_bytes + slot <= HZ11_MAX_CACHED_BYTES) {
+    *cc->top++ = ptr;
+    tc->cached_bytes += slot;
+    return;
+  }
+  hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
+#else
   size_t slot = hz11_class_slot_size(class_id);
   if (cc->count < HZ11_CACHE_CAP &&
       tc->cached_bytes + slot <= HZ11_MAX_CACHED_BYTES) {
@@ -172,6 +201,7 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
     return;
   }
   hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
+#endif
 }
 
 #endif /* HZ11_THREAD_CACHE_H */

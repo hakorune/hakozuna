@@ -24,6 +24,10 @@ HZ11_STATS_COMPILE_GATE_L1.md:
   compile-time hot-counter opt-out; kept as a small speed cleanup, but measured
   as too small to be the main tcmalloc-gap lever
 
+HZ11_CACHE_SHAPE_L1.md:
+  pointer-top cache A/B; measured as NO-GO because instruction count increased
+  despite modest throughput noise on one lane
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence

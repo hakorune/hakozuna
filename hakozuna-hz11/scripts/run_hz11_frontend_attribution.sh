@@ -20,6 +20,8 @@ HZ11_LIB="$ROOT/libhz11.so"
 HZ11_SPAN_LIB="$ROOT/libhz11_span.so"
 HZ11_STATS_LIB="$ROOT/libhz11_stats.so"
 HZ11_SPAN_STATS_LIB="$ROOT/libhz11_span_stats.so"
+HZ11_TOP_LIB="$ROOT/libhz11_top.so"
+HZ11_SPAN_TOP_LIB="$ROOT/libhz11_span_top.so"
 TC_LIB="${TCMALLOC_LIB:-$(hz10_bench_find_tcmalloc_lib || true)}"
 MI_LIB="${MIMALLOC_LIB:-}"
 for m in \
@@ -50,10 +52,13 @@ allocators+=("glibc|")
 [[ -f "$HZ10_LIB" ]] && allocators+=("hz10|$HZ10_LIB")
 [[ -f "$HZ11_LIB" ]] && allocators+=("hz11-token|$HZ11_LIB")
 [[ -f "$HZ11_STATS_LIB" ]] && allocators+=("hz11-token-stats|$HZ11_STATS_LIB")
+[[ -f "$HZ11_TOP_LIB" ]] && allocators+=("hz11-token-top|$HZ11_TOP_LIB")
 [[ -f "$HZ11_SPAN_LIB" ]] && allocators+=("hz11-span|$HZ11_SPAN_LIB")
 [[ -f "$HZ11_SPAN_STATS_LIB" ]] && allocators+=("hz11-span-stats|$HZ11_SPAN_STATS_LIB")
+[[ -f "$HZ11_SPAN_TOP_LIB" ]] && allocators+=("hz11-span-top|$HZ11_SPAN_TOP_LIB")
 
-make -C "$ROOT" preload preload-span preload-token-stats preload-span-stats hz11_fixed_local_bench >/dev/null 2>&1
+make -C "$ROOT" preload preload-span preload-token-stats preload-span-stats \
+  preload-token-top preload-span-top hz11_fixed_local_bench >/dev/null 2>&1
 BIN="$ROOT/hz11_fixed_local_bench"
 
 # --- helpers ---
@@ -151,7 +156,8 @@ done
 echo
 echo "## objdump instruction counts (AUXILIARY -- LTO may merge/break symbol boundaries)"
 echo "lib            symbol        instrs"
-for lib_entry in "token|$HZ11_LIB" "span|$HZ11_SPAN_LIB"; do
+for lib_entry in "token|$HZ11_LIB" "token-top|$HZ11_TOP_LIB" \
+    "span|$HZ11_SPAN_LIB" "span-top|$HZ11_SPAN_TOP_LIB"; do
   lname="${lib_entry%%|*}"; lib="${lib_entry##*|}"
   for sym in malloc hz11_malloc free hz11_free; do
     c=$(count_instrs "$lib" "$sym")

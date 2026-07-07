@@ -1,5 +1,5 @@
 .PHONY: all smoke bench-fixed-local preload preload-span preload-token-stats \
-        preload-span-stats hz11-standalone-check clean
+        preload-span-stats preload-token-top preload-span-top hz11-standalone-check clean
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -22,7 +22,8 @@ SMOKE_SRC := $(ROOT)/tests/hz11_thread_cache_smoke.c $(CORE_SRC)
 BENCH_SRC := $(ROOT)/bench/hz11_fixed_local_bench.c
 
 # Binary targets are relative so `make hz11_fixed_local_bench` works.
-all: smoke preload preload-span preload-token-stats preload-span-stats
+all: smoke preload preload-span preload-token-stats preload-span-stats \
+     preload-token-top preload-span-top
 
 # --- smoke binaries (speed + stats, token + span) ---
 
@@ -38,12 +39,21 @@ hz11_thread_cache_smoke_stats: $(SMOKE_SRC) $(HEADERS)
 hz11_thread_cache_smoke_span_stats: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_ENABLE_HOT_COUNTERS=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+hz11_thread_cache_smoke_top: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ11_CACHE_TOPPTR=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
+hz11_thread_cache_smoke_span_top: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(OPT_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_CACHE_TOPPTR=1 $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 smoke: hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
-        hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats
+        hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
+        hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top
 	./hz11_thread_cache_smoke
 	./hz11_thread_cache_smoke_span
 	./hz11_thread_cache_smoke_stats
 	./hz11_thread_cache_smoke_span_stats
+	./hz11_thread_cache_smoke_top
+	./hz11_thread_cache_smoke_span_top
 
 hz11_fixed_local_bench: $(BENCH_SRC) $(HEADERS)
 	$(CC) $(OPT_CFLAGS) $(INC) -o $@ $(BENCH_SRC) $(LDFLAGS) $(LDLIBS)
@@ -66,10 +76,19 @@ libhz11_stats.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_stats.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_ENABLE_HOT_COUNTERS=1 $(INC) -shared -Wl,-soname,libhz11_span_stats.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11CacheShape-L1: pointer-top pop/push (A/B vs count-indexed).
+libhz11_top.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CACHE_TOPPTR=1 $(INC) -shared -Wl,-soname,libhz11_top.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_top.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_CACHE_TOPPTR=1 $(INC) -shared -Wl,-soname,libhz11_span_top.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 preload: libhz11.so
 preload-span: libhz11_span.so
 preload-token-stats: libhz11_stats.so
 preload-span-stats: libhz11_span_stats.so
+preload-token-top: libhz11_top.so
+preload-span-top: libhz11_span_top.so
 
 hz11-standalone-check:
 	./scripts/check_hz11_standalone.sh
@@ -77,5 +96,7 @@ hz11-standalone-check:
 clean:
 	rm -f hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
 	      hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
+	      hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top \
 	      hz11_fixed_local_bench libhz11.so libhz11_span.so \
-	      libhz11_stats.so libhz11_span_stats.so
+	      libhz11_stats.so libhz11_span_stats.so \
+	      libhz11_top.so libhz11_span_top.so
