@@ -2,7 +2,9 @@
         preload-span-stats preload-token-top preload-span-top \
         preload-token-tlsfast preload-span-tlsfast \
         preload-token-nobytes preload-span-nobytes \
-        preload-token-soa preload-span-soa hz11-standalone-check clean
+        preload-token-soa preload-span-soa \
+        preload-span-transfer preload-span-transfer-diag preload-span-transfer-cap \
+        hz11-standalone-check clean
 
 CC ?= gcc
 CFLAGS ?= -O2 -g -fPIC -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE
@@ -12,6 +14,7 @@ OPT_CFLAGS := $(CFLAGS) -flto
 SHIM_CFLAGS := $(OPT_CFLAGS) -fno-builtin -ftls-model=initial-exec
 SHIM_LDFLAGS := $(LDFLAGS) -Wl,-Bsymbolic-functions
 LDLIBS ?= -pthread -ldl
+HZ11_CENTRAL_CAP_AB ?= 32768
 
 ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 INC := -I$(ROOT)/include -I$(ROOT)/src
@@ -146,6 +149,14 @@ libhz11_span_soa.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_transfer.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11MacroFailureAttribution-L1: diagnostic sibling. Class counters are only
+# compiled into this opt-in lane; the recommended transfer lane is unchanged.
+libhz11_span_transfer_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_CLASS_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_cap.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=$(HZ11_CENTRAL_CAP_AB) $(INC) -shared -Wl,-soname,libhz11_span_transfer_cap.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 preload: libhz11.so
 preload-span: libhz11_span.so
 preload-token-stats: libhz11_stats.so
@@ -159,6 +170,8 @@ preload-span-nobytes: libhz11_span_nobytes.so
 preload-token-soa: libhz11_soa.so
 preload-span-soa: libhz11_span_soa.so
 preload-span-transfer: libhz11_span_transfer.so
+preload-span-transfer-diag: libhz11_span_transfer_diag.so
+preload-span-transfer-cap: libhz11_span_transfer_cap.so
 
 hz11-standalone-check:
 	./scripts/check_hz11_standalone.sh
@@ -177,4 +190,5 @@ clean:
 	      libhz11_tlsfast.so libhz11_span_tlsfast.so \
 	      libhz11_nobytes.so libhz11_span_nobytes.so \
 	      libhz11_soa.so libhz11_span_soa.so \
-	      libhz11_span_transfer.so
+	      libhz11_span_transfer.so libhz11_span_transfer_diag.so \
+	      libhz11_span_transfer_cap.so

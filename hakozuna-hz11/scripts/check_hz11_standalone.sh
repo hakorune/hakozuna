@@ -69,7 +69,8 @@ for product in hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
                libhz11_tlsfast.so libhz11_span_tlsfast.so \
                libhz11_nobytes.so libhz11_span_nobytes.so \
                libhz11_soa.so libhz11_span_soa.so \
-               libhz11_span_transfer.so; do
+               libhz11_span_transfer.so libhz11_span_transfer_diag.so \
+               libhz11_span_transfer_cap.so; do
   if ! grep -q "^${product}\$" .gitignore 2>/dev/null; then
     echo "[hz11-standalone] build product ${product} not in .gitignore" >&2
     exit 1

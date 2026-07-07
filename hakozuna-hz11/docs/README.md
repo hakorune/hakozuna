@@ -67,6 +67,11 @@ HZ11_MACRO_SPEED_LANE_GATE_L1.md:
   tcmalloc, mimalloc when available, span-soa, and span-transfer across Python,
   Larson, xmalloc, sh6bench, and local optional rows without hot-path changes
 
+HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md:
+  diagnostic sibling and cap A/B for macro failures; attributes python_alloc
+  and mstress aborts to central stack class pressure, then records that
+  cap-only does not solve larson/sh6bench RSS
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c

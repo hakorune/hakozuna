@@ -2,12 +2,12 @@
 
 ```text
 Active box:
-  HZ11MacroSpeedLaneGate-L1 (measured NO-GO)
+  HZ11MacroFailureAttribution-L1 (measured MIXED)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
   recommended speed-lane candidate on the micro remote/mixed matrix, but macro
-  promotion is blocked by correctness and RSS failures.
+  promotion is blocked by incomplete central memory policy.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -28,6 +28,7 @@ docs/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_MACRO_SPEED_LANE_GATE_L1.md
+docs/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
@@ -119,14 +120,37 @@ HZ11MacroSpeedLaneGate-L1:
     hz11_central_stack_insert_range().
     This is intentional fail-fast on central stack capacity overflow, not a
     silent heap corruption.
+
+HZ11MacroFailureAttribution-L1:
+  diagnostic/cap script added and RUNS=3 measured:
+    hakozuna-hz11/scripts/run_hz11_macro_failure_attribution.sh
+  Abort/cap output:
+    bench_results/hz11_macro_failure_attr_20260707T223657Z/summary.md
+  Larson/sh6bench RSS output:
+    bench_results/hz11_macro_failure_attr_20260707T223856Z/summary.md
+  Verdict:
+    MIXED attribution result. Cap-only fixes abort rows, but does not make the
+    transfer lane a macro speed lane.
+  Key results:
+    python_alloc: cap 4096..32768 aborts in class 2; cap 65536 passes 3/3,
+      max RSS 1.137x tcmalloc
+    mstress: cap 4096..32768 aborts in class 0; cap 65536 passes 3/3,
+      max RSS 1.189x tcmalloc
+    larson cap65536: passes 3/3, but max RSS remains 2.345x tcmalloc
+    sh6bench cap65536: passes 3/3, but max RSS remains 1.322x tcmalloc and
+      wall remains far slower than tcmalloc
+  Decision:
+    do not promote a larger fixed central stack as policy. Move to
+    CentralFreeList/span-return design.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  HZ11MacroFailureAttribution-L1:
-    diagnose central stack overflow policy/cap first, then larson/sh6bench RSS.
+  HZ11CentralFreeListSpanReturn-L1:
+    replace the simple retained-object central stack with a policy that can
+    return fully free spans or otherwise cap central retained memory.
   Keep transfer as remote/mixed microbench lane only until macro correctness is stable.
 
 Candidate cleanup:

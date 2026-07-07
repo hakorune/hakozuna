@@ -15,9 +15,21 @@
 #define HZ11_TRANSFER_CENTRAL_SPAN 0
 #endif
 
+#ifndef HZ11_TRANSFER_BATCH
 #define HZ11_TRANSFER_BATCH 16u
+#endif
+
+#ifndef HZ11_TRANSFER_CAP
 #define HZ11_TRANSFER_CAP   1024u
+#endif
+
+#ifndef HZ11_CENTRAL_CAP
 #define HZ11_CENTRAL_CAP   4096u  /* max slot_count for class-0 (16B) from one 64KiB span */
+#endif
+
+#ifndef HZ11_CENTRAL_CLASS_DIAG
+#define HZ11_CENTRAL_CLASS_DIAG 0
+#endif
 
 #if HZ11_TRANSFER_CENTRAL_SPAN
 
@@ -42,6 +54,7 @@ uint64_t hz11_transfer_insert_spill_count_load(void);
 uint64_t hz11_central_remove_hit_count_load(void);
 uint64_t hz11_central_remove_miss_count_load(void);
 uint64_t hz11_central_insert_count_load(void);
+void hz11_central_stack_dump_class_stats(void);
 
 #else
 
@@ -65,6 +78,7 @@ static inline uint64_t hz11_transfer_insert_spill_count_load(void) { return 0u; 
 static inline uint64_t hz11_central_remove_hit_count_load(void) { return 0u; }
 static inline uint64_t hz11_central_remove_miss_count_load(void) { return 0u; }
 static inline uint64_t hz11_central_insert_count_load(void) { return 0u; }
+static inline void hz11_central_stack_dump_class_stats(void) {}
 
 #endif
 

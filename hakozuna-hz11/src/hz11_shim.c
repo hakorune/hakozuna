@@ -1,4 +1,5 @@
 #include "hz11_public_entry.h"
+#include "hz11_transfer_cache.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -37,6 +38,9 @@ static void hz11_dump_stats_atexit(void) {
           (unsigned long long)s.central_remove_hit,
           (unsigned long long)s.central_remove_miss,
           (unsigned long long)s.central_insert);
+  if (getenv("HZ11_DUMP_CENTRAL_CLASSES") != NULL) {
+    hz11_central_stack_dump_class_stats();
+  }
 }
 
 /* LD_PRELOAD entry points. Export the full interposition surface so foreign
