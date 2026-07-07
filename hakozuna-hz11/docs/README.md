@@ -48,6 +48,10 @@ HZ11_SIZE_TABLE_STATIC_INIT_L1.md:
   NO-GO record for removing the size-class table lazy-init guard; loader-time
   malloc before constructors makes the guard load-bearing
 
+HZ11_STATIC_CONST_SIZE_TABLE_L1.md:
+  NO-GO record for replacing the runtime-filled size-class table with a const
+  .rodata table; correct but slower on the speed-ceiling lane
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c

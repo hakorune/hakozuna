@@ -28,6 +28,7 @@ docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
 docs/HZ11_SIZE_TABLE_STATIC_INIT_L1.md
+docs/HZ11_STATIC_CONST_SIZE_TABLE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -65,13 +66,24 @@ HZ11SizeTableStaticInit-L1:
   LD_PRELOAD because ld.so can call malloc before constructors run. Removing
   the guard classifies all sizes as class 0 from the BSS-zeroed table and
   corrupts the heap. Kept exhaustive 1..65536 class-map smoke coverage.
+
+HZ11RefillTailCall-L1:
+  NO-GO. Static hz11_malloc body shrank, but fixed64 cache-hit throughput did
+  not improve because refill is a miss path and the measured row is hit-heavy.
+  Reverted the source change.
+
+HZ11StaticConstSizeClassTable-L1:
+  NO-GO. A const .rodata table is correct and avoids loader-time BSS-zero class
+  corruption, but fixed64 token-soa regressed about 7%. Reverted the source
+  change and kept only the NO-GO record.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed box:
-  HZ11RefillTailCall-L1
+  structural design box, not another small cleanup.
+  Candidate: HZ11DirectEntryOrPerCpuFrontEnd-Design-L0
 
 Candidate cleanup:
   no active cleanup box
