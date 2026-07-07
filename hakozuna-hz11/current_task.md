@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11SizeTableStaticInit-L1
+  HZ11SysResolverSplit-L0
 
 Goal:
   keep HZ11 as a speed-first research line and measure the remaining local
@@ -24,6 +24,7 @@ docs/HZ11_TLS_FAST_PATH_L1.md
 docs/HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md
 docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/HZ11_CACHE_LAYOUT_L1.md
+docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -51,7 +52,7 @@ HZ11CacheLayout-L1:
   token no-bytes 101.2 -> SOA 98.3 instr/op (~3 win, target >=4)
   token ops/s improved, so keep as speed-ceiling sibling.
 
-Next:
-  HZ11SizeTableStaticInit-L1
-  remove the runtime size_table_ready check from malloc hit path
+Cleanup:
+  split dlsym/bootstrap/system allocator wrappers from hz11_thread_cache.c
+  into hz11_sys_alloc.{c,h}; do not change hot-path behavior
 ```

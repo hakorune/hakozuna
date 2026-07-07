@@ -4,6 +4,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include "hz11_size_class.h"
+#include "hz11_sys_alloc.h"
 
 /* Per-thread front-end cache. Hot-path helpers below are static inline so
  * malloc/free do not pay a call per helper; only the cold paths (init, refill,
@@ -127,22 +128,12 @@ typedef struct H11ThreadCache {
 
 /* State defined in hz11_thread_cache.c. */
 extern _Thread_local H11ThreadCache* hz11_tls;
-extern _Thread_local int hz11_resolving;
 
 /* Cold paths (out-of-line). */
 H11ThreadCache* hz11_thread_cache_init_slow(void);
 void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr);
 void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id);
-void hz11_resolver_ensure(void);
-void* hz11_sys_malloc(size_t n);
-void hz11_sys_free(void* p);
-void* hz11_sys_realloc(void* p, size_t n);
-void* hz11_sys_calloc(size_t count, size_t size);
-size_t hz11_sys_usable_size(void* p);
-int hz11_sys_posix_memalign(void** memptr, size_t alignment, size_t size);
-void* hz11_sys_aligned_alloc(size_t alignment, size_t size);
-void* hz11_sys_memalign(size_t alignment, size_t size);
 
 /* ---------- hot path (static inline) ---------- */
 

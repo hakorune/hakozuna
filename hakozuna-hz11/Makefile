@@ -17,7 +17,8 @@ ROOT := $(abspath $(dir $(lastword $(MAKEFILE_LIST))))
 INC := -I$(ROOT)/include -I$(ROOT)/src
 
 CORE_SRC := $(ROOT)/src/hz11_size_class.c $(ROOT)/src/hz11_thread_cache.c \
-            $(ROOT)/src/hz11_public_entry.c $(ROOT)/src/hz11_span.c
+            $(ROOT)/src/hz11_public_entry.c $(ROOT)/src/hz11_span.c \
+            $(ROOT)/src/hz11_sys_alloc.c
 SHIM_SRC := $(ROOT)/src/hz11_shim.c $(CORE_SRC)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 
