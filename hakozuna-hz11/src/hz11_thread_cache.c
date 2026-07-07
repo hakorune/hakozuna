@@ -1,4 +1,5 @@
 #include "hz11_thread_cache.h"
+#include "hz11_transfer_cache.h"
 
 #include <string.h>
 
@@ -29,6 +30,21 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
 
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) {
 #if HZ11_CACHE_SOA
+#if HZ11_TRANSFER_CENTRAL_SPAN && HZ11_CLASSIFY_SPAN
+  /* Transfer lane: batch-move all cached objects into the transfer cache,
+   * spilling any excess to the central stack. Never sys_free arena pointers. */
+  uint32_t n = tc->class_counts[class_id];
+  HZ11_COUNT_ADD(tc->flush_items, n);
+  if (n > 0u) {
+    uint32_t inserted = hz11_transfer_insert_range(class_id,
+        tc->class_items[class_id], n);
+    if (inserted < n) {
+      hz11_central_stack_insert_range(class_id,
+          tc->class_items[class_id] + inserted, n - inserted);
+    }
+  }
+  tc->class_counts[class_id] = 0u;
+#else
   uint32_t n = tc->class_counts[class_id];
   HZ11_COUNT_ADD(tc->flush_items, n);
   for (uint32_t i = 0u; i < n; ++i) {
@@ -44,6 +60,7 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
     tc->class_items[class_id][i] = NULL;
   }
   tc->class_counts[class_id] = 0u;
+#endif /* HZ11_TRANSFER_CENTRAL_SPAN */
 #else
   H11ClassCache* cc = &tc->class_cache[class_id];
   size_t slot = hz11_class_slot_size(class_id);
@@ -114,7 +131,46 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   (void)tc; /* token lane: tc only used for the now-compiled-out refill_count */
 #endif
   HZ11_COUNT_INC(tc->refill_count);
-#if HZ11_CLASSIFY_SPAN
+#if HZ11_TRANSFER_CENTRAL_SPAN && HZ11_CLASSIFY_SPAN
+  /* Transfer lane: batch refill from transfer cache -> central stack -> span.
+   * One mutex lock per batch (vs per-object returned_pop). */
+  void* tmp[HZ11_TRANSFER_BATCH];
+  uint32_t n = hz11_transfer_remove_range(class_id, tmp, HZ11_TRANSFER_BATCH);
+  if (n > 0u) {
+    HZ11_COUNT_INC(tc->refill_from_transfer);
+  } else {
+    n = hz11_central_stack_remove_range(class_id, tmp, HZ11_TRANSFER_BATCH);
+    if (n > 0u) {
+      HZ11_COUNT_INC(tc->refill_from_central);
+    } else {
+      size_t slot = hz11_class_slot_size(class_id);
+      H11SpanCurrent* cs = &tc->current[class_id];
+      while (n < HZ11_TRANSFER_BATCH) {
+        if (!cs->base || cs->bump_index >= cs->slot_count) {
+          char* base = (char*)hz11_span_carve_for_class(class_id);
+          if (!base) {
+            break;
+          }
+          cs->base = base;
+          cs->bump_index = 0u;
+          cs->slot_count = (uint32_t)(HZ11_SPAN_BYTES / slot);
+        }
+        tmp[n++] = cs->base + (size_t)cs->bump_index++ * slot;
+      }
+      if (n > 0u) {
+        HZ11_COUNT_INC(tc->refill_from_span);
+      }
+    }
+  }
+  if (n == 0u) {
+    return hz11_sys_malloc(hz11_class_slot_size(class_id)); /* arena full fallback */
+  }
+  /* push tmp[1..n-1] into thread cache, return tmp[0] */
+  for (uint32_t i = 1u; i < n; ++i) {
+    hz11_thread_cache_push(tc, class_id, tmp[i]);
+  }
+  return tmp[0];
+#elif HZ11_CLASSIFY_SPAN
   /* 1. per-class returned-object sink first (reuse before carving a fresh span) */
   void* reused = hz11_returned_pop(class_id);
   if (reused) {

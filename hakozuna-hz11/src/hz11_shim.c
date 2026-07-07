@@ -14,7 +14,10 @@ static void hz11_dump_stats_atexit(void) {
           "hz11_shim_exit_stats malloc=%llu hit=%llu refill=%llu free=%llu "
           "token_hit=%llu token_miss=%llu direct_hit=%llu direct_miss=%llu "
           "span_create=%llu overflow=%llu flush=%llu flush_items=%llu "
-          "cached_bytes=%zu\n",
+          "cached_bytes=%zu "
+          "refill_xfer=%llu refill_central=%llu refill_span=%llu "
+          "xfer_hit=%llu xfer_miss=%llu xfer_insert=%llu xfer_spill=%llu "
+          "central_hit=%llu central_miss=%llu central_insert=%llu\n",
           (unsigned long long)s.malloc_count, (unsigned long long)s.malloc_hit,
           (unsigned long long)s.refill_count, (unsigned long long)s.free_count,
           (unsigned long long)s.token_hit, (unsigned long long)s.token_miss,
@@ -23,7 +26,17 @@ static void hz11_dump_stats_atexit(void) {
           (unsigned long long)s.span_create_count,
           (unsigned long long)s.overflow_count,
           (unsigned long long)s.flush_count,
-          (unsigned long long)s.flush_items, s.cached_bytes);
+          (unsigned long long)s.flush_items, s.cached_bytes,
+          (unsigned long long)s.refill_from_transfer,
+          (unsigned long long)s.refill_from_central,
+          (unsigned long long)s.refill_from_span,
+          (unsigned long long)s.transfer_remove_hit,
+          (unsigned long long)s.transfer_remove_miss,
+          (unsigned long long)s.transfer_insert,
+          (unsigned long long)s.transfer_insert_spill,
+          (unsigned long long)s.central_remove_hit,
+          (unsigned long long)s.central_remove_miss,
+          (unsigned long long)s.central_insert);
 }
 
 /* LD_PRELOAD entry points. Export the full interposition surface so foreign

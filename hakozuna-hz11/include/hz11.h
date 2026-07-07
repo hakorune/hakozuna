@@ -27,18 +27,29 @@ void* hz11_memalign(size_t alignment, size_t size);
 
 typedef struct H11Stats {
   uint64_t malloc_count;
-  uint64_t malloc_hit;      /* cache pop */
-  uint64_t refill_count;    /* cache miss -> refill (sys_malloc in L0; returned/bump/carve in span lane) */
+  uint64_t malloc_hit;
+  uint64_t refill_count;
   uint64_t free_count;
-  uint64_t token_hit;       /* L0 token lane: free exact-token hit */
-  uint64_t token_miss;      /* L0 token lane: free token miss -> sys_free */
-  uint64_t direct_hit_count;  /* L1 span lane: free direct-index classify hit */
-  uint64_t direct_miss_count; /* L1 span lane: free arena-miss -> sys_free */
-  uint64_t span_create_count; /* L1 span lane: spans carved (global) */
-  uint64_t overflow_count;  /* push triggered a flush */
+  uint64_t token_hit;
+  uint64_t token_miss;
+  uint64_t direct_hit_count;
+  uint64_t direct_miss_count;
+  uint64_t span_create_count;
+  uint64_t overflow_count;
   uint64_t flush_count;
   uint64_t flush_items;
   size_t cached_bytes;
+  /* HZ11TransferCacheCentralSpan-L1 counters */
+  uint64_t refill_from_transfer;
+  uint64_t refill_from_central;
+  uint64_t refill_from_span;
+  uint64_t transfer_remove_hit;
+  uint64_t transfer_remove_miss;
+  uint64_t transfer_insert;
+  uint64_t transfer_insert_spill;
+  uint64_t central_remove_hit;
+  uint64_t central_remove_miss;
+  uint64_t central_insert;
 } H11Stats;
 
 void hz11_stats(H11Stats* out);

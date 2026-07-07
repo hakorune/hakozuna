@@ -1,4 +1,5 @@
 #include "hz11_public_entry.h"
+#include "hz11_transfer_cache.h"
 
 #include <string.h>
 
@@ -240,5 +241,28 @@ void hz11_stats(H11Stats* out) {
   out->direct_hit_count = 0;
   out->direct_miss_count = 0;
   out->span_create_count = 0;
+#endif
+#if HZ11_TRANSFER_CENTRAL_SPAN
+  out->refill_from_transfer = tc->refill_from_transfer;
+  out->refill_from_central = tc->refill_from_central;
+  out->refill_from_span = tc->refill_from_span;
+  out->transfer_remove_hit = hz11_transfer_remove_hit_count_load();
+  out->transfer_remove_miss = hz11_transfer_remove_miss_count_load();
+  out->transfer_insert = hz11_transfer_insert_count_load();
+  out->transfer_insert_spill = hz11_transfer_insert_spill_count_load();
+  out->central_remove_hit = hz11_central_remove_hit_count_load();
+  out->central_remove_miss = hz11_central_remove_miss_count_load();
+  out->central_insert = hz11_central_insert_count_load();
+#else
+  out->refill_from_transfer = 0;
+  out->refill_from_central = 0;
+  out->refill_from_span = 0;
+  out->transfer_remove_hit = 0;
+  out->transfer_remove_miss = 0;
+  out->transfer_insert = 0;
+  out->transfer_insert_spill = 0;
+  out->central_remove_hit = 0;
+  out->central_remove_miss = 0;
+  out->central_insert = 0;
 #endif
 }

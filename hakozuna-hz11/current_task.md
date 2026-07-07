@@ -2,14 +2,15 @@
 
 ```text
 Active box:
-  none
+  HZ11TransferPromotionMatrix-L1 (measured GO)
 
 Goal:
-  keep HZ11 as a speed-first research line and measure the remaining local
-  malloc/free fixed cost against tcmalloc with small reversible sibling lanes.
+  keep HZ11 as a speed-first research line. The transfer lane is now the
+  recommended speed-lane candidate; next work should either tune transfer
+  parameters or test macro workloads.
 
 Do not do yet:
-  claim HZ11 beats tcmalloc
+  claim HZ11 generally beats tcmalloc
   promote no-bytes lanes to default without an RSS-cap replacement
   add checked-mode diagnostics to the default path
   claim HZ11 replaces HZ8 or HZ10
@@ -24,6 +25,8 @@ docs/HZ11_TLS_FAST_PATH_L1.md
 docs/HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md
 docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/HZ11_CACHE_LAYOUT_L1.md
+docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
+docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
@@ -76,14 +79,33 @@ HZ11StaticConstSizeClassTable-L1:
   NO-GO. A const .rodata table is correct and avoids loader-time BSS-zero class
   corruption, but fixed64 token-soa regressed about 7%. Reverted the source
   change and kept only the NO-GO record.
+
+HZ11TransferPromotionMatrix-L1:
+  gate script added and default gate measured:
+    hakozuna-hz11/scripts/run_hz11_transfer_promotion_matrix.sh
+  Default gate output:
+    bench_results/hz11_transfer_promotion_20260707T220243Z/summary.md
+  Conditions:
+    RUNS=10 THREADS=16 ITERS=100000
+    rows: main_local0, main_r50, main_r90, small_remote90, medium_r50, medium_r90
+    allocators: tcmalloc, hz11-span-soa, hz11-span-transfer
+  Verdict:
+    GO. libhz11_span_transfer.so is the recommended HZ11 speed-lane candidate.
+  Key results:
+    main_r50:       transfer 83.95M vs tcmalloc 44.68M ops/s
+    main_r90:       transfer 59.24M vs tcmalloc 24.29M ops/s
+    small_remote90: transfer 65.39M vs tcmalloc 57.99M ops/s
+    medium_r50:     transfer 76.74M vs tcmalloc 15.52M ops/s
+    medium_r90:     transfer 53.80M vs tcmalloc 8.56M ops/s
+    RSS is below tcmalloc on every measured row.
 ```
 
 ## Next Step
 
 ```text
-Candidate speed box:
-  structural design box, not another small cleanup.
-  Candidate: HZ11DirectEntryOrPerCpuFrontEnd-Design-L0
+Candidate speed boxes:
+  transfer cap/batch size tuning
+  macro workload gate
 
 Candidate cleanup:
   no active cleanup box

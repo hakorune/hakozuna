@@ -132,6 +132,28 @@ int main(void) {
   CHECK(hz11_size_class(HZ11_MAX_CACHED_SIZE + 1u) == HZ11_LARGE_CLASS,
         "size_class(>64K) -> LARGE");
 
+#if HZ11_TRANSFER_CENTRAL_SPAN
+  /* 5c. Transfer lane stress: force thread-cache overflow, transfer-cache
+   * fill, central-stack spill, then allocate enough to reuse both transfer and
+   * central objects before carving more spans. */
+  enum { TRANSFER_STRESS_N = 1100 };
+  void* many[TRANSFER_STRESS_N];
+  for (int i = 0; i < TRANSFER_STRESS_N; ++i) {
+    many[i] = hz11_malloc(64);
+    CHECK(many[i] != NULL, "transfer stress alloc");
+  }
+  for (int i = 0; i < TRANSFER_STRESS_N; ++i) {
+    hz11_free(many[i]);
+  }
+  for (int i = 0; i < TRANSFER_STRESS_N; ++i) {
+    many[i] = hz11_malloc(64);
+    CHECK(many[i] != NULL, "transfer stress realloc");
+  }
+  for (int i = 0; i < TRANSFER_STRESS_N; ++i) {
+    hz11_free(many[i]);
+  }
+#endif
+
   /* 6. counter sanity (lane-aware + counters-flag-aware).
    *   When HZ11_ENABLE_HOT_COUNTERS is off (speed lane), all hot counters are
    *   compile-time eliminated and read as zero. Only the correctness checks
@@ -151,11 +173,19 @@ int main(void) {
   CHECK(s.malloc_count == 0, "stats: malloc_count zero (counters off)");
   CHECK(s.free_count == 0, "stats: free_count zero (counters off)");
 #endif
+#if HZ11_TRANSFER_CENTRAL_SPAN
+  CHECK(s.transfer_insert > 0, "transfer stats: transfer_insert");
+  CHECK(s.transfer_remove_hit > 0, "transfer stats: transfer_remove_hit");
+  CHECK(s.transfer_insert_spill > 0, "transfer stats: transfer_insert_spill");
+  CHECK(s.central_insert > 0, "transfer stats: central_insert");
+  CHECK(s.central_remove_hit > 0, "transfer stats: central_remove_hit");
+#endif
   fprintf(stderr,
           "hz11_thread_cache_smoke[%s] stats: malloc=%llu hit=%llu refill=%llu "
           "free=%llu token_hit=%llu token_miss=%llu direct_hit=%llu "
           "direct_miss=%llu span_create=%llu overflow=%llu flush=%llu "
-          "flush_items=%llu cached_bytes=%zu\n",
+          "flush_items=%llu cached_bytes=%zu xfer_hit=%llu xfer_insert=%llu "
+          "xfer_spill=%llu central_hit=%llu central_insert=%llu\n",
 #if HZ11_CLASSIFY_SPAN
           "span",
 #else
@@ -169,7 +199,12 @@ int main(void) {
           (unsigned long long)s.span_create_count,
           (unsigned long long)s.overflow_count,
           (unsigned long long)s.flush_count,
-          (unsigned long long)s.flush_items, s.cached_bytes);
+          (unsigned long long)s.flush_items, s.cached_bytes,
+          (unsigned long long)s.transfer_remove_hit,
+          (unsigned long long)s.transfer_insert,
+          (unsigned long long)s.transfer_insert_spill,
+          (unsigned long long)s.central_remove_hit,
+          (unsigned long long)s.central_insert);
 
   if (failures) {
     fprintf(stderr, "hz11_thread_cache_smoke: %d FAILURES\n", failures);

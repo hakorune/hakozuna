@@ -24,4 +24,6 @@ libhz11_nobytes.so
 libhz11_span_nobytes.so
 libhz11_soa.so
 libhz11_span_soa.so
+libhz11_span_transfer.so
+hz11_thread_cache_smoke_span_transfer
 *.o

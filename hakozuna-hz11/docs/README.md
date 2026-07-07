@@ -53,10 +53,14 @@ HZ11_STATIC_CONST_SIZE_TABLE_L1.md:
   .rodata table; correct but slower on the speed-ceiling lane
 
 HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md:
-  design document for the tcmalloc-shaped middle-end (batch transfer cache +
-  central span source); replaces the per-object returned-list sink; targets
-  remote/mixed rows (main_r50/r90) where per-object mutex contention is the
-  bottleneck; implementation is a separate box
+  implemented opt-in tcmalloc-shaped middle-end (batch transfer cache + central
+  object stack); replaces the per-object returned-list sink; measured as GO for
+  remote/mixed rows while keeping fixed-local hit-path instruction count neutral
+
+HZ11_TRANSFER_PROMOTION_MATRIX_L1.md:
+  re-runnable promotion gate for `libhz11_span_transfer.so` across main/local,
+  main remote, small remote, and medium remote rows; emits p25/p75, RSS, and
+  transfer counters, then classifies GO/NO-GO for speed-lane recommendation
 
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of

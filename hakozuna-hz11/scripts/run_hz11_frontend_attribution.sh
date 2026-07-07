@@ -28,6 +28,7 @@ HZ11_NOBYTES_LIB="$ROOT/libhz11_nobytes.so"
 HZ11_SPAN_NOBYTES_LIB="$ROOT/libhz11_span_nobytes.so"
 HZ11_SOA_LIB="$ROOT/libhz11_soa.so"
 HZ11_SPAN_SOA_LIB="$ROOT/libhz11_span_soa.so"
+HZ11_SPAN_TRANSFER_LIB="$ROOT/libhz11_span_transfer.so"
 TC_LIB="${TCMALLOC_LIB:-$(hz10_bench_find_tcmalloc_lib || true)}"
 MI_LIB="${MIMALLOC_LIB:-}"
 for m in \
@@ -46,6 +47,7 @@ trap 'rm -f "$PERF_TMP"' EXIT
 make -C "$ROOT" preload preload-span preload-token-stats preload-span-stats \
   preload-token-top preload-span-top preload-token-tlsfast preload-span-tlsfast \
   preload-token-nobytes preload-span-nobytes preload-token-soa preload-span-soa \
+  preload-span-transfer \
   hz11_fixed_local_bench >/dev/null 2>&1
 BIN="$ROOT/hz11_fixed_local_bench"
 
@@ -74,6 +76,7 @@ allocators+=("glibc|")
 [[ -f "$HZ11_SPAN_TLSFAST_LIB" ]] && allocators+=("hz11-span-tlsfast|$HZ11_SPAN_TLSFAST_LIB")
 [[ -f "$HZ11_SPAN_NOBYTES_LIB" ]] && allocators+=("hz11-span-nobytes|$HZ11_SPAN_NOBYTES_LIB")
 [[ -f "$HZ11_SPAN_SOA_LIB" ]] && allocators+=("hz11-span-soa|$HZ11_SPAN_SOA_LIB")
+[[ -f "$HZ11_SPAN_TRANSFER_LIB" ]] && allocators+=("hz11-span-transfer|$HZ11_SPAN_TRANSFER_LIB")
 
 # --- helpers ---
 
@@ -160,8 +163,10 @@ done
 # --- HZ11 counters (fixed64) ---
 echo
 echo "## HZ11 counters (fixed64, HZ11_DUMP_STATS=1)"
-for entry in "hz11-token|$HZ11_LIB" "hz11-span|$HZ11_SPAN_LIB"; do
+for entry in "hz11-token|$HZ11_LIB" "hz11-span|$HZ11_SPAN_LIB" \
+    "hz11-span-transfer|$HZ11_SPAN_TRANSFER_LIB"; do
   name="${entry%%|*}"; lib="${entry##*|}"
+  [[ -f "$lib" ]] || continue
   echo "[$name]"
   SLOT_SIZE=64 ITERS="$ITERS" HZ11_DUMP_STATS=1 LD_PRELOAD="$lib" "$BIN" 2>&1 >/dev/null | grep exit_stats || echo "(no stats)"
 done
@@ -175,7 +180,8 @@ for lib_entry in "token|$HZ11_LIB" "token-top|$HZ11_TOP_LIB" \
     "token-soa|$HZ11_SOA_LIB" \
     "span|$HZ11_SPAN_LIB" "span-top|$HZ11_SPAN_TOP_LIB" \
     "span-tlsfast|$HZ11_SPAN_TLSFAST_LIB" \
-    "span-nobytes|$HZ11_SPAN_NOBYTES_LIB" "span-soa|$HZ11_SPAN_SOA_LIB"; do
+    "span-nobytes|$HZ11_SPAN_NOBYTES_LIB" "span-soa|$HZ11_SPAN_SOA_LIB" \
+    "span-transfer|$HZ11_SPAN_TRANSFER_LIB"; do
   lname="${lib_entry%%|*}"; lib="${lib_entry##*|}"
   for sym in malloc hz11_malloc free hz11_free; do
     c=$(count_instrs "$lib" "$sym")

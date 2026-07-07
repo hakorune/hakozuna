@@ -120,6 +120,11 @@ typedef struct H11ThreadCache {
   uint64_t overflow_count;
   uint64_t flush_count;
   uint64_t flush_items;
+#if HZ11_TRANSFER_CENTRAL_SPAN
+  uint64_t refill_from_transfer;
+  uint64_t refill_from_central;
+  uint64_t refill_from_span;
+#endif
 } H11ThreadCache;
 
 /* State defined in hz11_thread_cache.c. */

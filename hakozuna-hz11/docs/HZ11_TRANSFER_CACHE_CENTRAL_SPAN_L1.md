@@ -1,6 +1,7 @@
 # HZ11 Transfer Cache + Central Span L1
 
-Status: design document. Implementation is a separate box.
+Status: implemented as an opt-in sibling lane (`libhz11_span_transfer.so`).
+Verdict: GO for the remote/mixed target rows; fixed-local guard is neutral.
 
 ## Why this box
 
@@ -87,14 +88,16 @@ uint32_t hz11_transfer_remove_range(uint8_t class_id, void** out, uint32_t max_n
 uint32_t hz11_transfer_insert_range(uint8_t class_id, void** items, uint32_t n);
 ```
 
-### Central source: `src/hz11_span.c` (extend)
+### Central source: per-thread current span
 
-```c
-/* Carve a fresh 64KiB span for class_id, then extract a batch of object
- * pointers into out[]. Returns the number extracted (up to max_n).
- * Same bump logic as hz11_thread_cache_refill, but fills an array. */
-uint32_t hz11_span_carve_batch(uint8_t class_id, void** out, uint32_t max_n);
-```
+The measured lane keeps the live source of truth in each thread's
+`H11SpanCurrent`. Refill fills a temporary batch by bumping the current span
+until it is exhausted, then carves the next 64KiB span with
+`hz11_span_carve_for_class()`.
+
+Do not add a naive `carve_batch()` API that carves a fresh span and returns only
+the requested batch: that loses the unissued tail of the 64KiB span and creates
+hidden RSS churn.
 
 ### Central spill/reuse: per-class object stack
 
@@ -113,6 +116,8 @@ typedef struct H11CentralStack {
 This is not a full tcmalloc `CentralFreeList`. It is a bounded L1 spill/reuse
 stack so transfer overflow does not turn into fresh span churn. Use names like
 `hz11_central_stack_*` in code rather than implying full span ownership/reclaim.
+The central stack is intentionally fail-fast on capacity overflow: L1 has no span
+reclaim, so silently dropping arena objects would hide a policy bug.
 
 ### Refill path (transfer lane)
 
@@ -125,7 +130,8 @@ hz11_thread_cache_refill (transfer lane):
   3. if n == 0:
        hz11_central_stack_remove_range(class, tmp[16], 16) -> n
   4. if n == 0:
-       hz11_span_carve_batch(class, tmp[16], 16) -> n
+       bump tmp[16] from H11SpanCurrent, carving a new 64KiB span only when
+       the current span is exhausted
   5. if n > 0:
        return tmp[0]
        push tmp[1..n-1] into thread cache
@@ -265,17 +271,105 @@ NO-GO:
   public hit path instruction count changes materially
 ```
 
-## Implementation order (for the implementation box, not this doc box)
+## Implementation verdict
+
+Build lane:
+
+```text
+libhz11_span_transfer.so:
+  -DHZ11_CLASSIFY_SPAN=1
+  -DHZ11_TLS_FASTPATH=1
+  -DHZ11_CACHE_BYTE_ACCOUNTING=0
+  -DHZ11_CACHE_SOA=1
+  -DHZ11_TRANSFER_CENTRAL_SPAN=1
+```
+
+Correctness and hygiene:
+
+```text
+make clean && make smoke preload-span-transfer hz11-standalone-check
+  green
+
+transfer smoke:
+  xfer_hit=64
+  xfer_insert=2048
+  xfer_spill=128
+  central_hit=4
+  central_insert=128
+```
+
+This proves the transfer batch path and central spill/reuse path are both
+exercised. The lane also initializes mutexes explicitly with `pthread_once` and
+aborts on central-stack overflow instead of leaking arena objects.
+
+Fixed-local guard (`fixed64`, RUNS=5, ITERS=10M):
+
+| Allocator | ops/s | instr/op | cycles/op |
+|---|---:|---:|---:|
+| tcmalloc | 189.88M | 87.3 | 22.6 |
+| hz11-span-soa | 163.86M | 100.5 | 24.6 |
+| hz11-span-transfer | 163.95M | 100.5 | 27.4 |
+
+The public hit path is effectively unchanged: objdump counts for
+`hz11_malloc`/`hz11_free` are identical to `span-soa` (69/48), and the fixed64
+instruction count is unchanged.
+
+Main mixed rows (`bench/out/bench_matrix_malloc`, THREADS=16, ITERS=100000,
+RUNS=10 median, size=16..32768, interleaved=1, live_window=1024):
+
+| Row | Allocator | Median ops/s | p25 | p75 | post RSS | peak RSS |
+|---|---:|---:|---:|---:|---:|---:|
+| main_local0 | tcmalloc | 451.51M | 329.65M | 463.55M | 11.13MiB | 11.13MiB |
+| main_local0 | hz11-span-soa | 400.17M | 389.44M | 405.39M | 8.12MiB | 8.12MiB |
+| main_local0 | hz11-span-transfer | 455.58M | 433.35M | 466.82M | 8.12MiB | 8.12MiB |
+| main_r50 | tcmalloc | 42.02M | 33.75M | 42.60M | 105.70MiB | 105.70MiB |
+| main_r50 | hz11-span-soa | 20.60M | 19.08M | 20.94M | 100.00MiB | 100.00MiB |
+| main_r50 | hz11-span-transfer | 87.66M | 84.04M | 90.10M | 74.63MiB | 74.63MiB |
+| main_r90 | tcmalloc | 23.47M | 22.75M | 23.57M | 105.03MiB | 105.66MiB |
+| main_r90 | hz11-span-soa | 9.99M | 9.71M | 10.09M | 96.50MiB | 96.50MiB |
+| main_r90 | hz11-span-transfer | 62.41M | 61.45M | 63.08M | 80.75MiB | 80.75MiB |
+
+Transfer counters from the RUNS=10 process:
+
+```text
+main_r50:
+  span_create=3271
+  xfer_hit=144190
+  xfer_miss=1686
+  xfer_insert=2308832
+  xfer_spill=352
+  central_hit=22
+  central_miss=1664
+  central_insert=352
+
+main_r90:
+  span_create=3127
+  xfer_hit=362950
+  xfer_miss=1601
+  xfer_insert=5809328
+  xfer_spill=112
+  central_hit=7
+  central_miss=1594
+  central_insert=112
+```
+
+Conclusion: GO. The A/B confirms the design hypothesis: the old per-object
+returned-list path was the mixed/remote bottleneck. Batch transfer moves the
+cost from one mutex operation per object to one mutex operation per batch and
+turns the HZ11 mixed rows from below tcmalloc to above tcmalloc in this harness.
+This is still an opt-in research lane; it is not a product claim that HZ11
+beats tcmalloc broadly.
+
+## Implementation order (completed)
 
 ```text
 1. src/hz11_transfer_cache.{c,h} -- struct + remove_range/insert_range
 2. src/hz11_span.c -- central object stack remove/insert range
-3. src/hz11_span.c -- hz11_span_carve_batch wrapper
-4. src/hz11_thread_cache.c -- refill order:
+3. src/hz11_thread_cache.c -- refill order:
      transfer -> central stack -> span batch
-5. src/hz11_thread_cache.c -- overflow order:
+4. src/hz11_thread_cache.c -- overflow order:
      collect batch -> transfer -> central stack spill
-6. Makefile + smoke + standalone
-7. Measure fixed64 guard + main_r50/r90
-8. Record verdict
+5. Makefile + smoke + standalone
+6. Measure fixed64 guard + main_r50/r90
+7. Record verdict
 ```
