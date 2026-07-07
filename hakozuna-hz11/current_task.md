@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11PublicEntryFastSlowHelpers-L0
+  none
 
 Goal:
   keep HZ11 as a speed-first research line and measure the remaining local
@@ -26,6 +26,7 @@ docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
+docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -43,9 +44,7 @@ HZ11CacheByteAccountingGate-L1:
   Remaining gap is about +14 to +16 instr/op vs tcmalloc.
 ```
 
-## Next Step
-
-Open `HZ11CacheLayout-L1`.
+## Recent Results
 
 ```text
 HZ11CacheLayout-L1:
@@ -53,7 +52,26 @@ HZ11CacheLayout-L1:
   token no-bytes 101.2 -> SOA 98.3 instr/op (~3 win, target >=4)
   token ops/s improved, so keep as speed-ceiling sibling.
 
-Cleanup:
-  next cleanup candidate is public-entry helper consolidation, but it touches
-  hot-path codegen and must be measured as its own reversible box
+HZ11PublicEntryFastSlowHelpers-L0:
+  GO cleanup. Common malloc/free with-thread-cache helper body is shared by
+  TLS and non-TLS lanes.
+  fixed64 attribution preserved the speed-ceiling lanes:
+    token-soa 159.14M ops/s, 98.4 instr/op
+    span-soa  164.91M ops/s, 100.4 instr/op
+```
+
+## Next Step
+
+```text
+Candidate speed box:
+  HZ11SizeTableStaticInit-L1
+
+Candidate cleanup:
+  no active cleanup box
+
+Recently completed cleanup:
+  split system allocator resolver
+  split token table helpers
+  consolidate duplicated malloc/free with-thread-cache bodies in
+  hz11_public_entry.c
 ```

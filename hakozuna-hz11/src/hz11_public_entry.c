@@ -2,7 +2,6 @@
 
 #include <string.h>
 
-#if HZ11_TLS_FASTPATH
 #if defined(__GNUC__) || defined(__clang__)
 #define HZ11_NOINLINE __attribute__((noinline))
 #define HZ11_LIKELY(x) __builtin_expect(!!(x), 1)
@@ -46,6 +45,7 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
 #endif
 }
 
+#if HZ11_TLS_FASTPATH
 static HZ11_NOINLINE void* hz11_malloc_slow(size_t size) {
   if (hz11_in_resolver()) {
     return hz11_sys_malloc(size);
@@ -56,6 +56,7 @@ static HZ11_NOINLINE void* hz11_malloc_slow(size_t size) {
   }
   return hz11_malloc_fast_with_tc(tc, size);
 }
+#endif
 
 static inline void hz11_free_fast_with_tc(H11ThreadCache* tc, void* ptr) {
 #if HZ11_CLASSIFY_SPAN
@@ -85,6 +86,7 @@ static inline void hz11_free_fast_with_tc(H11ThreadCache* tc, void* ptr) {
 #endif
 }
 
+#if HZ11_TLS_FASTPATH
 static HZ11_NOINLINE void hz11_free_slow(void* ptr) {
   if (hz11_in_resolver()) {
     hz11_sys_free(ptr);
@@ -114,40 +116,7 @@ void* hz11_malloc(size_t size) {
   if (!tc) {
     return hz11_sys_malloc(size);
   }
-  uint8_t class_id = hz11_size_class(size);
-  HZ11_COUNT_INC(tc->malloc_count);
-#if HZ11_CLASSIFY_SPAN
-  if (class_id == HZ11_LARGE_CLASS) {
-    return hz11_sys_malloc(size); /* large: system; free misses arena -> sys_free */
-  }
-  void* p = hz11_thread_cache_pop(tc, class_id);
-  if (p) {
-    HZ11_COUNT_INC(tc->malloc_hit);
-    return p;
-  }
-  return hz11_thread_cache_refill(tc, class_id); /* returned/bump/carve */
-#else
-  if (class_id == HZ11_LARGE_CLASS) {
-    void* p = hz11_sys_malloc(size);
-    if (p) {
-      hz11_token_set(tc->tokens, p, HZ11_LARGE_CLASS);
-    }
-    return p;
-  }
-  void* p = hz11_thread_cache_pop(tc, class_id);
-  if (p) {
-    HZ11_COUNT_INC(tc->malloc_hit);
-    /* Cache hit: the token was set when first refilled and is not deleted on
-     * free, so it is already present. Skip the redundant token_set. */
-    return p;
-  }
-  p = hz11_thread_cache_refill(tc, class_id);
-  if (!p) {
-    return NULL;
-  }
-  hz11_token_set(tc->tokens, p, class_id);
-  return p;
-#endif
+  return hz11_malloc_fast_with_tc(tc, size);
 #endif
 }
 
@@ -167,41 +136,12 @@ void hz11_free(void* ptr) {
     hz11_sys_free(ptr);
     return;
   }
-#if HZ11_CLASSIFY_SPAN
-  uint8_t class_id;
-  if (hz11_span_classify(ptr, &class_id)) {
-    H11ThreadCache* tc = hz11_thread_cache_get();
-    if (tc) {
-      HZ11_COUNT_INC(tc->free_count);
-      HZ11_COUNT_INC(tc->direct_hit_count);
-      hz11_thread_cache_push(tc, class_id, ptr);
-      return;
-    }
-  }
   H11ThreadCache* tc = hz11_thread_cache_get();
   if (tc) {
-    HZ11_COUNT_INC(tc->direct_miss_count);
-  }
-  /* arena-miss / uncarved / foreign / large: sys_free is correct (system ptr). */
-  hz11_sys_free(ptr);
-#else
-  H11ThreadCache* tc = hz11_thread_cache_get();
-  uint8_t class_id;
-  if (tc && hz11_token_lookup(tc->tokens, ptr, &class_id)) {
-    HZ11_COUNT_INC(tc->free_count);
-    HZ11_COUNT_INC(tc->token_hit);
-    if (class_id == HZ11_LARGE_CLASS) {
-      hz11_sys_free(ptr);
-      return;
-    }
-    hz11_thread_cache_push(tc, class_id, ptr); /* token NOT deleted (speed mode) */
+    hz11_free_fast_with_tc(tc, ptr);
     return;
   }
-  if (tc) {
-    HZ11_COUNT_INC(tc->token_miss);
-  }
-  hz11_sys_free(ptr); /* cross-thread / evicted / foreign */
-#endif
+  hz11_sys_free(ptr);
 #endif
 }
 

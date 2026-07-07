@@ -52,6 +52,10 @@ HZ11_TOKEN_HELPERS_SPLIT_L0.md:
   cleanup box that moves token-table types and inline helpers out of
   hz11_thread_cache.h
 
+HZ11_PUBLIC_ENTRY_HELPERS_L0.md:
+  cleanup box that consolidates duplicated malloc/free with-thread-cache bodies
+  in hz11_public_entry.c
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence
