@@ -2,6 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+REPO_ROOT="$(cd "${ROOT}/.." && pwd)"
 OUTDIR="${OUTDIR:-${ROOT}/bench_results/hz8_v11_same_run_matrix_$(date -u +%Y%m%dT%H%M%SZ)}"
 RUNS="${RUNS:-5}"
 THREADS="${THREADS:-16}"
@@ -13,7 +14,14 @@ MATRIX_BIN="${ROOT}/bench/out/bench_matrix_malloc"
 
 mkdir -p "${OUTDIR}" "$(dirname "${MATRIX_BIN}")"
 
+IFS=',' read -r -a allocator_list <<< "${ALLOCATORS}"
+
 make -C "${ROOT}" preload preload-medium64k2 preload-mediumkeeprefillempty >/dev/null
+for alloc in "${allocator_list[@]}"; do
+  if [[ "${alloc}" == "hz10" && -d "${REPO_ROOT}/hakozuna-hz10" ]]; then
+    make -C "${REPO_ROOT}/hakozuna-hz10" preload >/dev/null
+  fi
+done
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
   -pthread -o "${MATRIX_BIN}" "${ROOT}/bench/bench_matrix_malloc.c"
 
@@ -35,6 +43,14 @@ find_lib() {
       ;;
     hz8_keeprefill)
       printf '%s\n' "${ROOT}/libhakozuna_hz8_preload_keeprefill.so"
+      ;;
+    hz10)
+      for p in \
+        "${REPO_ROOT}/hakozuna-hz10/libhz10.so" \
+        /mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10.so; do
+        [[ -f "${p}" ]] && { printf '%s\n' "${p}"; return 0; }
+      done
+      return 1
       ;;
     hz3)
       for p in \
@@ -81,7 +97,6 @@ find_lib() {
   esac
 }
 
-IFS=',' read -r -a allocator_list <<< "${ALLOCATORS}"
 declare -A allocator_lib
 for alloc in "${allocator_list[@]}"; do
   lib="$(find_lib "${alloc}" || true)"
@@ -255,7 +270,7 @@ for row in rows:
         allocs.append(row["allocator"])
 
 with open(dst, "w", encoding="utf-8") as f:
-    f.write("# HZ8 Same-Run Allocator Matrix\n\n")
+    f.write("# Allocator Same-Run Matrix\n\n")
     f.write("Median ops/s. Raw samples: `samples.csv`.\n\n")
     for row in row_names:
         ranked = []

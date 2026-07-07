@@ -205,6 +205,18 @@ This repository already includes public Windows-native allocator comparisons and
 
 ## Benchmark Snapshot (Ubuntu native)
 
+For new cross-line measurements, use the integrated same-run matrix instead of
+editing the wide table below by hand:
+
+```bash
+ALLOCATORS=hz8,hz10,hz3,hz4,mimalloc,tcmalloc,system \
+ROWS=guard_local0,main_local0,main_interleaved_r50,main_interleaved_r90 \
+RUNS=10 THREADS=16 ITERS=50000 \
+  hakozuna-hz8/scripts/run_hz8_v11_same_run_matrix.sh
+```
+
+Guide: `docs/benchmarks/ALLOCATOR_LINE_INTEGRATED_MATRIX.md`
+
 The MT table below is a `RUNS=10`, `T=16` unified rerun on 2026-05-26 using the
 same machine and runner for `hz3`, `hz4`, `mimalloc`, `tcmalloc`, and HZ5 rows.
 The redis-like row remains from the 2026-02-18 paper snapshot.
