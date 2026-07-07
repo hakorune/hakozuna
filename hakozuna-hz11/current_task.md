@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11CacheByteAccountingGate-L1
+  HZ11CacheLayout-L1
 
 Goal:
   keep HZ11 as a speed-first research line and measure the remaining local
@@ -22,6 +22,7 @@ README.md
 docs/README.md
 docs/HZ11_TLS_FAST_PATH_L1.md
 docs/HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md
+docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -41,10 +42,16 @@ HZ11CacheByteAccountingGate-L1:
 
 ## Next Step
 
-Open a new box only after reviewing the no-bytes tradeoff. Candidate directions:
+Open `HZ11CacheLayout-L1`.
 
 ```text
-1. Low-cost RSS cap replacement for no-bytes lanes
-2. Remaining body attribution after no-bytes
-3. Transfer-cache/span backend shape, if speed-first architecture moves forward
+Plan:
+  add HZ11_CACHE_SOA=1 sibling lanes on top of TLSFastPath + no-bytes
+  replace class_cache AoS addressing with class_items/class_counts SOA
+  measure fixed64 against hz11-token-nobytes and tcmalloc
+
+Gate:
+  token-soa <= 96 instr/op
+  token-soa ops/s >= 158M
+  span-soa improves over span-nobytes
 ```

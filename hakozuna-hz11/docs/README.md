@@ -36,6 +36,10 @@ HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md:
   opt-in no-bytes sibling lane that removes global cached-byte accounting from
   cache pop/push to price the remaining hot body cost
 
+HZ11_REMAINING_BODY_ATTRIBUTION_L0.md:
+  objdump attribution after TLSFastPath and no-bytes lanes; identifies
+  class-cache address calculation as the next largest actionable cost
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence
