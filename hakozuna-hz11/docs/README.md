@@ -28,6 +28,10 @@ HZ11_CACHE_SHAPE_L1.md:
   pointer-top cache A/B; measured as NO-GO because instruction count increased
   despite modest throughput noise on one lane
 
+HZ11_TLS_FAST_PATH_L1.md:
+  public-entry TLS-present fast path A/B; tests whether moving resolver/init
+  checks to a slow helper reduces the fixed malloc/free instruction budget
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence

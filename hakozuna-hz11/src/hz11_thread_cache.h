@@ -42,6 +42,13 @@
 #define HZ11_CACHE_TOPPTR 0
 #endif
 
+/* HZ11TLSFastPath-L1: public entry reads hz11_tls once and sends the missing
+ * TLS / resolver cases to a noinline slow helper. Default OFF; sibling lanes
+ * build with -DHZ11_TLS_FASTPATH=1 for A/B. */
+#ifndef HZ11_TLS_FASTPATH
+#define HZ11_TLS_FASTPATH 0
+#endif
+
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;

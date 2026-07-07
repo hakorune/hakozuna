@@ -5,6 +5,8 @@ hz11_thread_cache_smoke_stats
 hz11_thread_cache_smoke_span_stats
 hz11_thread_cache_smoke_top
 hz11_thread_cache_smoke_span_top
+hz11_thread_cache_smoke_tlsfast
+hz11_thread_cache_smoke_span_tlsfast
 hz11_fixed_local_bench
 libhz11.so
 libhz11_span.so
@@ -12,4 +14,6 @@ libhz11_stats.so
 libhz11_span_stats.so
 libhz11_top.so
 libhz11_span_top.so
+libhz11_tlsfast.so
+libhz11_span_tlsfast.so
 *.o
