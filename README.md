@@ -1,4 +1,4 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9 / hakozuna-hz10
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
@@ -31,6 +31,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **HZ9 (hakozuna-hz9)**: standalone experimental throughput line. It keeps
   HZ8 as the frozen balanced line and develops new HZ9 behavior only under
   `hakozuna-hz9/`.
+- **HZ10 (hakozuna-hz10)**: macro/shim research candidate. It is now included
+  in the integrated benchmark matrix, but has not replaced HZ8 as the public
+  recommendation.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
@@ -47,6 +50,7 @@ metadata and ownership models:
 | HZ7 TinyRoute | tiny-binary direct API allocator design | span-mask first, optional tiny route table later | the HZ6-minimal design seed, organized under `hz7/` |
 | HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | the current public allocator line |
 | HZ9 | standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | the experimental successor lane under `hakozuna-hz9/` |
+| HZ10 | macro/shim speed research | page-based fail-closed substrate + preload shim + orphan adoption work | the speed-oriented research candidate under `hakozuna-hz10/` |
 
 In short:
 
@@ -205,8 +209,7 @@ This repository already includes public Windows-native allocator comparisons and
 
 ## Benchmark Snapshot (Ubuntu native)
 
-For new cross-line measurements, use the integrated same-run matrix instead of
-editing the wide table below by hand:
+For new cross-line measurements, use the integrated same-run matrix:
 
 ```bash
 ALLOCATORS=hz8,hz10,hz3,hz4,mimalloc,tcmalloc,system \
@@ -220,193 +223,25 @@ Guide: `docs/benchmarks/ALLOCATOR_LINE_INTEGRATED_MATRIX.md`
 Latest integrated snapshot:
 `docs/benchmarks/20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md`
 
-The MT table below is a `RUNS=10`, `T=16` unified rerun on 2026-05-26 using the
-same machine and runner for `hz3`, `hz4`, `mimalloc`, `tcmalloc`, and HZ5 rows.
-The redis-like row remains from the 2026-02-18 paper snapshot.
+Current HZ-line integrated snapshot, including HZ10:
 
-- `hz3`: strongest in local-heavy and redis-like workloads.
-- `hz4`: strongest in remote-heavy and high-thread cross workloads.
-- `HZ5`: strong low-RSS profile-family rows for selected remote-pressure
-  workloads; not one default profile.
-- Full benchmark log: `docs/benchmarks/2026-02-18_PAPER_BENCH_RESULTS.md`
+| Row | HZ3 ops/s / post RSS | HZ4 ops/s / post RSS | HZ8 ops/s / post RSS | HZ10 ops/s / post RSS |
+|-----|----------------------:|----------------------:|----------------------:|-----------------------:|
+| `guard_local0` | 156.85M / 12.35 MiB | 49.01M / 131.11 MiB | **207.05M / 2.00 MiB** | 137.53M / 26.38 MiB |
+| `main_local0` | 149.31M / 15.11 MiB | 28.82M / 169.99 MiB | 117.94M / **3.50 MiB** | 118.18M / 33.75 MiB |
+| `main_interleaved_r50` | 16.86M / 163.77 MiB | 12.28M / 258.10 MiB | 10.84M / **4.33 MiB** | **20.18M** / 79.50 MiB |
+| `main_interleaved_r90` | 10.20M / 205.82 MiB | 9.75M / 275.23 MiB | 7.04M / **4.62 MiB** | **12.60M** / 89.62 MiB |
+| `small_interleaved_remote90` | 12.95M / 130.92 MiB | 11.13M / 144.87 MiB | 14.70M / **2.95 MiB** | **14.96M** / 43.75 MiB |
+| `medium_interleaved_r50` | 15.43M / 148.37 MiB | 8.68M / 237.98 MiB | 9.84M / **3.83 MiB** | **19.87M / 69.62 MiB** |
 
-### MT lane x remote% (median ops/s, RUNS=10, T=16)
+Interpretation:
 
-| Lane | hz3 | hz4 | mimalloc | tcmalloc | Best HZ5 | HZ6 | HZ8 |
-|------|-----|-----|----------|----------|----------|-----|-----|
-| `main_r0` | 292.15M | 85.63M | 146.73M | **318.82M** | 157.44M | 16.88M | 107.633M |
-| `main_r50` | 31.46M | 62.32M | 14.26M | 64.87M | **79.43M** | 15.08M | 29.633M |
-| `main_r90` | 22.31M | **67.14M** | 7.72M | 45.42M | 62.31M | 10.99M | 20.610M |
-| `guard_r0` | 318.98M | 156.68M | 258.19M | **375.71M** | 149.00M | 189.48M | 224.750M |
-| `cross128_r90` | 2.78M | **27.66M** | 3.52M | 7.21M | 22.39M | 6.38M | 37.342k |
-
-HZ5 is shown as "Best HZ5" because it is a profile family. The selected HZ5 row
-is listed explicitly so the table does not hide profile dependence.
-
-HZ6 is added from the Linux x86_64 full allocator frontier run
-`2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md`, with the
-`guard_r0` gap filled by a same-machine/same-runner HZ6 selected-row rerun
-(`RUNS=10`, `T=16`, `size=16..2048`, `remote_pct=0`). The HZ6 claim here is
-deliberately different from the HZ5 column: it is the low-RSS production line in
-this full R10 run, not the throughput leader. The HZ6 runner uses `local0` /
-`remote50` / `remote90`, which correspond to `main_r0` / `main_r50` /
-`main_r90` in the older table.
-
-HZ8 is added from the same Ubuntu-native table shape after the HZ8 paper record
-was published. It should be read as the recommended balanced line, not as a
-universal throughput winner. The `cross128_r90` row is intentionally kept visible
-as a current weak row.
-
-Profile-selection notes:
-
-- HZ5 selected rows: `main_r0` and `guard_r0` use `hz5-pagerun64-main`;
-  `main_r50` and `cross128_r90` use `hz5-large128-transfer128`; `main_r90`
-  uses `hz5-pagerun64-cross128`.
-- HZ6 selected rows: `main_r0`/`main_r50`/`main_r90` use the HZ6 full R10
-  `local0`/`remote50`/`remote90` rows; `guard_r0` uses the selected-row guard
-  rerun; `cross128_r90` uses the full R10 `cross128_r90` row.
-- HZ6 peak RSS medians: `main_r0` 67.38 MiB, `main_r50` 69.50 MiB,
-  `main_r90` 72.07 MiB, `guard_r0` 65.88 MiB, `cross128_r90` 68.91 MiB.
-- HZ8 selected rows use the Ubuntu-native R10 HZ8 table: `main_r0`,
-  `main_r50`, `main_r90`, `guard_r0`, and `cross128_r90`.
-- HZ8 `cross128_r90` is a known weak row: 37.342k ops/s, post RSS 151.40 MiB,
-  peak RSS 196.85 MiB, `n_ok=10`, `n_fail=0`.
-
-Lane legend:
-
-- `r0` / `r50` / `r90`: target remote-free ratio of `0%`, `50%`, and `90%`
-- `main_*`: standard MT `random_mixed` lane at `T=16`, size range `16..32768`
-- `guard_*`: small-only guard lane at `T=16`, size range `16..2048`, used to isolate small-object fixed cost
-- `cross128_*`: harsher cross-thread lane at `T=16`, size range `16..131072`, used to stress mixed large-path and cross-thread behavior
-
-### Redis-like (median ops/s, RUNS=10)
-
-| Allocator | ops/s |
-|-----------|-------|
-| **hz3** | **571,199** |
-| mimalloc | 568,740 |
-| tcmalloc | 568,052 |
-| hz4 | 560,576 |
-
-### Practical profile guidance
-
-- Default profile: `hz3` (`scale` lane).
-- Remote-heavy / high-thread profile: `hz4`.
-- `hz4` redis preload crash (`rc=139`) was fixed via `malloc_usable_size` interpose; redis-like rerun is now stable (`n_ok=10`).
-
-## HZ5 Linux General-Profile Snapshot (2026-05-26, Ubuntu x86_64)
-
-HZ5 has moved beyond the earlier exact `64K/a8192` appendix into a Linux
-full-preload profile family. The current claim is deliberately profile-scoped:
-HZ5 is a low-RSS, fail-closed, descriptor-owned allocator family with strong
-mid/main/cross remote-pressure rows, not a universal replacement for `hz3`,
-`hz4`, or tcmalloc.
-
-| HZ5 row | Claim scope |
-|---------|-------------|
-| `hz5-pagerun64-main` / `hz5-pagerun64-cross128` | MidPage PageRun64 general and cross-size profiles |
-| `hz5-large128-rss` | low-RSS LargeFront profile |
-| `hz5-large128-source16` | broad LargeFront 128K throughput comparison lane |
-| `hz5-large128-transfer128` | diagnostic transfer-cache lane, not a default |
-
-Representative paper-facing rows from the RUNS=5 sweep:
-
-| Case | Best HZ5 row | HZ5 ops/s | HZ5 RSS | tcmalloc ops/s | tcmalloc RSS |
-|------|--------------|----------:|--------:|---------------:|-------------:|
-| `t=8 main r50` | `hz5-large128-source16` | 63.26M | 24MB | 22.36M | 474MB |
-| `t=8 main r90` | `hz5-pagerun64-cross128` | 56.58M | 33MB | 27.80M | 367MB |
-| `t=8 mid_only r50` | `hz5-pagerun64-main` | 75.94M | 8MB | 19.30M | 497MB |
-| `t=8 cross128 r90` | `hz5-large128-transfer128` | 17.16M | 57MB | 11.72M | 183MB |
-| `t=8 large128 r90` | `hz5-large128-source16` | 13.16M | 145MB | 12.12M | 182MB |
-
-## HZ6 Windows Selected-Family Snapshot (2026-06, Windows native)
-
-HZ6 is reported separately from the Ubuntu HZ3/HZ4/HZ5 MT table because it uses
-Windows-native selected-family runners and profile-specific lanes. The rows
-below are representative paper-facing snapshots, not a universal allocator
-ranking.
-
-| Lane | HZ6 selected row | ops/s | Peak RSS |
-|------|------------------|------:|---------:|
-| `random_mixed small` | `sameownerfast-descavail-noboost-route4k` | 45.755M | 4,968 KB |
-| `random_mixed medium` | `sameownerfast-descavail-noboost-route4k` | 42.408M | 4,964 KB |
-| `random_mixed mixed` | `sameownerfast-descavail-noboost-route4k` | 41.306M | 4,964 KB |
-| `mixed_ws balanced` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 66.922M | 111,244 KB |
-| `mixed_ws wide_ws` | `mixedclean-front16k-sourcerun-desc17k-source2k-route17k-linearwrap-loopcarry` | 21.853M | 140,708 KB |
-
-Selected-small decision evidence:
-
-| Profile | Previous selected-small | SourceBlockRoute dynmap | Speed delta | RSS delta |
-|---------|------------------------:|------------------------:|------------:|----------:|
-| `balanced` | 76.471M / 96,776 KB | 82.939M / 98,288 KB | +8.46% | +1,512 KB |
-| `larger_sizes` | 35.407M / 70,952 KB | 37.857M / 71,684 KB | +6.92% | +732 KB |
-| `large_slice_16k` | 46.308M / 17,096 KB | 53.940M / 17,664 KB | +16.48% | +568 KB |
-
-## HZ8 Paper-Ready Snapshot (2026-06-30, Ubuntu x86_64)
-
-HZ8 is the recommended balanced allocator line.  The current public default is
-HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
-hardening.  The HZ8 paper-facing matrix is intentionally interpreted as a
-throughput/RSS tradeoff, not as a universal tcmalloc replacement claim.
-
-Snapshot:
-
-```text
-hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
-Ubuntu 22.04.5 / Linux 6.8.0-90 / x86_64
-RUNS=10, THREADS=16, ITERS=50000
-```
-
-Representative rows:
-
-| Row | HZ8 KeepRefill | mimalloc | tcmalloc |
-|---|---:|---:|---:|
-| `small_interleaved_remote90` ops/s | 12.023M | 10.960M | 23.900M |
-| `small_interleaved_remote90` post RSS | 2.91 MiB | 50.98 MiB | 32.94 MiB |
-| `main_interleaved_r90` ops/s | 6.048M | 4.715M | 12.178M |
-| `main_interleaved_r90` post RSS | 4.57 MiB | 183.12 MiB | 90.31 MiB |
-| `medium_interleaved_r50` ops/s | 8.128M | 4.151M | 15.870M |
-| `medium_interleaved_r50` post RSS | 3.81 MiB | 162.54 MiB | 79.06 MiB |
-
-Read HZ8 as the low-post-workload-RSS balanced line: tcmalloc remains stronger
-on raw throughput in several rows, while HZ8 keeps post RSS much lower on the
-reported remote/interleaved rows.
-
-Latest Windows rerun note:
-
-- The 2026-06-29 Windows Larson rerun now exits cleanly after the runner
-  capture/rc fix.
-- The narrow `-LarsonAppcapOnly` rerun is the current clean Windows HZ6
-  baseline.
-- In that rerun, the default `hz6-strict`, `hz6-speed`, `hz6-rss`,
-  `hz6-*-broad`, and `hz6-*-route4k` lanes remain warmup no-go rows on this
-  matrix; keep them as control / failure evidence, not as promotion claims.
-- The strongest HZ6 row in that narrow rerun is
-  `hz6-ownerlocality-appcap-speed` at `45.754M ops/s` and `2,250,016 KB`
-  peak RSS.
-- The appcap family is the clean Windows baseline for this rerun; the
-  non-appcap default lanes are still control-only.
-
-Sources:
-
-- `docs/benchmarks/windows/paper/hz6_selected_family/selected-family-desc17-refresh/selected-random-sameowner/20260603_204102_hz6_capacity_matrix_windows.md`
-- `docs/benchmarks/windows/paper/hz6_selected_family/selected-mixed-lowrss/20260617_105037_hz6_capacity_matrix_windows.md`
-- `docs/benchmarks/windows/paper/hz6_selected_family/sourceblockroute-dynmap-selected-small-20260606/README.md`
-
-Current interpretation:
-
-- Keep `hz3` as the default public profile and `hz4` as the remote-heavy profile.
-- Present HZ5 as a profile family: strong low-RSS evidence on selected
-  mid/main/cross rows, with guard small-object and some LargeFront 128K rows
-  still profile-sensitive.
-- Keep the older exact `64K/a8192` Local2P rows as appendix evidence for
-  explicit route specialization.
-- Treat HZ6 as the active successor line. Use
-  `hakozuna-hz6/docs/current_task.md`,
-  `hakozuna-hz6/docs/HZ6_UBUNTU_PRELOAD_LANES.md`, and
-  `hakozuna-hz6/docs/HZ6_UBUNTU_SELECTED_BALANCE.md` before interpreting new
-  HZ6 numbers. Selected/default and profile-only DSOs are deliberately
-  separate.
+- HZ8 remains the public recommended balanced line: lowest HZ post RSS in this
+  integrated matrix.
+- HZ10 is the speed-oriented research candidate: stronger remote/interleaved
+  throughput, with tens-of-MiB post RSS in these rows.
+- Historical HZ3/HZ4/HZ5/HZ6/HZ8 snapshots are archived in
+  `docs/benchmarks/ALLOCATOR_HISTORY_SNAPSHOTS.md`.
 
 ## Documentation
 
