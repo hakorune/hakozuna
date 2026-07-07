@@ -2,12 +2,12 @@
 
 ```text
 Active box:
-  HZ11TransferPromotionMatrix-L1 (measured GO)
+  HZ11MacroSpeedLaneGate-L1 (measured NO-GO)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
-  recommended speed-lane candidate; next work should either tune transfer
-  parameters or test macro workloads.
+  recommended speed-lane candidate on the micro remote/mixed matrix, but macro
+  promotion is blocked by correctness and RSS failures.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -27,6 +27,7 @@ docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
+docs/HZ11_MACRO_SPEED_LANE_GATE_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
@@ -98,14 +99,35 @@ HZ11TransferPromotionMatrix-L1:
     medium_r50:     transfer 76.74M vs tcmalloc 15.52M ops/s
     medium_r90:     transfer 53.80M vs tcmalloc 8.56M ops/s
     RSS is below tcmalloc on every measured row.
+
+HZ11MacroSpeedLaneGate-L1:
+  script added and RUNS=5 measured:
+    hakozuna-hz11/scripts/run_hz11_macro_speed_lane_gate.sh
+  Output:
+    bench_results/hz11_macro_speed_lane_20260707T222023Z/summary.md
+  Verdict:
+    NO-GO for macro speed-lane promotion.
+  Key results:
+    xmalloc_test: transfer 2.025s vs tcmalloc 2.054s, much lower RSS
+    cache_scratch: transfer 1.177s vs tcmalloc 1.174s, lower RSS
+    python_alloc: transfer aborts 5/5, rc=134
+    mstress: transfer aborts 5/5, rc=134
+    larson: transfer wall near tcmalloc, but RSS 2.344x tcmalloc
+    sh6bench: transfer 13.048x tcmalloc wall and 1.336x max RSS
+  Abort attribution:
+    gdb confirms python_alloc and mstress both abort in
+    hz11_central_stack_insert_range().
+    This is intentional fail-fast on central stack capacity overflow, not a
+    silent heap corruption.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  transfer cap/batch size tuning
-  macro workload gate
+  HZ11MacroFailureAttribution-L1:
+    diagnose central stack overflow policy/cap first, then larson/sh6bench RSS.
+  Keep transfer as remote/mixed microbench lane only until macro correctness is stable.
 
 Candidate cleanup:
   no active cleanup box

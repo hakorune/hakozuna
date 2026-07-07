@@ -9,10 +9,15 @@ HZ10 remains the route/ownership/reclaim research line.
 
 ```text
 state:
-  design-only speed-first research line
+  speed-first research line
 
 default allocator:
   not HZ11
+
+recommended speed lane candidate:
+  libhz11_span_transfer.so
+  promoted by HZ11TransferPromotionMatrix-L1 on the micro remote/mixed matrix;
+  macro promotion is blocked by HZ11MacroSpeedLaneGate-L1; not default
 
 identity:
   tcmalloc-speed competitor

@@ -62,6 +62,11 @@ HZ11_TRANSFER_PROMOTION_MATRIX_L1.md:
   main remote, small remote, and medium remote rows; emits p25/p75, RSS, and
   transfer counters, then classifies GO/NO-GO for speed-lane recommendation
 
+HZ11_MACRO_SPEED_LANE_GATE_L1.md:
+  macro workload gate for the promoted HZ11 transfer lane; compares glibc,
+  tcmalloc, mimalloc when available, span-soa, and span-transfer across Python,
+  Larson, xmalloc, sh6bench, and local optional rows without hot-path changes
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
