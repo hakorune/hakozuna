@@ -1,0 +1,5 @@
+# HZ11 build products (must not be committed)
+hz11_thread_cache_smoke
+hz11_fixed_local_bench
+libhz11.so
+*.o

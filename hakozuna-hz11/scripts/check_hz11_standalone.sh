@@ -4,7 +4,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-CHECK_TREE=(Makefile README.md current_task.md docs scripts)
+CHECK_TREE=(Makefile README.md current_task.md docs scripts src include tests bench)
 
 echo "[hz11-standalone] checking required docs"
 for file in \
@@ -48,11 +48,19 @@ echo "[hz11-standalone] checking active file line limits"
 if find "${CHECK_TREE[@]}" -type f \
     \( -name '*.c' -o -name '*.h' -o -name '*.sh' -o -name '*.md' \
        -o -name 'Makefile' \) -print0 |
-    xargs -0 wc -l |
+    LC_ALL=C xargs -0 wc -l |
     awk '$2 != "total" && $1 > 800 { print; bad = 1 }
          END { exit bad ? 0 : 1 }'; then
   echo "[hz11-standalone] file over 800 lines" >&2
   exit 1
 fi
+
+echo "[hz11-standalone] checking local build products are ignored"
+for product in hz11_thread_cache_smoke hz11_fixed_local_bench libhz11.so; do
+  if ! grep -q "^${product}\$" .gitignore 2>/dev/null; then
+    echo "[hz11-standalone] build product ${product} not in .gitignore" >&2
+    exit 1
+  fi
+done
 
 echo "[hz11-standalone] ok"

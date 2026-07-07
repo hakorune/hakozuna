@@ -227,3 +227,72 @@ Q4:
   What is the first fair tcmalloc comparator: system tcmalloc package or the
   same local source build used in HZ10 matrices?
 ```
+
+## Implementation review (HZ11ThreadCacheFastPath-L0)
+
+Status: implemented + measured; fixed-gate NO-GO, diagnosis clean. L0 is a
+system-allocator-backed front-cache SHIM -- these numbers are a front-cache
+ceiling, not HZ11-allocator-body speed.
+
+Open questions resolved:
+
+```text
+Q1 token key/collision: per-thread TLS direct-mapped table, 1024 slots, key =
+    hash(ptr) (mix), value = (ptr, class_id), EXACT pointer compare mandatory.
+    Collision evicts the older entry -> its free token-misses -> system free
+    (safe; the backing is system malloc). Never misclassifies.
+Q2 route fallback: token miss / cross-thread / foreign / large / realloc /
+    calloc/usable_size/align* -> system allocator (dlsym RTLD_NEXT). L0 has no
+    pagemap route; the system-malloc backing makes every fallback correct.
+Q3 class cache storage: fixed inline arrays (CAP=32 per class, _Thread_local
+    heap-allocated H11ThreadCache). NOT the HZ10 mmap-metadata-slab pattern.
+    max_cached_bytes (2MiB/thread) is a mandatory RSS gate.
+Q4 comparator: system tcmalloc package (libtcmalloc_minimal.so.4) via the
+    shared hz10_bench_find_tcmalloc_lib helper, same harness as HZ10. Primary
+    comparator is tcmalloc (HZ11's target tier); hz10/mimalloc/glibc are
+    reference columns.
+```
+
+Two implementation fixes found necessary during the box (codegen, not design):
+(1) the hot helpers (size_class, cache get/pop/push, token set/lookup,
+in_resolver) must be `static inline` in headers -- without it the per-op call
+overhead left hz11 at 52M ops/s (28% of tcmalloc); inlining took it to 133M.
+(2) token_set is skipped on a cache HIT (the address's token was set at first
+refill and is not deleted on free, so it is already present) -- redundant on the
+hot path; only refill/large set tokens.
+
+Measurement (fixed*_local0, single-thread LIFO alloc/touch/free, same binary,
+LD_PRELOAD-driven, RUNS=3 median after the gate script was changed to report
+medians; hz11 counter sanity: cache hit 100%, token hit 100%, token_miss 0,
+refill 2/run):
+
+```text
+row          tcmalloc ops/s   hz11 ops/s   hz11/tcmalloc   gate (>=0.95)
+fixed16       180.11M          135.85M      0.754           MISS
+fixed64       190.68M          135.28M      0.709           MISS
+fixed256      190.73M          136.02M      0.713           MISS
+fixed4096     166.59M          136.42M      0.819           MISS
+```
+
+hz11 beats glibc (~108M), mimalloc (~117M), and hz10 (~115M) on these rows, but
+sits at 0.71-0.82 of tcmalloc.
+
+Diagnosis (why the gate misses): the remaining gap is the free-side
+token_lookup (hash + compare) that tcmalloc does not pay. tcmalloc classifies a
+free by a direct-indexed page table (addr >> shift -> span -> class), ~1-2
+cycles; hz11 must hash the pointer because its objects come from the system
+allocator at arbitrary addresses (no contiguous region to index directly). The
+hash is the cost the L0 "no pagemap route" constraint forces onto the token
+path. This is structural to the system-backed L0, not a tuning miss.
+
+Verdict: NO-GO for the fixed gate (best 0.819 on fixed4096, gate 0.95). The box
+succeeded at its purpose: it measured the front-cache ceiling and isolated the
+gap to a single, named cause (token hash vs direct-index, forced by the lack of
+a contiguous region).
+
+Next box (the lever the diagnosis points at): give HZ11 its own span/pageheap
+backing so objects live in a contiguous, directly-indexed region; then free can
+classify by direct index (like tcmalloc) instead of a token hash, closing the
+~25-30% gap. The front-end (cache + inlined hot path + token_set-skip) is kept;
+only the classification mechanism and the backing change. Do NOT claim hz11
+beats tcmalloc until that box measures it.
