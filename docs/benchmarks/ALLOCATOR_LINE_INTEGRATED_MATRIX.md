@@ -53,6 +53,7 @@ hz8
 hz8_legacy64k2
 hz8_keeprefill
 hz10
+hz10_nobump
 hz10_bump
 hz3
 hz4
@@ -66,9 +67,10 @@ same-harness measurement column, not as a public recommendation. HZ8 remains
 the current public allocator line unless a later release promotes HZ10
 separately.
 
-The `hz10_bump` column builds and uses `hakozuna-hz10/libhz10_bump.so`, an
-opt-in HZ10 lazy page-init lane (`HZ10_ENABLE_BUMP_INIT=1`). It is a measurement
-sibling, not the default HZ10 preload.
+The `hz10` column now includes lazy page initialization
+(`HZ10_ENABLE_BUMP_INIT=1`) by default. The `hz10_nobump` column builds and uses
+`hakozuna-hz10/libhz10_nobump.so` as the immediate rollback lane. The
+`hz10_bump` column remains a compatibility alias for older benchmark scripts.
 
 ## Recommended Rows
 

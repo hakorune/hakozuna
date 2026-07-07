@@ -6,6 +6,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 - [Allocator line integrated matrix: HZ3/HZ4/HZ8/HZ10, 2026-07-07](./20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md)
 - [HZ10 bump init L0, 2026-07-07](./20260707_hz10_bump_init_l0_r10/README.md)
+- [HZ10 bump default gate L1, 2026-07-07](./20260707_hz10_bump_default_gate_l1/README.md)
 - [Allocator history snapshots](./ALLOCATOR_HISTORY_SNAPSHOTS.md)
 - [Windows HZ6 Larson appcap-only baseline, 2026-06-29](./windows/paper/20260629_045702_paper_larson_windows.md)
 - [Linux x86_64 HZ6 remote allocator compare full R10, 2026-06-21](./2026-06-21_LINUX_X86_64_HZ6_REMOTE_ALLOCATOR_COMPARE_FULL_R10.md)

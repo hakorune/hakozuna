@@ -20,10 +20,11 @@
  * claim/drain path, which only runs for slots that were allocated (and thus
  * marker-cleared). free_count continues to mean total page capacity currently
  * available to the allocator, including never-bumped slots, so
- * free_count == slot_count remains the idle/reclaim predicate. Default off;
- * the preload-bump lane enables it for measurement. */
+ * free_count == slot_count remains the idle/reclaim predicate. Default on
+ * after HZ10BumpDefaultGate-L1; the preload-nobump lane disables it for
+ * immediate A/B rollback. */
 #ifndef HZ10_ENABLE_BUMP_INIT
-#define HZ10_ENABLE_BUMP_INIT 0
+#define HZ10_ENABLE_BUMP_INIT 1
 #endif
 #ifndef HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE
 #define HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE 64u

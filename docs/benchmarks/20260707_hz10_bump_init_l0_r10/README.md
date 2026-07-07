@@ -1,11 +1,15 @@
 # HZ10 Bump Init L0, RUNS=10
 
-Status: `GO(opt-in measurement) / HOLD(default)`.
+Status: `GO(opt-in measurement)` at the time of this L0 run.
+
+Follow-up: promoted to default by
+[`HZ10 bump default gate L1`](../20260707_hz10_bump_default_gate_l1/README.md)
+after macro, sanitizer, RSS-guard, and steady-state gates.
 
 `HZ10_ENABLE_BUMP_INIT=1` changes fresh-page initialization from eager
 intrusive freelist construction to lazy bump allocation. It is exposed as the
-`hz10_bump` preload sibling (`hakozuna-hz10/libhz10_bump.so`) and is default-off
-in normal HZ10 builds.
+`hz10_bump` preload sibling (`hakozuna-hz10/libhz10_bump.so`) in this run. It is
+now the default HZ10 behavior; `libhz10_nobump.so` is the rollback lane.
 
 ## Conditions
 
@@ -55,14 +59,13 @@ summary=summary.md
 
 ## Verdict
 
-`HZ10_ENABLE_BUMP_INIT=1` is a strong opt-in lane. It fixes the HZ10 local
-fixed-cost weakness relative to HZ8 on these rows and cuts page-fault pressure
-substantially. It also improves post RSS on the measured HZ10 rows because
-unused slots are not eagerly faulted/touched.
+`HZ10_ENABLE_BUMP_INIT=1` fixed the HZ10 local fixed-cost weakness relative to
+HZ8 on these rows and cut page-fault pressure substantially. It also improved
+post RSS on the measured HZ10 rows because unused slots are not eagerly
+faulted/touched.
 
-Keep it default-off until a longer macro/shim matrix and sustained run confirm
-that lazy bump initialization is stable under real application churn. The
-notable corrected invariant is that `free_count` still counts never-bumped
-slots as available capacity; active scans, retired harvest, and partial orphan
-adoption must use `hz10_freelist_page_has_capacity()` rather than checking only
+The follow-up L1 gate made it default. The notable corrected invariant is that
+`free_count` still counts never-bumped slots as available capacity; active
+scans, retired harvest, and partial orphan adoption must use
+`hz10_freelist_page_has_capacity()` rather than checking only
 `local_free_head`.

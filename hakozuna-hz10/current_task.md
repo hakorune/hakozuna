@@ -56,6 +56,9 @@ status:
       already past the original 70%+ "not first target" line. Do not open
       another sh6bench micro-speed box without a new macro-level reason.
       Product headline moves back to RSS and macro evidence breadth.
+    - HZ10BumpDefaultGate-L1 is GO. Lazy page initialization is now default
+      (`HZ10_ENABLE_BUMP_INIT=1`), with `libhz10_nobump.so` as rollback.
+      Public record: docs/benchmarks/20260707_hz10_bump_default_gate_l1/.
     - Macro width RUNS=5 now covers 7 rows: python_alloc, redis_setget,
       larson, xmalloc_test, cache_scratch, mstress, sh6bench.
       HZ10 is competitive on python/redis/larson/cache/xmalloc, with headline
@@ -157,9 +160,8 @@ status:
 
   Implementation lane:
     - LD_PRELOAD default (`libhz10.so`, `make preload`) now enables orphan +
-      partial adoption + fine size classes. Source compile-time defaults
-      remain off; this is a shim default, not a public-entry/front-cache
-      default.
+      partial adoption + fine size classes, plus bump-init lazy page
+      initialization. `libhz10_nobump.so` is the immediate bump rollback lane.
     - Keep coarse rollback as `libhz10_coarse.so` via `make preload-coarse`.
     - Keep no-orphan rollback as `libhz10_base.so` via `make preload-base`.
     - Keep existing hz10+orphan idle-only as `libhz10_orphan.so`.

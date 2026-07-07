@@ -21,7 +21,7 @@
 	bench-class-pages-scan \
 	smoke-retired-ready bench-retired-ready bench-public-entry-steady-state \
 	bench-public-entry-thread-reuse \
-	preload preload-bump preload-base preload-fine preload-front preload-coarse \
+	preload preload-bump preload-nobump preload-base preload-fine preload-front preload-coarse \
 	preload-orphan-adoption preload-orphan-partial preload-thread-stats \
 	preload-fine-size-classes preload-retired-local \
 	preload-fine-retired-local smoke-shim-api smoke-shim-foreign \
@@ -255,12 +255,18 @@ $(ROOT)/libhz10.so: $(SHIM_SRC) $(HEADERS)
 
 preload: $(ROOT)/libhz10.so
 
-# HZ10BumpInit-L0: default lane + bump-init (lazy page init) sibling for
-# measurement of the cold-start page-fault win on local-only rows.
+# HZ10BumpDefaultGate-L1: bump-init (lazy page init) is now part of the
+# default lane. Keep libhz10_bump.so as a compatibility alias for older
+# measurement scripts, and provide libhz10_nobump.so as immediate rollback.
 $(ROOT)/libhz10_bump.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_BUMP_INIT=1 $(INC) -shared -Wl,-soname,libhz10_bump.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 preload-bump: $(ROOT)/libhz10_bump.so
+
+$(ROOT)/libhz10_nobump.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION=1 -DHZ10_ENABLE_PARTIAL_ORPHAN_ADOPTION=1 -DHZ10_ENABLE_FINE_SIZE_CLASSES=1 -DHZ10_ENABLE_BUMP_INIT=0 $(INC) -shared -Wl,-soname,libhz10_nobump.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+preload-nobump: $(ROOT)/libhz10_nobump.so
 
 # Stable sibling preload artifacts for side-by-side macro matrix rows.
 $(ROOT)/libhz10_base.so: $(SHIM_SRC) $(HEADERS)

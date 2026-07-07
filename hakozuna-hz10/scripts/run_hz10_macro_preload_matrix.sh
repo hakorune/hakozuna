@@ -41,7 +41,7 @@ SH6_THREADS="${SH6_THREADS:-4}"
 BASE_PORT="${BASE_PORT:-6399}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" preload preload-front preload-thread-stats preload-coarse preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
+make -C "${ROOT}" preload preload-bump preload-nobump preload-front preload-thread-stats preload-coarse preload-base preload-fine preload-orphan-adoption preload-orphan-partial >/dev/null
 
 log="${OUTDIR}/combined.log"
 summary="${OUTDIR}/summary.tsv"
@@ -103,8 +103,8 @@ find_mimalloc_bench_bin() {
   return 1
 }
 
-declare -a alloc_names=("glibc" "hz10" "hz10-coarse" "hz10-base" "hz10+orphan")
-declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_coarse.so" "${ROOT}/libhz10_base.so" "${ROOT}/libhz10_orphan.so")
+declare -a alloc_names=("glibc" "hz10" "hz10-nobump" "hz10-bump" "hz10-coarse" "hz10-base" "hz10+orphan")
+declare -a alloc_libs=("" "${ROOT}/libhz10.so" "${ROOT}/libhz10_nobump.so" "${ROOT}/libhz10_bump.so" "${ROOT}/libhz10_coarse.so" "${ROOT}/libhz10_base.so" "${ROOT}/libhz10_orphan.so")
 declare -a compat_alloc_names=("hz10-front" "hz10-thread-stats" "hz10+fine" "hz10+orphan-partial")
 declare -a compat_alloc_libs=("${ROOT}/libhz10_front.so" "${ROOT}/libhz10_thread_stats.so" "${ROOT}/libhz10_fine.so" "${ROOT}/libhz10_orphan_partial.so")
 
@@ -165,6 +165,8 @@ sh6bench_bin="$(find_mimalloc_bench_bin sh6bench || true)"
   echo "# RUN_MSTRESS=${RUN_MSTRESS} MSTRESS_THREADS=${MSTRESS_THREADS} MSTRESS_SCALE=${MSTRESS_SCALE} MSTRESS_ITER=${MSTRESS_ITER}"
   echo "# RUN_SH6BENCH=${RUN_SH6BENCH} SH6_CALL_COUNT=${SH6_CALL_COUNT} SH6_MIN_BLOCK=${SH6_MIN_BLOCK} SH6_MAX_BLOCK=${SH6_MAX_BLOCK} SH6_THREADS=${SH6_THREADS}"
   echo "# hz10=${ROOT}/libhz10.so"
+  echo "# hz10_nobump=${ROOT}/libhz10_nobump.so"
+  echo "# hz10_bump=${ROOT}/libhz10_bump.so"
   echo "# hz10_front=${ROOT}/libhz10_front.so"
   echo "# hz10_thread_stats=${ROOT}/libhz10_thread_stats.so"
   echo "# hz10_coarse=${ROOT}/libhz10_coarse.so"
