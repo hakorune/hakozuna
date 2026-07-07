@@ -331,7 +331,7 @@ Hz10FreelistPage* hz10_public_entry_try_adopt_orphan_active(
                                         hz10_public_entry_owner_record(adopter));
     hz10_page_drain_remote(page);
 
-    if (page->local_free_head) {
+    if (hz10_freelist_page_has_capacity(page)) {
 #if HZ10_ENABLE_ORPHAN_ACTIVE_ADOPTION
       hz10_orphan_stat_add(
           class_id, &hz10_orphan_adoption_stats[class_id].adopt_count, 1u);

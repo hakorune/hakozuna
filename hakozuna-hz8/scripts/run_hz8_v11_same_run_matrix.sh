@@ -20,6 +20,8 @@ make -C "${ROOT}" preload preload-medium64k2 preload-mediumkeeprefillempty >/dev
 for alloc in "${allocator_list[@]}"; do
   if [[ "${alloc}" == "hz10" && -d "${REPO_ROOT}/hakozuna-hz10" ]]; then
     make -C "${REPO_ROOT}/hakozuna-hz10" preload >/dev/null
+  elif [[ "${alloc}" == "hz10_bump" && -d "${REPO_ROOT}/hakozuna-hz10" ]]; then
+    make -C "${REPO_ROOT}/hakozuna-hz10" preload-bump >/dev/null
   fi
 done
 "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
@@ -48,6 +50,14 @@ find_lib() {
       for p in \
         "${REPO_ROOT}/hakozuna-hz10/libhz10.so" \
         /mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10.so; do
+        [[ -f "${p}" ]] && { printf '%s\n' "${p}"; return 0; }
+      done
+      return 1
+      ;;
+    hz10_bump)
+      for p in \
+        "${REPO_ROOT}/hakozuna-hz10/libhz10_bump.so" \
+        /mnt/workdisk/public_share/hakozuna_repo/hakozuna-hz10/libhz10_bump.so; do
         [[ -f "${p}" ]] && { printf '%s\n' "${p}"; return 0; }
       done
       return 1

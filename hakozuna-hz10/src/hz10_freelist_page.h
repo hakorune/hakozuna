@@ -8,6 +8,23 @@
 #ifndef HZ10_ENABLE_STRIPE_SPREAD
 #define HZ10_ENABLE_STRIPE_SPREAD 1
 #endif
+/* HZ10BumpInit-L0: hand out fresh-page slots via a bump index instead of
+ * pre-chaining (and pre-touching) every slot at create. A fresh page starts
+ * full but unchained (local_free_head=NULL, free_count=slot_count,
+ * bump_index=0); alloc bumps one untouched slot at a time and clears its
+ * in-slot marker, so each 64KiB
+ * quantum's slots fault on first use (spread across the workload) instead of
+ * all at once in init_chain. The marker invariant is preserved: alloc clears
+ * the marker (pop already did; bump now does too, overwriting any stale value
+ * on a recycled quantum), free sets it; the marker is read only on the remote
+ * claim/drain path, which only runs for slots that were allocated (and thus
+ * marker-cleared). free_count continues to mean total page capacity currently
+ * available to the allocator, including never-bumped slots, so
+ * free_count == slot_count remains the idle/reclaim predicate. Default off;
+ * the preload-bump lane enables it for measurement. */
+#ifndef HZ10_ENABLE_BUMP_INIT
+#define HZ10_ENABLE_BUMP_INIT 0
+#endif
 #ifndef HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE
 #define HZ10_STRIPE_SPREAD_MAX_SLOT_SIZE 64u
 #endif
@@ -58,6 +75,7 @@ typedef struct Hz10FreelistPage {
   uint32_t slot_size;
   uint32_t slot_count;
   uint32_t free_count;
+  uint32_t bump_index;   /* HZ10BumpInit-L0: next untouched slot to hand out */
   uint32_t generation;    /* returned by hz10_pagemap_register() at create */
 
   /*
@@ -355,13 +373,46 @@ static inline int hz10_freelist_page_is_marked_local_free(
 
 static inline void* hz10_freelist_page_alloc(Hz10FreelistPage* page) {
   void* slot = page->local_free_head;
-  if (!slot) {
-    return NULL;
+  if (slot) {
+    page->local_free_head = *(void**)slot;
+    hz10_freelist_page_clear_local_free_marker(page, slot);
+    page->free_count -= 1u;
+    return slot;
   }
-  page->local_free_head = *(void**)slot;
-  hz10_freelist_page_clear_local_free_marker(page, slot);
-  page->free_count -= 1u;
-  return slot;
+#if HZ10_ENABLE_BUMP_INIT
+  /* Fresh-slot fast path: hand out the next untouched slot. The marker is
+   * cleared here (overwriting any stale value on a recycled quantum) so the
+   * marker invariant "set IFF on local freelist" holds for allocated slots
+   * even though init_chain no longer pre-writes it. The slot's payload line
+   * faults on this write, one slot at a time -- spread, not the burst the
+   * pre-chain paid. free_count still tracks total available capacity,
+   * including never-bumped slots, so bump allocation decrements it exactly
+   * like a freelist pop. A page that only used a prefix can still return to
+   * free_count == slot_count after that prefix is freed, allowing ordinary
+   * idle reclaim to destroy it. */
+  if (page->bump_index < page->slot_count) {
+    void* fresh = (char*)page->base +
+                  (size_t)page->bump_index * (size_t)page->slot_size;
+    page->bump_index += 1u;
+    hz10_freelist_page_clear_local_free_marker(page, fresh);
+    page->free_count -= 1u;
+    return fresh;
+  }
+#endif
+  return NULL;
+}
+
+static inline int hz10_freelist_page_has_capacity(
+    const Hz10FreelistPage* page) {
+  if (page->local_free_head) {
+    return 1;
+  }
+#if HZ10_ENABLE_BUMP_INIT
+  return page->bump_index < page->slot_count;
+#else
+  (void)page;
+  return 0;
+#endif
 }
 
 /* Same-thread fast path. Plain loads/stores only. Caller must pass a

@@ -63,6 +63,12 @@ In short:
 - **HZ10 is a newer macro/shim research candidate; it has not replaced HZ8 as
   the public recommendation.**
 
+Hakozuna is not trying to be the fastest allocator on every local hot-path
+benchmark. HZ8 is the recommended balanced line for low post-workload RSS,
+fail-closed ownership boundaries, and cross-thread free correctness. HZ10 is
+the active research line for faster allocator substrates that keep explicit
+route, ownership, and reclamation boundaries; it is not the public default yet.
+
 ## Architecture Difference / アーキテクチャの違い
 
 English summary:
@@ -253,6 +259,10 @@ Interpretation:
   integrated matrix.
 - HZ10 is the speed-oriented research candidate: stronger remote/interleaved
   throughput, with tens-of-MiB post RSS in these rows.
+- tcmalloc remains the raw-throughput leader on local hot-path rows. The
+  Hakozuna claim is not universal throughput replacement; it is an allocator
+  family exploring RSS discipline, ownership-correct routing, and explicit
+  recovery boundaries.
 - Historical HZ3/HZ4/HZ5/HZ6/HZ8 snapshots are archived in
   `docs/benchmarks/ALLOCATOR_HISTORY_SNAPSHOTS.md`.
 

@@ -194,6 +194,17 @@ static void* hz10_freelist_reserve_aligned_quantum(void) {
  * pointer to slot i-1, so the head-of-chain (last one linked, slot 0) is
  * popped first. */
 static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
+#if HZ10_ENABLE_BUMP_INIT
+  /* Bump allocator: no upfront chain/pre-touch. Set the three init fields
+   * explicitly so this does not depend on create_common's memset. Slots are
+   * handed out via bump_index in hz10_freelist_page_alloc() and fault on
+   * first use; the in-slot marker is cleared at bump and set at free.
+   * free_count still starts full because never-bumped slots are free
+   * capacity for allocation and idle reclaim. */
+  page->bump_index = 0u;
+  page->free_count = page->slot_count;
+  page->local_free_head = NULL;
+#else
   void* head = NULL;
   for (uint32_t i = page->slot_count; i > 0u; --i) {
     void* slot = (char*)page->base + (size_t)(i - 1u) * (size_t)page->slot_size;
@@ -203,6 +214,7 @@ static void hz10_freelist_page_init_chain(Hz10FreelistPage* page) {
   }
   page->local_free_head = head;
   page->free_count = page->slot_count;
+#endif
 }
 
 /* Shared by hz10_freelist_page_create_with_base() and

@@ -201,7 +201,7 @@ Hz10FreelistPage* hz10_class_pages_find_with_capacity(
   for (Hz10FreelistPage* page = list->active.head;
        page && scanned < HZ10_CLASS_PAGES_SCAN_LIMIT;
        page = page->next_in_owner_list, ++scanned) {
-    if (page->local_free_head) {
+    if (hz10_freelist_page_has_capacity(page)) {
 #if HZ10_ENABLE_ACTIVE_SCAN_STATS
       uint32_t depth = scanned + 1u;
       list->find_pages_visited_count += depth;
@@ -279,7 +279,7 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
       hz10_pooled_page_destroy(candidate);
       /* Keep draining -- more candidates may already be waiting, and
        * each is O(1), no scan cost. */
-    } else if (candidate->local_free_head) {
+    } else if (hz10_freelist_page_has_capacity(candidate)) {
       hz10_class_pages_retired_remove(list, candidate);
       list->retired_promoted_by_ready_count += 1u;
       hz10_class_pages_prepend_active_with_eviction(list, candidate);
@@ -337,7 +337,7 @@ Hz10FreelistPage* hz10_class_pages_harvest_retired_capacity(
       hz10_class_pages_retired_remove(list, node);
       list->retired_reclaimed_by_sweep_count += 1u;
       hz10_pooled_page_destroy(node);
-    } else if (node->local_free_head) {
+    } else if (hz10_freelist_page_has_capacity(node)) {
       /* Same cancel()-first requirement as the destroy branch above --
        * see hz10_retired_ready.h's bug (3): promoting this page into
        * `active` while a note_remote_free() call still believes it owns
