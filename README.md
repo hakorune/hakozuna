@@ -223,16 +223,29 @@ Guide: `docs/benchmarks/ALLOCATOR_LINE_INTEGRATED_MATRIX.md`
 Latest integrated snapshot:
 `docs/benchmarks/20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md`
 
-Current HZ-line integrated snapshot, including HZ10:
+Current integrated snapshot, including HZ10 and external allocators:
 
-| Row | HZ3 ops/s / post RSS | HZ4 ops/s / post RSS | HZ8 ops/s / post RSS | HZ10 ops/s / post RSS |
-|-----|----------------------:|----------------------:|----------------------:|-----------------------:|
-| `guard_local0` | 156.85M / 12.35 MiB | 49.01M / 131.11 MiB | **207.05M / 2.00 MiB** | 137.53M / 26.38 MiB |
-| `main_local0` | 149.31M / 15.11 MiB | 28.82M / 169.99 MiB | 117.94M / **3.50 MiB** | 118.18M / 33.75 MiB |
-| `main_interleaved_r50` | 16.86M / 163.77 MiB | 12.28M / 258.10 MiB | 10.84M / **4.33 MiB** | **20.18M** / 79.50 MiB |
-| `main_interleaved_r90` | 10.20M / 205.82 MiB | 9.75M / 275.23 MiB | 7.04M / **4.62 MiB** | **12.60M** / 89.62 MiB |
-| `small_interleaved_remote90` | 12.95M / 130.92 MiB | 11.13M / 144.87 MiB | 14.70M / **2.95 MiB** | **14.96M** / 43.75 MiB |
-| `medium_interleaved_r50` | 15.43M / 148.37 MiB | 8.68M / 237.98 MiB | 9.84M / **3.83 MiB** | **19.87M / 69.62 MiB** |
+Median ops/s:
+
+| Row | HZ3 | HZ4 | HZ8 | HZ10 | mimalloc | tcmalloc |
+|-----|----:|----:|----:|-----:|---------:|---------:|
+| `guard_local0` | 156.85M | 49.01M | 207.05M | 137.53M | 88.23M | **354.64M** |
+| `main_local0` | 149.31M | 28.82M | 117.94M | 118.18M | 21.32M | **367.54M** |
+| `main_interleaved_r50` | 16.86M | 12.28M | 10.84M | 20.18M | 5.63M | **22.22M** |
+| `main_interleaved_r90` | 10.20M | 9.75M | 7.04M | 12.60M | 4.28M | **13.90M** |
+| `small_interleaved_remote90` | 12.95M | 11.13M | 14.70M | 14.96M | 13.19M | **26.54M** |
+| `medium_interleaved_r50` | 15.43M | 8.68M | 9.84M | **19.87M** | 4.20M | 16.76M |
+
+Post-workload RSS:
+
+| Row | HZ3 | HZ4 | HZ8 | HZ10 | mimalloc | tcmalloc |
+|-----|----:|----:|----:|-----:|---------:|---------:|
+| `guard_local0` | 12.35MiB | 131.11MiB | 2.00MiB | 26.38MiB | 13.33MiB | 7.00MiB |
+| `main_local0` | 15.11MiB | 169.99MiB | 3.50MiB | 33.75MiB | 67.89MiB | 9.00MiB |
+| `main_interleaved_r50` | 163.77MiB | 258.10MiB | 4.33MiB | 79.50MiB | 190.12MiB | 68.50MiB |
+| `main_interleaved_r90` | 205.82MiB | 275.23MiB | 4.62MiB | 89.62MiB | 234.37MiB | 82.88MiB |
+| `small_interleaved_remote90` | 130.92MiB | 144.87MiB | 2.95MiB | 43.75MiB | 56.82MiB | 31.62MiB |
+| `medium_interleaved_r50` | 148.37MiB | 237.98MiB | 3.83MiB | 69.62MiB | 191.08MiB | 85.12MiB |
 
 Interpretation:
 
