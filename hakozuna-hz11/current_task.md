@@ -27,6 +27,7 @@ docs/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
+docs/HZ11_SIZE_TABLE_STATIC_INIT_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -58,13 +59,19 @@ HZ11PublicEntryFastSlowHelpers-L0:
   fixed64 attribution preserved the speed-ceiling lanes:
     token-soa 159.14M ops/s, 98.4 instr/op
     span-soa  164.91M ops/s, 100.4 instr/op
+
+HZ11SizeTableStaticInit-L1:
+  NO-GO. The lazy-init guard in hz11_size_class() is load-bearing under
+  LD_PRELOAD because ld.so can call malloc before constructors run. Removing
+  the guard classifies all sizes as class 0 from the BSS-zeroed table and
+  corrupts the heap. Kept exhaustive 1..65536 class-map smoke coverage.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed box:
-  HZ11SizeTableStaticInit-L1
+  HZ11RefillTailCall-L1
 
 Candidate cleanup:
   no active cleanup box

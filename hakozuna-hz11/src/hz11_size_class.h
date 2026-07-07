@@ -17,11 +17,16 @@
   (HZ11_MAX_CACHED_SIZE >> HZ11_QUANTUM_SHIFT) /* 4096 */
 
 extern uint8_t hz11_size_table[HZ11_SIZE_TABLE_ENTRIES];
-extern volatile int hz11_size_table_ready;
+extern int hz11_size_table_ready;
 
 void hz11_size_class_init(void);
 
-/* Hot path: inlined so malloc does not pay a call per classification. */
+/* Hot path: inlined so malloc does not pay a call per classification.
+ * HZ11SizeTableStaticInit-L1: the lazy-init check CANNOT be removed because
+ * ld.so itself calls malloc during library loading, before any constructor
+ * runs. Removing the check corrupts the heap (all sizes get class 0).
+ * The flag is non-volatile to let the compiler cache it; the write-once race
+ * is benign (idempotent init). */
 static inline uint8_t hz11_size_class(size_t size) {
   if (size == 0u) {
     size = HZ11_MIN_SIZE;

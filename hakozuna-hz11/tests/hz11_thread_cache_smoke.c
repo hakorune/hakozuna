@@ -4,6 +4,7 @@
  * hit/miss. Asserts basic counter sanity. Does NOT test double-free / interior /
  * stale (speed-mode non-goals). */
 #include "hz11.h"
+#include "hz11_size_class.h"
 
 #include <stdint.h>
 #include <stdio.h>
@@ -32,6 +33,10 @@ static int ok_fill(void* p, size_t n, uint8_t v) {
 }
 
 int main(void) {
+  /* HZ11SizeTableStaticInit-L1: the smoke links core directly (no shim
+   * constructor), so initialize the table here before any use. */
+  hz11_size_class_init();
+
   /* 1. alloc across the cached size range + large */
   static const size_t sizes[] = {16, 64, 256, 4096, 70000};
   void* ptrs[5];
@@ -101,6 +106,31 @@ int main(void) {
   CHECK(pn != NULL, "realloc(NULL,n)");
   void* pz = hz11_realloc(pn, 0);
   CHECK(pz == NULL, "realloc(p,0) returns NULL");
+
+  /* 5b. exhaustive 1..65536 size-class check.
+   * HZ11SizeTableStaticInit-L1: verify the initialized table matches the
+   * formula for EVERY size, catching table corruption or future class-map
+   * edits. Computes the expected class the same way the init loop does and
+   * compares against hz11_size_class(). */
+  for (size_t s = 1u; s <= HZ11_MAX_CACHED_SIZE; ++s) {
+    size_t size_max = s;  /* the max size for this query is s itself */
+    uint8_t expected = 0;
+    size_t slot = HZ11_MIN_SIZE;
+    while (slot < size_max && (expected + 1u) < HZ11_CLASS_COUNT) {
+      slot <<= 1u;
+      expected += 1u;
+    }
+    uint8_t got = hz11_size_class(s);
+    if (got != expected) {
+      fprintf(stderr, "FAIL: size-class mismatch at size %zu: expected %u got %u\n",
+              s, expected, got);
+      failures++;
+    }
+  }
+  /* size 0 and >64KiB edge cases */
+  CHECK(hz11_size_class(0) == 0u, "size_class(0) -> class 0");
+  CHECK(hz11_size_class(HZ11_MAX_CACHED_SIZE + 1u) == HZ11_LARGE_CLASS,
+        "size_class(>64K) -> LARGE");
 
   /* 6. counter sanity (lane-aware + counters-flag-aware).
    *   When HZ11_ENABLE_HOT_COUNTERS is off (speed lane), all hot counters are

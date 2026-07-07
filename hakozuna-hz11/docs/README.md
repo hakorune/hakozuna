@@ -44,6 +44,10 @@ HZ11_CACHE_LAYOUT_L1.md:
   SOA class-cache layout sibling; measured as a small win but NO-GO for the
   instruction-count gate
 
+HZ11_SIZE_TABLE_STATIC_INIT_L1.md:
+  NO-GO record for removing the size-class table lazy-init guard; loader-time
+  malloc before constructors makes the guard load-bearing
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
