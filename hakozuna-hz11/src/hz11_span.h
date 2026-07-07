@@ -8,7 +8,7 @@
 /* HZ11SpanBackedClassify-L1: a 4 GiB virtual arena carved into 64 KiB spans, one
  * class per span, with a flat direct-index classify table. This replaces L0's
  * system-malloc backing + token-hash classify. See
- * docs/HZ11_SPAN_BACKED_CLASSIFY_L1.md. */
+ * docs/no_go/HZ11_SPAN_BACKED_CLASSIFY_L1.md. */
 
 #define HZ11_SPAN_SHIFT 16u
 #define HZ11_SPAN_BYTES (1ul << HZ11_SPAN_SHIFT)    /* 64 KiB */

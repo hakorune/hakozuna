@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11CentralFreeListSpanReturn-L1 (measured NO-GO)
+  HZ11NoGoDocsRestructure-L0 (docs-only cleanup)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
@@ -24,17 +24,17 @@ docs/README.md
 docs/HZ11_TLS_FAST_PATH_L1.md
 docs/HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md
 docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
-docs/HZ11_CACHE_LAYOUT_L1.md
+docs/no_go/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
-docs/HZ11_MACRO_SPEED_LANE_GATE_L1.md
-docs/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
-docs/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
+docs/no_go/HZ11_MACRO_SPEED_LANE_GATE_L1.md
+docs/no_go/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
+docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
-docs/HZ11_SIZE_TABLE_STATIC_INIT_L1.md
-docs/HZ11_STATIC_CONST_SIZE_TABLE_L1.md
+docs/no_go/HZ11_SIZE_TABLE_STATIC_INIT_L1.md
+docs/no_go/HZ11_STATIC_CONST_SIZE_TABLE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -146,7 +146,7 @@ HZ11MacroFailureAttribution-L1:
 
 HZ11CentralFreeListSpanReturn-L1:
   implementation and gate added:
-    docs/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
+    docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
     hakozuna-hz11/scripts/run_hz11_span_return_gate.sh
   Purpose:
     add a new opt-in sibling, libhz11_span_return.so, behind
@@ -176,6 +176,14 @@ HZ11CentralFreeListSpanReturn-L1:
     xmalloc_test: no >5% wall regression and RSS remains low
   Decision:
     keep libhz11_span_return.so as an attribution lane only. Do not promote it.
+
+HZ11NoGoDocsRestructure-L0:
+  docs-only cleanup:
+    docs/no_go/README.md
+    docs/HZ11_NO_GO_LEDGER.md remains the short decision index
+  Decision:
+    detailed NO-GO and failed-promotion records live under docs/no_go/.
+    GO/current design docs remain directly under docs/.
 ```
 
 ## Next Step
