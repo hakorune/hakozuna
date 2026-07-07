@@ -32,6 +32,10 @@ HZ11_TLS_FAST_PATH_L1.md:
   public-entry TLS-present fast path A/B; tests whether moving resolver/init
   checks to a slow helper reduces the fixed malloc/free instruction budget
 
+HZ11_CACHE_BYTE_ACCOUNTING_GATE_L1.md:
+  opt-in no-bytes sibling lane that removes global cached-byte accounting from
+  cache pop/push to price the remaining hot body cost
+
 HZ11_NO_GO_LEDGER.md:
   decisions that should not be retried in the HZ11 hot path without new
   evidence

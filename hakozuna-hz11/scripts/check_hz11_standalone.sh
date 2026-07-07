@@ -60,10 +60,12 @@ for product in hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
                hz11_thread_cache_smoke_stats hz11_thread_cache_smoke_span_stats \
                hz11_thread_cache_smoke_top hz11_thread_cache_smoke_span_top \
                hz11_thread_cache_smoke_tlsfast hz11_thread_cache_smoke_span_tlsfast \
+               hz11_thread_cache_smoke_nobytes hz11_thread_cache_smoke_span_nobytes \
                hz11_fixed_local_bench libhz11.so libhz11_span.so \
                libhz11_stats.so libhz11_span_stats.so \
                libhz11_top.so libhz11_span_top.so \
-               libhz11_tlsfast.so libhz11_span_tlsfast.so; do
+               libhz11_tlsfast.so libhz11_span_tlsfast.so \
+               libhz11_nobytes.so libhz11_span_nobytes.so; do
   if ! grep -q "^${product}\$" .gitignore 2>/dev/null; then
     echo "[hz11-standalone] build product ${product} not in .gitignore" >&2
     exit 1

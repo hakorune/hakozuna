@@ -49,6 +49,14 @@
 #define HZ11_TLS_FASTPATH 0
 #endif
 
+/* HZ11CacheByteAccountingGate-L1: default keeps global per-thread cached-byte
+ * accounting and the HZ11_MAX_CACHED_BYTES cap. Sibling speed-ceiling lanes can
+ * build with -DHZ11_CACHE_BYTE_ACCOUNTING=0 to price that accounting cost while
+ * leaving the per-class HZ11_CACHE_CAP in place. */
+#ifndef HZ11_CACHE_BYTE_ACCOUNTING
+#define HZ11_CACHE_BYTE_ACCOUNTING 1
+#endif
+
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;
@@ -175,14 +183,18 @@ static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
     return NULL;
   }
   void* p = *--cc->top;
+#if HZ11_CACHE_BYTE_ACCOUNTING
   tc->cached_bytes -= hz11_class_slot_size(class_id);
+#endif
   return p;
 #else
   if (cc->count == 0u) {
     return NULL;
   }
   void* p = cc->items[--cc->count];
+#if HZ11_CACHE_BYTE_ACCOUNTING
   tc->cached_bytes -= hz11_class_slot_size(class_id);
+#endif
   return p;
 #endif
 }
@@ -191,6 +203,7 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
   H11ClassCache* cc = &tc->class_cache[class_id];
 #if HZ11_CACHE_TOPPTR
+#if HZ11_CACHE_BYTE_ACCOUNTING
   size_t slot = hz11_class_slot_size(class_id);
   if (cc->top < cc->items + HZ11_CACHE_CAP &&
       tc->cached_bytes + slot <= HZ11_MAX_CACHED_BYTES) {
@@ -198,8 +211,15 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
     tc->cached_bytes += slot;
     return;
   }
+#else
+  if (cc->top < cc->items + HZ11_CACHE_CAP) {
+    *cc->top++ = ptr;
+    return;
+  }
+#endif
   hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
 #else
+#if HZ11_CACHE_BYTE_ACCOUNTING
   size_t slot = hz11_class_slot_size(class_id);
   if (cc->count < HZ11_CACHE_CAP &&
       tc->cached_bytes + slot <= HZ11_MAX_CACHED_BYTES) {
@@ -207,6 +227,12 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
     tc->cached_bytes += slot;
     return;
   }
+#else
+  if (cc->count < HZ11_CACHE_CAP) {
+    cc->items[cc->count++] = ptr;
+    return;
+  }
+#endif
   hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
 #endif
 }

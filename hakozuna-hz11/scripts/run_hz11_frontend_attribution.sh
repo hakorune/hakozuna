@@ -24,6 +24,8 @@ HZ11_TOP_LIB="$ROOT/libhz11_top.so"
 HZ11_SPAN_TOP_LIB="$ROOT/libhz11_span_top.so"
 HZ11_TLSFAST_LIB="$ROOT/libhz11_tlsfast.so"
 HZ11_SPAN_TLSFAST_LIB="$ROOT/libhz11_span_tlsfast.so"
+HZ11_NOBYTES_LIB="$ROOT/libhz11_nobytes.so"
+HZ11_SPAN_NOBYTES_LIB="$ROOT/libhz11_span_nobytes.so"
 TC_LIB="${TCMALLOC_LIB:-$(hz10_bench_find_tcmalloc_lib || true)}"
 MI_LIB="${MIMALLOC_LIB:-}"
 for m in \
@@ -41,7 +43,7 @@ trap 'rm -f "$PERF_TMP"' EXIT
 
 make -C "$ROOT" preload preload-span preload-token-stats preload-span-stats \
   preload-token-top preload-span-top preload-token-tlsfast preload-span-tlsfast \
-  hz11_fixed_local_bench >/dev/null 2>&1
+  preload-token-nobytes preload-span-nobytes hz11_fixed_local_bench >/dev/null 2>&1
 BIN="$ROOT/hz11_fixed_local_bench"
 
 # perf availability check
@@ -61,10 +63,12 @@ allocators+=("glibc|")
 [[ -f "$HZ11_STATS_LIB" ]] && allocators+=("hz11-token-stats|$HZ11_STATS_LIB")
 [[ -f "$HZ11_TOP_LIB" ]] && allocators+=("hz11-token-top|$HZ11_TOP_LIB")
 [[ -f "$HZ11_TLSFAST_LIB" ]] && allocators+=("hz11-token-tlsfast|$HZ11_TLSFAST_LIB")
+[[ -f "$HZ11_NOBYTES_LIB" ]] && allocators+=("hz11-token-nobytes|$HZ11_NOBYTES_LIB")
 [[ -f "$HZ11_SPAN_LIB" ]] && allocators+=("hz11-span|$HZ11_SPAN_LIB")
 [[ -f "$HZ11_SPAN_STATS_LIB" ]] && allocators+=("hz11-span-stats|$HZ11_SPAN_STATS_LIB")
 [[ -f "$HZ11_SPAN_TOP_LIB" ]] && allocators+=("hz11-span-top|$HZ11_SPAN_TOP_LIB")
 [[ -f "$HZ11_SPAN_TLSFAST_LIB" ]] && allocators+=("hz11-span-tlsfast|$HZ11_SPAN_TLSFAST_LIB")
+[[ -f "$HZ11_SPAN_NOBYTES_LIB" ]] && allocators+=("hz11-span-nobytes|$HZ11_SPAN_NOBYTES_LIB")
 
 # --- helpers ---
 
@@ -162,8 +166,10 @@ echo
 echo "## objdump instruction counts (AUXILIARY -- LTO may merge/break symbol boundaries)"
 echo "lib            symbol        instrs"
 for lib_entry in "token|$HZ11_LIB" "token-top|$HZ11_TOP_LIB" \
-    "token-tlsfast|$HZ11_TLSFAST_LIB" "span|$HZ11_SPAN_LIB" \
-    "span-top|$HZ11_SPAN_TOP_LIB" "span-tlsfast|$HZ11_SPAN_TLSFAST_LIB"; do
+    "token-tlsfast|$HZ11_TLSFAST_LIB" "token-nobytes|$HZ11_NOBYTES_LIB" \
+    "span|$HZ11_SPAN_LIB" "span-top|$HZ11_SPAN_TOP_LIB" \
+    "span-tlsfast|$HZ11_SPAN_TLSFAST_LIB" \
+    "span-nobytes|$HZ11_SPAN_NOBYTES_LIB"; do
   lname="${lib_entry%%|*}"; lib="${lib_entry##*|}"
   for sym in malloc hz11_malloc free hz11_free; do
     c=$(count_instrs "$lib" "$sym")
