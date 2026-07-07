@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11NoGoDocsRestructure-L0 (docs-only cleanup)
+  HZ11SpanSourceAttribution-L1 (measured; attribution GO)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
@@ -30,6 +30,7 @@ docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/no_go/HZ11_MACRO_SPEED_LANE_GATE_L1.md
 docs/no_go/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
 docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
+docs/no_go/HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md
 docs/HZ11_SYS_RESOLVER_SPLIT_L0.md
 docs/HZ11_TOKEN_HELPERS_SPLIT_L0.md
 docs/HZ11_PUBLIC_ENTRY_HELPERS_L0.md
@@ -184,15 +185,40 @@ HZ11NoGoDocsRestructure-L0:
   Decision:
     detailed NO-GO and failed-promotion records live under docs/no_go/.
     GO/current design docs remain directly under docs/.
+
+HZ11SpanSourceAttribution-L1:
+  source diagnostic siblings and runner added:
+    libhz11_span_source_diag.so
+    libhz11_span_return_source_diag.so
+    hakozuna-hz11/scripts/run_hz11_span_source_attribution.sh
+  Output:
+    bench_results/hz11_span_source_attr_20260707T231924Z/summary.md
+  Verdict:
+    GO for attribution; no macro promotion.
+  Key findings:
+    larson RSS is not central-stack retention. Classes 0-3 fresh-carve current
+    spans dominate: span_create == arena_carve, span_reuse 0,
+    central_bypass_rate 1.000, and live_current_span ~= span_create.
+    sh6bench span-return wall regression is not sweep/O(n): sweep_scanned is 0,
+    while meta_lock traffic is huge, especially class 0.
+  Decision:
+    keep transfer as remote/mixed microbench lane only. Do not promote
+    span-return. Split next work into current-span pooling and metadata-lock
+    batching/removal.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  HZ11SpanSourceAttribution-L1:
-    larson reaches span_create=65536 with no central return activity; attribute
-    span source/current-span/pageheap policy and sh6bench span-return overhead.
+  HZ11CurrentSpanPoolThreadExit-L1:
+    address larson RSS by salvaging/reusing per-thread current spans on thread
+    churn or by adding a span source pool before fresh arena carve.
+
+  HZ11SpanReturnMetadataBatch-L1:
+    if span-return is retried, remove or batch per-object metadata locking;
+    sh6bench ruled out sweep/O(n) as the primary wall-time source.
+
   Keep transfer as remote/mixed microbench lane only until macro correctness is stable.
 
 Candidate cleanup:

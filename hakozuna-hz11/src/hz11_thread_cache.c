@@ -137,23 +137,36 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   void* tmp[HZ11_TRANSFER_BATCH];
   uint32_t n = hz11_transfer_remove_range(class_id, tmp, HZ11_TRANSFER_BATCH);
   if (n > 0u) {
+    hz11_span_source_diag_transfer_refill(class_id, 1u);
     HZ11_COUNT_INC(tc->refill_from_transfer);
   } else {
+    hz11_span_source_diag_transfer_refill(class_id, 0u);
     n = hz11_central_stack_remove_range(class_id, tmp, HZ11_TRANSFER_BATCH);
     if (n > 0u) {
+      hz11_span_source_diag_central_refill(class_id, 1u);
       HZ11_COUNT_INC(tc->refill_from_central);
     } else {
+      hz11_span_source_diag_central_refill(class_id, 0u);
       size_t slot = hz11_class_slot_size(class_id);
       H11SpanCurrent* cs = &tc->current[class_id];
       while (n < HZ11_TRANSFER_BATCH) {
         if (!cs->base || cs->bump_index >= cs->slot_count) {
+          if (cs->base && cs->bump_index >= cs->slot_count) {
+            hz11_span_source_diag_current_exhaust(class_id);
+          }
           char* base = (char*)hz11_span_return_pop_reusable_span(class_id);
           if (!base) {
             base = (char*)hz11_span_carve_for_class(class_id);
+            if (base) {
+              hz11_span_source_diag_arena_carve(class_id);
+            }
+          } else {
+            hz11_span_source_diag_span_reuse(class_id);
           }
           if (!base) {
             break;
           }
+          hz11_span_source_diag_current_replace(class_id);
           cs->base = base;
           cs->bump_index = 0u;
           cs->slot_count = (uint32_t)(HZ11_SPAN_BYTES / slot);

@@ -59,5 +59,5 @@ HZ11_NO_GO_LEDGER.md:
 
 no_go/README.md:
   archive index for detailed HZ11 NO-GO, failed-promotion, and attribution-only
-  documents
+  documents, including macro span-source attribution
 ```

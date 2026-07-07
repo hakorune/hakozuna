@@ -40,6 +40,10 @@
 #define HZ11_REUSABLE_SPAN_CAP 4096u
 #endif
 
+#ifndef HZ11_SPAN_SOURCE_DIAG
+#define HZ11_SPAN_SOURCE_DIAG 0
+#endif
+
 #if HZ11_TRANSFER_CENTRAL_SPAN
 
 /* Batch remove: pop up to max_n objects from the transfer cache.
@@ -75,6 +79,16 @@ uint64_t hz11_central_partial_span_count_load(void);
 uint64_t hz11_central_object_count_load(void);
 uint64_t hz11_span_return_by_class_load(uint8_t class_id);
 uint64_t hz11_central_high_water_by_class_load(uint8_t class_id);
+
+void hz11_span_source_diag_transfer_refill(uint8_t class_id, uint32_t hit);
+void hz11_span_source_diag_central_refill(uint8_t class_id, uint32_t hit);
+void hz11_span_source_diag_current_exhaust(uint8_t class_id);
+void hz11_span_source_diag_current_replace(uint8_t class_id);
+void hz11_span_source_diag_arena_carve(uint8_t class_id);
+void hz11_span_source_diag_span_reuse(uint8_t class_id);
+void hz11_span_source_diag_sweep(uint8_t class_id, uint32_t scanned);
+void hz11_span_source_diag_meta_lock(uint8_t class_id);
+void hz11_span_source_diag_dump(void);
 
 #else
 
@@ -117,6 +131,21 @@ static inline uint64_t hz11_span_return_by_class_load(uint8_t c) {
 static inline uint64_t hz11_central_high_water_by_class_load(uint8_t c) {
   (void)c; return 0u;
 }
+static inline void hz11_span_source_diag_transfer_refill(uint8_t c, uint32_t h) {
+  (void)c; (void)h;
+}
+static inline void hz11_span_source_diag_central_refill(uint8_t c, uint32_t h) {
+  (void)c; (void)h;
+}
+static inline void hz11_span_source_diag_current_exhaust(uint8_t c) { (void)c; }
+static inline void hz11_span_source_diag_current_replace(uint8_t c) { (void)c; }
+static inline void hz11_span_source_diag_arena_carve(uint8_t c) { (void)c; }
+static inline void hz11_span_source_diag_span_reuse(uint8_t c) { (void)c; }
+static inline void hz11_span_source_diag_sweep(uint8_t c, uint32_t s) {
+  (void)c; (void)s;
+}
+static inline void hz11_span_source_diag_meta_lock(uint8_t c) { (void)c; }
+static inline void hz11_span_source_diag_dump(void) {}
 
 #endif
 

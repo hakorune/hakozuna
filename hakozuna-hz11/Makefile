@@ -4,7 +4,7 @@
         preload-token-nobytes preload-span-nobytes \
         preload-token-soa preload-span-soa \
         preload-span-transfer preload-span-transfer-diag preload-span-transfer-cap \
-        preload-span-return \
+        preload-span-return preload-span-source-diag preload-span-return-source-diag \
         hz11-standalone-check clean
 
 CC ?= gcc
@@ -166,6 +166,13 @@ libhz11_span_transfer_cap.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_return.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_SPAN_RETURN=1 -DHZ11_CENTRAL_CAP=65536 $(INC) -shared -Wl,-soname,libhz11_span_return.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11SpanSourceAttribution-L1: source counters only; no production lane.
+libhz11_span_source_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_SPAN_SOURCE_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_source_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_return_source_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CENTRAL_SPAN_RETURN=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_SPAN_SOURCE_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_return_source_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 preload: libhz11.so
 preload-span: libhz11_span.so
 preload-token-stats: libhz11_stats.so
@@ -182,6 +189,8 @@ preload-span-transfer: libhz11_span_transfer.so
 preload-span-transfer-diag: libhz11_span_transfer_diag.so
 preload-span-transfer-cap: libhz11_span_transfer_cap.so
 preload-span-return: libhz11_span_return.so
+preload-span-source-diag: libhz11_span_source_diag.so
+preload-span-return-source-diag: libhz11_span_return_source_diag.so
 
 hz11-standalone-check:
 	./scripts/check_hz11_standalone.sh
@@ -201,4 +210,5 @@ clean:
 	      libhz11_nobytes.so libhz11_span_nobytes.so \
 	      libhz11_soa.so libhz11_span_soa.so \
 	      libhz11_span_transfer.so libhz11_span_transfer_diag.so \
-	      libhz11_span_transfer_cap.so libhz11_span_return.so
+	      libhz11_span_transfer_cap.so libhz11_span_return.so \
+	      libhz11_span_source_diag.so libhz11_span_return_source_diag.so

@@ -48,6 +48,9 @@ static void hz11_dump_stats_atexit(void) {
   if (getenv("HZ11_DUMP_CENTRAL_CLASSES") != NULL) {
     hz11_central_stack_dump_class_stats();
   }
+  if (getenv("HZ11_DUMP_SPAN_SOURCE") != NULL) {
+    hz11_span_source_diag_dump();
+  }
 }
 
 /* LD_PRELOAD entry points. Export the full interposition surface so foreign

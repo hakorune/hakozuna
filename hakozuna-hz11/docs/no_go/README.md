@@ -36,4 +36,9 @@ HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md:
 HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md:
   span-aware central free list and reusable span stack; fixes abort rows but
   remains NO-GO for macro promotion
+
+HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md:
+  source/current-span attribution for larson RSS and sh6bench span-return wall
+  regression; narrows the next work to current-span pooling and metadata-lock
+  batching
 ```
