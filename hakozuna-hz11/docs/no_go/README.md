@@ -41,4 +41,8 @@ HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md:
   source/current-span attribution for larson RSS and sh6bench span-return wall
   regression; narrows the next work to current-span pooling and metadata-lock
   batching
+
+HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md:
+  macro promotion gate for the thread-exit current-span pool lane; larson RSS is
+  fixed, but python_alloc/mstress still abort and sh6bench still fails wall/RSS
 ```

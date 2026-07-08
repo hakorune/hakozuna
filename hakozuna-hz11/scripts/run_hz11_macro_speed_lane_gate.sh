@@ -15,6 +15,9 @@ STAMP="${STAMP:-$(date -u +%Y%m%dT%H%M%SZ)}"
 OUTDIR="${OUTDIR:-${REPO_ROOT}/bench_results/hz11_macro_speed_lane_${STAMP}}"
 RUNS="${RUNS:-5}"
 ALLOCATORS="${ALLOCATORS:-glibc,tcmalloc,mimalloc,hz11-span-soa,hz11-span-transfer}"
+HZ11_MACRO_CANDIDATE="${HZ11_MACRO_CANDIDATE:-hz11-span-transfer}"
+HZ11_REQUIRE_SPAN_SOA_CHECK="${HZ11_REQUIRE_SPAN_SOA_CHECK:-1}"
+HZ11_COUNTER_EXPECT_INSERT_MIN="${HZ11_COUNTER_EXPECT_INSERT_MIN:-1024}"
 BUILD="${BUILD:-1}"
 
 PYTHON_LOOPS="${PYTHON_LOOPS:-80}"
@@ -55,6 +58,9 @@ Usage:
 
 Options:
   --allocators LIST   comma-separated allocators
+  --candidate NAME    HZ11 allocator to gate (default hz11-span-transfer)
+  --skip-span-soa-check
+                      do not require candidate/span-soa wall check
   --runs N            fresh process samples per workload/allocator (default 5)
   --outdir DIR        output directory
   --skip-build        do not build HZ11 lanes
@@ -73,6 +79,10 @@ while [[ $# -gt 0 ]]; do
   case "$1" in
     --allocators)
       ALLOCATORS="$2"; shift 2 ;;
+    --candidate)
+      HZ11_MACRO_CANDIDATE="$2"; shift 2 ;;
+    --skip-span-soa-check)
+      HZ11_REQUIRE_SPAN_SOA_CHECK=0; shift ;;
     --runs)
       RUNS="$2"; shift 2 ;;
     --outdir)
@@ -91,7 +101,8 @@ done
 mkdir -p "${OUTDIR}"
 
 if [[ "${BUILD}" -ne 0 ]]; then
-  make -C "${ROOT}" preload-span-soa preload-span-transfer >/dev/null
+  make -C "${ROOT}" preload-span-soa preload-span-transfer \
+    preload-span-transfer-thread-exit >/dev/null
 fi
 
 find_first_existing() {
@@ -208,6 +219,8 @@ for alloc in "${requested_allocators[@]}"; do
       add_allocator hz11-span-soa "${ROOT}/libhz11_span_soa.so" "" ;;
     hz11-span-transfer)
       add_allocator hz11-span-transfer "${ROOT}/libhz11_span_transfer.so" "" ;;
+    hz11-thread-exit)
+      add_allocator hz11-thread-exit "${ROOT}/libhz11_span_transfer_thread_exit.so" "" ;;
     /*)
       if [[ -f "${alloc}" ]]; then
         add_allocator "$(basename "${alloc}")" "${alloc}" ""
@@ -235,6 +248,9 @@ printf 'workload,allocator,run,status,exit_code,wall_sec,max_rss_kb,current_rss_
   echo "[HZ11_MACRO_SPEED_LANE] hz11_root=${ROOT}"
   echo "[HZ11_MACRO_SPEED_LANE] runs=${RUNS}"
   echo "[HZ11_MACRO_SPEED_LANE] allocators=${ALLOCATORS}"
+  echo "[HZ11_MACRO_SPEED_LANE] candidate=${HZ11_MACRO_CANDIDATE}"
+  echo "[HZ11_MACRO_SPEED_LANE] require_span_soa_check=${HZ11_REQUIRE_SPAN_SOA_CHECK}"
+  echo "[HZ11_MACRO_SPEED_LANE] counter_expect_insert_min=${HZ11_COUNTER_EXPECT_INSERT_MIN}"
   echo "[HZ11_MACRO_SPEED_LANE] tcmalloc=${tcmalloc_lib:-SKIP}"
   echo "[HZ11_MACRO_SPEED_LANE] mimalloc=${mimalloc_lib:-SKIP}"
   echo "[HZ11_MACRO_SPEED_LANE] larson=${larson_bin:-SKIP}"
@@ -358,15 +374,24 @@ allocator_env_prefix() {
   fi
 }
 
+add_hz11_diag_env() {
+  local allocator="$1"
+  local -n cmd_ref="$2"
+  case "${allocator}" in
+    hz11-span-transfer)
+      cmd_ref+=(HZ11_DUMP_STATS=1) ;;
+    hz11-thread-exit)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1) ;;
+  esac
+}
+
 run_python_alloc() {
   local allocator="$1" lib="$2" run="$3"
   local -a cmd=(env PYTHONMALLOC=malloc)
   if [[ -n "${lib}" ]]; then
     cmd+=(LD_PRELOAD="${lib}")
   fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then
-    cmd+=(HZ11_DUMP_STATS=1)
-  fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=(/usr/bin/python3 - "${PYTHON_LOOPS}")
   run_sampled python_alloc "${allocator}" "${run}" 60 "${cmd[@]}" <<'PY'
 import sys
@@ -386,7 +411,7 @@ run_larson() {
   if [[ -z "${larson_bin}" ]]; then run_skip larson "${allocator}" "${run}" "larson binary not found"; return 0; fi
   local -a cmd=(env)
   if [[ -n "${lib}" ]]; then cmd+=(LD_PRELOAD="${lib}"); fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then cmd+=(HZ11_DUMP_STATS=1); fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=("${larson_bin}" "${LARSON_SECONDS}" "${LARSON_MIN}" "${LARSON_MAX}" \
     "${LARSON_CHUNKS}" "${LARSON_ROUNDS}" "${LARSON_SEED}" "${LARSON_THREADS}")
   run_sampled larson "${allocator}" "${run}" 30 "${cmd[@]}"
@@ -397,7 +422,7 @@ run_xmalloc_test() {
   if [[ -z "${xmalloc_bin}" ]]; then run_skip xmalloc_test "${allocator}" "${run}" "xmalloc-test binary not found"; return 0; fi
   local -a cmd=(env)
   if [[ -n "${lib}" ]]; then cmd+=(LD_PRELOAD="${lib}"); fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then cmd+=(HZ11_DUMP_STATS=1); fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=("${xmalloc_bin}" -w "${XMALLOC_WORKERS}" -t "${XMALLOC_SECONDS}" -s "${XMALLOC_SIZE}")
   run_sampled xmalloc_test "${allocator}" "${run}" 30 "${cmd[@]}"
 }
@@ -410,7 +435,7 @@ run_sh6bench() {
     "${SH6_MAX_BLOCK}" "${SH6_THREADS}" >"${input}"
   local -a cmd=(env)
   if [[ -n "${lib}" ]]; then cmd+=(LD_PRELOAD="${lib}"); fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then cmd+=(HZ11_DUMP_STATS=1); fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=("${sh6bench_bin}" "${input}")
   run_sampled sh6bench "${allocator}" "${run}" 30 "${cmd[@]}"
 }
@@ -420,7 +445,7 @@ run_cache_scratch() {
   if [[ -z "${cache_scratch_bin}" ]]; then run_skip cache_scratch "${allocator}" "${run}" "cache-scratch binary not found"; return 0; fi
   local -a cmd=(env)
   if [[ -n "${lib}" ]]; then cmd+=(LD_PRELOAD="${lib}"); fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then cmd+=(HZ11_DUMP_STATS=1); fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=("${cache_scratch_bin}" "${CACHE_SCRATCH_THREADS}" "${CACHE_SCRATCH_ITERATIONS}" \
     "${CACHE_SCRATCH_OBJECT_SIZE}" "${CACHE_SCRATCH_REPETITIONS}" "${CACHE_SCRATCH_CONCURRENCY}")
   run_sampled cache_scratch "${allocator}" "${run}" 30 "${cmd[@]}"
@@ -431,7 +456,7 @@ run_mstress() {
   if [[ -z "${mstress_bin}" ]]; then run_skip mstress "${allocator}" "${run}" "mstress binary not found"; return 0; fi
   local -a cmd=(env)
   if [[ -n "${lib}" ]]; then cmd+=(LD_PRELOAD="${lib}"); fi
-  if [[ "${allocator}" == "hz11-span-transfer" ]]; then cmd+=(HZ11_DUMP_STATS=1); fi
+  add_hz11_diag_env "${allocator}" cmd
   cmd+=("${mstress_bin}" "${MSTRESS_THREADS}" "${MSTRESS_SCALE}" "${MSTRESS_ITER}")
   run_sampled mstress "${allocator}" "${run}" 30 "${cmd[@]}"
 }
@@ -456,14 +481,18 @@ for i in "${!alloc_names[@]}"; do
   done
 done
 
-python3 - "${csv}" "${summary_md}" "${RUNS}" "${ALLOCATORS}" <<'PY'
+python3 - "${csv}" "${summary_md}" "${RUNS}" "${ALLOCATORS}" \
+  "${HZ11_MACRO_CANDIDATE}" "${HZ11_REQUIRE_SPAN_SOA_CHECK}" \
+  "${HZ11_COUNTER_EXPECT_INSERT_MIN}" <<'PY'
 import csv
 import math
 import statistics
 import sys
 from collections import defaultdict
 
-src, dst, runs, allocators_arg = sys.argv[1:5]
+src, dst, runs, allocators_arg, candidate, require_span_soa_arg, counter_insert_min_arg = sys.argv[1:8]
+require_span_soa = require_span_soa_arg == "1"
+counter_insert_min = float(counter_insert_min_arg)
 rows = list(csv.DictReader(open(src, newline="")))
 
 def completed(row):
@@ -506,58 +535,60 @@ checks = []
 def check(name, ok, detail):
     checks.append((name, bool(ok), detail))
 
-transfer_failures = [r for r in rows if r["allocator"] == "hz11-span-transfer" and r["status"] in ("FAIL", "TIMEOUT")]
-check("hz11-span-transfer has no crashes/timeouts", not transfer_failures,
-      f"failures={len(transfer_failures)}")
+candidate_failures = [r for r in rows if r["allocator"] == candidate and r["status"] in ("FAIL", "TIMEOUT")]
+check(f"{candidate} has no crashes/timeouts", not candidate_failures,
+      f"failures={len(candidate_failures)}")
 
-available_vs_soa = [w for w in workloads if have(w, "hz11-span-transfer") and have(w, "hz11-span-soa")]
-within_soa = [w for w in available_vs_soa if ratio(w, "hz11-span-transfer", "hz11-span-soa") <= 1.05]
+available_vs_soa = [w for w in workloads if have(w, candidate) and have(w, "hz11-span-soa")]
+within_soa = [w for w in available_vs_soa if ratio(w, candidate, "hz11-span-soa") <= 1.05]
 need = math.ceil(len(available_vs_soa) * 0.75) if available_vs_soa else 1
-check("transfer wall time is within 5% of span-soa on >=3/4 available rows",
-      len(within_soa) >= need,
-      f"{len(within_soa)}/{len(available_vs_soa)} rows within 1.05x")
+span_soa_ok = len(within_soa) >= need if available_vs_soa else not require_span_soa
+check(f"{candidate} wall time is within 5% of span-soa on >=3/4 available rows",
+      span_soa_ok,
+      f"{len(within_soa)}/{len(available_vs_soa)} rows within 1.05x" +
+      ("" if available_vs_soa or require_span_soa else " (not requested)"))
 
-available_vs_tc = [w for w in workloads if have(w, "hz11-span-transfer") and have(w, "tcmalloc")]
-tc_wins = [w for w in available_vs_tc if ratio(w, "hz11-span-transfer", "tcmalloc") < 1.0]
+available_vs_tc = [w for w in workloads if have(w, candidate) and have(w, "tcmalloc")]
+tc_wins = [w for w in available_vs_tc if ratio(w, candidate, "tcmalloc") < 1.0]
 tc_within_low_rss = []
 for w in available_vs_tc:
-    wall_ratio = ratio(w, "hz11-span-transfer", "tcmalloc")
-    rss_ratio = ratio(w, "hz11-span-transfer", "tcmalloc", key="max_rss_kb")
+    wall_ratio = ratio(w, candidate, "tcmalloc")
+    rss_ratio = ratio(w, candidate, "tcmalloc", key="max_rss_kb")
     if wall_ratio <= 1.25 and rss_ratio < 0.90:
         tc_within_low_rss.append(w)
-check("transfer has a macro tcmalloc win or within 1.25x with lower RSS",
+check(f"{candidate} has a macro tcmalloc win or within 1.25x with lower RSS",
       bool(tc_wins or tc_within_low_rss),
       f"wins={tc_wins} within_1.25x_lower_rss={tc_within_low_rss}")
 
 rss_bad = []
 current_bad = []
 for w in available_vs_tc:
-    max_ratio = ratio(w, "hz11-span-transfer", "tcmalloc", key="max_rss_kb")
-    cur_ratio = ratio(w, "hz11-span-transfer", "tcmalloc", key="current_rss_kb")
+    max_ratio = ratio(w, candidate, "tcmalloc", key="max_rss_kb")
+    cur_ratio = ratio(w, candidate, "tcmalloc", key="current_rss_kb")
     if not math.isnan(max_ratio) and max_ratio > 1.25:
         rss_bad.append((w, max_ratio))
     if not math.isnan(cur_ratio) and cur_ratio > 1.25:
         current_bad.append((w, cur_ratio))
-check("transfer max RSS <= tcmalloc*1.25 on completed rows", not rss_bad,
+check(f"{candidate} max RSS <= tcmalloc*1.25 on completed rows", not rss_bad,
       ", ".join(f"{w}={r:.3f}" for w, r in rss_bad) or "ok")
-check("transfer current RSS <= tcmalloc*1.25 where measurable", not current_bad,
+check(f"{candidate} current RSS <= tcmalloc*1.25 where measurable", not current_bad,
       ", ".join(f"{w}={r:.3f}" for w, r in current_bad) or "ok")
 
-churn_rows = [w for w in ("larson", "xmalloc_test", "sh6bench", "cache_scratch", "mstress") if have(w, "hz11-span-transfer")]
+churn_rows = [w for w in ("larson", "xmalloc_test", "sh6bench", "cache_scratch", "mstress") if have(w, candidate)]
 counter_missing = []
 counter_not_expected = []
 counter_hit_rows = []
 for w in churn_rows:
-    items = groups[(w, "hz11-span-transfer")]
+    items = groups[(w, candidate)]
     inserted = total(items, "xfer_insert")
     hits = total(items, "xfer_hit")
-    if inserted > 0 and hits > 0:
+    if inserted >= counter_insert_min and hits > 0:
         counter_hit_rows.append(w)
-    elif inserted > 0:
+    elif inserted >= counter_insert_min:
         counter_missing.append(w)
     else:
         counter_not_expected.append(w)
-check("transfer counters fire on multi-thread/churn rows where expected",
+check(f"{candidate} counters fire on multi-thread/churn rows where expected",
       not counter_missing and bool(counter_hit_rows),
       (("hit_rows=" + ",".join(counter_hit_rows)) if counter_hit_rows else "hit_rows=none") +
       ((" missing=" + ",".join(counter_missing)) if counter_missing else "") +
@@ -575,7 +606,7 @@ def fmt(v):
 
 with open(dst, "w", encoding="utf-8") as f:
     f.write("# HZ11 Macro Speed Lane Gate L1\n\n")
-    f.write(f"Conditions: RUNS={runs}. Allocators: " + ", ".join(f"`{a}`" for a in allocators) + ".\n\n")
+    f.write(f"Conditions: RUNS={runs}. Candidate: `{candidate}`. Allocators: " + ", ".join(f"`{a}`" for a in allocators) + ".\n\n")
     f.write(f"Verdict: **{verdict}**\n\n")
     f.write("## Summary\n\n")
     f.write("| Workload | Allocator | status runs | median wall sec | median max RSS KiB | median current RSS KiB | xfer_hit | xfer_insert |\n")
@@ -596,14 +627,16 @@ with open(dst, "w", encoding="utf-8") as f:
                 f"{int(total(ok_items, 'xfer_hit'))} | {int(total(ok_items, 'xfer_insert'))} |\n"
             )
     f.write("\n## Ratios\n\n")
-    f.write("| Workload | transfer/span-soa wall | transfer/tcmalloc wall | transfer/tcmalloc max RSS | transfer/tcmalloc current RSS |\n")
-    f.write("|---|---:|---:|---:|---:|\n")
+    f.write(f"| Workload | {candidate}/span-soa wall | {candidate}/tcmalloc wall | {candidate}/tcmalloc max RSS | {candidate}/tcmalloc current RSS | {candidate}/hz11-span-transfer wall | {candidate}/hz11-span-transfer max RSS |\n")
+    f.write("|---|---:|---:|---:|---:|---:|---:|\n")
     for w in workloads:
         f.write(
-            f"| {w} | {fmt(ratio(w, 'hz11-span-transfer', 'hz11-span-soa'))} | "
-            f"{fmt(ratio(w, 'hz11-span-transfer', 'tcmalloc'))} | "
-            f"{fmt(ratio(w, 'hz11-span-transfer', 'tcmalloc', key='max_rss_kb'))} | "
-            f"{fmt(ratio(w, 'hz11-span-transfer', 'tcmalloc', key='current_rss_kb'))} |\n"
+            f"| {w} | {fmt(ratio(w, candidate, 'hz11-span-soa'))} | "
+            f"{fmt(ratio(w, candidate, 'tcmalloc'))} | "
+            f"{fmt(ratio(w, candidate, 'tcmalloc', key='max_rss_kb'))} | "
+            f"{fmt(ratio(w, candidate, 'tcmalloc', key='current_rss_kb'))} | "
+            f"{fmt(ratio(w, candidate, 'hz11-span-transfer'))} | "
+            f"{fmt(ratio(w, candidate, 'hz11-span-transfer', key='max_rss_kb'))} |\n"
         )
     f.write("\n## Gate\n\n")
     f.write("| Check | Result | Detail |\n")

@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11CurrentSpanPoolThreadExit-L1 (measured; larson GO, opt-in only)
+  HZ11MacroSpeedLaneGateWithThreadExit-L1 (measured; macro NO-GO)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
@@ -29,6 +29,7 @@ docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md
 docs/no_go/HZ11_MACRO_SPEED_LANE_GATE_L1.md
+docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md
 docs/no_go/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
 docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
 docs/no_go/HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md
@@ -227,19 +228,44 @@ HZ11CurrentSpanPoolThreadExit-L1:
     current-span suffix pooling fixes the larson RSS source. Do not promote to
     default until python_alloc, mstress, sh6bench, xmalloc_test, cache_scratch,
     and larson are rechecked together.
+
+HZ11MacroSpeedLaneGateWithThreadExit-L1:
+  macro gate re-run with thread-exit candidate:
+    hakozuna-hz11/scripts/run_hz11_macro_speed_lane_gate.sh \
+      --allocators tcmalloc,hz11-span-transfer,hz11-thread-exit \
+      --candidate hz11-thread-exit --skip-span-soa-check --runs 5
+  Output:
+    bench_results/hz11_macro_speed_lane_20260708T001420Z/summary.md
+  Verdict:
+    NO-GO for macro promotion.
+  Key results:
+    larson RSS fix holds:
+      transfer 653952 KiB, thread-exit 273280 KiB, tcmalloc 279168 KiB
+      thread-exit wall 4.132s vs tcmalloc 4.145s
+    xmalloc_test remains good:
+      thread-exit 2.024s vs tcmalloc 2.041s, max RSS 0.080x tcmalloc
+    cache_scratch remains near-parity with lower RSS.
+    But:
+      python_alloc fails 5/5
+      mstress fails 5/5
+      sh6bench remains 13.161x tcmalloc wall and 1.307x max RSS
+  Decision:
+    thread-exit pooling fixes larson only. Keep as opt-in candidate/diagnostic
+    lane. Macro promotion still blocked by central policy correctness and
+    sh6bench wall/RSS.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  HZ11MacroSpeedLaneGateWithThreadExit-L1:
-    run the macro gate against tcmalloc, hz11-span-transfer, and
-    hz11-span-transfer-thread-exit before any promotion claim.
-
   HZ11SpanReturnMetadataBatch-L1:
     if span-return is retried, remove or batch per-object metadata locking;
     sh6bench ruled out sweep/O(n) as the primary wall-time source.
+
+  HZ11CentralPolicyCorrectness-L1:
+    address python_alloc/mstress central capacity fail-fast without relying on
+    current-span thread-exit pooling.
 
   Keep transfer as remote/mixed microbench lane only until macro correctness is stable.
 
