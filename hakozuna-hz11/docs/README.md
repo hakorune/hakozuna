@@ -55,9 +55,13 @@ HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md:
   transfer/central path volume and span footprint as the active blockers
 
 HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md:
-  transfer-cache cap/batch sibling for sh6bench; eliminates central spill and
-  improves wall about 20%, but remains far slower than tcmalloc and does not
-  improve RSS
+  transfer-cache cap/batch xferwide probe for sh6bench; eliminates central
+  spill and improves wall about 20%, but remains far slower than tcmalloc and
+  must be split into batch-vs-cap before promotion decisions
+
+HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md:
+  splits the xferwide sh6bench wall improvement into transfer batch vs transfer
+  capacity; shows batch width is the wall lever, not cap/spill elimination
 
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of

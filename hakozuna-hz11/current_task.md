@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchTransferCentralPathCost-L1 is measured as attribution GO.
+  HZ11Sh6benchTransferBatchVsCap-L1 is measured as attribution GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -13,7 +13,7 @@ Current stance:
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
-  now confirms transfer/central trip volume is a wall lever, while span/page
+  now shows transfer batch/refill granularity is a wall lever, while span/page
   footprint remains unresolved.
 
 Do not do yet:
@@ -35,6 +35,7 @@ docs/HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md
 docs/HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md
 docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md
+docs/HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -169,27 +170,47 @@ HZ11Sh6benchTransferCentralPathCost-L1:
     Decision:
       transfer/central trip volume is a real wall lever, but still leaves
       sh6bench at 10.019x tcmalloc wall and about 1.318x RSS.
+
+HZ11Sh6benchTransferBatchVsCap-L1:
+  Output:
+    bench_results/hz11_sh6bench_transfer_batch_vs_cap_20260708T050133Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md
+  Verdict:
+    GO for contribution attribution; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      tcmalloc wall 0.373s, max RSS 267520 KiB
+      base wall 4.552s, max RSS 351744 KiB
+      batch32 wall 3.505s, max RSS 350848 KiB
+      cap8192 wall 4.660s, max RSS 351616 KiB
+      xferwide wall 3.602s, max RSS 351488 KiB
+    Decision:
+      HZ11_TRANSFER_BATCH=32 is the wall lever.
+      HZ11_TRANSFER_CAP=8192 eliminates xfer_spill/central_insert but does not
+      improve wall by itself.
+      RSS/span_create stay essentially unchanged.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchTransferBatchVsCap-L1
+  HZ11Sh6benchTransferBatchGranularity-L1
 
 Goal:
-  separate the sh6bench wall benefit from HZ11_TRANSFER_BATCH=32 vs
-  HZ11_TRANSFER_CAP=8192 before promoting any transfer policy idea.
+  tune or bound transfer batch/refill granularity after batch32 proved to be
+  the wall lever.
 
 Boundary:
   diagnostic siblings only; do not promote macro default until sh6bench and the
   full macro gate pass.
 
 Required evidence:
-  A/B thread-exit-cap, batch-only, cap-only, and xferwide on sh6bench; track
-  wall, RSS, xfer_hit/miss, xfer_spill, central_insert, and span_create.
+  A/B batch widths on sh6bench; track wall, RSS, xfer_hit/miss, xfer_insert,
+  xfer_spill, central_insert, central high-water, and span_create.
 
 Keep:
-  transfer as the remote/mixed microbench lane only until macro correctness is
-  stable.
+  transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
+  the full macro gate pass.
 ```

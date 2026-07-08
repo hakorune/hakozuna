@@ -7,6 +7,8 @@
         preload-span-return preload-span-source-diag preload-span-return-source-diag \
         preload-span-transfer-thread-exit preload-span-transfer-thread-exit-cap \
         preload-span-transfer-thread-exit-cap-source-diag \
+        preload-span-transfer-thread-exit-cap-batch32 \
+        preload-span-transfer-thread-exit-cap-cap8192 \
         preload-span-transfer-thread-exit-cap-xferwide \
         hz11-standalone-check clean
 
@@ -170,6 +172,12 @@ libhz11_span_transfer_thread_exit_cap_source_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_SPAN_SOURCE_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_source_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
 # HZ11Sh6benchTransferCentralPathCost-L1: transfer/central volume probe.
+libhz11_span_transfer_thread_exit_cap_batch32.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_thread_exit_cap_cap8192.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_CAP=8192 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_cap8192.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_xferwide.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_CAP=8192 -DHZ11_TRANSFER_BATCH=32 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_xferwide.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -208,6 +216,8 @@ preload-span-transfer: libhz11_span_transfer.so
 preload-span-transfer-thread-exit: libhz11_span_transfer_thread_exit.so
 preload-span-transfer-thread-exit-cap: libhz11_span_transfer_thread_exit_cap.so
 preload-span-transfer-thread-exit-cap-source-diag: libhz11_span_transfer_thread_exit_cap_source_diag.so
+preload-span-transfer-thread-exit-cap-batch32: libhz11_span_transfer_thread_exit_cap_batch32.so
+preload-span-transfer-thread-exit-cap-cap8192: libhz11_span_transfer_thread_exit_cap_cap8192.so
 preload-span-transfer-thread-exit-cap-xferwide: libhz11_span_transfer_thread_exit_cap_xferwide.so
 preload-span-transfer-diag: libhz11_span_transfer_diag.so
 preload-span-transfer-cap: libhz11_span_transfer_cap.so
@@ -235,6 +245,8 @@ clean:
 	      libhz11_span_transfer.so libhz11_span_transfer_thread_exit.so \
 	      libhz11_span_transfer_thread_exit_cap.so \
 	      libhz11_span_transfer_thread_exit_cap_source_diag.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32.so \
+	      libhz11_span_transfer_thread_exit_cap_cap8192.so \
 	      libhz11_span_transfer_thread_exit_cap_xferwide.so \
 	      libhz11_span_transfer_diag.so \
 	      libhz11_span_transfer_cap.so libhz11_span_return.so \
