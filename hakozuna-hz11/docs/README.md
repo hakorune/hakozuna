@@ -106,6 +106,11 @@ docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md:
   keeps fineclass as a sh6bench RSS research lane only because remote/mixed
   throughput/RSS/span-create tradeoffs are material
 
+docs/no_go/HZ11_MACRO_SPEED_LANE_FINE128_L1.md:
+  full macro gate for the selective fine128 candidate; correctness, larson,
+  xmalloc/cache_scratch, and sh6bench max RSS pass, but current RSS fails on
+  python_alloc and sh6bench, so fine128 is not promoted
+
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
   whole-arena eager commit as the sh6bench RSS/page-footprint lever

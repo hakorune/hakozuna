@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11SelectiveFineclassRange-L1 is measured as candidate GO for fine128.
+  HZ11MacroSpeedLaneGateWithFine128-L1 is measured as MIXED / no promotion.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -11,10 +11,10 @@ Current stance:
   not a macro default.
   libhz11_span_transfer_thread_exit_cap_batch32.so is the current sh6bench wall
   candidate.
-  libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so is the current
-  sh6bench RSS/class-packing candidate.
-  Neither lane is macro default while fineclass python_alloc current RSS and
-  remote/mixed tradeoffs remain unresolved.
+  libhz11_span_transfer_thread_exit_cap_batch32_fine128.so is the current
+  selective sh6bench RSS/class-packing candidate.
+  Global fineclass remains a sh6bench RSS research lane only.
+  Neither lane is macro default until fine128 passes the full macro gate.
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
@@ -34,7 +34,9 @@ Macro promotion blockers:
   it improves sh6bench RSS but raises RSS/span_create and loses throughput on
   several transfer-matrix rows. Selective fine128 keeps enough of the sh6bench
   RSS win to pass the focused RSS guard while avoiding the worst global
-  fineclass remote/mixed RSS expansion.
+  fineclass remote/mixed RSS expansion. Full macro gate with fine128 passes
+  correctness, larson, xmalloc/cache_scratch, and sh6bench max RSS, but current
+  RSS still fails on python_alloc and sh6bench.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -76,6 +78,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md
   docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md
+  docs/no_go/HZ11_MACRO_SPEED_LANE_FINE128_L1.md
   docs/no_go/HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md
   docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md
 
@@ -488,30 +491,60 @@ HZ11SelectiveFineclassRange-L1:
   Decision:
     Select fine128 as the next candidate. Fine256 and global fineclass remain
     attribution/research lanes, not the next general candidate.
+
+HZ11MacroSpeedLaneGateWithFine128-L1:
+  Output:
+    bench_results/hz11_macro_speed_lane_20260708T083138Z/summary.md
+  Record:
+    docs/no_go/HZ11_MACRO_SPEED_LANE_FINE128_L1.md
+  Verdict:
+    MIXED; no macro promotion.
+  Key result:
+    RUNS=5:
+      python_alloc OK 5/5, wall 0.032s vs tcmalloc 0.032s
+      mstress OK 5/5, wall 0.221s vs tcmalloc 0.192s
+      larson RSS fix holds: 273024 KiB vs tcmalloc 278912 KiB
+      xmalloc_test wall/RSS remains inside gate shape:
+        wall 2.027s vs tcmalloc 2.047s
+        max RSS 18432 KiB vs tcmalloc 195456 KiB
+      cache_scratch remains inside gate shape:
+        wall 1.177s vs tcmalloc 1.163s
+        max RSS 3456 KiB vs tcmalloc 7296 KiB
+      sh6bench:
+        wall 3.532s vs batch32 3.582s
+        max RSS 323712 KiB vs tcmalloc 259584 KiB, 1.247x
+    Blocker:
+      current RSS gate fails:
+        python_alloc 1.714x tcmalloc current RSS
+        sh6bench 1.313x tcmalloc current RSS
+  Decision:
+    fine128 remains the best sh6bench RSS candidate, but no macro promotion
+    until current-RSS gate semantics/sampling are resolved.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11MacroSpeedLaneGateWithFine128-L1
+  HZ11MacroCurrentRSSGateSemantics-L1
 
 Goal:
-  Run the full macro promotion gate for the selected fine128 candidate.
+  Decide whether the macro gate should use max RSS, current RSS, or a stabilized
+  sampled-current rule for fast/timing-sensitive rows before promoting fine128.
 
 Boundary:
-  gate only.
-  fine128 remains opt-in.
-  compare against tcmalloc, batch32, and global fineclass context.
+  diagnostics/gate semantics only.
+  no allocator policy change.
+  no promotion claim.
 
 Required evidence:
-  python_alloc/mstress correctness still pass
-  larson RSS fix holds
-  sh6bench RSS/wall gate result with fine128
-  xmalloc/cache_scratch side effects
-  python_alloc current RSS interpreted with the prior sampling artifact note
+  focused python_alloc RUNS>=10 current/max stability
+  focused sh6bench RUNS>=10 current/max stability
+  whether current RSS failure is sampler timing or steady retained footprint
+  a documented rule for promotion gates
 
 Keep:
   transfer as the remote/mixed microbench lane.
+  fine128 as the current sh6bench RSS candidate.
   global fineclass as a sh6bench RSS research lane only.
 ```
