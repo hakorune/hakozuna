@@ -73,6 +73,8 @@ mkdir -p "${OUTDIR}" "$(dirname "${BENCH_BIN}")"
 if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
     preload-span-transfer-thread-exit-cap-batch32 \
+    preload-span-transfer-thread-exit-cap-batch32-fine128 \
+    preload-span-transfer-thread-exit-cap-batch32-fine256 \
     preload-span-transfer-thread-exit-cap-batch32-fineclass >/dev/null
   "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
     -pthread -o "${BENCH_BIN}" "${REPO_ROOT}/bench/bench_matrix_malloc.c"
@@ -91,6 +93,12 @@ allocator_lib() {
     hz11-thread-exit-cap-batch32)
       bench_find_first_existing "${HZ11_BATCH32_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" ;;
+    hz11-thread-exit-cap-batch32-fine128)
+      bench_find_first_existing "${HZ11_FINE128_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128.so" ;;
+    hz11-thread-exit-cap-batch32-fine256)
+      bench_find_first_existing "${HZ11_FINE256_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256.so" ;;
     hz11-thread-exit-cap-batch32-fineclass)
       bench_find_first_existing "${HZ11_FINECLASS_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so" ;;
@@ -150,6 +158,8 @@ run_case() {
   read -r -a argv <<< "${args}"
   if [[ "${alloc}" == "hz11-span-transfer" ||
         "${alloc}" == "hz11-thread-exit-cap-batch32" ||
+        "${alloc}" == "hz11-thread-exit-cap-batch32-fine128" ||
+        "${alloc}" == "hz11-thread-exit-cap-batch32-fine256" ||
         "${alloc}" == "hz11-thread-exit-cap-batch32-fineclass" ]]; then
     env HZ11_DUMP_STATS=1 LD_PRELOAD="${lib}" "${BENCH_BIN}" "${argv[@]}" \
       >> "${log}" 2>&1

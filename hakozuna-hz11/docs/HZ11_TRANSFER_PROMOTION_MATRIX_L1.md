@@ -23,6 +23,8 @@ The script builds `libhz11_span_soa.so`, `libhz11_span_transfer.so`, and
 `bench/out/bench_matrix_malloc` unless `--skip-build` is passed.
 It also accepts optional candidate aliases such as
 `hz11-thread-exit-cap-batch32` and
+`hz11-thread-exit-cap-batch32-fine128`,
+`hz11-thread-exit-cap-batch32-fine256`, and
 `hz11-thread-exit-cap-batch32-fineclass` for tradeoff runs.
 
 Output goes under:

@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11FineclassRemoteMixedTradeoff-L1 is measured as general-candidate NO-GO.
+  HZ11SelectiveFineclassRange-L1 is measured as candidate GO for fine128.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -32,7 +32,9 @@ Macro promotion blockers:
   tiny denominator rather than a steady fineclass resident-footprint regression.
   Remote/mixed tradeoff shows global fineclass is not a clean general candidate:
   it improves sh6bench RSS but raises RSS/span_create and loses throughput on
-  several transfer-matrix rows.
+  several transfer-matrix rows. Selective fine128 keeps enough of the sh6bench
+  RSS win to pass the focused RSS guard while avoiding the worst global
+  fineclass remote/mixed RSS expansion.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -60,6 +62,7 @@ docs/HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
 docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
+docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -452,27 +455,61 @@ HZ11FineclassRemoteMixedTradeoff-L1:
   Decision:
     Keep global fineclass as a sh6bench RSS research lane only. Do not rerun a
     macro promotion gate with global fineclass as the next general candidate.
+
+HZ11SelectiveFineclassRange-L1:
+  Output:
+    bench_results/hz11_sh6bench_size_class_policy_20260708T081029Z/summary.md
+    bench_results/hz11_macro_speed_lane_20260708T081413Z/summary.md
+    bench_results/hz11_transfer_promotion_20260708T081413Z/summary.md
+    bench_results/hz11_selective_fineclass_fixed_20260708T081439Z/summary.md
+  Record:
+    docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
+  Verdict:
+    GO for fine128 as an opt-in candidate only; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      batch32 RSS 352000 KiB, wall 3.574s
+      fine128 RSS 322688 KiB, wall 3.523s
+      fine256 RSS 315264 KiB, wall 3.514s
+      global fineclass RSS 301312 KiB, wall 3.603s
+    request-to-slot waste:
+      batch32 148231845 bytes
+      fine128 119302668 bytes
+      fine256 111644881 bytes
+      global fineclass 95468881 bytes
+    remote/mixed RUNS=5:
+      fine128 removes the worst global small_remote90 RSS expansion:
+        fine128/span-transfer post RSS 0.831x
+        global/span-transfer post RSS 1.976x
+      fine256 has stronger side effects:
+        main_local0 post RSS 2.067x span-transfer
+        medium_r50 ops 0.884x span-transfer
+    fixed64/fixed256 sanity stays neutral.
+  Decision:
+    Select fine128 as the next candidate. Fine256 and global fineclass remain
+    attribution/research lanes, not the next general candidate.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11SelectiveFineclassRange-L1
+  HZ11MacroSpeedLaneGateWithFine128-L1
 
 Goal:
-  Preserve most of the sh6bench RSS/class-packing win while avoiding the
-  remote/mixed RSS/span-create expansion from global fineclass.
+  Run the full macro promotion gate for the selected fine128 candidate.
 
 Boundary:
-  size-class mapping policy only.
-  opt-in sibling lane only.
-  no macro promotion claim.
+  gate only.
+  fine128 remains opt-in.
+  compare against tcmalloc, batch32, and global fineclass context.
 
 Required evidence:
-  sh6bench RSS/wall versus batch32 and global fineclass
-  transfer matrix spot check versus span-transfer, batch32, and global fineclass
-  class-range evidence for why selected fine classes are included
+  python_alloc/mstress correctness still pass
+  larson RSS fix holds
+  sh6bench RSS/wall gate result with fine128
+  xmalloc/cache_scratch side effects
+  python_alloc current RSS interpreted with the prior sampling artifact note
 
 Keep:
   transfer as the remote/mixed microbench lane.

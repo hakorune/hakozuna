@@ -46,6 +46,10 @@ if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" \
     preload-span-transfer-thread-exit-cap-batch32 \
     preload-span-transfer-thread-exit-cap-batch32-live-diag \
+    preload-span-transfer-thread-exit-cap-batch32-fine128 \
+    preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag \
+    preload-span-transfer-thread-exit-cap-batch32-fine256 \
+    preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag \
     preload-span-transfer-thread-exit-cap-batch32-fineclass \
     preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag >/dev/null
 fi
@@ -195,6 +199,14 @@ for run in $(seq 1 "${RUNS}"); do
     "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" stats
   run_sampled hz11-thread-exit-cap-batch32-live-diag "${run}" \
     "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so" live
+  run_sampled hz11-thread-exit-cap-batch32-fine128 "${run}" \
+    "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128.so" stats
+  run_sampled hz11-thread-exit-cap-batch32-fine128-live-diag "${run}" \
+    "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so" live
+  run_sampled hz11-thread-exit-cap-batch32-fine256 "${run}" \
+    "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256.so" stats
+  run_sampled hz11-thread-exit-cap-batch32-fine256-live-diag "${run}" \
+    "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so" live
   run_sampled hz11-thread-exit-cap-batch32-fineclass "${run}" \
     "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so" stats
   run_sampled hz11-thread-exit-cap-batch32-fineclass-live-diag "${run}" \
@@ -230,8 +242,12 @@ def status(items):
 order=[
     "tcmalloc",
     "hz11-thread-exit-cap-batch32",
+    "hz11-thread-exit-cap-batch32-fine128",
+    "hz11-thread-exit-cap-batch32-fine256",
     "hz11-thread-exit-cap-batch32-fineclass",
     "hz11-thread-exit-cap-batch32-live-diag",
+    "hz11-thread-exit-cap-batch32-fine128-live-diag",
+    "hz11-thread-exit-cap-batch32-fine256-live-diag",
     "hz11-thread-exit-cap-batch32-fineclass-live-diag",
 ]
 base_wall=med(sg.get("tcmalloc",[]),"wall_sec")
@@ -249,7 +265,13 @@ with open(sys.argv[5],"w") as f:
         wall=med(items,"wall_sec"); rss=med(items,"max_rss_kb"); cur=med(items,"current_rss_kb")
         f.write(f"| {alloc} | {status(items)} | {fmt(wall)} | {fmt(wall/base_wall if wall and base_wall else None)} | {fmt(rss)} | {fmt(rss/base_rss if rss and base_rss else None)} | {fmt(cur)} | {total(items,'xfer_hit')} | {total(items,'xfer_miss')} | {total(items,'xfer_insert')} | {total(items,'xfer_spill')} | {total(items,'central_insert')} | {total(items,'span_create')} |\n")
     f.write("\n## Request To Slot Class Packing\n")
-    for alloc in ("hz11-thread-exit-cap-batch32-live-diag", "hz11-thread-exit-cap-batch32-fineclass-live-diag"):
+    live_allocs=[
+        "hz11-thread-exit-cap-batch32-live-diag",
+        "hz11-thread-exit-cap-batch32-fine128-live-diag",
+        "hz11-thread-exit-cap-batch32-fine256-live-diag",
+        "hz11-thread-exit-cap-batch32-fineclass-live-diag",
+    ]
+    for alloc in live_allocs:
         f.write(f"\n### {alloc}\n\n")
         f.write("| class | slot | alloc total | free total | live high | requested bytes high | slot bytes high | request-to-slot waste | waste ratio | span create high | span capacity bytes | span internal waste |\n")
         f.write("|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
@@ -280,7 +302,7 @@ with open(sys.argv[5],"w") as f:
     f.write("\n## Source And Central Class Totals\n\n")
     f.write("| allocator | class | arena carve | span reuse | live current span | created high water | transfer refill hit | transfer refill miss | central final count | central high water |\n")
     f.write("|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
-    for alloc in ("hz11-thread-exit-cap-batch32-live-diag", "hz11-thread-exit-cap-batch32-fineclass-live-diag"):
+    for alloc in live_allocs:
         classes=sorted({cls for a, cls in set(so) | set(cg) if a == alloc}, key=lambda x:int(x))
         for cls in classes:
             si=so.get((alloc, cls), []); ci=cg.get((alloc, cls), [])

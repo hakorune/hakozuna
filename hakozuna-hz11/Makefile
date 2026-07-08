@@ -12,6 +12,10 @@
         preload-span-transfer-thread-exit-cap-batch32-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-fineclass \
         preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag \
+        preload-span-transfer-thread-exit-cap-batch32-fine128 \
+        preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag \
+        preload-span-transfer-thread-exit-cap-batch32-fine256 \
+        preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-span-reuse \
         preload-span-transfer-thread-exit-cap-batch32-span-reuse-source-diag \
         preload-span-transfer-thread-exit-cap-batch32-nohuge \
@@ -200,6 +204,19 @@ libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so: $(SHIM_SRC) $(HEADER
 libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11SelectiveFineclassRange-L1: narrower fine-class candidates.
+libhz11_span_transfer_thread_exit_cap_batch32_fine128.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_thread_exit_cap_batch32_fine256.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=256u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine256.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=256u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_CENTRAL_SPAN_REUSE=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -264,6 +281,10 @@ preload-span-transfer-thread-exit-cap-batch32-source-diag: libhz11_span_transfer
 preload-span-transfer-thread-exit-cap-batch32-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-fineclass: libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so
 preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so
+preload-span-transfer-thread-exit-cap-batch32-fine128: libhz11_span_transfer_thread_exit_cap_batch32_fine128.so
+preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so
+preload-span-transfer-thread-exit-cap-batch32-fine256: libhz11_span_transfer_thread_exit_cap_batch32_fine256.so
+preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-span-reuse: libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so
 preload-span-transfer-thread-exit-cap-batch32-span-reuse-source-diag: libhz11_span_transfer_thread_exit_cap_batch32_span_reuse_source_diag.so
 preload-span-transfer-thread-exit-cap-batch32-nohuge: libhz11_span_transfer_thread_exit_cap_batch32_nohuge.so
@@ -303,6 +324,10 @@ clean:
 	      libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine128.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine256.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_span_reuse_source_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_nohuge.so \

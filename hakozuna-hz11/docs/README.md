@@ -91,6 +91,11 @@ HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md:
   gate miss; treats the small miss as a sampling artifact on a tiny denominator
   rather than a steady fineclass resident-footprint regression
 
+HZ11_SELECTIVE_FINECLASS_RANGE_L1.md:
+  opt-in selective fineclass range box; adds fine128/fine256 siblings, selects
+  fine128 as the next candidate because it brings focused sh6bench RSS inside
+  the guard while avoiding the worst global-fineclass remote/mixed RSS expansion
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

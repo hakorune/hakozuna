@@ -104,6 +104,8 @@ if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
     preload-span-transfer-thread-exit preload-span-transfer-thread-exit-cap \
     preload-span-transfer-thread-exit-cap-batch32 \
+    preload-span-transfer-thread-exit-cap-batch32-fine128 \
+    preload-span-transfer-thread-exit-cap-batch32-fine256 \
     preload-span-transfer-thread-exit-cap-batch32-fineclass >/dev/null
 fi
 
@@ -227,6 +229,10 @@ for alloc in "${requested_allocators[@]}"; do
       add_allocator hz11-thread-exit-cap "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" "" ;;
     hz11-thread-exit-cap-batch32)
       add_allocator hz11-thread-exit-cap-batch32 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" "" ;;
+    hz11-thread-exit-cap-batch32-fine128)
+      add_allocator hz11-thread-exit-cap-batch32-fine128 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128.so" "" ;;
+    hz11-thread-exit-cap-batch32-fine256)
+      add_allocator hz11-thread-exit-cap-batch32-fine256 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256.so" "" ;;
     hz11-thread-exit-cap-batch32-fineclass)
       add_allocator hz11-thread-exit-cap-batch32-fineclass "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so" "" ;;
     /*)
@@ -394,6 +400,12 @@ add_hz11_diag_env() {
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
         HZ11_DUMP_CENTRAL_CLASSES=1) ;;
     hz11-thread-exit-cap-batch32)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
+        HZ11_DUMP_CENTRAL_CLASSES=1) ;;
+    hz11-thread-exit-cap-batch32-fine128)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
+        HZ11_DUMP_CENTRAL_CLASSES=1) ;;
+    hz11-thread-exit-cap-batch32-fine256)
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
         HZ11_DUMP_CENTRAL_CLASSES=1) ;;
     hz11-thread-exit-cap-batch32-fineclass)
