@@ -13,6 +13,7 @@
         preload-span-transfer-thread-exit-cap-batch32-fineclass \
         preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-fine128 \
+        preload-span-transfer-thread-exit-cap-batch32-fine128-rseq \
         preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-fine256 \
         preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag \
@@ -42,7 +43,7 @@ INC := -I$(ROOT)/include -I$(ROOT)/src
 CORE_SRC := $(ROOT)/src/hz11_size_class.c $(ROOT)/src/hz11_thread_cache.c \
             $(ROOT)/src/hz11_public_entry.c $(ROOT)/src/hz11_span.c \
             $(ROOT)/src/hz11_sys_alloc.c $(ROOT)/src/hz11_transfer_cache.c \
-            $(ROOT)/src/hz11_live_footprint.c
+            $(ROOT)/src/hz11_live_footprint.c $(ROOT)/src/hz11_percpu_cache.c
 SHIM_SRC := $(ROOT)/src/hz11_shim.c $(CORE_SRC)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 
@@ -209,6 +210,13 @@ libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so: $(SHIM_SRC
 libhz11_span_transfer_thread_exit_cap_batch32_fine128.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11PerCpuRseqCachePrototype-L2: rseq-selected LOCKED per-CPU cache on fine128.
+# rseq selects the current CPU only; slab mutation is a per-CPU spinlock. This is
+# NOT a lock-free rseq critical section (deferred to HZ11PerCpuRseqSingleCommitCS-L2).
+# Opt-in only; fine128, span-transfer, and the default path are unchanged.
+libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_PERCPU_RSEQ=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -283,6 +291,7 @@ preload-span-transfer-thread-exit-cap-batch32-live-diag: libhz11_span_transfer_t
 preload-span-transfer-thread-exit-cap-batch32-fineclass: libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so
 preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-fine128: libhz11_span_transfer_thread_exit_cap_batch32_fine128.so
+preload-span-transfer-thread-exit-cap-batch32-fine128-rseq: libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-fine256: libhz11_span_transfer_thread_exit_cap_batch32_fine256.so
 preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so
@@ -326,6 +335,7 @@ clean:
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine256.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so \

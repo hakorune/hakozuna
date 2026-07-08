@@ -2,11 +2,16 @@
 
 ```text
 Active status:
-  HZ11PerCpuRseqCacheReadiness-L1 is the active next step (GO to design the L2
-  per-CPU/rseq prototype boundary; NOT implemented in this box; NOT adopted; not a
-  claim that rseq fixes sh6bench). See docs/HZ11_PERCPU_RSEQ_CACHE_READINESS_L1.md.
+  HZ11PerCpuRseqCachePrototype-L2 (locked per-CPU cache) is NO-GO for the
+  CPU-locality hypothesis: the locked lane REGRESSED sh6bench 3.66x vs fine128
+  (12.917s vs 3.527s) -- per-op spinlock overhead dominated even though the slab
+  cut transfer/central traffic. Keep fine128 as the candidate; do NOT pursue the
+  lock-free rseq CS. Correctness held (all macro rows OK:5; layer self-enables).
+  See docs/HZ11_PERCPU_RSEQ_CACHE_PROTOTYPE_L2.md.
+  HZ11PerCpuRseqCacheReadiness-L1 remains the completed boundary/rollback/gate
+  reference for this prototype. See docs/HZ11_PERCPU_RSEQ_CACHE_READINESS_L1.md.
   HZ11PaperPositioning-L1 is the current HZ11 line statement (GO for
-  positioning; no default promotion; per-CPU/rseq not started). See
+  positioning; no default promotion). See
   docs/HZ11_PAPER_POSITIONING_L1.md.
   HZ11Fine128CandidatePositioning-L1 is documented as GO. No default promotion.
 

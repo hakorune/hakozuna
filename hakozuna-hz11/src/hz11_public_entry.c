@@ -1,6 +1,7 @@
 #include "hz11_public_entry.h"
 #include "hz11_live_footprint.h"
 #include "hz11_transfer_cache.h"
+#include "hz11_percpu_cache.h"
 
 #include <string.h>
 
@@ -19,6 +20,19 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   if (class_id == HZ11_LARGE_CLASS) {
     return hz11_sys_malloc(size); /* large: system; free misses arena -> sys_free */
   }
+#if HZ11_PERCPU_RSEQ
+  /* Per-CPU front cache (locked prototype): rseq-selected CPU-local slab for
+   * eligible small classes, before the thread cache. pop self-probes and
+   * self-disables, so call it unconditionally for eligible classes. */
+  if (class_id < HZ11_PERCPU_NCLASSES) {
+    void* q = NULL;
+    if (hz11_percpu_pop(class_id, &q)) {
+      HZ11_COUNT_INC(tc->malloc_hit);
+      hz11_live_footprint_alloc(class_id, q, size);
+      return q;
+    }
+  }
+#endif
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
     HZ11_COUNT_INC(tc->malloc_hit);
@@ -72,6 +86,16 @@ static inline void hz11_free_fast_with_tc(H11ThreadCache* tc, void* ptr) {
     HZ11_COUNT_INC(tc->free_count);
     HZ11_COUNT_INC(tc->direct_hit_count);
     hz11_live_footprint_free(class_id, ptr);
+#if HZ11_PERCPU_RSEQ
+    /* Per-CPU front cache (locked prototype): push to current CPU-local slab for
+     * eligible small classes; on overflow fall through to the thread cache. push
+     * self-probes and self-disables, so call it unconditionally for eligible. */
+    if (class_id < HZ11_PERCPU_NCLASSES) {
+      if (hz11_percpu_push(class_id, ptr)) {
+        return;
+      }
+    }
+#endif
     hz11_thread_cache_push(tc, class_id, ptr);
     return;
   }

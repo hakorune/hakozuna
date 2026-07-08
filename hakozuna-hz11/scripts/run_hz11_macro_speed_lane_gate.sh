@@ -231,6 +231,8 @@ for alloc in "${requested_allocators[@]}"; do
       add_allocator hz11-thread-exit-cap-batch32 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" "" ;;
     hz11-thread-exit-cap-batch32-fine128)
       add_allocator hz11-thread-exit-cap-batch32-fine128 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128.so" "" ;;
+    hz11-thread-exit-cap-batch32-fine128-rseq)
+      add_allocator hz11-thread-exit-cap-batch32-fine128-rseq "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so" "" ;;
     hz11-thread-exit-cap-batch32-fine256)
       add_allocator hz11-thread-exit-cap-batch32-fine256 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256.so" "" ;;
     hz11-thread-exit-cap-batch32-fineclass)
@@ -403,6 +405,9 @@ add_hz11_diag_env() {
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
         HZ11_DUMP_CENTRAL_CLASSES=1) ;;
     hz11-thread-exit-cap-batch32-fine128)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
+        HZ11_DUMP_CENTRAL_CLASSES=1) ;;
+    hz11-thread-exit-cap-batch32-fine128-rseq)
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
         HZ11_DUMP_CENTRAL_CLASSES=1) ;;
     hz11-thread-exit-cap-batch32-fine256)

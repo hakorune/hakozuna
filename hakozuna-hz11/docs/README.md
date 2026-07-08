@@ -131,6 +131,14 @@ HZ11_PERCPU_RSEQ_CACHE_READINESS_L1.md:
   span-transfer stays the dedicated remote/mixed lane); GO to design only, not to
   implement or adopt, not a claim that rseq fixes sh6bench
 
+HZ11_PERCPU_RSEQ_CACHE_PROTOTYPE_L2.md:
+  locked per-CPU cache prototype (rseq selects the CPU only; per-CPU spinlock;
+  no hand-rolled rseq CS). NO-GO for the CPU-locality hypothesis: the locked lane
+  regressed sh6bench 3.66x vs fine128 (lock overhead dominated, though the slab
+  did cut transfer/central traffic). Correctness held. Keep fine128; do NOT pursue
+  the lock-free rseq CS. Proves a locked per-CPU layer is a net loss; does NOT
+  prove lock-free locality would lose (measurement confounded by lock cost)
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
