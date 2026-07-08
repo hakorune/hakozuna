@@ -20,6 +20,8 @@
         preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap256-bytes \
         preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap512-bytes \
         preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap1024-bytes \
+        preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap768-bytes \
+        preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap1024-bytes1m \
         preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-fine256 \
         preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag \
@@ -250,6 +252,15 @@ libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap512_bytes.so: $(SH
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=1 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_CACHE_CAP=1024u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11ThreadCacheCapacityMiddleLane-L1: middle points between fine128 (generalist) and
+# cap1024-bytes (sh6bench specialist) -- looking for a general candidate that improves
+# sh6bench without breaking remote/mixed. Flag-only variants; no code/default change.
+libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=1 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_CACHE_CAP=768u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=1 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_CACHE_CAP=1024u -DHZ11_MAX_CACHED_BYTES=1048576u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -331,6 +342,8 @@ preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap256: libhz11_span_
 preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap256-bytes: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap256_bytes.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap512-bytes: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap512_bytes.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap1024-bytes: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
+preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap768-bytes: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so
+preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap1024-bytes1m: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-fine256: libhz11_span_transfer_thread_exit_cap_batch32_fine256.so
 preload-span-transfer-thread-exit-cap-batch32-fine256-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so
@@ -381,6 +394,8 @@ clean:
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap256_bytes.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap512_bytes.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine256.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine256_live_diag.so \

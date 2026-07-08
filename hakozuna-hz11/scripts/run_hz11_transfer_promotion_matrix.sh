@@ -102,6 +102,15 @@ allocator_lib() {
     hz11-thread-exit-cap-batch32-fine128-cachecap1024-bytes)
       bench_find_first_existing "${HZ11_FINE128_CAP1024_BYTES_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so" ;;
+    hz11-thread-exit-cap-batch32-fine128-cachecap512-bytes)
+      bench_find_first_existing "${HZ11_FINE128_CAP512_BYTES_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap512_bytes.so" ;;
+    hz11-thread-exit-cap-batch32-fine128-cachecap768-bytes)
+      bench_find_first_existing "${HZ11_FINE128_CAP768_BYTES_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so" ;;
+    hz11-thread-exit-cap-batch32-fine128-cachecap1024-bytes1m)
+      bench_find_first_existing "${HZ11_FINE128_CAP1024_BYTES1M_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so" ;;
     hz11-thread-exit-cap-batch32-fine256)
       bench_find_first_existing "${HZ11_FINE256_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fine256.so" ;;

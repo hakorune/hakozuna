@@ -2,6 +2,13 @@
 
 ```text
 Active status:
+  HZ11ThreadCacheCapacityMiddleLane-L1: NO-GO for a middle general candidate. No
+  uniform CAP 512-1024 (+byte cap) keeps remote/mixed ~= fine128 -- even cap512-bytes
+  (sh6bench only 3.29x) collapses fine128's medium-row dominance (4.5x/5.8x -> ~1.5x
+  tcmalloc). The big-CAP vs remote/mixed-medium tension is fundamental, not tunable.
+  Lane split confirmed: fine128 generalist, cap1024/cap768-bytes sh6bench specialist,
+  span-transfer remote/mixed. Next lever: class-range CAP (code change, follow-up). See
+  docs/HZ11_THREAD_CACHE_CAPACITY_MIDDLE_LANE_L1.md.
   HZ11Cap1024BytesCandidatePositioning-L1: MIXED. cap1024-bytes fixes sh6bench
   (1.21x tcmalloc on the synthetic macro gate) but regresses remote/mixed vs fine128
   (medium rows 4.3x->1.5x, 5.9x->1.6x; RSS up on several rows). So cap1024-bytes is a

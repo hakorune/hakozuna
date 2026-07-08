@@ -26,9 +26,9 @@ recommended opt-in macro speed-lane candidate:
 
 sh6bench/macro-churn specialist lane:
   libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
-  reaches near tcmalloc sh6bench wall on the synthetic macro gate, but
-  regresses remote/mixed versus fine128; not the general recommendation and not
-  default
+  or libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so
+  reaches near tcmalloc sh6bench wall on the synthetic macro gate, but regresses
+  remote/mixed versus fine128; not the general recommendation and not default
 
 identity:
   tcmalloc-speed competitor
@@ -52,6 +52,7 @@ docs/HZ11_POSITIONING_L0.md
 docs/HZ11_THREAD_CACHE_FAST_PATH_L0.md
 docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md
+docs/HZ11_THREAD_CACHE_CAPACITY_MIDDLE_LANE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 

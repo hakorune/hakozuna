@@ -77,7 +77,9 @@ for product in hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap256.so \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap256_bytes.so \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap512_bytes.so \
-               libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so; do
+               libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so \
+               libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so \
+               libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so; do
   if ! grep -q "^${product}\$" .gitignore 2>/dev/null; then
     echo "[hz11-standalone] build product ${product} not in .gitignore" >&2
     exit 1

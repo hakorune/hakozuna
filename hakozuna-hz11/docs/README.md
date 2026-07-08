@@ -172,6 +172,15 @@ HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md:
   opt-in macro candidate; span-transfer stays the remote/mixed lane (3-way split).
   Rollback = LD_PRELOAD fine128 instead. No default change, no claim broadening
 
+HZ11_THREAD_CACHE_CAPACITY_MIDDLE_LANE_L1.md:
+  searches for a middle CAP (512/768) or tighter byte cap (1 MiB) that improves sh6bench
+  without breaking remote/mixed -- a true general candidate. NO-GO: no uniform CAP
+  512-1024 (+byte) keeps remote/mixed ~= fine128. sh6bench win saturates at CAP768
+  (1.24x), but even cap512-bytes collapses fine128's medium-row dominance (4.5x/5.8x ->
+  ~1.5x tcmalloc); the big-CAP vs remote/mixed-medium tension is fundamental. Lane split
+  confirmed: fine128 generalist, cap1024/cap768-bytes sh6bench specialist. Next lever:
+  class-range CAP (code change, follow-up). Adds cap768-bytes + cap1024-bytes1m siblings
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
