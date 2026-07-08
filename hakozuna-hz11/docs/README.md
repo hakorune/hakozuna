@@ -86,6 +86,11 @@ HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md:
   attribution; keeps batch32 transfer policy fixed and requires focused
   correctness before any macro gate
 
+docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
+  full macro gate for the batch32 fineclass candidate; keeps the useful
+  sh6bench RSS reduction but does not promote because python_alloc current RSS
+  misses the macro threshold
+
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
   whole-arena eager commit as the sh6bench RSS/page-footprint lever

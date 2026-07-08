@@ -56,6 +56,11 @@ HZ11_MACRO_SPEED_LANE_BATCH32_L1.md:
   macro promotion gate for the batch32 candidate; keeps correctness and larson
   RSS while improving sh6bench wall, but sh6bench wall/RSS still block promotion
 
+HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
+  macro promotion gate for the batch32 fineclass candidate; keeps correctness,
+  larson RSS, xmalloc/cache_scratch, and improves sh6bench RSS, but misses the
+  macro gate on python_alloc current RSS
+
 HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md:
   central-only full-span reuse under batch32; avoids transfer metadata locks but
   does not materially reduce span_create, arena_carve, or sh6bench RSS

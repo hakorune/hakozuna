@@ -71,7 +71,8 @@ done
 mkdir -p "${OUTDIR}" "$(dirname "${BENCH_BIN}")"
 
 if [[ "${BUILD}" -ne 0 ]]; then
-  make -C "${ROOT}" preload-span-soa preload-span-transfer >/dev/null
+  make -C "${ROOT}" preload-span-soa preload-span-transfer \
+    preload-span-transfer-thread-exit-cap-batch32-fineclass >/dev/null
   "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
     -pthread -o "${BENCH_BIN}" "${REPO_ROOT}/bench/bench_matrix_malloc.c"
 fi
@@ -86,6 +87,9 @@ allocator_lib() {
       bench_find_first_existing "${HZ11_SPAN_SOA_SO:-}" "${ROOT}/libhz11_span_soa.so" ;;
     hz11-span-transfer)
       bench_find_first_existing "${HZ11_SPAN_TRANSFER_SO:-}" "${ROOT}/libhz11_span_transfer.so" ;;
+    hz11-thread-exit-cap-batch32-fineclass)
+      bench_find_first_existing "${HZ11_FINECLASS_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so" ;;
     /*)
       bench_find_first_existing "${alloc}" ;;
     *)
@@ -140,7 +144,8 @@ run_case() {
   } > "${log}"
 
   read -r -a argv <<< "${args}"
-  if [[ "${alloc}" == "hz11-span-transfer" ]]; then
+  if [[ "${alloc}" == "hz11-span-transfer" ||
+        "${alloc}" == "hz11-thread-exit-cap-batch32-fineclass" ]]; then
     env HZ11_DUMP_STATS=1 LD_PRELOAD="${lib}" "${BENCH_BIN}" "${argv[@]}" \
       >> "${log}" 2>&1
   else
