@@ -2,6 +2,9 @@
 
 ```text
 Active status:
+  HZ11PaperPositioning-L1 is the current HZ11 line statement (GO for
+  positioning; no default promotion; per-CPU/rseq not started). See
+  docs/HZ11_PAPER_POSITIONING_L1.md.
   HZ11Fine128CandidatePositioning-L1 is documented as GO. No default promotion.
 
 Current stance:

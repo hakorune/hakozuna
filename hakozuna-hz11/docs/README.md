@@ -116,6 +116,13 @@ HZ11_FINE128_CANDIDATE_POSITIONING_L1.md:
   as the recommended opt-in macro candidate, span-transfer as the remote/mixed
   microbench lane, global fineclass as research-only, and default unchanged
 
+HZ11_PAPER_POSITIONING_L1.md:
+  current HZ11 line statement; converts the fine128 evidence chain into a
+  publishable narrative (near-parity-or-better wall on 5/6 macro rows, major RSS
+  wins, remote/mixed microbench dominance, one open sh6bench pathology), states
+  the claim boundary, and defines the exact gate per-CPU/rseq must earn before
+  it is adopted; no policy change, no default promotion
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
