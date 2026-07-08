@@ -76,6 +76,11 @@ HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md:
   spans are almost full after HZ11 class rounding, shifting the remaining RSS
   question toward requested-size distribution, class packing, and residency
 
+HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md:
+  diagnostic-only requested-size versus HZ11 slot-size observation under
+  batch32; attributes the sh6bench RSS gap primarily to power-of-two
+  class-packing waste
+
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
   whole-arena eager commit as the sh6bench RSS/page-footprint lever

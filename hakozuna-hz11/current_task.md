@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchLiveFootprintObservation-L1 is measured as diagnostic GO.
+  HZ11Sh6benchRequestSizeClassPackingObservation-L1 is measured as diagnostic GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -16,12 +16,12 @@ Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
   shows batch32 is a useful wall lever with no obvious macro side effects, but
-  sh6bench span/page footprint is now attributed to live HZ11 slot footprint
-  under power-of-two classes plus page residency. Central-only full-span reuse
-  did not materially reduce span_create, arena_carve, or RSS. MADV_NOHUGEPAGE
-  also did not move RSS or page faults. Live-footprint observation shows active
-  spans are almost full after class rounding, so span-internal waste is not the
-  main remaining RSS lever.
+  sh6bench span/page footprint is now attributed primarily to HZ11 power-of-two
+  class-packing waste. Central-only full-span reuse did not materially reduce
+  span_create, arena_carve, or RSS. MADV_NOHUGEPAGE also did not move RSS or
+  page faults. Live-footprint observation shows active spans are almost full
+  after class rounding, and requested-size observation shows requested payload
+  high-water is far below HZ11 slot high-water.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -46,6 +46,7 @@ docs/HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md
 docs/HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md
 docs/HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md
+docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -315,29 +316,44 @@ HZ11Sh6benchLiveFootprintObservation-L1:
     remaining RSS is live HZ11 slot footprint / class packing / residency, not
     central retention, current-span reserve, or span-internal waste after class
     rounding.
+
+HZ11Sh6benchRequestSizeClassPackingObservation-L1:
+  Output:
+    bench_results/hz11_sh6bench_request_class_packing_20260708T071205Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
+  Verdict:
+    GO for diagnostics only; no optimization or macro promotion.
+  Key result:
+    batch32 wall 3.549s, max RSS 350208 KiB
+    live-diag wall 10.149s, max RSS 388352 KiB due to side-table overhead
+    requested bytes high-water 211116531
+    HZ11 slot bytes high-water 359344128
+    request-to-slot waste 148227597 bytes, 41.2%
+  Decision:
+    sh6bench RSS gap is primarily power-of-two class-packing waste.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchRequestSizeClassPackingObservation-L1
+  HZ11Sh6benchSizeClassPolicyCandidate-L1
 
 Goal:
-  Measure requested-size distribution against HZ11 power-of-two slot classes
-  under batch32 before changing class packing or span/page policy.
+  Add an opt-in finer size-class policy candidate for the sh6bench-heavy
+  request distribution while preserving batch32 transfer behavior.
 
 Boundary:
-  diagnostics only.
-  no optimization policy.
+  size-class policy only.
+  opt-in sibling only.
   no macro promotion claim.
 
 Required evidence:
-  requested bytes high-water
-  HZ11 slot bytes high-water
-  request-to-slot waste by class
-  RSS and wall
-  existing span/source/live counters under batch32
+  sh6bench wall/RSS versus batch32 and tcmalloc
+  requested-to-slot waste improvement
+  span_create and transfer counters
+  focused correctness rows before any macro gate
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
