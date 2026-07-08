@@ -2,6 +2,15 @@
 
 ```text
 Active status:
+  HZ11LaneFullEvidenceGate-L1: GO for evidence, with a runner RSS correction. Real-app
+  sqlite3 confirms the synthetic lane story on wall: fine128/cap768/cap1024 are
+  near-parity with tcmalloc, cap768/cap1024's sh6bench win does NOT translate to this
+  single-threaded app, and span-transfer ABORTS (central-overflow issue fixed in fine128).
+  The real-app runner now samples process-tree RSS; corrected sqlite3 RSS is a modest HZ11
+  win (~0.84x tcmalloc), not the earlier parent-PID-sampled ~0.4x. Espresso RSS must be
+  rerun with the fixed runner before any strong RSS multiplier is claimed. Next:
+  fine128-centered paper/positioning, plus multi-threaded real-app (rocksdb/redis) as the
+  remaining gap. See docs/HZ11_LANE_FULL_EVIDENCE_GATE_L1.md.
   HZ11ThreadCacheCapacityMiddleLane-L1: NO-GO for a middle general candidate. No
   uniform CAP 512-1024 (+byte cap) keeps remote/mixed ~= fine128 -- even cap512-bytes
   (sh6bench only 3.29x) collapses fine128's medium-row dominance (4.5x/5.8x -> ~1.5x

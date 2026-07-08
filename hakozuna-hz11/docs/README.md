@@ -181,6 +181,17 @@ HZ11_THREAD_CACHE_CAPACITY_MIDDLE_LANE_L1.md:
   confirmed: fine128 generalist, cap1024/cap768-bytes sh6bench specialist. Next lever:
   class-range CAP (code change, follow-up). Adds cap768-bytes + cap1024-bytes1m siblings
 
+HZ11_LANE_FULL_EVIDENCE_GATE_L1.md:
+  full-evidence gate: 5 lanes across synthetic (macro RUNS=5 + remote/mixed RUNS=10) AND
+  real-app (espresso SPEC app + sqlite3 in-memory DB, RUNS=3). GO for evidence with a
+  runner RSS correction: the initial runner sampled the bash wrapper PID, so it now samples
+  process-tree RSS. Corrected sqlite3 keeps the wall story (fine128/cap768/cap1024
+  near-parity, cap lanes indistinguishable from fine128, span-transfer aborts) but the RSS
+  win is modest (~0.84x tcmalloc), not the earlier ~0.4x. Espresso RSS needs rerun before a
+  strong multiplier claim. Next: fine128-centered paper; multi-threaded real-app
+  (rocksdb/redis) is the remaining gap. New runner run_hz11_real_app_gate.sh +
+  bench/hz11_real_app_sqlite.sql
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
