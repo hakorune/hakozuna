@@ -123,6 +123,14 @@ HZ11_PAPER_POSITIONING_L1.md:
   the claim boundary, and defines the exact gate per-CPU/rseq must earn before
   it is adopted; no policy change, no default promotion
 
+HZ11_PERCPU_RSEQ_CACHE_READINESS_L1.md:
+  readiness/design box for a per-CPU/rseq front cache on the fine128 base; fixes
+  the L2 prototype boundary (where it sits, minimal sibling under
+  -DHZ11_PERCPU_RSEQ=1, glibc-symbols-preferred-but-verify fallback, LD_PRELOAD-only
+  rollback) and the 6-check adoption gate (remote/mixed regression baseline = fine128;
+  span-transfer stays the dedicated remote/mixed lane); GO to design only, not to
+  implement or adopt, not a claim that rseq fixes sh6bench
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

@@ -2,6 +2,9 @@
 
 ```text
 Active status:
+  HZ11PerCpuRseqCacheReadiness-L1 is the active next step (GO to design the L2
+  per-CPU/rseq prototype boundary; NOT implemented in this box; NOT adopted; not a
+  claim that rseq fixes sh6bench). See docs/HZ11_PERCPU_RSEQ_CACHE_READINESS_L1.md.
   HZ11PaperPositioning-L1 is the current HZ11 line statement (GO for
   positioning; no default promotion; per-CPU/rseq not started). See
   docs/HZ11_PAPER_POSITIONING_L1.md.
