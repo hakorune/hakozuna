@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11MacroSpeedLaneGateWithThreadExitCap-L1 is measured as macro NO-GO.
+  HZ11Sh6benchPathCostAttribution-L1 is measured as attribution GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -12,8 +12,9 @@ Current stance:
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
-  sh6bench remains far slower than tcmalloc and over the RSS guard, so macro
-  promotion is still blocked.
+  sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
+  now points to transfer/central path volume plus span footprint, not the
+  span-return metadata-lock regression.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -32,6 +33,7 @@ docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md
 docs/HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md
+docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -116,24 +118,54 @@ HZ11MacroSpeedLaneGateWithThreadExitCap-L1:
       cache_scratch 1.010x tcmalloc wall, 0.456x max RSS
     Blocker:
       sh6bench 12.848x tcmalloc wall, 1.358x max RSS, 1.306x current RSS
+
+HZ11Sh6benchPathCostAttribution-L1:
+  Output:
+    bench_results/hz11_sh6bench_path_cost_20260708T021718Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
+  Verdict:
+    GO for attribution; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      tcmalloc wall 0.359s, max RSS 265344 KiB
+      span-transfer wall 4.546s, max RSS 351360 KiB
+      thread-exit-cap wall 4.552s, max RSS 351872 KiB
+      thread-exit-cap-source wall 4.648s, max RSS 351232 KiB
+      span-return-source wall 18.913s, max RSS 352768 KiB
+    thread-exit-cap totals:
+      xfer_insert 502021151
+      xfer_spill / central_insert 25573012
+      central final count drains to 0, high_water only ~3K for class 0
+      span_create 16680
+    source diag:
+      span_create == arena_carve; span_reuse is only 51
+      live_current_span is small
+      meta_lock is 0 for thread-exit-cap-source
+      meta_lock is huge only in span-return-source
+  Decision:
+    sh6bench active blocker is transfer/central path volume and span footprint,
+    not span-return metadata-lock. Do not jump straight to metadata batching as
+    the candidate macro fix.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11SpanReturnMetadataBatch-L1
+  HZ11Sh6benchTransferCentralPathCost-L1
 
 Goal:
-  reduce sh6bench transfer/span-return path cost after correctness rows pass.
+  reduce sh6bench transfer/central path volume or span footprint for the
+  thread-exit-cap candidate.
 
 Boundary:
-  span-return or sh6bench-specific candidate lane only; do not promote macro
-  default until the full gate is rerun.
+  candidate sibling only; do not promote macro default until sh6bench improves
+  and the full gate is rerun.
 
 Required evidence:
-  sh6bench wall improves materially without RSS regression; previous attribution
-  ruled out sweep/O(n) and pointed at metadata-lock traffic for span-return.
+  sh6bench wall improves materially without RSS regression; track transfer
+  inserts/spills, central high-water, span_create, and RSS.
 
 Keep:
   transfer as the remote/mixed microbench lane only until macro correctness is

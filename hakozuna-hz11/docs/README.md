@@ -50,6 +50,10 @@ HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md:
   opt-in thread-exit plus central-cap correctness sibling; makes python_alloc
   and mstress pass the focused gate without changing default lanes
 
+HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md:
+  sh6bench attribution for the thread-exit-cap candidate; identifies
+  transfer/central path volume and span footprint as the active blockers
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
