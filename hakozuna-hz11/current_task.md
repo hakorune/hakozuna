@@ -2,8 +2,7 @@
 
 ```text
 Active status:
-  HZ11Fine128RemoteMixedFinalConfirm-L1 is measured as GO for fine128 as the
-  recommended opt-in macro speed-lane candidate. No default promotion.
+  HZ11Fine128CandidatePositioning-L1 is documented as GO. No default promotion.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -15,6 +14,8 @@ Current stance:
   candidate.
   libhz11_span_transfer_thread_exit_cap_batch32_fine128.so is the current
   recommended opt-in macro speed-lane candidate.
+  libhz11_span_transfer_thread_exit_cap_batch32.so remains an intermediate
+  attribution/candidate step, not the final lane.
   Global fineclass remains a sh6bench RSS research lane only.
   The default allocator path is unchanged.
 
@@ -75,6 +76,7 @@ docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
 docs/HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md
 docs/HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md
 docs/HZ11_FINE128_REMOTE_MIXED_FINAL_CONFIRM_L1.md
+docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -600,26 +602,39 @@ HZ11Fine128RemoteMixedFinalConfirm-L1:
   Decision:
     fine128 is the recommended opt-in macro candidate. Do not make it default
     and do not replace span-transfer as the remote/mixed microbench lane.
+
+HZ11Fine128CandidatePositioning-L1:
+  Record:
+    docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
+  Verdict:
+    GO for positioning only; no allocator policy change and no default
+    promotion.
+  Decision:
+    fine128 is the recommended opt-in macro speed-lane candidate backed by
+    macro and remote/mixed evidence. span-transfer remains the clean
+    remote/mixed microbench lane. batch32 remains an intermediate attribution
+    step. global fineclass remains sh6bench RSS research only. No public claim
+    that HZ11 generally beats tcmalloc.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Fine128CandidatePositioning-L1
+  HZ11Fine128DefaultPromotionGate-L1
 
 Goal:
-  Make docs and Makefile lane naming clearly distinguish the recommended
-  opt-in macro candidate from the remote/mixed-only lane and default path.
+  Decide whether to promote fine128 beyond opt-in candidate status.
 
 Boundary:
-  positioning/docs/build-target cleanup only.
-  no allocator policy change.
-  no default path change.
+  explicit promotion gate only.
+  must define rollback and claim wording before any default-path change.
+  do not change defaults without fresh gate evidence.
 
 Required evidence:
-  README/current_task/Makefile target names make lane boundaries obvious
-  standalone check remains green
+  define default target/env behavior
+  rerun required macro evidence under the proposed default path
+  confirm rollback to current default is immediate
 
 Keep:
   span-transfer as the remote/mixed microbench lane.

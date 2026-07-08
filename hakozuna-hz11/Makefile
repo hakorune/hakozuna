@@ -186,7 +186,7 @@ libhz11_span_transfer_thread_exit_cap.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_transfer_thread_exit_cap_source_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_SPAN_SOURCE_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_source_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
-# HZ11Sh6benchTransferCentralPathCost-L1: transfer/central volume probe.
+# HZ11Sh6benchTransferCentralPathCost-L1: intermediate batch32 wall probe.
 libhz11_span_transfer_thread_exit_cap_batch32.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -204,7 +204,8 @@ libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so: $(SHIM_SRC) $(HEADER
 libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
-# HZ11SelectiveFineclassRange-L1: narrower fine-class candidates.
+# HZ11Fine128CandidatePositioning-L1: fine128 is the recommended opt-in macro
+# candidate; span-transfer remains the remote/mixed-only lane; default unchanged.
 libhz11_span_transfer_thread_exit_cap_batch32_fine128.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 

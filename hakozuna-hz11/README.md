@@ -14,10 +14,15 @@ state:
 default allocator:
   not HZ11
 
-recommended speed lane candidate:
+remote/mixed microbench speed lane:
   libhz11_span_transfer.so
   promoted by HZ11TransferPromotionMatrix-L1 on the micro remote/mixed matrix;
-  macro promotion is blocked by HZ11MacroSpeedLaneGate-L1; not default
+  remains the clean remote/mixed result; not default
+
+recommended opt-in macro speed-lane candidate:
+  libhz11_span_transfer_thread_exit_cap_batch32_fine128.so
+  backed by macro gate reclassification, current-RSS semantics, and RUNS=10
+  remote/mixed final confirmation; not default
 
 identity:
   tcmalloc-speed competitor
@@ -30,6 +35,7 @@ first box:
 non-goals:
   do not preserve HZ8/HZ10 owner-return remote-free on the hot path
   do not route every local free through pagemap metadata
+  do not claim HZ11 generally beats tcmalloc
   do not claim HZ11 replaces HZ8
 ```
 
@@ -38,6 +44,7 @@ non-goals:
 ```text
 docs/HZ11_POSITIONING_L0.md
 docs/HZ11_THREAD_CACHE_FAST_PATH_L0.md
+docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 

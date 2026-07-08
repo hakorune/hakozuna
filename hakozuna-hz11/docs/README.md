@@ -111,6 +111,11 @@ HZ11_FINE128_REMOTE_MIXED_FINAL_CONFIRM_L1.md:
   recommended opt-in macro speed-lane candidate while keeping span-transfer as
   the cleaner remote/mixed-only lane
 
+HZ11_FINE128_CANDIDATE_POSITIONING_L1.md:
+  final lane-positioning record after fine128 confirmation; documents fine128
+  as the recommended opt-in macro candidate, span-transfer as the remote/mixed
+  microbench lane, global fineclass as research-only, and default unchanged
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
