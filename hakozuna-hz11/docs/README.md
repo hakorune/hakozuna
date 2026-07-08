@@ -67,6 +67,10 @@ HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md:
   compares transfer batch widths 16/32/64/128 for sh6bench; selects batch32 as
   the smallest useful wall candidate and rejects wider batches as regressions
 
+HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md:
+  source/page attribution with batch32 in place; shows sh6bench RSS is dominated
+  by fresh arena-carved spans and missing span reuse, not central retention
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c

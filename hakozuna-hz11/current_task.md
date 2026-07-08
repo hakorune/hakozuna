@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11MacroSpeedLaneGateWithBatch32-L1 is measured as macro NO-GO.
+  HZ11Sh6benchSpanPageFootprintWithBatch32-L1 is measured as attribution GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -14,7 +14,8 @@ Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
   shows batch32 is a useful wall lever with no obvious macro side effects, but
-  sh6bench span/page footprint remains unresolved.
+  sh6bench span/page footprint is now attributed to fresh arena-carved spans and
+  missing span reuse.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -37,6 +38,7 @@ docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md
+docs/HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -232,24 +234,45 @@ HZ11MacroSpeedLaneGateWithBatch32-L1:
         9.929x tcmalloc wall
         1.374x max RSS
         1.407x current RSS
+
+HZ11Sh6benchSpanPageFootprintWithBatch32-L1:
+  Output:
+    bench_results/hz11_sh6bench_span_page_batch32_20260708T063053Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md
+  Verdict:
+    GO for RSS/page-footprint attribution; no macro promotion.
+  Key result:
+    sh6bench RUNS=3 batch32-source:
+      wall 3.542s vs tcmalloc 0.357s
+      max RSS 351744 KiB vs tcmalloc 265728 KiB
+      span_create 16745
+      arena_carve 16745
+      span_reuse 70
+      live_current_span 387 total across runs
+      central final total 752, high-water max 3232
+    Decision:
+      RSS/page footprint is fresh arena-carved span creation with little reuse,
+      not central retention or current-span reserve.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchSpanPageFootprintWithBatch32-L1
+  HZ11Sh6benchSpanReusePolicy-L1
 
 Goal:
-  attribute remaining sh6bench RSS/page footprint with batch32 in place.
+  add or test a narrow reusable span/page source for sh6bench classes with
+  batch32 in place.
 
 Boundary:
   diagnostic/candidate sibling only; do not promote macro default until
   sh6bench wall/RSS and full macro gate pass.
 
 Required evidence:
-  compare tcmalloc, thread-exit-cap, and batch32 on sh6bench; track span_create,
-  arena carve, live/current span counters, current RSS, max RSS, and wall.
+  A/B sh6bench wall/RSS and source counters vs batch32; span_create and
+  arena_carve must drop without correctness or macro side effects.
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
