@@ -2,6 +2,10 @@
 
 ```text
 Active status:
+  HZ11PaperEvidencePackage-L1 consolidates the HZ11/fine128 evidence chain into
+  one paper-ready doc (lane taxonomy, macro + remote/mixed tables, 7-item
+  negative ladder, claim boundary, next-work warrant). No new measurements; every
+  number cites its source. See docs/HZ11_PAPER_EVIDENCE_PACKAGE_L1.md.
   HZ11PerCpuRseqCachePrototype-L2 (locked per-CPU cache) is NO-GO for the
   CPU-locality hypothesis: the locked lane REGRESSED sh6bench 3.66x vs fine128
   (12.917s vs 3.527s) -- per-op spinlock overhead dominated even though the slab

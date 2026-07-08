@@ -139,6 +139,13 @@ HZ11_PERCPU_RSEQ_CACHE_PROTOTYPE_L2.md:
   the lock-free rseq CS. Proves a locked per-CPU layer is a net loss; does NOT
   prove lock-free locality would lose (measurement confounded by lock cost)
 
+HZ11_PAPER_EVIDENCE_PACKAGE_L1.md:
+  paper-ready consolidation of the HZ11/fine128 evidence: final lane taxonomy,
+  the macro and remote/mixed evidence tables, the 7-item negative-result ladder
+  plus the sh6bench open-gap spine, the claim boundary, and the next-work warrant.
+  No new measurements; every number cites its source doc. Companion to
+  HZ11PaperPositioning-L1 (which states the line; this carries the evidence)
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
