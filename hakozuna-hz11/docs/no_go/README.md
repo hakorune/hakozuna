@@ -1,7 +1,8 @@
 # HZ11 NO-GO Docs
 
 This directory holds detailed HZ11 documents for boxes that should not be
-promoted or retried without new evidence.
+promoted or retried without new evidence. Failed macro-promotion gates live
+here even when part of the measured behavior is useful as an opt-in lane.
 
 Keep `../HZ11_NO_GO_LEDGER.md` as the short decision index. Put the longer
 design, measurement, and interpretation records here.
@@ -43,6 +44,7 @@ HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md:
   batching
 
 HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md:
-  macro promotion gate for the thread-exit current-span pool lane; larson RSS is
-  fixed, but python_alloc/mstress still abort and sh6bench still fails wall/RSS
+  macro promotion gate for the thread-exit current-span pool lane; keeps the
+  larson RSS fix, but python_alloc/mstress still abort and sh6bench still fails
+  wall/RSS
 ```
