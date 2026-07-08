@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchPathCostAttribution-L1 is measured as attribution GO.
+  HZ11Sh6benchTransferCentralPathCost-L1 is measured as attribution GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -13,8 +13,8 @@ Current stance:
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
-  now points to transfer/central path volume plus span footprint, not the
-  span-return metadata-lock regression.
+  now confirms transfer/central trip volume is a wall lever, while span/page
+  footprint remains unresolved.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -34,6 +34,7 @@ docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
 docs/HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md
 docs/HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md
 docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
+docs/HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -147,25 +148,46 @@ HZ11Sh6benchPathCostAttribution-L1:
     sh6bench active blocker is transfer/central path volume and span footprint,
     not span-return metadata-lock. Do not jump straight to metadata batching as
     the candidate macro fix.
+
+HZ11Sh6benchTransferCentralPathCost-L1:
+  Output:
+    bench_results/hz11_sh6bench_path_cost_20260708T043634Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md
+  Verdict:
+    GO for transfer/central path-cost attribution; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      tcmalloc wall 0.362s, max RSS 267136 KiB
+      thread-exit-cap wall 4.542s, max RSS 352256 KiB
+      thread-exit-cap-xferwide wall 3.627s, max RSS 352128 KiB
+    xferwide:
+      xfer_spill / central_insert 25462402 -> 0
+      xfer_hit 31382475 -> 17121178
+      xfer_miss 3315573 -> 862087
+      span_create stays about 16.7K
+    Decision:
+      transfer/central trip volume is a real wall lever, but still leaves
+      sh6bench at 10.019x tcmalloc wall and about 1.318x RSS.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchTransferCentralPathCost-L1
+  HZ11Sh6benchTransferBatchVsCap-L1
 
 Goal:
-  reduce sh6bench transfer/central path volume or span footprint for the
-  thread-exit-cap candidate.
+  separate the sh6bench wall benefit from HZ11_TRANSFER_BATCH=32 vs
+  HZ11_TRANSFER_CAP=8192 before promoting any transfer policy idea.
 
 Boundary:
-  candidate sibling only; do not promote macro default until sh6bench improves
-  and the full gate is rerun.
+  diagnostic siblings only; do not promote macro default until sh6bench and the
+  full macro gate pass.
 
 Required evidence:
-  sh6bench wall improves materially without RSS regression; track transfer
-  inserts/spills, central high-water, span_create, and RSS.
+  A/B thread-exit-cap, batch-only, cap-only, and xferwide on sh6bench; track
+  wall, RSS, xfer_hit/miss, xfer_spill, central_insert, and span_create.
 
 Keep:
   transfer as the remote/mixed microbench lane only until macro correctness is

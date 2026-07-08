@@ -54,6 +54,11 @@ HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md:
   sh6bench attribution for the thread-exit-cap candidate; identifies
   transfer/central path volume and span footprint as the active blockers
 
+HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md:
+  transfer-cache cap/batch sibling for sh6bench; eliminates central spill and
+  improves wall about 20%, but remains far slower than tcmalloc and does not
+  improve RSS
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c

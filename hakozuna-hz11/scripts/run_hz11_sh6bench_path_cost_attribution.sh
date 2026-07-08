@@ -46,6 +46,7 @@ if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-transfer \
     preload-span-transfer-thread-exit-cap \
     preload-span-transfer-thread-exit-cap-source-diag \
+    preload-span-transfer-thread-exit-cap-xferwide \
     preload-span-return-source-diag >/dev/null
 fi
 
@@ -161,6 +162,7 @@ for run in $(seq 1 "${RUNS}"); do
   [[ -n "${tcmalloc_lib}" ]] && run_sampled tcmalloc "${run}" "${tcmalloc_lib}" none
   run_sampled hz11-span-transfer "${run}" "${ROOT}/libhz11_span_transfer.so" stats
   run_sampled hz11-thread-exit-cap "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" stats
+  run_sampled hz11-thread-exit-cap-xferwide "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_xferwide.so" stats
   run_sampled hz11-thread-exit-cap-source-diag "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_source_diag.so" source
   run_sampled hz11-span-return-source-diag "${run}" "${ROOT}/libhz11_span_return_source_diag.so" source
 done
