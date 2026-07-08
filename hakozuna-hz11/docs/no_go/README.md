@@ -69,7 +69,9 @@ HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md:
 HZ11_MACRO_SPEED_LANE_FINE128_L1.md:
   macro promotion gate for the selective fine128 candidate; keeps correctness,
   larson RSS, xmalloc/cache_scratch, and sh6bench max RSS inside the guard, but
-  current RSS fails on python_alloc and sh6bench
+  current RSS fails on python_alloc and sh6bench under the old single-sample
+  hard-fail rule. Superseded by
+  `../HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md`.
 
 HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md:
   central-only full-span reuse under batch32; avoids transfer metadata locks but

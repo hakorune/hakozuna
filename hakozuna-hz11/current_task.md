@@ -2,7 +2,8 @@
 
 ```text
 Active status:
-  HZ11MacroCurrentRSSGateSemantics-L1 is measured as gate-semantics GO.
+  HZ11MacroSpeedLaneGateFine128Reclassify-L1 is measured as GO for the next
+  opt-in macro candidate. No default promotion.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -14,7 +15,8 @@ Current stance:
   libhz11_span_transfer_thread_exit_cap_batch32_fine128.so is the current
   selective sh6bench RSS/class-packing candidate.
   Global fineclass remains a sh6bench RSS research lane only.
-  Neither lane is macro default until fine128 passes the full macro gate.
+  Neither lane is macro default until fine128 also clears final remote/mixed
+  confirmation.
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
@@ -36,8 +38,10 @@ Macro promotion blockers:
   RSS win to pass the focused RSS guard while avoiding the worst global
   fineclass remote/mixed RSS expansion. Full macro gate with fine128 passes
   correctness, larson, xmalloc/cache_scratch, and sh6bench max RSS, but current
-  RSS still fails on python_alloc and sh6bench. Focused current-RSS semantics
-  diagnostics clear that blocker under a documented stabilized-sampling rule.
+  RSS still fails on python_alloc and sh6bench under the old single-sample rule.
+  Focused current-RSS semantics diagnostics clear that blocker under a
+  documented stabilized-sampling rule, so fine128 is reclassified as the next
+  opt-in macro candidate.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -67,6 +71,7 @@ docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
 docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
 docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
 docs/HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md
+docs/HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -546,30 +551,51 @@ HZ11MacroCurrentRSSGateSemantics-L1:
     max RSS remains the primary hard guard. current RSS hard-fails only when a
     focused RUNS>=10 stability check also fails or shows a large stable retained
     footprint. The prior fine128 current-RSS blocker is cleared under this rule.
+
+HZ11MacroSpeedLaneGateFine128Reclassify-L1:
+  Record:
+    docs/HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md
+  Verdict:
+    GO for fine128 as the next opt-in macro candidate; no default promotion.
+  Key result:
+    Existing RUNS=5 macro gate plus focused RUNS=10 current-RSS stability is
+    sufficient for reclassification under the documented rule.
+      macro gate:
+        correctness OK
+        larson RSS fix holds
+        xmalloc/cache_scratch stay inside gate shape
+        sh6bench max RSS 1.247x tcmalloc, inside the 1.25x guard
+      focused current RSS:
+        python_alloc fine128/tcmalloc last RSS 1.138x
+        sh6bench fine128/tcmalloc last RSS 1.226x
+        sh6bench fine128/tcmalloc p95 RSS 1.167x
+  Decision:
+    fine128 is now the best opt-in macro candidate, but requires final
+    remote/mixed RUNS=10 confirmation before stronger promotion.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11MacroSpeedLaneGateFine128Reclassify-L1
+  HZ11Fine128RemoteMixedFinalConfirm-L1
 
 Goal:
-  Reclassify or rerun the fine128 macro gate under the documented current-RSS
-  semantics rule.
+  Confirm fine128 remote/mixed side effects with RUNS=10 before stronger
+  promotion beyond opt-in macro candidate status.
 
 Boundary:
-  gate/reclassification only.
+  remote/mixed gate only.
   no allocator policy change.
-  fine128 remains opt-in unless the gate is explicitly marked GO.
+  fine128 remains opt-in unless this confirmation is explicitly GO.
 
 Required evidence:
-  apply HZ11MacroCurrentRSSGateSemantics-L1 to the fine128 macro gate
-  decide whether existing RUNS=5 macro gate plus focused RUNS=10 RSS stability
-  is enough, or rerun the full macro gate
+  compare tcmalloc, hz11-span-transfer, batch32, fine128
+  RUNS=10 THREADS=16 ITERS=100000 transfer matrix rows
+  check throughput, post/peak RSS, span_create, transfer counters
 
 Keep:
   transfer as the remote/mixed microbench lane.
-  fine128 as the current sh6bench RSS candidate.
+  fine128 as the current opt-in macro candidate.
   global fineclass as a sh6bench RSS research lane only.
 ```

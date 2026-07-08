@@ -1,8 +1,11 @@
 # HZ11MacroSpeedLaneGateWithFine128-L1
 
-Status: MIXED. No macro promotion.
+Status: MIXED under the original single-sample current-RSS rule. Superseded by
+`../HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md`.
 
-Keep `fine128` as an opt-in candidate pending current-RSS gate resolution.
+Keep this file as the original gate record. The follow-up current-RSS semantics
+box cleared the blocker and reclassified fine128 as the next opt-in macro
+candidate; it still did not promote fine128 to the default path.
 
 ## Box
 

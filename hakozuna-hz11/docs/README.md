@@ -101,6 +101,11 @@ HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md:
   hard guard and requires focused RUNS>=10 stability evidence before current
   RSS can hard-fail tiny or timing-sensitive rows
 
+HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md:
+  reclassifies the prior fine128 macro gate under the documented current-RSS
+  semantics rule; marks fine128 GO as the next opt-in macro candidate, with
+  final remote/mixed confirmation still required before stronger promotion
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
@@ -114,7 +119,8 @@ docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md:
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINE128_L1.md:
   full macro gate for the selective fine128 candidate; correctness, larson,
   xmalloc/cache_scratch, and sh6bench max RSS pass, but current RSS fails on
-  python_alloc and sh6bench, so fine128 is not promoted
+  python_alloc and sh6bench under the old single-sample hard-fail rule; this
+  is superseded by HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md
 
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
