@@ -46,7 +46,9 @@ if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" \
     preload-span-transfer-thread-exit-cap \
     preload-span-transfer-thread-exit-cap-batch32 \
-    preload-span-transfer-thread-exit-cap-batch32-source-diag >/dev/null
+    preload-span-transfer-thread-exit-cap-batch32-source-diag \
+    preload-span-transfer-thread-exit-cap-batch32-span-reuse \
+    preload-span-transfer-thread-exit-cap-batch32-span-reuse-source-diag >/dev/null
 fi
 
 samples="${OUTDIR}/samples.csv"
@@ -181,6 +183,8 @@ for run in $(seq 1 "${RUNS}"); do
   run_sampled hz11-thread-exit-cap "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" stats
   run_sampled hz11-thread-exit-cap-batch32 "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" stats
   run_sampled hz11-thread-exit-cap-batch32-source-diag "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_source_diag.so" source
+  run_sampled hz11-thread-exit-cap-batch32-span-reuse "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so" stats
+  run_sampled hz11-thread-exit-cap-batch32-span-reuse-source-diag "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_span_reuse_source_diag.so" source
 done
 
 python3 - "${samples}" "${central}" "${classes}" "${summary}" <<'PY'
@@ -215,6 +219,8 @@ order=[
     "hz11-thread-exit-cap",
     "hz11-thread-exit-cap-batch32",
     "hz11-thread-exit-cap-batch32-source-diag",
+    "hz11-thread-exit-cap-batch32-span-reuse",
+    "hz11-thread-exit-cap-batch32-span-reuse-source-diag",
 ]
 with open(sys.argv[4],"w") as f:
     f.write("# HZ11 Sh6bench Span Page Footprint With Batch32 L1\n\n")

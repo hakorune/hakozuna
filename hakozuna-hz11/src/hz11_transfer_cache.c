@@ -47,7 +47,7 @@ static void hz11_diag_add(_Atomic uint64_t* slot, uint64_t value) {
 }
 #endif
 
-#if HZ11_CENTRAL_SPAN_RETURN
+#if HZ11_CENTRAL_SPAN_RETURN || HZ11_CENTRAL_SPAN_REUSE
 enum {
   HZ11_SPAN_RETURN_ACTIVE = 0,
   HZ11_SPAN_RETURN_CENTRAL_PARTIAL = 1,
@@ -70,7 +70,9 @@ typedef struct H11ReusableSpanStack {
 
 static H11SpanReturnMeta hz11_span_return_meta[HZ11_SPAN_COUNT];
 static H11ReusableSpanStack hz11_reusable_spans[HZ11_CLASS_COUNT];
+#if HZ11_CENTRAL_SPAN_RETURN
 static pthread_mutex_t hz11_span_return_meta_lock = PTHREAD_MUTEX_INITIALIZER;
+#endif
 #endif
 
 /* ---------- per-class transfer cache ---------- */
@@ -113,7 +115,8 @@ static inline void hz11_transfer_init(void) {
   (void)pthread_once(&hz11_transfer_once, hz11_transfer_init_once);
 }
 
-#if HZ11_CENTRAL_SPAN_RETURN || HZ11_SPAN_SOURCE_DIAG
+#if HZ11_CENTRAL_SPAN_RETURN || HZ11_CENTRAL_SPAN_REUSE || \
+    HZ11_SPAN_SOURCE_DIAG
 static void hz11_atomic_max_u64(_Atomic uint64_t* dst, uint64_t value) {
   uint64_t cur = atomic_load_explicit(dst, memory_order_relaxed);
   while (cur < value &&
@@ -199,140 +202,7 @@ void hz11_span_source_diag_meta_lock(uint8_t class_id) {
 #endif
 }
 
-#if HZ11_CENTRAL_SPAN_RETURN
-static int hz11_span_id_for_ptr(const void* ptr, uint32_t* span_id) {
-  if (!hz11_arena_base || !ptr || !span_id) {
-    return 0;
-  }
-  uintptr_t p = (uintptr_t)ptr;
-  uintptr_t base = (uintptr_t)hz11_arena_base;
-  uintptr_t off = p - base;
-  if (p < base || off >= (uintptr_t)HZ11_ARENA_BYTES) {
-    return 0;
-  }
-  *span_id = (uint32_t)(off >> HZ11_SPAN_SHIFT);
-  return 1;
-}
-
-static void hz11_span_return_ensure_meta_locked(uint32_t span_id) {
-  H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
-  if (meta->slot_count != 0u) {
-    return;
-  }
-  uint8_t c1 = hz11_span_class[span_id];
-  if (c1 == 0u) {
-    abort();
-  }
-  uint8_t class_id = (uint8_t)(c1 - 1u);
-  meta->class_id = class_id;
-  meta->slot_count = (uint32_t)(HZ11_SPAN_BYTES / hz11_class_slot_size(class_id));
-  meta->central_free_count = 0u;
-  meta->transfer_count = 0u;
-  meta->state = HZ11_SPAN_RETURN_ACTIVE;
-}
-
-static void hz11_span_return_account_transfer(void* ptr, int delta) {
-  uint32_t span_id;
-  if (!hz11_span_id_for_ptr(ptr, &span_id)) {
-    abort();
-  }
-  uint8_t diag_class = 0u;
-  if (hz11_span_class[span_id] != 0u) {
-    diag_class = (uint8_t)(hz11_span_class[span_id] - 1u);
-  }
-  hz11_span_source_diag_meta_lock(diag_class);
-  pthread_mutex_lock(&hz11_span_return_meta_lock);
-  hz11_span_return_ensure_meta_locked(span_id);
-  H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
-  if (delta > 0) {
-    meta->transfer_count += 1u;
-  } else {
-    if (meta->transfer_count == 0u) {
-      pthread_mutex_unlock(&hz11_span_return_meta_lock);
-      abort();
-    }
-    meta->transfer_count -= 1u;
-  }
-  pthread_mutex_unlock(&hz11_span_return_meta_lock);
-}
-
-static void hz11_reusable_span_push(uint8_t class_id, uint32_t span_id) {
-  H11ReusableSpanStack* rs = &hz11_reusable_spans[class_id];
-  pthread_mutex_lock(&rs->lock);
-  if (rs->count >= HZ11_REUSABLE_SPAN_CAP) {
-    pthread_mutex_unlock(&rs->lock);
-    abort();
-  }
-  rs->span_ids[rs->count++] = span_id;
-  pthread_mutex_unlock(&rs->lock);
-}
-
-static void hz11_central_try_return_full_span_locked(uint8_t class_id,
-                                                     H11CentralStack* cs,
-                                                     uint32_t span_id) {
-  H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
-  if (meta->central_free_count != meta->slot_count ||
-      meta->transfer_count != 0u || meta->slot_count == 0u) {
-    meta->state = HZ11_SPAN_RETURN_CENTRAL_PARTIAL;
-    atomic_fetch_add_explicit(&hz11_central_partial_span_count, 1u,
-                              memory_order_relaxed);
-    return;
-  }
-
-  uint32_t write = 0u;
-  uint32_t removed = 0u;
-  for (uint32_t read = 0u; read < cs->count; ++read) {
-    uint32_t item_span_id = UINT32_MAX;
-    if (hz11_span_id_for_ptr(cs->slots[read], &item_span_id) &&
-        item_span_id == span_id) {
-      ++removed;
-      continue;
-    }
-    cs->slots[write++] = cs->slots[read];
-  }
-  if (removed != meta->slot_count) {
-    abort();
-  }
-  cs->count = write;
-  meta->central_free_count = 0u;
-  meta->state = HZ11_SPAN_RETURN_REUSABLE;
-  atomic_fetch_sub_explicit(&hz11_central_object_count, removed,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz11_span_return_count, 1u, memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz11_central_full_span_count, 1u,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&hz11_span_return_by_class[class_id], 1u,
-                            memory_order_relaxed);
-  hz11_reusable_span_push(class_id, span_id);
-}
-
-static void hz11_central_sweep_full_spans_locked(uint8_t class_id,
-                                                 H11CentralStack* cs) {
-  uint32_t i = 0u;
-  while (i < cs->count) {
-    uint32_t before_scan_count = cs->count;
-    uint32_t span_id;
-    if (!hz11_span_id_for_ptr(cs->slots[i], &span_id)) {
-      ++i;
-      continue;
-    }
-    hz11_span_source_diag_meta_lock(class_id);
-    pthread_mutex_lock(&hz11_span_return_meta_lock);
-    H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
-    uint32_t before = cs->count;
-    if (meta->state != HZ11_SPAN_RETURN_REUSABLE) {
-      hz11_central_try_return_full_span_locked(class_id, cs, span_id);
-    }
-    pthread_mutex_unlock(&hz11_span_return_meta_lock);
-    if (cs->count < before) {
-      i = 0u;
-    } else {
-      ++i;
-    }
-    hz11_span_source_diag_sweep(class_id, before_scan_count);
-  }
-}
-#endif
+#include "hz11_transfer_span_reuse.inc"
 
 uint32_t hz11_transfer_remove_range(uint8_t class_id, void** out, uint32_t max_n) {
   if (class_id >= HZ11_CLASS_COUNT || !out || !max_n) {
@@ -428,6 +298,23 @@ uint32_t hz11_central_stack_remove_range(uint8_t class_id, void** out, uint32_t 
     pthread_mutex_unlock(&hz11_span_return_meta_lock);
     atomic_fetch_sub_explicit(&hz11_central_object_count, 1u,
                               memory_order_relaxed);
+#elif HZ11_CENTRAL_SPAN_REUSE
+    uint32_t span_id;
+    if (!hz11_span_id_for_ptr(out[n], &span_id)) {
+      pthread_mutex_unlock(&cs->lock);
+      abort();
+    }
+    H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
+    if (meta->central_free_count == 0u ||
+        meta->state == HZ11_SPAN_RETURN_REUSABLE ||
+        meta->class_id != class_id) {
+      pthread_mutex_unlock(&cs->lock);
+      abort();
+    }
+    meta->central_free_count -= 1u;
+    meta->state = meta->central_free_count > 0u
+        ? HZ11_SPAN_RETURN_CENTRAL_PARTIAL
+        : HZ11_SPAN_RETURN_ACTIVE;
 #endif
   }
 #if HZ11_CENTRAL_CLASS_DIAG
@@ -501,11 +388,31 @@ void hz11_central_stack_insert_range(uint8_t class_id, void** items, uint32_t n)
     }
     meta->central_free_count += 1u;
     pthread_mutex_unlock(&hz11_span_return_meta_lock);
+#elif HZ11_CENTRAL_SPAN_REUSE
+    uint32_t span_id;
+    if (!hz11_span_id_for_ptr(items[i], &span_id)) {
+      pthread_mutex_unlock(&cs->lock);
+      abort();
+    }
+    H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
+    if (meta->slot_count == 0u) {
+      hz11_span_return_ensure_meta_locked(span_id);
+    }
+    if (meta->state == HZ11_SPAN_RETURN_REUSABLE) {
+      meta->state = HZ11_SPAN_RETURN_ACTIVE;
+    }
+    if (meta->class_id != class_id || meta->slot_count == 0u) {
+      pthread_mutex_unlock(&cs->lock);
+      abort();
+    }
+    meta->central_free_count += 1u;
 #endif
     cs->slots[cs->count++] = items[i];
 #if HZ11_CENTRAL_SPAN_RETURN
     atomic_fetch_add_explicit(&hz11_central_object_count, 1u,
                               memory_order_relaxed);
+    hz11_atomic_max_u64(&hz11_central_high_water_by_class[class_id], cs->count);
+#elif HZ11_CENTRAL_SPAN_REUSE
     hz11_atomic_max_u64(&hz11_central_high_water_by_class[class_id], cs->count);
 #endif
 #if HZ11_CENTRAL_CLASS_DIAG
@@ -530,6 +437,17 @@ void hz11_central_stack_insert_range(uint8_t class_id, void** items, uint32_t n)
       hz11_central_try_return_full_span_locked(class_id, cs, span_id);
     }
     pthread_mutex_unlock(&hz11_span_return_meta_lock);
+  }
+#elif HZ11_CENTRAL_SPAN_REUSE
+  for (uint32_t i = 0u; i < n; ++i) {
+    uint32_t span_id;
+    if (!hz11_span_id_for_ptr(items[i], &span_id)) {
+      continue;
+    }
+    H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
+    if (meta->state != HZ11_SPAN_RETURN_REUSABLE) {
+      hz11_central_try_return_full_span_locked(class_id, cs, span_id);
+    }
   }
 #endif
   pthread_mutex_unlock(&cs->lock);
@@ -639,7 +557,7 @@ void hz11_span_source_diag_dump(void) {
 }
 
 void* hz11_span_return_pop_reusable_span(uint8_t class_id) {
-#if HZ11_CENTRAL_SPAN_RETURN
+#if HZ11_CENTRAL_SPAN_RETURN || HZ11_CENTRAL_SPAN_REUSE
   if (class_id >= HZ11_CLASS_COUNT) {
     return NULL;
   }
@@ -654,16 +572,27 @@ void* hz11_span_return_pop_reusable_span(uint8_t class_id) {
     uint32_t span_id = rs->span_ids[--rs->count];
     pthread_mutex_unlock(&rs->lock);
 
+#if HZ11_CENTRAL_SPAN_RETURN
     pthread_mutex_lock(&hz11_span_return_meta_lock);
+#endif
     H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
+#if HZ11_CENTRAL_SPAN_RETURN
     if (meta->state != HZ11_SPAN_RETURN_REUSABLE ||
         meta->central_free_count != 0u || meta->transfer_count != 0u ||
         meta->class_id != class_id) {
       pthread_mutex_unlock(&hz11_span_return_meta_lock);
       continue;
     }
+#else
+    if (meta->state != HZ11_SPAN_RETURN_REUSABLE ||
+        meta->central_free_count != 0u || meta->class_id != class_id) {
+      continue;
+    }
+#endif
     meta->state = HZ11_SPAN_RETURN_ACTIVE;
+#if HZ11_CENTRAL_SPAN_RETURN
     pthread_mutex_unlock(&hz11_span_return_meta_lock);
+#endif
 
     atomic_fetch_add_explicit(&hz11_span_reuse_count, 1u, memory_order_relaxed);
     return hz11_arena_base + ((size_t)span_id << HZ11_SPAN_SHIFT);
@@ -676,18 +605,22 @@ void* hz11_span_return_pop_reusable_span(uint8_t class_id) {
 
 void hz11_span_return_register_active_span(uint8_t class_id, void* base,
                                            uint32_t slot_count) {
-#if HZ11_CENTRAL_SPAN_RETURN
+#if HZ11_CENTRAL_SPAN_RETURN || HZ11_CENTRAL_SPAN_REUSE
   uint32_t span_id;
   if (class_id >= HZ11_CLASS_COUNT || !base || slot_count == 0u ||
       !hz11_span_id_for_ptr(base, &span_id)) {
     abort();
   }
   hz11_transfer_init();
+#if HZ11_CENTRAL_SPAN_RETURN
   pthread_mutex_lock(&hz11_span_return_meta_lock);
+#endif
   H11SpanReturnMeta* meta = &hz11_span_return_meta[span_id];
   if (meta->state != HZ11_SPAN_RETURN_ACTIVE &&
       meta->state != HZ11_SPAN_RETURN_REUSABLE) {
+#if HZ11_CENTRAL_SPAN_RETURN
     pthread_mutex_unlock(&hz11_span_return_meta_lock);
+#endif
     abort();
   }
   meta->class_id = class_id;
@@ -695,7 +628,9 @@ void hz11_span_return_register_active_span(uint8_t class_id, void* base,
   meta->central_free_count = 0u;
   meta->transfer_count = 0u;
   meta->state = HZ11_SPAN_RETURN_ACTIVE;
+#if HZ11_CENTRAL_SPAN_RETURN
   pthread_mutex_unlock(&hz11_span_return_meta_lock);
+#endif
 #else
   (void)class_id; (void)base; (void)slot_count;
 #endif

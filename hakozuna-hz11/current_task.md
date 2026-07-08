@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchSpanPageFootprintWithBatch32-L1 is measured as attribution GO.
+  HZ11Sh6benchSpanReusePolicy-L1 is measured as NO-GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -15,7 +15,8 @@ Macro promotion blockers:
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
   shows batch32 is a useful wall lever with no obvious macro side effects, but
   sh6bench span/page footprint is now attributed to fresh arena-carved spans and
-  missing span reuse.
+  missing span reuse. Central-only full-span reuse did not materially reduce
+  span_create, arena_carve, or RSS.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -50,6 +51,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
+  docs/no_go/HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md
 
 Cleanup / baseline docs:
   docs/HZ11_TLS_FAST_PATH_L1.md
@@ -254,25 +256,42 @@ HZ11Sh6benchSpanPageFootprintWithBatch32-L1:
     Decision:
       RSS/page footprint is fresh arena-carved span creation with little reuse,
       not central retention or current-span reserve.
+
+HZ11Sh6benchSpanReusePolicy-L1:
+  Output:
+    bench_results/hz11_sh6bench_span_page_batch32_20260708T063931Z/summary.md
+  Record:
+    docs/no_go/HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md
+  Verdict:
+    NO-GO for sh6bench RSS/page-footprint fix.
+  Key result:
+    sh6bench RUNS=3:
+      batch32 wall 3.497s, max RSS 351488 KiB, span_create 16769
+      batch32-span-reuse wall 3.568s, max RSS 350848 KiB, span_create 16753
+      batch32-source arena_carve 16755, span_reuse 44
+      batch32-span-reuse-source arena_carve 16753, span_reuse 66
+    Decision:
+      central-only full-span reuse is too rare to move RSS or arena carve.
+      It avoids transfer metadata locks, but does not solve the page footprint.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchSpanReusePolicy-L1
+  HZ11Sh6benchArenaCommitPolicy-L1
 
 Goal:
-  add or test a narrow reusable span/page source for sh6bench classes with
-  batch32 in place.
+  test whether the remaining sh6bench RSS gap is committed-page footprint that
+  can be reduced without requiring full central-span reuse.
 
 Boundary:
   diagnostic/candidate sibling only; do not promote macro default until
   sh6bench wall/RSS and full macro gate pass.
 
 Required evidence:
-  A/B sh6bench wall/RSS and source counters vs batch32; span_create and
-  arena_carve must drop without correctness or macro side effects.
+  A/B sh6bench wall/RSS/page counters vs batch32; preserve batch32 wall
+  improvement and avoid hot per-object metadata-lock accounting.
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
