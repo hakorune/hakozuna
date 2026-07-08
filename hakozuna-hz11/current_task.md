@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchTransferBatchGranularity-L1 is measured as attribution GO.
+  HZ11MacroSpeedLaneGateWithBatch32-L1 is measured as macro NO-GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -13,8 +13,8 @@ Current stance:
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
   sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
-  now shows transfer batch/refill granularity is a wall lever, while span/page
-  footprint remains unresolved.
+  shows batch32 is a useful wall lever with no obvious macro side effects, but
+  sh6bench span/page footprint remains unresolved.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -47,6 +47,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
+  docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
 
 Cleanup / baseline docs:
   docs/HZ11_TLS_FAST_PATH_L1.md
@@ -210,25 +211,45 @@ HZ11Sh6benchTransferBatchGranularity-L1:
       batch32 is the smallest useful wall candidate.
       batch64/batch128 regress as xfer_insert and central_insert grow.
       RSS/span_create remain unresolved.
+
+HZ11MacroSpeedLaneGateWithBatch32-L1:
+  Output:
+    bench_results/hz11_macro_speed_lane_20260708T061909Z/summary.md
+  Record:
+    docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
+  Verdict:
+    NO-GO for macro promotion.
+  Key result:
+    RUNS=5:
+      python_alloc OK 5/5, wall 0.032s vs tcmalloc 0.032s
+      mstress OK 5/5, wall 0.221s vs tcmalloc 0.188s
+      larson RSS fix holds: 273024 KiB vs tcmalloc 278912 KiB
+      xmalloc_test 0.991x tcmalloc wall, 0.094x max RSS
+      cache_scratch 1.016x tcmalloc wall, 0.456x max RSS
+      sh6bench improves vs thread-exit-cap:
+        4.537s -> 3.495s
+      sh6bench still blocks:
+        9.929x tcmalloc wall
+        1.374x max RSS
+        1.407x current RSS
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11MacroSpeedLaneGateWithBatch32-L1
+  HZ11Sh6benchSpanPageFootprintWithBatch32-L1
 
 Goal:
-  rerun focused/full macro gate with batch32 candidate before treating it as a
-  broader speed-lane improvement.
+  attribute remaining sh6bench RSS/page footprint with batch32 in place.
 
 Boundary:
-  candidate sibling only; do not promote macro default unless correctness,
-  sh6bench wall/RSS, and existing macro rows pass gate thresholds.
+  diagnostic/candidate sibling only; do not promote macro default until
+  sh6bench wall/RSS and full macro gate pass.
 
 Required evidence:
-  python_alloc, mstress, sh6bench, xmalloc_test, cache_scratch, larson vs
-  tcmalloc, thread-exit-cap, and batch32 candidate.
+  compare tcmalloc, thread-exit-cap, and batch32 on sh6bench; track span_create,
+  arena carve, live/current span counters, current RSS, max RSS, and wall.
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and

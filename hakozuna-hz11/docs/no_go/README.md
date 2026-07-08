@@ -51,4 +51,8 @@ HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md:
 HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md:
   macro promotion gate for the thread-exit plus central-cap candidate; clears
   python_alloc/mstress and keeps larson RSS, but sh6bench still blocks promotion
+
+HZ11_MACRO_SPEED_LANE_BATCH32_L1.md:
+  macro promotion gate for the batch32 candidate; keeps correctness and larson
+  RSS while improving sh6bench wall, but sh6bench wall/RSS still block promotion
 ```

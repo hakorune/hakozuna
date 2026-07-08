@@ -102,7 +102,8 @@ mkdir -p "${OUTDIR}"
 
 if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
-    preload-span-transfer-thread-exit preload-span-transfer-thread-exit-cap >/dev/null
+    preload-span-transfer-thread-exit preload-span-transfer-thread-exit-cap \
+    preload-span-transfer-thread-exit-cap-batch32 >/dev/null
 fi
 
 find_first_existing() {
@@ -223,6 +224,8 @@ for alloc in "${requested_allocators[@]}"; do
       add_allocator hz11-thread-exit "${ROOT}/libhz11_span_transfer_thread_exit.so" "" ;;
     hz11-thread-exit-cap)
       add_allocator hz11-thread-exit-cap "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" "" ;;
+    hz11-thread-exit-cap-batch32)
+      add_allocator hz11-thread-exit-cap-batch32 "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" "" ;;
     /*)
       if [[ -f "${alloc}" ]]; then
         add_allocator "$(basename "${alloc}")" "${alloc}" ""
@@ -385,6 +388,9 @@ add_hz11_diag_env() {
     hz11-thread-exit)
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1) ;;
     hz11-thread-exit-cap)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
+        HZ11_DUMP_CENTRAL_CLASSES=1) ;;
+    hz11-thread-exit-cap-batch32)
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
         HZ11_DUMP_CENTRAL_CLASSES=1) ;;
   esac
