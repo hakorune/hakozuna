@@ -1,4 +1,5 @@
 #include "hz11_public_entry.h"
+#include "hz11_live_footprint.h"
 #include "hz11_transfer_cache.h"
 
 #include <string.h>
@@ -21,9 +22,14 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
     HZ11_COUNT_INC(tc->malloc_hit);
+    hz11_live_footprint_alloc(class_id);
     return p;
   }
-  return hz11_thread_cache_refill(tc, class_id); /* returned/bump/carve */
+  p = hz11_thread_cache_refill(tc, class_id); /* returned/bump/carve */
+  if (p && hz11_arena_contains(p)) {
+    hz11_live_footprint_alloc(class_id);
+  }
+  return p;
 #else
   if (class_id == HZ11_LARGE_CLASS) {
     void* p = hz11_sys_malloc(size);
@@ -65,6 +71,7 @@ static inline void hz11_free_fast_with_tc(H11ThreadCache* tc, void* ptr) {
   if (hz11_span_classify(ptr, &class_id)) {
     HZ11_COUNT_INC(tc->free_count);
     HZ11_COUNT_INC(tc->direct_hit_count);
+    hz11_live_footprint_free(class_id);
     hz11_thread_cache_push(tc, class_id, ptr);
     return;
   }

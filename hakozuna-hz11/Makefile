@@ -9,6 +9,7 @@
         preload-span-transfer-thread-exit-cap-source-diag \
         preload-span-transfer-thread-exit-cap-batch32 \
         preload-span-transfer-thread-exit-cap-batch32-source-diag \
+        preload-span-transfer-thread-exit-cap-batch32-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-span-reuse \
         preload-span-transfer-thread-exit-cap-batch32-span-reuse-source-diag \
         preload-span-transfer-thread-exit-cap-batch32-nohuge \
@@ -34,7 +35,8 @@ INC := -I$(ROOT)/include -I$(ROOT)/src
 
 CORE_SRC := $(ROOT)/src/hz11_size_class.c $(ROOT)/src/hz11_thread_cache.c \
             $(ROOT)/src/hz11_public_entry.c $(ROOT)/src/hz11_span.c \
-            $(ROOT)/src/hz11_sys_alloc.c $(ROOT)/src/hz11_transfer_cache.c
+            $(ROOT)/src/hz11_sys_alloc.c $(ROOT)/src/hz11_transfer_cache.c \
+            $(ROOT)/src/hz11_live_footprint.c
 SHIM_SRC := $(ROOT)/src/hz11_shim.c $(CORE_SRC)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 
@@ -185,6 +187,10 @@ libhz11_span_transfer_thread_exit_cap_batch32.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_transfer_thread_exit_cap_batch32_source_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_SPAN_SOURCE_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_source_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11Sh6benchLiveFootprintObservation-L1: diagnostic-only live class counters.
+libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_CENTRAL_SPAN_REUSE=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -246,6 +252,7 @@ preload-span-transfer-thread-exit-cap: libhz11_span_transfer_thread_exit_cap.so
 preload-span-transfer-thread-exit-cap-source-diag: libhz11_span_transfer_thread_exit_cap_source_diag.so
 preload-span-transfer-thread-exit-cap-batch32: libhz11_span_transfer_thread_exit_cap_batch32.so
 preload-span-transfer-thread-exit-cap-batch32-source-diag: libhz11_span_transfer_thread_exit_cap_batch32_source_diag.so
+preload-span-transfer-thread-exit-cap-batch32-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-span-reuse: libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so
 preload-span-transfer-thread-exit-cap-batch32-span-reuse-source-diag: libhz11_span_transfer_thread_exit_cap_batch32_span_reuse_source_diag.so
 preload-span-transfer-thread-exit-cap-batch32-nohuge: libhz11_span_transfer_thread_exit_cap_batch32_nohuge.so
@@ -282,6 +289,7 @@ clean:
 	      libhz11_span_transfer_thread_exit_cap_source_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_source_diag.so \
+	      libhz11_span_transfer_thread_exit_cap_batch32_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_span_reuse.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_span_reuse_source_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_nohuge.so \

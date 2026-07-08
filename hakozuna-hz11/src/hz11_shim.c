@@ -1,4 +1,5 @@
 #include "hz11_public_entry.h"
+#include "hz11_live_footprint.h"
 #include "hz11_transfer_cache.h"
 
 #include <stdio.h>
@@ -54,6 +55,9 @@ static void hz11_dump_stats_atexit(void) {
   if (getenv("HZ11_DUMP_CURRENT_SPAN_POOL") != NULL) {
     hz11_current_span_pool_dump_stats();
   }
+  if (getenv("HZ11_DUMP_LIVE_FOOTPRINT") != NULL) {
+    hz11_live_footprint_dump();
+  }
 }
 
 /* LD_PRELOAD entry points. Export the full interposition surface so foreign
@@ -108,7 +112,8 @@ __attribute__((constructor)) static void hz11_shim_init(void) {
   if (getenv("HZ11_DUMP_STATS") != NULL ||
       getenv("HZ11_DUMP_CENTRAL_CLASSES") != NULL ||
       getenv("HZ11_DUMP_SPAN_SOURCE") != NULL ||
-      getenv("HZ11_DUMP_CURRENT_SPAN_POOL") != NULL) {
+      getenv("HZ11_DUMP_CURRENT_SPAN_POOL") != NULL ||
+      getenv("HZ11_DUMP_LIVE_FOOTPRINT") != NULL) {
     atexit(hz11_dump_stats_atexit);
   }
 }

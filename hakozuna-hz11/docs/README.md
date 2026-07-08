@@ -71,6 +71,15 @@ HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md:
   source/page attribution with batch32 in place; shows sh6bench RSS is dominated
   by fresh arena-carved spans and missing span reuse, not central retention
 
+HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md:
+  diagnostic-only live class footprint observation under batch32; shows active
+  spans are almost full after HZ11 class rounding, shifting the remaining RSS
+  question toward requested-size distribution, class packing, and residency
+
+docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
+  `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
+  whole-arena eager commit as the sh6bench RSS/page-footprint lever
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
