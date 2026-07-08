@@ -1,11 +1,135 @@
 #include "hz11_thread_cache.h"
 #include "hz11_transfer_cache.h"
 
+#include <pthread.h>
+#include <stdatomic.h>
+#include <stdio.h>
 #include <string.h>
 
 /* ---------- state ---------- */
 
 _Thread_local H11ThreadCache* hz11_tls = NULL;
+
+static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id);
+
+#if HZ11_CURRENT_SPAN_THREAD_EXIT && HZ11_TRANSFER_CENTRAL_SPAN && \
+    HZ11_CLASSIFY_SPAN
+#ifndef HZ11_CURRENT_SPAN_POOL_CAP
+#define HZ11_CURRENT_SPAN_POOL_CAP 4096u
+#endif
+
+typedef struct H11CurrentSpanPoolEntry {
+  char* base;
+  uint32_t bump_index;
+  uint32_t slot_count;
+} H11CurrentSpanPoolEntry;
+
+typedef struct H11CurrentSpanPool {
+  pthread_mutex_t lock;
+  H11CurrentSpanPoolEntry entries[HZ11_CURRENT_SPAN_POOL_CAP];
+  uint32_t count;
+} H11CurrentSpanPool;
+
+static H11CurrentSpanPool hz11_current_span_pool[HZ11_CLASS_COUNT];
+static pthread_once_t hz11_current_span_pool_once = PTHREAD_ONCE_INIT;
+static pthread_once_t hz11_thread_cache_key_once = PTHREAD_ONCE_INIT;
+static pthread_key_t hz11_thread_cache_key;
+static _Atomic uint64_t hz11_current_span_pool_push_count;
+static _Atomic uint64_t hz11_current_span_pool_pop_count;
+static _Atomic uint64_t hz11_current_span_pool_drop_count;
+
+static void hz11_thread_cache_destroy(void* value);
+
+static void hz11_current_span_pool_init_once(void) {
+  for (uint32_t i = 0u; i < HZ11_CLASS_COUNT; ++i) {
+    (void)pthread_mutex_init(&hz11_current_span_pool[i].lock, NULL);
+  }
+}
+
+static void hz11_thread_cache_key_init_once(void) {
+  (void)pthread_key_create(&hz11_thread_cache_key, hz11_thread_cache_destroy);
+}
+
+static void hz11_current_span_pool_push(uint8_t class_id,
+                                        H11SpanCurrent* current) {
+  if (class_id >= HZ11_CLASS_COUNT || !current->base ||
+      current->bump_index >= current->slot_count) {
+    return;
+  }
+  (void)pthread_once(&hz11_current_span_pool_once,
+                     hz11_current_span_pool_init_once);
+  H11CurrentSpanPool* pool = &hz11_current_span_pool[class_id];
+  pthread_mutex_lock(&pool->lock);
+  if (pool->count < HZ11_CURRENT_SPAN_POOL_CAP) {
+    H11CurrentSpanPoolEntry* entry = &pool->entries[pool->count++];
+    entry->base = current->base;
+    entry->bump_index = current->bump_index;
+    entry->slot_count = current->slot_count;
+    atomic_fetch_add_explicit(&hz11_current_span_pool_push_count, 1u,
+                              memory_order_relaxed);
+  } else {
+    atomic_fetch_add_explicit(&hz11_current_span_pool_drop_count, 1u,
+                              memory_order_relaxed);
+  }
+  pthread_mutex_unlock(&pool->lock);
+  current->base = NULL;
+  current->bump_index = 0u;
+  current->slot_count = 0u;
+}
+
+static int hz11_current_span_pool_pop(uint8_t class_id,
+                                      H11SpanCurrent* current) {
+  if (class_id >= HZ11_CLASS_COUNT || !current) {
+    return 0;
+  }
+  (void)pthread_once(&hz11_current_span_pool_once,
+                     hz11_current_span_pool_init_once);
+  H11CurrentSpanPool* pool = &hz11_current_span_pool[class_id];
+  pthread_mutex_lock(&pool->lock);
+  if (pool->count == 0u) {
+    pthread_mutex_unlock(&pool->lock);
+    return 0;
+  }
+  H11CurrentSpanPoolEntry entry = pool->entries[--pool->count];
+  pthread_mutex_unlock(&pool->lock);
+  current->base = entry.base;
+  current->bump_index = entry.bump_index;
+  current->slot_count = entry.slot_count;
+  atomic_fetch_add_explicit(&hz11_current_span_pool_pop_count, 1u,
+                            memory_order_relaxed);
+  return 1;
+}
+
+static void hz11_thread_cache_destroy(void* value) {
+  H11ThreadCache* tc = (H11ThreadCache*)value;
+  if (!tc) {
+    return;
+  }
+  if (hz11_tls == tc) {
+    hz11_tls = NULL;
+  }
+  for (uint32_t class_id = 0u; class_id < HZ11_CLASS_COUNT; ++class_id) {
+    hz11_thread_cache_flush_class(tc, (uint8_t)class_id);
+    hz11_current_span_pool_push((uint8_t)class_id, &tc->current[class_id]);
+  }
+  hz11_sys_free(tc);
+}
+
+void hz11_current_span_pool_dump_stats(void) {
+  uint64_t push = atomic_load_explicit(&hz11_current_span_pool_push_count,
+                                       memory_order_relaxed);
+  uint64_t pop = atomic_load_explicit(&hz11_current_span_pool_pop_count,
+                                      memory_order_relaxed);
+  uint64_t drop = atomic_load_explicit(&hz11_current_span_pool_drop_count,
+                                       memory_order_relaxed);
+  fprintf(stderr,
+          "hz11_current_span_pool push=%llu pop=%llu drop=%llu cap=%u\n",
+          (unsigned long long)push, (unsigned long long)pop,
+          (unsigned long long)drop, (unsigned)HZ11_CURRENT_SPAN_POOL_CAP);
+}
+#else
+void hz11_current_span_pool_dump_stats(void) {}
+#endif
 
 /* ---------- TLS cache init + slow paths ---------- */
 
@@ -20,6 +144,12 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
   hz11_span_init(); /* ensure the arena is mapped before any span carve */
 #endif
   hz11_tls = tc;
+#if HZ11_CURRENT_SPAN_THREAD_EXIT && HZ11_TRANSFER_CENTRAL_SPAN && \
+    HZ11_CLASSIFY_SPAN
+  (void)pthread_once(&hz11_thread_cache_key_once,
+                     hz11_thread_cache_key_init_once);
+  (void)pthread_setspecific(hz11_thread_cache_key, tc);
+#endif
 #if HZ11_CACHE_TOPPTR
   for (uint32_t c = 0u; c < HZ11_CLASS_COUNT; ++c) {
     tc->class_cache[c].top = tc->class_cache[c].items;
@@ -154,7 +284,15 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
           if (cs->base && cs->bump_index >= cs->slot_count) {
             hz11_span_source_diag_current_exhaust(class_id);
           }
-          char* base = (char*)hz11_span_return_pop_reusable_span(class_id);
+          char* base = NULL;
+#if HZ11_CURRENT_SPAN_THREAD_EXIT
+          if (hz11_current_span_pool_pop(class_id, cs)) {
+            hz11_span_source_diag_span_reuse(class_id);
+            hz11_span_source_diag_current_replace(class_id);
+            continue;
+          }
+#endif
+          base = (char*)hz11_span_return_pop_reusable_span(class_id);
           if (!base) {
             base = (char*)hz11_span_carve_for_class(class_id);
             if (base) {

@@ -51,6 +51,9 @@ static void hz11_dump_stats_atexit(void) {
   if (getenv("HZ11_DUMP_SPAN_SOURCE") != NULL) {
     hz11_span_source_diag_dump();
   }
+  if (getenv("HZ11_DUMP_CURRENT_SPAN_POOL") != NULL) {
+    hz11_current_span_pool_dump_stats();
+  }
 }
 
 /* LD_PRELOAD entry points. Export the full interposition surface so foreign
@@ -102,7 +105,10 @@ __attribute__((visibility("default"))) void* memalign(size_t alignment,
 __attribute__((constructor)) static void hz11_shim_init(void) {
   hz11_resolver_ensure();
   hz11_size_class_init();
-  if (getenv("HZ11_DUMP_STATS") != NULL) {
+  if (getenv("HZ11_DUMP_STATS") != NULL ||
+      getenv("HZ11_DUMP_CENTRAL_CLASSES") != NULL ||
+      getenv("HZ11_DUMP_SPAN_SOURCE") != NULL ||
+      getenv("HZ11_DUMP_CURRENT_SPAN_POOL") != NULL) {
     atexit(hz11_dump_stats_atexit);
   }
 }

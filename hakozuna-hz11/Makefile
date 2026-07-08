@@ -5,6 +5,7 @@
         preload-token-soa preload-span-soa \
         preload-span-transfer preload-span-transfer-diag preload-span-transfer-cap \
         preload-span-return preload-span-source-diag preload-span-return-source-diag \
+        preload-span-transfer-thread-exit \
         hz11-standalone-check clean
 
 CC ?= gcc
@@ -154,6 +155,10 @@ libhz11_span_soa.so: $(SHIM_SRC) $(HEADERS)
 libhz11_span_transfer.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
+# HZ11CurrentSpanPoolThreadExit-L1: opt-in current-span suffix salvage.
+libhz11_span_transfer_thread_exit.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 # HZ11MacroFailureAttribution-L1: diagnostic sibling. Class counters are only
 # compiled into this opt-in lane; the recommended transfer lane is unchanged.
 libhz11_span_transfer_diag.so: $(SHIM_SRC) $(HEADERS)
@@ -186,6 +191,7 @@ preload-span-nobytes: libhz11_span_nobytes.so
 preload-token-soa: libhz11_soa.so
 preload-span-soa: libhz11_span_soa.so
 preload-span-transfer: libhz11_span_transfer.so
+preload-span-transfer-thread-exit: libhz11_span_transfer_thread_exit.so
 preload-span-transfer-diag: libhz11_span_transfer_diag.so
 preload-span-transfer-cap: libhz11_span_transfer_cap.so
 preload-span-return: libhz11_span_return.so
@@ -209,6 +215,7 @@ clean:
 	      libhz11_tlsfast.so libhz11_span_tlsfast.so \
 	      libhz11_nobytes.so libhz11_span_nobytes.so \
 	      libhz11_soa.so libhz11_span_soa.so \
-	      libhz11_span_transfer.so libhz11_span_transfer_diag.so \
+	      libhz11_span_transfer.so libhz11_span_transfer_thread_exit.so \
+	      libhz11_span_transfer_diag.so \
 	      libhz11_span_transfer_cap.so libhz11_span_return.so \
 	      libhz11_span_source_diag.so libhz11_span_return_source_diag.so

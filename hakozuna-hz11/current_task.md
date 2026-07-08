@@ -2,7 +2,7 @@
 
 ```text
 Active box:
-  HZ11SpanSourceAttribution-L1 (measured; attribution GO)
+  HZ11CurrentSpanPoolThreadExit-L1 (measured; larson GO, opt-in only)
 
 Goal:
   keep HZ11 as a speed-first research line. The transfer lane is now the
@@ -27,6 +27,7 @@ docs/HZ11_REMAINING_BODY_ATTRIBUTION_L0.md
 docs/no_go/HZ11_CACHE_LAYOUT_L1.md
 docs/HZ11_TRANSFER_CACHE_CENTRAL_SPAN_L1.md
 docs/HZ11_TRANSFER_PROMOTION_MATRIX_L1.md
+docs/HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md
 docs/no_go/HZ11_MACRO_SPEED_LANE_GATE_L1.md
 docs/no_go/HZ11_MACRO_FAILURE_ATTRIBUTION_L1.md
 docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
@@ -205,15 +206,36 @@ HZ11SpanSourceAttribution-L1:
     keep transfer as remote/mixed microbench lane only. Do not promote
     span-return. Split next work into current-span pooling and metadata-lock
     batching/removal.
+
+HZ11CurrentSpanPoolThreadExit-L1:
+  opt-in sibling and larson gate added:
+    libhz11_span_transfer_thread_exit.so
+    hakozuna-hz11/scripts/run_hz11_current_span_thread_exit.sh
+  Output:
+    bench_results/hz11_current_span_thread_exit_20260708T000125Z/summary.md
+  Verdict:
+    GO for larson RSS/thread-churn attribution; keep opt-in pending broader
+    macro gate.
+  Key results:
+    larson RUNS=3:
+      transfer median RSS 654080 KiB, wall 4.170s
+      thread-exit median RSS 273280 KiB, wall 4.138s
+      tcmalloc median RSS 278912 KiB, wall 4.144s
+    pool counters show drop=0 and span_create is 17..24 instead of tens of
+    thousands.
+  Decision:
+    current-span suffix pooling fixes the larson RSS source. Do not promote to
+    default until python_alloc, mstress, sh6bench, xmalloc_test, cache_scratch,
+    and larson are rechecked together.
 ```
 
 ## Next Step
 
 ```text
 Candidate speed boxes:
-  HZ11CurrentSpanPoolThreadExit-L1:
-    address larson RSS by salvaging/reusing per-thread current spans on thread
-    churn or by adding a span source pool before fresh arena carve.
+  HZ11MacroSpeedLaneGateWithThreadExit-L1:
+    run the macro gate against tcmalloc, hz11-span-transfer, and
+    hz11-span-transfer-thread-exit before any promotion claim.
 
   HZ11SpanReturnMetadataBatch-L1:
     if span-return is retried, remove or batch per-object metadata locking;

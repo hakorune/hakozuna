@@ -73,6 +73,12 @@
 #error "HZ11_CACHE_SOA is only defined for the no-bytes speed-ceiling lane"
 #endif
 
+/* HZ11CurrentSpanPoolThreadExit-L1: opt-in thread-exit salvage for the
+ * transfer span lane. The default path has no pthread key/destructor. */
+#ifndef HZ11_CURRENT_SPAN_THREAD_EXIT
+#define HZ11_CURRENT_SPAN_THREAD_EXIT 0
+#endif
+
 typedef struct H11ClassCache {
   void* items[HZ11_CACHE_CAP];
   uint32_t count;
@@ -135,6 +141,7 @@ H11ThreadCache* hz11_thread_cache_init_slow(void);
 void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr);
 void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id);
+void hz11_current_span_pool_dump_stats(void);
 
 /* ---------- hot path (static inline) ---------- */
 
