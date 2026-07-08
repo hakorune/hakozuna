@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11MacroSpeedLaneGateWithFine128-L1 is measured as MIXED / no promotion.
+  HZ11MacroCurrentRSSGateSemantics-L1 is measured as gate-semantics GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -36,7 +36,8 @@ Macro promotion blockers:
   RSS win to pass the focused RSS guard while avoiding the worst global
   fineclass remote/mixed RSS expansion. Full macro gate with fine128 passes
   correctness, larson, xmalloc/cache_scratch, and sh6bench max RSS, but current
-  RSS still fails on python_alloc and sh6bench.
+  RSS still fails on python_alloc and sh6bench. Focused current-RSS semantics
+  diagnostics clear that blocker under a documented stabilized-sampling rule.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -65,6 +66,7 @@ docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
 docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
 docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
+docs/HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -520,28 +522,51 @@ HZ11MacroSpeedLaneGateWithFine128-L1:
   Decision:
     fine128 remains the best sh6bench RSS candidate, but no macro promotion
     until current-RSS gate semantics/sampling are resolved.
+
+HZ11MacroCurrentRSSGateSemantics-L1:
+  Output:
+    bench_results/hz11_macro_current_rss_20260708T085625Z/summary.md
+    bench_results/hz11_macro_current_rss_20260708T085828Z/summary.md
+  Record:
+    docs/HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md
+  Verdict:
+    GO for gate semantics only; no allocator policy change or promotion.
+  Key result:
+    Authoritative RUNS=10 5ms sampling:
+      python_alloc:
+        tcmalloc max/last RSS 104128 / 104128 KiB
+        fine128 max/last RSS 118506 / 118512 KiB
+        fine128/tcmalloc last RSS 1.138x
+      sh6bench:
+        tcmalloc max/last/p95 RSS 263936 / 263616 / 263616 KiB
+        fine128 max/last/p95 RSS 323520 / 323264 / 307648 KiB
+        fine128/tcmalloc last RSS 1.226x
+        fine128/tcmalloc p95 RSS 1.167x
+  Decision:
+    max RSS remains the primary hard guard. current RSS hard-fails only when a
+    focused RUNS>=10 stability check also fails or shows a large stable retained
+    footprint. The prior fine128 current-RSS blocker is cleared under this rule.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11MacroCurrentRSSGateSemantics-L1
+  HZ11MacroSpeedLaneGateFine128Reclassify-L1
 
 Goal:
-  Decide whether the macro gate should use max RSS, current RSS, or a stabilized
-  sampled-current rule for fast/timing-sensitive rows before promoting fine128.
+  Reclassify or rerun the fine128 macro gate under the documented current-RSS
+  semantics rule.
 
 Boundary:
-  diagnostics/gate semantics only.
+  gate/reclassification only.
   no allocator policy change.
-  no promotion claim.
+  fine128 remains opt-in unless the gate is explicitly marked GO.
 
 Required evidence:
-  focused python_alloc RUNS>=10 current/max stability
-  focused sh6bench RUNS>=10 current/max stability
-  whether current RSS failure is sampler timing or steady retained footprint
-  a documented rule for promotion gates
+  apply HZ11MacroCurrentRSSGateSemantics-L1 to the fine128 macro gate
+  decide whether existing RUNS=5 macro gate plus focused RUNS=10 RSS stability
+  is enough, or rerun the full macro gate
 
 Keep:
   transfer as the remote/mixed microbench lane.

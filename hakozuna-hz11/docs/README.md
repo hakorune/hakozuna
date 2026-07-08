@@ -96,6 +96,11 @@ HZ11_SELECTIVE_FINECLASS_RANGE_L1.md:
   fine128 as the next candidate because it brings focused sh6bench RSS inside
   the guard while avoiding the worst global-fineclass remote/mixed RSS expansion
 
+HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md:
+  diagnostic-only macro RSS gate semantics box; defines max RSS as the primary
+  hard guard and requires focused RUNS>=10 stability evidence before current
+  RSS can hard-fail tiny or timing-sensitive rows
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
