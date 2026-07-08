@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11FineclassPythonAllocCurrentRSS-L1 is measured as diagnostic GO.
+  HZ11FineclassRemoteMixedTradeoff-L1 is measured as general-candidate NO-GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -30,6 +30,9 @@ Macro promotion blockers:
   macro gate misses python_alloc current RSS by a small ratio. Focused
   python_alloc RUNS=10 diagnostics show that miss is a sampling artifact on a
   tiny denominator rather than a steady fineclass resident-footprint regression.
+  Remote/mixed tradeoff shows global fineclass is not a clean general candidate:
+  it improves sh6bench RSS but raises RSS/span_create and loses throughput on
+  several transfer-matrix rows.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -69,6 +72,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md
+  docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md
   docs/no_go/HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md
   docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md
 
@@ -417,30 +421,60 @@ HZ11FineclassPythonAllocCurrentRSS-L1:
   Decision:
     The macro gate's 1792 KiB vs 2304 KiB current-RSS miss is a sampling
     artifact on a tiny denominator, not a steady fineclass RSS regression.
+
+HZ11FineclassRemoteMixedTradeoff-L1:
+  Output:
+    bench_results/hz11_transfer_promotion_20260708T080416Z/summary.md
+  Record:
+    docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md
+  Verdict:
+    NO-GO for global fineclass as a general remote/mixed candidate.
+  Key result:
+    RUNS=10 transfer matrix:
+      fineclass/span-transfer ops:
+        main_local0 0.893x
+        main_r50 0.912x
+        main_r90 0.943x
+        small_remote90 0.941x
+        medium_r50 0.903x
+        medium_r90 0.983x
+      fineclass/span-transfer post RSS:
+        main_local0 3.800x
+        main_r50 1.436x
+        main_r90 1.388x
+        small_remote90 2.906x
+        medium_r50 1.329x
+        medium_r90 0.967x
+      span_create also rises on several rows:
+        main_local0 4.105x
+        main_r50 1.880x
+        small_remote90 3.864x
+  Decision:
+    Keep global fineclass as a sh6bench RSS research lane only. Do not rerun a
+    macro promotion gate with global fineclass as the next general candidate.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11FineclassRemoteMixedTradeoff-L1
+  HZ11SelectiveFineclassRange-L1
 
 Goal:
-  Measure the fixed/local and remote/mixed tradeoff of the fineclass candidate
-  before another macro promotion attempt.
+  Preserve most of the sh6bench RSS/class-packing win while avoiding the
+  remote/mixed RSS/span-create expansion from global fineclass.
 
 Boundary:
-  focused tradeoff gate only.
-  fineclass candidate remains opt-in.
+  size-class mapping policy only.
+  opt-in sibling lane only.
   no macro promotion claim.
 
 Required evidence:
-  fixed/local smoke stays neutral
-  remote/mixed throughput and RSS deltas vs span-transfer and batch32
-  whether fineclass's extra transfer inserts are acceptable outside sh6bench
+  sh6bench RSS/wall versus batch32 and global fineclass
+  transfer matrix spot check versus span-transfer, batch32, and global fineclass
+  class-range evidence for why selected fine classes are included
 
 Keep:
-  transfer as the remote/mixed microbench lane only until fineclass RSS,
-  python_alloc current RSS, remote/mixed tradeoffs, and the full macro gate are
-  resolved.
+  transfer as the remote/mixed microbench lane.
+  global fineclass as a sh6bench RSS research lane only.
 ```

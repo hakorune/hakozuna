@@ -61,6 +61,11 @@ HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   larson RSS, xmalloc/cache_scratch, and improves sh6bench RSS, but misses the
   macro gate on python_alloc current RSS
 
+HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md:
+  remote/mixed transfer-matrix tradeoff for global fineclass; keeps fineclass
+  as a sh6bench RSS research lane only because global fineclass lowers
+  throughput and increases RSS/span_create on several remote/mixed rows
+
 HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md:
   central-only full-span reuse under batch32; avoids transfer metadata locks but
   does not materially reduce span_create, arena_carve, or sh6bench RSS

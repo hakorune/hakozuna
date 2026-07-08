@@ -72,6 +72,7 @@ mkdir -p "${OUTDIR}" "$(dirname "${BENCH_BIN}")"
 
 if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
+    preload-span-transfer-thread-exit-cap-batch32 \
     preload-span-transfer-thread-exit-cap-batch32-fineclass >/dev/null
   "${CC:-gcc}" -O3 -Wall -Wextra -Werror -std=c11 -D_GNU_SOURCE \
     -pthread -o "${BENCH_BIN}" "${REPO_ROOT}/bench/bench_matrix_malloc.c"
@@ -87,6 +88,9 @@ allocator_lib() {
       bench_find_first_existing "${HZ11_SPAN_SOA_SO:-}" "${ROOT}/libhz11_span_soa.so" ;;
     hz11-span-transfer)
       bench_find_first_existing "${HZ11_SPAN_TRANSFER_SO:-}" "${ROOT}/libhz11_span_transfer.so" ;;
+    hz11-thread-exit-cap-batch32)
+      bench_find_first_existing "${HZ11_BATCH32_SO:-}" \
+        "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" ;;
     hz11-thread-exit-cap-batch32-fineclass)
       bench_find_first_existing "${HZ11_FINECLASS_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so" ;;
@@ -127,7 +131,7 @@ for alloc in "${allocator_list[@]}"; do
 done
 
 csv="${OUTDIR}/samples.csv"
-printf 'row,run,allocator,lib,throughput,throughput_p25,throughput_p75,steady,steady_p25,steady_p75,post_rss,peak_rss,minor_faults,work_ms,tail_ms,xfer_hit,xfer_miss,xfer_insert,xfer_spill,central_hit,central_miss,central_insert,refill_xfer,refill_central,refill_span,log\n' > "${csv}"
+printf 'row,run,allocator,lib,throughput,throughput_p25,throughput_p75,steady,steady_p25,steady_p75,post_rss,peak_rss,minor_faults,work_ms,tail_ms,xfer_hit,xfer_miss,xfer_insert,xfer_spill,central_hit,central_miss,central_insert,refill_xfer,refill_central,refill_span,span_create,log\n' > "${csv}"
 
 run_case() {
   local row="$1" run="$2" alloc="$3" args="$4"
@@ -145,6 +149,7 @@ run_case() {
 
   read -r -a argv <<< "${args}"
   if [[ "${alloc}" == "hz11-span-transfer" ||
+        "${alloc}" == "hz11-thread-exit-cap-batch32" ||
         "${alloc}" == "hz11-thread-exit-cap-batch32-fineclass" ]]; then
     env HZ11_DUMP_STATS=1 LD_PRELOAD="${lib}" "${BENCH_BIN}" "${argv[@]}" \
       >> "${log}" 2>&1
@@ -190,15 +195,16 @@ run_case() {
         else if (a[1] == "refill_xfer") refill_xfer = a[2]
         else if (a[1] == "refill_central") refill_central = a[2]
         else if (a[1] == "refill_span") refill_span = a[2]
+        else if (a[1] == "span_create") span_create = a[2]
       }
     }
     END {
-      printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
+      printf "%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s\n",
         row, run, alloc, lib, throughput, throughput_p25, throughput_p75,
         steady, steady_p25, steady_p75, post, peak, faults, work, tail,
         xfer_hit, xfer_miss, xfer_insert, xfer_spill, central_hit,
         central_miss, central_insert, refill_xfer, refill_central, refill_span,
-        logfile
+        span_create, logfile
     }
   ' "${log}" >> "${csv}"
 }
@@ -290,17 +296,19 @@ checks = []
 def check(name, ok, detail):
     checks.append((name, bool(ok), detail))
 
-local_ratio = ratio("main_local0", "hz11-span-transfer", "hz11-span-soa")
-check("fixed/local hit path no regression",
-      not math.isnan(local_ratio) and local_ratio >= 0.97,
-      f"main_local0 transfer/span-soa={local_ratio:.3f}")
+if "hz11-span-soa" in allocators:
+    local_ratio = ratio("main_local0", "hz11-span-transfer", "hz11-span-soa")
+    check("fixed/local hit path no regression",
+          not math.isnan(local_ratio) and local_ratio >= 0.97,
+          f"main_local0 transfer/span-soa={local_ratio:.3f}")
 
 for row in ("main_r50", "main_r90"):
-    soa_ratio = ratio(row, "hz11-span-transfer", "hz11-span-soa")
     tc_ratio = ratio(row, "hz11-span-transfer", "tcmalloc")
-    check(f"{row} improves over span-soa",
-          not math.isnan(soa_ratio) and soa_ratio >= 1.10,
-          f"transfer/span-soa={soa_ratio:.3f}")
+    if "hz11-span-soa" in allocators:
+        soa_ratio = ratio(row, "hz11-span-transfer", "hz11-span-soa")
+        check(f"{row} improves over span-soa",
+              not math.isnan(soa_ratio) and soa_ratio >= 1.10,
+              f"transfer/span-soa={soa_ratio:.3f}")
     check(f"{row} tcmalloc parity",
           not math.isnan(tc_ratio) and tc_ratio >= 1.00,
           f"transfer/tcmalloc={tc_ratio:.3f}")
@@ -322,12 +330,13 @@ check("transfer cache is used on main remote rows",
       f"xfer_hit={int(xfer_hit)} xfer_insert={int(xfer_insert)}")
 
 for row in ("small_remote90", "medium_r50", "medium_r90"):
-    soa_ratio = ratio(row, "hz11-span-transfer", "hz11-span-soa")
     tc_rss = ratio(row, "hz11-span-transfer", "tcmalloc", key="post_rss")
     soa_rss = ratio(row, "hz11-span-transfer", "hz11-span-soa", key="post_rss")
-    check(f"{row} no large throughput regression vs span-soa",
-          not math.isnan(soa_ratio) and soa_ratio >= 0.90,
-          f"transfer/span-soa={soa_ratio:.3f}")
+    if "hz11-span-soa" in allocators:
+        soa_ratio = ratio(row, "hz11-span-transfer", "hz11-span-soa")
+        check(f"{row} no large throughput regression vs span-soa",
+              not math.isnan(soa_ratio) and soa_ratio >= 0.90,
+              f"transfer/span-soa={soa_ratio:.3f}")
     check(f"{row} RSS not materially worse",
           (math.isnan(tc_rss) or tc_rss <= 1.25) and (math.isnan(soa_rss) or soa_rss <= 1.25),
           f"postRSS transfer/tcmalloc={tc_rss:.3f} transfer/span-soa={soa_rss:.3f}")
@@ -339,8 +348,8 @@ with open(dst, "w", encoding="utf-8") as f:
     f.write(f"Conditions: RUNS={runs}, THREADS={threads}, ITERS={iters}, LIVE_WINDOW={live_window}.\n\n")
     f.write("Allocators: " + ", ".join(f"`{item}`" for item in allocators) + ".\n\n")
     f.write("## Summary\n\n")
-    f.write("| Row | Allocator | median ops/s | p25 ops/s | p75 ops/s | post RSS MiB | peak RSS MiB | xfer_hit | xfer_insert | central_insert |\n")
-    f.write("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|\n")
+    f.write("| Row | Allocator | median ops/s | p25 ops/s | p75 ops/s | post RSS MiB | peak RSS MiB | xfer_hit | xfer_insert | central_insert | span_create |\n")
+    f.write("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
     for row in target_rows:
         for alloc in allocators:
             items = groups.get((row, alloc), [])
@@ -351,7 +360,7 @@ with open(dst, "w", encoding="utf-8") as f:
                 f"{pct(items, 'throughput', 0.25):.3f} | {pct(items, 'throughput', 0.75):.3f} | "
                 f"{mib(med(items, 'post_rss')):.2f} | {mib(med(items, 'peak_rss')):.2f} | "
                 f"{int(total(items, 'xfer_hit'))} | {int(total(items, 'xfer_insert'))} | "
-                f"{int(total(items, 'central_insert'))} |\n"
+                f"{int(total(items, 'central_insert'))} | {int(total(items, 'span_create'))} |\n"
             )
     f.write("\n## Ratios\n\n")
     f.write("| Row | transfer/span-soa ops | transfer/tcmalloc ops | transfer/tcmalloc post RSS |\n")
@@ -362,6 +371,37 @@ with open(dst, "w", encoding="utf-8") as f:
             f"{ratio(row, 'hz11-span-transfer', 'tcmalloc'):.3f} | "
             f"{ratio(row, 'hz11-span-transfer', 'tcmalloc', key='post_rss'):.3f} |\n"
         )
+    extra_allocs = [
+        alloc for alloc in allocators
+        if alloc not in ("tcmalloc", "hz11-span-soa", "hz11-span-transfer")
+    ]
+    if extra_allocs:
+        f.write("\n## Extra Allocator Tradeoffs\n\n")
+        f.write("| Row | Allocator | ops/span-transfer | ops/tcmalloc | ops/hz11-thread-exit-cap-batch32 | postRSS/span-transfer | postRSS/tcmalloc | postRSS/hz11-thread-exit-cap-batch32 | xfer_insert/span-transfer | central_insert/span-transfer | span_create/span-transfer |\n")
+        f.write("|---|---|---:|---:|---:|---:|---:|---:|---:|---:|---:|\n")
+        for row in target_rows:
+            for alloc in extra_allocs:
+                items = groups.get((row, alloc), [])
+                transfer_items = groups.get((row, "hz11-span-transfer"), [])
+                xfer_base = total(transfer_items, "xfer_insert")
+                central_base = total(transfer_items, "central_insert")
+                span_base = total(transfer_items, "span_create")
+                xfer = total(items, "xfer_insert")
+                central = total(items, "central_insert")
+                span = total(items, "span_create")
+                xfer_ratio = xfer / xfer_base if xfer_base else math.nan
+                central_ratio = central / central_base if central_base else math.nan
+                span_ratio = span / span_base if span_base else math.nan
+                f.write(
+                    f"| {row} | {alloc} | "
+                    f"{ratio(row, alloc, 'hz11-span-transfer'):.3f} | "
+                    f"{ratio(row, alloc, 'tcmalloc'):.3f} | "
+                    f"{ratio(row, alloc, 'hz11-thread-exit-cap-batch32'):.3f} | "
+                    f"{ratio(row, alloc, 'hz11-span-transfer', key='post_rss'):.3f} | "
+                    f"{ratio(row, alloc, 'tcmalloc', key='post_rss'):.3f} | "
+                    f"{ratio(row, alloc, 'hz11-thread-exit-cap-batch32', key='post_rss'):.3f} | "
+                    f"{xfer_ratio:.3f} | {central_ratio:.3f} | {span_ratio:.3f} |\n"
+                )
     f.write("\n## Gate\n\n")
     f.write(f"Verdict: **{verdict}**\n\n")
     f.write("| Check | Result | Detail |\n")

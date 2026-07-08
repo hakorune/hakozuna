@@ -96,6 +96,11 @@ docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   sh6bench RSS reduction but does not promote because python_alloc current RSS
   misses the macro threshold
 
+docs/no_go/HZ11_FINECLASS_REMOTE_MIXED_TRADEOFF_L1.md:
+  remote/mixed transfer-matrix tradeoff for the global fineclass candidate;
+  keeps fineclass as a sh6bench RSS research lane only because remote/mixed
+  throughput/RSS/span-create tradeoffs are material
+
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
   whole-arena eager commit as the sh6bench RSS/page-footprint lever
