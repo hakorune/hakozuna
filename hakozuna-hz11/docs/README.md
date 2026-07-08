@@ -106,6 +106,11 @@ HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md:
   semantics rule; marks fine128 GO as the next opt-in macro candidate, with
   final remote/mixed confirmation still required before stronger promotion
 
+HZ11_FINE128_REMOTE_MIXED_FINAL_CONFIRM_L1.md:
+  RUNS=10 remote/mixed confirmation for fine128; confirms fine128 as the
+  recommended opt-in macro speed-lane candidate while keeping span-transfer as
+  the cleaner remote/mixed-only lane
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

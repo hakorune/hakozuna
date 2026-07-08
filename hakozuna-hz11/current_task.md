@@ -2,21 +2,21 @@
 
 ```text
 Active status:
-  HZ11MacroSpeedLaneGateFine128Reclassify-L1 is measured as GO for the next
-  opt-in macro candidate. No default promotion.
+  HZ11Fine128RemoteMixedFinalConfirm-L1 is measured as GO for fine128 as the
+  recommended opt-in macro speed-lane candidate. No default promotion.
 
 Current stance:
   HZ11 remains a speed-first research line.
-  libhz11_span_transfer.so is the remote/mixed microbench speed-lane candidate.
+  libhz11_span_transfer.so remains the remote/mixed microbench speed-lane
+  candidate.
   libhz11_span_transfer_thread_exit.so fixes larson thread-churn RSS, but is
   not a macro default.
   libhz11_span_transfer_thread_exit_cap_batch32.so is the current sh6bench wall
   candidate.
   libhz11_span_transfer_thread_exit_cap_batch32_fine128.so is the current
-  selective sh6bench RSS/class-packing candidate.
+  recommended opt-in macro speed-lane candidate.
   Global fineclass remains a sh6bench RSS research lane only.
-  Neither lane is macro default until fine128 also clears final remote/mixed
-  confirmation.
+  The default allocator path is unchanged.
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
@@ -41,7 +41,9 @@ Macro promotion blockers:
   RSS still fails on python_alloc and sh6bench under the old single-sample rule.
   Focused current-RSS semantics diagnostics clear that blocker under a
   documented stabilized-sampling rule, so fine128 is reclassified as the next
-  opt-in macro candidate.
+  opt-in macro candidate. Final RUNS=10 remote/mixed confirmation keeps
+  fine128 acceptable versus batch32, but span-transfer remains the cleaner
+  remote/mixed-only speed lane.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -72,6 +74,7 @@ docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
 docs/HZ11_SELECTIVE_FINECLASS_RANGE_L1.md
 docs/HZ11_MACRO_CURRENT_RSS_GATE_SEMANTICS_L1.md
 docs/HZ11_MACRO_SPEED_LANE_FINE128_RECLASSIFY_L1.md
+docs/HZ11_FINE128_REMOTE_MIXED_FINAL_CONFIRM_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -572,30 +575,54 @@ HZ11MacroSpeedLaneGateFine128Reclassify-L1:
   Decision:
     fine128 is now the best opt-in macro candidate, but requires final
     remote/mixed RUNS=10 confirmation before stronger promotion.
+
+HZ11Fine128RemoteMixedFinalConfirm-L1:
+  Output:
+    bench_results/hz11_transfer_promotion_20260708T091747Z/summary.md
+  Record:
+    docs/HZ11_FINE128_REMOTE_MIXED_FINAL_CONFIRM_L1.md
+  Verdict:
+    GO for fine128 as the recommended opt-in macro speed-lane candidate.
+    No default promotion.
+  Key result:
+    RUNS=10 transfer matrix:
+      fine128 vs batch32:
+        worst ops ratio 0.935x on main_local0
+        worst post RSS ratio 1.094x on main_local0
+        medium_r50 ops/RSS 1.017x / 0.996x
+        medium_r90 ops/RSS 0.988x / 1.072x
+      fine128 vs span-transfer:
+        medium_r50 ops/RSS 0.929x / 1.261x
+        medium_r90 ops/RSS 0.918x / 1.281x
+      fine128 vs tcmalloc:
+        remote/mixed throughput remains >1.0x on all rows and RSS remains far
+        below tcmalloc on all rows.
+  Decision:
+    fine128 is the recommended opt-in macro candidate. Do not make it default
+    and do not replace span-transfer as the remote/mixed microbench lane.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Fine128RemoteMixedFinalConfirm-L1
+  HZ11Fine128CandidatePositioning-L1
 
 Goal:
-  Confirm fine128 remote/mixed side effects with RUNS=10 before stronger
-  promotion beyond opt-in macro candidate status.
+  Make docs and Makefile lane naming clearly distinguish the recommended
+  opt-in macro candidate from the remote/mixed-only lane and default path.
 
 Boundary:
-  remote/mixed gate only.
+  positioning/docs/build-target cleanup only.
   no allocator policy change.
-  fine128 remains opt-in unless this confirmation is explicitly GO.
+  no default path change.
 
 Required evidence:
-  compare tcmalloc, hz11-span-transfer, batch32, fine128
-  RUNS=10 THREADS=16 ITERS=100000 transfer matrix rows
-  check throughput, post/peak RSS, span_create, transfer counters
+  README/current_task/Makefile target names make lane boundaries obvious
+  standalone check remains green
 
 Keep:
-  transfer as the remote/mixed microbench lane.
-  fine128 as the current opt-in macro candidate.
+  span-transfer as the remote/mixed microbench lane.
+  fine128 as the recommended opt-in macro candidate.
   global fineclass as a sh6bench RSS research lane only.
 ```
