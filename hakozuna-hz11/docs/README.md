@@ -86,6 +86,11 @@ HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md:
   attribution; keeps batch32 transfer policy fixed and requires focused
   correctness before any macro gate
 
+HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md:
+  diagnostic-only attribution for the fineclass python_alloc current-RSS macro
+  gate miss; treats the small miss as a sampling artifact on a tiny denominator
+  rather than a steady fineclass resident-footprint regression
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11MacroSpeedLaneGateWithFineclass-L1 is measured as macro-promotion NO-GO.
+  HZ11FineclassPythonAllocCurrentRSS-L1 is measured as diagnostic GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -10,7 +10,11 @@ Current stance:
   libhz11_span_transfer_thread_exit.so fixes larson thread-churn RSS, but is
   not a macro default.
   libhz11_span_transfer_thread_exit_cap_batch32.so is the current sh6bench wall
-  candidate, but remains macro NO-GO while RSS/page footprint is unresolved.
+  candidate.
+  libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so is the current
+  sh6bench RSS/class-packing candidate.
+  Neither lane is macro default while fineclass python_alloc current RSS and
+  remote/mixed tradeoffs remain unresolved.
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
@@ -23,7 +27,9 @@ Macro promotion blockers:
   after class rounding, and requested-size observation shows requested payload
   high-water is far below HZ11 slot high-water. Fine size classes materially
   reduce sh6bench RSS while keeping batch32 wall roughly flat, but the full
-  macro gate misses python_alloc current RSS by a small ratio.
+  macro gate misses python_alloc current RSS by a small ratio. Focused
+  python_alloc RUNS=10 diagnostics show that miss is a sampling artifact on a
+  tiny denominator rather than a steady fineclass resident-footprint regression.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -50,6 +56,7 @@ docs/HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md
 docs/HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
+docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -385,30 +392,55 @@ HZ11MacroSpeedLaneGateWithFineclass-L1:
     fineclass is not a macro default yet. The blocker is the small python_alloc
     current-RSS ratio miss, with remote/mixed tradeoff still needing a dedicated
     decision if fineclass is pursued.
+
+HZ11FineclassPythonAllocCurrentRSS-L1:
+  Output:
+    bench_results/hz11_fineclass_python_alloc_rss_20260708T075016Z/summary.md
+    bench_results/hz11_fineclass_python_alloc_rss_20260708T075132Z/summary.md
+  Record:
+    docs/HZ11_FINECLASS_PYTHON_ALLOC_CURRENT_RSS_L1.md
+  Verdict:
+    GO for diagnosis only; no macro promotion.
+  Key result:
+    RUNS=10 focused python_alloc:
+      5ms sampling:
+        tcmalloc current RSS 104128 KiB
+        batch32 current RSS 118792 KiB
+        fineclass current RSS 117764 KiB
+      20ms sampling:
+        tcmalloc current RSS 104064 KiB
+        batch32 current RSS 118790 KiB
+        fineclass current RSS 117814 KiB
+      span_create is equal: batch32 17980, fineclass 17980
+      fineclass central final count is lower: 734400 vs 835520
+      fineclass request-to-slot waste is lower by about 2.1 MiB
+  Decision:
+    The macro gate's 1792 KiB vs 2304 KiB current-RSS miss is a sampling
+    artifact on a tiny denominator, not a steady fineclass RSS regression.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11FineclassPythonAllocCurrentRSS-L1
+  HZ11FineclassRemoteMixedTradeoff-L1
 
 Goal:
-  Attribute the python_alloc current-RSS ratio miss under fineclass without
-  changing the size-class policy yet.
+  Measure the fixed/local and remote/mixed tradeoff of the fineclass candidate
+  before another macro promotion attempt.
 
 Boundary:
-  diagnostics only.
+  focused tradeoff gate only.
   fineclass candidate remains opt-in.
   no macro promotion claim.
 
 Required evidence:
-  python_alloc current/max RSS under tcmalloc, batch32, fineclass
-  class/source/live counters if practical
-  whether the 512 KiB current-RSS miss is allocator-resident, sampling noise, or
-  class-policy side effect
+  fixed/local smoke stays neutral
+  remote/mixed throughput and RSS deltas vs span-transfer and batch32
+  whether fineclass's extra transfer inserts are acceptable outside sh6bench
 
 Keep:
-  transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
-  the full macro gate pass.
+  transfer as the remote/mixed microbench lane only until fineclass RSS,
+  python_alloc current RSS, remote/mixed tradeoffs, and the full macro gate are
+  resolved.
 ```
