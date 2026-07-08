@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchTransferBatchVsCap-L1 is measured as attribution GO.
+  HZ11Sh6benchTransferBatchGranularity-L1 is measured as attribution GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -36,6 +36,7 @@ docs/HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md
 docs/HZ11_SH6BENCH_PATH_COST_ATTRIBUTION_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_CENTRAL_PATH_COST_L1.md
 docs/HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md
+docs/HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -190,25 +191,44 @@ HZ11Sh6benchTransferBatchVsCap-L1:
       HZ11_TRANSFER_CAP=8192 eliminates xfer_spill/central_insert but does not
       improve wall by itself.
       RSS/span_create stay essentially unchanged.
+
+HZ11Sh6benchTransferBatchGranularity-L1:
+  Output:
+    bench_results/hz11_sh6bench_transfer_batch_granularity_20260708T060304Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md
+  Verdict:
+    GO for batch granularity attribution; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      tcmalloc wall 0.354s, max RSS 262016 KiB
+      batch16 wall 4.539s, max RSS 352128 KiB
+      batch32 wall 3.506s, max RSS 350336 KiB
+      batch64 wall 5.501s, max RSS 352128 KiB
+      batch128 wall 9.312s, max RSS 352128 KiB
+    Decision:
+      batch32 is the smallest useful wall candidate.
+      batch64/batch128 regress as xfer_insert and central_insert grow.
+      RSS/span_create remain unresolved.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchTransferBatchGranularity-L1
+  HZ11MacroSpeedLaneGateWithBatch32-L1
 
 Goal:
-  tune or bound transfer batch/refill granularity after batch32 proved to be
-  the wall lever.
+  rerun focused/full macro gate with batch32 candidate before treating it as a
+  broader speed-lane improvement.
 
 Boundary:
-  diagnostic siblings only; do not promote macro default until sh6bench and the
-  full macro gate pass.
+  candidate sibling only; do not promote macro default unless correctness,
+  sh6bench wall/RSS, and existing macro rows pass gate thresholds.
 
 Required evidence:
-  A/B batch widths on sh6bench; track wall, RSS, xfer_hit/miss, xfer_insert,
-  xfer_spill, central_insert, central high-water, and span_create.
+  python_alloc, mstress, sh6bench, xmalloc_test, cache_scratch, larson vs
+  tcmalloc, thread-exit-cap, and batch32 candidate.
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and

@@ -63,6 +63,10 @@ HZ11_SH6BENCH_TRANSFER_BATCH_VS_CAP_L1.md:
   splits the xferwide sh6bench wall improvement into transfer batch vs transfer
   capacity; shows batch width is the wall lever, not cap/spill elimination
 
+HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md:
+  compares transfer batch widths 16/32/64/128 for sh6bench; selects batch32 as
+  the smallest useful wall candidate and rejects wider batches as regressions
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
