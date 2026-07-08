@@ -15,6 +15,10 @@
 #define HZ11_ARENA_BYTES (1ull << 32)               /* 4 GiB virtual */
 #define HZ11_SPAN_COUNT (HZ11_ARENA_BYTES >> HZ11_SPAN_SHIFT) /* 65536 */
 
+#ifndef HZ11_ARENA_NOHUGEPAGE
+#define HZ11_ARENA_NOHUGEPAGE 0
+#endif
+
 /* State defined in hz11_span.c. */
 extern char* hz11_arena_base;
 extern uint8_t hz11_span_class[HZ11_SPAN_COUNT];

@@ -27,6 +27,9 @@ static void hz11_span_init_real(void) {
     hz11_arena_end = NULL;
     return;
   }
+#if HZ11_ARENA_NOHUGEPAGE
+  (void)madvise(base, HZ11_ARENA_BYTES, MADV_NOHUGEPAGE);
+#endif
   hz11_arena_base = (char*)base;
   hz11_arena_end = hz11_arena_base + HZ11_ARENA_BYTES;
   atomic_store_explicit(&hz11_span_cursor, hz11_arena_base, memory_order_relaxed);

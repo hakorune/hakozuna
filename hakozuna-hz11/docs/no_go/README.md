@@ -59,4 +59,8 @@ HZ11_MACRO_SPEED_LANE_BATCH32_L1.md:
 HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md:
   central-only full-span reuse under batch32; avoids transfer metadata locks but
   does not materially reduce span_create, arena_carve, or sh6bench RSS
+
+HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
+  `MADV_NOHUGEPAGE` arena policy probe under batch32; does not move RSS, wall,
+  minor faults, or fresh arena carve counts
 ```

@@ -88,6 +88,6 @@ HZ11_NO_GO_LEDGER.md:
 
 no_go/README.md:
   archive index for detailed HZ11 NO-GO, failed-promotion, and attribution-only
-  documents, including macro gates, span-source attribution, and thread-exit
-  failed promotion records
+  documents, including macro gates, span-source attribution, thread-exit failed
+  promotion records, and sh6bench span-reuse failures
 ```

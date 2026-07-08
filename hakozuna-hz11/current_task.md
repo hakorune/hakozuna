@@ -2,13 +2,15 @@
 
 ```text
 Active status:
-  HZ11Sh6benchSpanReusePolicy-L1 is measured as NO-GO.
+  HZ11Sh6benchArenaCommitPolicy-L1 is measured as NO-GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
   libhz11_span_transfer.so is the remote/mixed microbench speed-lane candidate.
   libhz11_span_transfer_thread_exit.so fixes larson thread-churn RSS, but is
   not a macro default.
+  libhz11_span_transfer_thread_exit_cap_batch32.so is the current sh6bench wall
+  candidate, but remains macro NO-GO while RSS/page footprint is unresolved.
 
 Macro promotion blockers:
   python_alloc and mstress now pass under the thread-exit-cap candidate.
@@ -16,7 +18,8 @@ Macro promotion blockers:
   shows batch32 is a useful wall lever with no obvious macro side effects, but
   sh6bench span/page footprint is now attributed to fresh arena-carved spans and
   missing span reuse. Central-only full-span reuse did not materially reduce
-  span_create, arena_carve, or RSS.
+  span_create, arena_carve, or RSS. MADV_NOHUGEPAGE also did not move RSS or
+  page faults.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -52,6 +55,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_BATCH32_L1.md
   docs/no_go/HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md
+  docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md
 
 Cleanup / baseline docs:
   docs/HZ11_TLS_FAST_PATH_L1.md
@@ -273,25 +277,44 @@ HZ11Sh6benchSpanReusePolicy-L1:
     Decision:
       central-only full-span reuse is too rare to move RSS or arena carve.
       It avoids transfer metadata locks, but does not solve the page footprint.
+
+HZ11Sh6benchArenaCommitPolicy-L1:
+  Output:
+    bench_results/hz11_sh6bench_arena_commit_20260708T065611Z/summary.md
+  Record:
+    docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md
+  Verdict:
+    NO-GO for sh6bench RSS/page-footprint fix.
+  Key result:
+    sh6bench RUNS=3:
+      batch32 wall 3.508s, max RSS 351104 KiB, minor faults 88218
+      batch32-nohuge wall 3.522s, max RSS 351616 KiB, minor faults 88168
+      batch32-source span_create/arena_carve 16728, carved about 1045.5 MiB
+      batch32-nohuge-source span_create/arena_carve 16765, carved about 1047.8 MiB
+    Decision:
+      MADV_NOHUGEPAGE does not move RSS/wall/faults.
+      RSS is not simple whole-arena eager commit or THP behavior.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchArenaCommitPolicy-L1
+  HZ11Sh6benchLiveObjectFootprintAttribution-L1
 
 Goal:
-  test whether the remaining sh6bench RSS gap is committed-page footprint that
-  can be reduced without requiring full central-span reuse.
+  compare live allocated payload/page demand against HZ11 fixed-span layout to
+  decide whether the next policy is span size, class packing, or lifecycle
+  accounting.
 
 Boundary:
   diagnostic/candidate sibling only; do not promote macro default until
   sh6bench wall/RSS and full macro gate pass.
 
 Required evidence:
-  A/B sh6bench wall/RSS/page counters vs batch32; preserve batch32 wall
-  improvement and avoid hot per-object metadata-lock accounting.
+  sh6bench class distribution, estimated live/touched payload pages, RSS, wall,
+  and source counters under batch32; avoid hot per-object metadata-lock
+  accounting.
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and
