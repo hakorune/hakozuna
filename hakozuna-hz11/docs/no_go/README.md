@@ -47,4 +47,8 @@ HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md:
   macro promotion gate for the thread-exit current-span pool lane; keeps the
   larson RSS fix, but python_alloc/mstress still abort and sh6bench still fails
   wall/RSS
+
+HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md:
+  macro promotion gate for the thread-exit plus central-cap candidate; clears
+  python_alloc/mstress and keeps larson RSS, but sh6bench still blocks promotion
 ```

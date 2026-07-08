@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11CentralPolicyCorrectness-L1 is measured as focused correctness GO.
+  HZ11MacroSpeedLaneGateWithThreadExitCap-L1 is measured as macro NO-GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -11,9 +11,9 @@ Current stance:
   not a macro default.
 
 Macro promotion blockers:
-  python_alloc and mstress pass under the thread-exit-cap candidate, but that
-  is still a fixed-cap sibling rather than a final/default central policy.
-  sh6bench remains far slower than tcmalloc and over the RSS guard.
+  python_alloc and mstress now pass under the thread-exit-cap candidate.
+  sh6bench remains far slower than tcmalloc and over the RSS guard, so macro
+  promotion is still blocked.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -41,6 +41,7 @@ NO-GO / attribution records:
   docs/no_go/HZ11_CENTRAL_FREELIST_SPAN_RETURN_L1.md
   docs/no_go/HZ11_SPAN_SOURCE_ATTRIBUTION_L1.md
   docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_L1.md
+  docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
 
 Cleanup / baseline docs:
   docs/HZ11_TLS_FAST_PATH_L1.md
@@ -98,35 +99,41 @@ HZ11CentralPolicyCorrectness-L1:
     central high-water:
       python_alloc class 2 high_water 4848
       mstress class 0 high_water about 58.5K-59.0K
+
+HZ11MacroSpeedLaneGateWithThreadExitCap-L1:
+  Output:
+    bench_results/hz11_macro_speed_lane_20260708T003638Z/summary.md
+  Record:
+    docs/no_go/HZ11_MACRO_SPEED_LANE_THREAD_EXIT_CAP_L1.md
+  Verdict:
+    NO-GO for macro promotion.
+  Key result:
+    Candidate hz11-thread-exit-cap:
+      python_alloc OK 5/5, wall 0.032s vs tcmalloc 0.033s
+      mstress OK 5/5, wall 0.221s vs tcmalloc 0.192s
+      larson RSS fix holds: 273152 KiB vs tcmalloc 278912 KiB
+      xmalloc_test 0.985x tcmalloc wall, 0.083x max RSS
+      cache_scratch 1.010x tcmalloc wall, 0.456x max RSS
+    Blocker:
+      sh6bench 12.848x tcmalloc wall, 1.358x max RSS, 1.306x current RSS
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11MacroSpeedLaneGateWithThreadExitCap-L1
-
-Goal:
-  re-run the broader macro gate with hz11-thread-exit-cap after the focused
-  correctness rows pass.
-
-Boundary:
-  measurement only; keep transfer/thread-exit/thread-exit-cap as opt-in
-  candidate lanes.
-
-Required evidence:
-  confirm remaining blockers before deciding between sh6bench metadata-lock work
-  and replacing fixed cap with a real central policy.
-
-Secondary box:
   HZ11SpanReturnMetadataBatch-L1
 
 Goal:
-  if span-return is retried, remove or batch per-object metadata locking.
+  reduce sh6bench transfer/span-return path cost after correctness rows pass.
 
-Reason:
-  HZ11SpanSourceAttribution-L1 ruled out sweep/O(n) as sh6bench span-return's
-  primary wall-time source.
+Boundary:
+  span-return or sh6bench-specific candidate lane only; do not promote macro
+  default until the full gate is rerun.
+
+Required evidence:
+  sh6bench wall improves materially without RSS regression; previous attribution
+  ruled out sweep/O(n) and pointed at metadata-lock traffic for span-return.
 
 Keep:
   transfer as the remote/mixed microbench lane only until macro correctness is
