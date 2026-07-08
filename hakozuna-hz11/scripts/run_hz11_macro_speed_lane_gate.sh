@@ -102,7 +102,7 @@ mkdir -p "${OUTDIR}"
 
 if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
-    preload-span-transfer-thread-exit >/dev/null
+    preload-span-transfer-thread-exit preload-span-transfer-thread-exit-cap >/dev/null
 fi
 
 find_first_existing() {
@@ -221,6 +221,8 @@ for alloc in "${requested_allocators[@]}"; do
       add_allocator hz11-span-transfer "${ROOT}/libhz11_span_transfer.so" "" ;;
     hz11-thread-exit)
       add_allocator hz11-thread-exit "${ROOT}/libhz11_span_transfer_thread_exit.so" "" ;;
+    hz11-thread-exit-cap)
+      add_allocator hz11-thread-exit-cap "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" "" ;;
     /*)
       if [[ -f "${alloc}" ]]; then
         add_allocator "$(basename "${alloc}")" "${alloc}" ""
@@ -382,6 +384,9 @@ add_hz11_diag_env() {
       cmd_ref+=(HZ11_DUMP_STATS=1) ;;
     hz11-thread-exit)
       cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1) ;;
+    hz11-thread-exit-cap)
+      cmd_ref+=(HZ11_DUMP_STATS=1 HZ11_DUMP_CURRENT_SPAN_POOL=1 \
+        HZ11_DUMP_CENTRAL_CLASSES=1) ;;
   esac
 }
 

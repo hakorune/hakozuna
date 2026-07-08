@@ -46,6 +46,10 @@ HZ11_CURRENT_SPAN_POOL_THREAD_EXIT_L1.md:
   opt-in thread-exit current-span suffix pool for the transfer lane; fixes
   larson thread-churn RSS without changing the default lane
 
+HZ11_CENTRAL_POLICY_CORRECTNESS_L1.md:
+  opt-in thread-exit plus central-cap correctness sibling; makes python_alloc
+  and mstress pass the focused gate without changing default lanes
+
 HZ11_SYS_RESOLVER_SPLIT_L0.md:
   cleanup box that moves dlsym/bootstrap/system allocator wrappers out of
   hz11_thread_cache.c
