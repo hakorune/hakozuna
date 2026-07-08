@@ -4,13 +4,25 @@
 #include <stddef.h>
 #include <stdint.h>
 
-/* HZ11 size classes: power-of-two slot sizes 16..65536 (13 classes), looked up
- * by a 16B-quantum table (NOT the HZ10 fine-class branch ladder). Objects larger
- * than 64KiB are LARGE and bypass the cache (system allocator). */
+/* HZ11 default size classes: power-of-two slot sizes 16..65536 (13 classes),
+ * looked up by a 16B-quantum table (NOT the HZ10 fine-class branch ladder).
+ * Objects larger than 64KiB are LARGE and bypass the cache (system allocator).
+ *
+ * HZ11_FINE_SIZE_CLASSES is an opt-in sh6bench attribution/candidate lane:
+ * 16B steps through 1024B, then powers of two through 64KiB. */
 
 #define HZ11_MIN_SIZE 16u
 #define HZ11_MAX_CACHED_SIZE 65536u           /* 64 KiB */
+#ifndef HZ11_FINE_SIZE_CLASSES
+#define HZ11_FINE_SIZE_CLASSES 0
+#endif
+
+#if HZ11_FINE_SIZE_CLASSES
+#define HZ11_FINE_LINEAR_CLASSES 64u          /* 16, 32, ... 1024 */
+#define HZ11_CLASS_COUNT 70u
+#else
 #define HZ11_CLASS_COUNT 13u                  /* slot_size = HZ11_MIN_SIZE << class_id */
+#endif
 #define HZ11_LARGE_CLASS 255u                 /* sentinel: bypass cache */
 #define HZ11_QUANTUM_SHIFT 4u                 /* 16-byte quanta */
 #define HZ11_SIZE_TABLE_ENTRIES \
@@ -44,7 +56,14 @@ static inline size_t hz11_class_slot_size(uint8_t class_id) {
   if (class_id >= HZ11_CLASS_COUNT) {
     return 0u;
   }
+#if HZ11_FINE_SIZE_CLASSES
+  if (class_id < HZ11_FINE_LINEAR_CLASSES) {
+    return (size_t)HZ11_MIN_SIZE * ((size_t)class_id + 1u);
+  }
+  return (size_t)2048u << (class_id - HZ11_FINE_LINEAR_CLASSES);
+#else
   return (size_t)HZ11_MIN_SIZE << class_id;
+#endif
 }
 
 #endif /* HZ11_SIZE_CLASS_H */

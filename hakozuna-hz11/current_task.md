@@ -2,7 +2,7 @@
 
 ```text
 Active status:
-  HZ11Sh6benchRequestSizeClassPackingObservation-L1 is measured as diagnostic GO.
+  HZ11Sh6benchSizeClassPolicyCandidate-L1 is measured as candidate GO.
 
 Current stance:
   HZ11 remains a speed-first research line.
@@ -21,7 +21,9 @@ Macro promotion blockers:
   span_create, arena_carve, or RSS. MADV_NOHUGEPAGE also did not move RSS or
   page faults. Live-footprint observation shows active spans are almost full
   after class rounding, and requested-size observation shows requested payload
-  high-water is far below HZ11 slot high-water.
+  high-water is far below HZ11 slot high-water. Fine size classes materially
+  reduce sh6bench RSS while keeping batch32 wall roughly flat, but still need a
+  full macro gate.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc
@@ -47,6 +49,7 @@ docs/HZ11_SH6BENCH_TRANSFER_BATCH_GRANULARITY_L1.md
 docs/HZ11_SH6BENCH_SPAN_PAGE_FOOTPRINT_WITH_BATCH32_L1.md
 docs/HZ11_SH6BENCH_LIVE_FOOTPRINT_OBSERVATION_L1.md
 docs/HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md
+docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 
 NO-GO / attribution records:
@@ -332,28 +335,50 @@ HZ11Sh6benchRequestSizeClassPackingObservation-L1:
     request-to-slot waste 148227597 bytes, 41.2%
   Decision:
     sh6bench RSS gap is primarily power-of-two class-packing waste.
+
+HZ11Sh6benchSizeClassPolicyCandidate-L1:
+  Output:
+    bench_results/hz11_sh6bench_size_class_policy_20260708T072222Z/summary.md
+    bench_results/hz11_macro_speed_lane_20260708T072459Z/summary.md
+  Record:
+    docs/HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md
+  Verdict:
+    GO as opt-in candidate only; no macro promotion.
+  Key result:
+    sh6bench RUNS=3:
+      batch32 wall 3.542s, max RSS 350592 KiB
+      fineclass wall 3.563s, max RSS 301568 KiB
+      fineclass span_create 14613 vs batch32 16750
+    class packing:
+      batch32 request-to-slot waste 148234895 bytes, 41.2%
+      fineclass request-to-slot waste 95470901 bytes, 31.1%
+    focused correctness:
+      python_alloc OK 3/3, wall 0.032s, max RSS 7040 KiB
+      mstress OK 3/3, wall 0.218s, max RSS 234916 KiB
+  Decision:
+    fineclass materially improves sh6bench RSS without losing the batch32 wall
+    win, but focused python_alloc current RSS needs full-gate recheck.
 ```
 
 ## Next Step
 
 ```text
 Primary next box:
-  HZ11Sh6benchSizeClassPolicyCandidate-L1
+  HZ11MacroSpeedLaneGateWithFineclass-L1
 
 Goal:
-  Add an opt-in finer size-class policy candidate for the sh6bench-heavy
-  request distribution while preserving batch32 transfer behavior.
+  Run the full macro promotion gate with the fineclass batch32 candidate.
 
 Boundary:
-  size-class policy only.
-  opt-in sibling only.
-  no macro promotion claim.
+  measurement only.
+  no default promotion unless every macro row passes the gate.
 
 Required evidence:
-  sh6bench wall/RSS versus batch32 and tcmalloc
-  requested-to-slot waste improvement
-  span_create and transfer counters
-  focused correctness rows before any macro gate
+  python_alloc and mstress correctness still pass
+  larson RSS fix still holds
+  sh6bench RSS improvement holds without wall regression
+  xmalloc/cache_scratch remain within gate
+  python_alloc current RSS is rechecked under full gate
 
 Keep:
   transfer as the remote/mixed microbench lane only until sh6bench wall/RSS and

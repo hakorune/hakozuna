@@ -10,10 +10,10 @@ void hz11_size_class_init(void) {
   for (size_t i = 0; i < HZ11_SIZE_TABLE_ENTRIES; ++i) {
     size_t size_max = (i + 1u) << HZ11_QUANTUM_SHIFT;
     uint8_t c = 0;
-    size_t slot = HZ11_MIN_SIZE;
+    size_t slot = hz11_class_slot_size(c);
     while (slot < size_max && (c + 1u) < HZ11_CLASS_COUNT) {
-      slot <<= 1u;
       c += 1u;
+      slot = hz11_class_slot_size(c);
     }
     hz11_size_table[i] = c;
   }

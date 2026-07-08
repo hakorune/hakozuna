@@ -81,6 +81,11 @@ HZ11_SH6BENCH_REQUEST_SIZE_CLASS_PACKING_OBSERVATION_L1.md:
   batch32; attributes the sh6bench RSS gap primarily to power-of-two
   class-packing waste
 
+HZ11_SH6BENCH_SIZE_CLASS_POLICY_CANDIDATE_L1.md:
+  opt-in fine size-class policy candidate for sh6bench after class-packing
+  attribution; keeps batch32 transfer policy fixed and requires focused
+  correctness before any macro gate
+
 docs/no_go/HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; rules out simple THP or
   whole-arena eager commit as the sh6bench RSS/page-footprint lever

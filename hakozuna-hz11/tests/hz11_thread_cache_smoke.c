@@ -115,10 +115,10 @@ int main(void) {
   for (size_t s = 1u; s <= HZ11_MAX_CACHED_SIZE; ++s) {
     size_t size_max = s;  /* the max size for this query is s itself */
     uint8_t expected = 0;
-    size_t slot = HZ11_MIN_SIZE;
+    size_t slot = hz11_class_slot_size(expected);
     while (slot < size_max && (expected + 1u) < HZ11_CLASS_COUNT) {
-      slot <<= 1u;
       expected += 1u;
+      slot = hz11_class_slot_size(expected);
     }
     uint8_t got = hz11_size_class(s);
     if (got != expected) {
