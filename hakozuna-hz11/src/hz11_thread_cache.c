@@ -174,6 +174,9 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
     }
   }
   tc->class_counts[class_id] = 0u;
+#if HZ11_CACHE_BYTE_ACCOUNTING
+  tc->cached_bytes -= hz11_class_slot_size(class_id) * n;
+#endif
 #else
   uint32_t n = tc->class_counts[class_id];
   HZ11_COUNT_ADD(tc->flush_items, n);
@@ -190,6 +193,9 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
     tc->class_items[class_id][i] = NULL;
   }
   tc->class_counts[class_id] = 0u;
+#if HZ11_CACHE_BYTE_ACCOUNTING
+  tc->cached_bytes -= hz11_class_slot_size(class_id) * n;
+#endif
 #endif /* HZ11_TRANSFER_CENTRAL_SPAN */
 #else
   H11ClassCache* cc = &tc->class_cache[class_id];
@@ -241,6 +247,9 @@ void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
 #if HZ11_CACHE_SOA
     tc->class_items[class_id][0] = ptr;
     tc->class_counts[class_id] = 1u;
+#if HZ11_CACHE_BYTE_ACCOUNTING
+    tc->cached_bytes += hz11_class_slot_size(class_id);
+#endif
 #else
     H11ClassCache* cc = &tc->class_cache[class_id];
 #if HZ11_CACHE_TOPPTR

@@ -34,8 +34,12 @@
 #define HZ11_COUNT_ADD(x, n) ((void)0)
 #endif
 
+#ifndef HZ11_CACHE_CAP
 #define HZ11_CACHE_CAP 32u
+#endif
+#ifndef HZ11_MAX_CACHED_BYTES
 #define HZ11_MAX_CACHED_BYTES (2u * 1024u * 1024u)
+#endif
 
 /* HZ11CacheShape-L1: pointer-top pop/push (A/B vs count-indexed).
  * Default OFF (count-indexed). Sibling .so lanes build with
@@ -69,9 +73,9 @@
 #if HZ11_CACHE_SOA && HZ11_CACHE_TOPPTR
 #error "HZ11_CACHE_SOA and HZ11_CACHE_TOPPTR are alternative cache-shape lanes"
 #endif
-#if HZ11_CACHE_SOA && HZ11_CACHE_BYTE_ACCOUNTING
-#error "HZ11_CACHE_SOA is only defined for the no-bytes speed-ceiling lane"
-#endif
+/* HZ11ThreadCacheCapacityByteCap-L1: SOA + BYTE_ACCOUNTING is now allowed. The byte
+ * cap is enforced on the SOA push/pop when HZ11_CACHE_BYTE_ACCOUNTING=1; existing
+ * no-bytes lanes (BYTE_ACCOUNTING=0) are unaffected (they hit the #else SOA branch). */
 
 /* HZ11CurrentSpanPoolThreadExit-L1: opt-in thread-exit salvage for the
  * transfer span lane. The default path has no pthread key/destructor. */
@@ -171,6 +175,9 @@ static inline void* hz11_thread_cache_pop(H11ThreadCache* tc,
   }
   cnt -= 1u;
   tc->class_counts[class_id] = cnt;
+#if HZ11_CACHE_BYTE_ACCOUNTING
+  tc->cached_bytes -= hz11_class_slot_size(class_id);
+#endif
   return tc->class_items[class_id][cnt];
 #else
   H11ClassCache* cc = &tc->class_cache[class_id];
@@ -200,11 +207,23 @@ static inline void hz11_thread_cache_push(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
 #if HZ11_CACHE_SOA
   uint32_t cnt = tc->class_counts[class_id];
+#if HZ11_CACHE_BYTE_ACCOUNTING
+  size_t slot = hz11_class_slot_size(class_id);
+  /* overflow-safe: subtractive form with a slot<=MAX guard avoids cached_bytes+slot wrap */
+  if (cnt < HZ11_CACHE_CAP && slot <= HZ11_MAX_CACHED_BYTES &&
+      tc->cached_bytes <= HZ11_MAX_CACHED_BYTES - slot) {
+    tc->class_items[class_id][cnt] = ptr;
+    tc->class_counts[class_id] = cnt + 1u;
+    tc->cached_bytes += slot;
+    return;
+  }
+#else
   if (cnt < HZ11_CACHE_CAP) {
     tc->class_items[class_id][cnt] = ptr;
     tc->class_counts[class_id] = cnt + 1u;
     return;
   }
+#endif
   hz11_thread_cache_push_overflow_slow(tc, class_id, ptr);
 #else
   H11ClassCache* cc = &tc->class_cache[class_id];

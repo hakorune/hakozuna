@@ -158,13 +158,31 @@ run_sampled() {
   parse_classes "${allocator}" "${run}" "${err}" "${out}"
 }
 
-for run in $(seq 1 "${RUNS}"); do
+# Default path-cost attribution lane set (used when ALLOC_LIST is unset; preserves
+# prior-art reproducibility for HZ11Sh6benchPathCostAttribution-L1).
+run_default_set() {
+  local run="$1"
   [[ -n "${tcmalloc_lib}" ]] && run_sampled tcmalloc "${run}" "${tcmalloc_lib}" none
   run_sampled hz11-span-transfer "${run}" "${ROOT}/libhz11_span_transfer.so" stats
   run_sampled hz11-thread-exit-cap "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap.so" stats
   run_sampled hz11-thread-exit-cap-xferwide "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_xferwide.so" stats
   run_sampled hz11-thread-exit-cap-source-diag "${run}" "${ROOT}/libhz11_span_transfer_thread_exit_cap_source_diag.so" source
   run_sampled hz11-span-return-source-diag "${run}" "${ROOT}/libhz11_span_return_source_diag.so" source
+}
+
+# ALLOC_LIST (optional): space-separated "name:path:mode" triples (mode = stats|source).
+# Lets other boxes (e.g. HZ11ThreadCacheCapacityTuning-L1) reuse this sh6bench
+# counter-dump runner with a custom lane set. Unset -> default set above.
+for run in $(seq 1 "${RUNS}"); do
+  if [[ -n "${ALLOC_LIST:-}" ]]; then
+    [[ -n "${tcmalloc_lib}" ]] && run_sampled tcmalloc "${run}" "${tcmalloc_lib}" none
+    for entry in ${ALLOC_LIST}; do
+      ae_name="${entry%%:*}"; ae_rest="${entry#*:}"; ae_path="${ae_rest%%:*}"; ae_mode="${ae_rest##*:}"
+      run_sampled "${ae_name}" "${run}" "${ae_path}" "${ae_mode}"
+    done
+  else
+    run_default_set "${run}"
+  fi
 done
 
 python3 - "${samples}" "${classes}" "${summary}" <<'PY'

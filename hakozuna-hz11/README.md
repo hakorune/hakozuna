@@ -24,6 +24,12 @@ recommended opt-in macro speed-lane candidate:
   backed by macro gate reclassification, current-RSS semantics, and RUNS=10
   remote/mixed final confirmation; not default
 
+sh6bench/macro-churn specialist lane:
+  libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
+  reaches near tcmalloc sh6bench wall on the synthetic macro gate, but
+  regresses remote/mixed versus fine128; not the general recommendation and not
+  default
+
 identity:
   tcmalloc-speed competitor
   RSS-capped, not low-RSS-first
@@ -45,6 +51,7 @@ non-goals:
 docs/HZ11_POSITIONING_L0.md
 docs/HZ11_THREAD_CACHE_FAST_PATH_L0.md
 docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
+docs/HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_NO_GO_LEDGER.md
 ```
 
@@ -67,7 +74,7 @@ HZ11:
   checked diagnostics are optional lanes, not default hot-path work
 ```
 
-## Initial Implementation Ladder
+## Implementation Ladder
 
 ```text
 1. HZ11ThreadCacheFastPath-L0
@@ -76,8 +83,13 @@ HZ11:
 2. HZ11TransferCacheCentralSpan-L1
    batch refill/return, transfer cache, central spans, minimal pageheap
 
-3. HZ11PerCpuRseqCache-L2
-   Linux rseq per-CPU cache for the real tcmalloc-class contest
+3. HZ11PerCpuRseqCachePrototype-L2
+   NO-GO as a locked per-CPU diagnostic lane; do not pursue lock-free rseq
+   without new evidence
+
+4. HZ11ThreadCacheCapacityByteCap-L1
+   confirms the sh6bench wall lever is thread-cache capacity with byte-capped
+   retention; cap1024-bytes is a specialist lane, not the general candidate
 ```
 
 ## Check

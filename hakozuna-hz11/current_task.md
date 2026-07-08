@@ -2,6 +2,25 @@
 
 ```text
 Active status:
+  HZ11Cap1024BytesCandidatePositioning-L1: MIXED. cap1024-bytes fixes sh6bench
+  (1.21x tcmalloc on the synthetic macro gate) but regresses remote/mixed vs fine128
+  (medium rows 4.3x->1.5x, 5.9x->1.6x; RSS up on several rows). So cap1024-bytes is a
+  sh6bench/macro-churn SPECIALIST opt-in lane; fine128 REMAINS the recommended general
+  opt-in macro candidate; span-transfer stays the remote/mixed lane. Lane split is now
+  explicit and 3-way. No default change. See
+  docs/HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md.
+  HZ11ThreadCacheCapacityByteCap-L1: GO. CAP1024 + byte cap (2 MiB) closes the
+  sh6bench gap to 1.20x tcmalloc (3.5s -> 0.43s) with xmalloc_test RSS bounded
+  (27648 vs plain CAP256's 52864) and no regression on the other 5 macro rows.
+  Also found+fixed a cached_bytes consistency bug in the SOA slow paths. cap1024-bytes
+  is a strong opt-in candidate; NOT promoted (needs a positioning box). See
+  docs/HZ11_THREAD_CACHE_CAPACITY_BYTE_CAP_L1.md.
+  HZ11ThreadCacheCapacityTuning-L1: HZ11_CACHE_CAP is a CONFIRMED sh6bench lever.
+  Varying CAP 32->256 drops sh6bench wall 3.5s->1.9s (-45%; tcmalloc gap 9.8x->5.3x)
+  with xfer_insert -40%, the other 5 macro rows flat. BUT plain CAP256 regresses
+  xmalloc_test RSS 2.8x (cached-bytes retention). GO for root cause; MIXED for
+  promotion. Clean win needs CAP + byte-cap policy (re-enable
+  HZ11_CACHE_BYTE_ACCOUNTING). See docs/HZ11_THREAD_CACHE_CAPACITY_TUNING_L1.md.
   HZ11PaperEvidencePackage-L1 consolidates the HZ11/fine128 evidence chain into
   one paper-ready doc (lane taxonomy, macro + remote/mixed tables, 7-item
   negative ladder, claim boundary, next-work warrant). No new measurements; every
@@ -25,41 +44,28 @@ Current stance:
   candidate.
   libhz11_span_transfer_thread_exit.so fixes larson thread-churn RSS, but is
   not a macro default.
-  libhz11_span_transfer_thread_exit_cap_batch32.so is the current sh6bench wall
-  candidate.
   libhz11_span_transfer_thread_exit_cap_batch32_fine128.so is the current
-  recommended opt-in macro speed-lane candidate.
+  recommended general opt-in macro speed-lane candidate.
+  libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
+  is a sh6bench/macro-churn specialist opt-in lane: it closes synthetic
+  sh6bench to about 1.2x tcmalloc, but regresses remote/mixed, so it does not
+  replace fine128 as the general recommendation.
   libhz11_span_transfer_thread_exit_cap_batch32.so remains an intermediate
   attribution/candidate step, not the final lane.
   Global fineclass remains a sh6bench RSS research lane only.
   The default allocator path is unchanged.
 
-Macro promotion blockers:
-  python_alloc and mstress now pass under the thread-exit-cap candidate.
-  sh6bench remains far slower than tcmalloc and over the RSS guard. Attribution
-  shows batch32 is a useful wall lever with no obvious macro side effects, but
-  sh6bench span/page footprint is now attributed primarily to HZ11 power-of-two
-  class-packing waste. Central-only full-span reuse did not materially reduce
-  span_create, arena_carve, or RSS. MADV_NOHUGEPAGE also did not move RSS or
-  page faults. Live-footprint observation shows active spans are almost full
-  after class rounding, and requested-size observation shows requested payload
-  high-water is far below HZ11 slot high-water. Fine size classes materially
-  reduce sh6bench RSS while keeping batch32 wall roughly flat, but the full
-  macro gate misses python_alloc current RSS by a small ratio. Focused
-  python_alloc RUNS=10 diagnostics show that miss is a sampling artifact on a
-  tiny denominator rather than a steady fineclass resident-footprint regression.
-  Remote/mixed tradeoff shows global fineclass is not a clean general candidate:
-  it improves sh6bench RSS but raises RSS/span_create and loses throughput on
-  several transfer-matrix rows. Selective fine128 keeps enough of the sh6bench
-  RSS win to pass the focused RSS guard while avoiding the worst global
-  fineclass remote/mixed RSS expansion. Full macro gate with fine128 passes
-  correctness, larson, xmalloc/cache_scratch, and sh6bench max RSS, but current
-  RSS still fails on python_alloc and sh6bench under the old single-sample rule.
-  Focused current-RSS semantics diagnostics clear that blocker under a
-  documented stabilized-sampling rule, so fine128 is reclassified as the next
-  opt-in macro candidate. Final RUNS=10 remote/mixed confirmation keeps
-  fine128 acceptable versus batch32, but span-transfer remains the cleaner
-  remote/mixed-only speed lane.
+Macro candidate blockers / lane split:
+  python_alloc and mstress now pass under the thread-exit-cap/fine128 family.
+  fine128 is the general opt-in macro recommendation because it keeps the best
+  balance across macro rows and remote/mixed. Its sh6bench wall remains much
+  slower than tcmalloc, but cap1024-bytes shows that the specific sh6bench
+  pathology is cache-capacity driven and can be closed on a specialist lane.
+  cap1024-bytes is not the general recommendation because it materially
+  regresses remote/mixed versus fine128. span-transfer remains the dedicated
+  remote/mixed lane. The next claim-strengthening work should use real
+  applications and platform coverage rather than another synthetic-only
+  promotion.
 
 Do not do yet:
   claim HZ11 generally beats tcmalloc

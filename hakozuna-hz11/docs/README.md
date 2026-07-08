@@ -146,6 +146,32 @@ HZ11_PAPER_EVIDENCE_PACKAGE_L1.md:
   No new measurements; every number cites its source doc. Companion to
   HZ11PaperPositioning-L1 (which states the line; this carries the evidence)
 
+HZ11_THREAD_CACHE_CAPACITY_TUNING_L1.md:
+  tests whether sh6bench wall is dominated by HZ11_CACHE_CAP=32 thread-cache overflow
+  into the transfer cache. GO for the cache-cap root cause: CAP 32->256 drops sh6bench
+  wall 3.5s->1.9s (-45%, tcmalloc gap 9.8x->5.3x) with xfer_insert -40%, monotonic,
+  other 5 macro rows flat. MIXED for promotion: plain CAP256 regresses xmalloc_test RSS
+  2.8x (cached-bytes under HZ11_CACHE_BYTE_ACCOUNTING=0). Clean win needs CAP + byte-cap
+  policy. Reuses the sh6bench path-cost runner via a new ALLOC_LIST env (default preserved)
+
+HZ11_THREAD_CACHE_CAPACITY_BYTE_CAP_L1.md:
+  big CAP + HZ11_CACHE_BYTE_ACCOUNTING=1 on the fine128/SOA base. GO: cap1024-bytes
+  (CAP=1024, 2 MiB byte cap) closes sh6bench to 1.20x tcmalloc (3.5s->0.43s,
+  xfer_insert 868M->173K) with xmalloc_test RSS bounded (27648 vs plain CAP256 52864)
+  and no regression on the other 5 macro rows. Made byte accounting functional on the
+  SOA push/pop (was a #error/no-op) and fixed a cached_bytes consistency bug in the SOA
+  slow paths (flush_class/overflow_slow) that timed out cap256/512-bytes before the fix.
+  Not promoted (needs a positioning box)
+
+HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md:
+  positioning box: decide whether cap1024-bytes replaces fine128 as the recommended
+  opt-in macro candidate. MIXED: cap1024-bytes fixes sh6bench (1.21x tcmalloc, synthetic
+  macro; other macro rows flat) but materially regresses the remote/mixed microbench vs
+  fine128 (medium rows 4.3x->1.5x, 5.9x->1.6x tcmalloc). So cap1024-bytes is a
+  sh6bench/macro-churn SPECIALIST opt-in lane; fine128 remains the recommended general
+  opt-in macro candidate; span-transfer stays the remote/mixed lane (3-way split).
+  Rollback = LD_PRELOAD fine128 instead. No default change, no claim broadening
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
