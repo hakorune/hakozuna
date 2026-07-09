@@ -2,6 +2,14 @@
 
 ```text
 Active status:
+  HZ11RealAppEvidenceRerun-L1: claim-grade real-app rerun (RUNS=10, fixed process-tree
+  RSS). espresso: HZ11 near-parity + ~3x RSS win (genuine). sqlite3: HZ11 7-12% slower
+  + modest RSS win (~0.83x) -- mixed, NOT the earlier (buggy) near-parity+0.4x. rocksdb
+  (multi-thread DB, fillrandom+readrandom 8 threads): ALL HZ11 lanes SEGFAULT on
+  readrandom; tcmalloc/jemalloc clean -- a FUNDAMENTAL correctness gap on multi-thread
+  real reads. P0 next: fix the rocksdb crash before any real-app/multi-thread claim.
+  cap1024-on-real-multi-thread is blocked by the crash. See
+  docs/HZ11_REAL_APP_EVIDENCE_RERUN_L1.md.
   HZ11LaneFullEvidenceGate-L1: GO for evidence, with a runner RSS correction. Real-app
   sqlite3 confirms the synthetic lane story on wall: fine128/cap768/cap1024 are
   near-parity with tcmalloc, cap768/cap1024's sh6bench win does NOT translate to this

@@ -192,6 +192,15 @@ HZ11_LANE_FULL_EVIDENCE_GATE_L1.md:
   (rocksdb/redis) is the remaining gap. New runner run_hz11_real_app_gate.sh +
   bench/hz11_real_app_sqlite.sql
 
+HZ11_REAL_APP_EVIDENCE_RERUN_L1.md:
+  claim-grade real-app rerun with the fixed process-tree RSS runner (RUNS=10) + a
+  multi-threaded real DB (rocksdb). BOUNDS the claim: espresso is a genuine HZ11 win
+  (near-parity wall + ~3x less RSS); sqlite3 is mixed (7-12% slower + ~0.83x RSS, not the
+  earlier buggy near-parity+0.4x); and EVERY HZ11 lane SEGFAULTS on rocksdb's
+  multi-threaded readrandom (tcmalloc/jemalloc clean) -- a fundamental correctness gap.
+  P0 next: fix the rocksdb crash before any real-app/multi-thread claim. cap1024-on-real-
+  multi-thread is blocked by the crash. compile workload deferred (no suitable target)
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

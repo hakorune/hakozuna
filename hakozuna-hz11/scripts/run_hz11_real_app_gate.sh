@@ -12,6 +12,7 @@ WORKLOAD_NAME=""
 WORKLOAD_CMD=""
 ALLOCATORS=""
 OUTDIR=""
+PRECLEAN_CMD=""
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -21,6 +22,7 @@ while [[ $# -gt 0 ]]; do
     --runs)          RUNS="$2";          shift 2 ;;
     --timeout)       TIMEOUT="$2";       shift 2 ;;
     --outdir)        OUTDIR="$2";        shift 2 ;;
+    --preclean-cmd)  PRECLEAN_CMD="$2";  shift 2 ;;
     *) echo "unknown arg: $1" >&2; exit 2 ;;
   esac
 done
@@ -93,6 +95,11 @@ run_one() {
   esac
   cmd+=(bash -c "${WORKLOAD_CMD}")
   : >"${err}"; : >"${out}"
+  # Optional untimed reset before each measured run (e.g. `make clean` so a compile
+  # workload rebuilds from scratch without timing the clean). Output discarded.
+  if [[ -n "${PRECLEAN_CMD}" ]]; then
+    bash -c "${PRECLEAN_CMD}" >/dev/null 2>&1 || true
+  fi
   start="$(date +%s%N)"
   "${cmd[@]}" >"${out}" 2>"${err}" &
   pid=$!
