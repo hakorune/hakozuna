@@ -71,6 +71,9 @@ for product in hz11_thread_cache_smoke hz11_thread_cache_smoke_span \
                libhz11_soa.so libhz11_span_soa.so \
                libhz11_span_transfer.so libhz11_span_transfer_diag.so \
                libhz11_span_transfer_cap.so libhz11_span_return.so \
+               libhz11_span_cache256.so \
+               libhz11_span_cache512_classbatch16.so \
+               libhz11_span_cache512_classbatch32.so \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap64.so \
                libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap128.so \

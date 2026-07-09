@@ -13,6 +13,8 @@
         preload-span-transfer-thread-exit-cap-batch32-fineclass \
         preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag \
         preload-span-transfer-thread-exit-cap-batch32-fine128 \
+        preload-span-cache256 preload-span-cache512-classbatch16 \
+        preload-span-cache512-classbatch32 \
         preload-span-transfer-thread-exit-cap-batch32-fine128-rseq \
         preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap64 \
         preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap128 \
@@ -271,6 +273,17 @@ libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so: $
 # Everything below this line is historical. Do not promote without a new box.
 # ==========================================================================
 
+# HZ11LinuxReturnedRefillBatchProbe-L1: Windows-style non-transfer span lane
+# probes on Ubuntu. Cross-check evidence only; these lost to Linux span-transfer.
+libhz11_span_cache256.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_CACHE_CAP=256u $(INC) -shared -Wl,-soname,libhz11_span_cache256.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_cache512_classbatch16.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_CACHE_CAP=512u -DHZ11_RETURNED_REFILL_BATCH=1 -DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4u -DHZ11_RETURNED_REFILL_BATCH_COUNT=16u $(INC) -shared -Wl,-soname,libhz11_span_cache512_classbatch16.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+libhz11_span_cache512_classbatch32.so: $(SHIM_SRC) $(HEADERS)
+	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_CACHE_CAP=512u -DHZ11_RETURNED_REFILL_BATCH=1 -DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4u -DHZ11_RETURNED_REFILL_BATCH_COUNT=32u $(INC) -shared -Wl,-soname,libhz11_span_cache512_classbatch32.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
 
@@ -345,6 +358,9 @@ preload-span-transfer-thread-exit-cap-batch32-live-diag: libhz11_span_transfer_t
 preload-span-transfer-thread-exit-cap-batch32-fineclass: libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so
 preload-span-transfer-thread-exit-cap-batch32-fineclass-live-diag: libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so
 preload-span-transfer-thread-exit-cap-batch32-fine128: libhz11_span_transfer_thread_exit_cap_batch32_fine128.so
+preload-span-cache256: libhz11_span_cache256.so
+preload-span-cache512-classbatch16: libhz11_span_cache512_classbatch16.so
+preload-span-cache512-classbatch32: libhz11_span_cache512_classbatch32.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-rseq: libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap64: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap64.so
 preload-span-transfer-thread-exit-cap-batch32-fine128-cachecap128: libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap128.so
@@ -397,6 +413,9 @@ clean:
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fineclass_live_diag.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128.so \
+	      libhz11_span_cache256.so \
+	      libhz11_span_cache512_classbatch16.so \
+	      libhz11_span_cache512_classbatch32.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_rseq.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap64.so \
 	      libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap128.so \

@@ -29,6 +29,11 @@ cap768/cap1024-bytes:
   sh6bench synthetic / macro-churn specialist. They close synthetic sh6bench to near
   tcmalloc wall, but do not improve rocksdb and regress remote/mixed.
 
+span-cache512-classbatch:
+  Linux cross-check evidence for the Windows returned-refill batch idea only.
+  It is live on some non-transfer span rows, but loses to Linux span-transfer
+  on remote/mixed throughput and RSS.
+
 default path:
   unchanged.
 ```
@@ -84,6 +89,8 @@ fine128 has claim-grade real-app evidence on this Linux x86-64 machine:
   rocksdb db_bench: near-parity wall/readrandom and slightly lower RSS
 cap768/cap1024 are sh6bench synthetic specialists, not general upgrades.
 span-transfer remains the remote/mixed microbench lane, not a general lane.
+Linux span-cache512-classbatch is cross-platform evidence only, not a lane
+replacement.
 ```
 
 Not allowed:
@@ -94,6 +101,7 @@ HZ11 is production-safe.
 fine128 is default.
 cap1024/cap768 help real multi-thread workloads in general.
 span-transfer is a general allocator lane.
+returned-refill classbatch transfers from Windows to Linux as a winning lane.
 rocksdb in general is won; only one db_bench config was measured.
 ```
 
@@ -109,4 +117,3 @@ synthetic capacity tuning:
 4. Treat new adaptive/class-range policy work as optional and evidence-gated; rocksdb did
    not warrant it.
 ```
-

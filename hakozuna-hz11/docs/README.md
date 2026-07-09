@@ -34,9 +34,9 @@ HZ11_WINDOWS_SPAN_CACHE512_PRESSURE_L4.md:
 HZ11_WINDOWS_CLASS_AWARE_REFILL_BATCH_L1.md:
   Windows class-aware returned-refill behavior probe. Adds opt-in
   `hz11-span-cache512-classbatch` rows that batch-pop returned objects for
-  dominant classes and seed the front cache. Strong RUNS=1 matrix signal
-  (balanced/wide_ws/larger_sizes improve) but repeat confirmation is required
-  before promotion; existing selected rows remain unchanged.
+  dominant classes and seed the front cache. Repeat confirmation keeps it as
+  Windows profile-specific evidence: matrix rows improve, but random_mixed
+  general rows still block selected-row promotion.
 
 HZ11_WINDOWS_LANE_STATUS_L1.md:
   cleanup/orientation record for the Windows HZ11 lanes after cache512,
@@ -44,6 +44,13 @@ HZ11_WINDOWS_LANE_STATUS_L1.md:
   active status: `hz11-span-cache256` remains selected, `classbatch16` is
   candidate-watch/matrix helper, pressure-gated classbatch is no-go as
   implemented, and diagnostic rows must not be used for speed ranking.
+
+HZ11_LINUX_RETURNED_REFILL_BATCH_PROBE_L1.md:
+  Ubuntu cross-check for the Windows returned-refill classbatch idea. Adds
+  Linux non-transfer span siblings (`span-cache256`, `span-cache512-classbatch`)
+  and measures them on the transfer matrix. Classbatch is live but loses to
+  Linux `span-transfer` on throughput and RSS, so it is cross-platform evidence
+  only, not a Linux lane replacement.
 
 HZ11_FRONTEND_ATTRIBUTION_L0.md:
   perf/objdump attribution that identified HZ11's remaining fixed64 gap as

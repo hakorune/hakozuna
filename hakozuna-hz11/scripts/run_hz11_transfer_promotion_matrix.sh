@@ -72,6 +72,9 @@ mkdir -p "${OUTDIR}" "$(dirname "${BENCH_BIN}")"
 
 if [[ "${BUILD}" -ne 0 ]]; then
   make -C "${ROOT}" preload-span-soa preload-span-transfer \
+    preload-span-cache256 \
+    preload-span-cache512-classbatch16 \
+    preload-span-cache512-classbatch32 \
     preload-span-transfer-thread-exit-cap-batch32 \
     preload-span-transfer-thread-exit-cap-batch32-fine128 \
     preload-span-transfer-thread-exit-cap-batch32-fine256 \
@@ -90,6 +93,15 @@ allocator_lib() {
       bench_find_first_existing "${HZ11_SPAN_SOA_SO:-}" "${ROOT}/libhz11_span_soa.so" ;;
     hz11-span-transfer)
       bench_find_first_existing "${HZ11_SPAN_TRANSFER_SO:-}" "${ROOT}/libhz11_span_transfer.so" ;;
+    hz11-span-cache256)
+      bench_find_first_existing "${HZ11_SPAN_CACHE256_SO:-}" \
+        "${ROOT}/libhz11_span_cache256.so" ;;
+    hz11-span-cache512-classbatch16)
+      bench_find_first_existing "${HZ11_SPAN_CACHE512_CLASSBATCH16_SO:-}" \
+        "${ROOT}/libhz11_span_cache512_classbatch16.so" ;;
+    hz11-span-cache512-classbatch32)
+      bench_find_first_existing "${HZ11_SPAN_CACHE512_CLASSBATCH32_SO:-}" \
+        "${ROOT}/libhz11_span_cache512_classbatch32.so" ;;
     hz11-thread-exit-cap-batch32)
       bench_find_first_existing "${HZ11_BATCH32_SO:-}" \
         "${ROOT}/libhz11_span_transfer_thread_exit_cap_batch32.so" ;;
