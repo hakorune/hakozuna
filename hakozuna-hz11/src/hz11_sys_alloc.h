@@ -2,8 +2,9 @@
 #define HZ11_SYS_ALLOC_H
 
 #include <stddef.h>
+#include "hz11_port.h"
 
-extern _Thread_local int hz11_resolving;
+extern HZ11_THREAD_LOCAL int hz11_resolving;
 
 void hz11_resolver_ensure(void);
 void* hz11_sys_malloc(size_t n);

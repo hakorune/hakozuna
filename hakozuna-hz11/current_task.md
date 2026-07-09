@@ -1,5 +1,24 @@
 # HZ11 Current Task
 
+## Windows Bring-up
+
+```text
+HZ11WindowsBringup-L0:
+  start with standalone token/front-cache smoke only
+  no LD_PRELOAD parity
+  no fine128 Windows performance claim
+  no span/transfer/pthread/mmap path in L0
+
+added:
+  docs/HZ11_WINDOWS_BRINGUP_L0.md
+  src/hz11_port.h
+  scripts/build_hz11_win64_smoke.ps1
+
+next:
+  L0 smoke passes with clang-cl on Windows
+  next decide whether to add VirtualAlloc-backed span/classify smoke
+```
+
 ```text
 Active status:
   HZ11RealAppWorkloadExpansion-L1: GO for fine128 real-app breadth. 3 new workload

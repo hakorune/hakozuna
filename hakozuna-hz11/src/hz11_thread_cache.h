@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
+#include "hz11_port.h"
 #include "hz11_size_class.h"
 #include "hz11_sys_alloc.h"
 #include "hz11_token_table.h"
@@ -138,7 +139,7 @@ typedef struct H11ThreadCache {
 } H11ThreadCache;
 
 /* State defined in hz11_thread_cache.c. */
-extern _Thread_local H11ThreadCache* hz11_tls;
+extern HZ11_THREAD_LOCAL H11ThreadCache* hz11_tls;
 
 /* Cold paths (out-of-line). */
 H11ThreadCache* hz11_thread_cache_init_slow(void);

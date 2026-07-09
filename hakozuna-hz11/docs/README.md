@@ -12,6 +12,11 @@ HZ11_THREAD_CACHE_FAST_PATH_L0.md:
   first implementation box design: per-thread cache, size-class table,
   pointer-token free fast path, route fallback, counters, gates, and risks
 
+HZ11_WINDOWS_BRINGUP_L0.md:
+  Windows bring-up scaffold for the standalone token/front-cache smoke. This is
+  not fine128 parity and not a Windows malloc replacement; it establishes the
+  minimal portability seam before span/transfer/DLL work.
+
 HZ11_FRONTEND_ATTRIBUTION_L0.md:
   perf/objdump attribution that identified HZ11's remaining fixed64 gap as
   instruction count rather than efficiency

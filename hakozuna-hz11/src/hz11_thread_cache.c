@@ -1,14 +1,16 @@
 #include "hz11_thread_cache.h"
 #include "hz11_transfer_cache.h"
 
+#if !defined(_WIN32)
 #include <pthread.h>
+#endif
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
 /* ---------- state ---------- */
 
-_Thread_local H11ThreadCache* hz11_tls = NULL;
+HZ11_THREAD_LOCAL H11ThreadCache* hz11_tls = NULL;
 
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id);
 

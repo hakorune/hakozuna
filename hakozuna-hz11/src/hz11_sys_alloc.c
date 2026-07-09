@@ -3,10 +3,60 @@
 #include <errno.h>
 #include <stdint.h>
 #include <string.h>
+
+#if defined(_WIN32)
+#include <malloc.h>
+#include <stdlib.h>
+#else
 #include <dlfcn.h>
+#endif
 
-_Thread_local int hz11_resolving = 0;
+HZ11_THREAD_LOCAL int hz11_resolving = 0;
 
+#if defined(_WIN32)
+void hz11_resolver_ensure(void) {}
+
+void* hz11_sys_malloc(size_t n) {
+  return malloc(n);
+}
+
+void hz11_sys_free(void* p) {
+  free(p);
+}
+
+void* hz11_sys_realloc(void* p, size_t n) {
+  return realloc(p, n);
+}
+
+void* hz11_sys_calloc(size_t count, size_t size) {
+  return calloc(count, size);
+}
+
+size_t hz11_sys_usable_size(void* p) {
+  return p ? _msize(p) : 0u;
+}
+
+int hz11_sys_posix_memalign(void** memptr, size_t alignment, size_t size) {
+  (void)alignment;
+  (void)size;
+  if (memptr) {
+    *memptr = NULL;
+  }
+  return ENOMEM;
+}
+
+void* hz11_sys_aligned_alloc(size_t alignment, size_t size) {
+  (void)alignment;
+  (void)size;
+  return NULL;
+}
+
+void* hz11_sys_memalign(size_t alignment, size_t size) {
+  (void)alignment;
+  (void)size;
+  return NULL;
+}
+#else
 static void* (*hz11_real_malloc)(size_t) = NULL;
 static void (*hz11_real_free)(void*) = NULL;
 static void* (*hz11_real_realloc)(void*, size_t) = NULL;
@@ -144,3 +194,4 @@ void* hz11_sys_memalign(size_t alignment, size_t size) {
   }
   return NULL;
 }
+#endif
