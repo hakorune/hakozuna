@@ -51,7 +51,8 @@ INC := -I$(ROOT)/include -I$(ROOT)/src
 CORE_SRC := $(ROOT)/src/hz11_size_class.c $(ROOT)/src/hz11_thread_cache.c \
             $(ROOT)/src/hz11_public_entry.c $(ROOT)/src/hz11_span.c \
             $(ROOT)/src/hz11_sys_alloc.c $(ROOT)/src/hz11_transfer_cache.c \
-            $(ROOT)/src/hz11_live_footprint.c $(ROOT)/src/hz11_percpu_cache.c
+            $(ROOT)/src/hz11_live_footprint.c $(ROOT)/src/hz11_percpu_cache.c \
+            $(ROOT)/src/hz11_alloc_diag.c
 SHIM_SRC := $(ROOT)/src/hz11_shim.c $(CORE_SRC)
 HEADERS := $(wildcard $(ROOT)/src/*.h) $(wildcard $(ROOT)/include/*.h)
 
@@ -260,6 +261,15 @@ libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so: $(SH
 
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=1 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_CACHE_CAP=1024u -DHZ11_MAX_CACHED_BYTES=1048576u $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes1m.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)
+
+# ==========================================================================
+# HISTORICAL / RESEARCH LANES (NO-GO experiments, diagnostics, rejected
+# alternatives). Kept for reproducibility. The live recommended lanes are:
+#   libhz11_span_transfer.so                                   (remote/mixed)
+#   libhz11_span_transfer_thread_exit_cap_batch32_fine128.so  (general opt-in)
+#   libhz11_*_cachecap{256,512,768,1024}*.so                   (tuning/specialist)
+# Everything below this line is historical. Do not promote without a new box.
+# ==========================================================================
 
 libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so: $(SHIM_SRC) $(HEADERS)
 	$(CC) $(SHIM_CFLAGS) -DHZ11_CLASSIFY_SPAN=1 -DHZ11_TLS_FASTPATH=1 -DHZ11_CACHE_BYTE_ACCOUNTING=0 -DHZ11_CACHE_SOA=1 -DHZ11_TRANSFER_CENTRAL_SPAN=1 -DHZ11_CURRENT_SPAN_THREAD_EXIT=1 -DHZ11_CENTRAL_CLASS_DIAG=1 -DHZ11_CENTRAL_CAP=65536 -DHZ11_TRANSFER_BATCH=32 -DHZ11_FINE_SIZE_CLASSES=1 -DHZ11_FINE_LINEAR_MAX=128u -DHZ11_SPAN_SOURCE_DIAG=1 -DHZ11_LIVE_FOOTPRINT_DIAG=1 $(INC) -shared -Wl,-soname,libhz11_span_transfer_thread_exit_cap_batch32_fine128_live_diag.so -o $@ $(SHIM_SRC) $(SHIM_LDFLAGS) $(LDLIBS)

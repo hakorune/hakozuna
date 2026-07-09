@@ -1,4 +1,9 @@
-/* HZ11PerCpuRseqCachePrototype-L2: correctness-first locked per-CPU cache.
+/* NO-GO: HZ11PerCpuRseqCachePrototype-L2 (locked per-CPU cache).
+ * Result: sh6bench REGRESSED 3.66x vs fine128 (lock overhead dominated).
+ * Kept for reproducibility. Do not promote. See
+ * docs/HZ11_PERCPU_RSEQ_CACHE_PROTOTYPE_L2.md.
+ *
+ * HZ11PerCpuRseqCachePrototype-L2: correctness-first locked per-CPU cache.
  *
  * IMPORTANT: this prototype uses rseq ONLY to select the current CPU (glibc's
  * per-thread rseq area `cpu_id`). The per-CPU slab mutation is serialized by a
