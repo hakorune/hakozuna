@@ -203,6 +203,40 @@ keep `returnedrange` and `returnedrange32` as matrix-specialist evidence, while
 `hz11-span-cache256` remains the selected/default row. No half-flush, retention
 cap, or additional returned-sink policy should be added from this experiment.
 
+## Null controls: A/A and inert build
+
+The A/A baseline ABAB R5 showed a substantial Larson noise floor. Worker pair
+deltas ranged from -17.8% to +10.3%, with A/A medians differing by only +0.2%.
+Main pair deltas ranged from -3.5% to +9.6%, with A/A medians differing by
+-0.4%. A single five-percent candidate delta is therefore not decisive on
+this machine without a stronger noise-control protocol.
+
+An inert build was compiled with returnedrange code present but runtime forced
+through the legacy per-object publication path. In alternating-order R5, the
+worker medians were 45.456M inert versus 46.357M returnedrange (+2.0%), and
+main medians were 47.169M versus 46.956M (-0.5%). The earlier -5% did not
+reappear in the code-layout control. No stable binary-layout regression is
+established. Keep default unchanged and do not add another returned-sink
+policy; if promotion is revisited, use A/A noise bands rather than a fixed
+three-percent Larson threshold.
+
 If this area is revisited, the next experiment should explain Larson lifecycle
 or pacing attribution independently. It should not combine another sink policy
 with the current returnedrange implementation.
+
+## Lifecycle diagnostic D1
+
+Diagnostic 5-second runs (three per allocator and warmup mode) showed that the
+candidate does not change the surrounding lifecycle topology. For the 1KiB
+class, refill counts stayed around 29K-31K, overflow counts around 112-118,
+and returned sink depth around 19.5K-20.6K for both cache256 and returnedrange.
+The candidate published roughly 112-118 ranges containing 28.7K-30.2K items in
+each run, as expected from the range splice. Short-run throughput was noisy and
+slightly positive for the candidate, but this is not sufficient to overturn the
+paired ten-second Larson gate.
+
+This rules out a new source/lifecycle failure as the immediate explanation for
+the regression. Existing diagnostic counters are sufficient, and no hot-path
+timing counters should be added. If work resumes, isolate benchmark pacing or
+lock interaction in a separate diagnostic experiment without changing the
+returned-sink policy.

@@ -200,6 +200,19 @@ if (Test-Path $Hz11Root) {
             )
         },
         @{
+            Name = "hz11-span-cache256-returnedrange-inert-diag"
+            Output = "bench_larson_hz11_span_cache256_returnedrange_inert_diag.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1",
+                "/DHZ11_RETURNED_PUSH_RANGE_INERT=1",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
             Name = "hz11-span-cache256-returnedrange32"
             Output = "bench_larson_hz11_span_cache256_returnedrange32.exe"
             ExtraFlags = @(

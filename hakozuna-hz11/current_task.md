@@ -90,6 +90,15 @@ returnedrange32 as matrix-specialist evidence only; selected/default remains
 policy on this result. The next work, if resumed, is a separate attribution of
 Larson lifecycle/pacing rather than further returned-sink batching.
 
+Lifecycle diagnostic D1 (5 seconds, diagnostic builds, three runs per mode) found
+no new source/lifecycle failure signal. For class 6 (1KiB), cache256 and
+returnedrange had nearly identical refill counts (about 29K-31K), overflow
+counts (about 112-118), and returned sink depth (about 19.5K-20.6K). The
+returnedrange path compressed the flush work to about 112-118 range calls and
+28.7K-30.2K items per run. The short-run medians were noisy and slightly
+candidate-positive, but they do not overturn the paired 10-second NO-GO gate.
+The existing counters are sufficient; do not add hot-path timing counters.
+
 Lock-outside-chain scout: after moving private chain construction outside the
 returned-sink lock, Larson 2-second R3 medians were worker 42.061M -> 39.386M
 (-6.4%) and main 38.427M -> 40.105M (+4.4%). This trims the critical section as
@@ -278,6 +287,18 @@ next:
       This is not a speed claim over tcmalloc.
       coldskip remains matrix/wide_ws evidence, not a Larson or default row.
 ```
+
+## Returnedrange Null-Control Closeout
+
+A/A baseline ABAB R5 showed a large Larson noise floor: worker pair deltas
+ranged from -17.8% to +10.3% while A/A medians differed by +0.2%; main pair
+deltas ranged from -3.5% to +9.6% while medians differed by -0.4%. An inert
+returnedrange build, with returnedrange code compiled in but runtime forced
+through legacy per-object push, was compared against returnedrange in
+alternating-order R5. Medians were 45.456M vs 46.357M for worker (+2.0%) and
+47.169M vs 46.956M for main (-0.5%). The earlier -5% was not reproduced by the
+code-layout control and is within the observed Larson band. Keep default
+unchanged; do not add hot-path timing counters or another returned-sink policy.
 
 ```text
 Active status:

@@ -487,6 +487,27 @@ static uint32_t hz11_thread_cache_cached_count(H11ThreadCache* tc,
 #endif
 
 #if HZ11_CLASSIFY_SPAN && HZ11_RETURNED_PUSH_RANGE
+/* Diagnostic inert build: keep the returned-range implementation in the
+ * binary, but execute the old per-object publication path. This separates
+ * code-layout effects from returned-range behavior without touching speed rows. */
+#ifndef HZ11_RETURNED_PUSH_RANGE_INERT
+#define HZ11_RETURNED_PUSH_RANGE_INERT 0
+#endif
+static volatile int hz11_returned_push_range_inert =
+    HZ11_RETURNED_PUSH_RANGE_INERT;
+
+static void hz11_thread_cache_flush_span_items_legacy(uint8_t class_id,
+                                                       void** items,
+                                                       uint32_t count) {
+  for (uint32_t i = 0u; i < count; ++i) {
+    if (hz11_arena_contains(items[i])) {
+      hz11_returned_push(class_id, items[i]);
+    } else {
+      hz11_sys_free(items[i]);
+    }
+  }
+}
+
 static void hz11_thread_cache_flush_span_items(uint8_t class_id,
                                                 void** items,
                                                 uint32_t count) {
@@ -528,7 +549,12 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
   uint32_t n = tc->class_counts[class_id];
   HZ11_COUNT_ADD(tc->flush_items, n);
 #if HZ11_RETURNED_PUSH_RANGE
-  hz11_thread_cache_flush_span_items(class_id, tc->class_items[class_id], n);
+  if (hz11_returned_push_range_inert) {
+    hz11_thread_cache_flush_span_items_legacy(class_id,
+                                               tc->class_items[class_id], n);
+  } else {
+    hz11_thread_cache_flush_span_items(class_id, tc->class_items[class_id], n);
+  }
 #else
   for (uint32_t i = 0u; i < n; ++i) {
 #if HZ11_CLASSIFY_SPAN
@@ -556,7 +582,11 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
   uint32_t n = (uint32_t)(cc->top - cc->items);
   HZ11_COUNT_ADD(tc->flush_items, n);
 #if HZ11_RETURNED_PUSH_RANGE
-  hz11_thread_cache_flush_span_items(class_id, cc->items, n);
+  if (hz11_returned_push_range_inert) {
+    hz11_thread_cache_flush_span_items_legacy(class_id, cc->items, n);
+  } else {
+    hz11_thread_cache_flush_span_items(class_id, cc->items, n);
+  }
 #else
   while (p < cc->top) {
 #if HZ11_CLASSIFY_SPAN
@@ -576,7 +606,11 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
 #else
   HZ11_COUNT_ADD(tc->flush_items, cc->count);
 #if HZ11_RETURNED_PUSH_RANGE
-  hz11_thread_cache_flush_span_items(class_id, cc->items, cc->count);
+  if (hz11_returned_push_range_inert) {
+    hz11_thread_cache_flush_span_items_legacy(class_id, cc->items, cc->count);
+  } else {
+    hz11_thread_cache_flush_span_items(class_id, cc->items, cc->count);
+  }
 #else
   for (uint32_t i = 0; i < cc->count; ++i) {
 #if HZ11_CLASSIFY_SPAN
