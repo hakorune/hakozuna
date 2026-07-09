@@ -228,6 +228,18 @@ void* hz11_calloc(size_t count, size_t size) {
 }
 
 size_t hz11_malloc_usable_size(void* ptr) {
+  if (!ptr) {
+    return 0u;
+  }
+#if HZ11_CLASSIFY_SPAN
+  /* Arena pointers are not libc chunks: hz11_sys_usable_size would read the arena
+   * slot data as a libc chunk header and fault. Return the real slot size instead.
+   * (HZ11RocksdbReadrandomCrashRootCause-L1) */
+  uint8_t class_id;
+  if (hz11_span_classify(ptr, &class_id)) {
+    return hz11_class_slot_size(class_id);
+  }
+#endif
   return hz11_sys_usable_size(ptr);
 }
 

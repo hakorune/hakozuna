@@ -2,13 +2,21 @@
 
 ```text
 Active status:
+  HZ11RocksdbReadrandomCrashRootCause-L1: FIX-GO. Root cause: hz11_malloc_usable_size
+  routed arena pointers to libc, which read arena slot data as a chunk header and
+  SEGFAULTED (minimal repro: p=malloc(N); malloc_usable_size(p); under LD_PRELOAD).
+  Fixed with an arena-aware hz11_malloc_usable_size (NULL->0; arena ptr -> slot size;
+  non-arena -> libc). rocksdb readrandom now rc=0 at ~tcmalloc parity (fillrandom
+  1.99s/9.93us, readrandom 1.11s/5.39us; tcmalloc 1.95s/1.12s); espresso/sqlite3 no
+  regression. The real-app multi-thread correctness gap is CLOSED. Perf eval is the next
+  box. See docs/HZ11_ROCKSDB_READRANDOM_CRASH_ROOT_CAUSE_L1.md.
   HZ11RealAppEvidenceRerun-L1: claim-grade real-app rerun (RUNS=10, fixed process-tree
   RSS). espresso: HZ11 near-parity + ~3x RSS win (genuine). sqlite3: HZ11 7-12% slower
   + modest RSS win (~0.83x) -- mixed, NOT the earlier (buggy) near-parity+0.4x. rocksdb
   (multi-thread DB, fillrandom+readrandom 8 threads): ALL HZ11 lanes SEGFAULT on
   readrandom; tcmalloc/jemalloc clean -- a FUNDAMENTAL correctness gap on multi-thread
-  real reads. P0 next: fix the rocksdb crash before any real-app/multi-thread claim.
-  cap1024-on-real-multi-thread is blocked by the crash. See
+  real reads. This P0 is now resolved by HZ11RocksdbReadrandomCrashRootCause-L1;
+  cap1024-on-real-multi-thread needs a post-fix perf rerun. See
   docs/HZ11_REAL_APP_EVIDENCE_RERUN_L1.md.
   HZ11LaneFullEvidenceGate-L1: GO for evidence, with a runner RSS correction. Real-app
   sqlite3 confirms the synthetic lane story on wall: fine128/cap768/cap1024 are

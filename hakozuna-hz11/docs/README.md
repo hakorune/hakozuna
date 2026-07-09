@@ -201,6 +201,15 @@ HZ11_REAL_APP_EVIDENCE_RERUN_L1.md:
   P0 next: fix the rocksdb crash before any real-app/multi-thread claim. cap1024-on-real-
   multi-thread is blocked by the crash. compile workload deferred (no suitable target)
 
+HZ11_ROCKSDB_READRANDOM_CRASH_ROOT_CAUSE_L1.md:
+  FIX-GO. Root cause of the rocksdb readrandom segfault: hz11_malloc_usable_size routed
+  arena pointers to libc, which read arena slot data as a chunk header and faulted
+  (minimal repro: p=malloc(N); malloc_usable_size(p); under LD_PRELOAD -> SIGSEGV; gdb bt
+  in libc __malloc_usable_size). Refuted: API-coverage, foreign-pointer classify, realloc.
+  Fixed with an arena-aware hz11_malloc_usable_size (NULL->0; arena ptr -> slot size;
+  non-arena -> libc). rocksdb readrandom now rc=0 at ~tcmalloc parity; espresso/sqlite3 no
+  regression. Real-app multi-thread correctness gap CLOSED. Perf eval is the next box
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
