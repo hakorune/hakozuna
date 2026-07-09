@@ -1,5 +1,6 @@
 #include "hz11_span.h"
 #include "hz11_port.h"
+#include "hz11_class_diag.h"
 
 #include <stdatomic.h>
 
@@ -179,5 +180,44 @@ void* hz11_returned_pop(uint8_t class_id) {
                             1u,
                             memory_order_relaxed);
 #endif
+  if (p) {
+    HZ11_CLASS_DIAG_RETURNED_POP_HIT(class_id);
+  } else {
+    HZ11_CLASS_DIAG_RETURNED_POP_MISS(class_id);
+  }
   return p;
+}
+
+uint32_t hz11_returned_pop_range(uint8_t class_id, void** out, uint32_t max) {
+  if (class_id >= HZ11_CLASS_COUNT || !out || max == 0u) {
+    return 0u;
+  }
+  H11Returned* r = &hz11_returned[class_id];
+  hz11_mutex_lock(&r->lock);
+  uint32_t n = 0u;
+  while (n < max && r->head) {
+    void* p = r->head;
+    r->head = *(void**)p;
+    out[n++] = p;
+  }
+  hz11_mutex_unlock(&r->lock);
+#if HZ11_SPAN_RETURNED_DIAG
+  if (n > 0u) {
+    atomic_fetch_add_explicit(&hz11_returned_pop_hit_count, n,
+                              memory_order_relaxed);
+  } else {
+    atomic_fetch_add_explicit(&hz11_returned_pop_miss_count, 1u,
+                              memory_order_relaxed);
+  }
+#endif
+#if HZ11_CLASS_DIAG
+  if (n > 0u) {
+    for (uint32_t i = 0u; i < n; ++i) {
+      HZ11_CLASS_DIAG_RETURNED_POP_HIT(class_id);
+    }
+  } else {
+    HZ11_CLASS_DIAG_RETURNED_POP_MISS(class_id);
+  }
+#endif
+  return n;
 }

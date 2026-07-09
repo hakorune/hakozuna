@@ -59,6 +59,12 @@ not claimed:
   not fine128 parity
   not a remote/mixed speed-lane claim
   not a replacement for HZ8/HZ10
+
+follow-up pressure evidence:
+  hz11-span-cache512
+    RUNS=1 scout improves matrix balanced and slightly improves larger_sizes,
+    but does not solve wide_ws. Keep as HOLD / pressure evidence, not selected
+    row promotion.
 ```
 
 The Windows row exists so HZ11 can be measured in the existing Windows

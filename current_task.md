@@ -19,16 +19,19 @@ Current direction:
   opened.
   HZ10 in hakozuna-hz10/: active macro/shim speed/RSS-aware research candidate;
   not HZ8 replacement.
-  HZ11 in hakozuna-hz11/: design-only speed-first research line. It is the
-  tcmalloc-shaped front-end/transfer-cache/span experiment, not a faster HZ10
-  and not an HZ8 replacement.
+  HZ11 in hakozuna-hz11/: speed-first research line with Linux fine128
+  evidence and Windows bring-up lanes. It is the tcmalloc-shaped
+  front-end/transfer-cache/span experiment, not a faster HZ10 and not an HZ8
+  replacement.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
   HZ8 is the balanced default line.
   HZ9 is archived as evidence, not an active line.
   HZ10 is the active research line for speed/RSS-aware allocator work.
-  HZ11 has initial positioning docs only; no allocator behavior has landed.
+  HZ11 has allocator behavior and evidence. Current Windows selected bring-up
+  row is hz11-span-cache256; Windows classbatch16 is matrix candidate-watch
+  only. Linux fine128 remains the general opt-in evidence lane.
 ```
 
 ## Read First
@@ -50,7 +53,8 @@ HZ10 next-substrate orientation:
 HZ11 speed-first orientation:
   hakozuna-hz11/README.md
   hakozuna-hz11/docs/HZ11_POSITIONING_L0.md
-  hakozuna-hz11/docs/HZ11_THREAD_CACHE_FAST_PATH_L0.md
+  hakozuna-hz11/docs/HZ11_FINE128_REAL_APP_POSITIONING_L1.md
+  hakozuna-hz11/docs/HZ11_WINDOWS_LANE_STATUS_L1.md
 
 Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```

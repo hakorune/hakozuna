@@ -7,6 +7,7 @@
 #include "hz11_size_class.h"
 #include "hz11_sys_alloc.h"
 #include "hz11_token_table.h"
+#include "hz11_class_diag.h"
 
 /* Per-thread front-end cache. Hot-path helpers below are static inline so
  * malloc/free do not pay a call per helper; only the cold paths (init, refill,
@@ -64,6 +65,28 @@
 #define HZ11_CACHE_BYTE_ACCOUNTING 1
 #endif
 
+/* WindowsSpanClassAwareRefill-L1: diagnostic/sibling behavior for the returned
+ * object sink. Instead of one mutex pop per refill, pop a small batch for the
+ * dominant mid classes and seed the front cache. */
+#ifndef HZ11_RETURNED_REFILL_BATCH
+#define HZ11_RETURNED_REFILL_BATCH 0u
+#endif
+#ifndef HZ11_RETURNED_REFILL_BATCH_MIN_CLASS
+#define HZ11_RETURNED_REFILL_BATCH_MIN_CLASS 4u
+#endif
+#ifndef HZ11_RETURNED_REFILL_BATCH_MAX_CLASS
+#define HZ11_RETURNED_REFILL_BATCH_MAX_CLASS (HZ11_CLASS_COUNT - 1u)
+#endif
+#ifndef HZ11_RETURNED_REFILL_BATCH_COUNT
+#define HZ11_RETURNED_REFILL_BATCH_COUNT 32u
+#endif
+#ifndef HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
+#define HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE 0u
+#endif
+#ifndef HZ11_RETURNED_REFILL_BATCH_PRESSURE_THRESHOLD
+#define HZ11_RETURNED_REFILL_BATCH_PRESSURE_THRESHOLD 4u
+#endif
+
 /* HZ11CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H11ClassCache[13] into two parallel arrays with power-of-2
  * strides (256B items + 4B counts), eliminating the *264 address chain.
@@ -115,6 +138,9 @@ typedef struct H11ThreadCache {
   H11Token tokens[HZ11_TOKEN_COUNT];
 #else
   H11SpanCurrent current[HZ11_CLASS_COUNT];
+#if HZ11_RETURNED_REFILL_BATCH && HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
+  uint8_t returned_refill_pressure[HZ11_CLASS_COUNT];
+#endif
 #endif
   size_t cached_bytes;
   uint64_t malloc_count;

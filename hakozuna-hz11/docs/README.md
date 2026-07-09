@@ -25,6 +25,26 @@ HZ11_WINDOWS_SPAN_BRINGUP_L1.md:
   Windows span/classify smoke bring-up. Adds VirtualAlloc-backed arena support
   and verifies HZ11_CLASSIFY_SPAN=1 can pass the standalone smoke.
 
+HZ11_WINDOWS_SPAN_CACHE512_PRESSURE_L4.md:
+  Windows cap-pressure follow-up for `hz11-span-cache256`. Adds matrix-only
+  `cache512` and `cache512-diag` rows. Keep as pressure evidence / HOLD:
+  balanced improves, larger_sizes slightly improves, but wide_ws remains
+  refill-dominated.
+
+HZ11_WINDOWS_CLASS_AWARE_REFILL_BATCH_L1.md:
+  Windows class-aware returned-refill behavior probe. Adds opt-in
+  `hz11-span-cache512-classbatch` rows that batch-pop returned objects for
+  dominant classes and seed the front cache. Strong RUNS=1 matrix signal
+  (balanced/wide_ws/larger_sizes improve) but repeat confirmation is required
+  before promotion; existing selected rows remain unchanged.
+
+HZ11_WINDOWS_LANE_STATUS_L1.md:
+  cleanup/orientation record for the Windows HZ11 lanes after cache512,
+  classdiag, classbatch, narrow classbatch, and pressure-gate probes. Fixes the
+  active status: `hz11-span-cache256` remains selected, `classbatch16` is
+  candidate-watch/matrix helper, pressure-gated classbatch is no-go as
+  implemented, and diagnostic rows must not be used for speed ranking.
+
 HZ11_FRONTEND_ATTRIBUTION_L0.md:
   perf/objdump attribution that identified HZ11's remaining fixed64 gap as
   instruction count rather than efficiency

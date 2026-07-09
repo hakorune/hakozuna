@@ -18,6 +18,7 @@
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
+#include "hz11_class_diag.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
 #include <mimalloc.h>
 #elif defined(HZ_BENCH_USE_TCMALLOC)
@@ -674,6 +675,8 @@ int main(int argc, char** argv) {
            (unsigned long long)hz11_stats_sum.central_remove_hit,
            (unsigned long long)hz11_stats_sum.central_remove_miss,
            (unsigned long long)hz11_stats_sum.central_insert);
+    printf("\n");
+    hz11_class_diag_dump_stats();
 #endif
     fflush(stdout);
     free(args);

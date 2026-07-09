@@ -91,6 +91,22 @@ function Invoke-Hz11RandomMixedBuilds {
     Write-Host "Building: bench_random_mixed (hz11-span-cache256)"
     $BenchHz11SpanCache256Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256Out"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache512)"
+    $BenchHz11SpanCache512Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512Out"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache512-classbatch)"
+    $BenchHz11SpanCache512ClassBatchOut = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=32", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatchOut"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache512-classbatch16)"
+    $BenchHz11SpanCache512ClassBatch16Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch16.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatch16Out"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache512-classbatch16-4-7)"
+    $BenchHz11SpanCache512ClassBatch16Range7Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch16_4_7.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_MAX_CLASS=7", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatch16Range7Out"))
 }
 
 $BaseFlags = @(

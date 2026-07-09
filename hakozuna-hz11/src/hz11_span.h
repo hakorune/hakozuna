@@ -70,5 +70,6 @@ void* hz11_span_carve_for_class(uint8_t class_id);
  * Intrusive singly-linked via the object's first word. Mutex-guarded. */
 void hz11_returned_push(uint8_t class_id, void* ptr);
 void* hz11_returned_pop(uint8_t class_id);
+uint32_t hz11_returned_pop_range(uint8_t class_id, void** out, uint32_t max);
 
 #endif /* HZ11_SPAN_H */

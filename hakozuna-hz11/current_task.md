@@ -89,6 +89,27 @@ next:
       keep hz11-span as L1 control.
       keep transfer as NO-GO/control.
       no DLL replacement or Linux fine128 parity claim.
+  HZ11WindowsClassAwareRefillBatch-L1:
+    CLOSED as evidence / specialist track.
+    docs/HZ11_WINDOWS_CLASS_AWARE_REFILL_BATCH_L1.md
+    docs/HZ11_WINDOWS_LANE_STATUS_L1.md
+    result:
+      cache512 alone helps balanced but not wide_ws.
+      classdiag shows refill is class-local.
+      classbatch32 is strong on matrix but regresses random_mixed medium/mixed.
+      classbatch16 is the best candidate-watch / matrix helper:
+        matrix balanced/wide_ws/larger_sizes improve materially.
+        random_mixed medium/mixed has a small cost.
+      classbatch16-4-7 preserves random_mixed but loses larger_sizes.
+      pressure-gated classbatch protects random_mixed but loses matrix wins.
+    decision:
+      selected Windows row remains hz11-span-cache256.
+      classbatch16 is opt-in candidate-watch / matrix helper only.
+      pressure variants are no-go as implemented.
+    next:
+      do not continue simple threshold/range tuning.
+      prefer app-like confirmation for hz11-span-cache256 or a profile-scoped
+      classbatch16 row if the matrix profile matters.
 ```
 
 ```text

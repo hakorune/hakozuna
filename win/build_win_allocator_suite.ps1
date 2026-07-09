@@ -93,6 +93,84 @@ function Invoke-Hz11AllocatorMatrixBuild {
                 "/DHZ11_SPAN_RETURNED_DIAG=1",
                 "/DHZ_BENCH_HZ11_SUMMARY=1"
             )
+        },
+        @{
+            Name = "hz11_span_cache512"
+            Output = "bench_mixed_ws_hz11_span_cache512.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @("/DHZ11_CACHE_CAP=512")
+        },
+        @{
+            Name = "hz11_span_cache512_diag"
+            Output = "bench_mixed_ws_hz11_span_cache512_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classdiag"
+            Output = "bench_mixed_ws_hz11_span_cache512_classdiag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=32"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch16"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch16.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch16_4_7"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch16_4_7.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_MAX_CLASS=7",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch_diag"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=32",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
         }
     )) {
         $Hz11Output = Join-Path $OutDir $variant.Output

@@ -14,6 +14,94 @@ HZ11_THREAD_LOCAL H11ThreadCache* hz11_tls = NULL;
 
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id);
 
+#if HZ11_CLASS_DIAG
+typedef struct H11ClassDiagCounter {
+  _Atomic uint64_t malloc_count;
+  _Atomic uint64_t hit_count;
+  _Atomic uint64_t refill_count;
+  _Atomic uint64_t overflow_count;
+  _Atomic uint64_t returned_pop_hit;
+  _Atomic uint64_t returned_pop_miss;
+} H11ClassDiagCounter;
+
+static H11ClassDiagCounter hz11_class_diag_counters[HZ11_CLASS_COUNT];
+
+static void hz11_class_diag_inc(_Atomic uint64_t* value) {
+  atomic_fetch_add_explicit(value, 1u, memory_order_relaxed);
+}
+
+void hz11_class_diag_malloc(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].malloc_count);
+  }
+}
+
+void hz11_class_diag_hit(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].hit_count);
+  }
+}
+
+void hz11_class_diag_refill(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].refill_count);
+  }
+}
+
+void hz11_class_diag_overflow(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].overflow_count);
+  }
+}
+
+void hz11_class_diag_returned_pop_hit(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].returned_pop_hit);
+  }
+}
+
+void hz11_class_diag_returned_pop_miss(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_class_diag_inc(&hz11_class_diag_counters[class_id].returned_pop_miss);
+  }
+}
+
+void hz11_class_diag_dump_stats(void) {
+  for (uint32_t class_id = 0u; class_id < HZ11_CLASS_COUNT; ++class_id) {
+    uint64_t malloc_count = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].malloc_count, memory_order_relaxed);
+    uint64_t hit_count = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].hit_count, memory_order_relaxed);
+    uint64_t refill_count = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].refill_count, memory_order_relaxed);
+    uint64_t overflow_count = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].overflow_count, memory_order_relaxed);
+    uint64_t returned_pop_hit = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].returned_pop_hit,
+        memory_order_relaxed);
+    uint64_t returned_pop_miss = atomic_load_explicit(
+        &hz11_class_diag_counters[class_id].returned_pop_miss,
+        memory_order_relaxed);
+    if (malloc_count == 0u && hit_count == 0u && refill_count == 0u &&
+        overflow_count == 0u && returned_pop_hit == 0u &&
+        returned_pop_miss == 0u) {
+      continue;
+    }
+    fprintf(stdout,
+            "[HZ11_CLASS_DIAG] class=%u slot=%zu malloc=%llu hit=%llu "
+            "refill=%llu overflow=%llu returned_pop_hit=%llu "
+            "returned_pop_miss=%llu\n",
+            (unsigned)class_id, hz11_class_slot_size((uint8_t)class_id),
+            (unsigned long long)malloc_count,
+            (unsigned long long)hit_count,
+            (unsigned long long)refill_count,
+            (unsigned long long)overflow_count,
+            (unsigned long long)returned_pop_hit,
+            (unsigned long long)returned_pop_miss);
+  }
+}
+#endif
+
 #if HZ11_CURRENT_SPAN_THREAD_EXIT && HZ11_TRANSFER_CENTRAL_SPAN && \
     HZ11_CLASSIFY_SPAN
 #ifndef HZ11_CURRENT_SPAN_POOL_CAP
@@ -244,6 +332,7 @@ static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) 
 void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
                                           void* ptr) {
   HZ11_COUNT_INC(tc->overflow_count);
+  HZ11_CLASS_DIAG_OVERFLOW(class_id);
   hz11_thread_cache_flush_class(tc, class_id);
   if (class_id < HZ11_CLASS_COUNT) {
 #if HZ11_CACHE_SOA
@@ -272,6 +361,7 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   (void)tc; /* token lane: tc only used for the now-compiled-out refill_count */
 #endif
   HZ11_COUNT_INC(tc->refill_count);
+  HZ11_CLASS_DIAG_REFILL(class_id);
 #if HZ11_TRANSFER_CENTRAL_SPAN && HZ11_CLASSIFY_SPAN
   /* Transfer lane: batch refill from transfer cache -> central stack -> span.
    * One mutex lock per batch (vs per-object returned_pop). */
@@ -338,9 +428,49 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   return tmp[0];
 #elif HZ11_CLASSIFY_SPAN
   /* 1. per-class returned-object sink first (reuse before carving a fresh span) */
-  void* reused = hz11_returned_pop(class_id);
-  if (reused) {
-    return reused;
+#if HZ11_RETURNED_REFILL_BATCH
+  if (class_id >= HZ11_RETURNED_REFILL_BATCH_MIN_CLASS &&
+      class_id <= HZ11_RETURNED_REFILL_BATCH_MAX_CLASS) {
+#if HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
+    uint8_t pressure = tc->returned_refill_pressure[class_id];
+    if (pressure >= HZ11_RETURNED_REFILL_BATCH_PRESSURE_THRESHOLD) {
+#endif
+    void* tmp[HZ11_RETURNED_REFILL_BATCH_COUNT];
+    uint32_t n = hz11_returned_pop_range(class_id, tmp,
+                                         HZ11_RETURNED_REFILL_BATCH_COUNT);
+    if (n > 0u) {
+      for (uint32_t i = 1u; i < n; ++i) {
+        hz11_thread_cache_push(tc, class_id, tmp[i]);
+      }
+#if HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
+      tc->returned_refill_pressure[class_id] = 0u;
+#endif
+      return tmp[0];
+    }
+#if HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
+    if (pressure < 255u) {
+      tc->returned_refill_pressure[class_id] = (uint8_t)(pressure + 1u);
+    }
+    } else {
+      void* reused = hz11_returned_pop(class_id);
+      if (reused) {
+        if (pressure > 0u) {
+          tc->returned_refill_pressure[class_id] = (uint8_t)(pressure - 1u);
+        }
+        return reused;
+      }
+      if (pressure < 255u) {
+        tc->returned_refill_pressure[class_id] = (uint8_t)(pressure + 1u);
+      }
+    }
+#endif
+  } else
+#endif
+  {
+    void* reused = hz11_returned_pop(class_id);
+    if (reused) {
+      return reused;
+    }
   }
   /* 2. bump from the per-thread current span */
   size_t slot = hz11_class_slot_size(class_id);

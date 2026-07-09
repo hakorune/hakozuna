@@ -34,6 +34,13 @@ $Executables = @(
     @{ Name = "hz11-span-cache256"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256.exe") },
     @{ Name = "hz11-span-tlsfast-cache256"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_tlsfast_cache256.exe") },
     @{ Name = "hz11-span-cache256-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256_diag.exe") },
+    @{ Name = "hz11-span-cache512"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512.exe") },
+    @{ Name = "hz11-span-cache512-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_diag.exe") },
+    @{ Name = "hz11-span-cache512-classdiag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classdiag.exe") },
+    @{ Name = "hz11-span-cache512-classbatch"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch.exe") },
+    @{ Name = "hz11-span-cache512-classbatch16"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16.exe") },
+    @{ Name = "hz11-span-cache512-classbatch16-4-7"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16_4_7.exe") },
+    @{ Name = "hz11-span-cache512-classbatch-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch_diag.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss.exe") },
@@ -316,6 +323,10 @@ $Summary.Add("- `hz11-span-cache256` is the selected Windows HZ11 bring-up row: 
 $Summary.Add("- `hz11-span-transfer` adds HZ11_TRANSFER_CENTRAL_SPAN=1 to the Windows span row as an opt-in L1 pressure lane. It is not the selected Windows row unless a follow-up gate promotes it.")
 $Summary.Add("- `hz11-span-diag` is a diagnostic-only sibling of `hz11-span` with HZ11_ENABLE_HOT_COUNTERS=1, HZ11_SPAN_RETURNED_DIAG=1, and HZ11 summary printing. Do not use it for speed ranking.")
 $Summary.Add("- `hz11-span-tlsfast` and `hz11-span-tlsfast-cache256` are Windows A/B rows for the matrix balanced pressure signal. `hz11-span-cache256-diag` is the diagnostic sibling of the selected cache256 row.")
+$Summary.Add("- `hz11-span-cache512` is an experimental Windows cap-pressure row used to test whether matrix balanced/wide_ws weakness is caused by returned-object/refill pressure. `hz11-span-cache512-diag` is its diagnostic sibling and should not be used for speed ranking.")
+$Summary.Add("- `hz11-span-cache512-classdiag` adds HZ11_CLASS_DIAG=1 to print per-class malloc/hit/refill/overflow/returned-pop attribution. It is diagnostic-only and must not be used for speed ranking.")
+$Summary.Add("- `hz11-span-cache512-classbatch` is a Windows L1 behavior probe: for class >= 4 it pops returned objects in a small batch and seeds the front cache. `classbatch-diag` adds class attribution and must not be used for speed ranking.")
+$Summary.Add("- `hz11-span-cache512-classbatch16` and `classbatch16-4-7` are narrower L2 probes. `classbatch16` is candidate-watch / matrix helper; `classbatch16-4-7` is balanced/wide_ws specialist evidence. Pressure-gated and 4-6 variants are documented no-go/evidence rows and are not kept in the default runner list.")
 $Summary.Add("- `hz6-*-broad` keeps the same HZ6 policy profile but raises descriptor/route/source/front-cache capacities for broad working-set matrix profiles.")
 $Summary.Add("- `hz6-*-route4k` keeps the non-route capacities at control values while widening only the route table to 4096.")
 $Summary.Add("- `hz6-*-largerlowrss` uses the selected 4K..16K/LargerSizes low-RSS lane: front8k + SourceRunReuse + desc8k + route8k.")

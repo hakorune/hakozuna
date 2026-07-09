@@ -16,6 +16,7 @@
 static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   uint8_t class_id = hz11_size_class(size);
   HZ11_COUNT_INC(tc->malloc_count);
+  HZ11_CLASS_DIAG_MALLOC(class_id);
 #if HZ11_CLASSIFY_SPAN
   if (class_id == HZ11_LARGE_CLASS) {
     return hz11_sys_malloc(size); /* large: system; free misses arena -> sys_free */
@@ -36,6 +37,7 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
     HZ11_COUNT_INC(tc->malloc_hit);
+    HZ11_CLASS_DIAG_HIT(class_id);
     hz11_live_footprint_alloc(class_id, p, size);
     return p;
   }
@@ -55,6 +57,7 @@ static inline void* hz11_malloc_fast_with_tc(H11ThreadCache* tc, size_t size) {
   void* p = hz11_thread_cache_pop(tc, class_id);
   if (p) {
     HZ11_COUNT_INC(tc->malloc_hit);
+    HZ11_CLASS_DIAG_HIT(class_id);
     return p;
   }
   p = hz11_thread_cache_refill(tc, class_id);
