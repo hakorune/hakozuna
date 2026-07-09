@@ -95,6 +95,18 @@ function Invoke-Hz11AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz11_span_cache256_matrixattrib"
+            Output = "bench_mixed_ws_hz11_span_cache256_matrixattrib.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
             Name = "hz11_span_cache512"
             Output = "bench_mixed_ws_hz11_span_cache512.exe"
             Sources = $Hz11Sources
@@ -108,6 +120,18 @@ function Invoke-Hz11AllocatorMatrixBuild {
                 "/DHZ11_CACHE_CAP=512",
                 "/DHZ11_ENABLE_HOT_COUNTERS=1",
                 "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_matrixattrib"
+            Output = "bench_mixed_ws_hz11_span_cache512_matrixattrib.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
                 "/DHZ_BENCH_HZ11_SUMMARY=1"
             )
         },
@@ -155,6 +179,51 @@ function Invoke-Hz11AllocatorMatrixBuild {
                 "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
                 "/DHZ11_RETURNED_REFILL_BATCH_MAX_CLASS=7",
                 "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch16_matrixattrib"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch16_matrixattrib.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch16_coldskip"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch16_coldskip.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP=1",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP_BUDGET=8"
+            )
+        },
+        @{
+            Name = "hz11_span_cache512_classbatch16_coldskip_matrixattrib"
+            Output = "bench_mixed_ws_hz11_span_cache512_classbatch16_coldskip_matrixattrib.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP=1",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP_BUDGET=8",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
             )
         },
         @{

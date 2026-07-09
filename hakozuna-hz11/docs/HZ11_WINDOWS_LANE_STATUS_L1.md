@@ -32,6 +32,13 @@ hz11-span-cache512-classbatch16:
   improves balanced, wide_ws, and larger_sizes
   small random_mixed medium/mixed cost remains
 
+hz11-span-cache512-classbatch16-coldskip:
+  candidate-watch / returned-empty-lock evidence
+  improves wide_ws and lowers wide_ws RSS
+  repeat-5 loop confirms wide_ws RSS/speed signal and neutral larger_sizes shape
+  recovers most classbatch16 random_mixed medium/mixed loss
+  not selected because balanced/larger_sizes repeat medians are not stronger
+
 hz11-span-cache512-classbatch:
   broad matrix specialist
   too aggressive for random_mixed general use
@@ -43,7 +50,11 @@ hz11-span-cache512-classbatch:
 hz11-span-diag
 hz11-span-cache256-diag
 hz11-span-cache512-diag
+hz11-span-cache256-matrixattrib
+hz11-span-cache512-matrixattrib
 hz11-span-cache512-classdiag
+hz11-span-cache512-classbatch16-matrixattrib
+hz11-span-cache512-classbatch16-coldskip-matrixattrib
 hz11-span-cache512-classbatch-diag
 ```
 
@@ -76,6 +87,7 @@ kept in normal Windows runners:
   hz11-span-cache512-classbatch
   hz11-span-cache512-classbatch16
   hz11-span-cache512-classbatch16-4-7
+  hz11-span-cache512-classbatch16-coldskip
 
 not kept in normal Windows runners:
   hz11-span-cache512-classbatch16-4-6
@@ -93,10 +105,11 @@ General Windows HZ11:
   use hz11-span-cache256
 
 Matrix pressure experiments:
-  use hz11-span-cache512-classbatch16 as candidate-watch
+  use hz11-span-cache512-classbatch16 as baseline candidate-watch
+  use hz11-span-cache512-classbatch16-coldskip for wide_ws / returned-empty-lock study
 
 Do not:
-  promote classbatch32, pressure-gated classbatch, or transfer as selected rows
+  promote classbatch32, pressure-gated classbatch, coldskip, or transfer as selected rows
 ```
 
 ## Next Work
@@ -106,6 +119,6 @@ classbatch threshold. Prefer one of:
 
 ```text
 1. app-like / real workload confirmation for hz11-span-cache256
-2. profile-scoped classbatch16 lane if the matrix row matters
+2. profile-scoped classbatch16/coldskip lane if the matrix row matters
 3. a new pre-refill workload signal, not post-miss pressure gating
 ```

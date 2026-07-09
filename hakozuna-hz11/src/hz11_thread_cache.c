@@ -102,6 +102,150 @@ void hz11_class_diag_dump_stats(void) {
 }
 #endif
 
+#if HZ11_MATRIX_ATTRIB_DIAG
+typedef struct H11MatrixDiagCounter {
+  _Atomic uint64_t cache_refill_samples;
+  _Atomic uint64_t cache_count_at_refill_total;
+  _Atomic uint64_t cache_count_at_refill_max;
+  _Atomic uint64_t cache_after_batch_samples;
+  _Atomic uint64_t cache_count_after_batch_total;
+  _Atomic uint64_t cache_count_after_batch_max;
+  _Atomic uint64_t returned_one_hit;
+  _Atomic uint64_t returned_one_miss;
+  _Atomic uint64_t returned_batch_call;
+  _Atomic uint64_t returned_batch_items;
+  _Atomic uint64_t returned_batch_miss;
+  _Atomic uint64_t current_hit;
+  _Atomic uint64_t span_new;
+  _Atomic uint64_t sys_fallback;
+} H11MatrixDiagCounter;
+
+static H11MatrixDiagCounter hz11_matrix_diag_counters[HZ11_CLASS_COUNT];
+
+static void hz11_matrix_diag_inc(_Atomic uint64_t* value) {
+  atomic_fetch_add_explicit(value, 1u, memory_order_relaxed);
+}
+
+static void hz11_matrix_diag_add(_Atomic uint64_t* value, uint64_t amount) {
+  atomic_fetch_add_explicit(value, amount, memory_order_relaxed);
+}
+
+static void hz11_matrix_diag_max(_Atomic uint64_t* value, uint64_t sample) {
+  uint64_t old = atomic_load_explicit(value, memory_order_relaxed);
+  while (old < sample &&
+         !atomic_compare_exchange_weak_explicit(value, &old, sample,
+                                                memory_order_relaxed,
+                                                memory_order_relaxed)) {
+  }
+}
+
+void hz11_matrix_diag_cache_at_refill(uint8_t class_id, uint32_t count) {
+  if (class_id >= HZ11_CLASS_COUNT) return;
+  H11MatrixDiagCounter* c = &hz11_matrix_diag_counters[class_id];
+  hz11_matrix_diag_inc(&c->cache_refill_samples);
+  hz11_matrix_diag_add(&c->cache_count_at_refill_total, count);
+  hz11_matrix_diag_max(&c->cache_count_at_refill_max, count);
+}
+
+void hz11_matrix_diag_cache_after_batch(uint8_t class_id, uint32_t count) {
+  if (class_id >= HZ11_CLASS_COUNT) return;
+  H11MatrixDiagCounter* c = &hz11_matrix_diag_counters[class_id];
+  hz11_matrix_diag_inc(&c->cache_after_batch_samples);
+  hz11_matrix_diag_add(&c->cache_count_after_batch_total, count);
+  hz11_matrix_diag_max(&c->cache_count_after_batch_max, count);
+}
+
+void hz11_matrix_diag_returned_one(uint8_t class_id, int hit) {
+  if (class_id >= HZ11_CLASS_COUNT) return;
+  H11MatrixDiagCounter* c = &hz11_matrix_diag_counters[class_id];
+  hz11_matrix_diag_inc(hit ? &c->returned_one_hit : &c->returned_one_miss);
+}
+
+void hz11_matrix_diag_returned_batch(uint8_t class_id, uint32_t count) {
+  if (class_id >= HZ11_CLASS_COUNT) return;
+  H11MatrixDiagCounter* c = &hz11_matrix_diag_counters[class_id];
+  hz11_matrix_diag_inc(&c->returned_batch_call);
+  if (count == 0u) {
+    hz11_matrix_diag_inc(&c->returned_batch_miss);
+  } else {
+    hz11_matrix_diag_add(&c->returned_batch_items, count);
+  }
+}
+
+void hz11_matrix_diag_current_hit(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_matrix_diag_inc(&hz11_matrix_diag_counters[class_id].current_hit);
+  }
+}
+
+void hz11_matrix_diag_span_new(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_matrix_diag_inc(&hz11_matrix_diag_counters[class_id].span_new);
+  }
+}
+
+void hz11_matrix_diag_sys_fallback(uint8_t class_id) {
+  if (class_id < HZ11_CLASS_COUNT) {
+    hz11_matrix_diag_inc(&hz11_matrix_diag_counters[class_id].sys_fallback);
+  }
+}
+
+void hz11_matrix_diag_dump_stats(void) {
+  for (uint32_t class_id = 0u; class_id < HZ11_CLASS_COUNT; ++class_id) {
+    H11MatrixDiagCounter* c = &hz11_matrix_diag_counters[class_id];
+    uint64_t samples = atomic_load_explicit(&c->cache_refill_samples,
+                                            memory_order_relaxed);
+    uint64_t at_total = atomic_load_explicit(&c->cache_count_at_refill_total,
+                                             memory_order_relaxed);
+    uint64_t at_max = atomic_load_explicit(&c->cache_count_at_refill_max,
+                                           memory_order_relaxed);
+    uint64_t after_samples = atomic_load_explicit(&c->cache_after_batch_samples,
+                                                  memory_order_relaxed);
+    uint64_t after_total = atomic_load_explicit(&c->cache_count_after_batch_total,
+                                                memory_order_relaxed);
+    uint64_t after_max = atomic_load_explicit(&c->cache_count_after_batch_max,
+                                              memory_order_relaxed);
+    uint64_t one_hit = atomic_load_explicit(&c->returned_one_hit,
+                                            memory_order_relaxed);
+    uint64_t one_miss = atomic_load_explicit(&c->returned_one_miss,
+                                             memory_order_relaxed);
+    uint64_t batch_call = atomic_load_explicit(&c->returned_batch_call,
+                                               memory_order_relaxed);
+    uint64_t batch_items = atomic_load_explicit(&c->returned_batch_items,
+                                                memory_order_relaxed);
+    uint64_t batch_miss = atomic_load_explicit(&c->returned_batch_miss,
+                                               memory_order_relaxed);
+    uint64_t current_hit = atomic_load_explicit(&c->current_hit,
+                                                memory_order_relaxed);
+    uint64_t span_new = atomic_load_explicit(&c->span_new,
+                                             memory_order_relaxed);
+    uint64_t sys_fallback = atomic_load_explicit(&c->sys_fallback,
+                                                 memory_order_relaxed);
+    if (samples == 0u && after_samples == 0u && one_hit == 0u &&
+        one_miss == 0u && batch_call == 0u && batch_items == 0u &&
+        batch_miss == 0u && current_hit == 0u && span_new == 0u &&
+        sys_fallback == 0u) {
+      continue;
+    }
+    fprintf(stdout,
+            "[HZ11_MATRIX_ATTRIB] class=%u slot=%zu refill_samples=%llu "
+            "cache_at_total=%llu cache_at_max=%llu after_batch_samples=%llu "
+            "cache_after_total=%llu cache_after_max=%llu returned_one_hit=%llu "
+            "returned_one_miss=%llu returned_batch_call=%llu "
+            "returned_batch_items=%llu returned_batch_miss=%llu "
+            "current_hit=%llu span_new=%llu sys_fallback=%llu\n",
+            (unsigned)class_id, hz11_class_slot_size((uint8_t)class_id),
+            (unsigned long long)samples, (unsigned long long)at_total,
+            (unsigned long long)at_max, (unsigned long long)after_samples,
+            (unsigned long long)after_total, (unsigned long long)after_max,
+            (unsigned long long)one_hit, (unsigned long long)one_miss,
+            (unsigned long long)batch_call, (unsigned long long)batch_items,
+            (unsigned long long)batch_miss, (unsigned long long)current_hit,
+            (unsigned long long)span_new, (unsigned long long)sys_fallback);
+  }
+}
+#endif
+
 #if HZ11_CURRENT_SPAN_THREAD_EXIT && HZ11_TRANSFER_CENTRAL_SPAN && \
     HZ11_CLASSIFY_SPAN
 #ifndef HZ11_CURRENT_SPAN_POOL_CAP
@@ -248,6 +392,25 @@ H11ThreadCache* hz11_thread_cache_init_slow(void) {
   return tc;
 }
 
+#if HZ11_MATRIX_ATTRIB_DIAG
+static uint32_t hz11_thread_cache_cached_count(H11ThreadCache* tc,
+                                               uint8_t class_id) {
+  if (!tc || class_id >= HZ11_CLASS_COUNT) {
+    return 0u;
+  }
+#if HZ11_CACHE_SOA
+  return tc->class_counts[class_id];
+#else
+#if HZ11_CACHE_TOPPTR
+  H11ClassCache* cc = &tc->class_cache[class_id];
+  return (uint32_t)(cc->top - cc->items);
+#else
+  return tc->class_cache[class_id].count;
+#endif
+#endif
+}
+#endif
+
 static void hz11_thread_cache_flush_class(H11ThreadCache* tc, uint8_t class_id) {
 #if HZ11_CACHE_SOA
 #if HZ11_TRANSFER_CENTRAL_SPAN && HZ11_CLASSIFY_SPAN
@@ -334,6 +497,11 @@ void hz11_thread_cache_push_overflow_slow(H11ThreadCache* tc, uint8_t class_id,
   HZ11_COUNT_INC(tc->overflow_count);
   HZ11_CLASS_DIAG_OVERFLOW(class_id);
   hz11_thread_cache_flush_class(tc, class_id);
+#if HZ11_CLASSIFY_SPAN && HZ11_RETURNED_REFILL_COLD_SKIP
+  if (class_id < HZ11_CLASS_COUNT) {
+    tc->returned_refill_cold_skip[class_id] = 0u;
+  }
+#endif
   if (class_id < HZ11_CLASS_COUNT) {
 #if HZ11_CACHE_SOA
     tc->class_items[class_id][0] = ptr;
@@ -362,6 +530,8 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
 #endif
   HZ11_COUNT_INC(tc->refill_count);
   HZ11_CLASS_DIAG_REFILL(class_id);
+  HZ11_MATRIX_DIAG_CACHE_AT_REFILL(class_id,
+                                   hz11_thread_cache_cached_count(tc, class_id));
 #if HZ11_TRANSFER_CENTRAL_SPAN && HZ11_CLASSIFY_SPAN
   /* Transfer lane: batch refill from transfer cache -> central stack -> span.
    * One mutex lock per batch (vs per-object returned_pop). */
@@ -427,6 +597,17 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
   }
   return tmp[0];
 #elif HZ11_CLASSIFY_SPAN
+  size_t slot = hz11_class_slot_size(class_id);
+  H11SpanCurrent* cs = &tc->current[class_id];
+#if HZ11_RETURNED_REFILL_COLD_SKIP
+  if (class_id < HZ11_CLASS_COUNT &&
+      tc->returned_refill_cold_skip[class_id] > 0u && cs->base &&
+      cs->bump_index < cs->slot_count) {
+    tc->returned_refill_cold_skip[class_id]--;
+    HZ11_MATRIX_DIAG_CURRENT_HIT(class_id);
+    return cs->base + (size_t)cs->bump_index++ * slot;
+  }
+#endif
   /* 1. per-class returned-object sink first (reuse before carving a fresh span) */
 #if HZ11_RETURNED_REFILL_BATCH
   if (class_id >= HZ11_RETURNED_REFILL_BATCH_MIN_CLASS &&
@@ -438,27 +619,43 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
     void* tmp[HZ11_RETURNED_REFILL_BATCH_COUNT];
     uint32_t n = hz11_returned_pop_range(class_id, tmp,
                                          HZ11_RETURNED_REFILL_BATCH_COUNT);
+    HZ11_MATRIX_DIAG_RETURNED_BATCH(class_id, n);
     if (n > 0u) {
       for (uint32_t i = 1u; i < n; ++i) {
         hz11_thread_cache_push(tc, class_id, tmp[i]);
       }
+      HZ11_MATRIX_DIAG_CACHE_AFTER_BATCH(
+          class_id, hz11_thread_cache_cached_count(tc, class_id));
 #if HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
       tc->returned_refill_pressure[class_id] = 0u;
 #endif
       return tmp[0];
     }
+#if HZ11_RETURNED_REFILL_COLD_SKIP
+    if (cs->base && cs->bump_index < cs->slot_count) {
+      tc->returned_refill_cold_skip[class_id] =
+          (uint8_t)HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET;
+    }
+#endif
 #if HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
     if (pressure < 255u) {
       tc->returned_refill_pressure[class_id] = (uint8_t)(pressure + 1u);
     }
     } else {
       void* reused = hz11_returned_pop(class_id);
+      HZ11_MATRIX_DIAG_RETURNED_ONE(class_id, reused != NULL);
       if (reused) {
         if (pressure > 0u) {
           tc->returned_refill_pressure[class_id] = (uint8_t)(pressure - 1u);
         }
         return reused;
       }
+#if HZ11_RETURNED_REFILL_COLD_SKIP
+      if (cs->base && cs->bump_index < cs->slot_count) {
+        tc->returned_refill_cold_skip[class_id] =
+            (uint8_t)HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET;
+      }
+#endif
       if (pressure < 255u) {
         tc->returned_refill_pressure[class_id] = (uint8_t)(pressure + 1u);
       }
@@ -468,21 +665,30 @@ void* hz11_thread_cache_refill(H11ThreadCache* tc, uint8_t class_id) {
 #endif
   {
     void* reused = hz11_returned_pop(class_id);
+    HZ11_MATRIX_DIAG_RETURNED_ONE(class_id, reused != NULL);
     if (reused) {
       return reused;
     }
+#if HZ11_RETURNED_REFILL_COLD_SKIP
+    if (class_id < HZ11_CLASS_COUNT && cs->base &&
+        cs->bump_index < cs->slot_count) {
+      tc->returned_refill_cold_skip[class_id] =
+          (uint8_t)HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET;
+    }
+#endif
   }
   /* 2. bump from the per-thread current span */
-  size_t slot = hz11_class_slot_size(class_id);
-  H11SpanCurrent* cs = &tc->current[class_id];
   if (cs->base && cs->bump_index < cs->slot_count) {
+    HZ11_MATRIX_DIAG_CURRENT_HIT(class_id);
     return cs->base + (size_t)cs->bump_index++ * slot;
   }
   /* 3. current span exhausted (or none yet): carve a fresh 64 KiB span */
   char* base = (char*)hz11_span_carve_for_class(class_id);
   if (!base) {
+    HZ11_MATRIX_DIAG_SYS_FALLBACK(class_id);
     return hz11_sys_malloc(slot); /* arena full -- fall back (bench never hits) */
   }
+  HZ11_MATRIX_DIAG_SPAN_NEW(class_id);
   cs->base = base;
   cs->bump_index = 0;
   cs->slot_count = (uint32_t)(HZ11_SPAN_BYTES / slot);

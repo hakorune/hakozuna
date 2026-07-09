@@ -110,6 +110,50 @@ next:
       do not continue simple threshold/range tuning.
       prefer app-like confirmation for hz11-span-cache256 or a profile-scoped
       classbatch16 row if the matrix profile matters.
+  HZ11WindowsReturnedColdSkip-L2:
+    KEEP as Windows matrix evidence / candidate-watch.
+    docs/HZ11_WINDOWS_RETURNED_COLD_SKIP_L2.md
+    added:
+      HZ11_MATRIX_ATTRIB_DIAG diagnostic-only counters
+      hz11-span-cache256-matrixattrib
+      hz11-span-cache512-matrixattrib
+      hz11-span-cache512-classbatch16-matrixattrib
+      hz11-span-cache512-classbatch16-coldskip
+      hz11-span-cache512-classbatch16-coldskip-matrixattrib
+    diagnosis:
+      classbatch16 still pays many returned-sink lock attempts that miss and
+      immediately fall through to current span bump.
+      matrix attribution shows returned_batch_miss -> current_hit dominates
+      especially in wide_ws.
+    repeat-3 matrix:
+      balanced:
+        classbatch16 30.591M / 39760KB
+        coldskip     30.135M / 38628KB
+      wide_ws:
+        classbatch16 22.585M / 88732KB
+        coldskip     26.770M / 74512KB
+      larger_sizes:
+        classbatch16 44.455M / 59472KB
+        coldskip     43.682M / 60468KB
+    repeat-5 loop matrix:
+      balanced:
+        classbatch16 27.908M / 40232KB
+        coldskip     27.690M / 39960KB
+      wide_ws:
+        classbatch16 21.490M / 85996KB
+        coldskip     22.075M / 77148KB
+      larger_sizes:
+        classbatch16 40.355M / 60404KB
+        coldskip     40.812M / 59444KB
+    random_mixed RUNS=3:
+      coldskip recovers most classbatch16 medium/mixed loss:
+        medium 154.331M vs cache256 155.067M
+        mixed  154.246M vs cache256 154.947M
+    decision:
+      selected Windows row remains hz11-span-cache256.
+      coldskip is not default; keep as profile-scoped wide_ws / returned-empty
+      lock evidence.
+      do not tune skip budget blindly.
 ```
 
 ```text

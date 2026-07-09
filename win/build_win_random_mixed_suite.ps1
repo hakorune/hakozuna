@@ -104,6 +104,10 @@ function Invoke-Hz11RandomMixedBuilds {
     $BenchHz11SpanCache512ClassBatch16Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch16.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatch16Out"))
 
+    Write-Host "Building: bench_random_mixed (hz11-span-cache512-classbatch16-coldskip)"
+    $BenchHz11SpanCache512ClassBatch16ColdSkipOut = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch16_coldskip.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16", "/DHZ11_RETURNED_REFILL_COLD_SKIP=1", "/DHZ11_RETURNED_REFILL_COLD_SKIP_BUDGET=8", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatch16ColdSkipOut"))
+
     Write-Host "Building: bench_random_mixed (hz11-span-cache512-classbatch16-4-7)"
     $BenchHz11SpanCache512ClassBatch16Range7Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512_classbatch16_4_7.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", "/DHZ11_RETURNED_REFILL_BATCH=1", "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4", "/DHZ11_RETURNED_REFILL_BATCH_MAX_CLASS=7", "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512ClassBatch16Range7Out"))

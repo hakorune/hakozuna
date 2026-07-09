@@ -86,6 +86,15 @@
 #ifndef HZ11_RETURNED_REFILL_BATCH_PRESSURE_THRESHOLD
 #define HZ11_RETURNED_REFILL_BATCH_PRESSURE_THRESHOLD 4u
 #endif
+/* HZ11ReturnedColdSkip-L1: opt-in matrix probe. When returned-pop recently
+ * missed and the current span still has slots, skip a few returned-sink lock
+ * attempts and bump from current directly. Overflow flush clears the hint. */
+#ifndef HZ11_RETURNED_REFILL_COLD_SKIP
+#define HZ11_RETURNED_REFILL_COLD_SKIP 0u
+#endif
+#ifndef HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET
+#define HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET 8u
+#endif
 
 /* HZ11CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H11ClassCache[13] into two parallel arrays with power-of-2
@@ -140,6 +149,9 @@ typedef struct H11ThreadCache {
   H11SpanCurrent current[HZ11_CLASS_COUNT];
 #if HZ11_RETURNED_REFILL_BATCH && HZ11_RETURNED_REFILL_BATCH_PRESSURE_GATE
   uint8_t returned_refill_pressure[HZ11_CLASS_COUNT];
+#endif
+#if HZ11_RETURNED_REFILL_COLD_SKIP
+  uint8_t returned_refill_cold_skip[HZ11_CLASS_COUNT];
 #endif
 #endif
   size_t cached_bytes;

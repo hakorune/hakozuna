@@ -34,12 +34,17 @@ $Executables = @(
     @{ Name = "hz11-span-cache256"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256.exe") },
     @{ Name = "hz11-span-tlsfast-cache256"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_tlsfast_cache256.exe") },
     @{ Name = "hz11-span-cache256-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256_diag.exe") },
+    @{ Name = "hz11-span-cache256-matrixattrib"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256_matrixattrib.exe") },
     @{ Name = "hz11-span-cache512"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512.exe") },
     @{ Name = "hz11-span-cache512-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_diag.exe") },
+    @{ Name = "hz11-span-cache512-matrixattrib"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_matrixattrib.exe") },
     @{ Name = "hz11-span-cache512-classdiag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classdiag.exe") },
     @{ Name = "hz11-span-cache512-classbatch"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch.exe") },
     @{ Name = "hz11-span-cache512-classbatch16"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16.exe") },
     @{ Name = "hz11-span-cache512-classbatch16-4-7"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16_4_7.exe") },
+    @{ Name = "hz11-span-cache512-classbatch16-matrixattrib"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16_matrixattrib.exe") },
+    @{ Name = "hz11-span-cache512-classbatch16-coldskip"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16_coldskip.exe") },
+    @{ Name = "hz11-span-cache512-classbatch16-coldskip-matrixattrib"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch16_coldskip_matrixattrib.exe") },
     @{ Name = "hz11-span-cache512-classbatch-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache512_classbatch_diag.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
@@ -327,6 +332,8 @@ $Summary.Add("- `hz11-span-cache512` is an experimental Windows cap-pressure row
 $Summary.Add("- `hz11-span-cache512-classdiag` adds HZ11_CLASS_DIAG=1 to print per-class malloc/hit/refill/overflow/returned-pop attribution. It is diagnostic-only and must not be used for speed ranking.")
 $Summary.Add("- `hz11-span-cache512-classbatch` is a Windows L1 behavior probe: for class >= 4 it pops returned objects in a small batch and seeds the front cache. `classbatch-diag` adds class attribution and must not be used for speed ranking.")
 $Summary.Add("- `hz11-span-cache512-classbatch16` and `classbatch16-4-7` are narrower L2 probes. `classbatch16` is candidate-watch / matrix helper; `classbatch16-4-7` is balanced/wide_ws specialist evidence. Pressure-gated and 4-6 variants are documented no-go/evidence rows and are not kept in the default runner list.")
+$Summary.Add("- `hz11-span-*-matrixattrib` rows enable HZ11_MATRIX_ATTRIB_DIAG=1 and are diagnostic-only. They split refill into returned-one, returned-batch, current-span, span-new, and sys-fallback paths.")
+$Summary.Add("- `hz11-span-cache512-classbatch16-coldskip` is a Windows L2 returned-empty-lock probe. After a returned-pop miss it briefly skips returned-sink lock attempts when the current span has slots. It is evidence/candidate-watch, not the selected row.")
 $Summary.Add("- `hz6-*-broad` keeps the same HZ6 policy profile but raises descriptor/route/source/front-cache capacities for broad working-set matrix profiles.")
 $Summary.Add("- `hz6-*-route4k` keeps the non-route capacities at control values while widening only the route table to 4096.")
 $Summary.Add("- `hz6-*-largerlowrss` uses the selected 4K..16K/LargerSizes low-RSS lane: front8k + SourceRunReuse + desc8k + route8k.")

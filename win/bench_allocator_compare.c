@@ -677,6 +677,7 @@ int main(int argc, char** argv) {
            (unsigned long long)hz11_stats_sum.central_insert);
     printf("\n");
     hz11_class_diag_dump_stats();
+    hz11_matrix_diag_dump_stats();
 #endif
     fflush(stdout);
     free(args);

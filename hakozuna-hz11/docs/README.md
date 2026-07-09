@@ -45,6 +45,12 @@ HZ11_WINDOWS_LANE_STATUS_L1.md:
   candidate-watch/matrix helper, pressure-gated classbatch is no-go as
   implemented, and diagnostic rows must not be used for speed ranking.
 
+HZ11_WINDOWS_RETURNED_COLD_SKIP_L2.md:
+  Windows refill subpath attribution and returned-empty-lock probe. Adds
+  diagnostic-only `HZ11_MATRIX_ATTRIB_DIAG` rows and an opt-in
+  `classbatch16-coldskip` behavior row. Keep as wide_ws / returned-empty-lock
+  evidence; the selected Windows row remains `hz11-span-cache256`.
+
 HZ11_LINUX_RETURNED_REFILL_BATCH_PROBE_L1.md:
   Ubuntu cross-check for the Windows returned-refill classbatch idea. Adds
   Linux non-transfer span siblings (`span-cache256`, `span-cache512-classbatch`)
