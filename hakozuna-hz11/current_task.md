@@ -2,6 +2,13 @@
 
 ```text
 Active status:
+  HZ11RocksdbPostFixLanePerf-L1: GO for fine128 on real multi-thread DB; cap-specialist
+  NO-GO. fine128 is near-parity with tcmalloc on rocksdb (wall 1.009x, readrandom 1.01x,
+  RSS 0.956x). cap768/cap1024 ~= fine128 or slower with higher RSS -- the sh6bench win
+  does NOT translate to rocksdb (the cap cuts transfer traffic but rocksdb's bottleneck is
+  I/O, not the allocator). cap lanes confirmed sh6bench-synthetic specialists. This closes
+  the 'does cap help real multi-thread' question. See
+  docs/HZ11_ROCKSDB_POST_FIX_LANE_PERF_L1.md.
   HZ11RocksdbReadrandomCrashRootCause-L1: FIX-GO. Root cause: hz11_malloc_usable_size
   routed arena pointers to libc, which read arena slot data as a chunk header and
   SEGFAULTED (minimal repro: p=malloc(N); malloc_usable_size(p); under LD_PRELOAD).

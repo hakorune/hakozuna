@@ -210,6 +210,14 @@ HZ11_ROCKSDB_READRANDOM_CRASH_ROOT_CAUSE_L1.md:
   non-arena -> libc). rocksdb readrandom now rc=0 at ~tcmalloc parity; espresso/sqlite3 no
   regression. Real-app multi-thread correctness gap CLOSED. Perf eval is the next box
 
+HZ11_ROCKSDB_POST_FIX_LANE_PERF_L1.md:
+  post-fix rocksdb lane perf (fillrandom+readrandom, 8 threads, RUNS=3). GO for fine128 on
+  real multi-thread DB: near-parity with tcmalloc (wall 1.009x, readrandom 1.01x, RSS
+  0.956x). cap-specialist NO-GO: cap768/cap1024 ~= fine128 or slower with higher RSS; the
+  sh6bench win does NOT translate to rocksdb (cap cuts transfer traffic 4.6M->25K but
+  rocksdb's bottleneck is I/O, not the allocator). cap lanes confirmed sh6bench-synthetic
+  specialists. Closes the 'does cap help real multi-thread' question
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS
