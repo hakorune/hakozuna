@@ -6,6 +6,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 - [Allocator line integrated matrix: HZ3/HZ4/HZ8/HZ10, 2026-07-07](./20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md)
 - [Windows HZ11 L0 random_mixed connectivity, 2026-07-09](./windows/hz11_l0_random_mixed_connectivity/20260709_141007_paper_random_mixed_windows.md)
+- [Windows HZ11 L1 span random_mixed connectivity, 2026-07-09](./windows/hz11_l1_span_random_mixed_connectivity/20260709_142042_paper_random_mixed_windows.md)
 - [HZ10 bump init L0, 2026-07-07](./20260707_hz10_bump_init_l0_r10/README.md)
 - [HZ10 bump default gate L1, 2026-07-07](./20260707_hz10_bump_default_gate_l1/README.md)
 - [Allocator line integrated snapshot with HZ10 bump default, 2026-07-07](./20260707_allocator_line_integrated_hz10_bump_default/README.md)

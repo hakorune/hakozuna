@@ -21,6 +21,10 @@ HZ11_WINDOWS_FIXED_LOCAL_BENCH_L0.md:
   Windows L0 fixed-local speed observation. Compares system CRT, HZ11 token, and
   HZ11 tlsfast public-entry lanes in a standalone microbench.
 
+HZ11_WINDOWS_SPAN_BRINGUP_L1.md:
+  Windows span/classify smoke bring-up. Adds VirtualAlloc-backed arena support
+  and verifies HZ11_CLASSIFY_SPAN=1 can pass the standalone smoke.
+
 HZ11_FRONTEND_ATTRIBUTION_L0.md:
   perf/objdump attribution that identified HZ11's remaining fixed64 gap as
   instruction count rather than efficiency

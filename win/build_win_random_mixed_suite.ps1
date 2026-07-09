@@ -66,6 +66,10 @@ $Hz11Sources = @(
     (Join-Path $Hz11Dir "src\hz11_thread_cache.c"),
     (Join-Path $Hz11Dir "src\hz11_public_entry.c")
 )
+$Hz11SpanSources = $Hz11Sources + @(
+    (Join-Path $Hz11Dir "src\hz11_span.c"),
+    (Join-Path $Hz11Dir "src\hz11_live_footprint.c")
+)
 
 function Invoke-Hz11RandomMixedBuilds {
     if (($Hz11Sources | Where-Object { -not (Test-Path $_) }).Count -ne 0) {
@@ -79,6 +83,10 @@ function Invoke-Hz11RandomMixedBuilds {
     Write-Host "Building: bench_random_mixed (hz11-tlsfast)"
     $BenchHz11TlsfastOut = Join-Path $OutDir "bench_random_mixed_hz11_tlsfast.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_TLS_FASTPATH=1", $BenchSrc) + $Hz11Sources + @("psapi.lib", "/link", "/out:$BenchHz11TlsfastOut"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span)"
+    $BenchHz11SpanOut = Join-Path $OutDir "bench_random_mixed_hz11_span.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanOut"))
 }
 
 $BaseFlags = @(

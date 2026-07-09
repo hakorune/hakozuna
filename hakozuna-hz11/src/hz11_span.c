@@ -1,8 +1,16 @@
 #include "hz11_span.h"
+#include "hz11_port.h"
 
 #include <stdatomic.h>
-#include <pthread.h>
+
+#if defined(_WIN32)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#include <windows.h>
+#else
 #include <sys/mman.h>
+#endif
 
 char* hz11_arena_base = NULL;
 uint8_t hz11_span_class[HZ11_SPAN_COUNT]; /* BSS zero-fill == uncarved */
@@ -10,16 +18,29 @@ static _Atomic uint64_t hz11_span_create_count;
 
 static char* hz11_arena_end = NULL;
 static _Atomic(char*) hz11_span_cursor;
+#if defined(_WIN32)
+static INIT_ONCE hz11_span_init_once = INIT_ONCE_STATIC_INIT;
+#else
 static pthread_once_t hz11_span_init_once = PTHREAD_ONCE_INIT;
+#endif
 
 /* Per-class returned-object sink. */
 typedef struct H11Returned {
-  pthread_mutex_t lock;
+  HZ11_MUTEX lock;
   void* head;
 } H11Returned;
 static H11Returned hz11_returned[HZ11_CLASS_COUNT];
 
 static void hz11_span_init_real(void) {
+#if defined(_WIN32)
+  void* base = VirtualAlloc(NULL, (SIZE_T)HZ11_ARENA_BYTES,
+                            MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+  if (!base) {
+    hz11_arena_base = NULL;
+    hz11_arena_end = NULL;
+    return;
+  }
+#else
   void* base = mmap(NULL, HZ11_ARENA_BYTES, PROT_READ | PROT_WRITE,
                     MAP_PRIVATE | MAP_ANONYMOUS | MAP_NORESERVE, -1, 0);
   if (base == MAP_FAILED) {
@@ -30,17 +51,37 @@ static void hz11_span_init_real(void) {
 #if HZ11_ARENA_NOHUGEPAGE
   (void)madvise(base, HZ11_ARENA_BYTES, MADV_NOHUGEPAGE);
 #endif
+#endif
   hz11_arena_base = (char*)base;
   hz11_arena_end = hz11_arena_base + HZ11_ARENA_BYTES;
   atomic_store_explicit(&hz11_span_cursor, hz11_arena_base, memory_order_relaxed);
   for (uint32_t i = 0; i < HZ11_CLASS_COUNT; ++i) {
-    pthread_mutex_init(&hz11_returned[i].lock, NULL);
+    hz11_mutex_init(&hz11_returned[i].lock);
     hz11_returned[i].head = NULL;
   }
 }
 
+#if defined(_WIN32)
+static BOOL CALLBACK hz11_span_init_once_callback(PINIT_ONCE init_once,
+                                                  PVOID parameter,
+                                                  PVOID* context) {
+  (void)init_once;
+  (void)parameter;
+  (void)context;
+  hz11_span_init_real();
+  return TRUE;
+}
+#endif
+
 void hz11_span_init(void) {
+#if defined(_WIN32)
+  (void)InitOnceExecuteOnce(&hz11_span_init_once,
+                            hz11_span_init_once_callback,
+                            NULL,
+                            NULL);
+#else
   pthread_once(&hz11_span_init_once, hz11_span_init_real);
+#endif
 }
 
 void* hz11_span_carve_for_class(uint8_t class_id) {
@@ -75,10 +116,10 @@ void hz11_returned_push(uint8_t class_id, void* ptr) {
     return;
   }
   H11Returned* r = &hz11_returned[class_id];
-  pthread_mutex_lock(&r->lock);
+  hz11_mutex_lock(&r->lock);
   *(void**)ptr = r->head;
   r->head = ptr;
-  pthread_mutex_unlock(&r->lock);
+  hz11_mutex_unlock(&r->lock);
 }
 
 void* hz11_returned_pop(uint8_t class_id) {
@@ -86,11 +127,11 @@ void* hz11_returned_pop(uint8_t class_id) {
     return NULL;
   }
   H11Returned* r = &hz11_returned[class_id];
-  pthread_mutex_lock(&r->lock);
+  hz11_mutex_lock(&r->lock);
   void* p = r->head;
   if (p) {
     r->head = *(void**)p;
   }
-  pthread_mutex_unlock(&r->lock);
+  hz11_mutex_unlock(&r->lock);
   return p;
 }

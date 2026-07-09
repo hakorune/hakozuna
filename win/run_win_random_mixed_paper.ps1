@@ -36,6 +36,7 @@ $Executables = @(
     @{ Name = "hz7-v2"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz7_v2.exe") },
     @{ Name = "hz11-token"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_token.exe") },
     @{ Name = "hz11-tlsfast"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_tlsfast.exe") },
+    @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },
@@ -178,6 +179,7 @@ $Summary.Add(('- selected allocators: `{0}`' -f (($Executables | ForEach-Object 
 $Summary.Add('- `hz7-tinyroute` is a direct-API TinyRoute row: span classes currently cover `<=16KiB`; `>16KiB` uses direct OS regions with bounded 32K/64K direct retain buckets, and it is not an interposer/general allocator row yet.')
 $Summary.Add('- `hz7-v2` is the TinyRoute v2 row: it keeps the direct-API/global-lock safety model while testing the v2 task-track changes such as remote-safe smoke and SlowPathOutsideLock.')
 $Summary.Add('- `hz11-token` and `hz11-tlsfast` are Windows L0 standalone public-entry rows: token/front-cache only, no fine128/span-transfer parity claim, and no DLL replacement claim.')
+$Summary.Add('- `hz11-span` is a Windows L1 diagnostic row: VirtualAlloc-backed span/classify, no transfer/fine128 parity claim, and no DLL replacement claim.')
 $Summary.Add('- HZ6 rows now include `broad`, `control`, `route4k`, and `appcap` capacity lanes; `route4k` isolates route-table capacity while keeping the other control capacities.')
 $Summary.Add("")
 

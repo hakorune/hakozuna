@@ -24,7 +24,16 @@ next:
     hz11-token / hz11-tlsfast rows
     RUNS=3 small/medium/mixed connectivity snapshot stored under
     docs/benchmarks/windows/hz11_l0_random_mixed_connectivity/
-  next decide whether to add VirtualAlloc-backed span/classify smoke
+  Windows span/classify smoke passes:
+    HZ11_CLASSIFY_SPAN=1
+    VirtualAlloc arena
+    CRITICAL_SECTION returned-object locks
+    INIT_ONCE span init
+  opt-in hz11-span row connected to random_mixed runner:
+    RUNS=3 small: 149.284M ops/s, peak 4.18MB
+    RUNS=3 medium: 147.110M ops/s, peak 4.99MB
+    RUNS=3 mixed: 148.464M ops/s, peak 5.04MB
+  next decide if hz11-span should become the Windows selected HZ11 row
 ```
 
 ```text
