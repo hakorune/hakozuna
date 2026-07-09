@@ -157,6 +157,58 @@ if (Test-Path $Hz11Root) {
             ExtraFlags = @("/DHZ11_CACHE_CAP=256")
         },
         @{
+            Name = "hz11-span-cache256-bumpbatch16"
+            Output = "bench_larson_hz11_span_cache256_bumpbatch16.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_SPAN_BUMP_BATCH=1",
+                "/DHZ11_SPAN_BUMP_BATCH_COUNT=16"
+            )
+        },
+        @{
+            Name = "hz11-span-cache256-bumpbatch16-diag"
+            Output = "bench_larson_hz11_span_cache256_bumpbatch16_diag.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_SPAN_BUMP_BATCH=1",
+                "/DHZ11_SPAN_BUMP_BATCH_COUNT=16",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11-span-cache256-returnedrange"
+            Output = "bench_larson_hz11_span_cache256_returnedrange.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1"
+            )
+        },
+        @{
+            Name = "hz11-span-cache256-returnedrange-diag"
+            Output = "bench_larson_hz11_span_cache256_returnedrange_diag.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11-span-cache256-returnedrange32"
+            Output = "bench_larson_hz11_span_cache256_returnedrange32.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1",
+                "/DHZ11_RETURNED_PUSH_RANGE_CHUNK=32"
+            )
+        },
+        @{
             Name = "hz11-span-cache512-classbatch16-coldskip"
             Output = "bench_larson_hz11_span_cache512_classbatch16_coldskip.exe"
             ExtraFlags = @(

@@ -92,6 +92,18 @@ function Invoke-Hz11RandomMixedBuilds {
     $BenchHz11SpanCache256Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256Out"))
 
+    Write-Host "Building: bench_random_mixed (hz11-span-cache256-bumpbatch16)"
+    $BenchHz11SpanCache256BumpBatch16Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256_bumpbatch16.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", "/DHZ11_SPAN_BUMP_BATCH=1", "/DHZ11_SPAN_BUMP_BATCH_COUNT=16", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256BumpBatch16Out"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache256-returnedrange)"
+    $BenchHz11SpanCache256ReturnedRangeOut = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256_returnedrange.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", "/DHZ11_RETURNED_PUSH_RANGE=1", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256ReturnedRangeOut"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache256-returnedrange32)"
+    $BenchHz11SpanCache256ReturnedRange32Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256_returnedrange32.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", "/DHZ11_RETURNED_PUSH_RANGE=1", "/DHZ11_RETURNED_PUSH_RANGE_CHUNK=32", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256ReturnedRange32Out"))
+
     Write-Host "Building: bench_random_mixed (hz11-span-cache512)"
     $BenchHz11SpanCache512Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache512.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=512", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache512Out"))

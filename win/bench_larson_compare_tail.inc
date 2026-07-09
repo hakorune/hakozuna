@@ -7,6 +7,10 @@
 #endif
 #else
     hz_bench_dump_stats(stdout, "larson_main_final");
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    hz11_class_diag_dump_stats();
+    hz11_matrix_diag_dump_stats();
+#endif
 #endif
     printf("Done sleeping...\n");
 

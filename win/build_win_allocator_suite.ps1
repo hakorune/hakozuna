@@ -78,6 +78,63 @@ function Invoke-Hz11AllocatorMatrixBuild {
             ExtraFlags = @("/DHZ11_CACHE_CAP=256")
         },
         @{
+            Name = "hz11_span_cache256_bumpbatch16"
+            Output = "bench_mixed_ws_hz11_span_cache256_bumpbatch16.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_SPAN_BUMP_BATCH=1",
+                "/DHZ11_SPAN_BUMP_BATCH_COUNT=16"
+            )
+        },
+        @{
+            Name = "hz11_span_cache256_bumpbatch16_diag"
+            Output = "bench_mixed_ws_hz11_span_cache256_bumpbatch16_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_SPAN_BUMP_BATCH=1",
+                "/DHZ11_SPAN_BUMP_BATCH_COUNT=16",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ11_MATRIX_ATTRIB_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache256_returnedrange"
+            Output = "bench_mixed_ws_hz11_span_cache256_returnedrange.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache256_returnedrange_diag"
+            Output = "bench_mixed_ws_hz11_span_cache256_returnedrange_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ11_CLASS_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_cache256_returnedrange32"
+            Output = "bench_mixed_ws_hz11_span_cache256_returnedrange32.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_RETURNED_PUSH_RANGE=1",
+                "/DHZ11_RETURNED_PUSH_RANGE_CHUNK=32"
+            )
+        },
+        @{
             Name = "hz11_span_tlsfast_cache256"
             Output = "bench_mixed_ws_hz11_span_tlsfast_cache256.exe"
             Sources = $Hz11Sources

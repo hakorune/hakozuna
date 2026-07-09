@@ -1,5 +1,108 @@
 # HZ11 Current Task
 
+## Active: HZ11WindowsSpanBumpBatch-L1
+
+The next Windows pressure probe is `hz11-span-cache256-bumpbatch16`.
+`HZ11_SPAN_BUMP_BATCH=1` keeps the selected `hz11-span-cache256` row unchanged.
+On a current-span refill, one slot is returned and bounded additional slots are
+seeded into the local cache. The batch is limited by remaining span slots,
+per-class cache room, and the global cached-byte cap. Returned-first ordering,
+route safety, and source lifetime are unchanged.
+
+Acceptance: matrix balanced/wide_ws improve materially, random_mixed regression
+is <=2%, Larson does not regress, RSS stays within 5%, and smoke/safety remain
+clean. No-go: any safety failure, random-mixed regression >3%, RSS growth >10%,
+or new cache overflow flushing caused by the probe.
+
+The probe is Windows/profile-specific evidence only. Do not promote it or alter
+the selected row until repeat measurements confirm the contract.
+
+Initial scout result: bumpbatch16 improves matrix balanced (16.02M -> 16.52M)
+and larger_sizes (30.44M -> 32.29M), and is neutral/slightly positive on the
+random_mixed R3 rows. It regresses matrix wide_ws (13.13M -> 12.25M) and Larson
+worker/main 2-second scouts (40.54M -> 35.01M, 40.57M -> 37.21M). Keep it as a
+matrix-specialist evidence row; general/default promotion is currently NO-GO.
+
+Next independent probe: `hz11-span-cache256-returnedrange`. It batches only the
+flush-side insertion into the global returned sink, using one lock acquisition
+for arena objects collected from a thread-cache flush. Measure it separately
+from bumpbatch16; defer half-flush retention until this lock cost is isolated.
+
+Initial returned-range scout: matrix balanced 17.24M -> 26.65M, wide_ws
+14.27M -> 19.09M, larger_sizes 33.37M -> 36.60M. random_mixed R3 was +1.3%
+small, -0.6% medium, and +0.6% mixed with nearly flat RSS. Keep this as the
+next candidate-watch row; selected/default promotion still requires Larson and
+repeat confirmation.
+
+The 5-second Larson R5 reproduced a worker-warmup loss for returnedrange, so
+general promotion remains NO-GO. The next narrow experiment is now enabled:
+construct the private intrusive chain before entering the returned-sink lock,
+then publish it with one O(1) head splice. No half-flush, cap, route, or source
+lifetime change is included.
+
+Returned sink depth diagnostic is now live. In the first matrix diagnostic,
+balanced reached depth_max 12,840 for the 2KiB class; wide_ws reached depth_max
+60,798 for the 1KiB class. This confirms that the remaining weakness includes
+returned-sink retention/locality, not only lock hold time. Keep the two depth
+values as diagnostic evidence and design the next retention policy separately;
+do not add half-flush blindly.
+
+Runtime topology audit H: returnedrange depth reached a plateau almost
+immediately. For class 6 (1KiB), worker depth_max was about 20.2K at 1s and
+19.5K at 10s; main was about 20.3K at 1s and 20.5K at 10s. Baseline depth was
+nearly identical. Thus sink retention is a pressure signal in matrix/wide_ws,
+but it does not explain the returnedrange-vs-baseline Larson worker delta. The
+next isolated experiment is split publication (E), not soft-cap or half-flush.
+
+E is implemented as opt-in `hz11-span-cache256-returnedrange32`: each flush
+range is published in chunks of 32 objects. It keeps source lifetime, route
+state, cache cap, and returned-first order unchanged. Compare it against
+returnedrange and cache256; selected/default remains unchanged.
+
+Split-publication result: matrix returnedrange32 remains strong but below the
+one-shot range row (balanced 25.28M, wide_ws 14.97M, larger_sizes 40.11M), and
+random_mixed remains within about one percent of cache256. Larson 2-second R3
+still regressed: worker 41.783M -> 40.201M (-3.8%), main 42.432M -> 39.994M
+(-5.7%). Close E as a general-promotion path; keep returnedrange and
+returnedrange32 as matrix evidence only.
+
+Long Larson gate (10-second R5) is mixed: worker cache256 median 47.305M vs
+returnedrange 46.937M (-0.8%), while main cache256 median 46.391M vs
+returnedrange 40.417M (-12.9%). Main baseline variance is high, but the
+returnedrange values are consistently near 40M in this gate. Keep the lane
+non-default and treat main-warmup lifecycle/pacing as the next diagnostic
+surface; do not add retention policy or claim general Larson promotion.
+
+Review result: the returned-range splice is safety-equivalent to the original
+per-object push and has no promotion-blocking lifetime or route issue. Add only
+diagnostic `returned_push_range_calls/items` per class; all other required
+Larson attribution already exists. Next decision gate is Larson worker/main
+repeat-5 plus splice-length capture. Defer half-flush and lock-outside-chain
+changes until that gate shows they are necessary.
+
+Interleaved paired Larson R5 (10 seconds, alternating baseline/candidate order)
+closed the promotion gate. Worker-warmup medians were 42.503M for cache256 and
+40.241M for returnedrange (-5.3%). Main-warmup medians were 43.019M and
+40.429M (-6.0%). The paired order reduces the earlier run-order ambiguity, and
+both modes remain below the <=3% non-regression target. Keep returnedrange and
+returnedrange32 as matrix-specialist evidence only; selected/default remains
+`hz11-span-cache256`. Do not add half-flush, retention caps, or another remote
+policy on this result. The next work, if resumed, is a separate attribution of
+Larson lifecycle/pacing rather than further returned-sink batching.
+
+Lock-outside-chain scout: after moving private chain construction outside the
+returned-sink lock, Larson 2-second R3 medians were worker 42.061M -> 39.386M
+(-6.4%) and main 38.427M -> 40.105M (+4.4%). This trims the critical section as
+designed, but worker remains the blocker; do not promote returnedrange or add
+half-flush retention yet.
+
+Larson R5, T=4, 2-second runs: worker-warmup median is 40.819M cache256 vs
+39.609M returnedrange (-3.0%); main-warmup median is 39.895M vs 40.202M
+(+0.8%). The range counters confirm long splices (for example, 1KiB has about
+90 range calls carrying about 23K items per 2-second run). Keep returnedrange
+as the strongest matrix candidate-watch, but do not replace the selected row:
+the worker-warmup non-regression gate is not yet clean.
+
 ## Windows Bring-up
 
 ```text

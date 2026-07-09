@@ -56,6 +56,13 @@ HZ11_WINDOWS_LARSON_APP_LIKE_L1.md:
   coldskip control rows. This is safety/connectivity evidence, not a speed
   claim over tcmalloc.
 
+HZ11_WINDOWS_SPAN_BUMP_BATCH_L1.md:
+  Opt-in current-span refill batching probe. Keeps returned-first ordering and
+  bounds the batch by span capacity, cache room, and cached-byte room. The
+  selected Windows row remains unchanged.
+  The same track contains a separate returned-range splice probe; it does not
+  change flush amount or source lifetime.
+
 HZ11_LINUX_RETURNED_REFILL_BATCH_PROBE_L1.md:
   Ubuntu cross-check for the Windows returned-refill classbatch idea. Adds
   Linux non-transfer span siblings (`span-cache256`, `span-cache512-classbatch`)

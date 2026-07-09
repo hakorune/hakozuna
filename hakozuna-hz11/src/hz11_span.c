@@ -153,9 +153,63 @@ void hz11_returned_push(uint8_t class_id, void* ptr) {
   *(void**)ptr = r->head;
   r->head = ptr;
   hz11_mutex_unlock(&r->lock);
+  HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(class_id, 1);
 #if HZ11_SPAN_RETURNED_DIAG
   atomic_fetch_add_explicit(&hz11_returned_push_count, 1u,
                             memory_order_relaxed);
+#endif
+}
+
+static uint32_t hz11_returned_push_chain(uint8_t class_id,
+                                         void** items,
+                                         uint32_t count) {
+  void* head = NULL;
+  void* tail = NULL;
+  uint32_t linked_count = 0u;
+  /* Build privately; the sink lock covers only the O(1) head splice. */
+  for (uint32_t i = 0u; i < count; ++i) {
+    if (!items[i]) {
+      continue;
+    }
+    *(void**)items[i] = head;
+    if (!tail) {
+      tail = items[i];
+    }
+    head = items[i];
+    ++linked_count;
+  }
+  if (!head) {
+    return 0u;
+  }
+  H11Returned* r = &hz11_returned[class_id];
+  hz11_mutex_lock(&r->lock);
+  *(void**)tail = r->head;
+  r->head = head;
+  hz11_mutex_unlock(&r->lock);
+  HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(class_id, (int32_t)linked_count);
+  HZ11_CLASS_DIAG_RETURNED_PUSH_RANGE(class_id, linked_count);
+#if HZ11_SPAN_RETURNED_DIAG
+  atomic_fetch_add_explicit(&hz11_returned_push_count, linked_count,
+                            memory_order_relaxed);
+#endif
+  return linked_count;
+}
+
+void hz11_returned_push_range(uint8_t class_id, void** items, uint32_t count) {
+  if (class_id >= HZ11_CLASS_COUNT || !items || count == 0u) {
+    return;
+  }
+#if HZ11_RETURNED_PUSH_RANGE_CHUNK
+  for (uint32_t offset = 0u; offset < count;) {
+    uint32_t chunk = count - offset;
+    if (chunk > HZ11_RETURNED_PUSH_RANGE_CHUNK) {
+      chunk = HZ11_RETURNED_PUSH_RANGE_CHUNK;
+    }
+    (void)hz11_returned_push_chain(class_id, items + offset, chunk);
+    offset += chunk;
+  }
+#else
+  (void)hz11_returned_push_chain(class_id, items, count);
 #endif
 }
 
@@ -174,6 +228,9 @@ void* hz11_returned_pop(uint8_t class_id) {
     r->head = *(void**)p;
   }
   hz11_mutex_unlock(&r->lock);
+  if (p) {
+    HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(class_id, -1);
+  }
 #if HZ11_SPAN_RETURNED_DIAG
   atomic_fetch_add_explicit(p ? &hz11_returned_pop_hit_count
                               : &hz11_returned_pop_miss_count,
@@ -201,6 +258,9 @@ uint32_t hz11_returned_pop_range(uint8_t class_id, void** out, uint32_t max) {
     out[n++] = p;
   }
   hz11_mutex_unlock(&r->lock);
+  if (n > 0u) {
+    HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(class_id, -(int32_t)n);
+  }
 #if HZ11_SPAN_RETURNED_DIAG
   if (n > 0u) {
     atomic_fetch_add_explicit(&hz11_returned_pop_hit_count, n,

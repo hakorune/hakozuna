@@ -96,6 +96,24 @@
 #define HZ11_RETURNED_REFILL_COLD_SKIP_BUDGET 8u
 #endif
 
+/* HZ11SpanBumpBatch-L1: opt-in span refill batching. The span lane keeps the
+ * returned sink first, then carves a bounded batch from the current span and
+ * seeds the local cache. The selected Windows row remains unchanged. */
+#ifndef HZ11_SPAN_BUMP_BATCH
+#define HZ11_SPAN_BUMP_BATCH 0u
+#endif
+#ifndef HZ11_SPAN_BUMP_BATCH_COUNT
+#define HZ11_SPAN_BUMP_BATCH_COUNT 16u
+#endif
+
+/* HZ11ReturnedPushRange-L1: opt-in flush-side splice. */
+#ifndef HZ11_RETURNED_PUSH_RANGE
+#define HZ11_RETURNED_PUSH_RANGE 0u
+#endif
+#ifndef HZ11_RETURNED_PUSH_RANGE_CHUNK
+#define HZ11_RETURNED_PUSH_RANGE_CHUNK 0u
+#endif
+
 /* HZ11CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H11ClassCache[13] into two parallel arrays with power-of-2
  * strides (256B items + 4B counts), eliminating the *264 address chain.

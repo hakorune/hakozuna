@@ -23,6 +23,8 @@ void hz11_class_diag_refill(uint8_t class_id);
 void hz11_class_diag_overflow(uint8_t class_id);
 void hz11_class_diag_returned_pop_hit(uint8_t class_id);
 void hz11_class_diag_returned_pop_miss(uint8_t class_id);
+void hz11_class_diag_returned_push_range(uint8_t class_id, uint32_t count);
+void hz11_class_diag_returned_sink_depth(uint8_t class_id, int32_t delta);
 void hz11_class_diag_dump_stats(void);
 #define HZ11_CLASS_DIAG_MALLOC(c) hz11_class_diag_malloc((c))
 #define HZ11_CLASS_DIAG_HIT(c) hz11_class_diag_hit((c))
@@ -30,6 +32,10 @@ void hz11_class_diag_dump_stats(void);
 #define HZ11_CLASS_DIAG_OVERFLOW(c) hz11_class_diag_overflow((c))
 #define HZ11_CLASS_DIAG_RETURNED_POP_HIT(c) hz11_class_diag_returned_pop_hit((c))
 #define HZ11_CLASS_DIAG_RETURNED_POP_MISS(c) hz11_class_diag_returned_pop_miss((c))
+#define HZ11_CLASS_DIAG_RETURNED_PUSH_RANGE(c, n) \
+  hz11_class_diag_returned_push_range((c), (n))
+#define HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(c, d) \
+  hz11_class_diag_returned_sink_depth((c), (d))
 #else
 static inline void hz11_class_diag_dump_stats(void) {}
 #define HZ11_CLASS_DIAG_MALLOC(c) ((void)0)
@@ -38,6 +44,8 @@ static inline void hz11_class_diag_dump_stats(void) {}
 #define HZ11_CLASS_DIAG_OVERFLOW(c) ((void)0)
 #define HZ11_CLASS_DIAG_RETURNED_POP_HIT(c) ((void)0)
 #define HZ11_CLASS_DIAG_RETURNED_POP_MISS(c) ((void)0)
+#define HZ11_CLASS_DIAG_RETURNED_PUSH_RANGE(c, n) ((void)0)
+#define HZ11_CLASS_DIAG_RETURNED_SINK_DEPTH(c, d) ((void)0)
 #endif
 
 #if HZ11_MATRIX_ATTRIB_DIAG
@@ -46,6 +54,7 @@ void hz11_matrix_diag_cache_after_batch(uint8_t class_id, uint32_t count);
 void hz11_matrix_diag_returned_one(uint8_t class_id, int hit);
 void hz11_matrix_diag_returned_batch(uint8_t class_id, uint32_t count);
 void hz11_matrix_diag_current_hit(uint8_t class_id);
+void hz11_matrix_diag_bump_batch(uint8_t class_id, uint32_t count);
 void hz11_matrix_diag_span_new(uint8_t class_id);
 void hz11_matrix_diag_sys_fallback(uint8_t class_id);
 void hz11_matrix_diag_dump_stats(void);
@@ -58,6 +67,7 @@ void hz11_matrix_diag_dump_stats(void);
 #define HZ11_MATRIX_DIAG_RETURNED_BATCH(c, n) \
   hz11_matrix_diag_returned_batch((c), (n))
 #define HZ11_MATRIX_DIAG_CURRENT_HIT(c) hz11_matrix_diag_current_hit((c))
+#define HZ11_MATRIX_DIAG_BUMP_BATCH(c, n) hz11_matrix_diag_bump_batch((c), (n))
 #define HZ11_MATRIX_DIAG_SPAN_NEW(c) hz11_matrix_diag_span_new((c))
 #define HZ11_MATRIX_DIAG_SYS_FALLBACK(c) hz11_matrix_diag_sys_fallback((c))
 #else
@@ -67,6 +77,7 @@ static inline void hz11_matrix_diag_dump_stats(void) {}
 #define HZ11_MATRIX_DIAG_RETURNED_ONE(c, hit) ((void)0)
 #define HZ11_MATRIX_DIAG_RETURNED_BATCH(c, n) ((void)0)
 #define HZ11_MATRIX_DIAG_CURRENT_HIT(c) ((void)0)
+#define HZ11_MATRIX_DIAG_BUMP_BATCH(c, n) ((void)0)
 #define HZ11_MATRIX_DIAG_SPAN_NEW(c) ((void)0)
 #define HZ11_MATRIX_DIAG_SYS_FALLBACK(c) ((void)0)
 #endif

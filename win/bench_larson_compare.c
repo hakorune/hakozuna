@@ -13,6 +13,9 @@
 #if defined(HZ_BENCH_USE_HZ6) && HZ6_DIAGNOSTIC_PROBES
 #include "bench_larson_hz6_diag.h"
 #endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+#include "hz11_class_diag.h"
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
