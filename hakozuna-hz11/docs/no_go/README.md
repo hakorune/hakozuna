@@ -80,4 +80,9 @@ HZ11_SH6BENCH_SPAN_REUSE_POLICY_L1.md:
 HZ11_SH6BENCH_ARENA_COMMIT_POLICY_L1.md:
   `MADV_NOHUGEPAGE` arena policy probe under batch32; does not move RSS, wall,
   minor faults, or fresh arena carve counts
+
+HZ11_WINDOWS_SPAN_TRANSFER_MATRIX_L2.md:
+  Windows `hz11-span-transfer` build/runner probe; compiles and runs, but does
+  not improve allocator-matrix balanced throughput and expands peak RSS by more
+  than 30x versus `hz11-span`
 ```

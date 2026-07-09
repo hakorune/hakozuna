@@ -1,9 +1,9 @@
 #include "hz11_transfer_cache.h"
+#include "hz11_port.h"
 
 #if HZ11_TRANSFER_CENTRAL_SPAN
 
 #include <stdatomic.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

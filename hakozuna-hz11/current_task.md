@@ -50,6 +50,17 @@ next:
     The matrix balanced row is much weaker than the random_mixed row and should
     be treated as the next Windows pressure signal, not as a regression in the
     standalone fixed-local/random_mixed connectivity rows.
+  HZ11WindowsSpanTransferMatrix-L2:
+    NO-GO for Windows selected row promotion.
+    docs/no_go/HZ11_WINDOWS_SPAN_TRANSFER_MATRIX_L2.md
+    docs/benchmarks/windows/hz11_l2_span_transfer_matrix_probe/20260709_170332_allocator_matrix.md
+    hz11-span-transfer builds/runs with HZ11_TRANSFER_CENTRAL_SPAN=1, but:
+      balanced 13.670M ops/s vs hz11-span 13.945M
+      peak RSS 1282312KB vs hz11-span 38180KB
+    keep as opt-in evidence/control only.
+    do not port Linux transfer/central policy blindly to Windows.
+    next pressure work should be Windows-specific transfer/RSS attribution or a
+    smaller policy design, not transfer-cap tuning by default.
 ```
 
 ```text

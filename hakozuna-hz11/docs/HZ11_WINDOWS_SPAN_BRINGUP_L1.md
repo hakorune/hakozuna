@@ -65,3 +65,26 @@ NOT CLAIMED:
 
 The next clean step is to connect an opt-in `hz11-span` row to the existing
 Windows random_mixed runner and measure it as a Windows L1 diagnostic row.
+
+## Follow-Up
+
+`hz11-span` is now the selected Windows bring-up row for random_mixed and the
+legacy allocator matrix.
+
+```text
+random_mixed:
+  docs/benchmarks/windows/hz11_l1_span_random_mixed_connectivity/20260709_142042_paper_random_mixed_windows.md
+
+allocator matrix:
+  docs/benchmarks/windows/hz11_l1_allocator_matrix_connectivity/20260709_143810_allocator_matrix.md
+```
+
+`hz11-span-transfer` was also probed as a direct port of the Linux
+transfer/central middle-end. It is a Windows NO-GO for selected-row promotion:
+it builds and runs, but does not improve `balanced` throughput and greatly
+increases peak RSS.
+
+```text
+record:
+  docs/no_go/HZ11_WINDOWS_SPAN_TRANSFER_MATRIX_L2.md
+```

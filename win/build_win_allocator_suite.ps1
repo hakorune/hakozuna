@@ -33,32 +33,53 @@ function Invoke-Hz11AllocatorMatrixBuild {
         (Join-Path $Hz11Root "src\hz11_span.c"),
         (Join-Path $Hz11Root "src\hz11_live_footprint.c")
     )
-    $missing = $Hz11Sources | Where-Object { -not (Test-Path $_) }
+    $Hz11TransferSources = $Hz11Sources + @(
+        (Join-Path $Hz11Root "src\hz11_transfer_cache.c"),
+        (Join-Path $Hz11Root "src\hz11_alloc_diag.c")
+    )
+    $missing = $Hz11TransferSources | Where-Object { -not (Test-Path $_) }
     if ($missing.Count -gt 0) {
         throw "HZ11 source missing: $($missing -join ', ')"
     }
-    $Hz11Output = Join-Path $OutDir "bench_mixed_ws_hz11_span.exe"
-    $Hz11Args = @(
-        "/nologo",
-        "/O2",
-        "/DNDEBUG",
-        "/std:c11",
-        "/W3",
-        "/MD",
-        "/DHZ_BENCH_USE_HZ11=1",
-        "/DHZ11_CLASSIFY_SPAN=1",
-        "/DHZ_BENCH_DISABLE_REALLOC=1",
-        "/I$Hz11Root\include",
-        "/I$Hz11Root\src"
-    )
-    $Hz11Args += $Hz11Sources
-    $Hz11Args += $CompareSource
-    $Hz11Args += "psapi.lib"
-    $Hz11Args += "/Fe:$Hz11Output"
-    Write-Host "[hz11-win] building bench_mixed_ws_hz11_span.exe"
-    & $Compiler.Source @Hz11Args
-    if ($LASTEXITCODE -ne 0) {
-        throw "HZ11 mixed_ws build failed with exit code $LASTEXITCODE"
+
+    foreach ($variant in @(
+        @{
+            Name = "hz11_span"
+            Output = "bench_mixed_ws_hz11_span.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @()
+        },
+        @{
+            Name = "hz11_span_transfer"
+            Output = "bench_mixed_ws_hz11_span_transfer.exe"
+            Sources = $Hz11TransferSources
+            ExtraFlags = @("/DHZ11_TRANSFER_CENTRAL_SPAN=1")
+        }
+    )) {
+        $Hz11Output = Join-Path $OutDir $variant.Output
+        $Hz11Args = @(
+            "/nologo",
+            "/O2",
+            "/DNDEBUG",
+            "/std:c11",
+            "/W3",
+            "/MD",
+            "/DHZ_BENCH_USE_HZ11=1",
+            "/DHZ11_CLASSIFY_SPAN=1",
+            "/DHZ_BENCH_DISABLE_REALLOC=1",
+            "/I$Hz11Root\include",
+            "/I$Hz11Root\src"
+        )
+        $Hz11Args += $variant.ExtraFlags
+        $Hz11Args += $variant.Sources
+        $Hz11Args += $CompareSource
+        $Hz11Args += "psapi.lib"
+        $Hz11Args += "/Fe:$Hz11Output"
+        Write-Host "[hz11-win] building $($variant.Output)"
+        & $Compiler.Source @Hz11Args
+        if ($LASTEXITCODE -ne 0) {
+            throw "HZ11 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
+        }
     }
 }
 
