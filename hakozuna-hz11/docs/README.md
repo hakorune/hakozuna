@@ -218,6 +218,14 @@ HZ11_ROCKSDB_POST_FIX_LANE_PERF_L1.md:
   rocksdb's bottleneck is I/O, not the allocator). cap lanes confirmed sh6bench-synthetic
   specialists. Closes the 'does cap help real multi-thread' question
 
+HZ11_REAL_APP_WORKLOAD_EXPANSION_L1.md:
+  expands real-app evidence to 3 new workload families: git clone+repack (near-parity wall,
+  RSS higher due to arena overhead on large buffers), redis-6.2.7 source build (fine128
+  7% FASTER than tcmalloc + 20% less RSS -- a real compile win), redis-benchmark (real
+  server, ~3% slower + 34% less process-tree RSS). All rc=0 (malloc_usable_size fix covers
+  redis server-style). cap lanes ≈ fine128 on all (NO-GO for real apps). Total real-app
+  evidence: 6 workloads across 4 families. Redis RSS is process-tree total (server+client)
+
 HZ11_FINE128_REAL_APP_POSITIONING_L1.md:
   current HZ11 positioning after the capacity, real-app, malloc_usable_size, and rocksdb
   post-fix boxes. GO for updated positioning: fine128 is the recommended general opt-in

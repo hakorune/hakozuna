@@ -2,6 +2,14 @@
 
 ```text
 Active status:
+  HZ11RealAppWorkloadExpansion-L1: GO for fine128 real-app breadth. 3 new workload
+  families (git clone+repack, redis-6.2.7 source build, redis-benchmark) across 5 lanes,
+  all rc=0 (no crash). Redis build: fine128 7% FASTER than tcmalloc + 20% less RSS (real
+  compile win). Redis benchmark: ~3% slower + 34% less process-tree RSS. Git repack:
+  near-parity wall, RSS higher (+22%, arena overhead on large buffers). cap lanes ≈
+  fine128 on all (NO-GO for real apps, consistent with rocksdb). Total real-app evidence:
+  6 workloads (espresso/sqlite3/rocksdb/git-repack/redis-build/redis-benchmark). See
+  docs/HZ11_REAL_APP_WORKLOAD_EXPANSION_L1.md.
   HZ11Fine128RealAppPositioning-L1: updated current positioning. fine128 is the
   recommended general opt-in HZ11 lane with real-app evidence (espresso win, sqlite3
   mixed, rocksdb near-parity after malloc_usable_size fix). cap768/cap1024 are
