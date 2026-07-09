@@ -15,6 +15,8 @@
 #include "hz6_profiles.h"
 #elif defined(HZ_BENCH_USE_HZ7)
 #include "hz7.h"
+#elif defined(HZ_BENCH_USE_HZ11)
+#include "hz11.h"
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
@@ -66,6 +68,8 @@ static inline void* hz_bench_alloc(size_t size) {
     return hz6_malloc(&hz_bench_tls_hz6_allocator, size);
 #elif defined(HZ_BENCH_USE_HZ7)
     return h7_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ11)
+    return hz11_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
@@ -88,6 +92,8 @@ static inline void hz_bench_free(void* ptr) {
     hz6_free(&hz_bench_tls_hz6_allocator, ptr);
 #elif defined(HZ_BENCH_USE_HZ7)
     h7_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ11)
+    hz11_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     (void)hz5_policy_free(ptr, &hooks);
@@ -535,6 +541,29 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.direct_count,
                 s.route_count,
                 s.route_register_fail);
+    }
+#elif defined(HZ_BENCH_USE_HZ11)
+    {
+        H11Stats s;
+        hz11_stats(&s);
+        fprintf(out,
+                "[HZ11_STATS] label=%s malloc=%llu hit=%llu refill=%llu "
+                "free=%llu token_hit=%llu token_miss=%llu cached_bytes=%zu "
+                "xfer_hit=%llu xfer_insert=%llu xfer_spill=%llu "
+                "central_hit=%llu central_insert=%llu\n",
+                label ? label : "unknown",
+                (unsigned long long)s.malloc_count,
+                (unsigned long long)s.malloc_hit,
+                (unsigned long long)s.refill_count,
+                (unsigned long long)s.free_count,
+                (unsigned long long)s.token_hit,
+                (unsigned long long)s.token_miss,
+                s.cached_bytes,
+                (unsigned long long)s.transfer_remove_hit,
+                (unsigned long long)s.transfer_insert,
+                (unsigned long long)s.transfer_insert_spill,
+                (unsigned long long)s.central_remove_hit,
+                (unsigned long long)s.central_insert);
     }
 #else
     (void)out;

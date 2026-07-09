@@ -2,6 +2,7 @@ param(
     [string]$VcpkgRoot,
     [switch]$DiagnosticHz6Probes,
     [switch]$OnlyHz7V2,
+    [switch]$OnlyHz11,
     [int]$Hz7V2DirectRetainCap = 0,
     [int]$Hz7V2EmptySpanCap = 0,
     [int]$Hz7V2SpanClassMax = 0,
@@ -54,10 +55,31 @@ $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
 $Hz7Dir = Join-Path $RepoRoot "hakozuna-hz7"
 $Hz7Dir = Join-Path $RepoRoot "hz7"
 $Hz7V2Dir = Join-Path $Hz7Dir "v2"
+$Hz11Dir = Join-Path $RepoRoot "hakozuna-hz11"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
 $Hz7Source = Join-Path $Hz7Dir "hz7.c"
 $Hz7V2Source = Join-Path $Hz7V2Dir "hz7.c"
+$Hz11Sources = @(
+    (Join-Path $Hz11Dir "src\hz11_size_class.c"),
+    (Join-Path $Hz11Dir "src\hz11_sys_alloc.c"),
+    (Join-Path $Hz11Dir "src\hz11_thread_cache.c"),
+    (Join-Path $Hz11Dir "src\hz11_public_entry.c")
+)
+
+function Invoke-Hz11RandomMixedBuilds {
+    if (($Hz11Sources | Where-Object { -not (Test-Path $_) }).Count -ne 0) {
+        throw "HZ11 sources not found; cannot build HZ11 random_mixed bench."
+    }
+
+    Write-Host "Building: bench_random_mixed (hz11-token)"
+    $BenchHz11TokenOut = Join-Path $OutDir "bench_random_mixed_hz11_token.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", $BenchSrc) + $Hz11Sources + @("psapi.lib", "/link", "/out:$BenchHz11TokenOut"))
+
+    Write-Host "Building: bench_random_mixed (hz11-tlsfast)"
+    $BenchHz11TlsfastOut = Join-Path $OutDir "bench_random_mixed_hz11_tlsfast.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_TLS_FASTPATH=1", $BenchSrc) + $Hz11Sources + @("psapi.lib", "/link", "/out:$BenchHz11TlsfastOut"))
+}
 
 $BaseFlags = @(
     "/nologo",
@@ -73,7 +95,9 @@ $BaseFlags = @(
     "/I$Hz4Dir\include",
     "/I$Hz4Dir\win",
     "/I$Hz7Dir",
-    "/I$Hz7V2Dir"
+    "/I$Hz7V2Dir",
+    "/I$Hz11Dir\include",
+    "/I$Hz11Dir\src"
 )
 
 if ($OnlyHz7V2) {
@@ -95,6 +119,12 @@ if ($OnlyHz7V2) {
         return
     }
     throw "HZ7 v2 source not found: $Hz7V2Source"
+}
+
+if ($OnlyHz11) {
+    Invoke-Hz11RandomMixedBuilds
+    Write-Host "Built HZ11 random_mixed artifacts in: $OutDir"
+    return
 }
 
 & $SuiteBuild
@@ -184,6 +214,12 @@ if (Test-Path $Hz7V2Source) {
     Invoke-Checked $Cc ($BaseFlags + $Hz7V2Flags + @($Hz7V2Source, $BenchSrc, "psapi.lib", "/link", "/out:$BenchHz7V2Out"))
 } else {
     Write-Warning "HZ7 v2 source not found; skipping HZ7 v2 random_mixed bench."
+}
+
+if (($Hz11Sources | Where-Object { -not (Test-Path $_) }).Count -eq 0) {
+    Invoke-Hz11RandomMixedBuilds
+} else {
+    Write-Warning "HZ11 sources not found; skipping HZ11 random_mixed bench."
 }
 
 Invoke-AppLikeHz6BenchBuilds `

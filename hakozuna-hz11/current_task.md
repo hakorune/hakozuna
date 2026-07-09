@@ -19,6 +19,11 @@ next:
   L0 fixed-local speed observation passes:
     hz11-tlsfast ~291M-307M ops/s across 64..4096 byte slots
     system-crt ~56M-58M ops/s on the same microbench
+  connected to existing Windows random_mixed runner:
+    win/run_win_random_mixed_paper.ps1
+    hz11-token / hz11-tlsfast rows
+    RUNS=3 small/medium/mixed connectivity snapshot stored under
+    docs/benchmarks/windows/hz11_l0_random_mixed_connectivity/
   next decide whether to add VirtualAlloc-backed span/classify smoke
 ```
 
