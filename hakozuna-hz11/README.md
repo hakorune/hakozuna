@@ -25,8 +25,9 @@ recommended opt-in macro speed-lane candidate:
   remote/mixed final confirmation; not default
 
 Windows selected bring-up row:
-  hz11-span
+  hz11-span-cache256
   HZ11_CLASSIFY_SPAN=1
+  HZ11_CACHE_CAP=256
   VirtualAlloc arena + span classify + Windows CRITICAL_SECTION returned locks
   selected for the Windows random_mixed / allocator-matrix bring-up rows;
   not a DLL replacement, not fine128 parity, and not a default allocator claim
@@ -65,6 +66,7 @@ docs/HZ11_NO_GO_LEDGER.md
 docs/HZ11_WINDOWS_BRINGUP_L0.md
 docs/HZ11_WINDOWS_FIXED_LOCAL_BENCH_L0.md
 docs/HZ11_WINDOWS_SPAN_BRINGUP_L1.md
+docs/HZ11_WINDOWS_SPAN_CACHE256_L3.md
 ```
 
 ## Core Split

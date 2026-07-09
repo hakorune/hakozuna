@@ -15,6 +15,14 @@
 char* hz11_arena_base = NULL;
 uint8_t hz11_span_class[HZ11_SPAN_COUNT]; /* BSS zero-fill == uncarved */
 static _Atomic uint64_t hz11_span_create_count;
+#ifndef HZ11_SPAN_RETURNED_DIAG
+#define HZ11_SPAN_RETURNED_DIAG 0
+#endif
+#if HZ11_SPAN_RETURNED_DIAG
+static _Atomic uint64_t hz11_returned_push_count;
+static _Atomic uint64_t hz11_returned_pop_hit_count;
+static _Atomic uint64_t hz11_returned_pop_miss_count;
+#endif
 
 static char* hz11_arena_end = NULL;
 static _Atomic(char*) hz11_span_cursor;
@@ -111,6 +119,30 @@ uint64_t hz11_span_create_count_load(void) {
   return atomic_load_explicit(&hz11_span_create_count, memory_order_relaxed);
 }
 
+uint64_t hz11_returned_push_count_load(void) {
+#if HZ11_SPAN_RETURNED_DIAG
+  return atomic_load_explicit(&hz11_returned_push_count, memory_order_relaxed);
+#else
+  return 0u;
+#endif
+}
+
+uint64_t hz11_returned_pop_hit_count_load(void) {
+#if HZ11_SPAN_RETURNED_DIAG
+  return atomic_load_explicit(&hz11_returned_pop_hit_count, memory_order_relaxed);
+#else
+  return 0u;
+#endif
+}
+
+uint64_t hz11_returned_pop_miss_count_load(void) {
+#if HZ11_SPAN_RETURNED_DIAG
+  return atomic_load_explicit(&hz11_returned_pop_miss_count, memory_order_relaxed);
+#else
+  return 0u;
+#endif
+}
+
 void hz11_returned_push(uint8_t class_id, void* ptr) {
   if (class_id >= HZ11_CLASS_COUNT || !ptr) {
     return;
@@ -120,10 +152,18 @@ void hz11_returned_push(uint8_t class_id, void* ptr) {
   *(void**)ptr = r->head;
   r->head = ptr;
   hz11_mutex_unlock(&r->lock);
+#if HZ11_SPAN_RETURNED_DIAG
+  atomic_fetch_add_explicit(&hz11_returned_push_count, 1u,
+                            memory_order_relaxed);
+#endif
 }
 
 void* hz11_returned_pop(uint8_t class_id) {
   if (class_id >= HZ11_CLASS_COUNT) {
+#if HZ11_SPAN_RETURNED_DIAG
+    atomic_fetch_add_explicit(&hz11_returned_pop_miss_count, 1u,
+                              memory_order_relaxed);
+#endif
     return NULL;
   }
   H11Returned* r = &hz11_returned[class_id];
@@ -133,5 +173,11 @@ void* hz11_returned_pop(uint8_t class_id) {
     r->head = *(void**)p;
   }
   hz11_mutex_unlock(&r->lock);
+#if HZ11_SPAN_RETURNED_DIAG
+  atomic_fetch_add_explicit(p ? &hz11_returned_pop_hit_count
+                              : &hz11_returned_pop_miss_count,
+                            1u,
+                            memory_order_relaxed);
+#endif
   return p;
 }

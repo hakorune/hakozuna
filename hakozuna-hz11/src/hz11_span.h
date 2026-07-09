@@ -23,6 +23,9 @@
 extern char* hz11_arena_base;
 extern uint8_t hz11_span_class[HZ11_SPAN_COUNT];
 uint64_t hz11_span_create_count_load(void);
+uint64_t hz11_returned_push_count_load(void);
+uint64_t hz11_returned_pop_hit_count_load(void);
+uint64_t hz11_returned_pop_miss_count_load(void);
 
 void hz11_span_init(void); /* mmap the arena + init the returned sink (once) */
 

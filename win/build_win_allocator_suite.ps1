@@ -54,6 +54,45 @@ function Invoke-Hz11AllocatorMatrixBuild {
             Output = "bench_mixed_ws_hz11_span_transfer.exe"
             Sources = $Hz11TransferSources
             ExtraFlags = @("/DHZ11_TRANSFER_CENTRAL_SPAN=1")
+        },
+        @{
+            Name = "hz11_span_diag"
+            Output = "bench_mixed_ws_hz11_span_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
+        },
+        @{
+            Name = "hz11_span_tlsfast"
+            Output = "bench_mixed_ws_hz11_span_tlsfast.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @("/DHZ11_TLS_FASTPATH=1")
+        },
+        @{
+            Name = "hz11_span_cache256"
+            Output = "bench_mixed_ws_hz11_span_cache256.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @("/DHZ11_CACHE_CAP=256")
+        },
+        @{
+            Name = "hz11_span_tlsfast_cache256"
+            Output = "bench_mixed_ws_hz11_span_tlsfast_cache256.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @("/DHZ11_TLS_FASTPATH=1", "/DHZ11_CACHE_CAP=256")
+        },
+        @{
+            Name = "hz11_span_cache256_diag"
+            Output = "bench_mixed_ws_hz11_span_cache256_diag.exe"
+            Sources = $Hz11Sources
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=256",
+                "/DHZ11_ENABLE_HOT_COUNTERS=1",
+                "/DHZ11_SPAN_RETURNED_DIAG=1",
+                "/DHZ_BENCH_HZ11_SUMMARY=1"
+            )
         }
     )) {
         $Hz11Output = Join-Path $OutDir $variant.Output

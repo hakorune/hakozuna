@@ -33,20 +33,25 @@ Windows support is a bring-up track, not the primary Linux fine128 line.
 
 ```text
 selected Windows row:
-  hz11-span
+  hz11-span-cache256
 
 scope:
   Windows random_mixed and allocator-matrix connectivity
   HZ11_CLASSIFY_SPAN=1
+  HZ11_CACHE_CAP=256
   VirtualAlloc arena
   span classify path
   CRITICAL_SECTION returned-object locks
 
 evidence:
   random_mixed RUNS=3:
-    small  149.284M ops/s, peak 4.18MB
-    medium 147.110M ops/s, peak 4.99MB
-    mixed  148.464M ops/s, peak 5.04MB
+    small  156.195M ops/s, peak 4.15MB
+    medium 154.459M ops/s, peak 4.90MB
+    mixed  154.560M ops/s, peak 5.00MB
+
+  allocator-matrix balanced:
+    cache256 repeat-5 direct median 13.771M ops/s
+    cache256-diag shows overflow 30818 -> 3314 vs span-diag
 
 not claimed:
   not a default allocator

@@ -71,6 +71,9 @@ typedef struct {
     Hz6Allocator hz6_allocator;
     Hz6StatsSnapshot hz6_stats_after;
 #endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    H11Stats hz11_stats_after;
+#endif
 } ThreadArg;
 
 #if defined(_WIN32) && defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
@@ -371,6 +374,9 @@ static unsigned __stdcall bench_thread(void* arg) {
 #if defined(HZ_BENCH_USE_HZ6)
     ta->hz6_stats_after = hz6_stats_snapshot(&ta->hz6_allocator);
 #endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    hz11_stats(&ta->hz11_stats_after);
+#endif
     bench_thread_teardown(ta);
     free(slots);
     return 0;
@@ -440,6 +446,9 @@ static void* bench_thread(void* arg) {
     }
 #if defined(HZ_BENCH_USE_HZ6)
     ta->hz6_stats_after = hz6_stats_snapshot(&ta->hz6_allocator);
+#endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    hz11_stats(&ta->hz11_stats_after);
 #endif
     bench_thread_teardown(ta);
     free(slots);
@@ -565,6 +574,10 @@ int main(int argc, char** argv) {
     Hz6StatsSnapshot hz6_stats;
     memset(&hz6_stats, 0, sizeof(hz6_stats));
 #endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    H11Stats hz11_stats_sum;
+    memset(&hz11_stats_sum, 0, sizeof(hz11_stats_sum));
+#endif
     for (size_t i = 0; i < threads; i++) {
         alloc_attempts += args[i].alloc_attempts;
         alloc_successes += args[i].alloc_successes;
@@ -575,6 +588,42 @@ int main(int argc, char** argv) {
         hz6_duplicate_alloc_ptr += args[i].hz6_duplicate_alloc_ptr;
 #endif
 #include "bench_allocator_compare_hz6_stats_accumulate.inc"
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+        H11Stats* s = &args[i].hz11_stats_after;
+        hz11_stats_sum.malloc_count += s->malloc_count;
+        hz11_stats_sum.malloc_hit += s->malloc_hit;
+        hz11_stats_sum.refill_count += s->refill_count;
+        hz11_stats_sum.free_count += s->free_count;
+        hz11_stats_sum.token_hit += s->token_hit;
+        hz11_stats_sum.token_miss += s->token_miss;
+        hz11_stats_sum.direct_hit_count += s->direct_hit_count;
+        hz11_stats_sum.direct_miss_count += s->direct_miss_count;
+        hz11_stats_sum.overflow_count += s->overflow_count;
+        hz11_stats_sum.flush_count += s->flush_count;
+        hz11_stats_sum.flush_items += s->flush_items;
+        hz11_stats_sum.cached_bytes += s->cached_bytes;
+        hz11_stats_sum.refill_from_transfer += s->refill_from_transfer;
+        hz11_stats_sum.refill_from_central += s->refill_from_central;
+        hz11_stats_sum.refill_from_span += s->refill_from_span;
+#define HZ11_MAX_FIELD(name) if (s->name > hz11_stats_sum.name) { hz11_stats_sum.name = s->name; }
+        HZ11_MAX_FIELD(span_create_count)
+        HZ11_MAX_FIELD(transfer_remove_hit)
+        HZ11_MAX_FIELD(transfer_remove_miss)
+        HZ11_MAX_FIELD(transfer_insert)
+        HZ11_MAX_FIELD(transfer_insert_spill)
+        HZ11_MAX_FIELD(central_remove_hit)
+        HZ11_MAX_FIELD(central_remove_miss)
+        HZ11_MAX_FIELD(central_insert)
+        HZ11_MAX_FIELD(span_return_count)
+        HZ11_MAX_FIELD(span_reuse_count)
+        HZ11_MAX_FIELD(central_full_span_count)
+        HZ11_MAX_FIELD(central_partial_span_count)
+        HZ11_MAX_FIELD(central_objects)
+        HZ11_MAX_FIELD(returned_push)
+        HZ11_MAX_FIELD(returned_pop_hit)
+        HZ11_MAX_FIELD(returned_pop_miss)
+#undef HZ11_MAX_FIELD
+#endif
     }
 
     printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f "
@@ -588,6 +637,43 @@ int main(int argc, char** argv) {
 #else
     bench_print_hz6_summary(&hz6_stats, 0, 0, peak_kb);
 #endif
+#endif
+#if defined(HZ_BENCH_USE_HZ11) && HZ_BENCH_HZ11_SUMMARY
+    printf(" hz11_malloc=%llu hz11_hit=%llu hz11_refill=%llu"
+           " hz11_free=%llu hz11_direct_hit=%llu hz11_direct_miss=%llu"
+           " hz11_overflow=%llu hz11_flush=%llu hz11_flush_items=%llu"
+           " hz11_cached_bytes=%zu hz11_span_create=%llu"
+           " hz11_returned_push=%llu hz11_returned_pop_hit=%llu"
+           " hz11_returned_pop_miss=%llu"
+           " hz11_refill_transfer=%llu hz11_refill_central=%llu"
+           " hz11_refill_span=%llu hz11_xfer_hit=%llu hz11_xfer_miss=%llu"
+           " hz11_xfer_insert=%llu hz11_xfer_spill=%llu"
+           " hz11_central_hit=%llu hz11_central_miss=%llu"
+           " hz11_central_insert=%llu",
+           (unsigned long long)hz11_stats_sum.malloc_count,
+           (unsigned long long)hz11_stats_sum.malloc_hit,
+           (unsigned long long)hz11_stats_sum.refill_count,
+           (unsigned long long)hz11_stats_sum.free_count,
+           (unsigned long long)hz11_stats_sum.direct_hit_count,
+           (unsigned long long)hz11_stats_sum.direct_miss_count,
+           (unsigned long long)hz11_stats_sum.overflow_count,
+           (unsigned long long)hz11_stats_sum.flush_count,
+           (unsigned long long)hz11_stats_sum.flush_items,
+           hz11_stats_sum.cached_bytes,
+           (unsigned long long)hz11_stats_sum.span_create_count,
+           (unsigned long long)hz11_stats_sum.returned_push,
+           (unsigned long long)hz11_stats_sum.returned_pop_hit,
+           (unsigned long long)hz11_stats_sum.returned_pop_miss,
+           (unsigned long long)hz11_stats_sum.refill_from_transfer,
+           (unsigned long long)hz11_stats_sum.refill_from_central,
+           (unsigned long long)hz11_stats_sum.refill_from_span,
+           (unsigned long long)hz11_stats_sum.transfer_remove_hit,
+           (unsigned long long)hz11_stats_sum.transfer_remove_miss,
+           (unsigned long long)hz11_stats_sum.transfer_insert,
+           (unsigned long long)hz11_stats_sum.transfer_insert_spill,
+           (unsigned long long)hz11_stats_sum.central_remove_hit,
+           (unsigned long long)hz11_stats_sum.central_remove_miss,
+           (unsigned long long)hz11_stats_sum.central_insert);
 #endif
     fflush(stdout);
     free(args);

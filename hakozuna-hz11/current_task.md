@@ -61,6 +61,34 @@ next:
     do not port Linux transfer/central policy blindly to Windows.
     next pressure work should be Windows-specific transfer/RSS attribution or a
     smaller policy design, not transfer-cap tuning by default.
+  HZ11WindowsSpanCache256-L3:
+    GO as the selected Windows HZ11 bring-up row.
+    docs/HZ11_WINDOWS_SPAN_CACHE256_L3.md
+    diagnosis:
+      hz11-span-diag balanced:
+        refill 987139
+        overflow 30818
+        returned_push 986176
+        returned_pop_hit 960795
+      cache cap 32 is too small for the Windows matrix pressure shape.
+    matrix A/B:
+      repeat-5 direct balanced median:
+        hz11-span 10.986M
+        hz11-span-tlsfast 12.287M
+        hz11-span-cache256 13.771M
+        hz11-span-tlsfast-cache256 13.001M
+      cache256-diag:
+        overflow 30818 -> 3314
+        malloc_hit 28669 -> 161584
+    random_mixed RUNS=3:
+      small 156.195M, RSS 4252KB
+      medium 154.459M, RSS 5016KB
+      mixed 154.560M, RSS 5124KB
+    decision:
+      selected Windows row is now hz11-span-cache256.
+      keep hz11-span as L1 control.
+      keep transfer as NO-GO/control.
+      no DLL replacement or Linux fine128 parity claim.
 ```
 
 ```text

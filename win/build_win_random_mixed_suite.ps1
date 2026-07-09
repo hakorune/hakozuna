@@ -87,6 +87,10 @@ function Invoke-Hz11RandomMixedBuilds {
     Write-Host "Building: bench_random_mixed (hz11-span)"
     $BenchHz11SpanOut = Join-Path $OutDir "bench_random_mixed_hz11_span.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanOut"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-cache256)"
+    $BenchHz11SpanCache256Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256.exe"
+    Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256Out"))
 }
 
 $BaseFlags = @(

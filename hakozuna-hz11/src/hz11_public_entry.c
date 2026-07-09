@@ -278,12 +278,18 @@ void hz11_stats(H11Stats* out) {
   out->direct_hit_count = tc->direct_hit_count;
   out->direct_miss_count = tc->direct_miss_count;
   out->span_create_count = hz11_span_create_count_load();
+  out->returned_push = hz11_returned_push_count_load();
+  out->returned_pop_hit = hz11_returned_pop_hit_count_load();
+  out->returned_pop_miss = hz11_returned_pop_miss_count_load();
 #else
   out->token_hit = tc->token_hit;
   out->token_miss = tc->token_miss;
   out->direct_hit_count = 0;
   out->direct_miss_count = 0;
   out->span_create_count = 0;
+  out->returned_push = 0;
+  out->returned_pop_hit = 0;
+  out->returned_pop_miss = 0;
 #endif
 #if HZ11_TRANSFER_CENTRAL_SPAN
   out->refill_from_transfer = tc->refill_from_transfer;

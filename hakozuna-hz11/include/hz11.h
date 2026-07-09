@@ -56,6 +56,11 @@ typedef struct H11Stats {
   uint64_t central_full_span_count;
   uint64_t central_partial_span_count;
   uint64_t central_objects;
+  /* Windows/span returned-object attribution counters. These stay zero unless
+   * built with the opt-in diagnostic flag. */
+  uint64_t returned_push;
+  uint64_t returned_pop_hit;
+  uint64_t returned_pop_miss;
 } H11Stats;
 
 void hz11_stats(H11Stats* out);

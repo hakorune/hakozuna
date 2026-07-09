@@ -68,8 +68,9 @@ Windows random_mixed runner and measure it as a Windows L1 diagnostic row.
 
 ## Follow-Up
 
-`hz11-span` is now the selected Windows bring-up row for random_mixed and the
-legacy allocator matrix.
+`hz11-span` became the L1 Windows control row for random_mixed and the legacy
+allocator matrix. It has since been superseded as the selected Windows row by
+`hz11-span-cache256`.
 
 ```text
 random_mixed:
@@ -87,4 +88,11 @@ increases peak RSS.
 ```text
 record:
   docs/no_go/HZ11_WINDOWS_SPAN_TRANSFER_MATRIX_L2.md
+```
+
+`hz11-span-cache256` is the current selected Windows HZ11 bring-up row:
+
+```text
+record:
+  docs/HZ11_WINDOWS_SPAN_CACHE256_L3.md
 ```
