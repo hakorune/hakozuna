@@ -154,6 +154,26 @@ next:
       coldskip is not default; keep as profile-scoped wide_ws / returned-empty
       lock evidence.
       do not tune skip budget blindly.
+  HZ11WindowsLarsonAppLike-L1:
+    GO for runner connectivity and safety smoke.
+    docs/HZ11_WINDOWS_LARSON_APP_LIKE_L1.md
+    added:
+      bench_larson_hz11_span.exe
+      bench_larson_hz11_span_cache256.exe
+      bench_larson_hz11_span_cache512_classbatch16_coldskip.exe
+    short smoke:
+      worker-warmup T=4 runtime=2s:
+        hz11-span-cache256 26.999M
+        coldskip           22.583M
+        tcmalloc           39.121M
+      main-warmup T=4 runtime=2s:
+        hz11-span-cache256 24.716M
+        coldskip           25.724M
+        tcmalloc           44.357M
+    decision:
+      Larson connectivity is now covered for the selected Windows row.
+      This is not a speed claim over tcmalloc.
+      coldskip remains matrix/wide_ws evidence, not a Larson or default row.
 ```
 
 ```text

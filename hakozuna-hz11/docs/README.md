@@ -51,6 +51,11 @@ HZ11_WINDOWS_RETURNED_COLD_SKIP_L2.md:
   `classbatch16-coldskip` behavior row. Keep as wide_ws / returned-empty-lock
   evidence; the selected Windows row remains `hz11-span-cache256`.
 
+HZ11_WINDOWS_LARSON_APP_LIKE_L1.md:
+  Windows Larson app-like runner connectivity for `hz11-span-cache256` and
+  coldskip control rows. This is safety/connectivity evidence, not a speed
+  claim over tcmalloc.
+
 HZ11_LINUX_RETURNED_REFILL_BATCH_PROBE_L1.md:
   Ubuntu cross-check for the Windows returned-refill classbatch idea. Adds
   Linux non-transfer span siblings (`span-cache256`, `span-cache512-classbatch`)

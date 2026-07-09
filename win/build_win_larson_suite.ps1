@@ -55,6 +55,7 @@ $VcpkgBin = Join-Path $VcpkgRoot "installed\x64-windows\bin"
 $BenchSrc = Join-Path $RepoRoot "win\bench_larson_compare.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
+$Hz11Root = Join-Path $RepoRoot "hakozuna-hz11"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
 
@@ -130,6 +131,56 @@ Invoke-AppLikeHz5BenchBuild `
     -RepoRoot $RepoRoot `
     -BenchSrc $BenchSrc `
     -OutputPath (Join-Path $OutDir "bench_larson_hz5_policy.exe")
+
+if (Test-Path $Hz11Root) {
+    $Hz11Sources = @(
+        (Join-Path $Hz11Root "src\hz11_size_class.c"),
+        (Join-Path $Hz11Root "src\hz11_sys_alloc.c"),
+        (Join-Path $Hz11Root "src\hz11_thread_cache.c"),
+        (Join-Path $Hz11Root "src\hz11_public_entry.c"),
+        (Join-Path $Hz11Root "src\hz11_span.c"),
+        (Join-Path $Hz11Root "src\hz11_live_footprint.c")
+    )
+    $missingHz11 = $Hz11Sources | Where-Object { -not (Test-Path $_) }
+    if ($missingHz11.Count -gt 0) {
+        throw "HZ11 source missing for Larson build: $($missingHz11 -join ', ')"
+    }
+    foreach ($variant in @(
+        @{
+            Name = "hz11-span"
+            Output = "bench_larson_hz11_span.exe"
+            ExtraFlags = @()
+        },
+        @{
+            Name = "hz11-span-cache256"
+            Output = "bench_larson_hz11_span_cache256.exe"
+            ExtraFlags = @("/DHZ11_CACHE_CAP=256")
+        },
+        @{
+            Name = "hz11-span-cache512-classbatch16-coldskip"
+            Output = "bench_larson_hz11_span_cache512_classbatch16_coldskip.exe"
+            ExtraFlags = @(
+                "/DHZ11_CACHE_CAP=512",
+                "/DHZ11_RETURNED_REFILL_BATCH=1",
+                "/DHZ11_RETURNED_REFILL_BATCH_MIN_CLASS=4",
+                "/DHZ11_RETURNED_REFILL_BATCH_COUNT=16",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP=1",
+                "/DHZ11_RETURNED_REFILL_COLD_SKIP_BUDGET=8"
+            )
+        }
+    )) {
+        Write-Host "Building: larson ($($variant.Name))"
+        $out = Join-Path $OutDir $variant.Output
+        Invoke-Checked $Cc ($BaseFlags + @(
+            "/DHZ_BENCH_USE_HZ11=1",
+            "/DHZ11_CLASSIFY_SPAN=1",
+            "/I$Hz11Root\include",
+            "/I$Hz11Root\src"
+        ) + $variant.ExtraFlags + @($BenchSrc) + $Hz11Sources + @("psapi.lib", "/link", "/out:$out"))
+    }
+} else {
+    Write-Warning "HZ11 root not found; skipping HZ11 Larson benches."
+}
 
 Invoke-AppLikeHz6BenchBuilds `
     -Compiler $Cc `
