@@ -1,5 +1,10 @@
 # HZ11PaperEvidencePackage-L1
 
+Superseded for current evidence packaging by
+`HZ11_FINE128_REAL_APP_POSITIONING_L1.md` plus the later real-app and rocksdb boxes. This
+file remains the historical fine128 evidence package before the capacity and real-app
+track completed.
+
 Status: paper-ready consolidation. No new measurements. No policy change. No
 default promotion. Every number below cites its source doc and condition.
 

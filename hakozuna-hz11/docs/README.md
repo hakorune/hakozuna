@@ -218,6 +218,14 @@ HZ11_ROCKSDB_POST_FIX_LANE_PERF_L1.md:
   rocksdb's bottleneck is I/O, not the allocator). cap lanes confirmed sh6bench-synthetic
   specialists. Closes the 'does cap help real multi-thread' question
 
+HZ11_FINE128_REAL_APP_POSITIONING_L1.md:
+  current HZ11 positioning after the capacity, real-app, malloc_usable_size, and rocksdb
+  post-fix boxes. GO for updated positioning: fine128 is the recommended general opt-in
+  HZ11 lane with real-app evidence (espresso win, sqlite3 mixed, rocksdb near-parity);
+  cap768/cap1024 are sh6bench-synthetic specialists only; span-transfer remains
+  remote/mixed-only. Supersedes the older paper positioning where sh6bench was one open
+  gap and per-CPU/rseq was the leading next hypothesis
+
 docs/no_go/HZ11_MACRO_SPEED_LANE_FINECLASS_L1.md:
   full macro gate for the batch32 fineclass candidate; keeps the useful
   sh6bench RSS reduction but does not promote because python_alloc current RSS

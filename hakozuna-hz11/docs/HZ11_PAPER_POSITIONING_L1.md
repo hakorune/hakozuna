@@ -1,5 +1,9 @@
 # HZ11PaperPositioning-L1
 
+Superseded for current public positioning by
+`HZ11_FINE128_REAL_APP_POSITIONING_L1.md`. This file remains the historical paper
+positioning snapshot before the later capacity, real-app, and rocksdb correctness boxes.
+
 Status: GO for positioning. This is the current HZ11 line statement. No
 allocator policy change. No default promotion. Per-CPU/rseq is **not started**.
 

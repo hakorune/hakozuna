@@ -2,6 +2,13 @@
 
 ```text
 Active status:
+  HZ11Fine128RealAppPositioning-L1: updated current positioning. fine128 is the
+  recommended general opt-in HZ11 lane with real-app evidence (espresso win, sqlite3
+  mixed, rocksdb near-parity after malloc_usable_size fix). cap768/cap1024 are
+  sh6bench-synthetic specialists only; span-transfer remains remote/mixed-only; default
+  unchanged. This supersedes the earlier paper positioning where sh6bench was a single
+  open gap and rseq was the leading next hypothesis. See
+  docs/HZ11_FINE128_REAL_APP_POSITIONING_L1.md.
   HZ11RocksdbPostFixLanePerf-L1: GO for fine128 on real multi-thread DB; cap-specialist
   NO-GO. fine128 is near-parity with tcmalloc on rocksdb (wall 1.009x, readrandom 1.01x,
   RSS 0.956x). cap768/cap1024 ~= fine128 or slower with higher RSS -- the sh6bench win
