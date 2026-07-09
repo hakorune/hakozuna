@@ -17,6 +17,10 @@ HZ11_WINDOWS_BRINGUP_L0.md:
   not fine128 parity and not a Windows malloc replacement; it establishes the
   minimal portability seam before span/transfer/DLL work.
 
+HZ11_WINDOWS_FIXED_LOCAL_BENCH_L0.md:
+  Windows L0 fixed-local speed observation. Compares system CRT, HZ11 token, and
+  HZ11 tlsfast public-entry lanes in a standalone microbench.
+
 HZ11_FRONTEND_ATTRIBUTION_L0.md:
   perf/objdump attribution that identified HZ11's remaining fixed64 gap as
   instruction count rather than efficiency

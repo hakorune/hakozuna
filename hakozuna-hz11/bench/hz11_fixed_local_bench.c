@@ -8,7 +8,32 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+
+#if defined(_WIN32)
+#include <windows.h>
+#else
 #include <time.h>
+#endif
+
+#if HZ11_BENCH_USE_HZ11_API
+#include "hz11.h"
+#define malloc hz11_malloc
+#define free hz11_free
+#endif
+
+static double hz11_bench_now_seconds(void) {
+#if defined(_WIN32)
+  LARGE_INTEGER freq;
+  LARGE_INTEGER now;
+  QueryPerformanceFrequency(&freq);
+  QueryPerformanceCounter(&now);
+  return (double)now.QuadPart / (double)freq.QuadPart;
+#else
+  struct timespec ts;
+  clock_gettime(CLOCK_MONOTONIC, &ts);
+  return (double)ts.tv_sec + (double)ts.tv_nsec / 1e9;
+#endif
+}
 
 int main(void) {
   size_t slot = (size_t)strtoull(getenv("SLOT_SIZE") ? getenv("SLOT_SIZE") : "64",
@@ -31,8 +56,7 @@ int main(void) {
     }
   }
 
-  struct timespec t0;
-  clock_gettime(CLOCK_MONOTONIC, &t0);
+  double t0 = hz11_bench_now_seconds();
   volatile char sink = 0;
   for (unsigned long long i = 0; i < iters; ++i) {
     char* p = (char*)malloc(slot);
@@ -45,11 +69,9 @@ int main(void) {
     sink ^= *p;
     free(p);
   }
-  struct timespec t1;
-  clock_gettime(CLOCK_MONOTONIC, &t1);
+  double t1 = hz11_bench_now_seconds();
 
-  double elapsed =
-      (double)(t1.tv_sec - t0.tv_sec) + (double)(t1.tv_nsec - t0.tv_nsec) / 1e9;
+  double elapsed = t1 - t0;
   if (elapsed <= 0.0) {
     elapsed = 1e-9;
   }

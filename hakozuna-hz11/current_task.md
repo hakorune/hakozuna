@@ -16,6 +16,9 @@ added:
 
 next:
   L0 smoke passes with clang-cl on Windows
+  L0 fixed-local speed observation passes:
+    hz11-tlsfast ~291M-307M ops/s across 64..4096 byte slots
+    system-crt ~56M-58M ops/s on the same microbench
   next decide whether to add VirtualAlloc-backed span/classify smoke
 ```
 
