@@ -24,6 +24,13 @@ recommended opt-in macro speed-lane candidate:
   backed by macro gate reclassification, current-RSS semantics, and RUNS=10
   remote/mixed final confirmation; not default
 
+Windows selected bring-up row:
+  hz11-span
+  HZ11_CLASSIFY_SPAN=1
+  VirtualAlloc arena + span classify + Windows CRITICAL_SECTION returned locks
+  selected for the Windows random_mixed / allocator-matrix bring-up rows;
+  not a DLL replacement, not fine128 parity, and not a default allocator claim
+
 sh6bench/macro-churn specialist lane:
   libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
   or libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so
@@ -55,6 +62,9 @@ docs/HZ11_FINE128_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_CAP1024_BYTES_CANDIDATE_POSITIONING_L1.md
 docs/HZ11_THREAD_CACHE_CAPACITY_MIDDLE_LANE_L1.md
 docs/HZ11_NO_GO_LEDGER.md
+docs/HZ11_WINDOWS_BRINGUP_L0.md
+docs/HZ11_WINDOWS_FIXED_LOCAL_BENCH_L0.md
+docs/HZ11_WINDOWS_SPAN_BRINGUP_L1.md
 ```
 
 ## Core Split

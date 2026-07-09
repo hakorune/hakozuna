@@ -33,7 +33,23 @@ next:
     RUNS=3 small: 149.284M ops/s, peak 4.18MB
     RUNS=3 medium: 147.110M ops/s, peak 4.99MB
     RUNS=3 mixed: 148.464M ops/s, peak 5.04MB
-  next decide if hz11-span should become the Windows selected HZ11 row
+  hz11-span is the selected Windows HZ11 bring-up row:
+    selected for Windows random_mixed / allocator-matrix connectivity
+    not a DLL replacement
+    not Linux fine128 parity
+    not a default allocator claim
+  next:
+    connect hz11-span to win/run_win_allocator_matrix.ps1
+    then evaluate whether Windows transfer/fine128 work is worth starting
+  allocator-matrix connectivity passes:
+    docs/benchmarks/windows/hz11_l1_allocator_matrix_connectivity/20260709_143810_allocator_matrix.md
+    smoke: 22.212M ops/s, alloc_fail=0
+    balanced: 12.202M ops/s, peak 43080KB, alloc_fail=0
+  interpretation:
+    hz11-span is now connected to the legacy Windows matrix.
+    The matrix balanced row is much weaker than the random_mixed row and should
+    be treated as the next Windows pressure signal, not as a regression in the
+    standalone fixed-local/random_mixed connectivity rows.
 ```
 
 ```text

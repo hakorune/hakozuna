@@ -27,6 +27,39 @@ HZ11:
   diagnostics in checked/debug lanes
 ```
 
+## Windows Bring-Up Position
+
+Windows support is a bring-up track, not the primary Linux fine128 line.
+
+```text
+selected Windows row:
+  hz11-span
+
+scope:
+  Windows random_mixed and allocator-matrix connectivity
+  HZ11_CLASSIFY_SPAN=1
+  VirtualAlloc arena
+  span classify path
+  CRITICAL_SECTION returned-object locks
+
+evidence:
+  random_mixed RUNS=3:
+    small  149.284M ops/s, peak 4.18MB
+    medium 147.110M ops/s, peak 4.99MB
+    mixed  148.464M ops/s, peak 5.04MB
+
+not claimed:
+  not a default allocator
+  not a Windows DLL replacement
+  not fine128 parity
+  not a remote/mixed speed-lane claim
+  not a replacement for HZ8/HZ10
+```
+
+The Windows row exists so HZ11 can be measured in the existing Windows
+cross-allocator harness without pretending that the Linux fine128 / transfer
+line has already been ported.
+
 ## Why A New Line
 
 HZ10 proved that keeping route, ownership, free-count, remote-drain, and reclaim

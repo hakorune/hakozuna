@@ -1,6 +1,7 @@
 param(
     [string]$VcpkgRoot,
-    [switch]$DiagnosticHz6Probes
+    [switch]$DiagnosticHz6Probes,
+    [switch]$OnlyHz11
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,8 +15,58 @@ $Hz3Script = Join-Path $RepoRoot "hakozuna\\win\\build_win_bench_compare.ps1"
 $Hz4Script = Join-Path $RepoRoot "hakozuna-mt\\win\\build_win_bench_compare.ps1"
 $Hz5Root = Join-Path $RepoRoot "hakozuna-hz5"
 $Hz6Root = Join-Path $RepoRoot "hakozuna-hz6"
+$Hz11Root = Join-Path $RepoRoot "hakozuna-hz11"
 $Hz6Common = Join-Path $Hz6Root "win\\hz6_win_build_common.ps1"
 $AppLikeBuildCommon = Join-Path $PSScriptRoot "bench_app_like_allocator_build_common.ps1"
+$Compiler = Get-Command "clang-cl" -ErrorAction Stop
+$CompareSource = Join-Path $PSScriptRoot "bench_allocator_compare.c"
+
+function Invoke-Hz11AllocatorMatrixBuild {
+    if (-not (Test-Path $Hz11Root)) {
+        throw "HZ11 root not found; cannot build HZ11 matrix executable: $Hz11Root"
+    }
+    $Hz11Sources = @(
+        (Join-Path $Hz11Root "src\hz11_size_class.c"),
+        (Join-Path $Hz11Root "src\hz11_sys_alloc.c"),
+        (Join-Path $Hz11Root "src\hz11_thread_cache.c"),
+        (Join-Path $Hz11Root "src\hz11_public_entry.c"),
+        (Join-Path $Hz11Root "src\hz11_span.c"),
+        (Join-Path $Hz11Root "src\hz11_live_footprint.c")
+    )
+    $missing = $Hz11Sources | Where-Object { -not (Test-Path $_) }
+    if ($missing.Count -gt 0) {
+        throw "HZ11 source missing: $($missing -join ', ')"
+    }
+    $Hz11Output = Join-Path $OutDir "bench_mixed_ws_hz11_span.exe"
+    $Hz11Args = @(
+        "/nologo",
+        "/O2",
+        "/DNDEBUG",
+        "/std:c11",
+        "/W3",
+        "/MD",
+        "/DHZ_BENCH_USE_HZ11=1",
+        "/DHZ11_CLASSIFY_SPAN=1",
+        "/DHZ_BENCH_DISABLE_REALLOC=1",
+        "/I$Hz11Root\include",
+        "/I$Hz11Root\src"
+    )
+    $Hz11Args += $Hz11Sources
+    $Hz11Args += $CompareSource
+    $Hz11Args += "psapi.lib"
+    $Hz11Args += "/Fe:$Hz11Output"
+    Write-Host "[hz11-win] building bench_mixed_ws_hz11_span.exe"
+    & $Compiler.Source @Hz11Args
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ11 mixed_ws build failed with exit code $LASTEXITCODE"
+    }
+}
+
+if ($OnlyHz11) {
+    Invoke-Hz11AllocatorMatrixBuild
+    Write-Host "Built HZ11 suite artifact in: $OutDir"
+    return
+}
 
 $Hz3Args = @()
 $Hz4Args = @()
@@ -36,9 +87,6 @@ if ($LASTEXITCODE -ne 0) {
 
 $Hz3OutDir = Join-Path $RepoRoot "hakozuna\out_win_bench"
 $Hz4OutDir = Join-Path $RepoRoot "hakozuna-mt\out_win_bench"
-
-$Compiler = Get-Command "clang-cl" -ErrorAction Stop
-$CompareSource = Join-Path $PSScriptRoot "bench_allocator_compare.c"
 
 if (Test-Path $Hz5Root) {
     $Hz5IncludeFlags = @(
@@ -168,6 +216,8 @@ if (Test-Path $Hz6Common) {
 } else {
     Write-Warning "HZ6 Windows build helper not found; skipping HZ6 matrix executables: $Hz6Common"
 }
+
+Invoke-Hz11AllocatorMatrixBuild
 
 $Artifacts = @(
     (Join-Path $Hz3OutDir "bench_mixed_ws_crt.exe"),

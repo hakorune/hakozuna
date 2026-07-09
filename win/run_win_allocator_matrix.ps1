@@ -27,6 +27,7 @@ $Executables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
+    @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss.exe") },
@@ -80,7 +81,13 @@ if ($Allocators -and $Allocators.Count -gt 0) {
 }
 
 if (-not $ListOnly -and ($ForceBuild -or ($Executables | Where-Object { -not (Test-Path $_.Path) }))) {
-    & $BuildScript
+    $OnlyHz11Selected = (($Executables.Count -gt 0) -and
+        (($Executables | Where-Object { $_.Name -notlike "hz11-*" }).Count -eq 0))
+    if ($OnlyHz11Selected) {
+        & $BuildScript -OnlyHz11
+    } else {
+        & $BuildScript
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -299,6 +306,7 @@ $Summary.Add("Allocators: " + (($Executables | ForEach-Object { $_.Name }) -join
 $Summary.Add("")
 $Summary.Add("Notes:")
 $Summary.Add("- `hz5-policy` uses the HZ5 Windows policy/API path in this mixed `malloc/free` runner. It is not the exact 64K/a8192 Local2P microbench lane; use the HZ5 synthetic/Local2P family for that profile.")
+$Summary.Add("- `hz11-span` is the selected Windows HZ11 bring-up row: HZ11_CLASSIFY_SPAN=1 with a VirtualAlloc span arena. It is a Windows matrix connectivity row, not Linux fine128 parity and not a default allocator claim.")
 $Summary.Add("- `hz6-*-broad` keeps the same HZ6 policy profile but raises descriptor/route/source/front-cache capacities for broad working-set matrix profiles.")
 $Summary.Add("- `hz6-*-route4k` keeps the non-route capacities at control values while widening only the route table to 4096.")
 $Summary.Add("- `hz6-*-largerlowrss` uses the selected 4K..16K/LargerSizes low-RSS lane: front8k + SourceRunReuse + desc8k + route8k.")

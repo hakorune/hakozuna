@@ -16,6 +16,8 @@
 #include "hz6_profiles.h"
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
 #include "hz5_policy.h"
+#elif defined(HZ_BENCH_USE_HZ11)
+#include "hz11.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
 #include <mimalloc.h>
 #elif defined(HZ_BENCH_USE_TCMALLOC)
@@ -182,6 +184,9 @@ static inline void* bench_alloc(ThreadArg* ta, size_t size) {
     (void)ta;
     static const Hz5PolicyHooks hooks = {0};
     return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
+#elif defined(HZ_BENCH_USE_HZ11)
+    (void)ta;
+    return hz11_malloc(size);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     return mi_malloc(size);
@@ -211,6 +216,9 @@ static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
     (void)ptr;
     (void)size;
     return NULL;
+#elif defined(HZ_BENCH_USE_HZ11)
+    (void)ta;
+    return hz11_realloc(ptr, size);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     return mi_realloc(ptr, size);
@@ -236,6 +244,9 @@ static inline void bench_free(ThreadArg* ta, void* ptr) {
     (void)ta;
     static const Hz5PolicyHooks hooks = {0};
     (void)hz5_policy_free(ptr, &hooks);
+#elif defined(HZ_BENCH_USE_HZ11)
+    (void)ta;
+    hz11_free(ptr);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     mi_free(ptr);
@@ -275,6 +286,7 @@ static uint64_t now_ns(void) {
     }
 }
 
+#if defined(HZ_BENCH_USE_HZ6)
 static size_t peak_working_set_kb(void) {
     PROCESS_MEMORY_COUNTERS pmc;
     if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
@@ -282,6 +294,7 @@ static size_t peak_working_set_kb(void) {
     }
     return (size_t)(pmc.PeakWorkingSetSize / 1024u);
 }
+#endif
 
 static unsigned __stdcall bench_thread(void* arg) {
     ThreadArg* ta = (ThreadArg*)arg;
@@ -369,6 +382,7 @@ static uint64_t now_ns(void) {
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
 
+#if defined(HZ_BENCH_USE_HZ6)
 static size_t peak_working_set_kb(void) {
     struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) != 0) {
@@ -376,6 +390,7 @@ static size_t peak_working_set_kb(void) {
     }
     return (size_t)usage.ru_maxrss;
 }
+#endif
 
 static void* bench_thread(void* arg) {
     ThreadArg* ta = (ThreadArg*)arg;
