@@ -76,6 +76,16 @@ uint32_t hz12_returned_pop_range(uint8_t class_id, void** out, uint32_t max);
 /* Diagnostic-only cold query used by the HZ12 reclaim gate. */
 uint32_t hz12_returned_count_in_span(uint8_t class_id,
                                      const void* span_base);
+typedef struct H12ReturnedSpanSnapshot {
+  uint32_t objects;
+  uint32_t unique_slots;
+  uint32_t duplicate_slots;
+  uint32_t invalid_slots;
+  uint32_t slot_capacity;
+  uint8_t complete;
+} H12ReturnedSpanSnapshot;
+int hz12_returned_snapshot_span(uint8_t class_id, const void* span_base,
+                                H12ReturnedSpanSnapshot* out);
 uint32_t hz12_returned_detach_span(uint8_t class_id, const void* span_base);
 int hz12_span_route_detach(const void* span_base, uint8_t expected_class_id);
 int hz12_span_route_attach(const void* span_base, uint8_t class_id);

@@ -105,6 +105,8 @@ int main(void) {
   PROCESS_MEMORY_COUNTERS_EX memory_after = {0};
   HANDLE owner_thread;
   DWORD exit_code = 0u;
+  uint32_t snapshot_candidates = 0u;
+  uint32_t snapshot_mismatches = 0u;
 
   h12_span_accounting_reset();
   h12_span_owner_shadow_reset();
@@ -161,6 +163,31 @@ int main(void) {
       gate.mismatched_spans != 0u) {
     return 6;
   }
+  for (uint32_t span_id = 0u; span_id < HZ12_SPAN_COUNT; ++span_id) {
+    H12OwnerToken observed;
+    H12ReturnedSpanSnapshot snapshot;
+    void* span_base;
+    uint8_t class_plus_one;
+    if (!h12_span_owner_shadow_query(span_id, &observed) ||
+        observed.slot != state.owner.slot ||
+        observed.generation != state.owner.generation) {
+      continue;
+    }
+    class_plus_one = hz12_span_class[span_id];
+    if (class_plus_one == 0u) continue;
+    span_base = hz12_arena_base + ((size_t)span_id << HZ12_SPAN_SHIFT);
+    if (!hz12_returned_snapshot_span(
+            (uint8_t)(class_plus_one - 1u), span_base, &snapshot) ||
+        !snapshot.complete) {
+      snapshot_mismatches += 1u;
+    } else {
+      snapshot_candidates += 1u;
+    }
+  }
+  if (snapshot_candidates != H12_LEDGER_WIDE_SPANS ||
+      snapshot_mismatches != 0u) {
+    return 11;
+  }
 #if HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
   memory_before.cb = sizeof(memory_before);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
@@ -210,7 +237,8 @@ int main(void) {
   printf("[HZ12_WIDEWS_OWNER_LEDGER_SHADOW] spans=%u slots=%u "
          "candidate_bytes=%llu pending=%u matches=%u mismatches=%u gate=%u "
          "detached=%u decommitted=%u recycled=%u detach2=%u decommit2=%u "
-         "depot=%u rss_before=%llu rss_after=%llu\n",
+         "depot=%u snapshot=%u snapshot_mismatch=%u "
+         "rss_before=%llu rss_after=%llu\n",
          H12_LEDGER_WIDE_SPANS, state.total_objects,
          (unsigned long long)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES,
          gate.flush_owner_pending, agreement.matching_spans,
@@ -218,6 +246,7 @@ int main(void) {
          detach.succeeded, decommit.succeeded,
          recycle.spans_exercised, recycle.second_detach,
          recycle.second_decommit, recycle.depot_final,
+         snapshot_candidates, snapshot_mismatches,
          (unsigned long long)memory_before.WorkingSetSize,
          (unsigned long long)memory_after.WorkingSetSize);
   free(state.objects);

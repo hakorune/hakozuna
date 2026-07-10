@@ -582,3 +582,13 @@ frequent. P0-C is NO-GO. Stop continuous-ledger tuning. Next: reconstruct the
 candidate set only at a retirement/pressure checkpoint after real inbox drain
 and enrolled cache flush; validate that snapshot against bitmap/atomic shadows
 in diagnostic lanes without adding normal malloc/free/refill accounting.
+
+P0-D checkpoint snapshot result: the returned sink now supports a cold
+lock-held per-span snapshot using a temporary bitmap to reject unaligned and
+duplicate slots. In the 64-span L6-D diagnostic, repeat-10 reconstructed all 64
+atomic/bitmap candidates with zero snapshot mismatches and 4 MiB of candidate
+payload. The snapshot adds no malloc/free/refill/cache-flush accounting. P0-D
+is the first authority placement compatible with the speed gate by
+construction. Next: a separate retire-only behavior sibling may consume at
+most 64 snapshot-proven spans / 4 MiB; continuous bitmap/count controls remain
+NO-GO and must not enter the speed lane.

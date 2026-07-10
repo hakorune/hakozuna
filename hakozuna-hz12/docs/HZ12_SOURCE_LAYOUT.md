@@ -7,7 +7,8 @@ include/hz12.h
   public allocator API
 
 src/hz12_span.*
-  arena, span class route, returned-object sink
+  arena, span class route, returned-object sink, and P0-D checkpoint-local
+  unique/aligned returned-slot snapshot primitive
 
 src/hz12_thread_cache.*
   malloc/free front cache and current span
