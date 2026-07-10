@@ -1,7 +1,6 @@
 #include "hz12_owner_batch_ledger.h"
 
 #include "hz12_span.h"
-#include "hz12_span_accounting.h"
 #include "hz12_span_owner_shadow.h"
 
 #include <string.h>
@@ -196,50 +195,6 @@ int h12_owner_batch_ledger_query(const void* ptr,
   out->ledger_candidate = (uint8_t)(out->full_span &&
       span->outstanding_slots == 0u && span->rejected_transitions == 0u);
   return 1;
-}
-
-static H12OwnerBatchLedgerAgreement h12_ledger_compare_atomic(
-    const H12OwnerToken* owner) {
-  H12OwnerBatchLedgerAgreement result;
-  memset(&result, 0, sizeof(result));
-  for (uint32_t span_id = 0u; span_id < HZ12_SPAN_COUNT; ++span_id) {
-    H12OwnerBatchLedgerSpan* span = &h12_ledger_spans[span_id];
-    H12OwnerBatchLedgerRecord ledger;
-    H12SpanAccountingRecord atomic_record;
-    void* base;
-    if (span->class_plus_one == 0u) continue;
-    if (owner && (span->owner.slot != owner->slot ||
-                  span->owner.generation != owner->generation)) {
-      continue;
-    }
-    base = hz12_arena_base + ((size_t)span_id << HZ12_SPAN_SHIFT);
-    if (!h12_owner_batch_ledger_query(base, &ledger) ||
-        !h12_span_accounting_query(base, &atomic_record)) {
-      result.mismatched_spans += 1u;
-      continue;
-    }
-    result.compared_spans += 1u;
-    result.ledger_candidates += ledger.ledger_candidate != 0u;
-    result.atomic_candidates += atomic_record.accounting_candidate != 0u;
-    if (ledger.ledger_candidate == atomic_record.accounting_candidate &&
-        ledger.full_span == (atomic_record.carved_slots ==
-                             atomic_record.slot_capacity) &&
-        ledger.rejected_transitions == 0u) {
-      result.matching_spans += 1u;
-    } else {
-      result.mismatched_spans += 1u;
-    }
-  }
-  return result;
-}
-
-H12OwnerBatchLedgerAgreement h12_owner_batch_ledger_compare_atomic(void) {
-  return h12_ledger_compare_atomic(NULL);
-}
-
-H12OwnerBatchLedgerAgreement h12_owner_batch_ledger_compare_owner_atomic(
-    H12OwnerToken owner) {
-  return h12_ledger_compare_atomic(&owner);
 }
 
 int h12_owner_batch_ledger_recycle_span(const void* ptr,

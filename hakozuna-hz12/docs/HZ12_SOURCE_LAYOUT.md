@@ -40,6 +40,10 @@ src/hz12_owner_batch_ledger.*
   normal allocator lanes. L6-B hooks are compiled only when
   HZ12_OWNER_BATCH_LEDGER_DIAG is enabled.
 
+src/hz12_owner_batch_ledger_compare.c
+  diagnostic-only atomic-shadow comparator, separated so production-shape
+  ledger builds do not link per-operation atomic accounting
+
 src/hz12_owner_ledger_retire_gate.*
   L6-C read-only composition of epoch/token retirement, the real flush-owner
   inbox pending count, and owner-scoped ledger/atomic agreement

@@ -540,3 +540,21 @@ RSS reduction remained visible. Ledger query is now route-independent after
 detach/decommit, matching the side-table contract. The fixed lifecycle is
 complete. Next work is a separately gated bounded production policy, not more
 lifecycle mechanics and not direct HZ8 integration.
+
+## ReclaimPolicy P0 Performance Gate: NO-GO
+
+P0 separated the ledger core from the atomic comparison module, linked only
+the core into a production-shape ColdSpanOwner sibling, and kept automatic
+reclaim off. Build flags and binary hashes are saved in the P0 manifest.
+
+The two-second wide_ws R5 did not show a throughput regression (35.753M versus
+34.442M baseline), although peak RSS rose from 88.29 to 91.20 MiB before any
+reclaim policy. Local random_mixed is decisive: small fell 16.3%, medium 15.6%,
+and mixed 17.8%. P0 therefore fails the -5% hard gate and is frozen as a
+control. L6-A..L6-F remain valid lifecycle evidence.
+
+Do not implement automatic reclaim yet. Next: diagnostic attribution of the
+second flush scan, per-slot bitmap transitions, acquire-side lookup, and
+return-side update. The production candidate should reuse owner information
+already computed by flush routing and use compact per-span batch counts; the
+bitmap remains a diagnostic judge.

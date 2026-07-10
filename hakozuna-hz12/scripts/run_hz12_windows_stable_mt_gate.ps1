@@ -9,20 +9,22 @@ param(
     [string[]]$ProfileNames,
     [switch]$IncludeRefillBatchProbe,
     [switch]$IncludeHz11Fine128TransferProbe,
+    [switch]$LedgerP0Only,
+    [string]$Hz12OutDirName = "out_win_broad",
     [switch]$SkipBuild
 )
 
 $ErrorActionPreference = "Stop"
 $Hz12Root = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Hz12Root
-$Hz12Out = Join-Path $Hz12Root "out_win_broad"
+$Hz12Out = Join-Path $Hz12Root $Hz12OutDirName
 $SuiteOut = Join-Path $RepoRoot "out_win_suite"
 $Hz12Build = Join-Path $PSScriptRoot "build_hz12_windows_broad_controls.ps1"
 $SuiteBuild = Join-Path $RepoRoot "win\build_win_allocator_suite.ps1"
 
 if ($Rounds -lt 1) { throw "Rounds must be positive." }
 if ($TargetSeconds -lt 0.5) { throw "TargetSeconds must be at least 0.5." }
-if ($AffinityMask -eq 0u) { throw "AffinityMask must select at least one CPU." }
+if ($AffinityMask -eq 0) { throw "AffinityMask must select at least one CPU." }
 
 $Rows = @(
     [pscustomobject]@{ Name = "hz11-span-cache256"; Path = (Join-Path $SuiteOut "bench_mixed_ws_hz11_span_cache256.exe") },
@@ -30,6 +32,18 @@ $Rows = @(
     [pscustomobject]@{ Name = "hz12-coldspanowner"; Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_coldspanowner.exe") },
     [pscustomobject]@{ Name = "tcmalloc"; Path = (Join-Path $SuiteOut "bench_mixed_ws_tcmalloc.exe") }
 )
+if ($LedgerP0Only) {
+    $Rows = @(
+        [pscustomobject]@{
+            Name = "hz12-coldspanowner"
+            Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_coldspanowner.exe")
+        },
+        [pscustomobject]@{
+            Name = "hz12-owner-ledger-p0"
+            Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_ledger_p0.exe")
+        }
+    )
+}
 if ($IncludeRefillBatchProbe) {
     $Rows += [pscustomobject]@{
         Name = "hz12-coldspanowner-batch32"
@@ -58,10 +72,12 @@ if ($ProfileNames -and $ProfileNames.Count -gt 0) {
 }
 
 if (-not $SkipBuild) {
-    & $Hz12Build
+    & $Hz12Build -OutDirName $Hz12OutDirName
     if ($LASTEXITCODE -ne 0) { throw "HZ12 build failed: $LASTEXITCODE" }
-    & $SuiteBuild
-    if ($LASTEXITCODE -ne 0) { throw "allocator suite build failed: $LASTEXITCODE" }
+    if (-not $LedgerP0Only) {
+        & $SuiteBuild
+        if ($LASTEXITCODE -ne 0) { throw "allocator suite build failed: $LASTEXITCODE" }
+    }
 }
 foreach ($row in $Rows) {
     if (-not (Test-Path $row.Path)) { throw "Missing benchmark: $($row.Path)" }
@@ -91,7 +107,8 @@ function Invoke-StableProcess([string]$Path, [string[]]$Arguments) {
     $startInfo.UseShellExecute = $false
     $startInfo.RedirectStandardOutput = $true
     $startInfo.RedirectStandardError = $true
-    foreach ($argument in $Arguments) { [void]$startInfo.ArgumentList.Add($argument) }
+    # Windows PowerShell 5.1 does not expose ProcessStartInfo.ArgumentList.
+    $startInfo.Arguments = ($Arguments -join ' ')
     $process = [System.Diagnostics.Process]::new()
     $process.StartInfo = $startInfo
     if (-not $process.Start()) { throw "Failed to start $Path" }

@@ -3,7 +3,7 @@
 #include "hz12_shadow.h"
 #include "hz12_span.h"
 #include "hz12_thread_cache.h"
-#if HZ12_OWNER_BATCH_LEDGER_DIAG
+#if HZ12_OWNER_BATCH_LEDGER
 #include "hz12_owner_batch_ledger.h"
 #include "hz12_span_owner_shadow.h"
 #endif
@@ -47,7 +47,7 @@ static H12FlushOwnerInbox
     hz12_flush_owner_inboxes[HZ12_SHADOW_MAX_OWNERS];
 static H12FlushOwnerRouteAtomicStats hz12_flush_owner_stats;
 
-#if HZ12_OWNER_BATCH_LEDGER_DIAG
+#if HZ12_OWNER_BATCH_LEDGER
 static H12OwnerToken hz12_flush_owner_token(const H12ThreadCache* tc) {
   H12OwnerToken owner = {0u, 0u};
   if (tc && tc->flush_owner_valid) {
@@ -197,7 +197,7 @@ void hz12_flush_owner_route_assign_span(H12ThreadCache* tc, void* span_base) {
   if (!tc || !tc->flush_owner_valid || !span_base) return;
   h12_shadow_on_alloc_token(span_base, tc->flush_owner_id,
                             tc->flush_owner_generation);
-#if HZ12_OWNER_BATCH_LEDGER_DIAG
+#if HZ12_OWNER_BATCH_LEDGER
   {
     H12OwnerToken owner = hz12_flush_owner_token(tc);
     (void)h12_span_owner_shadow_assign(span_base, owner);
