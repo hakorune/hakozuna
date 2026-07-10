@@ -13,6 +13,7 @@ $Bench = Join-Path $Hz12Root "bench\bench_hz12_xowner_shadow.c"
 $InboxBench = Join-Path $Hz12Root "bench\bench_hz12_xowner_inbox.c"
 $TokenRetireLive = Join-Path $Hz12Root "bench\bench_hz12_token_retire_live.c"
 $TokenXownerPipeline = Join-Path $Hz12Root "bench\bench_hz12_token_xowner_pipeline.c"
+$WideWsReclaimShadow = Join-Path $Hz12Root "bench\bench_hz12_widews_reclaim_shadow.c"
 $AdoptionSmoke = Join-Path $Hz12Root "tests\hz12_owner_adoption_shadow_smoke.c"
 $RetiredAdoptionSmoke = Join-Path $Hz12Root "tests\hz12_retired_inbox_adoption_smoke.c"
 $WholeSpanSmoke = Join-Path $Hz12Root "tests\hz12_whole_span_accounting_smoke.c"
@@ -22,6 +23,7 @@ $OwnerRegistrySmoke = Join-Path $Hz12Root "tests\hz12_owner_registry_smoke.c"
 $TokenInboxSmoke = Join-Path $Hz12Root "tests\hz12_token_inbox_smoke.c"
 $OwnerEpochSmoke = Join-Path $Hz12Root "tests\hz12_owner_epoch_smoke.c"
 $OwnerRetireGateSmoke = Join-Path $Hz12Root "tests\hz12_owner_retire_gate_smoke.c"
+$RetiredReclaimShadowSmoke = Join-Path $Hz12Root "tests\hz12_retired_reclaim_shadow_smoke.c"
 $Shadow = Join-Path $Hz12Root "src\hz12_shadow.c"
 $Inbox = Join-Path $Hz12Root "src\hz12_inbox.c"
 $Accounting = Join-Path $Hz12Root "src\hz12_span_accounting.c"
@@ -33,6 +35,13 @@ $OwnerRegistry = Join-Path $Hz12Root "src\hz12_owner_registry.c"
 $TokenInbox = Join-Path $Hz12Root "src\hz12_token_inbox.c"
 $OwnerEpoch = Join-Path $Hz12Root "src\hz12_owner_epoch.c"
 $OwnerRetireGate = Join-Path $Hz12Root "src\hz12_owner_retire_gate.c"
+$SpanOwnerShadow = Join-Path $Hz12Root "src\hz12_span_owner_shadow.c"
+$RetiredReclaimShadow = Join-Path $Hz12Root "src\hz12_retired_reclaim_shadow.c"
+$RetiredReclaimDetach = Join-Path $Hz12Root "src\hz12_retired_reclaim_detach.c"
+$RetiredReclaimDecommit = Join-Path $Hz12Root "src\hz12_retired_reclaim_decommit.c"
+$RetiredReclaimDepotCycle = Join-Path $Hz12Root "src\hz12_retired_reclaim_depot_cycle.c"
+$ReclaimCarveDiag = Join-Path $Hz12Root "src\hz12_reclaim_carve_diag.c"
+$RetiredReclaimRecycle = Join-Path $Hz12Root "src\hz12_retired_reclaim_recycle.c"
 $Hz12Sources = @(
     "$Hz12Root\src\hz12_size_class.c",
     "$Hz12Root\src\hz12_sys_alloc.c",
@@ -43,7 +52,7 @@ $Hz12Sources = @(
     "$Hz12Root\src\hz12_live_footprint.c"
 )
 
-foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate) + $Hz12Sources) {
+foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle) + $Hz12Sources) {
     if (-not (Test-Path $path)) { throw "Missing HZ12 shadow source: $path" }
 }
 if ($InboxCap -lt 1) { throw "InboxCap must be positive." }
@@ -244,5 +253,42 @@ $tokenXownerPipelineArgs = @(
     "/out:$(Join-Path $OutDir 'bench_hz12_token_xowner_pipeline.exe')"
 )
 & clang-cl @tokenXownerPipelineArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$retiredReclaimShadowSmokeArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    $RetiredReclaimShadowSmoke, $RetiredReclaimShadow, $SpanOwnerShadow,
+    $OwnerRetireGate, $OwnerEpoch, $TokenInbox, $OwnerRegistry, $Shadow,
+    $Inbox, $Accounting, $ReclaimGate, $SpanDetach
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'hz12_retired_reclaim_shadow_smoke.exe')"
+)
+& clang-cl @retiredReclaimShadowSmokeArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$wideWsReclaimShadowArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    $WideWsReclaimShadow, $RetiredReclaimShadow, $RetiredReclaimDetach,
+    $RetiredReclaimDecommit, $SpanOwnerShadow, $SpanDetach, $SpanDecommit,
+    $RetiredReclaimDepotCycle, $SpanDepot,
+    $ReclaimCarveDiag, $RetiredReclaimRecycle,
+    $OwnerRetireGate, $OwnerEpoch, $TokenInbox, $OwnerRegistry, $Accounting,
+    $ReclaimGate
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_widews_reclaim_shadow.exe')"
+)
+& clang-cl @wideWsReclaimShadowArgs
 if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 Write-Host "Built HZ12 L0 and L1 artifacts in: $OutDir"

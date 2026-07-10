@@ -73,6 +73,13 @@ docs/HZ12_WINDOWS_OWNER_EPOCH_L3C.md
 docs/HZ12_WINDOWS_OWNER_RETIRE_GATE_L3D.md
 docs/HZ12_WINDOWS_TOKEN_RETIRE_LIVE_L4A.md
 docs/HZ12_WINDOWS_TOKEN_XOWNER_PIPELINE_L4B.md
+docs/HZ12_WINDOWS_TOKEN_DRAIN_POLICY_L4C.md
+docs/HZ12_WINDOWS_RETIRED_OWNER_RECLAIM_SHADOW_L5A.md
+docs/HZ12_WINDOWS_CLASS_FLUSH_CHECKPOINT_L5B.md
+docs/HZ12_WINDOWS_BOUNDED_RETIRED_DETACH_L5C.md
+docs/HZ12_WINDOWS_BOUNDED_RETIRED_DECOMMIT_L5D.md
+docs/HZ12_WINDOWS_RETIRED_DEPOT_CYCLE_L5E.md
+docs/HZ12_WINDOWS_RETIRED_SPAN_RECYCLE_L5F.md
 docs/HZ12_SOURCE_LAYOUT.md
 docs/HZ12_PORTABILITY_CONTRACT_L0.md
 docs/HZ12_NO_GO_LEDGER.md
@@ -114,3 +121,44 @@ L4-B extends that evidence to a one-producer/one-consumer 100% cross-owner
 pipeline. It passed repeat-5 with no token rejection or overflow, but its eager
 owner drain was about 13% slower than the owner-id L1 control. It is therefore
 a safe token-routing control, not a promoted performance profile.
+
+L4-C found that widening the token drain interval improves apparent throughput
+but does not reproducibly avoid bounded fallback on Windows. It is recorded as
+no-go policy evidence; HZ12 does not promote a token-drain default.
+
+L5-A returns to the low-RSS charter with a generation-aware span-owner side
+table and a read-only retired-owner reclaim scan. Its repeat-20 smoke reports
+zero bytes for incomplete thread scope, exactly 64 KiB only after the existing
+L2 gate opens, and excludes stale-generation spans.
+
+The L5-A wide working-set diagnostic found a 72.88 MiB median physical
+full-span candidate upper bound against 82.00 MiB median peak RSS. Foreign
+cache scope is still unknown, so it reports zero fully reclaimable bytes.
+
+L5-B adds an explicit diagnostic class-flush checkpoint. Its wide_ws-like
+repeat-5 exposes a median 80.75 MiB physical candidate set with no foreign-cache
+blocker; returned-sink contents and live routes remain the final blockers.
+
+L5-C uses a fixed 64-span quiescent budget. Its repeat-3 detached 64/64 spans
+with zero failures and exposed exactly 4.00 MiB as reclaimable, without
+decommit or depot insertion.
+
+L5-D decommits the same fixed 64-span success set. Repeat-3 released exactly
+4.00 MiB and reduced working-set RSS by 3.99 MiB in every run, with no depot or
+automatic policy enabled.
+
+L5-E connects only that bounded diagnostic set to the existing 64-span depot.
+It requires same-address recommit, accounting reset, route restoration, exact
+owner generation, and an empty depot after the cycle. It remains disconnected
+from normal allocation/free policy.
+
+The Windows repeat-3 passed 64/64 puts and takes in every run, recommitted
+4.00 MiB, and reported zero address or owner-generation mismatches. This is
+bounded lifecycle evidence, not an automatic depot policy.
+
+L5-F completed the second lifecycle cycle in repeat-3: all 64 spans were fully
+carved, touched, normally freed, detached again, decommitted again, and returned
+to the depot. It touched 9,984..10,048 class-dependent slots per run, released
+4.00 MiB again, and reported zero address, generation, or lifecycle failures.
+The bounded Windows mechanism is complete; automatic reclaim policy remains
+out of scope.

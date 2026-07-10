@@ -81,5 +81,41 @@ L4-Bでは1 producer / 1 consumer・100% cross-ownerのtoken-aware pipelineを
 eager drainによりowner-id L1 controlより約13%遅くなりました。安全なtoken routingの
 evidenceとして保持し、性能profileには昇格しません。
 
+L4-Cではtoken drain intervalをsweepしました。intervalを広げると見かけの速度は
+上がりますが、Windowsではbounded fallbackを再現性よく0にできませんでした。これは
+NO-GO policy evidenceとして固定し、HZ12のdefaultには昇格しません。
+
+L5-Aではgeneration-awareなspan-owner side tableとread-only reclaim scanを追加しました。
+repeat-20でforeign-cache scope不明時は0 bytes、既存L2 gateが開いた後だけ正確に64 KiB、
+owner slot再利用後の旧generation spanはstaleとして0 bytesになることを確認しています。
+
+wide_ws-like診断ではphysical full-span candidateが中央値72.88 MiB、peak RSSが
+中央値82.00 MiBでした。foreign cache scopeは未証明なので、完全にreclaimableなbytesは
+引き続き0として扱います。
+
+L5-Bでは全workerが明示class-flush checkpointとepoch ackを実行します。wide_ws-like
+repeat-5でforeign-cache blockerは0となり、physical candidateは中央値80.75 MiBでした。
+残るblockerはreturned sinkとrouteで、reclaimable bytesはまだ0です。
+
+L5-Cではquiescentな64-span固定budgetを追加しました。repeat-3で毎回64/64 span、
+失敗0、正確に4.00 MiBをreclaimableへ移しました。decommit/depotはまだ実行しません。
+
+L5-Dでは同じ64 spanをdecommitしました。repeat-3で毎回4.00 MiBを解放し、working-set
+RSSは毎回3.99 MiB低下しました。depotと自動policyはまだ有効化していません。
+
+L5-Eではその固定64 spanだけを既存depotへ接続します。同一addressでのrecommit、
+accounting reset、route復元、owner generation一致、cycle後のdepot空状態を必須とし、
+通常のallocation/free policyには接続しません。
+
+Windows repeat-3では毎回put/take 64/64、4.00 MiB recommit、address mismatch 0、
+owner-generation mismatch 0、depot残数0でした。これはbounded lifecycleの証拠であり、
+自動depot policyではありません。
+
+L5-Fでは二周目cycleまでrepeat-3で完了しました。64 spanすべてをfull carve、touch、
+通常free、再detach、再decommitし、depotへ戻しました。各runでclass構成に応じた
+9,984..10,048 slotをtouchし、再び4.00 MiBをdecommit、address/generation/lifecycle
+failureはすべて0でした。Windowsのbounded mechanismは完成し、自動reclaim policyは
+別gateとして残します。
+
 HZ11は独立したselected lineとして固定します。ownership/adoption/reclaimの
 以後の変更はすべてHZ12内で行い、HZ11へ戻しません。

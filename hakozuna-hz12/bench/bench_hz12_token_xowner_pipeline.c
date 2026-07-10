@@ -36,6 +36,7 @@ typedef struct H12L4BState {
   uint64_t frees;
   uint64_t drained;
   uint64_t waits;
+  uint32_t drain_interval;
   int producer_error;
   int consumer_error;
   int producer_ok;
@@ -109,9 +110,9 @@ static unsigned __stdcall h12_l4b_producer(void* arg) {
     h12_shadow_on_alloc(ptr, 0u);
     h12_span_accounting_on_alloc(ptr);
     state->allocs += 1u;
-    /* L4-B is an overflow-free lifecycle control. A separate policy lane can
-     * later sweep less frequent drains without conflating it with token safety. */
-    state->drained += h12_token_inbox_drain(state->owner);
+    if ((state->allocs & (state->drain_interval - 1u)) == 0u) {
+      state->drained += h12_token_inbox_drain(state->owner);
+    }
     while (!h12_l4b_push(&state->ring, ptr)) {
       state->waits += 1u;
       if (InterlockedCompareExchange(&h12_l4b_stop, 0, 0) != 0) {
@@ -205,16 +206,24 @@ int main(int argc, char** argv) {
   HANDLE producer;
   HANDLE consumer;
   uint32_t seconds = argc > 1 ? (uint32_t)strtoul(argv[1], NULL, 10) : 1u;
+  uint32_t drain_interval =
+      argc > 2 ? (uint32_t)strtoul(argv[2], NULL, 10) : 1u;
   uint64_t start;
   uint64_t elapsed;
 
-  if (seconds == 0u || seconds > 30u) return 1;
+  if (seconds == 0u || seconds > 30u || drain_interval == 0u ||
+      (drain_interval & (drain_interval - 1u)) != 0u) {
+    fprintf(stderr, "usage: %s [seconds 1..30] [drain_interval power-of-two]\n",
+            argv[0]);
+    return 1;
+  }
   h12_owner_registry_reset();
   h12_owner_epoch_reset();
   h12_token_inbox_reset();
   h12_owner_retire_gate_reset();
   if (!h12_shadow_init(1u)) return 2;
   h12_span_accounting_reset();
+  state.drain_interval = drain_interval;
   producer = (HANDLE)_beginthreadex(NULL, 0, h12_l4b_producer, &state, 0, NULL);
   consumer = (HANDLE)_beginthreadex(NULL, 0, h12_l4b_consumer, &state, 0, NULL);
   if (!producer || !consumer) return 3;
@@ -241,10 +250,10 @@ int main(int argc, char** argv) {
       state.allocs < state.frees) {
     return 4;
   }
-  printf("[HZ12_TOKEN_XOWNER_L4B] seconds=%u allocs=%llu frees=%llu "
+  printf("[HZ12_TOKEN_XOWNER_L4B] seconds=%u drain_interval=%u allocs=%llu frees=%llu "
          "ops/s=%.2f drained=%llu waits=%llu inbox_max=%u overflow=%llu "
          "fallback_objects=%llu generation_reject=0 gate_open=1\n",
-         seconds, (unsigned long long)state.allocs,
+         seconds, drain_interval, (unsigned long long)state.allocs,
          (unsigned long long)state.frees,
          (double)state.frees * 1000.0 / (double)elapsed,
          (unsigned long long)state.drained, (unsigned long long)state.waits,

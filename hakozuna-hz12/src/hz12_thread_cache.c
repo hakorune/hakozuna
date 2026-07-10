@@ -357,6 +357,20 @@ void hz12_thread_cache_push_overflow_slow(H12ThreadCache* tc, uint8_t class_id,
   }
 }
 
+void hz12_thread_cache_reclaim_checkpoint(void) {
+  H12ThreadCache* tc = hz12_tls;
+  uint32_t class_id;
+  if (!tc) return;
+  for (class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
+    hz12_thread_cache_flush_class(tc, (uint8_t)class_id);
+#if HZ12_CLASSIFY_SPAN
+    tc->current[class_id].base = NULL;
+    tc->current[class_id].bump_index = 0u;
+    tc->current[class_id].slot_count = 0u;
+#endif
+  }
+}
+
 void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
 #if !HZ12_CLASSIFY_SPAN && !HZ12_ENABLE_HOT_COUNTERS
   (void)tc; /* token lane: tc only used for the now-compiled-out refill_count */

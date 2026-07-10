@@ -21,6 +21,7 @@ typedef struct H12SpanAccountingRecord {
   uint32_t allocated;
   uint32_t released;
   uint32_t live;
+  uint32_t carved_slots;
   uint8_t class_id;
   uint8_t accounting_candidate;
 } H12SpanAccountingRecord;

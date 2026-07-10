@@ -1,6 +1,6 @@
 # HZ12 Current Task
 
-## Active: Windows Token Xowner Pipeline L4-B
+## Completed: Windows Bounded Reclaim Lifecycle L5-F
 
 HZ12 opens from HZ11's deterministic Windows cross-owner pipeline evidence.
 The first box is diagnostic-only. It must not change HZ11 or introduce an HZ12
@@ -232,3 +232,101 @@ This is expected control cost from the deliberately eager drain policy, not a
 production comparison. Keep L4-B as safe token-routing evidence; do not promote
 it. Any future drain-interval policy probe must remain separate from the L4-B
 lifecycle contract and preserve ownerless fallback.
+
+L4-C now sweeps token-inbox drain intervals of 1..256 allocations in the same
+1P/1C diagnostic pipeline. It records throughput, inbox peak, bounded
+ownerless fallback, rejection counters, and retirement completion. L4-B's
+interval-one control remains the safety baseline.
+
+L4-C result: no interval is a promotion candidate. The initial R3 sweep showed
+more fallback as intervals widened; interval 8 looked clean initially but had
+2/10 fallback runs, and interval 16 had 3/10 fallback runs in focused R10.
+Both retained zero registry/generation rejection and completed the retirement
+gate, so ownerless fallback is safe. However, Windows scheduling can fill the
+1,024-object inbox even under eager drain. Freeze drain policy as diagnostic
+evidence: do not default it, do not use it for a throughput claim, and do not
+raise the cap without a separate RSS/Pareto study.
+
+L5-A now opens as a read-only retired-owner reclaim shadow. A separate
+generation-aware side table narrows span discovery; L3-D proves owner
+quiescence; the existing L2 reclaim gate remains the sole span safety
+authority. `detach_ready_bytes` and fully gated `reclaimable_bytes` are reported
+separately, and incomplete foreign-cache scope forces both to zero.
+
+L5-A result: the dedicated smoke passed repeat-20. With incomplete foreign
+cache scope it reported zero bytes. With complete scope but before detach it
+identified one accounting candidate blocked by current-span, front-cache,
+returned-sink, and route witnesses. After the already-proven L2 ordered detach,
+the same owner span reported exactly 65,536 reclaimable bytes. Reusing the owner
+slot with a new generation produced one stale span and zero attributed bytes.
+L5-A remains read-only; the test invokes L2 detach only to validate the positive
+observation boundary.
+
+L5-A wide_ws-like attribution result: repeat-5 found 72.19..79.25 MiB of
+physical full-span accounting candidates (median 72.88 MiB) against median
+peak RSS 82.00 MiB. This explains roughly 89% of the observed RSS scale. The
+runner uses the matrix thread/iteration/working-set/size shape but omits its
+periodic realloc, so it is structural evidence rather than a benchmark score.
+`reclaimable_bytes` remains correctly zero because foreign-thread cache scope
+has not yet been proven complete. Next: L5-B class-flush checkpoint shadow.
+
+L5-B result: each of eight enrolled workers explicitly flushed its class cache,
+cleared diagnostic current-span references, and acknowledged the owner epoch
+before exit. Repeat-5 removed all foreign-scope/current/front blockers and found
+80.19..81.25 MiB of physical full-span candidates (median 80.75 MiB) against
+89.70 MiB median peak RSS. All candidate spans remain blocked by the returned
+sink and route; reclaimable bytes remain zero. Next: L5-C bounded quiescent
+returned-sink detach, route last, with no decommit yet.
+
+L5-C result: the wide_ws-like diagnostic completed a fixed 64-span budget in
+repeat-3. Every run attempted and detached exactly 64 spans, failed zero times,
+removed exactly 4.00 MiB from returned-sink ownership, detached each route last,
+and observed exactly 4.00 MiB as fully gated reclaimable bytes afterward.
+Candidate pools remained much larger (67.94..73.44 MiB in this repeat), proving
+the budget rather than candidate scarcity limited behavior. No span was
+decommitted or inserted into the depot. Next: L5-D bounded decommit of only the
+L5-C success set, still without automatic production policy.
+
+L5-D result: the 64-span wide_ws-like lane passed repeat-3. Every run
+decommitted 64/64 gate-open spans, failed zero times, and released exactly
+4.00 MiB. Working-set RSS fell by 3.99 MiB in every run (72.48->68.49,
+83.46->79.47, and 82.30->78.31 MiB). This directly validates the HZ12 low-RSS
+charter at a fixed bounded budget. No span entered the depot and no automatic
+reclaim policy ran. Next: L5-E bounded depot insertion/recommit cycle for only
+the L5-D success set.
+
+L5-E now connects only the bounded L5-D set to the existing 64-span depot. It
+must prove exact-address return, generation ownership, recommit-before-route,
+accounting reset, current-span installation, and an empty depot after the
+cycle. The explicit checkpoint between same-class takes is diagnostic-only.
+No automatic reclaim, depot admission, or normal malloc/free policy is added.
+
+L5-E result: the fixed wide_ws-like lane passed repeat-3. Each run detached,
+decommitted, inserted, took, and recommitted exactly 64/64 spans (4.00 MiB).
+All returned addresses belonged to the inserted set, owner generation mismatch
+was zero, all 64 explicit current checkpoints completed, and the depot ended
+empty. The pre-recommit L5-D RSS observation still fell by 3.99-4.00 MiB.
+This is GO as bounded lifecycle evidence only.
+
+## Next Decision
+
+L5-F may exercise a bounded subset of the recommitted spans through real slot
+allocation and payload touch, then require a second ordered detach/decommit
+cycle. It must remain diagnostic-only and must not introduce automatic reclaim
+or depot admission. If a recommitted span cannot complete that second cycle
+without route/accounting mismatch, stop before policy work.
+
+L5-F result: repeat-3 completed the full 64-span second cycle. Every run put,
+took, recommitted, exercised, detached again, decommitted again, and returned
+64/64 spans to the bounded depot. Each selected span touched every class slot
+(9,984..10,048 slots per run), redecommitted exactly 4.00 MiB, and ended with
+address mismatch 0, owner-generation mismatch 0, failures 0, and depot count
+64. The Windows bounded reclaim lifecycle is complete as mechanism evidence.
+
+## Frozen Boundary
+
+The L5 chain is now frozen. It proves that retired-owner spans can be identified,
+quiesced, detached, decommitted, recommitted at the same address, used through
+normal free, and reclaimed again. It does not select candidates automatically.
+Any production pacing/scanning/depot-admission policy must begin as a separate
+diagnostic lane with RSS and throughput acceptance gates.

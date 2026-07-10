@@ -47,6 +47,27 @@ src/hz12_owner_epoch.*
 
 src/hz12_owner_retire_gate.*
   controlled teardown query composing epoch acknowledgement and inbox drain
+
+src/hz12_span_owner_shadow.*
+  generation-aware advisory owner side table; span payload independent
+
+src/hz12_retired_reclaim_shadow.*
+  read-only composition of owner retirement and the existing L2 reclaim gate
+
+src/hz12_retired_reclaim_detach.*
+  bounded retired-owner ordered detach; no decommit or depot policy
+
+src/hz12_retired_reclaim_decommit.*
+  bounded gate-open Windows decommit; no depot or recommit policy
+
+src/hz12_retired_reclaim_depot_cycle.*
+  diagnostic bounded depot insertion and same-address recommit verification
+
+src/hz12_reclaim_carve_diag.*
+  diagnostic-only direct carve from an explicitly installed current span
+
+src/hz12_retired_reclaim_recycle.*
+  bounded touch/free and second detach/decommit lifecycle verification
 ```
 
 The dependency direction is one-way: the reclaim gate reads allocator and

@@ -202,6 +202,7 @@ H12ThreadCache* hz12_thread_cache_init_slow(void);
 void hz12_thread_cache_push_overflow_slow(H12ThreadCache* tc, uint8_t class_id,
                                           void* ptr);
 void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id);
+void hz12_thread_cache_reclaim_checkpoint(void);
 void hz12_current_span_pool_dump_stats(void);
 
 /* ---------- hot path (static inline) ---------- */
