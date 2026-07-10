@@ -358,6 +358,76 @@ int hz12_returned_snapshot_span(uint8_t class_id, const void* span_base,
   return 1;
 }
 
+int hz12_returned_detach_complete_span(uint8_t class_id,
+                                       const void* span_base,
+                                       H12ReturnedSpanSnapshot* out) {
+  uint64_t slots[HZ12_SPAN_BYTES / HZ12_MIN_SIZE / 64u];
+  const uintptr_t begin = (uintptr_t)span_base;
+  const uintptr_t end = begin + HZ12_SPAN_BYTES;
+  const size_t slot_bytes = hz12_class_slot_size(class_id);
+  H12Returned* returned;
+  void* current;
+  void** link;
+  if (!out || class_id >= HZ12_CLASS_COUNT || !span_base || slot_bytes == 0u) {
+    return 0;
+  }
+  memset(out, 0, sizeof(*out));
+  memset(slots, 0, sizeof(slots));
+  out->slot_capacity = (uint32_t)(HZ12_SPAN_BYTES / slot_bytes);
+  returned = &hz12_returned[class_id];
+  hz12_mutex_lock(&returned->lock);
+  current = returned->head;
+  while (current) {
+    const uintptr_t value = (uintptr_t)current;
+    void* next = *(void**)current;
+    if (value >= begin && value < end) {
+      const uintptr_t offset = value - begin;
+      uint32_t slot;
+      uint32_t word;
+      uint64_t mask;
+      out->objects += 1u;
+      if ((offset % slot_bytes) != 0u) {
+        out->invalid_slots += 1u;
+        current = next;
+        continue;
+      }
+      slot = (uint32_t)(offset / slot_bytes);
+      if (slot >= out->slot_capacity) {
+        out->invalid_slots += 1u;
+        current = next;
+        continue;
+      }
+      word = slot / 64u;
+      mask = UINT64_C(1) << (slot % 64u);
+      if ((slots[word] & mask) != 0u) {
+        out->duplicate_slots += 1u;
+      } else {
+        slots[word] |= mask;
+        out->unique_slots += 1u;
+      }
+    }
+    current = next;
+  }
+  out->complete = (uint8_t)(out->unique_slots == out->slot_capacity &&
+      out->objects == out->slot_capacity && out->duplicate_slots == 0u &&
+      out->invalid_slots == 0u);
+  if (!out->complete) {
+    hz12_mutex_unlock(&returned->lock);
+    return 0;
+  }
+  link = &returned->head;
+  while (*link) {
+    current = *link;
+    if ((uintptr_t)current >= begin && (uintptr_t)current < end) {
+      *link = *(void**)current;
+    } else {
+      link = (void**)current;
+    }
+  }
+  hz12_mutex_unlock(&returned->lock);
+  return 1;
+}
+
 uint32_t hz12_returned_detach_span(uint8_t class_id,
                                    const void* span_base) {
   const uintptr_t begin = (uintptr_t)span_base;

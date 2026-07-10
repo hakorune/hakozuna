@@ -18,6 +18,7 @@
 #include "hz12_retired_reclaim_decommit.h"
 #include "hz12_retired_reclaim_detach.h"
 #include "hz12_retired_reclaim_recycle.h"
+#include "hz12_snapshot_reclaim.h"
 #include "hz12_span.h"
 #include "hz12_span_accounting.h"
 #include "hz12_span_owner_shadow.h"
@@ -25,6 +26,10 @@
 #include "hz12_token_inbox.h"
 
 #define H12_LEDGER_WIDE_SPANS 64u
+
+#ifndef HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+#define HZ12_SNAPSHOT_RECLAIM_BEHAVIOR 0u
+#endif
 
 #ifndef HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
 #define HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR 0u
@@ -101,6 +106,9 @@ int main(void) {
   H12RetiredReclaimDetachResult detach = {0};
   H12RetiredReclaimDecommitResult decommit = {0};
   H12RetiredReclaimRecycleResult recycle = {0};
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  H12SnapshotReclaimResult snapshot_reclaim = {0};
+#endif
   PROCESS_MEMORY_COUNTERS_EX memory_before = {0};
   PROCESS_MEMORY_COUNTERS_EX memory_after = {0};
   HANDLE owner_thread;
@@ -188,7 +196,24 @@ int main(void) {
       snapshot_mismatches != 0u) {
     return 11;
   }
-#if HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  memory_before.cb = sizeof(memory_before);
+  (void)GetProcessMemoryInfo(GetCurrentProcess(),
+      (PROCESS_MEMORY_COUNTERS*)&memory_before, sizeof(memory_before));
+  if (!h12_snapshot_reclaim_retired_bounded(
+          state.owner, H12_LEDGER_WIDE_SPANS, &snapshot_reclaim) ||
+      snapshot_reclaim.candidates != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.detached != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.decommitted != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.failed != 0u ||
+      snapshot_reclaim.decommitted_bytes !=
+          (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES) {
+    return 12;
+  }
+  memory_after.cb = sizeof(memory_after);
+  (void)GetProcessMemoryInfo(GetCurrentProcess(),
+      (PROCESS_MEMORY_COUNTERS*)&memory_after, sizeof(memory_after));
+#elif HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
   memory_before.cb = sizeof(memory_before);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
       (PROCESS_MEMORY_COUNTERS*)&memory_before, sizeof(memory_before));
@@ -249,6 +274,16 @@ int main(void) {
          snapshot_candidates, snapshot_mismatches,
          (unsigned long long)memory_before.WorkingSetSize,
          (unsigned long long)memory_after.WorkingSetSize);
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  printf("[HZ12_SNAPSHOT_RECLAIM] budget=%u candidates=%u detached=%u "
+         "decommitted=%u failed=%u bytes=%llu rss_delta=%lld\n",
+         snapshot_reclaim.budget, snapshot_reclaim.candidates,
+         snapshot_reclaim.detached, snapshot_reclaim.decommitted,
+         snapshot_reclaim.failed,
+         (unsigned long long)snapshot_reclaim.decommitted_bytes,
+         (long long)memory_before.WorkingSetSize -
+             (long long)memory_after.WorkingSetSize);
+#endif
   free(state.objects);
   return 0;
 }

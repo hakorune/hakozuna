@@ -592,3 +592,14 @@ is the first authority placement compatible with the speed gate by
 construction. Next: a separate retire-only behavior sibling may consume at
 most 64 snapshot-proven spans / 4 MiB; continuous bitmap/count controls remain
 NO-GO and must not enter the speed lane.
+
+P1 retire-only snapshot behavior result: a separate sibling lane now consumes
+only snapshot-proven spans after the owner epoch, token inbox, and real
+flush-owner inbox gates are open. The bounded call is hard-capped at 64 spans
+(4 MiB), validates and detaches the complete returned-slot set under one sink
+lock, detaches the route last, and then decommits the payload. Repeat-10
+completed 64/64 detaches and decommits with zero failures and an exact 4 MiB
+working-set reduction in every run. The P0-D shadow executable still performs
+zero mutation. This is retire-only diagnostic behavior, not an automatic
+pressure policy and not a speed-lane change. Next: bounded depot handoff for
+the P1 success set; do not reopen continuous bitmap/count accounting.
