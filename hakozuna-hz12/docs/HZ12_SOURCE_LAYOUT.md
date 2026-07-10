@@ -21,11 +21,13 @@ src/hz12_shadow.*
 src/hz12_inbox.*
   bounded owner inbox and retired-owner adoption
 
-future src/hz12_flush_owner_route.*
-  proposed FlushTimeOwnerRouting-L1 boundary: receive an already-cold class
+src/hz12_flush_owner_route.*
+  FlushTimeOwnerRouting-L1 boundary: receive an already-cold class
   cache batch, split local/foreign owners, publish foreign groups, and send
   local/unknown-safe objects to the existing returned sink. It must not run an
   owner lookup on normal free.
+  ColdSpanOwner-L1 assigns advisory ownership only when a span becomes current
+  and drains an owner inbox only at current-span replacement.
 
 src/hz12_span_accounting.*
   diagnostic per-span alloc/free/live accounting

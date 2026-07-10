@@ -1,6 +1,6 @@
 # HZ12 Current Task
 
-## Restart Surface: FlushTimeOwnerRouting-L1 HOLD
+## Restart Surface: ColdSpanOwner-L1 GO Candidate
 
 The public HZ12 core remains unchanged. A Windows-only opt-in prototype now
 records advisory ownership on allocation, keeps normal free owner-blind, and
@@ -21,13 +21,15 @@ xowner R5, 4 producer / 4 consumer:
   tcmalloc                    36.318M / 13.81 MiB peak
 ```
 
-Decision: keep FlushTimeOwnerRouting-L1 as opt-in mechanism evidence. It
-doubles HZ11 cross-owner throughput and stays below tcmalloc RSS in this row,
-but its local regression exceeds the 3% acceptance gate and it reaches only
-72% of tcmalloc throughput. Do not promote it or tune drain/cap knobs further.
-The next design step, if pursued, is a new cold-path owner-local batch ledger
-that avoids allocation shadow-map traffic and per-refill polling; do not add a
-per-free owner lookup.
+FlushTimeOwnerRouting-L1 remains HOLD. ColdSpanOwner-L1 moves owner assignment
+to 64 KiB current-span acquisition and drains only at current-span replacement.
+It restored local random_mixed to within -1.4..-2.5% of core and reached
+29.064M ops/s with 11.32 MiB peak RSS in the fixed xowner R5. This is 11.1%
+faster than the first integrated route and 25.2% lower peak RSS than tcmalloc.
+
+Decision: GO as the selected opt-in integration candidate, not default. Next:
+prove bounded thread churn and generation-safe owner-slot reuse. Do not add a
+per-free owner lookup or make owner metadata a safety authority.
 
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 

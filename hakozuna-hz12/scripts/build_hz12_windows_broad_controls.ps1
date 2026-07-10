@@ -100,6 +100,20 @@ function Invoke-FlushRouteInertBuild([string]$Bench, [string]$Output) {
     if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 }
 
+function Invoke-ColdSpanOwnerBuild([string]$Bench, [string]$Output) {
+    $args = $Common + @(
+        "/DHZ12_FLUSH_OWNER_ROUTE=1",
+        "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+        "/DHZ12_SHADOW_OWNER_FAST_LOAD=1",
+        "/DHZ12_SHADOW_DIAG_COUNTERS=0",
+        $Bench, $Shadow, $FlushOwnerRoute
+    ) + $Sources + @(
+        "psapi.lib", "/link", "/out:$Output"
+    )
+    & clang-cl @args
+    if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+}
+
 Invoke-Build $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_core.exe")
 Invoke-Build $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_core.exe")
 Invoke-OwnerMapBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ownermap.exe")
@@ -111,4 +125,7 @@ Invoke-FlushRouteBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_flush
 Invoke-FlushRouteBuild $XownerBench (Join-Path $OutDir "bench_xowner_hz12_flushroute.exe")
 Invoke-FlushRouteInertBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_flushroute_inert.exe")
 Invoke-FlushRouteInertBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_flushroute_inert.exe")
+Invoke-ColdSpanOwnerBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_coldspanowner.exe")
+Invoke-ColdSpanOwnerBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_coldspanowner.exe")
+Invoke-ColdSpanOwnerBuild $XownerBench (Join-Path $OutDir "bench_xowner_hz12_coldspanowner.exe")
 Write-Host "Built HZ12 Windows broad controls in: $OutDir"

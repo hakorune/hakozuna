@@ -420,7 +420,8 @@ void hz12_thread_cache_reclaim_checkpoint(void) {
 }
 
 void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
-#if HZ12_FLUSH_OWNER_ROUTE && !HZ12_FLUSH_OWNER_ROUTE_INERT
+#if HZ12_FLUSH_OWNER_ROUTE && !HZ12_FLUSH_OWNER_ROUTE_INERT && \
+    !HZ12_FLUSH_OWNER_COLD_SPAN
   tc->flush_owner_refill_tick += 1u;
   if ((tc->flush_owner_refill_tick & 255u) == 0u) {
     hz12_flush_owner_route_drain(tc);
@@ -453,6 +454,13 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
       H12SpanCurrent* cs = &tc->current[class_id];
       while (n < HZ12_TRANSFER_BATCH) {
         if (!cs->base || cs->bump_index >= cs->slot_count) {
+#if HZ12_FLUSH_OWNER_COLD_SPAN
+          void* routed = hz12_flush_owner_route_drain_for_class(tc, class_id);
+          if (routed) {
+            tmp[n++] = routed;
+            continue;
+          }
+#endif
           if (cs->base && cs->bump_index >= cs->slot_count) {
             hz12_span_source_diag_current_exhaust(class_id);
           }
@@ -481,6 +489,9 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
           cs->bump_index = 0u;
           cs->slot_count = (uint32_t)(HZ12_SPAN_BYTES / slot);
           hz12_span_return_register_active_span(class_id, base, cs->slot_count);
+#if HZ12_FLUSH_OWNER_COLD_SPAN
+          hz12_flush_owner_route_assign_span(tc, base);
+#endif
         }
         tmp[n++] = cs->base + (size_t)cs->bump_index++ * slot;
       }
@@ -500,6 +511,12 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
 #elif HZ12_CLASSIFY_SPAN
   size_t slot = hz12_class_slot_size(class_id);
   H12SpanCurrent* cs = &tc->current[class_id];
+#if HZ12_FLUSH_OWNER_COLD_SPAN
+  if (!cs->base || cs->bump_index >= cs->slot_count) {
+    void* routed = hz12_flush_owner_route_drain_for_class(tc, class_id);
+    if (routed) return routed;
+  }
+#endif
 #if HZ12_RETURNED_REFILL_COLD_SKIP
   if (class_id < HZ12_CLASS_COUNT &&
       tc->returned_refill_cold_skip[class_id] > 0u && cs->base &&
@@ -630,6 +647,9 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
   cs->base = base;
   cs->bump_index = 0;
   cs->slot_count = (uint32_t)(HZ12_SPAN_BYTES / slot);
+#if HZ12_FLUSH_OWNER_COLD_SPAN
+  hz12_flush_owner_route_assign_span(tc, base);
+#endif
   return cs->base + (size_t)cs->bump_index++ * slot;
 #else
   return hz12_sys_malloc(hz12_class_slot_size(class_id));

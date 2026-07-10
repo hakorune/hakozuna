@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Compare", "Hz12AA", "AccountingAB", "CounterAB", "SpeedCompare", "RoutingAB", "OwnerMapAB", "OwnerFastCompare", "OwnerFastFullCompare", "FlushRouteCompare")]
+    [ValidateSet("Compare", "Hz12AA", "AccountingAB", "CounterAB", "SpeedCompare", "RoutingAB", "OwnerMapAB", "OwnerFastCompare", "OwnerFastFullCompare", "FlushRouteCompare", "ColdSpanOwnerCompare")]
     [string]$Mode = "Compare",
     [string]$OutputPath,
     [int]$Rounds = 5,
@@ -35,13 +35,13 @@ if ($CooldownMilliseconds -lt 0) { throw "CooldownMilliseconds cannot be negativ
 if (-not $SkipBuild) {
     if ($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
         $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
-        $Mode -eq "FlushRouteCompare") {
+        $Mode -eq "FlushRouteCompare" -or $Mode -eq "ColdSpanOwnerCompare") {
         & $Hz11Build
         if ($LASTEXITCODE -ne 0) { throw "HZ11/tcmalloc build failed: $LASTEXITCODE" }
     }
     & $Hz12Build
     if ($LASTEXITCODE -ne 0) { throw "HZ12 build failed: $LASTEXITCODE" }
-    if ($Mode -eq "FlushRouteCompare") {
+    if ($Mode -eq "FlushRouteCompare" -or $Mode -eq "ColdSpanOwnerCompare") {
         & $Hz12BroadBuild
         if ($LASTEXITCODE -ne 0) { throw "HZ12 broad build failed: $LASTEXITCODE" }
     }
@@ -93,6 +93,11 @@ $rowCatalog = @{
         Pattern = "\[XOWNER_PIPELINE\]"
         Flags = "/O2 /DNDEBUG HZ12_CLASSIFY_SPAN=1 HZ12_CACHE_CAP=256 flush_owner_route=on owner_fast_load=on accounting=off diag_counters=off drain_pace=256"
     }
+    "hz12-coldspanowner" = @{
+        Path = (Join-Path $Hz12BroadSuite "bench_xowner_hz12_coldspanowner.exe")
+        Pattern = "\[XOWNER_PIPELINE\]"
+        Flags = "/O2 /DNDEBUG HZ12_CLASSIFY_SPAN=1 HZ12_CACHE_CAP=256 flush_owner_route=on cold_span_owner=on accounting=off diag_counters=off"
+    }
     "tcmalloc" = @{
         Path = (Join-Path $Hz11Suite "bench_xowner_tcmalloc.exe")
         Pattern = "\[XOWNER_PIPELINE\]"
@@ -111,6 +116,7 @@ $rowNames = switch ($Mode) {
     "OwnerFastCompare" { @("hz12-owner-inbox-ownerfastload", "tcmalloc") }
     "OwnerFastFullCompare" { @("hz11-ownerless", "hz12-owner-inbox-ownerfastload", "tcmalloc") }
     "FlushRouteCompare" { @("hz11-ownerless", "hz12-flushroute-integrated", "hz12-owner-inbox-ownerfastload", "tcmalloc") }
+    "ColdSpanOwnerCompare" { @("hz12-flushroute-integrated", "hz12-coldspanowner", "hz12-owner-inbox-ownerfastload", "tcmalloc") }
 }
 
 foreach ($name in $rowNames) {
@@ -120,7 +126,7 @@ foreach ($name in $rowNames) {
 }
 if (($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
      $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
-     $Mode -eq "FlushRouteCompare") -and
+     $Mode -eq "FlushRouteCompare" -or $Mode -eq "ColdSpanOwnerCompare") -and
     -not (Test-Path $TcDll)) {
     throw "Missing tcmalloc runtime: $TcDll"
 }
@@ -185,7 +191,7 @@ foreach ($name in $rowNames) {
 }
 if ($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
     $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
-    $Mode -eq "FlushRouteCompare") {
+    $Mode -eq "FlushRouteCompare" -or $Mode -eq "ColdSpanOwnerCompare") {
     $manifests += Get-FileManifest "tcmalloc_minimal.dll" $TcDll "gperftools 2.16 minimal runtime"
 }
 

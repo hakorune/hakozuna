@@ -57,6 +57,7 @@ $Executables = @(
     @{ Name = "hz12-ownermap"; Path = (Join-Path $Hz12SuiteDir "bench_mixed_ws_hz12_ownermap.exe") },
     @{ Name = "hz12-allocmap"; Path = (Join-Path $Hz12SuiteDir "bench_mixed_ws_hz12_allocmap.exe") },
     @{ Name = "hz12-flushroute"; Path = (Join-Path $Hz12SuiteDir "bench_mixed_ws_hz12_flushroute.exe") },
+    @{ Name = "hz12-coldspanowner"; Path = (Join-Path $Hz12SuiteDir "bench_mixed_ws_hz12_coldspanowner.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz6_rss.exe") },

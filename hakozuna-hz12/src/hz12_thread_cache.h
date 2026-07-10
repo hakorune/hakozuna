@@ -122,6 +122,10 @@
 #define HZ12_FLUSH_OWNER_ROUTE_INERT 0u
 #endif
 
+#ifndef HZ12_FLUSH_OWNER_COLD_SPAN
+#define HZ12_FLUSH_OWNER_COLD_SPAN 0u
+#endif
+
 /* HZ12CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H12ClassCache[13] into two parallel arrays with power-of-2
  * strides (256B items + 4B counts), eliminating the *264 address chain.

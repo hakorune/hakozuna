@@ -168,7 +168,7 @@ void* hz12_malloc(size_t size) {
   }
   result = hz12_malloc_fast_with_tc(tc, size);
 #endif
-#if HZ12_FLUSH_OWNER_ROUTE
+#if HZ12_FLUSH_OWNER_ROUTE && !HZ12_FLUSH_OWNER_COLD_SPAN
   if (result && hz12_tls && hz12_tls->flush_owner_valid) {
     h12_shadow_on_alloc(result, hz12_tls->flush_owner_id);
   }

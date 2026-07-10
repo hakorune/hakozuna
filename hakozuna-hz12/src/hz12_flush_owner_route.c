@@ -85,6 +85,11 @@ void hz12_flush_owner_route_attach(H12ThreadCache* tc) {
   tc->flush_owner_valid = 1u;
 }
 
+void hz12_flush_owner_route_assign_span(H12ThreadCache* tc, void* span_base) {
+  if (!tc || !tc->flush_owner_valid || !span_base) return;
+  h12_shadow_on_alloc(span_base, tc->flush_owner_id);
+}
+
 void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
                                   void** items, uint32_t count) {
   void* heads[HZ12_SHADOW_MAX_OWNERS];
@@ -156,4 +161,11 @@ void hz12_flush_owner_route_drain(H12ThreadCache* tc) {
       head = next;
     }
   }
+}
+
+void* hz12_flush_owner_route_drain_for_class(H12ThreadCache* tc,
+                                              uint8_t class_id) {
+  if (!tc || class_id >= HZ12_CLASS_COUNT) return NULL;
+  hz12_flush_owner_route_drain(tc);
+  return hz12_thread_cache_pop(tc, class_id);
 }
