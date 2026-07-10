@@ -28,6 +28,10 @@ void h12_shadow_on_alloc_token(void* ptr, uint32_t owner_id,
 int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id);
 int h12_shadow_owner_token_for_ptr(const void* ptr, uint32_t* owner_id,
                                    uint32_t* generation);
+int h12_shadow_rehome_token(const void* ptr, uint32_t owner_id,
+                            uint32_t generation);
+int h12_shadow_clear_token_if(const void* ptr, uint32_t owner_id,
+                              uint32_t generation);
 int h12_shadow_batch_all_owner(void** items, uint32_t count,
                                uint32_t owner_id);
 int h12_shadow_batch_all_owner_token(void** items, uint32_t count,

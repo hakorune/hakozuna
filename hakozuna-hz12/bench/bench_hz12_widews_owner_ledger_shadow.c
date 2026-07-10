@@ -19,6 +19,8 @@
 #include "hz12_retired_reclaim_detach.h"
 #include "hz12_retired_reclaim_recycle.h"
 #include "hz12_snapshot_reclaim.h"
+#include "hz12_snapshot_recycle.h"
+#include "hz12_shadow.h"
 #include "hz12_span.h"
 #include "hz12_span_accounting.h"
 #include "hz12_span_depot_core.h"
@@ -31,6 +33,12 @@
 #ifndef HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
 #define HZ12_SNAPSHOT_RECLAIM_BEHAVIOR 0u
 #endif
+#ifndef HZ12_SNAPSHOT_RECYCLE_BEHAVIOR
+#define HZ12_SNAPSHOT_RECYCLE_BEHAVIOR 0u
+#endif
+#ifndef HZ12_SNAPSHOT_RECYCLE_ROLLBACK
+#define HZ12_SNAPSHOT_RECYCLE_ROLLBACK 0u
+#endif
 
 #ifndef HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
 #define HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR 0u
@@ -40,6 +48,7 @@ typedef struct H12LedgerWideState {
   void** objects;
   uint32_t slots_per_span;
   uint32_t total_objects;
+  uint8_t class_id;
   H12OwnerToken owner;
   H12OwnerEpochParticipant participant;
   volatile LONG ready;
@@ -64,6 +73,7 @@ static unsigned __stdcall h12_ledger_wide_owner(void* arg) {
   slot_bytes = hz12_class_slot_size(class_id);
   if (slot_bytes == 0u) return 4u;
   state->slots_per_span = (uint32_t)(HZ12_SPAN_BYTES / slot_bytes);
+  state->class_id = class_id;
   state->total_objects = H12_LEDGER_WIDE_SPANS * state->slots_per_span;
   h12_span_accounting_on_alloc(state->objects[0]);
   for (uint32_t i = 1u; i < state->total_objects; ++i) {
@@ -109,6 +119,10 @@ int main(void) {
   H12RetiredReclaimRecycleResult recycle = {0};
 #if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
   H12SnapshotReclaimResult snapshot_reclaim = {0};
+#if HZ12_SNAPSHOT_RECYCLE_BEHAVIOR
+  H12SnapshotRecycleResult snapshot_recycle = {0};
+  void* recycled_object = NULL;
+#endif
 #endif
   PROCESS_MEMORY_COUNTERS_EX memory_before = {0};
   PROCESS_MEMORY_COUNTERS_EX memory_after = {0};
@@ -218,6 +232,50 @@ int main(void) {
   memory_after.cb = sizeof(memory_after);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
       (PROCESS_MEMORY_COUNTERS*)&memory_after, sizeof(memory_after));
+#if HZ12_SNAPSHOT_RECYCLE_BEHAVIOR
+#if HZ12_SNAPSHOT_RECYCLE_ROLLBACK
+  recycled_object = hz12_malloc(64u);
+  if (!recycled_object ||
+      h12_snapshot_recycle_take(state.class_id, &snapshot_recycle) ||
+      !snapshot_recycle.rollback || snapshot_recycle.recommitted ||
+      snapshot_recycle.route_attached || snapshot_recycle.owner_assigned ||
+      snapshot_recycle.current_installed ||
+      h12_span_depot_core_count() != H12_LEDGER_WIDE_SPANS) {
+    return 16;
+  }
+  {
+    MEMORY_BASIC_INFORMATION memory;
+    H12OwnerToken unexpected_owner;
+    uint32_t route_owner;
+    uint32_t route_generation;
+    uint32_t recycled_span_id = (uint32_t)(
+        ((uintptr_t)snapshot_recycle.span_base -
+         (uintptr_t)hz12_arena_base) >> HZ12_SPAN_SHIFT);
+    if (VirtualQuery(snapshot_recycle.span_base, &memory, sizeof(memory)) !=
+            sizeof(memory) || memory.State != MEM_RESERVE ||
+        hz12_span_class[recycled_span_id] != 0u ||
+        h12_shadow_owner_token_for_ptr(snapshot_recycle.span_base,
+                                       &route_owner, &route_generation) ||
+        h12_span_owner_shadow_query(recycled_span_id, &unexpected_owner)) {
+      return 17;
+    }
+  }
+  hz12_free(recycled_object);
+  hz12_thread_cache_reclaim_checkpoint();
+#else
+  if (!h12_snapshot_recycle_take(state.class_id, &snapshot_recycle) ||
+      !snapshot_recycle.recommitted || !snapshot_recycle.route_attached ||
+      !snapshot_recycle.owner_assigned ||
+      !snapshot_recycle.current_installed || snapshot_recycle.rollback ||
+      h12_span_depot_core_count() != H12_LEDGER_WIDE_SPANS - 1u) {
+    return 13;
+  }
+  recycled_object = hz12_malloc(64u);
+  if (recycled_object != snapshot_recycle.span_base) return 14;
+  hz12_free(recycled_object);
+  hz12_thread_cache_reclaim_checkpoint();
+#endif
+#endif
 #elif HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
   memory_before.cb = sizeof(memory_before);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
@@ -289,6 +347,45 @@ int main(void) {
          (unsigned long long)snapshot_reclaim.decommitted_bytes,
          (long long)memory_before.WorkingSetSize -
              (long long)memory_after.WorkingSetSize);
+#endif
+#if HZ12_SNAPSHOT_RECYCLE_BEHAVIOR
+#if HZ12_SNAPSHOT_RECYCLE_ROLLBACK
+  printf("[HZ12_SNAPSHOT_RECYCLE_ROLLBACK] class=%u rollback=%u "
+         "depot_remaining=%u reserve=1 route=0 owner=0\n",
+         (unsigned)snapshot_recycle.class_id,
+         (unsigned)snapshot_recycle.rollback, h12_span_depot_core_count());
+#else
+  {
+    H12OwnerToken recycled_owner;
+    uint32_t route_owner;
+    uint32_t route_generation;
+    uint32_t recycled_span_id;
+    recycled_span_id = (uint32_t)(
+        ((uintptr_t)snapshot_recycle.span_base -
+         (uintptr_t)hz12_arena_base) >> HZ12_SPAN_SHIFT);
+    if (!hz12_tls || !hz12_tls->flush_owner_valid ||
+        !h12_shadow_owner_token_for_ptr(snapshot_recycle.span_base,
+                                        &route_owner, &route_generation) ||
+        !h12_span_owner_shadow_query(recycled_span_id, &recycled_owner) ||
+        route_owner != hz12_tls->flush_owner_id ||
+        route_generation != hz12_tls->flush_owner_generation ||
+        recycled_owner.slot != hz12_tls->flush_owner_id ||
+        recycled_owner.generation != hz12_tls->flush_owner_generation ||
+        (recycled_owner.slot == state.owner.slot &&
+         recycled_owner.generation == state.owner.generation)) {
+      return 15;
+    }
+  }
+  printf("[HZ12_SNAPSHOT_RECYCLE] class=%u recommitted=%u route=%u owner=%u "
+         "current=%u rollback=%u depot_remaining=%u exercised=%u\n",
+         (unsigned)snapshot_recycle.class_id,
+         (unsigned)snapshot_recycle.recommitted,
+         (unsigned)snapshot_recycle.route_attached,
+         (unsigned)snapshot_recycle.owner_assigned,
+         (unsigned)snapshot_recycle.current_installed,
+         (unsigned)snapshot_recycle.rollback, h12_span_depot_core_count(),
+         recycled_object == snapshot_recycle.span_base);
+#endif
 #endif
   free(state.objects);
   return 0;

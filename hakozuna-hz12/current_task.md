@@ -613,3 +613,15 @@ repeat-10, with zero failures, 4 MiB payload decommitted, and a stable
 depot-capacity smokes remained green, while P0-D remained mutation-free. Next:
 core-only bounded take/recommit/route/current installation with ordered
 rollback; automatic pressure policy remains closed.
+
+P3 core-only recycle result: the bounded depot can now recommit one span,
+attach its route, explicitly rehome both advisory owner side tables, install
+the span as the new thread's current source, and serve the first allocation at
+the exact recycled base without atomic accounting authority. The success lane
+passed repeat-10 with 63 depot entries remaining. A forced occupied-current
+lane also passed repeat-10: it cleared only the newly installed owner tokens,
+detached the route, restored `MEM_RESERVE`, and returned the span so the depot
+ended at 64. P0-D through P3 now form a complete bounded retirement lifecycle.
+Freeze lifecycle mechanics here. Next work must be a separately measured
+checkpoint policy gate; automatic pressure reclaim and speed-lane integration
+remain closed.

@@ -40,6 +40,16 @@ int h12_span_owner_shadow_assign(const void* ptr, H12OwnerToken owner) {
   return 1;
 }
 
+int h12_span_owner_shadow_clear_if(const void* ptr, H12OwnerToken owner) {
+  uint32_t span_id;
+  uint64_t expected;
+  if (owner.generation == 0u || !h12_span_owner_id(ptr, &span_id)) return 0;
+  expected = h12_span_owner_pack(owner);
+  return atomic_compare_exchange_strong_explicit(
+      &h12_span_owner_tokens[span_id], &expected, 0u,
+      memory_order_acq_rel, memory_order_acquire);
+}
+
 int h12_span_owner_shadow_query(uint32_t span_id, H12OwnerToken* out) {
   uint64_t packed;
   if (!out || span_id >= HZ12_SPAN_COUNT) return 0;

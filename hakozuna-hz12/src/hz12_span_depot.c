@@ -1,5 +1,6 @@
 #include "hz12_span_depot.h"
 
+#include "hz12_current_span_install.h"
 #include "hz12_span.h"
 #include "hz12_span_accounting.h"
 #include "hz12_span_depot_core.h"
@@ -28,27 +29,6 @@ static _Atomic uint64_t h12_recommit_fail;
 static _Atomic uint64_t h12_route_fail;
 static _Atomic uint64_t h12_current_install_fail;
 static _Atomic uint64_t h12_rollback;
-
-static int h12_depot_install_current(void* span_base, uint8_t class_id) {
-#if HZ12_CLASSIFY_SPAN
-  H12ThreadCache* cache = hz12_thread_cache_get();
-  H12SpanCurrent* current;
-  size_t slot_bytes;
-  if (!cache || class_id >= HZ12_CLASS_COUNT) return 0;
-  current = &cache->current[class_id];
-  if (current->base != NULL) return 0;
-  slot_bytes = hz12_class_slot_size(class_id);
-  if (slot_bytes == 0u) return 0;
-  current->base = (char*)span_base;
-  current->bump_index = 0u;
-  current->slot_count = (uint32_t)(HZ12_SPAN_BYTES / slot_bytes);
-  return 1;
-#else
-  (void)span_base;
-  (void)class_id;
-  return 0;
-#endif
-}
 
 void h12_span_depot_reset(void) {
   h12_span_depot_core_reset();
@@ -164,8 +144,8 @@ int h12_span_depot_take(uint8_t class_id, H12SpanDepotTakeResult* out) {
     atomic_fetch_add_explicit(&h12_route_fail, 1u, memory_order_relaxed);
     goto rollback;
   }
-  out->current_installed = (uint8_t)h12_depot_install_current(
-      entry.span_base, entry.class_id);
+  out->current_installed = (uint8_t)h12_current_span_install(
+      hz12_thread_cache_get(), entry.class_id, entry.span_base);
   if (!out->current_installed) {
     atomic_fetch_add_explicit(&h12_current_install_fail, 1u,
                               memory_order_relaxed);

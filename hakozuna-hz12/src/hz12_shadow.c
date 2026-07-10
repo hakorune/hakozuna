@@ -169,6 +169,34 @@ int h12_shadow_owner_token_for_ptr(const void* ptr, uint32_t* owner_id,
   return 1;
 }
 
+int h12_shadow_rehome_token(const void* ptr, uint32_t owner_id,
+                            uint32_t generation) {
+  uint32_t span_id;
+  uint64_t token;
+  if (owner_id >= h12_owner_count || generation == 0u ||
+      !h12_span_id(ptr, &span_id)) {
+    return 0;
+  }
+  token = ((uint64_t)generation << 32) | (uint64_t)(owner_id + 1u);
+  atomic_store_explicit(&h12_span_owner[span_id], token,
+                        memory_order_release);
+  return 1;
+}
+
+int h12_shadow_clear_token_if(const void* ptr, uint32_t owner_id,
+                              uint32_t generation) {
+  uint32_t span_id;
+  uint64_t expected;
+  if (owner_id >= h12_owner_count || generation == 0u ||
+      !h12_span_id(ptr, &span_id)) {
+    return 0;
+  }
+  expected = ((uint64_t)generation << 32) | (uint64_t)(owner_id + 1u);
+  return atomic_compare_exchange_strong_explicit(
+      &h12_span_owner[span_id], &expected, 0u,
+      memory_order_acq_rel, memory_order_acquire);
+}
+
 int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id) {
   uint32_t generation;
   return h12_shadow_owner_token_for_ptr(ptr, owner_id, &generation);
