@@ -558,3 +558,11 @@ second flush scan, per-slot bitmap transitions, acquire-side lookup, and
 return-side update. The production candidate should reuse owner information
 already computed by flush routing and use compact per-span batch counts; the
 bitmap remains a diagnostic judge.
+
+P0-A attribution result: small random_mixed R5 measured baseline 99.489M,
+inert 98.957M (-0.5%), acquire-only 97.370M (-2.1%), return-only 84.132M
+(-15.4%), and full 82.804M (-16.8%). Return-side duplicate classification and
+per-slot transition are the blocker. Next: P0-B trusted-owned batch return may
+reuse the existing all-owner proof and skip repeated owner filtering. If that
+still misses -3%, replace the production bitmap with compact per-span batch
+counts; keep the bitmap only as diagnostic authority.

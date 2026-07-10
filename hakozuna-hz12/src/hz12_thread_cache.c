@@ -3,7 +3,7 @@
 #if HZ12_FLUSH_OWNER_ROUTE
 #include "hz12_flush_owner_route.h"
 #endif
-#if HZ12_OWNER_BATCH_LEDGER
+#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
 #include "hz12_owner_batch_ledger.h"
 #endif
 
@@ -20,7 +20,7 @@ HZ12_THREAD_LOCAL H12ThreadCache* hz12_tls = NULL;
 
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id);
 
-#if HZ12_OWNER_BATCH_LEDGER
+#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
 static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
   H12OwnerToken owner = {0u, 0u};
   if (tc && tc->flush_owner_valid) {

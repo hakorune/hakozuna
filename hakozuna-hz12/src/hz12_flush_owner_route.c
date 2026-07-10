@@ -47,7 +47,7 @@ static H12FlushOwnerInbox
     hz12_flush_owner_inboxes[HZ12_SHADOW_MAX_OWNERS];
 static H12FlushOwnerRouteAtomicStats hz12_flush_owner_stats;
 
-#if HZ12_OWNER_BATCH_LEDGER
+#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_RETURN
 static H12OwnerToken hz12_flush_owner_token(const H12ThreadCache* tc) {
   H12OwnerToken owner = {0u, 0u};
   if (tc && tc->flush_owner_valid) {
@@ -199,7 +199,7 @@ void hz12_flush_owner_route_assign_span(H12ThreadCache* tc, void* span_base) {
                             tc->flush_owner_generation);
 #if HZ12_OWNER_BATCH_LEDGER
   {
-    H12OwnerToken owner = hz12_flush_owner_token(tc);
+    H12OwnerToken owner = {tc->flush_owner_id, tc->flush_owner_generation};
     (void)h12_span_owner_shadow_assign(span_base, owner);
   }
 #endif

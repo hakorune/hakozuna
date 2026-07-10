@@ -133,6 +133,12 @@
 #ifndef HZ12_OWNER_BATCH_LEDGER
 #define HZ12_OWNER_BATCH_LEDGER HZ12_OWNER_BATCH_LEDGER_DIAG
 #endif
+#ifndef HZ12_OWNER_BATCH_LEDGER_ACQUIRE
+#define HZ12_OWNER_BATCH_LEDGER_ACQUIRE HZ12_OWNER_BATCH_LEDGER
+#endif
+#ifndef HZ12_OWNER_BATCH_LEDGER_RETURN
+#define HZ12_OWNER_BATCH_LEDGER_RETURN HZ12_OWNER_BATCH_LEDGER
+#endif
 
 /* HZ12CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H12ClassCache[13] into two parallel arrays with power-of-2
