@@ -213,8 +213,39 @@ Decision:
 L0:
   ACCEPT
 
-next:
-  design L1 small-class bounded transfer adapter
-  keep behavior opt-in
-  preserve pending/qstate as safety authority
+behavior promotion:
+  NO-GO inside the current HZ8 contract
 ```
+
+## L1 Feasibility Review
+
+The L0 signal does not imply that HZ8 lacks batching. The existing collector
+already claims a pending bitmap word, validates every slot, builds an intrusive
+free-list chain, and publishes the resulting head with one store. This is the
+safe batch-transfer primitive for HZ8-owned small objects.
+
+The remaining obvious behaviors were already tested or prohibited:
+
+```text
+larger collector budget:
+  previously tested by ActiveFullRemoteCollectBudget-L1
+  pending_after improved, throughput did not
+  small peak RSS regressed from about 852 MiB to 917 MiB
+
+bounded ownerless remote sink:
+  existing HZ8 hard NO-GO
+  creates a second sink and backpressure/fallback problem
+
+remote ownership transfer:
+  existing HZ8 hard NO-GO
+  requires route/source/storage ownership transactions
+
+per-free policy or accounting:
+  hot-path production diagnostics/policy reads are NO-GO
+```
+
+Therefore `HZ8AdaptiveTransferShadow-L0` is retained as mechanism evidence,
+but no L1 transfer behavior is opened. HZ11 fine128 remains the validated
+broad-MT throughput lane; HZ8 v2 remains the balanced low-RSS public default.
+Long-term product integration should unify release guidance and tooling, not
+silently merge incompatible allocator contracts into one hot path.

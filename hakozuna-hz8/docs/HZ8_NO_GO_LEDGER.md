@@ -13,6 +13,7 @@ evidence changes the problem.  Keep this file short and decision-oriented.
 | Bounded remote-free sink | NO-GO | Requires a second sink on full and recreates transfer-cache/owner-inbox backpressure. |
 | Platform free for owned-looking INVALID pointers | HARD NO-GO | Violates fail-closed ownership and can hide double frees or stale HZ8 pointers. |
 | Hot-path production diagnostic counters | NO-GO | Pollutes the path HZ8 is trying to keep leaf-shaped. Use debug builds. |
+| AdaptiveTransfer L1 behavior | NO-GO | L0 confirms cross-owner pressure, but HZ8 already bulk-splices pending words; larger collect budgets were throughput-neutral/RSS-negative, while a second sink or ownership transfer violates the core contract. |
 | Profile-specific metadata layout | NO-GO | Turns HZ8 into an evidence family instead of one allocator. |
 | Public v0 profile/policy selector | NO-GO | v0 must prove one balanced layout before exposing policy knobs. |
 | Policy reads on malloc/free hit paths | NO-GO | Profiles may tune slow-path policy only. |

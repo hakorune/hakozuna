@@ -20,9 +20,14 @@ Design and gates: `docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md`.
 L0 result: ACCEPT on Windows. Feature-off smoke remains clean; the diagnostic
 smoke observes slow-path recommendations. Same-owner balanced/wide_ws report no
 transfer pressure, while remote90 R3 reports 10.4K..11.1K transfer
-recommendations and 10.3K..11.0K remote collector checkpoints. The next box is
-an opt-in L1 small-class bounded transfer adapter. Do not change medium or the
-HZ8 v2 default in the same experiment.
+recommendations and 10.3K..11.0K remote collector checkpoints.
+
+L1 feasibility result: CLOSED / NO-GO. HZ8 already bulk-splices pending bitmap
+words into the owner free list. A larger collector budget was previously
+throughput-neutral and increased RSS; an ownerless second sink and ownership
+transfer violate the frozen HZ8 contract. Keep L0 as diagnostic evidence only.
+Do not implement an adaptive transfer behavior or change the HZ8 v2 default.
+HZ11 fine128 remains the broad-MT opt-in line.
 
 ## Frozen Baselines
 

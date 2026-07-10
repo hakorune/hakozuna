@@ -55,7 +55,8 @@ next research track:
   HZ8 v3 adaptive integration (diagnostic-only L0)
   docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md
   HZ8 v2 remains the public/recommended default
-  Windows L0 shadow gate accepted; behavior remains unchanged
+  Windows L0 shadow gate accepted as evidence
+  L1 transfer behavior closed: existing batching is already the safe HZ8 form
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
