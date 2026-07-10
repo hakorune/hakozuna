@@ -39,9 +39,15 @@ rounds: 120 attaches, 116 generation-slot reuses, zero full-table events, and
 120 matching detaches. Publishing and detach serialize on the target inbox;
 stale/inactive targets downgrade to ownerless recycling.
 
-Decision: GO as concurrent lifetime evidence, still not default. Next: stable
-MT broad gate because the legacy matrix rows are too short for promotion. Do
-not add a per-free owner lookup or make owner metadata a safety authority.
+The calibrated stable-duration MT R3 closes promotion as NO-GO. ColdSpanOwner
+improves HZ12 core to 59.380M balanced, 32.086M wide_ws, and 74.075M
+larger_sizes, but tcmalloc reaches 523.964M, 441.749M, and 245.415M. HZ12 peak
+RSS is also 4.5..19.8% higher on these rows.
+
+Decision: keep ColdSpanOwner as opt-in internal HZ12 improvement; do not
+promote it or claim a tcmalloc Pareto win. If continuing, allow one diagnostic
+pass on balanced returned-sink lock/refill traffic. Do not start another
+owner-inbox cap/drain tuning ladder.
 
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 

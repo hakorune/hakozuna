@@ -9,6 +9,7 @@
 | Reclaim a span from inbox counts alone | NO-GO | Whole-span state needs an explicit verified authority. |
 | Unlimited owner inboxes | NO-GO | Overflow must downgrade to bounded ownerless recycling. |
 | Promote FlushTimeOwnerRouting-L1 | HOLD | It doubles HZ11 xowner throughput, but loses about 7% locally and remains 28% behind tcmalloc in the fixed xowner R5. |
+| Promote ColdSpanOwner after stable MT gate | NO-GO | It improves HZ12 core, but reaches only 7.3..30.2% of tcmalloc and uses 4.5..19.8% more peak RSS on balanced/wide/larger rows. |
 ## Windows per-free owner lookup
 
 Status: NO-GO for public/default integration.

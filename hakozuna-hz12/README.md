@@ -55,6 +55,11 @@ ColdSpanOwner-L3 passed that concurrent gate for 20 rounds with 120 matching
 attach/detach operations, 116 generation-slot reuses, and zero table-full
 events. The remaining promotion blocker is a stable-duration MT broad gate.
 
+That stable-duration MT R3 is now complete and blocks promotion. ColdSpanOwner
+substantially improves HZ12 core, but reaches only 7.3..30.2% of tcmalloc on
+balanced/wide/larger rows and uses 4.5..19.8% more peak RSS. HZ12 therefore
+retains mechanism and lifecycle value, not a general tcmalloc advantage.
+
 ## First Rule Set
 
 ```text
@@ -82,6 +87,7 @@ docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L1_20260710.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L2_CHURN_20260710.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L3_RETIRE_RACE_20260710.md
+docs/HZ12_WINDOWS_STABLE_MT_GATE_20260710.md
 docs/HZ12_WINDOWS_BOUNDED_OWNER_INBOX_L1.md
 docs/HZ12_WINDOWS_DEAD_OWNER_ADOPTION_SHADOW_L2A.md
 docs/HZ12_WINDOWS_RETIRED_INBOX_ADOPTION_L2B.md
