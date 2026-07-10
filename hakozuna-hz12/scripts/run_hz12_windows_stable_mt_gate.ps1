@@ -8,6 +8,7 @@ param(
     [Alias("Profiles")]
     [string[]]$ProfileNames,
     [switch]$IncludeRefillBatchProbe,
+    [switch]$IncludeHz11Fine128TransferProbe,
     [switch]$SkipBuild
 )
 
@@ -33,6 +34,12 @@ if ($IncludeRefillBatchProbe) {
     $Rows += [pscustomobject]@{
         Name = "hz12-coldspanowner-batch32"
         Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_coldspanowner_batch32.exe")
+    }
+}
+if ($IncludeHz11Fine128TransferProbe) {
+    $Rows += [pscustomobject]@{
+        Name = "hz11-span-transfer-fine128-win"
+        Path = (Join-Path $SuiteOut "bench_mixed_ws_hz11_span_transfer_fine128_win.exe")
     }
 }
 

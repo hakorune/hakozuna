@@ -31,6 +31,7 @@ $Executables = @(
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
+    @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },
     @{ Name = "hz11-span-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_diag.exe") },
     @{ Name = "hz11-span-tlsfast"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_tlsfast.exe") },
     @{ Name = "hz11-span-cache256"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_cache256.exe") },
@@ -342,6 +343,7 @@ $Summary.Add("Notes:")
 $Summary.Add("- `hz5-policy` uses the HZ5 Windows policy/API path in this mixed `malloc/free` runner. It is not the exact 64K/a8192 Local2P microbench lane; use the HZ5 synthetic/Local2P family for that profile.")
 $Summary.Add("- `hz11-span-cache256` is the selected Windows HZ11 bring-up row: HZ11_CLASSIFY_SPAN=1 plus HZ11_CACHE_CAP=256 with a VirtualAlloc span arena. `hz11-span` remains the L1 control row. These are Windows matrix connectivity rows, not Linux fine128 parity and not default allocator claims.")
 $Summary.Add("- `hz11-span-transfer` adds HZ11_TRANSFER_CENTRAL_SPAN=1 to the Windows span row as an opt-in L1 pressure lane. It is not the selected Windows row unless a follow-up gate promotes it.")
+$Summary.Add("- `hz11-span-transfer-fine128-win` ports the complete Linux fine128 transfer policy stack with Windows FLS thread-exit salvage. It is a broad-MT opt-in row, not the selected/default Windows row.")
 $Summary.Add("- `hz11-span-diag` is a diagnostic-only sibling of `hz11-span` with HZ11_ENABLE_HOT_COUNTERS=1, HZ11_SPAN_RETURNED_DIAG=1, and HZ11 summary printing. Do not use it for speed ranking.")
 $Summary.Add("- `hz11-span-tlsfast` and `hz11-span-tlsfast-cache256` are Windows A/B rows for the matrix balanced pressure signal. `hz11-span-cache256-diag` is the diagnostic sibling of the selected cache256 row.")
 $Summary.Add("- `hz11-span-cache512` is an experimental Windows cap-pressure row used to test whether matrix balanced/wide_ws weakness is caused by returned-object/refill pressure. `hz11-span-cache512-diag` is its diagnostic sibling and should not be used for speed ranking.")

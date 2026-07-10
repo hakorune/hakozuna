@@ -32,7 +32,18 @@ static inline void hz11_mutex_unlock(HZ11_MUTEX* m) {
  * and current-span diagnostics, not a general pthread compatibility layer. */
 typedef CRITICAL_SECTION pthread_mutex_t;
 typedef INIT_ONCE pthread_once_t;
+typedef DWORD pthread_key_t;
 #define PTHREAD_ONCE_INIT INIT_ONCE_STATIC_INIT
+
+/* HZ11 currently owns one destructor-bearing pthread key. Keep the Windows
+ * shim narrow rather than introducing a general pthread emulation layer. */
+static void (*hz11_pthread_key_destructor)(void*);
+
+static VOID NTAPI hz11_fls_callback(PVOID value) {
+  if (value && hz11_pthread_key_destructor) {
+    hz11_pthread_key_destructor(value);
+  }
+}
 
 static BOOL CALLBACK hz11_pthread_once_callback(PINIT_ONCE init_once,
                                                 PVOID parameter,
@@ -49,6 +60,24 @@ static inline int pthread_once(pthread_once_t* once_control,
                              hz11_pthread_once_callback,
                              (PVOID)init_routine,
                              NULL) ? 0 : -1;
+}
+
+static inline int pthread_key_create(pthread_key_t* key,
+                                     void (*destructor)(void*)) {
+  if (!key || hz11_pthread_key_destructor) {
+    return -1;
+  }
+  hz11_pthread_key_destructor = destructor;
+  *key = FlsAlloc(hz11_fls_callback);
+  if (*key == FLS_OUT_OF_INDEXES) {
+    hz11_pthread_key_destructor = NULL;
+    return -1;
+  }
+  return 0;
+}
+
+static inline int pthread_setspecific(pthread_key_t key, const void* value) {
+  return FlsSetValue(key, (PVOID)value) ? 0 : -1;
 }
 
 static inline int pthread_mutex_init(pthread_mutex_t* m, void* attr) {

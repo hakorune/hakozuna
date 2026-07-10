@@ -1,5 +1,33 @@
 # HZ11 Current Task
 
+## Restart Surface: HZ11WindowsFine128TransferPort-L1
+
+Port the established Linux fine128 transfer backend to Windows as one opt-in
+HZ11 lane. This is a backend port, not an HZ13 charter and not a selected-row
+change. The existing `hz11-span-transfer` Windows binary enables only
+`HZ11_TRANSFER_CENTRAL_SPAN`; it is not Linux fine128 parity.
+
+Implementation order:
+
+1. add a minimal Windows FLS-backed pthread-key shim for current-span
+   thread-exit salvage;
+2. add `hz11-span-transfer-fine128-win` with the exact Linux fine128 flag stack;
+3. build and smoke the candidate;
+4. run the stable MT gate before adding any tuning knobs;
+5. continue only at >=70% of tcmalloc with clean safety and bounded RSS.
+
+The selected `hz11-span-cache256` row remains fixed. Do not add diagnostic
+atomics to the speed lane. Full contract and no-go criteria:
+`docs/HZ11_WINDOWS_FINE128_TRANSFER_PORT_L1.md`.
+
+Result: implementation and Windows FLS thread-exit backing are complete. The
+counter-free speed row reached 422.016M balanced (81.7% of tcmalloc), 313.499M
+wide_ws (73.4%), and 365.921M larger_sizes (149.0%). Local R5 deltas versus
+selected HZ11 were -2.8% small, -2.5% medium, and -1.3% mixed. Keep the new row
+as the strong Windows broad-MT opt-in lane; do not replace
+`hz11-span-cache256` because wide_ws RSS remains 15.0% above tcmalloc. Next
+work, if reopened, must isolate that RSS gap rather than tune batch/cap blindly.
+
 ## Active: HZ11WindowsSpanBumpBatch-L1
 
 The next Windows pressure probe is `hz11-span-cache256-bumpbatch16`.

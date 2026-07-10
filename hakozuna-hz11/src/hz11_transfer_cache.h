@@ -32,6 +32,12 @@
 #define HZ11_CENTRAL_CLASS_DIAG 0
 #endif
 
+/* Linux research artifacts historically kept these counters enabled. Speed
+ * lanes must opt out so relaxed atomics do not become part of the result. */
+#ifndef HZ11_TRANSFER_STATS
+#define HZ11_TRANSFER_STATS 1
+#endif
+
 #ifndef HZ11_CENTRAL_SPAN_RETURN
 #define HZ11_CENTRAL_SPAN_RETURN 0
 #endif

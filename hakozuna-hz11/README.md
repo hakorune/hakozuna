@@ -32,6 +32,13 @@ Windows selected bring-up row:
   selected for the Windows random_mixed / allocator-matrix bring-up rows;
   not a DLL replacement, not fine128 parity, and not a default allocator claim
 
+Windows broad-MT opt-in row:
+  hz11-span-transfer-fine128-win
+  exact Linux fine128 transfer policy stack with Windows FLS thread-exit salvage
+  reaches 82% of tcmalloc on balanced, 73% on wide_ws, and exceeds it on
+  larger_sizes in the stable R3 gate; local random_mixed stays within -3%
+  remains opt-in because wide_ws RSS misses the general/default promotion line
+
 sh6bench/macro-churn specialist lane:
   libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap1024_bytes.so
   or libhz11_span_transfer_thread_exit_cap_batch32_fine128_cachecap768_bytes.so
@@ -67,6 +74,7 @@ docs/HZ11_WINDOWS_BRINGUP_L0.md
 docs/HZ11_WINDOWS_FIXED_LOCAL_BENCH_L0.md
 docs/HZ11_WINDOWS_SPAN_BRINGUP_L1.md
 docs/HZ11_WINDOWS_SPAN_CACHE256_L3.md
+docs/HZ11_WINDOWS_FINE128_TRANSFER_PORT_L1.md
 ```
 
 ## Core Split

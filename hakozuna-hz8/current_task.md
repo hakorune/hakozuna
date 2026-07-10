@@ -3,6 +3,20 @@
 This file is the short HZ8 orientation ledger. Keep detailed chronology in
 `bench_results/` and stable design records under `docs/`.
 
+## Restart Surface: HZ8 v3 Adaptive Integration L0
+
+Keep HZ8 v2 / KeepRefill frozen as the public default. Begin v3 only as a
+diagnostic research track inside the HZ8 family. The first box is
+`HZ8AdaptiveTransferShadow-L0`: observe class-local refill, reusable-transfer,
+remote-drain, and retained-byte pressure at existing slow-path checkpoints and
+recommend BALANCED / TRANSFER_PRESSURE / RSS_PRESSURE without changing allocator
+behavior.
+
+Do not copy HZ11/HZ12 cores into HZ8. Import only the proven contracts: bounded
+batch transfer from HZ11 and cold-path reclaim authority from HZ12. No hot-path
+profile checks, production counters, or default-lane changes are allowed.
+Design and gates: `docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md`.
+
 ## Frozen Baselines
 
 ```text

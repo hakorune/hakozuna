@@ -40,6 +40,7 @@ $Executables = @(
     @{ Name = "hz11-tlsfast"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_tlsfast.exe") },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span.exe") },
     @{ Name = "hz11-span-cache256"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache256.exe") },
+    @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_transfer_fine128_win.exe") },
     @{ Name = "hz11-span-cache256-bumpbatch16"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache256_bumpbatch16.exe") },
     @{ Name = "hz11-span-cache256-returnedrange"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache256_returnedrange.exe") },
     @{ Name = "hz11-span-cache256-returnedrange32"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache256_returnedrange32.exe") },

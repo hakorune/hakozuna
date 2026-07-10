@@ -70,6 +70,10 @@ $Hz11SpanSources = $Hz11Sources + @(
     (Join-Path $Hz11Dir "src\hz11_span.c"),
     (Join-Path $Hz11Dir "src\hz11_live_footprint.c")
 )
+$Hz11TransferSources = $Hz11SpanSources + @(
+    (Join-Path $Hz11Dir "src\hz11_transfer_cache.c"),
+    (Join-Path $Hz11Dir "src\hz11_alloc_diag.c")
+)
 
 function Invoke-Hz11RandomMixedBuilds {
     if (($Hz11Sources | Where-Object { -not (Test-Path $_) }).Count -ne 0) {
@@ -91,6 +95,24 @@ function Invoke-Hz11RandomMixedBuilds {
     Write-Host "Building: bench_random_mixed (hz11-span-cache256)"
     $BenchHz11SpanCache256Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256.exe"
     Invoke-Checked $Cc ($BaseFlags + @("/DHZ_BENCH_USE_HZ11=1", "/DHZ11_CLASSIFY_SPAN=1", "/DHZ11_CACHE_CAP=256", $BenchSrc) + $Hz11SpanSources + @("psapi.lib", "/link", "/out:$BenchHz11SpanCache256Out"))
+
+    Write-Host "Building: bench_random_mixed (hz11-span-transfer-fine128-win)"
+    $BenchHz11Fine128TransferOut = Join-Path $OutDir "bench_random_mixed_hz11_span_transfer_fine128_win.exe"
+    $Hz11Fine128TransferFlags = @(
+        "/DHZ_BENCH_USE_HZ11=1",
+        "/DHZ11_CLASSIFY_SPAN=1",
+        "/DHZ11_TLS_FASTPATH=1",
+        "/DHZ11_CACHE_BYTE_ACCOUNTING=0",
+        "/DHZ11_CACHE_SOA=1",
+        "/DHZ11_TRANSFER_STATS=0",
+        "/DHZ11_TRANSFER_CENTRAL_SPAN=1",
+        "/DHZ11_CURRENT_SPAN_THREAD_EXIT=1",
+        "/DHZ11_CENTRAL_CAP=65536",
+        "/DHZ11_TRANSFER_BATCH=32",
+        "/DHZ11_FINE_SIZE_CLASSES=1",
+        "/DHZ11_FINE_LINEAR_MAX=128u"
+    )
+    Invoke-Checked $Cc ($BaseFlags + $Hz11Fine128TransferFlags + @($BenchSrc) + $Hz11TransferSources + @("psapi.lib", "/link", "/out:$BenchHz11Fine128TransferOut"))
 
     Write-Host "Building: bench_random_mixed (hz11-span-cache256-bumpbatch16)"
     $BenchHz11SpanCache256BumpBatch16Out = Join-Path $OutDir "bench_random_mixed_hz11_span_cache256_bumpbatch16.exe"

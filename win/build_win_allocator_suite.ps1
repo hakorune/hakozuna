@@ -56,6 +56,23 @@ function Invoke-Hz11AllocatorMatrixBuild {
             ExtraFlags = @("/DHZ11_TRANSFER_CENTRAL_SPAN=1")
         },
         @{
+            Name = "hz11_span_transfer_fine128_win"
+            Output = "bench_mixed_ws_hz11_span_transfer_fine128_win.exe"
+            Sources = $Hz11TransferSources
+            ExtraFlags = @(
+                "/DHZ11_TLS_FASTPATH=1",
+                "/DHZ11_CACHE_BYTE_ACCOUNTING=0",
+                "/DHZ11_CACHE_SOA=1",
+                "/DHZ11_TRANSFER_STATS=0",
+                "/DHZ11_TRANSFER_CENTRAL_SPAN=1",
+                "/DHZ11_CURRENT_SPAN_THREAD_EXIT=1",
+                "/DHZ11_CENTRAL_CAP=65536",
+                "/DHZ11_TRANSFER_BATCH=32",
+                "/DHZ11_FINE_SIZE_CLASSES=1",
+                "/DHZ11_FINE_LINEAR_MAX=128u"
+            )
+        },
+        @{
             Name = "hz11_span_diag"
             Output = "bench_mixed_ws_hz11_span_diag.exe"
             Sources = $Hz11Sources

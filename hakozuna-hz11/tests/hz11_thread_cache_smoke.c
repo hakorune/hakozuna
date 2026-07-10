@@ -174,11 +174,22 @@ int main(void) {
   CHECK(s.free_count == 0, "stats: free_count zero (counters off)");
 #endif
 #if HZ11_TRANSFER_CENTRAL_SPAN
+#if HZ11_TRANSFER_STATS
   CHECK(s.transfer_insert > 0, "transfer stats: transfer_insert");
   CHECK(s.transfer_remove_hit > 0, "transfer stats: transfer_remove_hit");
   CHECK(s.transfer_insert_spill > 0, "transfer stats: transfer_insert_spill");
   CHECK(s.central_insert > 0, "transfer stats: central_insert");
   CHECK(s.central_remove_hit > 0, "transfer stats: central_remove_hit");
+#else
+  CHECK(s.transfer_insert == 0, "transfer stats: transfer_insert zero");
+  CHECK(s.transfer_remove_hit == 0,
+        "transfer stats: transfer_remove_hit zero");
+  CHECK(s.transfer_insert_spill == 0,
+        "transfer stats: transfer_insert_spill zero");
+  CHECK(s.central_insert == 0, "transfer stats: central_insert zero");
+  CHECK(s.central_remove_hit == 0,
+        "transfer stats: central_remove_hit zero");
+#endif
 #endif
   fprintf(stderr,
           "hz11_thread_cache_smoke[%s] stats: malloc=%llu hit=%llu refill=%llu "

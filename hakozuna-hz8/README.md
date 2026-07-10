@@ -50,6 +50,11 @@ recommended default:
 
 release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
+
+next research track:
+  HZ8 v3 adaptive integration (diagnostic-only L0)
+  docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md
+  HZ8 v2 remains the public/recommended default
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md

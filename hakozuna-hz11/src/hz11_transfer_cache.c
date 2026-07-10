@@ -23,6 +23,13 @@ static _Atomic uint64_t hz11_central_object_count;
 static _Atomic uint64_t hz11_span_return_by_class[HZ11_CLASS_COUNT];
 static _Atomic uint64_t hz11_central_high_water_by_class[HZ11_CLASS_COUNT];
 
+#if HZ11_TRANSFER_STATS
+#define HZ11_TRANSFER_STAT_ADD(counter, value) \
+  atomic_fetch_add_explicit(&(counter), (value), memory_order_relaxed)
+#else
+#define HZ11_TRANSFER_STAT_ADD(counter, value) ((void)0)
+#endif
+
 /* Source-diag counters + helpers moved to hz11_alloc_diag.c */
 
 /* NO-GO: HZ11_CENTRAL_SPAN_RETURN (metadata-lock regression) and
@@ -131,9 +138,11 @@ uint32_t hz11_transfer_remove_range(uint8_t class_id, void** out, uint32_t max_n
 #endif
   }
   pthread_mutex_unlock(&tc->lock);
-  atomic_fetch_add_explicit(n > 0u ? &hz11_transfer_remove_hit_count
-                                   : &hz11_transfer_remove_miss_count,
-                            1u, memory_order_relaxed);
+  if (n > 0u) {
+    HZ11_TRANSFER_STAT_ADD(hz11_transfer_remove_hit_count, 1u);
+  } else {
+    HZ11_TRANSFER_STAT_ADD(hz11_transfer_remove_miss_count, 1u);
+  }
   return n;
 }
 
@@ -156,11 +165,9 @@ uint32_t hz11_transfer_insert_range(uint8_t class_id, void** items, uint32_t n) 
     tc->slots[tc->count++] = items[inserted];
   }
   pthread_mutex_unlock(&tc->lock);
-  atomic_fetch_add_explicit(&hz11_transfer_insert_count, inserted,
-                            memory_order_relaxed);
+  HZ11_TRANSFER_STAT_ADD(hz11_transfer_insert_count, inserted);
   if (inserted < n) {
-    atomic_fetch_add_explicit(&hz11_transfer_insert_spill_count, n - inserted,
-                              memory_order_relaxed);
+    HZ11_TRANSFER_STAT_ADD(hz11_transfer_insert_spill_count, n - inserted);
   }
   return inserted;
 }
@@ -228,9 +235,11 @@ uint32_t hz11_central_stack_remove_range(uint8_t class_id, void** out, uint32_t 
   cs->remove_count += n;
 #endif
   pthread_mutex_unlock(&cs->lock);
-  atomic_fetch_add_explicit(n > 0u ? &hz11_central_remove_hit_count
-                                   : &hz11_central_remove_miss_count,
-                            1u, memory_order_relaxed);
+  if (n > 0u) {
+    HZ11_TRANSFER_STAT_ADD(hz11_central_remove_hit_count, 1u);
+  } else {
+    HZ11_TRANSFER_STAT_ADD(hz11_central_remove_miss_count, 1u);
+  }
   return n;
 }
 
@@ -328,8 +337,7 @@ void hz11_central_stack_insert_range(uint8_t class_id, void** items, uint32_t n)
       cs->high_water = cs->count;
     }
 #endif
-    atomic_fetch_add_explicit(&hz11_central_insert_count, 1u,
-                              memory_order_relaxed);
+    HZ11_TRANSFER_STAT_ADD(hz11_central_insert_count, 1u);
   }
 #if HZ11_CENTRAL_SPAN_RETURN
   for (uint32_t i = 0u; i < n; ++i) {

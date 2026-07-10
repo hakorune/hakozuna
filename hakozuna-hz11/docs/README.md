@@ -3,6 +3,14 @@
 HZ11 is a speed-first allocator research line. It starts from design documents
 and small boxes rather than a copy of HZ8, HZ9, or HZ10.
 
+Active Windows backend port:
+
+```text
+HZ11_WINDOWS_FINE128_TRANSFER_PORT_L1.md:
+  exact Linux fine128 transfer policy stack, Windows FLS backing, and the first
+  broad MT continuation gate; opt-in only, selected Windows row unchanged
+```
+
 ```text
 HZ11_POSITIONING_L0.md:
   identity, non-goals, relation to HZ3/HZ8/HZ10, tcmalloc-facing architecture,
