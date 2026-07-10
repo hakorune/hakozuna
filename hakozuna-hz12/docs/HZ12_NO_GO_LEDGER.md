@@ -10,6 +10,7 @@
 | Unlimited owner inboxes | NO-GO | Overflow must downgrade to bounded ownerless recycling. |
 | Promote FlushTimeOwnerRouting-L1 | HOLD | It doubles HZ11 xowner throughput, but loses about 7% locally and remains 28% behind tcmalloc in the fixed xowner R5. |
 | Promote ColdSpanOwner after stable MT gate | NO-GO | It improves HZ12 core, but reaches only 7.3..30.2% of tcmalloc and uses 4.5..19.8% more peak RSS on balanced/wide/larger rows. |
+| Promote all-class ReturnedRefillBatch32 generally | NO-GO | It exposes the refill bottleneck but remains far behind tcmalloc and regresses local medium/mixed by 3.8/4.7%. |
 ## Windows per-free owner lookup
 
 Status: NO-GO for public/default integration.

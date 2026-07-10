@@ -49,6 +49,16 @@ promote it or claim a tcmalloc Pareto win. If continuing, allow one diagnostic
 pass on balanced returned-sink lock/refill traffic. Do not start another
 owner-inbox cap/drain tuning ladder.
 
+That final diagnostic found the missing internal bottleneck: all-class
+returned-refill batch32 raises ColdSpanOwner from 54.725M to 166.157M balanced,
+33.480M to 70.661M wide_ws, and 74.503M to 128.981M larger_sizes. It still
+reaches only 16.0..51.8% of tcmalloc. Local medium/mixed regress by 3.8/4.7%,
+so Batch32 is broad-specialist evidence, not a general promotion.
+
+Final decision: close the Windows HZ12 speed-promotion track. Keep the
+mechanism/lifetime/reclaim evidence and the opt-in specialist rows. Do not add
+a class-mask or batch-size tuning ladder.
+
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 
 HZ12 opens from HZ11's deterministic Windows cross-owner pipeline evidence.

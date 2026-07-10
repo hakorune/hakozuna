@@ -60,6 +60,12 @@ substantially improves HZ12 core, but reaches only 7.3..30.2% of tcmalloc on
 balanced/wide/larger rows and uses 4.5..19.8% more peak RSS. HZ12 therefore
 retains mechanism and lifecycle value, not a general tcmalloc advantage.
 
+The final ReturnedRefillBatch32 probe identifies one-object global refill as a
+major internal bottleneck and raises stable MT throughput by 1.73..3.04x. It
+still reaches only 16.0..51.8% of tcmalloc and loses 3.8..4.7% on local
+medium/mixed, so it remains broad-specialist evidence. The Windows HZ12 speed
+promotion track is closed.
+
 ## First Rule Set
 
 ```text
@@ -88,6 +94,7 @@ docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L1_20260710.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L2_CHURN_20260710.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L3_RETIRE_RACE_20260710.md
 docs/HZ12_WINDOWS_STABLE_MT_GATE_20260710.md
+docs/HZ12_WINDOWS_RETURNED_REFILL_BATCH32_20260710.md
 docs/HZ12_WINDOWS_BOUNDED_OWNER_INBOX_L1.md
 docs/HZ12_WINDOWS_DEAD_OWNER_ADOPTION_SHADOW_L2A.md
 docs/HZ12_WINDOWS_RETIRED_INBOX_ADOPTION_L2B.md

@@ -54,6 +54,7 @@ $Executables = @(
     @{ Name = "hz12-flushroute"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_flushroute.exe") },
     @{ Name = "hz12-flushroute-inert"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_flushroute_inert.exe") },
     @{ Name = "hz12-coldspanowner"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_coldspanowner.exe") },
+    @{ Name = "hz12-coldspanowner-batch32"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_coldspanowner_batch32.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },

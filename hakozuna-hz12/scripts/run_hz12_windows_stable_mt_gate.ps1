@@ -5,6 +5,9 @@ param(
     [UInt64]$AffinityMask = 0xFF,
     [ValidateSet("Normal", "AboveNormal", "High")]
     [string]$PriorityClass = "High",
+    [Alias("Profiles")]
+    [string[]]$ProfileNames,
+    [switch]$IncludeRefillBatchProbe,
     [switch]$SkipBuild
 )
 
@@ -26,12 +29,26 @@ $Rows = @(
     [pscustomobject]@{ Name = "hz12-coldspanowner"; Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_coldspanowner.exe") },
     [pscustomobject]@{ Name = "tcmalloc"; Path = (Join-Path $SuiteOut "bench_mixed_ws_tcmalloc.exe") }
 )
+if ($IncludeRefillBatchProbe) {
+    $Rows += [pscustomobject]@{
+        Name = "hz12-coldspanowner-batch32"
+        Path = (Join-Path $Hz12Out "bench_mixed_ws_hz12_coldspanowner_batch32.exe")
+    }
+}
 
 $Profiles = @(
     [pscustomobject]@{ Name = "balanced"; Threads = 8; PilotIters = 500000; WorkingSet = 4096; MinSize = 16; MaxSize = 2048 },
     [pscustomobject]@{ Name = "wide_ws"; Threads = 8; PilotIters = 500000; WorkingSet = 16384; MinSize = 16; MaxSize = 1024 },
     [pscustomobject]@{ Name = "larger_sizes"; Threads = 4; PilotIters = 300000; WorkingSet = 4096; MinSize = 256; MaxSize = 8192 }
 )
+if ($ProfileNames -and $ProfileNames.Count -gt 0) {
+    $wanted = @($ProfileNames | ForEach-Object { $_ -split ',' } |
+                ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $Profiles = @($Profiles | Where-Object { $wanted -contains $_.Name })
+    if ($Profiles.Count -ne $wanted.Count) {
+        throw "Unknown or duplicate profile in: $($wanted -join ', ')"
+    }
+}
 
 if (-not $SkipBuild) {
     & $Hz12Build
