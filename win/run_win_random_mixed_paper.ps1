@@ -20,6 +20,8 @@ if (-not $SuiteDirName) {
 }
 $SuiteDir = Join-Path $RepoRoot $SuiteDirName
 $BuildScript = Join-Path $PSScriptRoot "build_win_random_mixed_suite.ps1"
+$Hz12BuildScript = Join-Path $RepoRoot "hakozuna-hz12\scripts\build_hz12_windows_broad_controls.ps1"
+$Hz12SuiteDir = Join-Path $RepoRoot "hakozuna-hz12\out_win_broad"
 
 if (-not $OutputDir) {
     $OutputDir = Join-Path $RepoRoot "docs\benchmarks\windows\paper"
@@ -46,6 +48,11 @@ $Executables = @(
     @{ Name = "hz11-span-cache512-classbatch16"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache512_classbatch16.exe") },
     @{ Name = "hz11-span-cache512-classbatch16-coldskip"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache512_classbatch16_coldskip.exe") },
     @{ Name = "hz11-span-cache512-classbatch16-4-7"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz11_span_cache512_classbatch16_4_7.exe") },
+    @{ Name = "hz12-core"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_core.exe") },
+    @{ Name = "hz12-ownermap"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_ownermap.exe") },
+    @{ Name = "hz12-allocmap"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_allocmap.exe") },
+    @{ Name = "hz12-flushroute"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_flushroute.exe") },
+    @{ Name = "hz12-flushroute-inert"; Path = (Join-Path $Hz12SuiteDir "bench_random_mixed_hz12_flushroute_inert.exe") },
     @{ Name = "hz6-strict"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_strict.exe") },
     @{ Name = "hz6-speed"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_speed.exe") },
     @{ Name = "hz6-rss"; Path = (Join-Path $SuiteDir "bench_random_mixed_hz6_rss.exe") },
@@ -85,8 +92,14 @@ if ($Allocators -and $Allocators.Count -gt 0) {
 
 $OnlyHz7V2Selected = (($Executables.Count -eq 1) -and ($Executables[0].Name -eq "hz7-v2"))
 $OnlyHz11Selected = (($Executables.Count -gt 0) -and (($Executables | Where-Object { $_.Name -notlike "hz11-*" }).Count -eq 0))
+$OnlyHz12Selected = (($Executables.Count -gt 0) -and
+    (($Executables | Where-Object { $_.Name -notlike "hz12-*" }).Count -eq 0))
 if ($DiagnosticHz6Probes -or ($Executables | Where-Object { -not (Test-Path $_.Path) })) {
-    & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OnlyHz7V2:$OnlyHz7V2Selected -OnlyHz11:$OnlyHz11Selected -OutDirName $SuiteDirName
+    if ($OnlyHz12Selected) {
+        & $Hz12BuildScript
+    } else {
+        & $BuildScript -DiagnosticHz6Probes:$DiagnosticHz6Probes -OnlyHz7V2:$OnlyHz7V2Selected -OnlyHz11:$OnlyHz11Selected -OutDirName $SuiteDirName
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_random_mixed_suite.ps1 failed with exit code $LASTEXITCODE"
     }

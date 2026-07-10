@@ -162,6 +162,36 @@ int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id) {
   return 1;
 }
 
+int h12_shadow_batch_all_owner(void** items, uint32_t count,
+                               uint32_t owner_id) {
+  uint32_t span_ids[8];
+  uint32_t tokens[8];
+  uint32_t wanted;
+  if (!items || owner_id >= h12_owner_count) return 0;
+  for (uint32_t i = 0u; i < 8u; ++i) {
+    span_ids[i] = UINT32_MAX;
+    tokens[i] = 0u;
+  }
+  wanted = owner_id + 1u;
+  for (uint32_t i = 0u; i < count; ++i) {
+    uint32_t span_id;
+    uint32_t slot;
+    uint32_t token;
+    if (!items[i] || !h12_span_id(items[i], &span_id)) return 0;
+    slot = span_id & 7u;
+    if (span_ids[slot] == span_id) {
+      token = tokens[slot];
+    } else {
+      token = atomic_load_explicit(&h12_span_owner[span_id],
+                                   memory_order_relaxed);
+      span_ids[slot] = span_id;
+      tokens[slot] = token;
+    }
+    if (token != wanted) return 0;
+  }
+  return 1;
+}
+
 void h12_shadow_cache_init(H12ShadowCache* cache, uint32_t consumer_id) {
   if (!cache) {
     return;

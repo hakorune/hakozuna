@@ -1,5 +1,5 @@
 param(
-    [ValidateSet("Compare", "Hz12AA", "AccountingAB", "CounterAB", "SpeedCompare", "RoutingAB", "OwnerMapAB", "OwnerFastCompare")]
+    [ValidateSet("Compare", "Hz12AA", "AccountingAB", "CounterAB", "SpeedCompare", "RoutingAB", "OwnerMapAB", "OwnerFastCompare", "OwnerFastFullCompare", "FlushRouteCompare")]
     [string]$Mode = "Compare",
     [string]$OutputPath,
     [int]$Rounds = 5,
@@ -23,6 +23,8 @@ $Hz11Suite = Join-Path $RepoRoot "out_win_xowner"
 $Hz11Build = Join-Path $RepoRoot "win\build_win_xowner_pipeline.ps1"
 $Hz12Build = Join-Path $PSScriptRoot "build_hz12_windows_shadow.ps1"
 $Hz12Suite = Join-Path $Hz12Root "out_win_shadow"
+$Hz12BroadSuite = Join-Path $Hz12Root "out_win_broad"
+$Hz12BroadBuild = Join-Path $PSScriptRoot "build_hz12_windows_broad_controls.ps1"
 $TcDll = Join-Path $Hz11Suite "tcmalloc_minimal.dll"
 
 if ($Rounds -lt 1) { throw "Rounds must be positive." }
@@ -32,12 +34,17 @@ if ($CooldownMilliseconds -lt 0) { throw "CooldownMilliseconds cannot be negativ
 
 if (-not $SkipBuild) {
     if ($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
-        $Mode -eq "OwnerFastCompare") {
+        $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
+        $Mode -eq "FlushRouteCompare") {
         & $Hz11Build
         if ($LASTEXITCODE -ne 0) { throw "HZ11/tcmalloc build failed: $LASTEXITCODE" }
     }
     & $Hz12Build
     if ($LASTEXITCODE -ne 0) { throw "HZ12 build failed: $LASTEXITCODE" }
+    if ($Mode -eq "FlushRouteCompare") {
+        & $Hz12BroadBuild
+        if ($LASTEXITCODE -ne 0) { throw "HZ12 broad build failed: $LASTEXITCODE" }
+    }
 }
 
 $rowCatalog = @{
@@ -81,6 +88,11 @@ $rowCatalog = @{
         Pattern = "\[HZ12_XOWNER_INBOX\]"
         Flags = "/O2 /DNDEBUG HZ12_CLASSIFY_SPAN=1 HZ12_CACHE_CAP=256 HZ12_INBOX_CAP=1024 HZ12_DRAIN_INTERVAL=256 accounting=off diag_counters=off owner_fast_load=on"
     }
+    "hz12-flushroute-integrated" = @{
+        Path = (Join-Path $Hz12BroadSuite "bench_xowner_hz12_flushroute.exe")
+        Pattern = "\[XOWNER_PIPELINE\]"
+        Flags = "/O2 /DNDEBUG HZ12_CLASSIFY_SPAN=1 HZ12_CACHE_CAP=256 flush_owner_route=on owner_fast_load=on accounting=off diag_counters=off drain_pace=256"
+    }
     "tcmalloc" = @{
         Path = (Join-Path $Hz11Suite "bench_xowner_tcmalloc.exe")
         Pattern = "\[XOWNER_PIPELINE\]"
@@ -97,6 +109,8 @@ $rowNames = switch ($Mode) {
     "RoutingAB" { @("hz12-owner-inbox-speed", "hz12-bare-core") }
     "OwnerMapAB" { @("hz12-owner-inbox-speed", "hz12-owner-inbox-ownerfastload") }
     "OwnerFastCompare" { @("hz12-owner-inbox-ownerfastload", "tcmalloc") }
+    "OwnerFastFullCompare" { @("hz11-ownerless", "hz12-owner-inbox-ownerfastload", "tcmalloc") }
+    "FlushRouteCompare" { @("hz11-ownerless", "hz12-flushroute-integrated", "hz12-owner-inbox-ownerfastload", "tcmalloc") }
 }
 
 foreach ($name in $rowNames) {
@@ -105,7 +119,9 @@ foreach ($name in $rowNames) {
     }
 }
 if (($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
-     $Mode -eq "OwnerFastCompare") -and -not (Test-Path $TcDll)) {
+     $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
+     $Mode -eq "FlushRouteCompare") -and
+    -not (Test-Path $TcDll)) {
     throw "Missing tcmalloc runtime: $TcDll"
 }
 
@@ -168,7 +184,8 @@ foreach ($name in $rowNames) {
     $manifests += Get-FileManifest $name $row.Path $row.Flags
 }
 if ($Mode -eq "Compare" -or $Mode -eq "SpeedCompare" -or
-    $Mode -eq "OwnerFastCompare") {
+    $Mode -eq "OwnerFastCompare" -or $Mode -eq "OwnerFastFullCompare" -or
+    $Mode -eq "FlushRouteCompare") {
     $manifests += Get-FileManifest "tcmalloc_minimal.dll" $TcDll "gperftools 2.16 minimal runtime"
 }
 
@@ -191,11 +208,21 @@ for ($round = 0; $round -lt $Rounds; ++$round) {
             throw "Cannot parse result for $name in round $($round + 1)."
         }
         $ops = [double]$Matches[1]
+        $peakRss = [double]::NaN
+        $finalRss = [double]::NaN
+        if ($line -match 'peak_rss_mib=([0-9.]+)') {
+            $peakRss = [double]$Matches[1]
+        }
+        if ($line -match '(?:^|\s)rss_mib=([0-9.]+)') {
+            $finalRss = [double]$Matches[1]
+        }
         $results += [pscustomobject]@{
             Round = $round + 1
             Position = $position + 1
             Name = $name
             Ops = $ops
+            PeakRssMiB = $peakRss
+            FinalRssMiB = $finalRss
             Raw = $line
         }
         Write-Host "[HZ12_ROUNDROBIN] round=$($round + 1) position=$($position + 1) allocator=$name $line"
@@ -226,15 +253,21 @@ foreach ($manifest in $manifests) {
 $lines.Add("")
 $lines.Add("## Median")
 $lines.Add("")
-$lines.Add("| Allocator | Median ops/s | Min | Max | Runs |")
-$lines.Add("| --- | ---: | ---: | ---: | ---: |")
+$lines.Add("| Allocator | Median ops/s | Min | Max | Peak RSS median | Final RSS median | Runs |")
+$lines.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
 foreach ($name in $rowNames) {
     $values = @($results | Where-Object Name -eq $name | ForEach-Object Ops)
-    $lines.Add(("| {0} | {1:N3}M | {2:N3}M | {3:N3}M | {4} |" -f
+    $peakValues = @($results | Where-Object Name -eq $name |
+        ForEach-Object PeakRssMiB | Where-Object { -not [double]::IsNaN($_) })
+    $finalValues = @($results | Where-Object Name -eq $name |
+        ForEach-Object FinalRssMiB | Where-Object { -not [double]::IsNaN($_) })
+    $peakText = if ($peakValues.Count) { "{0:N2} MiB" -f (Get-Median $peakValues) } else { "n/a" }
+    $finalText = if ($finalValues.Count) { "{0:N2} MiB" -f (Get-Median $finalValues) } else { "n/a" }
+    $lines.Add(("| {0} | {1:N3}M | {2:N3}M | {3:N3}M | {4} | {5} | {6} |" -f
         $name, ((Get-Median $values) / 1000000.0),
         (($values | Measure-Object -Minimum).Minimum / 1000000.0),
         (($values | Measure-Object -Maximum).Maximum / 1000000.0),
-        $values.Count))
+        $peakText, $finalText, $values.Count))
 }
 
 if ($Mode -eq "Hz12AA") {

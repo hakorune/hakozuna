@@ -19,6 +19,12 @@
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #include "hz11_class_diag.h"
+#elif defined(HZ_BENCH_USE_HZ12)
+#include "hz12.h"
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+    defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL)
+#include "hz12_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_MIMALLOC)
 #include <mimalloc.h>
 #elif defined(HZ_BENCH_USE_TCMALLOC)
@@ -191,6 +197,15 @@ static inline void* bench_alloc(ThreadArg* ta, size_t size) {
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ12)
+    void* ptr = hz12_malloc(size);
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+    defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL)
+    if (ptr) h12_shadow_on_alloc(ptr, (uint32_t)ta->thread_index);
+#else
+    (void)ta;
+#endif
+    return ptr;
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     return mi_malloc(size);
@@ -223,6 +238,9 @@ static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_realloc(ptr, size);
+#elif defined(HZ_BENCH_USE_HZ12)
+    (void)ta;
+    return hz12_realloc(ptr, size);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     return mi_realloc(ptr, size);
@@ -251,6 +269,14 @@ static inline void bench_free(ThreadArg* ta, void* ptr) {
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     hz11_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ12)
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL)
+    uint32_t owner_id;
+    (void)h12_shadow_owner_for_ptr(ptr, &owner_id);
+#else
+    (void)ta;
+#endif
+    hz12_free(ptr);
 #elif defined(HZ_BENCH_USE_MIMALLOC)
     (void)ta;
     mi_free(ptr);
@@ -470,6 +496,15 @@ int main(int argc, char** argv) {
     if (argc > 4) min_size = (size_t)strtoull(argv[4], NULL, 10);
     if (argc > 5) max_size = (size_t)strtoull(argv[5], NULL, 10);
     if (threads == 0) threads = 1;
+#if defined(HZ_BENCH_USE_HZ12) && \
+    (defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+     defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL))
+    if (threads > HZ12_SHADOW_MAX_OWNERS ||
+        !h12_shadow_init((uint32_t)threads)) {
+        fprintf(stderr, "HZ12 owner-map control init failed\n");
+        return 2;
+    }
+#endif
     if (ws == 0) ws = 1;
     if (min_size == 0) min_size = 1;
     if (max_size < min_size) max_size = min_size;

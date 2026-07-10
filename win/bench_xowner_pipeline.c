@@ -10,6 +10,7 @@
 #endif
 #include <windows.h>
 #include <process.h>
+#include <psapi.h>
 
 #include "bench_modern_allocator_adapter.h"
 
@@ -155,6 +156,7 @@ int main(int argc, char** argv) {
     uint64_t total_frees = 0u;
     uint64_t total_waits = 0u;
     uint64_t total_cleanup = 0u;
+    PROCESS_MEMORY_COUNTERS_EX memory = {0};
     if (producers == 0u || consumers == 0u || producers != consumers ||
         ring_capacity < 2u || min_size == 0u || max_size < min_size) {
         fprintf(stderr, "usage: %s <seconds> <producers> <consumers> <ring> <min> <max>\n", argv[0]);
@@ -202,16 +204,23 @@ int main(int argc, char** argv) {
         total_cleanup += states[i].cleanup_local;
         CloseHandle(handles[i]);
     }
+    memory.cb = sizeof(memory);
+    (void)GetProcessMemoryInfo(GetCurrentProcess(),
+                               (PROCESS_MEMORY_COUNTERS*)&memory,
+                               sizeof(memory));
     printf("[XOWNER_PIPELINE] producers=%u consumers=%u ring=%u allocs=%llu "
            "cross_owner_frees=%llu local_cleanup=%llu waits=%llu "
-           "sharing_factor=2.00 cross_owner_rate=100.0 ops/s=%.2f elapsed=%.3f\n",
+           "sharing_factor=2.00 cross_owner_rate=100.0 ops/s=%.2f elapsed=%.3f "
+           "peak_rss_mib=%.2f rss_mib=%.2f\n",
            producers, consumers, ring_capacity,
            (unsigned long long)total_allocs,
            (unsigned long long)total_frees,
            (unsigned long long)total_cleanup,
            (unsigned long long)total_waits,
            (double)total_frees * 1000000000.0 / (double)elapsed_ns,
-           (double)elapsed_ns / 1000000000.0);
+           (double)elapsed_ns / 1000000000.0,
+           (double)memory.PeakWorkingSetSize / (1024.0 * 1024.0),
+           (double)memory.WorkingSetSize / (1024.0 * 1024.0));
     for (i = 0u; i < producers; ++i) free(rings[i].slots);
     free(states);
     free(rings);

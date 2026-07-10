@@ -34,6 +34,12 @@ same-session 100% cross-owner R3, versus 9.138M for HZ11 ownerless and 28.553M
 for tcmalloc. This is mechanism evidence only; HZ12 is not a public allocator
 or a default lane.
 
+The later public-API integration probe kept normal free owner-blind and routed
+only class-cache flush batches. Its safe owner-by-class inbox reached 26.128M
+ops/s versus HZ11 ownerless at 12.939M and tcmalloc at 36.318M in the fixed R5,
+with 11.79 MiB median peak RSS. It remains opt-in/HOLD because same-owner local
+random_mixed regressed by about 7%.
+
 ## First Rule Set
 
 ```text
@@ -176,3 +182,10 @@ already matching span owner with a relaxed load. It reached 35.542M ops/s
 versus tcmalloc at 37.597M in the same R5 100% cross-owner pipeline (94.5%),
 and passed repeat-10 retirement/pending safety checks. It remains opt-in until
 local/random and broad workload controls are complete.
+
+Fair RSS sampling later measured HZ12 OwnerFastLoad at 36.427M ops/s and
+15.54 MiB peak RSS versus tcmalloc at 36.439M and 14.81 MiB. The row is speed
+parity, not a low-RSS win. Local random_mixed confirms the HZ12 core remains
+strong and compact, while a decomposition rejects per-free owner lookup and
+keeps only allocation attribution for the next flush-time routing experiment.
+See `docs/HZ12_WINDOWS_OWNERFAST_RSS_AND_BROAD_20260710.md`.

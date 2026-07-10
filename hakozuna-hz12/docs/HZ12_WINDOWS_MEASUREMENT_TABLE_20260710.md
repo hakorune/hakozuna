@@ -96,6 +96,12 @@ Sources:
 - `bench_results/windows_xowner_roundrobin_ownermap_ab_high_r5.md`
 - `bench_results/windows_xowner_roundrobin_ownerfast_tcmalloc_high_r5.md`
 
+The later fair-RSS three-way R5 supersedes the earlier speed-only snapshot:
+HZ12 36.427M / 15.54 MiB peak, tcmalloc 36.439M / 14.81 MiB, and HZ11
+12.992M / 7.79 MiB. See
+`HZ12_WINDOWS_OWNERFAST_RSS_AND_BROAD_20260710.md` for broad controls and the
+free-time owner-lookup no-go.
+
 ## Earlier Same-Session R3
 
 The earlier run used the same workload shape but produced a different absolute

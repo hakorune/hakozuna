@@ -1,5 +1,34 @@
 # HZ12 Current Task
 
+## Restart Surface: FlushTimeOwnerRouting-L1 HOLD
+
+The public HZ12 core remains unchanged. A Windows-only opt-in prototype now
+records advisory ownership on allocation, keeps normal free owner-blind, and
+groups ownership only when a class cache flushes. Its dedicated owner-by-class
+inbox fixed the unsafe reuse of the deferred-free inbox and passed the 100%
+cross-owner pipeline.
+
+```text
+local random_mixed R5:
+  core                         about 153..155M ops/s
+  allocation owner map        about 149..153M (-1.6..-2.8%)
+  integrated flush routing    about 139..141M (about -7% total)
+
+xowner R5, 4 producer / 4 consumer:
+  HZ11 ownerless              12.939M / 6.61 MiB peak
+  HZ12 integrated flushroute  26.128M / 11.79 MiB peak
+  HZ12 OwnerFast upper bound  34.324M / 15.80 MiB peak
+  tcmalloc                    36.318M / 13.81 MiB peak
+```
+
+Decision: keep FlushTimeOwnerRouting-L1 as opt-in mechanism evidence. It
+doubles HZ11 cross-owner throughput and stays below tcmalloc RSS in this row,
+but its local regression exceeds the 3% acceptance gate and it reaches only
+72% of tcmalloc throughput. Do not promote it or tune drain/cap knobs further.
+The next design step, if pursued, is a new cold-path owner-local batch ledger
+that avoids allocation shadow-map traffic and per-refill polling; do not add a
+per-free owner lookup.
+
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 
 HZ12 opens from HZ11's deterministic Windows cross-owner pipeline evidence.
@@ -366,6 +395,24 @@ with zero pending retired owners/objects and at most one producer-stop cleanup
 object. The first-writer CAS remains; only an already-matching owner token uses
 the relaxed-load return.
 
+The fair RSS R5 now includes all three rows. HZ11 measured 12.992M / 7.79 MiB
+peak, HZ12 OwnerFastLoad measured 36.427M / 15.54 MiB, and tcmalloc measured
+36.439M / 14.81 MiB. HZ12 is throughput-parity in this exact pipeline but uses
+4.9% more peak RSS and 8.2% more final RSS than tcmalloc. Do not claim a low-RSS
+win from this compact row.
+
+Broad controls are now connected to the existing Windows random_mixed and
+mixed_ws runners. HZ12 core is strong on local random_mixed: 154.122M small,
+150.096M medium, and 152.453M mixed, with 4.27..5.57 MiB peak RSS. The short MT
+matrix remains weak (13.902M balanced, 14.632M wide_ws, 27.734M larger_sizes),
+which is consistent with ownerless returned-list contention.
+
+Owner attribution decomposition fixes the next design boundary. Allocation-
+only owner mapping costs 1.6..2.4% on local random_mixed and passes the 3% gate.
+Adding a free-time owner lookup costs 9.7..10.6% and is NO-GO. The next behavior
+must leave normal free owner-blind and group by owner only when a class cache
+flushes.
+
 Review synthesis: the measured L1 row mixes allocator behavior with shadow,
 whole-span accounting, and inbox diagnostics, so an HZ12 speed lane has not yet
 been measured. Runner output must include a build-flag manifest in addition to
@@ -377,10 +424,11 @@ shadow/ledger agreement before any automatic reclaim policy can be promoted.
 
 ## Next Decision
 
-1. Keep `OwnerFastLoad-L1` opt-in until local/random and broad matrix controls
-   prove no regression; do not claim tcmalloc parity from one Windows row.
+1. Open `FlushTimeOwnerRouting-L1` as a benchmark/profile sibling: advisory
+   alloc map, owner-blind normal free, owner grouping only on cache flush.
 2. Keep the bounded inbox: it is 2.18x the ownerless bare-core control.
 3. Keep atomic accounting and all diagnostic counters out of the speed lane.
-4. Start production reclaim authority only as an owner-local batch-ledger
+4. Start production reclaim authority only after flush-time routing passes
+   local, MT, RSS, and teardown gates, using an owner-local batch-ledger
    sibling, checked against the frozen atomic shadow; do not reconnect per-op
    atomics to normal malloc/free.

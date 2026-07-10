@@ -1,5 +1,8 @@
 #include "hz12_thread_cache.h"
 #include "hz12_transfer_cache.h"
+#if HZ12_FLUSH_OWNER_ROUTE
+#include "hz12_flush_owner_route.h"
+#endif
 
 #if !defined(_WIN32)
 #include <pthread.h>
@@ -146,6 +149,9 @@ H12ThreadCache* hz12_thread_cache_init_slow(void) {
   hz12_span_init(); /* ensure the arena is mapped before any span carve */
 #endif
   hz12_tls = tc;
+#if HZ12_FLUSH_OWNER_ROUTE
+  hz12_flush_owner_route_attach(tc);
+#endif
 #if HZ12_CURRENT_SPAN_THREAD_EXIT && HZ12_TRANSFER_CENTRAL_SPAN && \
     HZ12_CLASSIFY_SPAN
   (void)pthread_once(&hz12_thread_cache_key_once,
@@ -220,6 +226,48 @@ static void hz12_thread_cache_flush_span_items(uint8_t class_id,
 #endif
 
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id) {
+#if HZ12_FLUSH_OWNER_ROUTE && HZ12_CLASSIFY_SPAN
+  void** route_items;
+  uint32_t route_count;
+#if HZ12_CACHE_SOA
+  route_items = tc->class_items[class_id];
+  route_count = tc->class_counts[class_id];
+#else
+  H12ClassCache* route_cache = &tc->class_cache[class_id];
+  route_items = route_cache->items;
+#if HZ12_CACHE_TOPPTR
+  route_count = (uint32_t)(route_cache->top - route_cache->items);
+#else
+  route_count = route_cache->count;
+#endif
+#endif
+  HZ12_COUNT_ADD(tc->flush_items, route_count);
+#if HZ12_FLUSH_OWNER_ROUTE_INERT
+  for (uint32_t i = 0u; i < route_count; ++i) {
+    if (hz12_arena_contains(route_items[i])) {
+      hz12_returned_push(class_id, route_items[i]);
+    } else {
+      hz12_sys_free(route_items[i]);
+    }
+  }
+#else
+  hz12_flush_owner_route_batch(tc, class_id, route_items, route_count);
+#endif
+#if HZ12_CACHE_SOA
+  tc->class_counts[class_id] = 0u;
+#else
+#if HZ12_CACHE_TOPPTR
+  route_cache->top = route_cache->items;
+#else
+  route_cache->count = 0u;
+#endif
+#endif
+#if HZ12_CACHE_BYTE_ACCOUNTING
+  tc->cached_bytes -= hz12_class_slot_size(class_id) * route_count;
+#endif
+  HZ12_COUNT_INC(tc->flush_count);
+  return;
+#endif
 #if HZ12_CACHE_SOA
 #if HZ12_TRANSFER_CENTRAL_SPAN && HZ12_CLASSIFY_SPAN
   /* Transfer lane: batch-move all cached objects into the transfer cache,
@@ -372,6 +420,12 @@ void hz12_thread_cache_reclaim_checkpoint(void) {
 }
 
 void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
+#if HZ12_FLUSH_OWNER_ROUTE && !HZ12_FLUSH_OWNER_ROUTE_INERT
+  tc->flush_owner_refill_tick += 1u;
+  if ((tc->flush_owner_refill_tick & 255u) == 0u) {
+    hz12_flush_owner_route_drain(tc);
+  }
+#endif
 #if !HZ12_CLASSIFY_SPAN && !HZ12_ENABLE_HOT_COUNTERS
   (void)tc; /* token lane: tc only used for the now-compiled-out refill_count */
 #endif

@@ -45,7 +45,7 @@ if (-not $OnlyHz11) {
             "/I$(Join-Path $VcpkgRoot 'installed\x64-windows\include')",
             "/DHZ_BENCH_USE_TCMALLOC=1"
         ) + @($Bench, $tcLib) + @(
-            "/link",
+            "psapi.lib", "/link",
             "/out:$(Join-Path $OutDir 'bench_xowner_tcmalloc.exe')"
         ))
     } else {

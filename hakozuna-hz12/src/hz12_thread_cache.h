@@ -114,6 +114,14 @@
 #define HZ12_RETURNED_PUSH_RANGE_CHUNK 0u
 #endif
 
+#ifndef HZ12_FLUSH_OWNER_ROUTE
+#define HZ12_FLUSH_OWNER_ROUTE 0u
+#endif
+
+#ifndef HZ12_FLUSH_OWNER_ROUTE_INERT
+#define HZ12_FLUSH_OWNER_ROUTE_INERT 0u
+#endif
+
 /* HZ12CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H12ClassCache[13] into two parallel arrays with power-of-2
  * strides (256B items + 4B counts), eliminating the *264 address chain.
@@ -171,6 +179,11 @@ typedef struct H12ThreadCache {
 #if HZ12_RETURNED_REFILL_COLD_SKIP
   uint8_t returned_refill_cold_skip[HZ12_CLASS_COUNT];
 #endif
+#endif
+#if HZ12_FLUSH_OWNER_ROUTE
+  uint32_t flush_owner_id;
+  uint32_t flush_owner_refill_tick;
+  uint8_t flush_owner_valid;
 #endif
   size_t cached_bytes;
   uint64_t malloc_count;

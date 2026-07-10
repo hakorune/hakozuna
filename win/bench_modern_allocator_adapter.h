@@ -17,6 +17,12 @@
 #include "hz7.h"
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
+#elif defined(HZ_BENCH_USE_HZ12)
+#include "hz12.h"
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+    defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL)
+#include "hz12_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_MIMALLOC)
@@ -46,6 +52,10 @@ static inline void hz_bench_allocator_thread_setup(void) {
         hz6_allocator_init_with_profile(&hz_bench_tls_hz6_allocator, HZ_BENCH_HZ6_PROFILE);
         hz_bench_tls_hz6_initialized = 1;
     }
+#elif defined(HZ_BENCH_USE_HZ12) && \
+    (defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+     defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL))
+    (void)h12_shadow_init(1u);
 #endif
 }
 
@@ -70,6 +80,13 @@ static inline void* hz_bench_alloc(size_t size) {
     return h7_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ11)
     return hz11_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ12)
+    void* ptr = hz12_malloc(size);
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
+    defined(HZ_BENCH_HZ12_ALLOC_OWNER_MAP_CONTROL)
+    if (ptr) h12_shadow_on_alloc(ptr, 0u);
+#endif
+    return ptr;
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
@@ -94,6 +111,12 @@ static inline void hz_bench_free(void* ptr) {
     h7_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ11)
     hz11_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ12)
+#if defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL)
+    uint32_t owner_id;
+    (void)h12_shadow_owner_for_ptr(ptr, &owner_id);
+#endif
+    hz12_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
     static const Hz5PolicyHooks hooks = {0};
     (void)hz5_policy_free(ptr, &hooks);

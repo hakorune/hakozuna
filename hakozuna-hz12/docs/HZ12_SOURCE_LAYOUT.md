@@ -21,6 +21,12 @@ src/hz12_shadow.*
 src/hz12_inbox.*
   bounded owner inbox and retired-owner adoption
 
+future src/hz12_flush_owner_route.*
+  proposed FlushTimeOwnerRouting-L1 boundary: receive an already-cold class
+  cache batch, split local/foreign owners, publish foreign groups, and send
+  local/unknown-safe objects to the existing returned sink. It must not run an
+  owner lookup on normal free.
+
 src/hz12_span_accounting.*
   diagnostic per-span alloc/free/live accounting
 
@@ -74,6 +80,11 @@ The dependency direction is one-way: the reclaim gate reads allocator and
 diagnostic state, but allocator malloc/free code does not depend on the reclaim
 gate. A future reclaim behavior must live in a separate module and must not
 turn diagnostic counters into the safety authority.
+
+Windows broad-control plumbing lives in
+`scripts/build_hz12_windows_broad_controls.ps1`. The `hz12-core`,
+`hz12-allocmap`, and `hz12-ownermap` rows are decomposition controls; only the
+core row is an allocator baseline. The map rows are not public profiles.
 
 Each C/header/include source file is kept below 1,000 lines. Run
 `scripts/check_hz12_source_layout.ps1` before adding a new lifecycle box.

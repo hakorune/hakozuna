@@ -2,6 +2,10 @@
 #include "hz12_live_footprint.h"
 #include "hz12_transfer_cache.h"
 #include "hz12_percpu_cache.h"
+#if HZ12_FLUSH_OWNER_ROUTE
+#include "hz12_flush_owner_route.h"
+#include "hz12_shadow.h"
+#endif
 
 #include <string.h>
 
@@ -146,12 +150,14 @@ static HZ12_NOINLINE void hz12_free_slow(void* ptr) {
 #endif
 
 void* hz12_malloc(size_t size) {
+  void* result;
 #if HZ12_TLS_FASTPATH
   H12ThreadCache* tc = hz12_tls;
   if (HZ12_LIKELY(tc != NULL)) {
-    return hz12_malloc_fast_with_tc(tc, size);
+    result = hz12_malloc_fast_with_tc(tc, size);
+  } else {
+    result = hz12_malloc_slow(size);
   }
-  return hz12_malloc_slow(size);
 #else
   if (hz12_in_resolver()) {
     return hz12_sys_malloc(size);
@@ -160,8 +166,14 @@ void* hz12_malloc(size_t size) {
   if (!tc) {
     return hz12_sys_malloc(size);
   }
-  return hz12_malloc_fast_with_tc(tc, size);
+  result = hz12_malloc_fast_with_tc(tc, size);
 #endif
+#if HZ12_FLUSH_OWNER_ROUTE
+  if (result && hz12_tls && hz12_tls->flush_owner_valid) {
+    h12_shadow_on_alloc(result, hz12_tls->flush_owner_id);
+  }
+#endif
+  return result;
 }
 
 void hz12_free(void* ptr) {

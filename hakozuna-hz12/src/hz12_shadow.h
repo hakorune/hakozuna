@@ -24,6 +24,8 @@ int h12_shadow_init(uint32_t owner_count);
 void h12_shadow_reset(void);
 void h12_shadow_on_alloc(void* ptr, uint32_t owner_id);
 int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id);
+int h12_shadow_batch_all_owner(void** items, uint32_t count,
+                               uint32_t owner_id);
 void h12_shadow_cache_init(H12ShadowCache* cache, uint32_t consumer_id);
 void h12_shadow_on_free(H12ShadowCache* cache, void* ptr);
 void h12_shadow_flush(H12ShadowCache* cache);
