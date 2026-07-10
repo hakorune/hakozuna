@@ -34,9 +34,14 @@ fallbacks. The post-lifetime local R5 remains within -1.1..-1.7% of core; the
 xowner R3 reached 29.194M with 12.01 MiB peak RSS versus tcmalloc at 38.089M
 and 14.19 MiB.
 
-Decision: GO as bounded lifetime evidence, still not default. Next: concurrent
-publish-versus-retire smoke, then a stable MT broad gate. Do not add a per-free
-owner lookup or make owner metadata a safety authority.
+ColdSpanOwner-L3 also passed the concurrent publish-versus-retire smoke for 20
+rounds: 120 attaches, 116 generation-slot reuses, zero full-table events, and
+120 matching detaches. Publishing and detach serialize on the target inbox;
+stale/inactive targets downgrade to ownerless recycling.
+
+Decision: GO as concurrent lifetime evidence, still not default. Next: stable
+MT broad gate because the legacy matrix rows are too short for promotion. Do
+not add a per-free owner lookup or make owner metadata a safety authority.
 
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 
