@@ -625,3 +625,13 @@ ended at 64. P0-D through P3 now form a complete bounded retirement lifecycle.
 Freeze lifecycle mechanics here. Next work must be a separately measured
 checkpoint policy gate; automatic pressure reclaim and speed-lane integration
 remain closed.
+
+P4 checkpoint-policy shadow result: a diagnostic-only retirement query now
+requires the owner gate, empty real flush-owner inbox, and at least 4 MiB of
+snapshot-complete payload, then caps the plan at 64 spans / 4 MiB. The exact
+64-span threshold fired only after retirement, while a 63-span boundary
+control did not fire; both passed repeat-10 with zero mutation. Full cold-query
+latency was approximately 3.3-4.2 ms on this fixture. This supports an
+owner-retirement behavior sibling but rejects frequent pressure polling with
+the current full scan. Next: one separate P4-gated retire behavior lane may
+call the existing bounded P1 path; normal speed/broad lanes remain unchanged.

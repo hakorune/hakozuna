@@ -15,6 +15,7 @@
 #include "hz12_owner_ledger_retire_gate.h"
 #include "hz12_owner_registry.h"
 #include "hz12_owner_retire_gate.h"
+#include "hz12_reclaim_policy_shadow.h"
 #include "hz12_retired_reclaim_decommit.h"
 #include "hz12_retired_reclaim_detach.h"
 #include "hz12_retired_reclaim_recycle.h"
@@ -28,7 +29,9 @@
 #include "hz12_thread_cache.h"
 #include "hz12_token_inbox.h"
 
+#ifndef H12_LEDGER_WIDE_SPANS
 #define H12_LEDGER_WIDE_SPANS 64u
+#endif
 
 #ifndef HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
 #define HZ12_SNAPSHOT_RECLAIM_BEHAVIOR 0u
@@ -38,6 +41,9 @@
 #endif
 #ifndef HZ12_SNAPSHOT_RECYCLE_ROLLBACK
 #define HZ12_SNAPSHOT_RECYCLE_ROLLBACK 0u
+#endif
+#ifndef HZ12_RECLAIM_POLICY_SHADOW
+#define HZ12_RECLAIM_POLICY_SHADOW 0u
 #endif
 
 #ifndef HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
@@ -130,6 +136,16 @@ int main(void) {
   DWORD exit_code = 0u;
   uint32_t snapshot_candidates = 0u;
   uint32_t snapshot_mismatches = 0u;
+#if HZ12_RECLAIM_POLICY_SHADOW
+  H12ReclaimPolicyShadow policy_before = {0};
+  H12ReclaimPolicyShadow policy_after = {0};
+  LARGE_INTEGER policy_frequency;
+  LARGE_INTEGER policy_start;
+  LARGE_INTEGER policy_end;
+  double policy_before_us = 0.0;
+  double policy_after_us = 0.0;
+  QueryPerformanceFrequency(&policy_frequency);
+#endif
 
   h12_span_accounting_reset();
 #if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
@@ -162,6 +178,17 @@ int main(void) {
       SwitchToThread();
     }
   }
+#if HZ12_RECLAIM_POLICY_SHADOW
+  QueryPerformanceCounter(&policy_start);
+  if (!h12_reclaim_policy_shadow_query(state.owner, &policy_before) ||
+      policy_before.would_reclaim) {
+    return 18;
+  }
+  QueryPerformanceCounter(&policy_end);
+  policy_before_us = 1000000.0 *
+      (double)(policy_end.QuadPart - policy_start.QuadPart) /
+      (double)policy_frequency.QuadPart;
+#endif
   if (!h12_owner_begin_retire(state.owner) ||
       !h12_owner_epoch_begin_retire(state.owner)) {
     return 3;
@@ -189,6 +216,39 @@ int main(void) {
       gate.mismatched_spans != 0u) {
     return 6;
   }
+#if HZ12_RECLAIM_POLICY_SHADOW
+  {
+    const uint32_t expected_planned =
+        H12_LEDGER_WIDE_SPANS < HZ12_RECLAIM_POLICY_MAX_SPANS
+            ? H12_LEDGER_WIDE_SPANS : HZ12_RECLAIM_POLICY_MAX_SPANS;
+    const uint8_t expected_threshold = (uint8_t)(
+        (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES >=
+        HZ12_RECLAIM_POLICY_MIN_BYTES);
+    QueryPerformanceCounter(&policy_start);
+    if (!h12_reclaim_policy_shadow_query(state.owner, &policy_after)) {
+      return 19;
+    }
+    QueryPerformanceCounter(&policy_end);
+    policy_after_us = 1000000.0 *
+        (double)(policy_end.QuadPart - policy_start.QuadPart) /
+        (double)policy_frequency.QuadPart;
+    if (
+      !policy_after.owner_gate_open || !policy_after.flush_owner_found ||
+      policy_after.flush_owner_pending != 0u ||
+      policy_after.owner_spans != H12_LEDGER_WIDE_SPANS ||
+      policy_after.complete_spans != H12_LEDGER_WIDE_SPANS ||
+      policy_after.incomplete_spans != 0u ||
+      policy_after.reclaimable_bytes !=
+          (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES ||
+      policy_after.planned_spans != expected_planned ||
+      policy_after.planned_bytes !=
+          (uint64_t)expected_planned * HZ12_SPAN_BYTES ||
+      policy_after.threshold_met != expected_threshold ||
+      policy_after.would_reclaim != expected_threshold) {
+      return 19;
+    }
+  }
+#endif
   for (uint32_t span_id = 0u; span_id < HZ12_SPAN_COUNT; ++span_id) {
     H12OwnerToken observed;
     H12ReturnedSpanSnapshot snapshot;
@@ -386,6 +446,18 @@ int main(void) {
          (unsigned)snapshot_recycle.rollback, h12_span_depot_core_count(),
          recycled_object == snapshot_recycle.span_base);
 #endif
+#endif
+#if HZ12_RECLAIM_POLICY_SHADOW
+  printf("[HZ12_RECLAIM_POLICY_SHADOW] before=%u after=%u owner_spans=%u "
+         "complete=%u incomplete=%u reclaimable=%llu planned_spans=%u "
+         "planned_bytes=%llu pending=%u before_us=%.3f after_us=%.3f\n",
+         (unsigned)policy_before.would_reclaim,
+         (unsigned)policy_after.would_reclaim, policy_after.owner_spans,
+         policy_after.complete_spans, policy_after.incomplete_spans,
+         (unsigned long long)policy_after.reclaimable_bytes,
+         policy_after.planned_spans,
+         (unsigned long long)policy_after.planned_bytes,
+         policy_after.flush_owner_pending, policy_before_us, policy_after_us);
 #endif
   free(state.objects);
   return 0;
