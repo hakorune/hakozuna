@@ -168,6 +168,23 @@ function Invoke-ColdSpanOwnerLedgerAttributionBuild(
     if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 }
 
+function Invoke-ColdSpanOwnerLedgerTrustedBuild([string]$Bench,
+                                                 [string]$Output) {
+    $args = $Common + @(
+        "/DHZ12_FLUSH_OWNER_ROUTE=1",
+        "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+        "/DHZ12_SHADOW_OWNER_FAST_LOAD=1",
+        "/DHZ12_SHADOW_DIAG_COUNTERS=0",
+        "/DHZ12_OWNER_BATCH_LEDGER=1",
+        "/DHZ12_OWNER_BATCH_LEDGER_TRUSTED_RETURN=1",
+        $Bench, $Shadow, $FlushOwnerRoute, $OwnerBatchLedger, $SpanOwnerShadow
+    ) + $Sources + @(
+        "psapi.lib", "/link", "/out:$Output"
+    )
+    & clang-cl @args
+    if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+}
+
 Invoke-Build $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_core.exe")
 Invoke-Build $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_core.exe")
 Invoke-OwnerMapBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ownermap.exe")
@@ -192,6 +209,7 @@ Invoke-ColdSpanOwnerLedgerBuild $XownerBench (Join-Path $OutDir "bench_xowner_hz
 Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_inert.exe") 0 0
 Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_acquire.exe") 1 0
 Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_return.exe") 0 1
+Invoke-ColdSpanOwnerLedgerTrustedBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_trusted.exe")
 
 $manifest = @(
     "HZ12 ReclaimPolicy P0 build manifest",

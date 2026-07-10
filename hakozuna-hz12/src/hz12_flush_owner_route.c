@@ -252,7 +252,15 @@ void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
 
   if (tc->flush_owner_valid &&
       h12_shadow_batch_all_owner(items, count, tc->flush_owner_id)) {
+#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_RETURN && \
+    HZ12_OWNER_BATCH_LEDGER_TRUSTED_RETURN
+    {
+      H12OwnerToken owner = {tc->flush_owner_id, tc->flush_owner_generation};
+      (void)h12_owner_batch_ledger_return_owned_range(owner, items, count);
+    }
+#else
     hz12_flush_owner_ledger_return_local(tc, items, count);
+#endif
     hz12_returned_push_range(class_id, items, count);
     return;
   }

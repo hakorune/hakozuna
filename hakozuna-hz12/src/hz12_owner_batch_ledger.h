@@ -36,6 +36,9 @@ uint32_t h12_owner_batch_ledger_owner_drain_range(H12OwnerToken owner,
 uint32_t h12_owner_batch_ledger_return_range(H12OwnerToken owner,
                                              void* const* items,
                                              uint32_t count);
+uint32_t h12_owner_batch_ledger_return_owned_range(H12OwnerToken owner,
+                                                   void* const* items,
+                                                   uint32_t count);
 int h12_owner_batch_ledger_query(const void* ptr,
                                  H12OwnerBatchLedgerRecord* out);
 H12OwnerBatchLedgerAgreement h12_owner_batch_ledger_compare_atomic(void);

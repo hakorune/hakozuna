@@ -566,3 +566,10 @@ per-slot transition are the blocker. Next: P0-B trusted-owned batch return may
 reuse the existing all-owner proof and skip repeated owner filtering. If that
 still misses -3%, replace the production bitmap with compact per-span batch
 counts; keep the bitmap only as diagnostic authority.
+
+P0-B trusted-owned return result: removing the duplicate owner filter and
+span-owner lookup improved the full ledger from 82.730M to 90.065M, but the
+98.055M baseline still leads by 8.1%. P0-B is NO-GO for production promotion.
+The remaining per-slot location/bitmap transition is too expensive. Freeze the
+bitmap implementation as the safety judge. Next: compact owner-local per-span
+batch counts with O(1) contiguous carve and route-reused return attribution.
