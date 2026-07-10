@@ -29,7 +29,7 @@ typedef struct H12ShadowCounters {
   _Atomic uint64_t projected_inbox_current_max;
 } H12ShadowCounters;
 
-static _Atomic uint32_t h12_span_owner[HZ12_SPAN_COUNT];
+static _Atomic uint64_t h12_span_owner[HZ12_SPAN_COUNT];
 static _Atomic uint8_t h12_span_foreign_seen[HZ12_SPAN_COUNT];
 static _Atomic uint32_t h12_owner_inbox_current[HZ12_SHADOW_MAX_OWNERS];
 static H12ShadowCounters h12_counters;
@@ -117,14 +117,16 @@ void h12_shadow_reset(void) {
                         memory_order_relaxed);
 }
 
-void h12_shadow_on_alloc(void* ptr, uint32_t owner_id) {
+void h12_shadow_on_alloc_token(void* ptr, uint32_t owner_id,
+                               uint32_t generation) {
   uint32_t span_id;
-  uint32_t expected;
-  uint32_t token;
-  if (owner_id >= h12_owner_count || !h12_span_id(ptr, &span_id)) {
+  uint64_t expected;
+  uint64_t token;
+  if (owner_id >= h12_owner_count || generation == 0u ||
+      !h12_span_id(ptr, &span_id)) {
     return;
   }
-  token = owner_id + 1u;
+  token = ((uint64_t)generation << 32) | (uint64_t)(owner_id + 1u);
   H12_SHADOW_COUNTER_ADD(alloc_span_seen, 1u);
 #if HZ12_SHADOW_OWNER_FAST_LOAD
   expected = atomic_load_explicit(&h12_span_owner[span_id],
@@ -148,35 +150,76 @@ void h12_shadow_on_alloc(void* ptr, uint32_t owner_id) {
   }
 }
 
-int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id) {
+void h12_shadow_on_alloc(void* ptr, uint32_t owner_id) {
+  h12_shadow_on_alloc_token(ptr, owner_id, 1u);
+}
+
+int h12_shadow_owner_token_for_ptr(const void* ptr, uint32_t* owner_id,
+                                   uint32_t* generation) {
   uint32_t span_id;
-  uint32_t token;
-  if (!owner_id || !h12_span_id(ptr, &span_id)) {
-    return 0;
-  }
+  uint64_t token;
+  uint32_t encoded_owner;
+  if (!owner_id || !generation || !h12_span_id(ptr, &span_id)) return 0;
   token = atomic_load_explicit(&h12_span_owner[span_id], memory_order_relaxed);
-  if (token == 0u || token > h12_owner_count) {
-    return 0;
-  }
-  *owner_id = token - 1u;
+  encoded_owner = (uint32_t)token;
+  if (encoded_owner == 0u || encoded_owner > h12_owner_count) return 0;
+  *generation = (uint32_t)(token >> 32);
+  if (*generation == 0u) return 0;
+  *owner_id = encoded_owner - 1u;
   return 1;
+}
+
+int h12_shadow_owner_for_ptr(const void* ptr, uint32_t* owner_id) {
+  uint32_t generation;
+  return h12_shadow_owner_token_for_ptr(ptr, owner_id, &generation);
 }
 
 int h12_shadow_batch_all_owner(void** items, uint32_t count,
                                uint32_t owner_id) {
   uint32_t span_ids[8];
-  uint32_t tokens[8];
+  uint32_t owners[8];
   uint32_t wanted;
   if (!items || owner_id >= h12_owner_count) return 0;
   for (uint32_t i = 0u; i < 8u; ++i) {
     span_ids[i] = UINT32_MAX;
-    tokens[i] = 0u;
+    owners[i] = 0u;
   }
   wanted = owner_id + 1u;
   for (uint32_t i = 0u; i < count; ++i) {
     uint32_t span_id;
     uint32_t slot;
-    uint32_t token;
+    uint32_t owner;
+    if (!items[i] || !h12_span_id(items[i], &span_id)) return 0;
+    slot = span_id & 7u;
+    if (span_ids[slot] == span_id) {
+      owner = owners[slot];
+    } else {
+      owner = (uint32_t)atomic_load_explicit(&h12_span_owner[span_id],
+                                             memory_order_relaxed);
+      span_ids[slot] = span_id;
+      owners[slot] = owner;
+    }
+    if (owner != wanted) return 0;
+  }
+  return 1;
+}
+
+int h12_shadow_batch_all_owner_token(void** items, uint32_t count,
+                                     uint32_t owner_id,
+                                     uint32_t generation) {
+  uint32_t span_ids[8];
+  uint64_t tokens[8];
+  uint64_t wanted;
+  if (!items || owner_id >= h12_owner_count || generation == 0u) return 0;
+  for (uint32_t i = 0u; i < 8u; ++i) {
+    span_ids[i] = UINT32_MAX;
+    tokens[i] = 0u;
+  }
+  wanted = ((uint64_t)generation << 32) | (uint64_t)(owner_id + 1u);
+  for (uint32_t i = 0u; i < count; ++i) {
+    uint32_t span_id;
+    uint32_t slot;
+    uint64_t token;
     if (!items[i] || !h12_span_id(items[i], &span_id)) return 0;
     slot = span_id & 7u;
     if (span_ids[slot] == span_id) {

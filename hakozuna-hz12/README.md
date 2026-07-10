@@ -46,6 +46,11 @@ within 1.4..2.5% of core and reached 29.064M ops/s with 11.32 MiB peak RSS in
 the fixed xowner R5, versus tcmalloc at 36.911M and 15.13 MiB. It is the current
 opt-in integration candidate; owner lifetime/thread churn remains a blocker.
 
+ColdSpanOwner-L2 adds generation-tagged owner slots and Windows FLS teardown.
+Its 128-thread churn smoke completed with 127 slot reuses, zero table-full
+events, and matching 128 attach/detach operations. Local R5 stayed within
+1.1..1.7% of core. Concurrent publish-versus-retire remains the next gate.
+
 ## First Rule Set
 
 ```text
@@ -71,6 +76,7 @@ current_task.md
 docs/HZ12_CHARTER_L0.md
 docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
 docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L1_20260710.md
+docs/HZ12_WINDOWS_COLD_SPAN_OWNER_L2_CHURN_20260710.md
 docs/HZ12_WINDOWS_BOUNDED_OWNER_INBOX_L1.md
 docs/HZ12_WINDOWS_DEAD_OWNER_ADOPTION_SHADOW_L2A.md
 docs/HZ12_WINDOWS_RETIRED_INBOX_ADOPTION_L2B.md

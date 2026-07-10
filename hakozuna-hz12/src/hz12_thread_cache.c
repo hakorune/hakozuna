@@ -17,6 +17,33 @@ HZ12_THREAD_LOCAL H12ThreadCache* hz12_tls = NULL;
 
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id);
 
+#if defined(_WIN32) && HZ12_FLUSH_OWNER_COLD_SPAN
+static INIT_ONCE hz12_thread_cache_fls_once = INIT_ONCE_STATIC_INIT;
+static DWORD hz12_thread_cache_fls_index = FLS_OUT_OF_INDEXES;
+
+static VOID CALLBACK hz12_thread_cache_fls_destroy(PVOID value) {
+  H12ThreadCache* tc = (H12ThreadCache*)value;
+  if (!tc) return;
+  if (hz12_tls == tc) hz12_tls = NULL;
+  for (uint32_t class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
+    hz12_thread_cache_flush_class(tc, (uint8_t)class_id);
+  }
+  hz12_flush_owner_route_drain(tc);
+  hz12_flush_owner_route_detach(tc);
+  hz12_sys_free(tc);
+}
+
+static BOOL CALLBACK hz12_thread_cache_fls_init(PINIT_ONCE once,
+                                                 PVOID parameter,
+                                                 PVOID* context) {
+  (void)once;
+  (void)parameter;
+  (void)context;
+  hz12_thread_cache_fls_index = FlsAlloc(hz12_thread_cache_fls_destroy);
+  return hz12_thread_cache_fls_index != FLS_OUT_OF_INDEXES;
+}
+#endif
+
 #if HZ12_CURRENT_SPAN_THREAD_EXIT && HZ12_TRANSFER_CENTRAL_SPAN && \
     HZ12_CLASSIFY_SPAN
 #ifndef HZ12_CURRENT_SPAN_POOL_CAP
@@ -151,6 +178,13 @@ H12ThreadCache* hz12_thread_cache_init_slow(void) {
   hz12_tls = tc;
 #if HZ12_FLUSH_OWNER_ROUTE
   hz12_flush_owner_route_attach(tc);
+#endif
+#if defined(_WIN32) && HZ12_FLUSH_OWNER_COLD_SPAN
+  if (!InitOnceExecuteOnce(&hz12_thread_cache_fls_once,
+                           hz12_thread_cache_fls_init, NULL, NULL) ||
+      !FlsSetValue(hz12_thread_cache_fls_index, tc)) {
+    hz12_flush_owner_route_detach(tc);
+  }
 #endif
 #if HZ12_CURRENT_SPAN_THREAD_EXIT && HZ12_TRANSFER_CENTRAL_SPAN && \
     HZ12_CLASSIFY_SPAN

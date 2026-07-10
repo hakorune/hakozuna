@@ -9,6 +9,7 @@ $OutDir = Join-Path $Hz12Root $OutDirName
 $RandomBench = Join-Path $RepoRoot "win\bench_random_mixed_compare.c"
 $MixedBench = Join-Path $RepoRoot "win\bench_allocator_compare.c"
 $XownerBench = Join-Path $RepoRoot "win\bench_xowner_pipeline.c"
+$OwnerChurnBench = Join-Path $RepoRoot "win\bench_hz12_owner_churn.c"
 $Sources = @(
     (Join-Path $Hz12Root "src\hz12_size_class.c"),
     (Join-Path $Hz12Root "src\hz12_sys_alloc.c"),
@@ -128,4 +129,5 @@ Invoke-FlushRouteInertBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_
 Invoke-ColdSpanOwnerBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_coldspanowner.exe")
 Invoke-ColdSpanOwnerBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_coldspanowner.exe")
 Invoke-ColdSpanOwnerBuild $XownerBench (Join-Path $OutDir "bench_xowner_hz12_coldspanowner.exe")
+Invoke-ColdSpanOwnerBuild $OwnerChurnBench (Join-Path $OutDir "hz12_owner_churn_smoke.exe")
 Write-Host "Built HZ12 Windows broad controls in: $OutDir"

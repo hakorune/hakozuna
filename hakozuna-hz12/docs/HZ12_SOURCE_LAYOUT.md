@@ -28,6 +28,8 @@ src/hz12_flush_owner_route.*
   owner lookup on normal free.
   ColdSpanOwner-L1 assigns advisory ownership only when a span becomes current
   and drains an owner inbox only at current-span replacement.
+  L2 keeps generation-tagged slots and uses Windows FLS only for cold thread
+  teardown; stale generations fall back to ownerless recycling.
 
 src/hz12_span_accounting.*
   diagnostic per-span alloc/free/live accounting

@@ -186,6 +186,7 @@ typedef struct H12ThreadCache {
 #endif
 #if HZ12_FLUSH_OWNER_ROUTE
   uint32_t flush_owner_id;
+  uint32_t flush_owner_generation;
   uint32_t flush_owner_refill_tick;
   uint8_t flush_owner_valid;
 #endif

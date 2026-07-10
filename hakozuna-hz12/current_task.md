@@ -27,9 +27,16 @@ It restored local random_mixed to within -1.4..-2.5% of core and reached
 29.064M ops/s with 11.32 MiB peak RSS in the fixed xowner R5. This is 11.1%
 faster than the first integrated route and 25.2% lower peak RSS than tcmalloc.
 
-Decision: GO as the selected opt-in integration candidate, not default. Next:
-prove bounded thread churn and generation-safe owner-slot reuse. Do not add a
-per-free owner lookup or make owner metadata a safety authority.
+ColdSpanOwner-L2 closes the first lifetime blocker with generation-tagged slots
+and Windows FLS teardown. A 128-thread sequential churn smoke recorded 128
+attaches, 127 reuses, zero full-table events, 128 detaches, and zero stale
+fallbacks. The post-lifetime local R5 remains within -1.1..-1.7% of core; the
+xowner R3 reached 29.194M with 12.01 MiB peak RSS versus tcmalloc at 38.089M
+and 14.19 MiB.
+
+Decision: GO as bounded lifetime evidence, still not default. Next: concurrent
+publish-versus-retire smoke, then a stable MT broad gate. Do not add a per-free
+owner lookup or make owner metadata a safety authority.
 
 ## Completed: Windows Bounded Reclaim Lifecycle L5-F
 
