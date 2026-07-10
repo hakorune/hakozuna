@@ -3,6 +3,7 @@
 
 #include "../include/h8.h"
 #include "h8_class_map.h"
+#include "h8_adaptive_shadow.h"
 #include "h8_medium.h"
 #include "h8_platform.h"
 

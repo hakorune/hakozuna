@@ -15,6 +15,11 @@
 #include "hz6_profiles.h"
 #elif defined(HZ_BENCH_USE_HZ7)
 #include "hz7.h"
+#elif defined(HZ_BENCH_USE_HZ8)
+#include "h8.h"
+#if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
+#include "h8_adaptive_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #elif defined(HZ_BENCH_USE_HZ12)
@@ -78,6 +83,8 @@ static inline void* hz_bench_alloc(size_t size) {
     return hz6_malloc(&hz_bench_tls_hz6_allocator, size);
 #elif defined(HZ_BENCH_USE_HZ7)
     return h7_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ8)
+    return h8_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ11)
     return hz11_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ12)
@@ -109,6 +116,8 @@ static inline void hz_bench_free(void* ptr) {
     hz6_free(&hz_bench_tls_hz6_allocator, ptr);
 #elif defined(HZ_BENCH_USE_HZ7)
     h7_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ8)
+    h8_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ11)
     hz11_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ12)
@@ -564,6 +573,19 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.direct_count,
                 s.route_count,
                 s.route_register_fail);
+    }
+#elif defined(HZ_BENCH_USE_HZ8)
+    {
+        H8Stats s = h8_stats();
+        fprintf(out,
+                "[HZ8_STATS] label=%s committed=%zu small_spans=%zu "
+                "owners=%zu remote_publish=%zu remote_collect=%zu\n",
+                label ? label : "unknown", s.arena_committed_bytes,
+                s.small_span_count, s.owner_count, s.remote_publish_count,
+                s.remote_collect_count);
+#if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
+        h8_adaptive_shadow_dump();
+#endif
     }
 #elif defined(HZ_BENCH_USE_HZ11)
     {

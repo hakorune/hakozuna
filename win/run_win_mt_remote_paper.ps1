@@ -2,6 +2,7 @@ param(
     [string]$OutputDir,
     [int]$Runs = 10,
     [int]$TimeoutSeconds = 900,
+    [string[]]$Allocators,
     [switch]$IncludeHz6Legacy,
     [switch]$SkipHz7TinyRoute,
     [switch]$ContinueOnFailure
@@ -26,6 +27,8 @@ $LegacyExecutables = @(
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz5_policy.exe") },
     @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7.exe") },
     @{ Name = "hz7-v2-remote-natural"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7_v2_remote_natural.exe") },
+    @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2.exe") },
+    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe") },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
@@ -52,9 +55,22 @@ if ($IncludeHz6Legacy) {
         $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
     }
 }
+if ($Allocators -and $Allocators.Count -gt 0) {
+    $wanted = @($Allocators | ForEach-Object { $_ -split ',' } |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $selected = @($Executables | Where-Object { $wanted -contains $_.Name })
+    if ($selected.Count -ne $wanted.Count) {
+        throw "Unknown or duplicate allocator in: $($wanted -join ', ')"
+    }
+    $Executables = $selected
+}
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    & $BuildScript
+    if (($Executables | Where-Object { $_.Name -notlike "hz8-*" }).Count -eq 0) {
+        & $BuildScript -OnlyHz8
+    } else {
+        & $BuildScript
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_mt_remote_suite.ps1 failed with exit code $LASTEXITCODE"
     }

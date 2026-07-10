@@ -29,6 +29,8 @@ $Executables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
+    @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe") },
+    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe") },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
     @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },

@@ -1,5 +1,6 @@
 param(
-    [string]$VcpkgRoot
+    [string]$VcpkgRoot,
+    [switch]$OnlyHz8
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,19 +40,23 @@ if (-not $VcpkgRoot) {
 
 . $ModernBuildCommon
 
-& $SuiteBuild
-if ($LASTEXITCODE -ne 0) {
-    throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
+if (-not $OnlyHz8) {
+    & $SuiteBuild
+    if ($LASTEXITCODE -ne 0) {
+        throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
+    }
 }
 
-$Hz3ExtraDefines = @(
-    "HZ3_S97_REMOTE_STASH_BUCKET=2",
-    "HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS=256",
-    "HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL=1"
-)
-& $Hz3BuildScript -OutDirName "out_win_mt_remote_hz3" -ExtraDefines $Hz3ExtraDefines | Out-Null
-if ($LASTEXITCODE -ne 0) {
-    throw "build_win_min.ps1 failed for mt_remote hz3 profile with exit code $LASTEXITCODE"
+if (-not $OnlyHz8) {
+    $Hz3ExtraDefines = @(
+        "HZ3_S97_REMOTE_STASH_BUCKET=2",
+        "HZ3_S97_REMOTE_STASH_BUCKET_MAX_KEYS=256",
+        "HZ3_S97_REMOTE_STASH_SKIP_TAIL_NULL=1"
+    )
+    & $Hz3BuildScript -OutDirName "out_win_mt_remote_hz3" -ExtraDefines $Hz3ExtraDefines | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "build_win_min.ps1 failed for mt_remote hz3 profile with exit code $LASTEXITCODE"
+    }
 }
 
 $VcpkgInclude = Join-Path $VcpkgRoot "installed\x64-windows\include"
@@ -64,10 +69,13 @@ $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
 $Hz7Dir = Join-Path $RepoRoot "hakozuna-hz7"
 $Hz7Dir = Join-Path $RepoRoot "hz7"
 $Hz7V2Dir = Join-Path $Hz7Dir "v2"
+$Hz8Dir = Join-Path $RepoRoot "hakozuna-hz8"
 $Hz3Lib = Join-Path $Hz3Dir "out_win_mt_remote_hz3\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
 $Hz7Source = Join-Path $Hz7Dir "hz7.c"
 $Hz7V2Source = Join-Path $Hz7V2Dir "hz7.c"
+$Hz8Sources = Get-ChildItem (Join-Path $Hz8Dir "src") -Filter "*.c" |
+    ForEach-Object { $_.FullName }
 
 $BaseFlags = @(
     "/nologo",
@@ -84,6 +92,41 @@ $BaseFlags = @(
     "/I$Hz4Dir\win",
     "/I$Hz7Dir"
 )
+
+$Hz8CommonFlags = @(
+    "/I$Hz8Dir\include",
+    "/I$Hz8Dir\src",
+    "/DHZ_BENCH_USE_HZ8=1",
+    "/DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4",
+    "/DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1=1",
+    "/DH8_MEDIUM_KEEP_REFILL_EMPTY_L1=1",
+    "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
+    "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
+)
+
+function Invoke-Hz8MtRemoteBuilds {
+    foreach ($variant in @(
+        @{ Name = "hz8-v2"; Output = "bench_random_mixed_mt_remote_hz8_v2.exe"; ExtraFlags = @() },
+        @{
+            Name = "hz8-v3-adaptive-shadow"
+            Output = "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"
+            ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
+        }
+    )) {
+        Write-Host "Building: mt_remote ($($variant.Name))"
+        $output = Join-Path $OutDir $variant.Output
+        Invoke-Checked $Cc ($BaseFlags + $Hz8CommonFlags + $variant.ExtraFlags +
+            @($BenchSrc) + $Hz8Sources + @("/link", "/out:$output"))
+    }
+}
+
+if ($OnlyHz8) {
+    Invoke-Hz8MtRemoteBuilds
+    Write-Host "Built HZ8 MT remote artifacts in: $OutDir"
+    return
+}
 
 Write-Host "Building: mt_remote (CRT baseline)"
 $BenchCrtOut = Join-Path $OutDir "bench_random_mixed_mt_remote_crt.exe"
@@ -163,6 +206,8 @@ if (Test-Path $Hz7V2Source) {
 } else {
     Write-Warning "HZ7 v2 source not found; skipping HZ7 v2 remote-natural mt_remote bench."
 }
+
+Invoke-Hz8MtRemoteBuilds
 
 Invoke-AppLikeHz6BenchBuilds `
     -Compiler $Cc `

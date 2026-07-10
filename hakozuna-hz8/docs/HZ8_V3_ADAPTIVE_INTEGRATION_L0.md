@@ -156,3 +156,65 @@ scope:
   BALANCED / TRANSFER_PRESSURE / RSS_PRESSURE recommendation
   no allocator behavior change
 ```
+
+## L0 Windows Result
+
+Implemented as a separate diagnostic-only module with four slow-path hooks:
+
+```text
+small:
+  immediately before a new span commit
+
+medium:
+  immediately before a new run scaffold
+
+remote:
+  after an existing pressure-collector checkpoint
+
+RSS:
+  at medium empty-residency budget accept/reject
+```
+
+The regular Windows smoke and the adaptive-shadow smoke both pass. The shadow
+smoke observed `balanced=7`, `transfer=4`, and `rss=0`; the tiny smoke does not
+create RSS pressure.
+
+Same-owner allocator-matrix observations:
+
+```text
+balanced:
+  transfer=0, rss=0
+
+wide_ws:
+  transfer=0, rss=0
+
+larger_sizes:
+  transfer=1090, rss=772
+```
+
+The zero transfer recommendation on balanced/wide_ws is expected: each worker
+allocates and frees its own objects in that runner.
+
+Cross-owner Windows `remote_pct=90` shadow R3:
+
+| run | transfer recommendation | remote collect | pending before | pending after |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 11,136 | 11,045 | 126,906 | 87,570 |
+| 2 | 10,835 | 10,784 | 116,558 | 82,761 |
+| 3 | 10,408 | 10,297 | 118,172 | 84,093 |
+
+The diagnostic row is not a speed row: its slow-path atomic observations are
+intentional. The result establishes that the recommendation signal is absent
+on same-owner small rows and reproducibly active under cross-owner pressure.
+
+Decision:
+
+```text
+L0:
+  ACCEPT
+
+next:
+  design L1 small-class bounded transfer adapter
+  keep behavior opt-in
+  preserve pending/qstate as safety authority
+```

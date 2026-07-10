@@ -681,6 +681,11 @@ retry_owner_capacity:
   }
   h8_medium_unlock_global();
 
+  h8_adaptive_shadow_note_medium_source(
+      class_id,
+      atomic_load_explicit(&h8g.medium_resident_empty_bytes,
+                           memory_order_relaxed),
+      0u);
   H8MediumRun* run = h8_medium_run_create_scaffold(class_id);
   if (!run) {
     return NULL;

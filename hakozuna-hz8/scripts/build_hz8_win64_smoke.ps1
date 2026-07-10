@@ -2,6 +2,7 @@ $ErrorActionPreference = "Stop"
 
 $root = Split-Path -Parent $PSScriptRoot
 $outExe = Join-Path $root "h8_smoke_win.exe"
+$outShadowExe = Join-Path $root "h8_smoke_adaptive_shadow_win.exe"
 
 $clang = (Get-Command clang-cl -ErrorAction Stop).Source
 
@@ -35,4 +36,26 @@ if ($LASTEXITCODE -ne 0) {
   throw "h8_smoke_win adoption run failed with exit code $LASTEXITCODE"
 }
 
+Remove-Item Env:H8_SMOKE_REGULAR_ADOPTION -ErrorAction SilentlyContinue
+
+& $clang /nologo /D_CRT_SECURE_NO_WARNINGS `
+  /I (Join-Path $root "include") `
+  /I (Join-Path $root "src") `
+  /DH8_ENABLE_DEBUG_STATS `
+  /DH8_ADAPTIVE_TRANSFER_SHADOW_L0 `
+  /Fe$outShadowExe `
+  $sources `
+  $smoke
+
+if ($LASTEXITCODE -ne 0) {
+  throw "adaptive shadow clang-cl failed with exit code $LASTEXITCODE"
+}
+
+Write-Host "built $outShadowExe"
+
+$env:H8_SMOKE_REGULAR_ADOPTION = '0'
+& $outShadowExe
+if ($LASTEXITCODE -ne 0) {
+  throw "h8_smoke_adaptive_shadow_win failed with exit code $LASTEXITCODE"
+}
 Remove-Item Env:H8_SMOKE_REGULAR_ADOPTION -ErrorAction SilentlyContinue

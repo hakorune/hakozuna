@@ -16,6 +16,11 @@
 #include "hz6_profiles.h"
 #elif defined(HZ_BENCH_USE_HZ5_POLICY)
 #include "hz5_policy.h"
+#elif defined(HZ_BENCH_USE_HZ8)
+#include "h8.h"
+#if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
+#include "h8_adaptive_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #include "hz11_class_diag.h"
@@ -194,6 +199,9 @@ static inline void* bench_alloc(ThreadArg* ta, size_t size) {
     (void)ta;
     static const Hz5PolicyHooks hooks = {0};
     return hz5_policy_alloc_aligned(size, (size_t)HZ_BENCH_HZ5_ALIGN, &hooks);
+#elif defined(HZ_BENCH_USE_HZ8)
+    (void)ta;
+    return h8_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_malloc(size);
@@ -235,6 +243,9 @@ static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
     (void)ptr;
     (void)size;
     return NULL;
+#elif defined(HZ_BENCH_USE_HZ8)
+    (void)ta;
+    return h8_realloc(ptr, size);
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_realloc(ptr, size);
@@ -266,6 +277,9 @@ static inline void bench_free(ThreadArg* ta, void* ptr) {
     (void)ta;
     static const Hz5PolicyHooks hooks = {0};
     (void)hz5_policy_free(ptr, &hooks);
+#elif defined(HZ_BENCH_USE_HZ8)
+    (void)ta;
+    h8_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     hz11_free(ptr);
@@ -713,6 +727,10 @@ int main(int argc, char** argv) {
     printf("\n");
     hz11_class_diag_dump_stats();
     hz11_matrix_diag_dump_stats();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && \
+    defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
+    h8_adaptive_shadow_dump();
 #endif
     fflush(stdout);
     free(args);

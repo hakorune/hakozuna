@@ -122,6 +122,7 @@ void h8_pressure_owner_collect_remote_pressure(H8OwnerRecord* owner,
   size_t collected = h8_collect_owner_pending_budget(owner, budget);
   size_t pending_after =
       atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
+  h8_adaptive_shadow_note_remote_collect(pending_before, pending_after);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(small_remote_pressure_collect_span_count, collected);
   H8_DEBUG_ADD(small_remote_pressure_collect_pending_after_count, pending_after);

@@ -17,6 +17,13 @@ batch transfer from HZ11 and cold-path reclaim authority from HZ12. No hot-path
 profile checks, production counters, or default-lane changes are allowed.
 Design and gates: `docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md`.
 
+L0 result: ACCEPT on Windows. Feature-off smoke remains clean; the diagnostic
+smoke observes slow-path recommendations. Same-owner balanced/wide_ws report no
+transfer pressure, while remote90 R3 reports 10.4K..11.1K transfer
+recommendations and 10.3K..11.0K remote collector checkpoints. The next box is
+an opt-in L1 small-class bounded transfer adapter. Do not change medium or the
+HZ8 v2 default in the same experiment.
+
 ## Frozen Baselines
 
 ```text

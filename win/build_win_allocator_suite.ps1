@@ -1,7 +1,8 @@
 param(
     [string]$VcpkgRoot,
     [switch]$DiagnosticHz6Probes,
-    [switch]$OnlyHz11
+    [switch]$OnlyHz11,
+    [switch]$OnlyHz8
 )
 
 $ErrorActionPreference = "Stop"
@@ -15,11 +16,55 @@ $Hz3Script = Join-Path $RepoRoot "hakozuna\\win\\build_win_bench_compare.ps1"
 $Hz4Script = Join-Path $RepoRoot "hakozuna-mt\\win\\build_win_bench_compare.ps1"
 $Hz5Root = Join-Path $RepoRoot "hakozuna-hz5"
 $Hz6Root = Join-Path $RepoRoot "hakozuna-hz6"
+$Hz8Root = Join-Path $RepoRoot "hakozuna-hz8"
 $Hz11Root = Join-Path $RepoRoot "hakozuna-hz11"
 $Hz6Common = Join-Path $Hz6Root "win\\hz6_win_build_common.ps1"
 $AppLikeBuildCommon = Join-Path $PSScriptRoot "bench_app_like_allocator_build_common.ps1"
 $Compiler = Get-Command "clang-cl" -ErrorAction Stop
 $CompareSource = Join-Path $PSScriptRoot "bench_allocator_compare.c"
+
+function Invoke-Hz8AllocatorMatrixBuild {
+    if (-not (Test-Path $Hz8Root)) {
+        throw "HZ8 root not found; cannot build HZ8 matrix executable: $Hz8Root"
+    }
+    $Hz8Sources = Get-ChildItem (Join-Path $Hz8Root "src") -Filter "*.c" |
+        ForEach-Object { $_.FullName }
+    $Hz8CommonFlags = @(
+        "/DHZ_BENCH_USE_HZ8=1",
+        "/DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE=1",
+        "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1=1",
+        "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4",
+        "/DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1=1",
+        "/DH8_MEDIUM_KEEP_REFILL_EMPTY_L1=1",
+        "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
+        "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
+    )
+    foreach ($variant in @(
+        @{ Name = "hz8-v2"; Output = "bench_mixed_ws_hz8_v2.exe"; ExtraFlags = @() },
+        @{
+            Name = "hz8-v3-adaptive-shadow"
+            Output = "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"
+            ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
+        }
+    )) {
+        $output = Join-Path $OutDir $variant.Output
+        $args = @(
+            "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+            "/I$Hz8Root\include", "/I$Hz8Root\src"
+        )
+        $args += $Hz8CommonFlags
+        $args += $variant.ExtraFlags
+        $args += $Hz8Sources
+        $args += $CompareSource
+        $args += "psapi.lib"
+        $args += "/Fe:$output"
+        Write-Host "[hz8-win] building $($variant.Output)"
+        & $Compiler.Source @args
+        if ($LASTEXITCODE -ne 0) {
+            throw "HZ8 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
+        }
+    }
+}
 
 function Invoke-Hz11AllocatorMatrixBuild {
     if (-not (Test-Path $Hz11Root)) {
@@ -348,6 +393,11 @@ if ($OnlyHz11) {
     Write-Host "Built HZ11 suite artifact in: $OutDir"
     return
 }
+if ($OnlyHz8) {
+    Invoke-Hz8AllocatorMatrixBuild
+    Write-Host "Built HZ8 suite artifacts in: $OutDir"
+    return
+}
 
 $Hz3Args = @()
 $Hz4Args = @()
@@ -499,6 +549,7 @@ if (Test-Path $Hz6Common) {
 }
 
 Invoke-Hz11AllocatorMatrixBuild
+Invoke-Hz8AllocatorMatrixBuild
 
 $Artifacts = @(
     (Join-Path $Hz3OutDir "bench_mixed_ws_crt.exe"),

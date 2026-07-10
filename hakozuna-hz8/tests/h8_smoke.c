@@ -1,4 +1,5 @@
 #include "../include/h8.h"
+#include "../src/h8_adaptive_shadow.h"
 #include "../src/h8_medium.h"
 
 #include <stdio.h>
@@ -551,6 +552,24 @@ int main(void) {
   }
 #endif
   H8Stats stats = h8_stats();
+#if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
+  H8AdaptiveShadowSnapshot adaptive = h8_adaptive_shadow_snapshot();
+  uint64_t small_refill = 0u;
+  uint64_t medium_source = 0u;
+  for (uint32_t i = 0u; i < H8_CLASS_COUNT; ++i) {
+    small_refill += adaptive.small_refill[i];
+  }
+  for (uint32_t i = 0u; i < H8_MEDIUM_CLASS_COUNT; ++i) {
+    medium_source += adaptive.medium_source[i];
+  }
+  if (small_refill == 0u || medium_source == 0u ||
+      adaptive.recommendation[H8_ADAPTIVE_SHADOW_TRANSFER_PRESSURE] == 0u) {
+    fprintf(stderr,
+            "adaptive shadow did not observe expected slow-path pressure\n");
+    return 28;
+  }
+  h8_adaptive_shadow_dump();
+#endif
   printf("arena=%zu committed=%zu owners=%zu local=%zu remote=%zu\n",
          stats.arena_reserved_bytes, stats.arena_committed_bytes,
          stats.owner_count, stats.local_alloc_count, stats.remote_publish_count);

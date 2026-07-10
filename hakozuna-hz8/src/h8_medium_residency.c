@@ -273,6 +273,8 @@ static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
   for (;;) {
     if (cur > k_h8_medium_empty_resident_budget ||
         bytes > k_h8_medium_empty_resident_budget - cur) {
+      h8_adaptive_shadow_note_medium_residency(
+          run->class_id, cur, k_h8_medium_empty_resident_budget, true);
 #if defined(H8_ENABLE_DEBUG_STATS)
       h8_medium_warm_shadow_note_budget_reject(run);
 #endif
@@ -285,6 +287,8 @@ static bool h8_medium_try_reserve_empty_payload(H8MediumRun* run) {
             memory_order_acq_rel, memory_order_relaxed)) {
       run->resident_charge = true;
       h8_medium_update_resident_peak(next);
+      h8_adaptive_shadow_note_medium_residency(
+          run->class_id, next, k_h8_medium_empty_resident_budget, false);
       return true;
     }
   }
