@@ -35,6 +35,7 @@ $ReclaimGate = Join-Path $Hz12Root "src\hz12_reclaim_gate.c"
 $SpanDetach = Join-Path $Hz12Root "src\hz12_span_detach.c"
 $SpanDecommit = Join-Path $Hz12Root "src\hz12_span_decommit.c"
 $SpanDepot = Join-Path $Hz12Root "src\hz12_span_depot.c"
+$SpanDepotCore = Join-Path $Hz12Root "src\hz12_span_depot_core.c"
 $OwnerRegistry = Join-Path $Hz12Root "src\hz12_owner_registry.c"
 $TokenInbox = Join-Path $Hz12Root "src\hz12_token_inbox.c"
 $OwnerEpoch = Join-Path $Hz12Root "src\hz12_owner_epoch.c"
@@ -60,7 +61,7 @@ $Hz12Sources = @(
     "$Hz12Root\src\hz12_live_footprint.c"
 )
 
-foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $WideWsOwnerLedgerShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $OwnerBatchLedgerSmoke, $OwnerBatchLedgerBoundarySmoke, $OwnerBatchLedgerXownerSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle, $OwnerBatchLedger, $OwnerBatchLedgerCompare, $OwnerLedgerRetireGate, $SnapshotReclaim) + $Hz12Sources) {
+foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $WideWsOwnerLedgerShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $OwnerBatchLedgerSmoke, $OwnerBatchLedgerBoundarySmoke, $OwnerBatchLedgerXownerSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $SpanDepotCore, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle, $OwnerBatchLedger, $OwnerBatchLedgerCompare, $OwnerLedgerRetireGate, $SnapshotReclaim) + $Hz12Sources) {
     if (-not (Test-Path $path)) { throw "Missing HZ12 shadow source: $path" }
 }
 if ($InboxCap -lt 1) { throw "InboxCap must be positive." }
@@ -221,7 +222,7 @@ $wholeSpanSmokeArgs = @(
     "/DHZ12_CLASSIFY_SPAN=1",
     "/DHZ12_CACHE_CAP=256",
     $WholeSpanSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach,
-    $SpanDecommit, $SpanDepot
+    $SpanDecommit, $SpanDepot, $SpanDepotCore
 ) + $Hz12Sources + @(
     "psapi.lib", "/link",
     "/out:$(Join-Path $OutDir 'hz12_whole_span_accounting_smoke.exe')"
@@ -237,7 +238,7 @@ $depotCycleSmokeArgs = @(
     "/DHZ12_CLASSIFY_SPAN=1",
     "/DHZ12_CACHE_CAP=256",
     $DepotCycleSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach,
-    $SpanDecommit, $SpanDepot
+    $SpanDecommit, $SpanDepot, $SpanDepotCore
 ) + $Hz12Sources + @(
     "psapi.lib", "/link",
     "/out:$(Join-Path $OutDir 'hz12_span_depot_cycle_smoke.exe')"
@@ -253,7 +254,7 @@ $depotCapSmokeArgs = @(
     "/DHZ12_CLASSIFY_SPAN=1",
     "/DHZ12_CACHE_CAP=256",
     $DepotCapSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach,
-    $SpanDecommit, $SpanDepot
+    $SpanDecommit, $SpanDepot, $SpanDepotCore
 ) + $Hz12Sources + @(
     "psapi.lib", "/link",
     "/out:$(Join-Path $OutDir 'hz12_span_depot_cap_smoke.exe')"
@@ -457,7 +458,7 @@ $wideWsSnapshotReclaimArgs = @(
     $WideWsOwnerLedgerShadow, $OwnerBatchLedger,
     $OwnerBatchLedgerCompare, $SpanOwnerShadow,
     $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
-    $OwnerEpoch, $TokenInbox, $OwnerRegistry, $SnapshotReclaim,
+    $OwnerEpoch, $TokenInbox, $OwnerRegistry, $SnapshotReclaim, $SpanDepotCore,
     (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
 ) + $Hz12Sources + @(
     "psapi.lib", "/link",
@@ -484,7 +485,7 @@ $wideWsOwnerLedgerReclaimArgs = @(
     $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
     $OwnerEpoch, $TokenInbox, $OwnerRegistry, $RetiredReclaimDetach,
     $RetiredReclaimDecommit, $SpanDetach, $SpanDecommit, $ReclaimGate,
-    $RetiredReclaimRecycle, $SpanDepot, $ReclaimCarveDiag,
+    $RetiredReclaimRecycle, $SpanDepot, $SpanDepotCore, $ReclaimCarveDiag,
     (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
 ) + $Hz12Sources + @(
     "psapi.lib", "/link",
@@ -502,7 +503,7 @@ $wideWsReclaimShadowArgs = @(
     "/DHZ12_CACHE_CAP=256",
     $WideWsReclaimShadow, $RetiredReclaimShadow, $RetiredReclaimDetach,
     $RetiredReclaimDecommit, $SpanOwnerShadow, $SpanDetach, $SpanDecommit,
-    $RetiredReclaimDepotCycle, $SpanDepot,
+    $RetiredReclaimDepotCycle, $SpanDepot, $SpanDepotCore,
     $ReclaimCarveDiag, $RetiredReclaimRecycle,
     $OwnerRetireGate, $OwnerEpoch, $TokenInbox, $OwnerRegistry, $Accounting,
     $ReclaimGate

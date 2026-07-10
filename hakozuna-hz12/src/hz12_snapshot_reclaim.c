@@ -3,6 +3,7 @@
 #include "hz12_flush_owner_route.h"
 #include "hz12_owner_retire_gate.h"
 #include "hz12_span.h"
+#include "hz12_span_depot_core.h"
 #include "hz12_span_owner_shadow.h"
 
 #include <string.h>
@@ -83,6 +84,12 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
     }
     out->decommitted += 1u;
     out->decommitted_bytes += HZ12_SPAN_BYTES;
+    if (!h12_span_depot_core_put_decommitted(
+            span_base, (uint8_t)(class_plus_one - 1u))) {
+      out->failed += 1u;
+      break;
+    }
+    out->depot_inserted += 1u;
 #endif
   }
   return out->failed == 0u && out->decommitted != 0u;

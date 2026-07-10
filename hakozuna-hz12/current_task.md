@@ -603,3 +603,13 @@ working-set reduction in every run. The P0-D shadow executable still performs
 zero mutation. This is retire-only diagnostic behavior, not an automatic
 pressure policy and not a speed-lane change. Next: bounded depot handoff for
 the P1 success set; do not reopen continuous bitmap/count accounting.
+
+P2 bounded depot handoff result: depot storage is now split from the
+diagnostic accounting/recommit wrapper. The core accepts only aligned,
+in-arena, decommitted span/class pairs and has no atomic accounting authority.
+The P1 sibling inserted all 64 reclaimed spans into the fixed depot in
+repeat-10, with zero failures, 4 MiB payload decommitted, and a stable
+4,186,112-byte working-set reduction. Existing whole-span, depot-cycle, and
+depot-capacity smokes remained green, while P0-D remained mutation-free. Next:
+core-only bounded take/recommit/route/current installation with ordered
+rollback; automatic pressure policy remains closed.

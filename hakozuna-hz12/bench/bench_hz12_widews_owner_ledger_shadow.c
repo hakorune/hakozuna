@@ -21,6 +21,7 @@
 #include "hz12_snapshot_reclaim.h"
 #include "hz12_span.h"
 #include "hz12_span_accounting.h"
+#include "hz12_span_depot_core.h"
 #include "hz12_span_owner_shadow.h"
 #include "hz12_thread_cache.h"
 #include "hz12_token_inbox.h"
@@ -117,6 +118,9 @@ int main(void) {
   uint32_t snapshot_mismatches = 0u;
 
   h12_span_accounting_reset();
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  h12_span_depot_core_reset();
+#endif
   h12_span_owner_shadow_reset();
   h12_owner_batch_ledger_reset();
   h12_owner_registry_reset();
@@ -205,6 +209,7 @@ int main(void) {
       snapshot_reclaim.candidates != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.detached != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.decommitted != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.depot_inserted != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.failed != 0u ||
       snapshot_reclaim.decommitted_bytes !=
           (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES) {
@@ -276,9 +281,10 @@ int main(void) {
          (unsigned long long)memory_after.WorkingSetSize);
 #if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
   printf("[HZ12_SNAPSHOT_RECLAIM] budget=%u candidates=%u detached=%u "
-         "decommitted=%u failed=%u bytes=%llu rss_delta=%lld\n",
+         "decommitted=%u depot=%u failed=%u bytes=%llu rss_delta=%lld\n",
          snapshot_reclaim.budget, snapshot_reclaim.candidates,
          snapshot_reclaim.detached, snapshot_reclaim.decommitted,
+         snapshot_reclaim.depot_inserted,
          snapshot_reclaim.failed,
          (unsigned long long)snapshot_reclaim.decommitted_bytes,
          (long long)memory_before.WorkingSetSize -
