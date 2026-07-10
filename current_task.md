@@ -23,6 +23,9 @@ Current direction:
   evidence and Windows bring-up lanes. It is the tcmalloc-shaped
   front-end/transfer-cache/span experiment, not a faster HZ10 and not an HZ8
   replacement.
+  HZ12 in hakozuna-hz12/: Windows-first advisory-ownership research line.
+  It starts shadow-only from HZ11 cross-owner evidence and targets reclaimable
+  spans / low RSS without adding owner work to the free hot path.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
@@ -55,6 +58,11 @@ HZ11 speed-first orientation:
   hakozuna-hz11/docs/HZ11_POSITIONING_L0.md
   hakozuna-hz11/docs/HZ11_FINE128_REAL_APP_POSITIONING_L1.md
   hakozuna-hz11/docs/HZ11_WINDOWS_LANE_STATUS_L1.md
+
+HZ12 advisory-ownership orientation:
+  hakozuna-hz12/README.md
+  hakozuna-hz12/docs/HZ12_CHARTER_L0.md
+  hakozuna-hz12/docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
 
 Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```

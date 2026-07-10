@@ -1,0 +1,5 @@
+/out_win_shadow/
+/out_win_diag/
+!/bench_results/
+/bench_results/*
+!/bench_results/*.md
