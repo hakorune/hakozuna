@@ -16,6 +16,26 @@
 #include "hz12_shadow.h"
 #include "hz12_span_accounting.h"
 
+#ifndef HZ12_XOWNER_ACCOUNTING
+#define HZ12_XOWNER_ACCOUNTING 1
+#endif
+
+#ifndef HZ12_XOWNER_BARE_CORE
+#define HZ12_XOWNER_BARE_CORE 0
+#endif
+
+#if HZ12_XOWNER_ACCOUNTING
+#define H12_XOWNER_ACCOUNT_ALLOC(ptr) h12_span_accounting_on_alloc(ptr)
+#define H12_XOWNER_ACCOUNT_RELEASE(ptr) h12_span_accounting_on_release(ptr)
+#define H12_XOWNER_ACCOUNT_RESET() h12_span_accounting_reset()
+#define H12_XOWNER_ACCOUNT_SCAN() h12_span_accounting_scan()
+#else
+#define H12_XOWNER_ACCOUNT_ALLOC(ptr) ((void)(ptr))
+#define H12_XOWNER_ACCOUNT_RELEASE(ptr) ((void)(ptr))
+#define H12_XOWNER_ACCOUNT_RESET() ((void)0)
+#define H12_XOWNER_ACCOUNT_SCAN() ((H12WholeSpanShadow){0})
+#endif
+
 #ifndef HZ12_DRAIN_INTERVAL
 #define HZ12_DRAIN_INTERVAL 256u
 #endif
@@ -48,6 +68,50 @@ static volatile LONG h12_l1_production_done;
 static volatile LONG h12_l1_consumers_done;
 static volatile LONG h12_l1_producers_done;
 static uint32_t h12_l1_producer_count;
+
+static void h12_l1_on_alloc(void* ptr, H12L1Thread* state) {
+#if HZ12_XOWNER_BARE_CORE
+  (void)ptr;
+  (void)state;
+#else
+  h12_shadow_on_alloc(ptr, state->id);
+  H12_XOWNER_ACCOUNT_ALLOC(ptr);
+  if ((state->allocs & (HZ12_DRAIN_INTERVAL - 1u)) == 0u) {
+    state->owner_drained += h12_inbox_drain_owner(state->id);
+  }
+#endif
+}
+
+static void h12_l1_producer_finish(H12L1Thread* state) {
+#if HZ12_XOWNER_BARE_CORE
+  (void)state;
+#else
+  h12_inbox_mark_owner_retired(state->id);
+  while (InterlockedCompareExchange(&h12_l1_consumers_done, 0, 0) <
+         (LONG)h12_l1_producer_count) {
+    state->owner_drained += h12_inbox_drain_owner(state->id);
+    SwitchToThread();
+  }
+  state->owner_drained += h12_inbox_drain_owner(state->id);
+#endif
+}
+
+static void h12_l1_consumer_free(H12L1Thread* state, void* ptr) {
+#if HZ12_XOWNER_BARE_CORE
+  (void)state;
+  hz12_free(ptr);
+#else
+  h12_inbox_defer_free(&state->deferred, ptr);
+#endif
+}
+
+static void h12_l1_consumer_finish(H12L1Thread* state) {
+#if HZ12_XOWNER_BARE_CORE
+  (void)state;
+#else
+  h12_inbox_flush(&state->deferred);
+#endif
+}
 
 static uint32_t h12_l1_parse_u32(const char* text, uint32_t fallback) {
   char* end = NULL;
@@ -104,16 +168,12 @@ static unsigned __stdcall h12_l1_producer_main(void* arg) {
     size_t size = state->min_size + (h12_l1_rng_next(&state->seed) % span);
     void* ptr = hz12_malloc(size);
     if (!ptr) continue;
-    h12_shadow_on_alloc(ptr, state->id);
-    h12_span_accounting_on_alloc(ptr);
     state->allocs += 1u;
-    if ((state->allocs & (HZ12_DRAIN_INTERVAL - 1u)) == 0u) {
-      state->owner_drained += h12_inbox_drain_owner(state->id);
-    }
+    h12_l1_on_alloc(ptr, state);
     while (!h12_l1_ring_push(state->ring, ptr)) {
       state->push_waits += 1u;
       if (InterlockedCompareExchange(&h12_l1_stop, 0, 0) != 0) {
-        h12_span_accounting_on_release(ptr);
+        H12_XOWNER_ACCOUNT_RELEASE(ptr);
         hz12_free(ptr);
         break;
       }
@@ -121,15 +181,7 @@ static unsigned __stdcall h12_l1_producer_main(void* arg) {
     }
   }
   InterlockedIncrement(&h12_l1_production_done);
-  h12_inbox_mark_owner_retired(state->id);
-  /* Consumers flush their final deferred batch after all producers stop. Keep
-   * each owner alive until that phase completes, then perform a final drain. */
-  while (InterlockedCompareExchange(&h12_l1_consumers_done, 0, 0) <
-         (LONG)h12_l1_producer_count) {
-    state->owner_drained += h12_inbox_drain_owner(state->id);
-    SwitchToThread();
-  }
-  state->owner_drained += h12_inbox_drain_owner(state->id);
+  h12_l1_producer_finish(state);
   InterlockedIncrement(&h12_l1_producers_done);
   return 0;
 }
@@ -141,7 +193,7 @@ static unsigned __stdcall h12_l1_consumer_main(void* arg) {
   for (;;) {
     void* ptr = h12_l1_ring_pop(state->ring);
     if (ptr) {
-      h12_inbox_defer_free(&state->deferred, ptr);
+      h12_l1_consumer_free(state, ptr);
       state->frees += 1u;
       continue;
     }
@@ -153,7 +205,7 @@ static unsigned __stdcall h12_l1_consumer_main(void* arg) {
     state->pop_waits += 1u;
     SwitchToThread();
   }
-  h12_inbox_flush(&state->deferred);
+  h12_l1_consumer_finish(state);
   InterlockedIncrement(&h12_l1_consumers_done);
   return 0;
 }
@@ -187,8 +239,10 @@ int main(int argc, char** argv) {
             argv[0]);
     return 2;
   }
+#if !HZ12_XOWNER_BARE_CORE
   if (!h12_shadow_init(producers) || !h12_inbox_init(producers)) return 3;
-  h12_span_accounting_reset();
+#endif
+  H12_XOWNER_ACCOUNT_RESET();
   h12_l1_producer_count = producers;
   total_threads = producers + consumers;
   handles = (HANDLE*)calloc(total_threads, sizeof(HANDLE));
@@ -209,7 +263,9 @@ int main(int argc, char** argv) {
                                          &states[i], 0, NULL);
     states[producers + i].id = producers + i;
     states[producers + i].ring = &rings[i];
+#if !HZ12_XOWNER_BARE_CORE
     h12_inbox_deferred_init(&states[producers + i].deferred);
+#endif
     handles[producers + i] = (HANDLE)_beginthreadex(NULL, 0, h12_l1_consumer_main,
                                                      &states[producers + i], 0, NULL);
     if (!handles[i] || !handles[producers + i]) return 5;
@@ -224,8 +280,12 @@ int main(int argc, char** argv) {
   InterlockedExchange(&h12_l1_stop, 1);
   WaitForMultipleObjects(total_threads, handles, TRUE, INFINITE);
   elapsed_ns = h12_l1_now_ns() - start_ns;
+#if HZ12_XOWNER_BARE_CORE
+  adoption_shadow = (H12AdoptionShadow){0};
+#else
   adoption_shadow = h12_inbox_adoption_shadow_scan();
-  whole_span_shadow = h12_span_accounting_scan();
+#endif
+  whole_span_shadow = H12_XOWNER_ACCOUNT_SCAN();
 
   for (i = 0u; i < total_threads; ++i) {
     allocs += states[i].allocs;
@@ -259,7 +319,9 @@ int main(int argc, char** argv) {
          (unsigned long long)whole_span_shadow.tracked_live_objects,
          (unsigned long long)whole_span_shadow.release_untracked,
          (unsigned long long)whole_span_shadow.release_underflow);
+#if !HZ12_XOWNER_BARE_CORE
   h12_inbox_dump(stdout);
+#endif
 
   for (i = 0u; i < producers; ++i) free(rings[i].slots);
   free(states);

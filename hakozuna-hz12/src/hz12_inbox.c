@@ -3,6 +3,14 @@
 #include "hz12.h"
 #include "hz12_span_accounting.h"
 
+#ifndef HZ12_INBOX_ACCOUNTING
+#define HZ12_INBOX_ACCOUNTING 1
+#endif
+
+#ifndef HZ12_INBOX_DIAG_COUNTERS
+#define HZ12_INBOX_DIAG_COUNTERS 1
+#endif
+
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -58,6 +66,7 @@ static BOOL CALLBACK h12_inbox_init_once(PINIT_ONCE once, PVOID parameter,
   return TRUE;
 }
 
+#if HZ12_INBOX_DIAG_COUNTERS
 static void h12_atomic_max(_Atomic uint64_t* destination, uint64_t value) {
   uint64_t current = atomic_load_explicit(destination, memory_order_relaxed);
   while (current < value &&
@@ -66,6 +75,17 @@ static void h12_atomic_max(_Atomic uint64_t* destination, uint64_t value) {
                                                 memory_order_relaxed)) {
   }
 }
+#endif
+
+#if HZ12_INBOX_DIAG_COUNTERS
+#define H12_INBOX_COUNTER_ADD(field, value)                               \
+  atomic_fetch_add_explicit(&h12_inbox_counters.field, (value), memory_order_relaxed)
+#define H12_INBOX_COUNTER_MAX(field, value) \
+  h12_atomic_max(&h12_inbox_counters.field, (value))
+#else
+#define H12_INBOX_COUNTER_ADD(field, value) ((void)0)
+#define H12_INBOX_COUNTER_MAX(field, value) ((void)0)
+#endif
 
 int h12_inbox_init(uint32_t owner_count) {
   if (owner_count == 0u || owner_count > HZ12_SHADOW_MAX_OWNERS) {
@@ -130,7 +150,9 @@ void h12_inbox_deferred_init(H12InboxDeferred* deferred) {
 static void h12_inbox_free_chain(void* head) {
   while (head) {
     void* next = *(void**)head;
+#if HZ12_INBOX_ACCOUNTING
     h12_span_accounting_on_release(head);
+#endif
     hz12_free(head);
     head = next;
   }
@@ -141,8 +163,7 @@ static void h12_inbox_publish(uint32_t owner_id, void* head, void* tail,
   H12OwnerInbox* inbox;
   if (!head || count == 0u) return;
   if (owner_id >= h12_inbox_owner_count) {
-    atomic_fetch_add_explicit(&h12_inbox_counters.fallback_unknown, count,
-                              memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(fallback_unknown, count);
     h12_inbox_free_chain(head);
     return;
   }
@@ -150,27 +171,23 @@ static void h12_inbox_publish(uint32_t owner_id, void* head, void* tail,
   EnterCriticalSection(&inbox->lock);
   if (inbox->adopted) {
     LeaveCriticalSection(&inbox->lock);
-    atomic_fetch_add_explicit(&h12_inbox_counters.fallback_adopted, count,
-                              memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(fallback_adopted, count);
     h12_inbox_free_chain(head);
     return;
   }
   if (inbox->count + count > HZ12_INBOX_CAP) {
     LeaveCriticalSection(&inbox->lock);
-    atomic_fetch_add_explicit(&h12_inbox_counters.fallback_overflow, count,
-                              memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(fallback_overflow, count);
     h12_inbox_free_chain(head);
     return;
   }
   *(void**)tail = inbox->head;
   inbox->head = head;
   inbox->count += count;
-  h12_atomic_max(&h12_inbox_counters.inbox_current_max, inbox->count);
+  H12_INBOX_COUNTER_MAX(inbox_current_max, inbox->count);
   LeaveCriticalSection(&inbox->lock);
-  atomic_fetch_add_explicit(&h12_inbox_counters.route_batches, 1u,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_inbox_counters.route_objects, count,
-                            memory_order_relaxed);
+  H12_INBOX_COUNTER_ADD(route_batches, 1u);
+  H12_INBOX_COUNTER_ADD(route_objects, count);
 }
 
 void h12_inbox_flush(H12InboxDeferred* deferred) {
@@ -186,8 +203,7 @@ void h12_inbox_flush(H12InboxDeferred* deferred) {
     uint32_t owner_id;
     void* ptr = deferred->items[i];
     if (!h12_shadow_owner_for_ptr(ptr, &owner_id)) {
-      atomic_fetch_add_explicit(&h12_inbox_counters.fallback_unknown, 1u,
-                                memory_order_relaxed);
+      H12_INBOX_COUNTER_ADD(fallback_unknown, 1u);
       hz12_free(ptr);
       continue;
     }
@@ -205,8 +221,7 @@ void h12_inbox_flush(H12InboxDeferred* deferred) {
 void h12_inbox_defer_free(H12InboxDeferred* deferred, void* ptr) {
   if (!deferred || !ptr) return;
   deferred->items[deferred->count++] = ptr;
-  atomic_fetch_add_explicit(&h12_inbox_counters.deferred_objects, 1u,
-                            memory_order_relaxed);
+  H12_INBOX_COUNTER_ADD(deferred_objects, 1u);
   if (deferred->count == HZ12_SHADOW_FLUSH_CAP) {
     h12_inbox_flush(deferred);
   }
@@ -226,10 +241,8 @@ uint32_t h12_inbox_drain_owner(uint32_t owner_id) {
   LeaveCriticalSection(&inbox->lock);
   if (head) {
     h12_inbox_free_chain(head);
-    atomic_fetch_add_explicit(&h12_inbox_counters.owner_drain_batches, 1u,
-                              memory_order_relaxed);
-    atomic_fetch_add_explicit(&h12_inbox_counters.owner_drain_objects, count,
-                              memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(owner_drain_batches, 1u);
+    H12_INBOX_COUNTER_ADD(owner_drain_objects, count);
   }
   return count;
 }
@@ -241,16 +254,13 @@ void h12_inbox_mark_owner_retired(uint32_t owner_id) {
   inbox = &h12_inboxes[owner_id];
   atomic_store_explicit(&h12_inbox_owner_retired[owner_id], 1u,
                         memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_inbox_counters.retired_owner_marked, 1u,
-                            memory_order_relaxed);
+  H12_INBOX_COUNTER_ADD(retired_owner_marked, 1u);
   EnterCriticalSection(&inbox->lock);
   pending = inbox->count;
   LeaveCriticalSection(&inbox->lock);
   if (pending != 0u) {
-    atomic_fetch_add_explicit(&h12_inbox_counters.retired_owner_with_pending,
-                              1u, memory_order_relaxed);
-    atomic_fetch_add_explicit(&h12_inbox_counters.retired_owner_pending_objects,
-                              pending, memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(retired_owner_with_pending, 1u);
+    H12_INBOX_COUNTER_ADD(retired_owner_pending_objects, pending);
   }
 }
 
@@ -274,12 +284,9 @@ H12AdoptionShadow h12_inbox_adoption_shadow_scan(void) {
       result.pending_objects += pending;
     }
   }
-  atomic_fetch_add_explicit(&h12_inbox_counters.adoption_shadow_scans, 1u,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_inbox_counters.adoption_shadow_pending_owners,
-                            result.pending_owners, memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_inbox_counters.adoption_shadow_pending_objects,
-                            result.pending_objects, memory_order_relaxed);
+  H12_INBOX_COUNTER_ADD(adoption_shadow_scans, 1u);
+  H12_INBOX_COUNTER_ADD(adoption_shadow_pending_owners, result.pending_owners);
+  H12_INBOX_COUNTER_ADD(adoption_shadow_pending_objects, result.pending_objects);
   return result;
 }
 
@@ -290,16 +297,14 @@ uint32_t h12_inbox_adopt_retired_owner(uint32_t owner_id) {
   if (owner_id >= h12_inbox_owner_count) return 0u;
   if (atomic_load_explicit(&h12_inbox_owner_retired[owner_id],
                            memory_order_relaxed) == 0u) {
-    atomic_fetch_add_explicit(&h12_inbox_counters.adoption_reject_active, 1u,
-                              memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(adoption_reject_active, 1u);
     return 0u;
   }
   inbox = &h12_inboxes[owner_id];
   EnterCriticalSection(&inbox->lock);
   if (inbox->adopted) {
     LeaveCriticalSection(&inbox->lock);
-    atomic_fetch_add_explicit(&h12_inbox_counters.adoption_reject_duplicate,
-                              1u, memory_order_relaxed);
+    H12_INBOX_COUNTER_ADD(adoption_reject_duplicate, 1u);
     return 0u;
   }
   inbox->adopted = 1u;
@@ -308,10 +313,8 @@ uint32_t h12_inbox_adopt_retired_owner(uint32_t owner_id) {
   inbox->head = NULL;
   inbox->count = 0u;
   LeaveCriticalSection(&inbox->lock);
-  atomic_fetch_add_explicit(&h12_inbox_counters.adoption_batches, 1u,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_inbox_counters.adoption_objects, count,
-                            memory_order_relaxed);
+  H12_INBOX_COUNTER_ADD(adoption_batches, 1u);
+  H12_INBOX_COUNTER_ADD(adoption_objects, count);
   h12_inbox_free_chain(head);
   return count;
 }

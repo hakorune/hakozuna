@@ -96,6 +96,85 @@ $inboxArgs = @(
 & clang-cl @inboxArgs
 if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 
+$inboxNoAccountingArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_INBOX_CAP=$InboxCap",
+    "/DHZ12_DRAIN_INTERVAL=$DrainInterval",
+    "/DHZ12_XOWNER_ACCOUNTING=0",
+    "/DHZ12_INBOX_ACCOUNTING=0",
+    $InboxBench, $Shadow, $Inbox
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_xowner_inbox_noaccounting.exe')"
+)
+& clang-cl @inboxNoAccountingArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$inboxSpeedArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_INBOX_CAP=$InboxCap",
+    "/DHZ12_DRAIN_INTERVAL=$DrainInterval",
+    "/DHZ12_XOWNER_ACCOUNTING=0",
+    "/DHZ12_INBOX_ACCOUNTING=0",
+    "/DHZ12_SHADOW_DIAG_COUNTERS=0",
+    "/DHZ12_INBOX_DIAG_COUNTERS=0",
+    $InboxBench, $Shadow, $Inbox
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_xowner_inbox_speed.exe')"
+)
+& clang-cl @inboxSpeedArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$ownerFastLoadArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_INBOX_CAP=$InboxCap",
+    "/DHZ12_DRAIN_INTERVAL=$DrainInterval",
+    "/DHZ12_XOWNER_ACCOUNTING=0",
+    "/DHZ12_INBOX_ACCOUNTING=0",
+    "/DHZ12_SHADOW_DIAG_COUNTERS=0",
+    "/DHZ12_INBOX_DIAG_COUNTERS=0",
+    "/DHZ12_SHADOW_OWNER_FAST_LOAD=1",
+    $InboxBench, $Shadow, $Inbox
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_xowner_inbox_ownerfastload.exe')"
+)
+& clang-cl @ownerFastLoadArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$bareCoreArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_XOWNER_ACCOUNTING=0",
+    "/DHZ12_XOWNER_BARE_CORE=1",
+    $InboxBench
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_xowner_bare_core.exe')"
+)
+& clang-cl @bareCoreArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
 $adoptionSmokeArgs = @(
     "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
     "/I$(Join-Path $RepoRoot 'win')",

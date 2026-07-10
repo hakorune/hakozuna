@@ -5,6 +5,14 @@
 #include <stdatomic.h>
 #include <string.h>
 
+#ifndef HZ12_SHADOW_DIAG_COUNTERS
+#define HZ12_SHADOW_DIAG_COUNTERS 1
+#endif
+
+#ifndef HZ12_SHADOW_OWNER_FAST_LOAD
+#define HZ12_SHADOW_OWNER_FAST_LOAD 0
+#endif
+
 typedef struct H12ShadowCounters {
   _Atomic uint64_t alloc_span_seen;
   _Atomic uint64_t alloc_owner_first;
@@ -47,6 +55,7 @@ static int h12_span_id(const void* ptr, uint32_t* out_id) {
   return 1;
 }
 
+#if HZ12_SHADOW_DIAG_COUNTERS
 static void h12_atomic_max(_Atomic uint64_t* destination, uint64_t value) {
   uint64_t current = atomic_load_explicit(destination, memory_order_relaxed);
   while (current < value &&
@@ -55,6 +64,14 @@ static void h12_atomic_max(_Atomic uint64_t* destination, uint64_t value) {
                                                 memory_order_relaxed)) {
   }
 }
+#endif
+
+#if HZ12_SHADOW_DIAG_COUNTERS
+#define H12_SHADOW_COUNTER_ADD(field, value)                              \
+  atomic_fetch_add_explicit(&h12_counters.field, (value), memory_order_relaxed)
+#else
+#define H12_SHADOW_COUNTER_ADD(field, value) ((void)0)
+#endif
 
 int h12_shadow_init(uint32_t owner_count) {
   if (owner_count == 0u || owner_count > HZ12_SHADOW_MAX_OWNERS) {
@@ -108,18 +125,26 @@ void h12_shadow_on_alloc(void* ptr, uint32_t owner_id) {
     return;
   }
   token = owner_id + 1u;
-  atomic_fetch_add_explicit(&h12_counters.alloc_span_seen, 1u,
-                            memory_order_relaxed);
+  H12_SHADOW_COUNTER_ADD(alloc_span_seen, 1u);
+#if HZ12_SHADOW_OWNER_FAST_LOAD
+  expected = atomic_load_explicit(&h12_span_owner[span_id],
+                                  memory_order_relaxed);
+  if (expected == token) {
+    return;
+  }
+  if (expected != 0u) {
+    H12_SHADOW_COUNTER_ADD(alloc_owner_reuse_foreign, 1u);
+    return;
+  }
+#endif
   expected = 0u;
   if (atomic_compare_exchange_strong_explicit(&h12_span_owner[span_id],
                                               &expected, token,
                                               memory_order_relaxed,
                                               memory_order_relaxed)) {
-    atomic_fetch_add_explicit(&h12_counters.alloc_owner_first, 1u,
-                              memory_order_relaxed);
+    H12_SHADOW_COUNTER_ADD(alloc_owner_first, 1u);
   } else if (expected != token) {
-    atomic_fetch_add_explicit(&h12_counters.alloc_owner_reuse_foreign, 1u,
-                              memory_order_relaxed);
+    H12_SHADOW_COUNTER_ADD(alloc_owner_reuse_foreign, 1u);
   }
 }
 
@@ -146,19 +171,17 @@ void h12_shadow_cache_init(H12ShadowCache* cache, uint32_t consumer_id) {
 }
 
 static void h12_shadow_project_batch(uint32_t owner_id, uint32_t count) {
+#if HZ12_SHADOW_DIAG_COUNTERS
   uint32_t now;
   if (count == 0u || owner_id >= h12_owner_count) {
     return;
   }
   if (count > HZ12_SHADOW_INBOX_CAP) {
-    atomic_fetch_add_explicit(&h12_counters.would_keep_ownerless_overflow,
-                              count, memory_order_relaxed);
+    H12_SHADOW_COUNTER_ADD(would_keep_ownerless_overflow, count);
     return;
   }
-  atomic_fetch_add_explicit(&h12_counters.would_route_batches, 1u,
-                            memory_order_relaxed);
-  atomic_fetch_add_explicit(&h12_counters.would_route_objects, count,
-                            memory_order_relaxed);
+  H12_SHADOW_COUNTER_ADD(would_route_batches, 1u);
+  H12_SHADOW_COUNTER_ADD(would_route_objects, count);
   /* L0 models immediate owner drain. This records a bounded batch peak without
    * creating an actual inbox or changing HZ12 ownership. */
   now = atomic_fetch_add_explicit(&h12_owner_inbox_current[owner_id], count,
@@ -166,6 +189,10 @@ static void h12_shadow_project_batch(uint32_t owner_id, uint32_t count) {
   h12_atomic_max(&h12_counters.projected_inbox_current_max, now);
   atomic_fetch_sub_explicit(&h12_owner_inbox_current[owner_id], count,
                             memory_order_relaxed);
+#else
+  (void)owner_id;
+  (void)count;
+#endif
 }
 
 void h12_shadow_flush(H12ShadowCache* cache) {
@@ -179,35 +206,30 @@ void h12_shadow_flush(H12ShadowCache* cache) {
     uint32_t span_id;
     uint32_t token;
     if (!h12_span_id(cache->items[i], &span_id)) {
-      atomic_fetch_add_explicit(&h12_counters.flush_owner_unknown, 1u,
-                                memory_order_relaxed);
+      H12_SHADOW_COUNTER_ADD(flush_owner_unknown, 1u);
       continue;
     }
-    atomic_fetch_add_explicit(&h12_counters.flush_objects_total, 1u,
-                              memory_order_relaxed);
+    H12_SHADOW_COUNTER_ADD(flush_objects_total, 1u);
     token = atomic_load_explicit(&h12_span_owner[span_id], memory_order_relaxed);
     if (token == 0u || token > h12_owner_count) {
-      atomic_fetch_add_explicit(&h12_counters.flush_owner_unknown, 1u,
-                                memory_order_relaxed);
-      atomic_fetch_add_explicit(&h12_counters.projected_orphan_objects, 1u,
-                                memory_order_relaxed);
+      H12_SHADOW_COUNTER_ADD(flush_owner_unknown, 1u);
+      H12_SHADOW_COUNTER_ADD(projected_orphan_objects, 1u);
       continue;
     }
     if ((token - 1u) == cache->consumer_id) {
-      atomic_fetch_add_explicit(&h12_counters.flush_owner_local, 1u,
-                                memory_order_relaxed);
+      H12_SHADOW_COUNTER_ADD(flush_owner_local, 1u);
       continue;
     }
-    atomic_fetch_add_explicit(&h12_counters.flush_owner_foreign, 1u,
-                              memory_order_relaxed);
+    H12_SHADOW_COUNTER_ADD(flush_owner_foreign, 1u);
     owner_counts[token - 1u] += 1u;
+#if HZ12_SHADOW_DIAG_COUNTERS
     if (atomic_exchange_explicit(&h12_span_foreign_seen[span_id], 1u,
                                  memory_order_relaxed) == 0u) {
       /* L0 cannot prove a span is wholly free; record the spans that would
        * require a future free-count authority before reclaim is legal. */
-      atomic_fetch_add_explicit(&h12_counters.projected_reclaim_blocked_spans,
-                                1u, memory_order_relaxed);
+      H12_SHADOW_COUNTER_ADD(projected_reclaim_blocked_spans, 1u);
     }
+#endif
   }
   for (i = 0u; i < h12_owner_count; ++i) {
     h12_shadow_project_batch(i, owner_counts[i]);

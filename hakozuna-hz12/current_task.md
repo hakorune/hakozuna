@@ -330,3 +330,57 @@ quiesced, detached, decommitted, recommitted at the same address, used through
 normal free, and reclaimed again. It does not select candidates automatically.
 Any production pacing/scanning/depot-admission policy must begin as a separate
 diagnostic lane with RSS and throughput acceptance gates.
+
+## Measurement Snapshot
+
+The original grouped R5 is retained only as invalid measurement-order evidence.
+The provenance-safe runner now rotates row order, fixes affinity and priority,
+and records executable hashes and build flags. Its A/A tests place median row
+noise near 4%, although individual Windows runs can still move by 14..24%.
+
+The corrected 100% cross-owner R5 first measured the diagnostic L1 at 17.604M
+ops/s. Compiling out atomic whole-span accounting raised the median from
+18.420M to 25.351M (+37.6%). Compiling out only the remaining shadow/inbox
+diagnostic counters then raised 25.620M to 28.477M (+11.2%). Both changes kept
+the owner mapping, bounded mutex inbox, drain behavior, ownerless fallback,
+and retirement path intact.
+
+The final round-robin speed comparison measured HZ11 ownerless at 13.046M,
+HZ12 owner-inbox speed at 28.896M, and tcmalloc at 36.833M ops/s. HZ12 is 2.21x
+HZ11 and reaches 78.4% of tcmalloc in this exact pipeline. Owner-inbox behavior
+is therefore GO as a speed mechanism; it is not yet a public/default allocator
+lane or a complete HZ11 performance superset.
+
+The bare-core ceiling control then measured 13.434M versus 29.274M for the
+owner-inbox speed row. The inbox path is 2.18x faster because it replaces the
+ownerless per-object returned-list critical-section traffic with bounded batch
+publication. Do not remove owner routing or the inbox. The next narrow A/B is
+to replace the steady-state owner-map CAS with a relaxed-load same-owner hit,
+while preserving first-writer CAS and all routing/fallback behavior.
+
+OwnerFastLoad-L1 is GO as a Windows xowner candidate. The narrow R5 measured
+36.052M versus 29.292M for the counter-free speed control (+23.1%). A direct
+same-session R5 then measured 35.542M versus tcmalloc at 37.597M, placing HZ12
+at 94.5% of tcmalloc in this row. Repeat-10 short safety runs all completed
+with zero pending retired owners/objects and at most one producer-stop cleanup
+object. The first-writer CAS remains; only an already-matching owner token uses
+the relaxed-load return.
+
+Review synthesis: the measured L1 row mixes allocator behavior with shadow,
+whole-span accounting, and inbox diagnostics, so an HZ12 speed lane has not yet
+been measured. Runner output must include a build-flag manifest in addition to
+hashes, and the corrected runner must establish its own A/A band. Production
+reclaim authority must not reuse per-op atomic shadow accounting: use an
+owner-local batch ledger updated at carve, local flush, owner drain, and retire
+checkpoint. Keep the atomic shadow only as a diagnostic judge and require exact
+shadow/ledger agreement before any automatic reclaim policy can be promoted.
+
+## Next Decision
+
+1. Keep `OwnerFastLoad-L1` opt-in until local/random and broad matrix controls
+   prove no regression; do not claim tcmalloc parity from one Windows row.
+2. Keep the bounded inbox: it is 2.18x the ownerless bare-core control.
+3. Keep atomic accounting and all diagnostic counters out of the speed lane.
+4. Start production reclaim authority only as an owner-local batch-ledger
+   sibling, checked against the frozen atomic shadow; do not reconnect per-op
+   atomics to normal malloc/free.

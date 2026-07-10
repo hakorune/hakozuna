@@ -80,6 +80,8 @@ docs/HZ12_WINDOWS_BOUNDED_RETIRED_DETACH_L5C.md
 docs/HZ12_WINDOWS_BOUNDED_RETIRED_DECOMMIT_L5D.md
 docs/HZ12_WINDOWS_RETIRED_DEPOT_CYCLE_L5E.md
 docs/HZ12_WINDOWS_RETIRED_SPAN_RECYCLE_L5F.md
+docs/HZ12_WINDOWS_MEASUREMENT_TABLE_20260710.md
+docs/HZ12_WINDOWS_TCMALLOC_HOTPATH_AUDIT_20260710.md
 docs/HZ12_SOURCE_LAYOUT.md
 docs/HZ12_PORTABILITY_CONTRACT_L0.md
 docs/HZ12_NO_GO_LEDGER.md
@@ -162,3 +164,15 @@ to the depot. It touched 9,984..10,048 class-dependent slots per run, released
 4.00 MiB again, and reported zero address, generation, or lifecycle failures.
 The bounded Windows mechanism is complete; automatic reclaim policy remains
 out of scope.
+
+The provenance-safe Windows cross-owner runner now separates allocator behavior
+from diagnostics. In R5, the counter-free/accounting-free owner-inbox mechanism
+reached 28.896M ops/s versus HZ11 ownerless at 13.046M and tcmalloc at 36.833M.
+It preserves bounded inbox/fallback behavior but does not yet provide automatic
+reclaim authority; atomic accounting remains a diagnostic judge only.
+
+The follow-up OwnerFastLoad candidate keeps the first-writer CAS but handles an
+already matching span owner with a relaxed load. It reached 35.542M ops/s
+versus tcmalloc at 37.597M in the same R5 100% cross-owner pipeline (94.5%),
+and passed repeat-10 retirement/pending safety checks. It remains opt-in until
+local/random and broad workload controls are complete.
