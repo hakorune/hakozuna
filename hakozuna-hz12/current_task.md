@@ -573,3 +573,12 @@ span-owner lookup improved the full ledger from 82.730M to 90.065M, but the
 The remaining per-slot location/bitmap transition is too expensive. Freeze the
 bitmap implementation as the safety judge. Next: compact owner-local per-span
 batch counts with O(1) contiguous carve and route-reused return attribution.
+
+P0-C compact-count result: replacing the bitmap with per-span owner/class,
+carved-highwater, and outstanding counts improved small random_mixed to
+87.415M, versus 70.540M for the bitmap control, but the 99.781M baseline still
+leads by 12.4%. Exact returned-sink reacquire/return maintenance remains too
+frequent. P0-C is NO-GO. Stop continuous-ledger tuning. Next: reconstruct the
+candidate set only at a retirement/pressure checkpoint after real inbox drain
+and enrolled cache flush; validate that snapshot against bitmap/atomic shadows
+in diagnostic lanes without adding normal malloc/free/refill accounting.

@@ -24,6 +24,7 @@ $Shadow = Join-Path $Hz12Root "src\hz12_shadow.c"
 $Inbox = Join-Path $Hz12Root "src\hz12_inbox.c"
 $FlushOwnerRoute = Join-Path $Hz12Root "src\hz12_flush_owner_route.c"
 $OwnerBatchLedger = Join-Path $Hz12Root "src\hz12_owner_batch_ledger.c"
+$OwnerBatchCountLedger = Join-Path $Hz12Root "src\hz12_owner_batch_count_ledger.c"
 $SpanOwnerShadow = Join-Path $Hz12Root "src\hz12_span_owner_shadow.c"
 $Common = @(
     "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
@@ -185,6 +186,22 @@ function Invoke-ColdSpanOwnerLedgerTrustedBuild([string]$Bench,
     if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 }
 
+function Invoke-ColdSpanOwnerBatchCountBuild([string]$Bench,
+                                              [string]$Output) {
+    $args = $Common + @(
+        "/DHZ12_FLUSH_OWNER_ROUTE=1",
+        "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+        "/DHZ12_SHADOW_OWNER_FAST_LOAD=1",
+        "/DHZ12_SHADOW_DIAG_COUNTERS=0",
+        "/DHZ12_OWNER_BATCH_COUNT_LEDGER=1",
+        $Bench, $Shadow, $FlushOwnerRoute, $OwnerBatchCountLedger
+    ) + $Sources + @(
+        "psapi.lib", "/link", "/out:$Output"
+    )
+    & clang-cl @args
+    if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+}
+
 Invoke-Build $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_core.exe")
 Invoke-Build $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_core.exe")
 Invoke-OwnerMapBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ownermap.exe")
@@ -210,6 +227,9 @@ Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "benc
 Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_acquire.exe") 1 0
 Invoke-ColdSpanOwnerLedgerAttributionBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_return.exe") 0 1
 Invoke-ColdSpanOwnerLedgerTrustedBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_ledger_trusted.exe")
+Invoke-ColdSpanOwnerBatchCountBuild $RandomBench (Join-Path $OutDir "bench_random_mixed_hz12_countledger_p0c.exe")
+Invoke-ColdSpanOwnerBatchCountBuild $MixedBench (Join-Path $OutDir "bench_mixed_ws_hz12_countledger_p0c.exe")
+Invoke-ColdSpanOwnerBatchCountBuild $XownerBench (Join-Path $OutDir "bench_xowner_hz12_countledger_p0c.exe")
 
 $manifest = @(
     "HZ12 ReclaimPolicy P0 build manifest",

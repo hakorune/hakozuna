@@ -142,6 +142,9 @@
 #ifndef HZ12_OWNER_BATCH_LEDGER_TRUSTED_RETURN
 #define HZ12_OWNER_BATCH_LEDGER_TRUSTED_RETURN 0u
 #endif
+#ifndef HZ12_OWNER_BATCH_COUNT_LEDGER
+#define HZ12_OWNER_BATCH_COUNT_LEDGER 0u
+#endif
 
 /* HZ12CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H12ClassCache[13] into two parallel arrays with power-of-2

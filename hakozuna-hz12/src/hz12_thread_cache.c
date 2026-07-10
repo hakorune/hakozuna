@@ -3,7 +3,9 @@
 #if HZ12_FLUSH_OWNER_ROUTE
 #include "hz12_flush_owner_route.h"
 #endif
-#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+#include "hz12_owner_batch_count_ledger.h"
+#elif HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
 #include "hz12_owner_batch_ledger.h"
 #endif
 
@@ -20,7 +22,46 @@ HZ12_THREAD_LOCAL H12ThreadCache* hz12_tls = NULL;
 
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id);
 
-#if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
+  H12OwnerToken owner = {0u, 0u};
+  if (tc && tc->flush_owner_valid) {
+    owner.slot = tc->flush_owner_id;
+    owner.generation = tc->flush_owner_generation;
+  }
+  return owner;
+}
+
+static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  void* items[1] = {ptr};
+  if (owner.generation != 0u) {
+    (void)h12_owner_batch_count_acquire_range(owner, items, 1u);
+  }
+}
+
+#if HZ12_SPAN_BUMP_BATCH
+static void hz12_thread_cache_ledger_acquire_contiguous(
+    H12ThreadCache* tc, char* first, size_t slot, uint32_t count) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  if (owner.generation != 0u) {
+    (void)h12_owner_batch_count_acquire_contiguous(
+        owner, first, slot, count);
+  }
+}
+#else
+#define hz12_thread_cache_ledger_acquire_contiguous(tc, first, slot, count) \
+  ((void)0)
+#endif
+
+static void hz12_thread_cache_ledger_reacquire_range(
+    H12ThreadCache* tc, void* const* items, uint32_t count) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  if (owner.generation != 0u) {
+    (void)h12_owner_batch_count_acquire_range(owner, items, count);
+  }
+}
+#elif HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
 static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
   H12OwnerToken owner = {0u, 0u};
   if (tc && tc->flush_owner_valid) {
@@ -35,6 +76,14 @@ static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
   if (owner.generation != 0u) {
     void* items[1] = {ptr};
     (void)h12_owner_batch_ledger_acquire_range(owner, items, 1u);
+  }
+}
+
+static void hz12_thread_cache_ledger_reacquire_range(
+    H12ThreadCache* tc, void* const* items, uint32_t count) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  if (owner.generation != 0u) {
+    (void)h12_owner_batch_ledger_acquire_range(owner, items, count);
   }
 }
 
@@ -65,6 +114,7 @@ static void hz12_thread_cache_ledger_acquire_contiguous(
 #define hz12_thread_cache_ledger_acquire(tc, ptr) ((void)0)
 #define hz12_thread_cache_ledger_acquire_contiguous(tc, first, slot, count) \
   ((void)0)
+#define hz12_thread_cache_ledger_reacquire_range(tc, items, count) ((void)0)
 #endif
 
 #if defined(_WIN32) && HZ12_FLUSH_OWNER_COLD_SPAN
@@ -623,6 +673,7 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
                                          HZ12_RETURNED_REFILL_BATCH_COUNT);
     HZ12_MATRIX_DIAG_RETURNED_BATCH(class_id, n);
     if (n > 0u) {
+      hz12_thread_cache_ledger_reacquire_range(tc, tmp, n);
       for (uint32_t i = 1u; i < n; ++i) {
         hz12_thread_cache_push(tc, class_id, tmp[i]);
       }
@@ -647,6 +698,11 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
       void* reused = hz12_returned_pop(class_id);
       HZ12_MATRIX_DIAG_RETURNED_ONE(class_id, reused != NULL);
       if (reused) {
+#if HZ12_OWNER_BATCH_COUNT_LEDGER || \
+    (HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE)
+        void* reacquired[1] = {reused};
+        hz12_thread_cache_ledger_reacquire_range(tc, reacquired, 1u);
+#endif
         if (pressure > 0u) {
           tc->returned_refill_pressure[class_id] = (uint8_t)(pressure - 1u);
         }
@@ -669,6 +725,11 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
     void* reused = hz12_returned_pop(class_id);
     HZ12_MATRIX_DIAG_RETURNED_ONE(class_id, reused != NULL);
     if (reused) {
+#if HZ12_OWNER_BATCH_COUNT_LEDGER || \
+    (HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE)
+      void* reacquired[1] = {reused};
+      hz12_thread_cache_ledger_reacquire_range(tc, reacquired, 1u);
+#endif
       return reused;
     }
 #if HZ12_RETURNED_REFILL_COLD_SKIP

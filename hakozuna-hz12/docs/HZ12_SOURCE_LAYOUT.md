@@ -44,6 +44,10 @@ src/hz12_owner_batch_ledger_compare.c
   diagnostic-only atomic-shadow comparator, separated so production-shape
   ledger builds do not link per-operation atomic accounting
 
+src/hz12_owner_batch_count_ledger.*
+  P0-C compact continuous per-span count control; faster than the bitmap but
+  still NO-GO because returned-refill update frequency fails the local gate
+
 src/hz12_owner_ledger_retire_gate.*
   L6-C read-only composition of epoch/token retirement, the real flush-owner
   inbox pending count, and owner-scoped ledger/atomic agreement

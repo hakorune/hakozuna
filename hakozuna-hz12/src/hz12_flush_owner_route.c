@@ -7,6 +7,9 @@
 #include "hz12_owner_batch_ledger.h"
 #include "hz12_span_owner_shadow.h"
 #endif
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+#include "hz12_owner_batch_count_ledger.h"
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -203,6 +206,15 @@ void hz12_flush_owner_route_assign_span(H12ThreadCache* tc, void* span_base) {
     (void)h12_span_owner_shadow_assign(span_base, owner);
   }
 #endif
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+  {
+    H12OwnerToken owner = {tc->flush_owner_id, tc->flush_owner_generation};
+    uint8_t class_id;
+    if (hz12_span_classify(span_base, &class_id)) {
+      (void)h12_owner_batch_count_assign_span(span_base, owner, class_id);
+    }
+  }
+#endif
 }
 
 void hz12_flush_owner_route_detach(H12ThreadCache* tc) {
@@ -252,6 +264,12 @@ void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
 
   if (tc->flush_owner_valid &&
       h12_shadow_batch_all_owner(items, count, tc->flush_owner_id)) {
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+    {
+      H12OwnerToken owner = {tc->flush_owner_id, tc->flush_owner_generation};
+      (void)h12_owner_batch_count_return_owned_range(owner, items, count);
+    }
+#endif
 #if HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_RETURN && \
     HZ12_OWNER_BATCH_LEDGER_TRUSTED_RETURN
     {
@@ -297,6 +315,13 @@ void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
   }
 
   if (local_count != 0u) {
+#if HZ12_OWNER_BATCH_COUNT_LEDGER
+    {
+      H12OwnerToken owner = {tc->flush_owner_id, tc->flush_owner_generation};
+      (void)h12_owner_batch_count_return_owned_range(
+          owner, local, local_count);
+    }
+#endif
     hz12_flush_owner_ledger_return_local(tc, local, local_count);
     hz12_returned_push_range(class_id, local, local_count);
   }
