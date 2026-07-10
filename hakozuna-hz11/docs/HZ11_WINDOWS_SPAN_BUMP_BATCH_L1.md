@@ -220,6 +220,39 @@ established. Keep default unchanged and do not add another returned-sink
 policy; if promotion is revisited, use A/A noise bands rather than a fixed
 three-percent Larson threshold.
 
+## Traffic scaling: cap32 control
+
+A cache-cap32 R3 noise gate was run to increase flush/sink traffic. It was too
+unstable to answer the causal question: worker A/A pair variation reached
+-19.0%, and main candidate pair deltas ranged from +34.1% to -30.0%. Medians
+were -3.2% for worker and -4.1% for main. No monotonic delta appeared as sink
+traffic increased. The cap32 pressure lane is diagnostic-only and must not be
+used for promotion or for claiming returned-sink causality.
+
+This closes the current returnedrange investigation. Keep the matrix benefit
+as evidence, keep `hz11-span-cache256` selected/default, and do not add
+half-flush, retention, or locality policy. Future performance work should use
+a more controlled Windows setup or target an independent workload.
+
+## Noise-gate R5 decision
+
+The automated gate was run on 2026-07-10 with five A/A pairs and five
+alternating baseline/candidate pairs per warmup mode, using 10-second runs,
+eight threads, and sizes 8..1024. The full output is stored at
+`docs/benchmarks/windows/noise-gates/hz11_returnedrange_noise_gate_20260710_074256.md`.
+
+| Warmup | Baseline median | Candidate median | Delta | Decision |
+| --- | ---: | ---: | ---: | --- |
+| worker | 42.566M | 43.295M | +1.7% | within candidate-watch band |
+| main | 46.029M | 43.774M | -4.9% | promotion blocked |
+
+Worker is clean, but main is below baseline in four of five alternating pairs.
+The A/A median delta for main was -1.4%, so A/A explains part of the Windows
+variation but does not clear this repeated main-warmup weakness. Final status:
+keep returnedrange as a general candidate-watch, keep `hz11-span-cache256` as
+selected/default, and do not add another returned-sink policy. Any further
+work must isolate the main-warmup-specific cause before promotion.
+
 If this area is revisited, the next experiment should explain Larson lifecycle
 or pacing attribution independently. It should not combine another sink policy
 with the current returnedrange implementation.

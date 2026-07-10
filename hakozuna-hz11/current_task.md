@@ -519,8 +519,39 @@ HZ11 Windows:
   selected row remains hz11-span-cache256.
   classbatch16 is candidate-watch / matrix helper only.
   Continue only with app-like confirmation or profile-scoped evidence if needed.
+  Use win/run_win_larson_noise_gate.ps1 for A/A-aware candidate gates; do not
+  judge a single Larson delta against a fixed three-percent threshold.
+
+Noise-gate R5 result (2026-07-10): returnedrange worker median was 43.295M
+versus 42.566M baseline (+1.7%), but main median was 43.774M versus 46.029M
+(-4.9%). Main was below baseline in four of five alternating pairs; its A/A
+median delta was -1.4%. Therefore A/A noise explains single-run fluctuations,
+but does not clear the repeated main-warmup weakness. Keep returnedrange as a
+general candidate-watch, not a selected/default promotion. Do not add another
+sink policy; the next work must isolate the main-warmup-specific cause or leave
+the candidate frozen as evidence.
 
 Writing:
   HZ8 paper exists. Natural order is HZ10 ownership/reclaim, then HZ11
   speed/lane-specialization, unless Windows evidence changes priority.
 ```
+
+## Cross-Owner Decision
+
+The diagnostic `win/bench_xowner_pipeline.c` lane now provides deterministic
+100% cross-owner free with sharing_factor=2. In the initial Windows R3
+(4 producers/4 consumers, ring4096, sizes8..1024), HZ11 was 7.45M ops/s
+median versus tcmalloc 27.35M. This exceeds the HZ12 opening rule (tcmalloc
+loss >=15%, sharing_factor >=2, cross-owner free >=20%). Keep HZ11 ownerless
+default unchanged and begin HZ12 ownership research at the cold-path
+flush-time handoff layer; do not add per-free owner metadata or lock-free
+queues to HZ11.
+
+## Returnedrange Cap32 Control
+
+A cache-cap32 R3 noise gate was used to increase flush/sink traffic. It was too
+unstable to answer the causal question: worker A/A pair variation reached
+-19.0%, and main candidate pair deltas ranged from +34.1% to -30.0%. Medians
+were -3.2% for worker and -4.1% for main. No monotonic returnedrange delta
+appeared as sink traffic increased. Keep cap32 diagnostic-only and do not infer
+returned-sink causality or promotion from this pressure lane.

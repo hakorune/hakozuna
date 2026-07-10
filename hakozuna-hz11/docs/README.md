@@ -63,6 +63,11 @@ HZ11_WINDOWS_SPAN_BUMP_BATCH_L1.md:
   The same track contains a separate returned-range splice probe; it does not
   change flush amount or source lifetime.
 
+win/run_win_larson_noise_gate.ps1:
+  A/A-aware Windows Larson gate for candidate comparisons. It alternates
+  baseline/candidate execution, records worker/main medians, and reports the
+  A/A noise band so a fixed single-run percentage is not overinterpreted.
+
 HZ11_LINUX_RETURNED_REFILL_BATCH_PROBE_L1.md:
   Ubuntu cross-check for the Windows returned-refill classbatch idea. Adds
   Linux non-transfer span siblings (`span-cache256`, `span-cache512-classbatch`)
