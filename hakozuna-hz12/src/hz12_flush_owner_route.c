@@ -3,6 +3,10 @@
 #include "hz12_shadow.h"
 #include "hz12_span.h"
 #include "hz12_thread_cache.h"
+#if HZ12_OWNER_BATCH_LEDGER_DIAG
+#include "hz12_owner_batch_ledger.h"
+#include "hz12_span_owner_shadow.h"
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -42,6 +46,55 @@ static _Atomic uint32_t hz12_flush_owner_next;
 static H12FlushOwnerInbox
     hz12_flush_owner_inboxes[HZ12_SHADOW_MAX_OWNERS];
 static H12FlushOwnerRouteAtomicStats hz12_flush_owner_stats;
+
+#if HZ12_OWNER_BATCH_LEDGER_DIAG
+static H12OwnerToken hz12_flush_owner_token(const H12ThreadCache* tc) {
+  H12OwnerToken owner = {0u, 0u};
+  if (tc && tc->flush_owner_valid) {
+    owner.slot = tc->flush_owner_id;
+    owner.generation = tc->flush_owner_generation;
+  }
+  return owner;
+}
+
+static void hz12_flush_owner_ledger_return_local(H12ThreadCache* tc,
+                                                 void* const* items,
+                                                 uint32_t count) {
+  H12OwnerToken owner = hz12_flush_owner_token(tc);
+  void* local[HZ12_CACHE_CAP];
+  uint32_t local_count = 0u;
+  if (owner.generation == 0u) return;
+  for (uint32_t i = 0u; items && i < count; ++i) {
+    uint32_t slot;
+    uint32_t generation;
+    if (h12_shadow_owner_token_for_ptr(items[i], &slot, &generation) &&
+        slot == owner.slot && generation == owner.generation) {
+      local[local_count++] = items[i];
+    }
+  }
+  if (local_count != 0u) {
+    (void)h12_owner_batch_ledger_return_range(owner, local, local_count);
+  }
+}
+
+static void hz12_flush_owner_ledger_drain_chain(H12ThreadCache* tc,
+                                                void* head) {
+  H12OwnerToken owner = hz12_flush_owner_token(tc);
+  void* items[HZ12_CACHE_CAP];
+  if (owner.generation == 0u) return;
+  while (head) {
+    uint32_t count = 0u;
+    while (head && count < HZ12_CACHE_CAP) {
+      items[count++] = head;
+      head = *(void**)head;
+    }
+    (void)h12_owner_batch_ledger_owner_drain_range(owner, items, count);
+  }
+}
+#else
+#define hz12_flush_owner_ledger_return_local(tc, items, count) ((void)0)
+#define hz12_flush_owner_ledger_drain_chain(tc, head) ((void)0)
+#endif
 
 static void hz12_flush_owner_init_once(void) {
   (void)h12_shadow_init(HZ12_SHADOW_MAX_OWNERS);
@@ -144,6 +197,12 @@ void hz12_flush_owner_route_assign_span(H12ThreadCache* tc, void* span_base) {
   if (!tc || !tc->flush_owner_valid || !span_base) return;
   h12_shadow_on_alloc_token(span_base, tc->flush_owner_id,
                             tc->flush_owner_generation);
+#if HZ12_OWNER_BATCH_LEDGER_DIAG
+  {
+    H12OwnerToken owner = hz12_flush_owner_token(tc);
+    (void)h12_span_owner_shadow_assign(span_base, owner);
+  }
+#endif
 }
 
 void hz12_flush_owner_route_detach(H12ThreadCache* tc) {
@@ -193,6 +252,7 @@ void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
 
   if (tc->flush_owner_valid &&
       h12_shadow_batch_all_owner(items, count, tc->flush_owner_id)) {
+    hz12_flush_owner_ledger_return_local(tc, items, count);
     hz12_returned_push_range(class_id, items, count);
     return;
   }
@@ -229,6 +289,7 @@ void hz12_flush_owner_route_batch(H12ThreadCache* tc, uint8_t class_id,
   }
 
   if (local_count != 0u) {
+    hz12_flush_owner_ledger_return_local(tc, local, local_count);
     hz12_returned_push_range(class_id, local, local_count);
   }
   for (uint32_t owner_id = 0u; owner_id < HZ12_SHADOW_MAX_OWNERS;
@@ -264,6 +325,7 @@ void hz12_flush_owner_route_drain(H12ThreadCache* tc) {
 
   for (uint32_t class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
     void* head = heads[class_id];
+    hz12_flush_owner_ledger_drain_chain(tc, head);
     while (head) {
       void* next = *(void**)head;
       hz12_thread_cache_push(tc, (uint8_t)class_id, head);
@@ -284,6 +346,23 @@ void hz12_flush_owner_route_stats(H12FlushOwnerRouteStats* out) {
       &hz12_flush_owner_stats.detach_success, memory_order_relaxed);
   out->stale_fallback = atomic_load_explicit(
       &hz12_flush_owner_stats.stale_fallback, memory_order_relaxed);
+}
+
+int hz12_flush_owner_route_pending(uint32_t owner_id, uint32_t generation,
+                                   uint32_t* out_pending) {
+  H12FlushOwnerInbox* inbox;
+  int matched;
+  if (!out_pending || owner_id >= HZ12_SHADOW_MAX_OWNERS || generation == 0u) {
+    return 0;
+  }
+  (void)pthread_once(&hz12_flush_owner_once, hz12_flush_owner_init_once);
+  inbox = &hz12_flush_owner_inboxes[owner_id];
+  EnterCriticalSection(&inbox->lock);
+  matched = atomic_load_explicit(&inbox->generation, memory_order_relaxed) ==
+            generation;
+  *out_pending = matched ? inbox->total_count : 0u;
+  LeaveCriticalSection(&inbox->lock);
+  return matched;
 }
 
 void* hz12_flush_owner_route_drain_for_class(H12ThreadCache* tc,

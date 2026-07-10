@@ -2,6 +2,10 @@
 
 #include "hz12.h"
 #include "hz12_reclaim_carve_diag.h"
+#if HZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG
+#include "hz12_owner_batch_ledger.h"
+#include "hz12_thread_cache.h"
+#endif
 #include "hz12_span.h"
 #include "hz12_span_accounting.h"
 #include "hz12_span_decommit.h"
@@ -62,12 +66,19 @@ static int h12_recycle_exercise_span(
   H12SpanDetachResult detach;
   H12SpanDecommitResult decommit;
   uint32_t i;
+#if HZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG
+  void* ledger_items[HZ12_SPAN_BYTES / HZ12_MIN_SIZE];
+  H12OwnerBatchLedgerRecord ledger;
+#endif
   if (!h12_span_accounting_query(take->span_base, &accounting) ||
       accounting.class_id != take->class_id ||
       !h12_recycle_owner_matches(accounting.span_id, owner)) {
     out->owner_mismatch += 1u;
     return 0;
   }
+#if HZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG
+  if (!h12_owner_batch_ledger_recycle_span(take->span_base, owner)) return 0;
+#endif
   for (i = 0u; i < accounting.slot_capacity; ++i) {
     void* ptr = h12_reclaim_carve_current(accounting.class_id);
     uint8_t observed_class;
@@ -76,11 +87,29 @@ static int h12_recycle_exercise_span(
       return 0;
     }
     h12_span_accounting_on_alloc(ptr);
+#if HZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG
+    ledger_items[i] = ptr;
+    if (h12_owner_batch_ledger_acquire_range(owner, &ledger_items[i], 1u) !=
+        1u) {
+      return 0;
+    }
+#endif
     *((volatile unsigned char*)ptr) = (unsigned char)(i + 1u);
     h12_span_accounting_on_release(ptr);
     hz12_free(ptr);
     out->slots_touched += 1u;
   }
+#if HZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG
+  hz12_thread_cache_reclaim_checkpoint();
+  if (h12_owner_batch_ledger_return_range(
+          owner, ledger_items, accounting.slot_capacity) !=
+      accounting.slot_capacity ||
+      !h12_owner_batch_ledger_query(take->span_base, &ledger) ||
+      !ledger.ledger_candidate || ledger.outstanding_slots != 0u ||
+      ledger.rejected_transitions != 0u) {
+    return 0;
+  }
+#endif
   if (!h12_span_accounting_query(take->span_base, &accounting) ||
       !accounting.accounting_candidate || accounting.live != 0u) {
     return 0;

@@ -14,6 +14,7 @@ $InboxBench = Join-Path $Hz12Root "bench\bench_hz12_xowner_inbox.c"
 $TokenRetireLive = Join-Path $Hz12Root "bench\bench_hz12_token_retire_live.c"
 $TokenXownerPipeline = Join-Path $Hz12Root "bench\bench_hz12_token_xowner_pipeline.c"
 $WideWsReclaimShadow = Join-Path $Hz12Root "bench\bench_hz12_widews_reclaim_shadow.c"
+$WideWsOwnerLedgerShadow = Join-Path $Hz12Root "bench\bench_hz12_widews_owner_ledger_shadow.c"
 $AdoptionSmoke = Join-Path $Hz12Root "tests\hz12_owner_adoption_shadow_smoke.c"
 $RetiredAdoptionSmoke = Join-Path $Hz12Root "tests\hz12_retired_inbox_adoption_smoke.c"
 $WholeSpanSmoke = Join-Path $Hz12Root "tests\hz12_whole_span_accounting_smoke.c"
@@ -24,6 +25,9 @@ $TokenInboxSmoke = Join-Path $Hz12Root "tests\hz12_token_inbox_smoke.c"
 $OwnerEpochSmoke = Join-Path $Hz12Root "tests\hz12_owner_epoch_smoke.c"
 $OwnerRetireGateSmoke = Join-Path $Hz12Root "tests\hz12_owner_retire_gate_smoke.c"
 $RetiredReclaimShadowSmoke = Join-Path $Hz12Root "tests\hz12_retired_reclaim_shadow_smoke.c"
+$OwnerBatchLedgerSmoke = Join-Path $Hz12Root "tests\hz12_owner_batch_ledger_smoke.c"
+$OwnerBatchLedgerBoundarySmoke = Join-Path $Hz12Root "tests\hz12_owner_batch_ledger_boundary_smoke.c"
+$OwnerBatchLedgerXownerSmoke = Join-Path $Hz12Root "tests\hz12_owner_batch_ledger_xowner_smoke.c"
 $Shadow = Join-Path $Hz12Root "src\hz12_shadow.c"
 $Inbox = Join-Path $Hz12Root "src\hz12_inbox.c"
 $Accounting = Join-Path $Hz12Root "src\hz12_span_accounting.c"
@@ -42,6 +46,8 @@ $RetiredReclaimDecommit = Join-Path $Hz12Root "src\hz12_retired_reclaim_decommit
 $RetiredReclaimDepotCycle = Join-Path $Hz12Root "src\hz12_retired_reclaim_depot_cycle.c"
 $ReclaimCarveDiag = Join-Path $Hz12Root "src\hz12_reclaim_carve_diag.c"
 $RetiredReclaimRecycle = Join-Path $Hz12Root "src\hz12_retired_reclaim_recycle.c"
+$OwnerBatchLedger = Join-Path $Hz12Root "src\hz12_owner_batch_ledger.c"
+$OwnerLedgerRetireGate = Join-Path $Hz12Root "src\hz12_owner_ledger_retire_gate.c"
 $Hz12Sources = @(
     "$Hz12Root\src\hz12_size_class.c",
     "$Hz12Root\src\hz12_sys_alloc.c",
@@ -52,7 +58,7 @@ $Hz12Sources = @(
     "$Hz12Root\src\hz12_live_footprint.c"
 )
 
-foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle) + $Hz12Sources) {
+foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $WideWsOwnerLedgerShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $OwnerBatchLedgerSmoke, $OwnerBatchLedgerBoundarySmoke, $OwnerBatchLedgerXownerSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle, $OwnerBatchLedger, $OwnerLedgerRetireGate) + $Hz12Sources) {
     if (-not (Test-Path $path)) { throw "Missing HZ12 shadow source: $path" }
 }
 if ($InboxCap -lt 1) { throw "InboxCap must be positive." }
@@ -349,6 +355,111 @@ $retiredReclaimShadowSmokeArgs = @(
     "/out:$(Join-Path $OutDir 'hz12_retired_reclaim_shadow_smoke.exe')"
 )
 & clang-cl @retiredReclaimShadowSmokeArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$ownerBatchLedgerSmokeArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    $OwnerBatchLedgerSmoke, $OwnerBatchLedger, $SpanOwnerShadow, $Accounting
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'hz12_owner_batch_ledger_smoke.exe')"
+)
+& clang-cl @ownerBatchLedgerSmokeArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$ownerBatchLedgerBoundarySmokeArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_DIAG=1",
+    $OwnerBatchLedgerBoundarySmoke, $OwnerBatchLedger, $SpanOwnerShadow,
+    $Accounting, $Shadow,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'hz12_owner_batch_ledger_boundary_smoke.exe')"
+)
+& clang-cl @ownerBatchLedgerBoundarySmokeArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$ownerBatchLedgerXownerSmokeArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_DIAG=1",
+    "/DHZ12_FLUSH_OWNER_INBOX_CAP=2048",
+    $OwnerBatchLedgerXownerSmoke, $OwnerBatchLedger, $SpanOwnerShadow,
+    $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
+    $OwnerEpoch, $TokenInbox, $OwnerRegistry,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'hz12_owner_batch_ledger_xowner_smoke.exe')"
+)
+& clang-cl @ownerBatchLedgerXownerSmokeArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$wideWsOwnerLedgerShadowArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_DIAG=1",
+    "/DHZ12_FLUSH_OWNER_INBOX_CAP=2048",
+    $WideWsOwnerLedgerShadow, $OwnerBatchLedger, $SpanOwnerShadow,
+    $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
+    $OwnerEpoch, $TokenInbox, $OwnerRegistry,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_widews_owner_ledger_shadow.exe')"
+)
+& clang-cl @wideWsOwnerLedgerShadowArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$wideWsOwnerLedgerReclaimArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_DIAG=1",
+    "/DHZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_RECYCLE_DIAG=1",
+    "/DHZ12_FLUSH_OWNER_INBOX_CAP=2048",
+    $WideWsOwnerLedgerShadow, $OwnerBatchLedger, $SpanOwnerShadow,
+    $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
+    $OwnerEpoch, $TokenInbox, $OwnerRegistry, $RetiredReclaimDetach,
+    $RetiredReclaimDecommit, $SpanDetach, $SpanDecommit, $ReclaimGate,
+    $RetiredReclaimRecycle, $SpanDepot, $ReclaimCarveDiag,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_widews_owner_ledger_reclaim.exe')"
+)
+& clang-cl @wideWsOwnerLedgerReclaimArgs
 if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 
 $wideWsReclaimShadowArgs = @(

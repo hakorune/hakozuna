@@ -25,5 +25,7 @@ void* hz12_flush_owner_route_drain_for_class(struct H12ThreadCache* tc,
 void hz12_flush_owner_route_assign_span(struct H12ThreadCache* tc,
                                         void* span_base);
 void hz12_flush_owner_route_stats(H12FlushOwnerRouteStats* out);
+int hz12_flush_owner_route_pending(uint32_t owner_id, uint32_t generation,
+                                   uint32_t* out_pending);
 
 #endif /* HZ12_FLUSH_OWNER_ROUTE_H */

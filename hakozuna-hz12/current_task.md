@@ -462,3 +462,81 @@ shadow/ledger agreement before any automatic reclaim policy can be promoted.
    local, MT, RSS, and teardown gates, using an owner-local batch-ledger
    sibling, checked against the frozen atomic shadow; do not reconnect per-op
    atomics to normal malloc/free.
+
+## Active: ReclaimPolicy-L6A Owner-Local Batch Ledger Shadow
+
+L6-A is shadow-only. It adds a physical-slot ledger whose only legal mutation
+points are source acquire/carve, owner drain observation, local batch return,
+and a quiescent retirement checkpoint. Foreign producers never update an
+owner's ledger. Owner drain does not clear outstanding slots because the
+objects remain in the owner cache until class flush.
+
+The initial dedicated smoke must show exact candidate agreement with the
+existing atomic accounting shadow after a full class-flush checkpoint. Normal
+speed lanes do not link the ledger module. Automatic detach, decommit, depot
+insertion, and reclaim policy remain closed.
+
+Initial L6-A result: the dedicated 64-byte-class smoke passed repeat-20. One
+full 64 KiB span produced 1,024 acquired slots; observing a 512-object owner
+drain did not reduce the outstanding count; the quiescent class flush returned
+all 1,024 slots; and the ledger/atomic candidate comparison reported one match
+and zero mismatches. Existing whole-span, retired-reclaim, and owner-retire-gate
+smokes also pass. The next gate is real-boundary wiring in a diagnostic sibling:
+source acquire, flush-owner batch split, actual flush-owner inbox drain, and
+retirement snapshot. The current retire gate still observes the token inbox,
+not the allocator's flush-owner inbox, so automatic reclaim remains closed.
+
+L6-B real-boundary result: the diagnostic-only build now records fresh/current
+span bump acquisition and same-owner flush return directly in allocator cold
+paths. Its 1,024-slot smoke observes the real owner token `0:1`, reaches zero
+outstanding slots after the real reclaim checkpoint, and matches the atomic
+candidate with zero mismatches. Foreign publish performs no ledger mutation;
+the owner-drain hook observes transit without clearing outstanding state.
+L6-B2 must exercise that cross-thread publish/drain path before the actual
+flush-owner inbox can join the retirement gate.
+
+L6-B2 result: the 100% cross-thread producer/consumer smoke passed repeat-20.
+The consumer published 1,024 foreign slots without mutating the owner ledger;
+the producer observed all 1,024 at the real flush-owner drain and reached zero
+outstanding only after its local class-flush checkpoint. Atomic and ledger
+candidates matched exactly with zero rejected transitions. Next: L6-C adds a
+read-only pending query for the real flush-owner inbox and composes it with the
+existing epoch/token-inbox retirement gate. No reclaim behavior before that
+combined gate is proven.
+
+L6-C result: the combined read-only retirement gate passed repeat-20. Before
+owner drain it observed 1,024 real flush-owner inbox objects and stayed closed.
+After producer epoch acknowledgement, real inbox drain, and owner-local cache
+flush, pending fell to zero; the owner-scoped ledger/atomic comparison reported
+one match and zero mismatches; and the combined gate opened. This removes the
+previous token-inbox-only observation gap without adding malloc/free work.
+Next: use this authority in a bounded wide_ws shadow scan only. Detach,
+decommit, depot insertion, and automatic reclaim remain closed.
+
+L6-D result: the bounded wide working-set owner-ledger shadow passed repeat-10.
+One owner exposed 64 full spans (65,536 64-byte slots); the consumer returned
+one span at a time and the owner drained after every span, keeping the real
+inbox bounded. All 64 ledger candidates matched all 64 atomic candidates with
+zero mismatches, pending ended at zero, the combined retirement gate opened,
+and the measured candidate set was exactly 4 MiB. No detach or decommit ran.
+Next: L6-E may hand only this fixed success set to the existing bounded ordered
+detach/decommit path, still as a diagnostic sibling with fail-closed set
+comparison before mutation.
+
+L6-E result: the fixed L6-D success set passed ordered detach/decommit repeat-5.
+All 64 candidate spans detached and decommitted with zero failures, releasing
+4 MiB of payload. Working-set RSS fell by 4,186,112 bytes (~3.99 MiB) in every
+run. The separate L6-D shadow executable still performs zero detach/decommit.
+This remains HZ12 diagnostic behavior, not HZ8 integration or automatic
+production policy. Next: L6-F bounded depot/recommit, real slot exercise, and a
+second owner-ledger reclaim cycle for the same fixed set.
+
+L6-F result: the bounded owner-ledger lifecycle passed repeat-5. All 64
+decommitted spans entered the depot, recommitted at valid addresses, exercised
+all 65,536 physical slots, reached ledger/atomic agreement again, completed 64
+second detaches and 64 second decommits, and ended with 64 bounded depot
+entries. Address, owner, and accounting mismatches remained zero; the ~3.99 MiB
+RSS reduction remained visible. Ledger query is now route-independent after
+detach/decommit, matching the side-table contract. The fixed lifecycle is
+complete. Next work is a separately gated bounded production policy, not more
+lifecycle mechanics and not direct HZ8 integration.

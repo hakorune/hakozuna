@@ -3,6 +3,9 @@
 #if HZ12_FLUSH_OWNER_ROUTE
 #include "hz12_flush_owner_route.h"
 #endif
+#if HZ12_OWNER_BATCH_LEDGER_DIAG
+#include "hz12_owner_batch_ledger.h"
+#endif
 
 #if !defined(_WIN32)
 #include <pthread.h>
@@ -16,6 +19,53 @@
 HZ12_THREAD_LOCAL H12ThreadCache* hz12_tls = NULL;
 
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id);
+
+#if HZ12_OWNER_BATCH_LEDGER_DIAG
+static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
+  H12OwnerToken owner = {0u, 0u};
+  if (tc && tc->flush_owner_valid) {
+    owner.slot = tc->flush_owner_id;
+    owner.generation = tc->flush_owner_generation;
+  }
+  return owner;
+}
+
+static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  if (owner.generation != 0u) {
+    void* items[1] = {ptr};
+    (void)h12_owner_batch_ledger_acquire_range(owner, items, 1u);
+  }
+}
+
+#if HZ12_SPAN_BUMP_BATCH
+static void hz12_thread_cache_ledger_acquire_contiguous(
+    H12ThreadCache* tc, char* first, size_t slot, uint32_t count) {
+  H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
+  void* items[HZ12_SPAN_BUMP_BATCH_COUNT];
+  uint32_t offset = 0u;
+  if (owner.generation == 0u || !first || slot == 0u) return;
+  while (offset < count) {
+    uint32_t batch = count - offset;
+    if (batch > HZ12_SPAN_BUMP_BATCH_COUNT) {
+      batch = HZ12_SPAN_BUMP_BATCH_COUNT;
+    }
+    for (uint32_t i = 0u; i < batch; ++i) {
+      items[i] = first + (size_t)(offset + i) * slot;
+    }
+    (void)h12_owner_batch_ledger_acquire_range(owner, items, batch);
+    offset += batch;
+  }
+}
+#else
+#define hz12_thread_cache_ledger_acquire_contiguous(tc, first, slot, count) \
+  ((void)0)
+#endif
+#else
+#define hz12_thread_cache_ledger_acquire(tc, ptr) ((void)0)
+#define hz12_thread_cache_ledger_acquire_contiguous(tc, first, slot, count) \
+  ((void)0)
+#endif
 
 #if defined(_WIN32) && HZ12_FLUSH_OWNER_COLD_SPAN
 static INIT_ONCE hz12_thread_cache_fls_once = INIT_ONCE_STATIC_INIT;
@@ -658,6 +708,8 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
 #endif
     if (batch > 1u) {
       void* first = cs->base + (size_t)cs->bump_index * slot;
+      hz12_thread_cache_ledger_acquire_contiguous(
+          tc, (char*)first, slot, batch);
       cs->bump_index += batch;
       for (uint32_t i = 1u; i < batch; ++i) {
         hz12_thread_cache_push(tc, class_id,
@@ -669,7 +721,11 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
     }
 #endif
     HZ12_MATRIX_DIAG_CURRENT_HIT(class_id);
-    return cs->base + (size_t)cs->bump_index++ * slot;
+    {
+      void* result = cs->base + (size_t)cs->bump_index++ * slot;
+      hz12_thread_cache_ledger_acquire(tc, result);
+      return result;
+    }
   }
   /* 3. current span exhausted (or none yet): carve a fresh 64 KiB span */
   char* base = (char*)hz12_span_carve_for_class(class_id);
@@ -684,7 +740,11 @@ void* hz12_thread_cache_refill(H12ThreadCache* tc, uint8_t class_id) {
 #if HZ12_FLUSH_OWNER_COLD_SPAN
   hz12_flush_owner_route_assign_span(tc, base);
 #endif
-  return cs->base + (size_t)cs->bump_index++ * slot;
+  {
+    void* result = cs->base + (size_t)cs->bump_index++ * slot;
+    hz12_thread_cache_ledger_acquire(tc, result);
+    return result;
+  }
 #else
   return hz12_sys_malloc(hz12_class_slot_size(class_id));
 #endif

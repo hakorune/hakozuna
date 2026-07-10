@@ -126,6 +126,11 @@
 #define HZ12_FLUSH_OWNER_COLD_SPAN 0u
 #endif
 
+/* L6-B diagnostic sibling. Normal and speed lanes leave this compiled out. */
+#ifndef HZ12_OWNER_BATCH_LEDGER_DIAG
+#define HZ12_OWNER_BATCH_LEDGER_DIAG 0u
+#endif
+
 /* HZ12CacheLayout-L1: SOA (structure-of-arrays) class cache.
  * Splits the AoS H12ClassCache[13] into two parallel arrays with power-of-2
  * strides (256B items + 4B counts), eliminating the *264 address chain.
