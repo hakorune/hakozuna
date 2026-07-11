@@ -49,6 +49,9 @@ docs/README.md
 
 docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   Windows default, candidate, diagnostic, and closed lane registry
+
+docs/HZ8_LINUX_LANE_STATUS_L1.md
+  Linux public, larger/local opt-in, and closed capacity lane registry
 ```
 
 ```text
@@ -67,9 +70,11 @@ next research track:
   HZ8 v2 remains the public/recommended default
   prior adaptive-transfer L1 is closed: existing batching is sufficient
   HZ12 contributes a reclaim contract, not a core implementation
-  Windows speed/RSS candidate: ReusableSpanMagazine-L1 Mag16
+  cross-platform default: ReusableSpanMagazine-L1 Mag16
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
   promoted to the cross-platform default after Linux/Windows gates
+  larger/local opt-in: hz8-v2-mag32
+  docs/HZ8_REUSABLE_SPAN_MAG32_L1.md
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md

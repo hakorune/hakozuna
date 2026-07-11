@@ -68,6 +68,11 @@ experimental throughput lane:
 
 windows bring-up lane:
   docs/HZ8_WINDOWS_BRINGUP.md
+
+Linux lane registry:
+  docs/HZ8_LINUX_LANE_STATUS_L1.md
+  public default: hz8-v2 / Mag16
+  larger/local opt-in: hz8-v2-mag32
 ```
 
 HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy

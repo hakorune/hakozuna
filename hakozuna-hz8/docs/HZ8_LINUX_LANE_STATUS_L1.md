@@ -1,0 +1,49 @@
+# HZ8 Linux Lane Status L1
+
+This page is the short Ubuntu/Linux lane registry. Lane names match Windows
+where the behavior contract is shared.
+
+## Default Lane
+
+| Lane | Build target | Status | Purpose |
+|---|---|---|---|
+| `hz8-v2` | `preload` | public default | KeepRefill, remote span-lease publish, and Mag16 balanced lane |
+
+Artifact: `libhakozuna_hz8_preload.so`.
+
+## Opt-In Lane
+
+| Lane | Build target | Status | Purpose |
+|---|---|---|---|
+| `hz8-v2-mag32` | `preload-reusable-span-mag32` | larger/local candidate | Global Mag32 capacity lane for explicit larger-size local workloads |
+
+Artifact: `libhakozuna_hz8_preload_reusable_span_mag32.so`.
+
+Mag32 is not included in the normal public matrix. Linux shows large wins and
+peak-RSS reductions for 16..2048 and 16..4096 local churn, but 16..256
+regresses and deterministic remote90 is slightly negative. Select it only as
+an explicit compile-time/output lane; do not switch it at runtime.
+
+## Closed Capacity Lanes
+
+| Lane | Status | Reason |
+|---|---|---|
+| class-7 Mag32 in `H8ThreadCtx` | NO-GO | 16..256 regression remained after removing other-class capacity |
+| class-7 detached TLS sidecar | NO-GO | Preserved 16..2048 benefit but not 16..4096; remote R20 regressed |
+| Mag64 | CLOSED / untested | Capacity tuning stops after the detached-sidecar gate |
+
+## Commands
+
+```sh
+make -C hakozuna-hz8 preload
+make -C hakozuna-hz8 preload-reusable-span-mag32
+make -C hakozuna-hz8 smoke-reusable-span-mag32
+make -C hakozuna-hz8 safety-stress-reusable-span-mag32
+```
+
+## Promotion Rule
+
+Keep Mag16 as the public default. Reopen Mag32 promotion only with an
+application-like cross-platform matrix showing no major small/remote
+regression, no peak/post-RSS regression, and the same direction on Linux and
+Windows. Microbenchmark win count alone is not a promotion argument.

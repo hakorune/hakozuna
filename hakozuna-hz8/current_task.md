@@ -50,21 +50,23 @@ wide_ws:
 ```
 
 The residual commit count tracks empty Mag pop attempts, not owner-list scan
-steps (still zero). Test `hz8-v2-mag32` once as a research capacity boundary.
+steps (still zero). `hz8-v2-mag32` was tested as the research capacity boundary.
 Do not change the Mag16 default unless balanced/wide peak RSS improves without
 remote or local throughput regression.
 
 Windows Mag32 clears that local gate: balanced/wide/larger R5 improve by about
 38%/43%/13%, while peak-RSS spot checks fall from 790.57/399.18/193.41 MiB to
 450.70/343.69/159.01 MiB. Fixed MT remote R5 is near-neutral, but effective
-remote ratios differ. Status: GO Windows candidate / HOLD default pending
-Linux local, remote, RSS, and GCC/Clang safety. See
+remote ratios differ. Linux correctness and larger-local gates pass, but
+16..256 regresses 9.4% and deterministic remote90 is -2.1%. Status:
+`hz8-v2-mag32` is an explicit larger/local opt-in; Mag16 remains default. See
 `docs/HZ8_REUSABLE_SPAN_MAG32_L1.md`.
 
 Per-class balanced attribution is concentrated in class 7: 12,187 of 12,457
 empty pops (about 98%), with classes 4/5/6 contributing 8/29/233. Replacement
-policy work is closed; the reusable spans are fungible. The next and only gate
-is Linux Mag16/Mag32 A/A-calibrated R5 with matched effective remote ratio.
+policy work is closed; the reusable spans are fungible. Class-7-only and
+detached-sidecar follow-ups are NO-GO. Linux capacity tuning is closed; do not
+test Mag64. Reopen promotion only with a cross-platform application matrix.
 
 Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
 line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator

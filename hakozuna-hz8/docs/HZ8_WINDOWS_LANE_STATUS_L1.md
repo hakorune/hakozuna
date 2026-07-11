@@ -9,6 +9,16 @@ promotion candidates, diagnostics, and closed experiments.
 |---|---|---|
 | `hz8-v2` | public default | KeepRefill balanced default with Mag16 reusable small-span inventory |
 
+## Candidate Lanes
+
+| Lane | Status | Purpose |
+|---|---|---|
+| `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
+
+Windows local and RSS gates are positive, but Linux small/remote gates block a
+cross-platform default promotion. Keep this row behind
+`-IncludeHz8Research` in normal Windows runners.
+
 The normal allocator matrix and MT remote runner include only the public HZ8
 row unless research controls are requested explicitly.
 
