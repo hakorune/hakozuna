@@ -170,6 +170,25 @@ mechanism for a separate shadow-first experiment.
 This is now the active next task under the name
 `HZ8SpeedAdapterAttribution-L0`.
 
+Windows diagnostic result:
+
+| Row | Active miss | Slow collect | Span commit | Owner scan steps |
+|---|---:|---:|---:|---:|
+| 16..256 | 2,569 | 2,569 | 2,569 | 0 |
+| 16..2048 | 21,171 | 21,171 | 21,171 | 0 |
+| 16..4096 | 80,538 | 80,538 | 80,538 | 0 |
+
+When the active span is exhausted and owner pending count is zero, HZ8 skips
+the owner list entirely. Locally freed older spans therefore remain reusable
+but invisible, while the allocator commits a new span. This explains both the
+small-row speed gap and the parking-lot RSS evidence without invoking route or
+medium machinery.
+
+Next narrow candidate: `HZ8ReusableSpanHint-L1`. Publish one owner-local
+same-class span hint when local free makes a span reusable, validate it on
+active miss, and fall back to the frozen path on stale/full hints. Keep remote
+collector publication as a later, separately measured extension.
+
 ## Non-Goals
 
 - no HZ10/HZ11/HZ12 whole-core merge;

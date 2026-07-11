@@ -50,6 +50,14 @@ function Invoke-Hz8AllocatorMatrixBuild {
             Name = "hz8-reclaim-shadow"
             Output = "bench_mixed_ws_hz8_reclaim_shadow.exe"
             ExtraFlags = @("/DH8_RECLAIM_ADAPTER_SHADOW_L0=1")
+        },
+        @{
+            Name = "hz8-speed-attribution"
+            Output = "bench_mixed_ws_hz8_speed_attribution.exe"
+            ExtraFlags = @(
+                "/DH8_SPEED_ATTRIBUTION_L0=1",
+                "/DH8_ENABLE_DEBUG_STATS=1"
+            )
         }
     )) {
         $output = Join-Path $OutDir $variant.Output

@@ -22,9 +22,11 @@ regressing throughput by roughly 10-33%. The complete spans become visible too
 late for commit-time bounded scanning. Do not add a free-hot-path candidate
 queue to rescue this track.
 
-Next: open `HZ8SpeedAdapterAttribution-L0`. Compare HZ8 against HZ11 on the
-same local and remote rows and attribute the gap to local hit, refill/commit,
-route, and remote collect before importing any speed mechanism.
+`HZ8SpeedAdapterAttribution-L0` is active in a diagnostic-only build. Windows
+small rows show an exact active-miss/span-commit coupling and zero owner-list
+scan steps when pending is empty. In 16-4096 churn: active miss 80,538, slow
+collect 80,538, span commit 80,538, find steps zero. The next narrow box is an
+O(1) owner-local reusable-span hint, not an HZ11 core or transfer-cache import.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 

@@ -738,6 +738,25 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
     h8_reclaim_shadow_dump();
 #endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_SPEED_ATTRIBUTION_L0)
+    {
+        H8DebugStats s = h8_debug_stats();
+        printf("[H8_SPEED_ATTR] active_hit=%zu active_miss=%zu "
+               "freelist=%zu bump=%zu slow_collect=%zu span_commit=%zu "
+               "find_scan=%zu find_steps=%zu find_usable=%zu find_full=%zu "
+               "pending_collect=%zu medium_route=%zu medium_route_steps=%zu "
+               "medium_collect_calls=%zu medium_collect_runs=%zu\n",
+               s.local_active_hit, s.local_active_miss,
+               s.local_freelist_pop, s.local_bump_alloc,
+               s.local_slow_collect, s.local_span_commit,
+               s.local_find_scan, s.local_find_scan_span,
+               s.local_find_scan_span_usable, s.local_find_scan_span_full,
+               s.pending_collect_call_count, s.medium_route_lookup_count,
+               s.medium_route_lookup_step_count,
+               s.medium_remote_collect_call_count,
+               s.medium_remote_collect_run_count);
+    }
+#endif
     fflush(stdout);
     free(args);
     return 0;
