@@ -5,6 +5,7 @@ param(
     [int]$BenchTimeoutSeconds = 0,
     [switch]$ForceBuild,
     [switch]$ContinueOnFailure,
+    [switch]$IncludeHz8Research,
     [switch]$ListOnly
 )
 
@@ -30,7 +31,10 @@ $Executables = @(
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
     @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe") },
-    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe") },
+    @{ Name = "hz8-reusable-span-mag16"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reusable_span_mag16.exe") },
+    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
     @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },
@@ -94,6 +98,10 @@ $Executables = @(
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
 )
+
+if (-not $IncludeHz8Research) {
+    $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+}
 
 if ($Allocators -and $Allocators.Count -gt 0) {
     $AllocatorNames = @()

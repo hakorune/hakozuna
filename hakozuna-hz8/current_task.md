@@ -3,6 +3,10 @@
 This file is the short HZ8 orientation ledger. Keep detailed chronology in
 `bench_results/` and stable design records under `docs/`.
 
+Stable documentation starts at `docs/README.md`. Windows benchmark lane
+status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
+promotion status from build target names alone.
+
 ## Restart Surface: HZ8 Reclaim Integration
 
 Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
@@ -36,6 +40,19 @@ near-neutral while committed small-span bytes fell about 43%. Windows smokes
 pass. Status: GO Windows candidate / HOLD default pending Linux and full gates.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
+
+Runner policy:
+
+```text
+normal comparison:
+  hz8-v2
+  hz8-reusable-span-mag16
+
+research-only (requires -IncludeHz8Research):
+  hz8-v3-adaptive-shadow
+  hz8-reclaim-shadow
+  hz8-speed-attribution
+```
 
 The prior adaptive-transfer track is closed. Its L0 shadow was valid evidence,
 but L1 was NO-GO because HZ8 already bulk-splices pending bitmap words. Do not

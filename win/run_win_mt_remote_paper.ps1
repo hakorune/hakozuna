@@ -4,6 +4,7 @@ param(
     [int]$TimeoutSeconds = 900,
     [string[]]$Allocators,
     [switch]$IncludeHz6Legacy,
+    [switch]$IncludeHz8Research,
     [switch]$SkipHz7TinyRoute,
     [switch]$ContinueOnFailure
 )
@@ -28,7 +29,9 @@ $LegacyExecutables = @(
     @{ Name = "hz7-tinyroute"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7.exe") },
     @{ Name = "hz7-v2-remote-natural"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7_v2_remote_natural.exe") },
     @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2.exe") },
-    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe") },
+    @{ Name = "hz8-reusable-span-mag16"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_reusable_span_mag16.exe") },
+    @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
@@ -46,11 +49,17 @@ $Hz6LegacyExecutables = @(
 )
 
 $Executables = $LegacyExecutables
+if (-not $IncludeHz8Research) {
+    $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+}
 if ($SkipHz7TinyRoute) {
     $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
 }
 if ($IncludeHz6Legacy) {
     $Executables = $LegacyExecutables + $Hz6LegacyExecutables
+    if (-not $IncludeHz8Research) {
+        $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+    }
     if ($SkipHz7TinyRoute) {
         $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
     }

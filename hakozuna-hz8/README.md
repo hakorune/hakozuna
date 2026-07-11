@@ -41,6 +41,16 @@ Paper-facing Ubuntu/Linux x86_64 matrix:
 
 ## Status
 
+Documentation entry points:
+
+```text
+docs/README.md
+  stable HZ8 document index
+
+docs/HZ8_WINDOWS_LANE_STATUS_L1.md
+  Windows default, candidate, diagnostic, and closed lane registry
+```
+
 ```text
 current public line:
   HZ8 v2 / KeepRefill + remote span-lease publish
@@ -77,6 +87,7 @@ experimental throughput lane:
 
 windows bring-up lane:
   docs/HZ8_WINDOWS_BRINGUP.md
+  docs/HZ8_WINDOWS_LANE_STATUS_L1.md
 ```
 
 HZ8-v2 keeps the HZ8-v1.1 balanced base and promotes KeepRefill as the default
