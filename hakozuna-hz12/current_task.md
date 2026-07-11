@@ -647,3 +647,12 @@ retirement invocation remains eligible. The source-layout checker now counts
 physical lines and enforces 800; the maximum is 799. Next: a P4-gated
 retirement behavior sibling may be measured, but periodic pressure polling
 remains closed.
+
+P4 retirement-only behavior result: the dedicated sibling requires the P4
+advisory `would_reclaim` result and then runs the separate P1 authority scan;
+the two scans are not fused. Repeat-10 authorized and completed 64/64 depot
+reservations, detaches, decommits, owner clears, and depot commits with limbo
+zero and about 3.99 MiB working-set reduction. Keep this as opt-in evidence.
+Default promotion remains closed until an application-like repeated
+thread-retirement workload proves bounded depot occupancy, stale-generation
+safety, and acceptable total retirement latency.

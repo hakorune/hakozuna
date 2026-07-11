@@ -49,6 +49,9 @@
 #ifndef HZ12_SNAPSHOT_RECLAIM_NO_CAP
 #define HZ12_SNAPSHOT_RECLAIM_NO_CAP 0u
 #endif
+#ifndef HZ12_RECLAIM_POLICY_BEHAVIOR
+#define HZ12_RECLAIM_POLICY_BEHAVIOR 0u
+#endif
 
 #ifndef HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
 #define HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR 0u
@@ -373,6 +376,9 @@ int main(void) {
     return 22;
   }
 #else
+#if HZ12_RECLAIM_POLICY_BEHAVIOR
+  if (!policy_after.would_reclaim) return 26;
+#endif
   if (!h12_snapshot_reclaim_retired_bounded(
           state.owner, H12_LEDGER_WIDE_SPANS, &snapshot_reclaim) ||
       snapshot_reclaim.candidates != H12_LEDGER_WIDE_SPANS ||
@@ -563,6 +569,13 @@ int main(void) {
          policy_after.depot_available,
          policy_after.flush_owner_pending, policy_before_us, policy_after_us,
          policy_lock_p99_us, policy_lock_max_us);
+#endif
+#if HZ12_RECLAIM_POLICY_BEHAVIOR
+  printf("[HZ12_RECLAIM_POLICY_BEHAVIOR] authorized=%u reserved=%u "
+         "decommitted=%u depot=%u owner_cleared=%u limbo=%u\n",
+         (unsigned)policy_after.would_reclaim, snapshot_reclaim.reserved,
+         snapshot_reclaim.decommitted, snapshot_reclaim.depot_inserted,
+         snapshot_reclaim.owner_cleared, snapshot_reclaim.limbo_spans);
 #endif
   free(state.objects);
   return 0;

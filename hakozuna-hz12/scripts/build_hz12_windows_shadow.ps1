@@ -549,6 +549,33 @@ $wideWsSnapshotReclaimNoCapArgs = @(
 & clang-cl @wideWsSnapshotReclaimNoCapArgs
 if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 
+$wideWsReclaimPolicyBehaviorArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_OWNER_BATCH_LEDGER_DIAG=1",
+    "/DHZ12_RECLAIM_POLICY_SHADOW=1",
+    "/DHZ12_SNAPSHOT_RECLAIM_BEHAVIOR=1",
+    "/DHZ12_RECLAIM_POLICY_BEHAVIOR=1",
+    "/DHZ12_FLUSH_OWNER_INBOX_CAP=2048",
+    $WideWsOwnerLedgerShadow, $OwnerBatchLedger,
+    $OwnerBatchLedgerCompare, $SpanOwnerShadow,
+    $Accounting, $Shadow, $OwnerLedgerRetireGate, $OwnerRetireGate,
+    $OwnerEpoch, $TokenInbox, $OwnerRegistry, $ReclaimPolicyShadow,
+    $SnapshotReclaim, $SpanDepotCore, $ReclaimEntry,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_widews_reclaim_policy_behavior.exe')"
+)
+& clang-cl @wideWsReclaimPolicyBehaviorArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
 $wideWsSnapshotRecycleArgs = @(
     "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
     "/I$(Join-Path $RepoRoot 'win')",
