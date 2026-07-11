@@ -13,6 +13,9 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
 
   H8_DEBUG_INC(medium_free_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_compare(ptr, run);
+#endif
   if (run) {
     uint64_t owner_word =
         atomic_load_explicit(&run->owner_word, memory_order_acquire);

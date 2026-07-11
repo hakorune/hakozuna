@@ -1,5 +1,6 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
+#include "h8_medium_page_shadow.h"
 
 #define H8_MEDIUM_DIRECTORY_CAP 65536u
 
@@ -150,6 +151,9 @@ static void h8_medium_directory_insert_locked(H8MediumRun* run) {
        quantum += H8_MEDIUM_QUANTUM_BYTES) {
     h8_medium_directory_insert_quantum_locked(run, quantum);
   }
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_register(run);
+#endif
 }
 
 static void h8_medium_directory_remove_locked(H8MediumRun* run) {
@@ -158,6 +162,9 @@ static void h8_medium_directory_remove_locked(H8MediumRun* run) {
   if (!run || !directory) {
     return;
   }
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_unregister(run);
+#endif
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
     _Atomic(H8MediumRun*)* slot = &directory[n];
     H8MediumRun* cur = atomic_load_explicit(slot, memory_order_acquire);

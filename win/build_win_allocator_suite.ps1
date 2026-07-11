@@ -57,6 +57,11 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraFlags = @("/DH8_MEDIUM_ENABLE_LOCAL_FAST_TIER=1")
         },
         @{
+            Name = "hz8-medium-pageshadow"
+            Output = "bench_mixed_ws_hz8_medium_pageshadow.exe"
+            ExtraFlags = @("/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1")
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
@@ -91,6 +96,23 @@ function Invoke-Hz8AllocatorMatrixBuild {
         if ($LASTEXITCODE -ne 0) {
             throw "HZ8 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
         }
+    }
+
+    $shadowSmoke = Join-Path $Hz8Root "tests\h8_medium_page_shadow_smoke.c"
+    $shadowSmokeOut = Join-Path $OutDir "h8_medium_page_shadow_smoke.exe"
+    $shadowSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src"
+    )
+    $shadowSmokeArgs += $Hz8CommonFlags
+    $shadowSmokeArgs += "/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1"
+    $shadowSmokeArgs += $Hz8Sources
+    $shadowSmokeArgs += $shadowSmoke
+    $shadowSmokeArgs += "/Fe:$shadowSmokeOut"
+    Write-Host "[hz8-win] building h8_medium_page_shadow_smoke.exe"
+    & $Compiler.Source @shadowSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page shadow smoke build failed with exit code $LASTEXITCODE"
     }
 }
 

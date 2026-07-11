@@ -18,6 +18,9 @@
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_HZ8)
 #include "h8.h"
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+#include "h8_medium_page_shadow.h"
+#endif
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
 #include "h8_adaptive_shadow.h"
 #endif
@@ -750,6 +753,17 @@ int main(int argc, char** argv) {
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
     h8_reclaim_shadow_dump();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+    {
+        H8MediumPageShadowStats s = h8_medium_page_shadow_stats();
+        printf("\n[H8_MEDIUM_PAGE_SHADOW] lookup=%llu hit=%llu miss=%llu "
+               "run_mismatch=%llu exact_valid=%llu exact_invalid=%llu\n",
+               (unsigned long long)s.lookup, (unsigned long long)s.hit,
+               (unsigned long long)s.miss, (unsigned long long)s.run_mismatch,
+               (unsigned long long)s.exact_valid,
+               (unsigned long long)s.exact_invalid);
+    }
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_SPEED_ATTRIBUTION_L0)
     {

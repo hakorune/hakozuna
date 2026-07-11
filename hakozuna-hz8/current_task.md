@@ -84,6 +84,12 @@ order is P0 classification shadow, then P1 detached page-state shadow, then an
 opt-in fixed-8K behavior sibling. P2 is not authorized until P0/P1 report zero
 route/generation/state disagreements.
 
+P0 classification shadow is implemented and passes the Windows fixed 8K/16K
+valid rows with 203,840/203,840 hits, zero miss, zero run mismatch, and zero
+exact-invalid. The interior/duplicate smoke records two exact addresses and
+one interior invalid while keeping run mismatch zero. Default builds preprocess
+all hooks away. P0 is GO; implement P1 detached live/free state comparison next.
+
 Current Windows attribution after the public matrix:
 
 ```text

@@ -138,3 +138,37 @@ classification/page-state shadow:
 behavior/default:
   HOLD
 ```
+
+## P0 Windows Result
+
+`H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0` now provides a diagnostic-only sparse
+radix side table keyed by the 64KiB medium quantum. Registration and removal
+run only beside the existing locked directory lifecycle. Free lookup compares
+the candidate run with the current directory authority and separately checks
+exact slot identity.
+
+Fixed valid workloads:
+
+| Row | Lookups | Hits | Misses | Run mismatch | Exact invalid |
+|---|---:|---:|---:|---:|---:|
+| fixed 8K | 203,840 | 203,840 | 0 | 0 | 0 |
+| fixed 16K | 203,840 | 203,840 | 0 | 0 | 0 |
+
+The dedicated interior/duplicate smoke reports:
+
+```text
+lookup=3
+hit=3
+miss=0
+run_mismatch=0
+exact_valid=2
+exact_invalid=1
+```
+
+The interior pointer is therefore recognized as page-owned but not exact. The
+duplicate pointer remains exact-address classification evidence; live/free
+state discrimination belongs to P1. All hooks are removed at preprocessing
+time when the diagnostic flag is absent, so the default free path receives no
+stub call or counter.
+
+P0 classification result: GO. P1 page-state shadow is next.
