@@ -15,16 +15,16 @@ walk. It adds no list scan and no malloc/free hook. Windows evidence found
 spans / 1.742 GiB in the remote90 default shape. Live, pending, and state
 blockers were zero for those complete sets.
 
-L0 is ACCEPTED as a retirement upper-bound witness. The next box is opt-in
-`HZ8ReclaimAdapterBehavior-L1`: bounded live-owner native-span detach,
-OS-specific discard,
-rollback, and reuse. Preserve HZ8 route/slot-state authority and pending bitmap
-protocol. Do not copy HZ12's span core or add owner/counter/atomic work to
-malloc/free.
+L0 is ACCEPTED as a retirement upper-bound witness. Live-owner
+`HZ8ReclaimAdapterBehavior-L1` is CLOSED / NO-GO: cursor and head-window
+variants reduced the 5 GiB peak by less than 1% in the repeatable runs while
+regressing throughput by roughly 10-33%. The complete spans become visible too
+late for commit-time bounded scanning. Do not add a free-hot-path candidate
+queue to rescue this track.
 
-Promotion requires paired Windows/Linux evidence: long-lived small-span peak RSS
-improves materially, public throughput rows stay within gate, post RSS does not
-regress, and invalid/stale/double-free/rollback/limbo checks remain clean.
+Next: open `HZ8SpeedAdapterAttribution-L0`. Compare HZ8 against HZ11 on the
+same local and remote rows and attribute the gap to local hit, refill/commit,
+route, and remote collect before importing any speed mechanism.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 

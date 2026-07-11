@@ -113,6 +113,30 @@ API. Windows may use decommit/recommit; Linux may use `madvise`-based discard.
 Every partial failure must restore a usable unit or report a hard failure;
 limbo is never an accepted fallback.
 
+Windows result: `NO-GO`, implementation removed.
+
+Two bounded commit-slow-path policies were tested:
+
+```text
+cursor scan:
+  scan up to 64 spans, retire up to 8
+  peak reduction: less than 1%
+  local throughput: about -15% in the initial run
+
+recent-head scan:
+  rescan the newest 64 spans, retire up to 8
+  baseline peak R3: 5020-5033 MiB
+  candidate peak R3: 4805-5006 MiB
+  repeatable reduction: less than 1% in two of three runs
+  throughput regression: approximately 10-33%
+```
+
+The L0 upper bound is real, but complete spans become visible after the useful
+commit-time maintenance window. Fixing that timing would require a candidate
+publication on local free or another continuously active policy, violating the
+no-hot-path-tax constraint. Keep L0 as evidence and do not promote or retain
+the L1 behavior code.
+
 ### Task 3: Paired Gate
 
 Measure default HZ8 and the opt-in sibling on both operating systems:
@@ -136,12 +160,15 @@ Experimental acceptance:
 Default promotion requires repeatable Windows and Linux Pareto improvement. A
 Windows-only or Linux-only win remains an opt-in profile.
 
-### Task 4: Speed Integration Only After Reclaim
+### Task 4: Speed Integration After Reclaim Closeout
 
 Do not import HZ11 transfer machinery preemptively. HZ8 already has safe batch
 collection, and its adaptive-transfer L1 was NO-GO. After reclaim is decided,
 use the remaining measured throughput cells to select at most one HZ10/HZ11
 mechanism for a separate shadow-first experiment.
+
+This is now the active next task under the name
+`HZ8SpeedAdapterAttribution-L0`.
 
 ## Non-Goals
 
