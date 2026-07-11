@@ -96,3 +96,6 @@ This page is the public pointer list for dated benchmark summaries.
 - [HZ8 Reusable Span Magazine Mag32 Linux gate](linux/HZ8_REUSABLE_SPAN_MAG32_20260711.md):
   A/A-calibrated GCC/Clang and paired local/remote/RSS gate; larger-size GO,
   global default promotion HOLD.
+- [HZ8 class-7 detached sidecar Linux NO-GO](linux/HZ8_CLASS7_SIDECAR_NO_GO_20260711.md):
+  final capacity box preserves 16..2048 benefit but not 16..4096/remote gates;
+  experiment removed and Linux capacity tuning closed.

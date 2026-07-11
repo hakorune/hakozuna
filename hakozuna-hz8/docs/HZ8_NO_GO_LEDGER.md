@@ -21,6 +21,7 @@ evidence changes the problem.  Keep this file short and decision-oriented.
 | Boolean remote queued marker | NO-GO | Use `IDLE / QUEUED / DRAINING` and finish recheck to close lost wakeups. |
 | Medium/large per-4KiB route registration | NO-GO | Recreates known remote-tail pressure from page-level registration. |
 | All sizes in v0 | NO-GO | Hides whether local small, remote small, or boundary safety caused a result. |
+| Class-7 detached Mag32 sidecar | NO-GO | Preserved the 16..2048 capacity win, but not global Mag32's 16..4096 benefit; deterministic remote R20 regressed 1.43%. Final Linux capacity-layout box. |
 
 ## MediumRun-v1.1 Closed Candidates
 
