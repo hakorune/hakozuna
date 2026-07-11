@@ -358,6 +358,14 @@ int hz12_returned_snapshot_span(uint8_t class_id, const void* span_base,
   return 1;
 }
 
+void hz12_returned_lock_probe(uint8_t class_id) {
+  H12Returned* returned;
+  if (class_id >= HZ12_CLASS_COUNT) return;
+  returned = &hz12_returned[class_id];
+  hz12_mutex_lock(&returned->lock);
+  hz12_mutex_unlock(&returned->lock);
+}
+
 int hz12_returned_detach_complete_span(uint8_t class_id,
                                        const void* span_base,
                                        H12ReturnedSpanSnapshot* out) {

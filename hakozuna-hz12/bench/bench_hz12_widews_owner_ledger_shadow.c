@@ -16,6 +16,7 @@
 #include "hz12_owner_registry.h"
 #include "hz12_owner_retire_gate.h"
 #include "hz12_reclaim_policy_shadow.h"
+#include "hz12_reclaim_entry.h"
 #include "hz12_retired_reclaim_decommit.h"
 #include "hz12_retired_reclaim_detach.h"
 #include "hz12_retired_reclaim_recycle.h"
@@ -45,6 +46,9 @@
 #ifndef HZ12_RECLAIM_POLICY_SHADOW
 #define HZ12_RECLAIM_POLICY_SHADOW 0u
 #endif
+#ifndef HZ12_SNAPSHOT_RECLAIM_NO_CAP
+#define HZ12_SNAPSHOT_RECLAIM_NO_CAP 0u
+#endif
 
 #ifndef HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR
 #define HZ12_OWNER_LEDGER_RECLAIM_BEHAVIOR 0u
@@ -63,6 +67,42 @@ typedef struct H12LedgerWideState {
   volatile LONG retire;
   volatile LONG checkpointed;
 } H12LedgerWideState;
+
+#if HZ12_RECLAIM_POLICY_SHADOW
+typedef struct H12PolicyLockProbe {
+  double* samples_us;
+  uint32_t capacity;
+  uint32_t count;
+  uint8_t class_id;
+  volatile LONG ready;
+  volatile LONG stop;
+} H12PolicyLockProbe;
+
+static int h12_compare_double(const void* left, const void* right) {
+  const double a = *(const double*)left;
+  const double b = *(const double*)right;
+  return (a > b) - (a < b);
+}
+
+static unsigned __stdcall h12_policy_lock_probe(void* arg) {
+  H12PolicyLockProbe* probe = (H12PolicyLockProbe*)arg;
+  LARGE_INTEGER frequency;
+  QueryPerformanceFrequency(&frequency);
+  InterlockedExchange(&probe->ready, 1);
+  while (InterlockedCompareExchange(&probe->stop, 0, 0) == 0 &&
+         probe->count < probe->capacity) {
+    LARGE_INTEGER begin;
+    LARGE_INTEGER end;
+    QueryPerformanceCounter(&begin);
+    hz12_returned_lock_probe(probe->class_id);
+    QueryPerformanceCounter(&end);
+    probe->samples_us[probe->count++] = 1000000.0 *
+        (double)(end.QuadPart - begin.QuadPart) /
+        (double)frequency.QuadPart;
+  }
+  return 0u;
+}
+#endif
 
 static unsigned __stdcall h12_ledger_wide_owner(void* arg) {
   H12LedgerWideState* state = (H12LedgerWideState*)arg;
@@ -144,12 +184,23 @@ int main(void) {
   LARGE_INTEGER policy_end;
   double policy_before_us = 0.0;
   double policy_after_us = 0.0;
+  double policy_lock_p99_us = 0.0;
+  double policy_lock_max_us = 0.0;
   QueryPerformanceFrequency(&policy_frequency);
 #endif
 
   h12_span_accounting_reset();
-#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR || HZ12_RECLAIM_POLICY_SHADOW
   h12_span_depot_core_reset();
+#endif
+#if HZ12_SNAPSHOT_RECLAIM_NO_CAP
+  if (h12_span_depot_core_reserve(HZ12_SPAN_DEPOT_CAP) !=
+      HZ12_SPAN_DEPOT_CAP) {
+    return 21;
+  }
+#endif
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  h12_reclaim_entry_reset();
 #endif
   h12_span_owner_shadow_reset();
   h12_owner_batch_ledger_reset();
@@ -158,6 +209,15 @@ int main(void) {
   h12_token_inbox_reset();
   h12_owner_retire_gate_reset();
   if (!h12_owner_register(&state.owner)) return 1;
+#if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
+  if (!h12_reclaim_entry_begin(state.owner) ||
+      h12_reclaim_entry_begin(state.owner) ||
+      !h12_reclaim_entry_end(state.owner) ||
+      !h12_reclaim_entry_begin(state.owner) ||
+      !h12_reclaim_entry_end(state.owner)) {
+    return 20;
+  }
+#endif
   owner_thread = (HANDLE)_beginthreadex(NULL, 0, h12_ledger_wide_owner,
                                         &state, 0, NULL);
   if (!owner_thread) return 2;
@@ -224,11 +284,34 @@ int main(void) {
     const uint8_t expected_threshold = (uint8_t)(
         (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES >=
         HZ12_RECLAIM_POLICY_MIN_BYTES);
+    H12PolicyLockProbe lock_probe = {0};
+    HANDLE lock_probe_thread;
+    lock_probe.capacity = 65536u;
+    lock_probe.class_id = state.class_id;
+    lock_probe.samples_us = (double*)calloc(lock_probe.capacity,
+                                            sizeof(double));
+    if (!lock_probe.samples_us) return 23;
+    lock_probe_thread = (HANDLE)_beginthreadex(
+        NULL, 0, h12_policy_lock_probe, &lock_probe, 0, NULL);
+    if (!lock_probe_thread) return 24;
+    while (InterlockedCompareExchange(&lock_probe.ready, 0, 0) == 0) {
+      SwitchToThread();
+    }
     QueryPerformanceCounter(&policy_start);
     if (!h12_reclaim_policy_shadow_query(state.owner, &policy_after)) {
       return 19;
     }
     QueryPerformanceCounter(&policy_end);
+    InterlockedExchange(&lock_probe.stop, 1);
+    WaitForSingleObject(lock_probe_thread, INFINITE);
+    CloseHandle(lock_probe_thread);
+    if (lock_probe.count == 0u) return 25;
+    qsort(lock_probe.samples_us, lock_probe.count, sizeof(double),
+          h12_compare_double);
+    policy_lock_p99_us = lock_probe.samples_us[
+        (size_t)(lock_probe.count - 1u) * 99u / 100u];
+    policy_lock_max_us = lock_probe.samples_us[lock_probe.count - 1u];
+    free(lock_probe.samples_us);
     policy_after_us = 1000000.0 *
         (double)(policy_end.QuadPart - policy_start.QuadPart) /
         (double)policy_frequency.QuadPart;
@@ -241,6 +324,7 @@ int main(void) {
       policy_after.reclaimable_bytes !=
           (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES ||
       policy_after.planned_spans != expected_planned ||
+      policy_after.depot_available != HZ12_SPAN_DEPOT_CAP ||
       policy_after.planned_bytes !=
           (uint64_t)expected_planned * HZ12_SPAN_BYTES ||
       policy_after.threshold_met != expected_threshold ||
@@ -278,17 +362,32 @@ int main(void) {
   memory_before.cb = sizeof(memory_before);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
       (PROCESS_MEMORY_COUNTERS*)&memory_before, sizeof(memory_before));
+#if HZ12_SNAPSHOT_RECLAIM_NO_CAP
+  if (h12_snapshot_reclaim_retired_bounded(
+          state.owner, H12_LEDGER_WIDE_SPANS, &snapshot_reclaim) ||
+      snapshot_reclaim.reserved != 0u || snapshot_reclaim.detached != 0u ||
+      snapshot_reclaim.decommitted != 0u ||
+      snapshot_reclaim.depot_inserted != 0u ||
+      snapshot_reclaim.owner_cleared != 0u ||
+      snapshot_reclaim.limbo_spans != 0u || snapshot_reclaim.failed != 0u) {
+    return 22;
+  }
+#else
   if (!h12_snapshot_reclaim_retired_bounded(
           state.owner, H12_LEDGER_WIDE_SPANS, &snapshot_reclaim) ||
       snapshot_reclaim.candidates != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.detached != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.decommitted != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.reserved != H12_LEDGER_WIDE_SPANS ||
       snapshot_reclaim.depot_inserted != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.owner_cleared != H12_LEDGER_WIDE_SPANS ||
+      snapshot_reclaim.limbo_spans != 0u ||
       snapshot_reclaim.failed != 0u ||
       snapshot_reclaim.decommitted_bytes !=
           (uint64_t)H12_LEDGER_WIDE_SPANS * HZ12_SPAN_BYTES) {
     return 12;
   }
+#endif
   memory_after.cb = sizeof(memory_after);
   (void)GetProcessMemoryInfo(GetCurrentProcess(),
       (PROCESS_MEMORY_COUNTERS*)&memory_after, sizeof(memory_after));
@@ -399,10 +498,13 @@ int main(void) {
          (unsigned long long)memory_after.WorkingSetSize);
 #if HZ12_SNAPSHOT_RECLAIM_BEHAVIOR
   printf("[HZ12_SNAPSHOT_RECLAIM] budget=%u candidates=%u detached=%u "
-         "decommitted=%u depot=%u failed=%u bytes=%llu rss_delta=%lld\n",
+         "decommitted=%u reserved=%u depot=%u owner_cleared=%u limbo=%u "
+         "failed=%u bytes=%llu rss_delta=%lld\n",
          snapshot_reclaim.budget, snapshot_reclaim.candidates,
          snapshot_reclaim.detached, snapshot_reclaim.decommitted,
+         snapshot_reclaim.reserved,
          snapshot_reclaim.depot_inserted,
+         snapshot_reclaim.owner_cleared, snapshot_reclaim.limbo_spans,
          snapshot_reclaim.failed,
          (unsigned long long)snapshot_reclaim.decommitted_bytes,
          (long long)memory_before.WorkingSetSize -
@@ -450,14 +552,17 @@ int main(void) {
 #if HZ12_RECLAIM_POLICY_SHADOW
   printf("[HZ12_RECLAIM_POLICY_SHADOW] before=%u after=%u owner_spans=%u "
          "complete=%u incomplete=%u reclaimable=%llu planned_spans=%u "
-         "planned_bytes=%llu pending=%u before_us=%.3f after_us=%.3f\n",
+         "planned_bytes=%llu depot_available=%u pending=%u "
+         "before_us=%.3f after_us=%.3f lock_p99_us=%.3f lock_max_us=%.3f\n",
          (unsigned)policy_before.would_reclaim,
          (unsigned)policy_after.would_reclaim, policy_after.owner_spans,
          policy_after.complete_spans, policy_after.incomplete_spans,
          (unsigned long long)policy_after.reclaimable_bytes,
          policy_after.planned_spans,
          (unsigned long long)policy_after.planned_bytes,
-         policy_after.flush_owner_pending, policy_before_us, policy_after_us);
+         policy_after.depot_available,
+         policy_after.flush_owner_pending, policy_before_us, policy_after_us,
+         policy_lock_p99_us, policy_lock_max_us);
 #endif
   free(state.objects);
   return 0;

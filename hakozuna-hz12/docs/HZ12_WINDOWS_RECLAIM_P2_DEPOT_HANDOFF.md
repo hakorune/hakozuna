@@ -16,6 +16,12 @@ The depot was split into two responsibilities:
 P1/P2 links only the core storage path. Existing lifecycle tests continue to
 use the wrapper and retain their previous behavior.
 
+The core now supports bounded reservations. Reclaim plans no more spans than
+`capacity - stored - reserved`, so a successful decommit always has a depot
+slot assigned before mutation begins. Successful insertion also clears the
+retired owner from both advisory side tables; a later P3 take installs its new
+owner explicitly.
+
 ## Windows Result
 
 Repeat-10 passed:

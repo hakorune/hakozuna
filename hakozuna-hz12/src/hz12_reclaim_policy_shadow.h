@@ -13,6 +13,7 @@ typedef struct H12ReclaimPolicyShadow {
   uint32_t complete_spans;
   uint32_t incomplete_spans;
   uint32_t planned_spans;
+  uint32_t depot_available;
   uint32_t flush_owner_pending;
   uint64_t reclaimable_bytes;
   uint64_t planned_bytes;

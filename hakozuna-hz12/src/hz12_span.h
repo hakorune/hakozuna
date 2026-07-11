@@ -86,6 +86,7 @@ typedef struct H12ReturnedSpanSnapshot {
 } H12ReturnedSpanSnapshot;
 int hz12_returned_snapshot_span(uint8_t class_id, const void* span_base,
                                 H12ReturnedSpanSnapshot* out);
+void hz12_returned_lock_probe(uint8_t class_id);
 int hz12_returned_detach_complete_span(uint8_t class_id,
                                        const void* span_base,
                                        H12ReturnedSpanSnapshot* out);

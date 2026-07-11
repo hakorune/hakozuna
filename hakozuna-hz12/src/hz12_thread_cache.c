@@ -8,20 +8,15 @@
 #elif HZ12_OWNER_BATCH_LEDGER && HZ12_OWNER_BATCH_LEDGER_ACQUIRE
 #include "hz12_owner_batch_ledger.h"
 #endif
-
 #if !defined(_WIN32)
 #include <pthread.h>
 #endif
 #include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
-
 /* ---------- state ---------- */
-
 HZ12_THREAD_LOCAL H12ThreadCache* hz12_tls = NULL;
-
 static void hz12_thread_cache_flush_class(H12ThreadCache* tc, uint8_t class_id);
-
 #if HZ12_OWNER_BATCH_COUNT_LEDGER
 static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
   H12OwnerToken owner = {0u, 0u};
@@ -31,7 +26,6 @@ static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
   }
   return owner;
 }
-
 static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
   H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
   void* items[1] = {ptr};
@@ -39,7 +33,6 @@ static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
     (void)h12_owner_batch_count_acquire_range(owner, items, 1u);
   }
 }
-
 #if HZ12_SPAN_BUMP_BATCH
 static void hz12_thread_cache_ledger_acquire_contiguous(
     H12ThreadCache* tc, char* first, size_t slot, uint32_t count) {
@@ -53,7 +46,6 @@ static void hz12_thread_cache_ledger_acquire_contiguous(
 #define hz12_thread_cache_ledger_acquire_contiguous(tc, first, slot, count) \
   ((void)0)
 #endif
-
 static void hz12_thread_cache_ledger_reacquire_range(
     H12ThreadCache* tc, void* const* items, uint32_t count) {
   H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
@@ -70,7 +62,6 @@ static H12OwnerToken hz12_thread_cache_ledger_owner(H12ThreadCache* tc) {
   }
   return owner;
 }
-
 static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
   H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
   if (owner.generation != 0u) {
@@ -78,7 +69,6 @@ static void hz12_thread_cache_ledger_acquire(H12ThreadCache* tc, void* ptr) {
     (void)h12_owner_batch_ledger_acquire_range(owner, items, 1u);
   }
 }
-
 static void hz12_thread_cache_ledger_reacquire_range(
     H12ThreadCache* tc, void* const* items, uint32_t count) {
   H12OwnerToken owner = hz12_thread_cache_ledger_owner(tc);
@@ -86,7 +76,6 @@ static void hz12_thread_cache_ledger_reacquire_range(
     (void)h12_owner_batch_ledger_acquire_range(owner, items, count);
   }
 }
-
 #if HZ12_SPAN_BUMP_BATCH
 static void hz12_thread_cache_ledger_acquire_contiguous(
     H12ThreadCache* tc, char* first, size_t slot, uint32_t count) {
@@ -116,11 +105,9 @@ static void hz12_thread_cache_ledger_acquire_contiguous(
   ((void)0)
 #define hz12_thread_cache_ledger_reacquire_range(tc, items, count) ((void)0)
 #endif
-
 #if defined(_WIN32) && HZ12_FLUSH_OWNER_COLD_SPAN
 static INIT_ONCE hz12_thread_cache_fls_once = INIT_ONCE_STATIC_INIT;
 static DWORD hz12_thread_cache_fls_index = FLS_OUT_OF_INDEXES;
-
 static VOID CALLBACK hz12_thread_cache_fls_destroy(PVOID value) {
   H12ThreadCache* tc = (H12ThreadCache*)value;
   if (!tc) return;

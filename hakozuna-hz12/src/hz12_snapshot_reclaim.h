@@ -7,10 +7,13 @@
 
 typedef struct H12SnapshotReclaimResult {
   uint32_t budget;
+  uint32_t reserved;
   uint32_t candidates;
   uint32_t detached;
   uint32_t decommitted;
   uint32_t depot_inserted;
+  uint32_t owner_cleared;
+  uint32_t limbo_spans;
   uint32_t failed;
   uint64_t decommitted_bytes;
 } H12SnapshotReclaimResult;

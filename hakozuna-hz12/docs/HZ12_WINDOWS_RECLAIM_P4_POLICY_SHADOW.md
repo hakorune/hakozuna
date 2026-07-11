@@ -41,7 +41,9 @@ The mutation-free owner-ledger shadow continued to report zero detach,
 decommit, recycle, and depot behavior.
 
 QPC timing for the cold full query was approximately 3.3-4.2 ms on this
-Windows fixture. That is acceptable evidence for owner retirement, but too
+Windows fixture. A concurrent same-class sink-lock probe measured p99 at
+0.1-0.2 microseconds, but an unlucky maximum waiter stalled for approximately
+3.45-3.83 ms. That is acceptable evidence for owner retirement, but too
 expensive to place at frequent allocation checkpoints without a cheaper owner
 span index. P4 therefore does not authorize periodic pressure polling.
 

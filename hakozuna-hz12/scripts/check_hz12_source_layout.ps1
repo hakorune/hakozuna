@@ -1,5 +1,5 @@
 param(
-    [int]$MaxLinesPerFile = 999
+    [int]$MaxLinesPerFile = 800
 )
 
 $ErrorActionPreference = "Stop"
@@ -16,7 +16,7 @@ foreach ($root in $Roots) {
         $Extensions -contains $_.Extension
     } | ForEach-Object {
         $Rows += [pscustomobject]@{
-            Lines = (Get-Content $_.FullName | Measure-Object -Line).Lines
+            Lines = (Get-Content $_.FullName).Count
             File = $_.FullName.Substring($Hz12Root.Length + 1)
         }
     }

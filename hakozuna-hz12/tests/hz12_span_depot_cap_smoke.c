@@ -10,6 +10,7 @@
 #include "hz12_span_accounting.h"
 #include "hz12_span_decommit.h"
 #include "hz12_span_depot.h"
+#include "hz12_span_depot_core.h"
 #include "hz12_span_detach.h"
 
 int main(void) {
@@ -29,6 +30,14 @@ int main(void) {
   if (!h12_shadow_init(1u) || !h12_inbox_init(1u)) return 1;
   h12_span_accounting_reset();
   h12_span_depot_reset();
+  if (h12_span_depot_core_reserve(HZ12_SPAN_DEPOT_CAP) !=
+          HZ12_SPAN_DEPOT_CAP ||
+      h12_span_depot_core_available() != 0u ||
+      h12_span_depot_core_reserve(1u) != 0u) {
+    return 9;
+  }
+  h12_span_depot_core_release_reservation(HZ12_SPAN_DEPOT_CAP);
+  if (h12_span_depot_core_available() != HZ12_SPAN_DEPOT_CAP) return 10;
   objects = (void**)calloc(object_count, sizeof(void*));
   span_bases = (void**)calloc(span_count, sizeof(void*));
   if (!objects || !span_bases) return 2;
@@ -78,6 +87,10 @@ int main(void) {
       stats.depot_current != HZ12_SPAN_DEPOT_CAP ||
       stats.depot_max != HZ12_SPAN_DEPOT_CAP) {
     return 8;
+  }
+  if (h12_span_depot_core_available() != 0u ||
+      h12_span_depot_core_reserve(1u) != 0u) {
+    return 11;
   }
   printf("[HZ12_SPAN_DEPOT_CAP] capacity=%u attempts=%llu success=%llu "
          "full=%llu current=%u max=%u\n",

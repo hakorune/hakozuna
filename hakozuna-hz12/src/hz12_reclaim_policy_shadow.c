@@ -3,6 +3,7 @@
 #include "hz12_flush_owner_route.h"
 #include "hz12_owner_retire_gate.h"
 #include "hz12_span.h"
+#include "hz12_span_depot_core.h"
 #include "hz12_span_owner_shadow.h"
 
 #include <string.h>
@@ -41,8 +42,12 @@ int h12_reclaim_policy_shadow_query(H12OwnerToken owner,
     }
   }
   out->reclaimable_bytes = (uint64_t)out->complete_spans * HZ12_SPAN_BYTES;
+  out->depot_available = h12_span_depot_core_available();
   out->planned_spans = out->complete_spans < HZ12_RECLAIM_POLICY_MAX_SPANS
       ? out->complete_spans : HZ12_RECLAIM_POLICY_MAX_SPANS;
+  if (out->planned_spans > out->depot_available) {
+    out->planned_spans = out->depot_available;
+  }
   out->planned_bytes = (uint64_t)out->planned_spans * HZ12_SPAN_BYTES;
   out->threshold_met = (uint8_t)(
       out->reclaimable_bytes >= HZ12_RECLAIM_POLICY_MIN_BYTES);

@@ -635,3 +635,15 @@ latency was approximately 3.3-4.2 ms on this fixture. This supports an
 owner-retirement behavior sibling but rejects frequent pressure polling with
 the current full scan. Next: one separate P4-gated retire behavior lane may
 call the existing bounded P1 path; normal speed/broad lanes remain unchanged.
+
+Review-fix result: the behavior blocker is closed. Depot capacity is reserved
+before mutation, same-owner reclaim has generation-aware single entry, and a
+successful depot handoff clears both retired-owner side tables. Normal
+repeat-10 completed 64 reservations, decommits, depot commits, and owner clears
+with limbo zero. A no-cap repeat-10 granted zero reservations and performed
+zero detach/decommit/owner mutation with unchanged RSS. The same-class lock
+probe measured p99 0.1-0.2 us but maximum waits of about 3.45-3.83 ms, so only
+retirement invocation remains eligible. The source-layout checker now counts
+physical lines and enforces 800; the maximum is 799. Next: a P4-gated
+retirement behavior sibling may be measured, but periodic pressure polling
+remains closed.

@@ -15,8 +15,10 @@ The authority sequence is:
 5. the same lock-held helper validates again and detaches the complete set;
 6. the route is detached last, then Windows decommits the 64 KiB payload.
 
-The behavior is capped at 64 spans (4 MiB) per call. A route or OS failure
-restores the route and complete returned-slot set where possible and stops the
+The behavior is capped at 64 spans (4 MiB) per call. Depot capacity is reserved
+before the first mutation, and one owner admits only one reclaim call at a
+time. A route, OS, owner-clear, or depot-commit failure restores the route,
+retired owner, and complete returned-slot set where possible and stops the
 batch. Continuous bitmap/count ledgers remain diagnostic controls only.
 
 ## Lane Separation

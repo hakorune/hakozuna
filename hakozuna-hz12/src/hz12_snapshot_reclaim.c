@@ -2,6 +2,8 @@
 
 #include "hz12_flush_owner_route.h"
 #include "hz12_owner_retire_gate.h"
+#include "hz12_reclaim_entry.h"
+#include "hz12_shadow.h"
 #include "hz12_span.h"
 #include "hz12_span_depot_core.h"
 #include "hz12_span_owner_shadow.h"
@@ -29,11 +31,35 @@ static void h12_snapshot_restore_span(uint8_t class_id, void* span_base) {
   }
 }
 
+static int h12_snapshot_rollback_decommitted(void* span_base,
+                                             uint8_t class_id,
+                                             H12OwnerToken owner) {
+#if defined(_WIN32)
+  H12ReturnedSpanSnapshot snapshot;
+  if (VirtualAlloc(span_base, HZ12_SPAN_BYTES, MEM_COMMIT,
+                   PAGE_READWRITE) != span_base ||
+      !hz12_span_route_attach(span_base, class_id) ||
+      !h12_shadow_rehome_token(span_base, owner.slot, owner.generation) ||
+      !h12_span_owner_shadow_assign(span_base, owner)) {
+    return 0;
+  }
+  h12_snapshot_restore_span(class_id, span_base);
+  return hz12_returned_snapshot_span(class_id, span_base, &snapshot) &&
+         snapshot.complete;
+#else
+  (void)span_base;
+  (void)class_id;
+  (void)owner;
+  return 0;
+#endif
+}
+
 int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
                                          uint32_t budget,
                                          H12SnapshotReclaimResult* out) {
   uint32_t pending = 0u;
   uint32_t span_id;
+  int entered = 0;
   if (!out || budget == 0u || budget > 64u) return 0;
   memset(out, 0, sizeof(*out));
   out->budget = budget;
@@ -42,7 +68,12 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
       pending != 0u) {
     return 0;
   }
-  for (span_id = 0u; span_id < HZ12_SPAN_COUNT && out->detached < budget;
+  if (!h12_reclaim_entry_begin(owner)) return 0;
+  entered = 1;
+  out->reserved = h12_span_depot_core_reserve(budget);
+  if (out->reserved == 0u) goto done;
+  for (span_id = 0u;
+       span_id < HZ12_SPAN_COUNT && out->detached < out->reserved;
        ++span_id) {
     H12OwnerToken observed;
     H12ReturnedSpanSnapshot snapshot;
@@ -84,13 +115,34 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
     }
     out->decommitted += 1u;
     out->decommitted_bytes += HZ12_SPAN_BYTES;
-    if (!h12_span_depot_core_put_decommitted(
+    if (!h12_shadow_clear_token_if(span_base, owner.slot, owner.generation) ||
+        !h12_span_owner_shadow_clear_if(span_base, owner)) {
+      if (!h12_snapshot_rollback_decommitted(
+              span_base, (uint8_t)(class_plus_one - 1u), owner)) {
+        out->limbo_spans += 1u;
+      }
+      out->failed += 1u;
+      break;
+    }
+    out->owner_cleared += 1u;
+    if (!h12_span_depot_core_put_reserved(
             span_base, (uint8_t)(class_plus_one - 1u))) {
+      if (!h12_snapshot_rollback_decommitted(
+              span_base, (uint8_t)(class_plus_one - 1u), owner)) {
+        out->limbo_spans += 1u;
+      }
       out->failed += 1u;
       break;
     }
     out->depot_inserted += 1u;
 #endif
   }
-  return out->failed == 0u && out->decommitted != 0u;
+done:
+  if (out->reserved > out->depot_inserted) {
+    h12_span_depot_core_release_reservation(
+        out->reserved - out->depot_inserted);
+  }
+  if (entered && !h12_reclaim_entry_end(owner)) out->failed += 1u;
+  return out->failed == 0u && out->limbo_spans == 0u &&
+         out->depot_inserted != 0u;
 }
