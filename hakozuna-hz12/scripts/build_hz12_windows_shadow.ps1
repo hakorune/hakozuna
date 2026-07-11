@@ -63,6 +63,7 @@ $Hz12Sources = @(
     "$Hz12Root\src\hz12_thread_cache_diag.c",
     "$Hz12Root\src\hz12_public_entry.c",
     "$Hz12Root\src\hz12_span.c",
+    "$Hz12Root\src\hz12_span_backing.c",
     "$Hz12Root\src\hz12_live_footprint.c"
 )
 

@@ -11,11 +11,6 @@
 #include "hz12_owner_batch_count_ledger.h"
 #endif
 
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-
 #include <stdatomic.h>
 #include <string.h>
 
@@ -24,7 +19,7 @@
 #endif
 
 typedef struct H12FlushOwnerInbox {
-  CRITICAL_SECTION lock;
+  HZ12_MUTEX lock;
   void* heads[HZ12_CLASS_COUNT];
   void* tails[HZ12_CLASS_COUNT];
   uint32_t counts[HZ12_CLASS_COUNT];
@@ -102,7 +97,7 @@ static void hz12_flush_owner_ledger_drain_chain(H12ThreadCache* tc,
 static void hz12_flush_owner_init_once(void) {
   (void)h12_shadow_init(HZ12_SHADOW_MAX_OWNERS);
   for (uint32_t i = 0u; i < HZ12_SHADOW_MAX_OWNERS; ++i) {
-    InitializeCriticalSection(&hz12_flush_owner_inboxes[i].lock);
+    hz12_mutex_init(&hz12_flush_owner_inboxes[i].lock);
   }
 }
 
@@ -129,18 +124,18 @@ static void hz12_flush_owner_publish(uint32_t owner_id, uint8_t class_id,
     return;
   }
   inbox = &hz12_flush_owner_inboxes[owner_id];
-  EnterCriticalSection(&inbox->lock);
+  hz12_mutex_lock(&inbox->lock);
   if (!atomic_load_explicit(&inbox->active, memory_order_relaxed) ||
       atomic_load_explicit(&inbox->generation, memory_order_relaxed) !=
           generation) {
-    LeaveCriticalSection(&inbox->lock);
+    hz12_mutex_unlock(&inbox->lock);
     atomic_fetch_add_explicit(&hz12_flush_owner_stats.stale_fallback, count,
                               memory_order_relaxed);
     hz12_flush_owner_return_chain(class_id, head);
     return;
   }
   if (inbox->total_count + count > HZ12_FLUSH_OWNER_INBOX_CAP) {
-    LeaveCriticalSection(&inbox->lock);
+    hz12_mutex_unlock(&inbox->lock);
     hz12_flush_owner_return_chain(class_id, head);
     return;
   }
@@ -150,7 +145,7 @@ static void hz12_flush_owner_publish(uint32_t owner_id, uint8_t class_id,
   inbox->counts[class_id] += count;
   inbox->total_count += count;
   atomic_store_explicit(&inbox->pending, 1u, memory_order_release);
-  LeaveCriticalSection(&inbox->lock);
+  hz12_mutex_unlock(&inbox->lock);
 }
 
 void hz12_flush_owner_route_attach(H12ThreadCache* tc) {
@@ -160,7 +155,7 @@ void hz12_flush_owner_route_attach(H12ThreadCache* tc) {
 #if HZ12_FLUSH_OWNER_COLD_SPAN
   for (owner_id = 0u; owner_id < HZ12_SHADOW_MAX_OWNERS; ++owner_id) {
     H12FlushOwnerInbox* inbox = &hz12_flush_owner_inboxes[owner_id];
-    EnterCriticalSection(&inbox->lock);
+    hz12_mutex_lock(&inbox->lock);
     if (!atomic_load_explicit(&inbox->active, memory_order_relaxed) &&
         inbox->total_count == 0u) {
       uint32_t generation = atomic_load_explicit(&inbox->generation,
@@ -178,10 +173,10 @@ void hz12_flush_owner_route_attach(H12ThreadCache* tc) {
         atomic_fetch_add_explicit(&hz12_flush_owner_stats.attach_reuse, 1u,
                                   memory_order_relaxed);
       }
-      LeaveCriticalSection(&inbox->lock);
+      hz12_mutex_unlock(&inbox->lock);
       return;
     }
-    LeaveCriticalSection(&inbox->lock);
+    hz12_mutex_unlock(&inbox->lock);
   }
   atomic_fetch_add_explicit(&hz12_flush_owner_stats.attach_full, 1u,
                             memory_order_relaxed);
@@ -224,11 +219,11 @@ void hz12_flush_owner_route_detach(H12ThreadCache* tc) {
   if (!tc || !tc->flush_owner_valid ||
       tc->flush_owner_id >= HZ12_SHADOW_MAX_OWNERS) return;
   inbox = &hz12_flush_owner_inboxes[tc->flush_owner_id];
-  EnterCriticalSection(&inbox->lock);
+  hz12_mutex_lock(&inbox->lock);
   if (!atomic_load_explicit(&inbox->active, memory_order_relaxed) ||
       atomic_load_explicit(&inbox->generation, memory_order_relaxed) !=
           tc->flush_owner_generation) {
-    LeaveCriticalSection(&inbox->lock);
+    hz12_mutex_unlock(&inbox->lock);
     tc->flush_owner_valid = 0u;
     return;
   }
@@ -239,7 +234,7 @@ void hz12_flush_owner_route_detach(H12ThreadCache* tc) {
   inbox->total_count = 0u;
   atomic_store_explicit(&inbox->pending, 0u, memory_order_relaxed);
   atomic_store_explicit(&inbox->active, 0u, memory_order_release);
-  LeaveCriticalSection(&inbox->lock);
+  hz12_mutex_unlock(&inbox->lock);
   for (uint32_t class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
     hz12_flush_owner_return_chain((uint8_t)class_id, heads[class_id]);
   }
@@ -341,11 +336,11 @@ void hz12_flush_owner_route_drain(H12ThreadCache* tc) {
   if (!tc || !tc->flush_owner_valid) return;
   inbox = &hz12_flush_owner_inboxes[tc->flush_owner_id];
   if (!atomic_load_explicit(&inbox->pending, memory_order_acquire)) return;
-  EnterCriticalSection(&inbox->lock);
+  hz12_mutex_lock(&inbox->lock);
   if (!atomic_load_explicit(&inbox->active, memory_order_relaxed) ||
       atomic_load_explicit(&inbox->generation, memory_order_relaxed) !=
           tc->flush_owner_generation) {
-    LeaveCriticalSection(&inbox->lock);
+    hz12_mutex_unlock(&inbox->lock);
     return;
   }
   memcpy(heads, inbox->heads, sizeof(heads));
@@ -354,7 +349,7 @@ void hz12_flush_owner_route_drain(H12ThreadCache* tc) {
   memset(inbox->counts, 0, sizeof(inbox->counts));
   inbox->total_count = 0u;
   atomic_store_explicit(&inbox->pending, 0u, memory_order_release);
-  LeaveCriticalSection(&inbox->lock);
+  hz12_mutex_unlock(&inbox->lock);
 
   for (uint32_t class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
     void* head = heads[class_id];
@@ -390,11 +385,11 @@ int hz12_flush_owner_route_pending(uint32_t owner_id, uint32_t generation,
   }
   (void)pthread_once(&hz12_flush_owner_once, hz12_flush_owner_init_once);
   inbox = &hz12_flush_owner_inboxes[owner_id];
-  EnterCriticalSection(&inbox->lock);
+  hz12_mutex_lock(&inbox->lock);
   matched = atomic_load_explicit(&inbox->generation, memory_order_relaxed) ==
             generation;
   *out_pending = matched ? inbox->total_count : 0u;
-  LeaveCriticalSection(&inbox->lock);
+  hz12_mutex_unlock(&inbox->lock);
   return matched;
 }
 

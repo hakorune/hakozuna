@@ -5,6 +5,7 @@
 #include "hz12_reclaim_entry.h"
 #include "hz12_shadow.h"
 #include "hz12_span.h"
+#include "hz12_span_backing.h"
 #include "hz12_span_depot_core.h"
 #include "hz12_span_owner_shadow.h"
 
@@ -38,13 +39,6 @@ static int h12_snapshot_select_batch(uint8_t class_id,
   return 1;
 }
 
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
-
 static void h12_snapshot_restore_span(uint8_t class_id, void* span_base) {
   void* batch[256];
   const size_t slot_bytes = hz12_class_slot_size(class_id);
@@ -62,10 +56,8 @@ static void h12_snapshot_restore_span(uint8_t class_id, void* span_base) {
 static int h12_snapshot_rollback_decommitted(void* span_base,
                                              uint8_t class_id,
                                              H12OwnerToken owner) {
-#if defined(_WIN32)
   H12ReturnedSpanSnapshot snapshot;
-  if (VirtualAlloc(span_base, HZ12_SPAN_BYTES, MEM_COMMIT,
-                   PAGE_READWRITE) != span_base ||
+  if (!h12_span_backing_recommit(span_base, NULL, NULL) ||
       !hz12_span_route_attach(span_base, class_id) ||
       !h12_shadow_rehome_token(span_base, owner.slot, owner.generation) ||
       !h12_span_owner_shadow_assign(span_base, owner)) {
@@ -74,12 +66,6 @@ static int h12_snapshot_rollback_decommitted(void* span_base,
   h12_snapshot_restore_span(class_id, span_base);
   return hz12_returned_snapshot_span(class_id, span_base, &snapshot) &&
          snapshot.complete;
-#else
-  (void)span_base;
-  (void)class_id;
-  (void)owner;
-  return 0;
-#endif
 }
 
 int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
@@ -179,8 +165,7 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
       break;
     }
     out->detached += 1u;
-#if defined(_WIN32)
-    if (!VirtualFree(span_base, HZ12_SPAN_BYTES, MEM_DECOMMIT)) {
+    if (!h12_span_backing_discard(span_base, NULL, NULL)) {
       (void)hz12_span_route_attach(span_base,
                                   (uint8_t)class_id);
       h12_snapshot_restore_span((uint8_t)class_id, span_base);
@@ -213,7 +198,6 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
     }
     out->depot_inserted += 1u;
     candidates[span_id].detached = 0u;
-#endif
   }
 restore_detached:
   if (out->failed != 0u) {

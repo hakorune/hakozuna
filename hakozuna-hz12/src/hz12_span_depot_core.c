@@ -2,15 +2,9 @@
 
 #include "hz12_port.h"
 #include "hz12_span.h"
+#include "hz12_span_backing.h"
 
 #include <string.h>
-
-#if defined(_WIN32)
-#ifndef WIN32_LEAN_AND_MEAN
-#define WIN32_LEAN_AND_MEAN
-#endif
-#include <windows.h>
-#endif
 
 static H12SpanDepotCoreEntry h12_depot_entries[HZ12_SPAN_DEPOT_CAP];
 static HZ12_MUTEX h12_depot_lock;
@@ -40,16 +34,7 @@ static int h12_depot_validate_decommitted(void* span_base,
        (HZ12_SPAN_BYTES - 1u)) != 0u) {
     return 0;
   }
-#if defined(_WIN32)
-  {
-    MEMORY_BASIC_INFORMATION memory;
-    if (VirtualQuery(span_base, &memory, sizeof(memory)) != sizeof(memory) ||
-        memory.State != MEM_RESERVE) {
-      return 0;
-    }
-  }
-#endif
-  return 1;
+  return h12_span_backing_validate_discarded(span_base);
 }
 
 uint32_t h12_span_depot_core_reserve(uint32_t requested) {

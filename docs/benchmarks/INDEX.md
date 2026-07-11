@@ -79,3 +79,10 @@ This page is the public pointer list for dated benchmark summaries.
 - [Cross-platform benchmark conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
 - [HZ6 remote pending inbox plan](../../hakozuna-hz6/docs/HZ6_REMOTE_PENDING_INBOX_PLAN.md)
 - [Mac benchmark prep order](../MAC_BENCH_PREP.md)
+# 2026-07-11
+
+- [HZ12 Linux retirement turnover](linux/HZ12_RETIREMENT_TURNOVER_20260711.md):
+  bounded 64-span `MADV_DONTNEED` reclaim, 8 generation reuse, repeat-5;
+  limbo 0 and run-median retirement p50 1.089 ms.
+- [HZ8 / HZ11 / HZ12 Linux allocator comparison](linux/HZ8_HZ11_HZ12_ALLOCATOR_COMPARE_20260711.md):
+  common 8-thread random-mixed repeat-5 against mimalloc and tcmalloc.
