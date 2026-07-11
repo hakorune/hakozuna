@@ -99,3 +99,35 @@ remained positive at +7.66%. GCC/Clang smoke and safety stress still pass.
 
 This candidate is HZ8-native. It imports the lesson that reusable front-end
 inventory must remain visible, not an HZ11 transfer-cache implementation.
+
+## Windows full-magazine follow-up
+
+Windows was rebuilt from commit `652fa283` and rerun after the full-magazine
+churn fix. The local comparison used alternating baseline/candidate order,
+five fresh processes per row, eight threads, five million iterations per
+thread, and a working set of 16,384.
+
+| Row | HZ8 v2 median | Mag16 median | Ratio | HZ8 v2 peak | Mag16 peak |
+|---|---:|---:|---:|---:|---:|
+| 16..256 | 134.49M | 329.35M | 2.45x | 3416.09 MiB | 1397.40 MiB |
+| 16..2048 | 18.58M | 24.77M | 1.33x | 26500.74 MiB | 22421.15 MiB |
+| 16..4096 | 3.34M | 9.63M | 2.88x | 50588.16 MiB | 48179.32 MiB |
+
+This long-lived probe is deliberately harsh and produced much higher absolute
+resident pressure than the earlier Windows R5. Use it as a same-session A/B,
+not as a replacement for the earlier absolute-RSS snapshot.
+
+The fixed MT remote runner (`T=16`, two million iterations, `ws=400`,
+`size=16..2048`, target remote 90%, R5) measured:
+
+| Row | Median ops/s | Actual remote | Fallback | Median peak RSS |
+|---|---:|---:|---:|---:|
+| HZ8 v2 | 124.891M | 79.70% | 11.45% | 32.20 MiB |
+| Mag16 | 131.737M | 77.43% | 13.97% | 18.71 MiB |
+
+The effective remote ratios differ, so the throughput delta is supporting
+evidence rather than a remote-speed claim. The important gate result is that
+the Linux full-magazine regression does not reproduce on Windows: throughput
+remains positive/neutral and peak RSS is lower. One initial baseline process
+ended with a non-reproducing Windows fast-fail; direct reruns and all ten runs
+in the recorded R5 completed successfully.

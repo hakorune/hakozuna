@@ -64,3 +64,19 @@ Mag16 remains compile-time opt-in until all of the following pass:
 - Linux paired local, remote, peak-RSS, and post-RSS rows;
 - broader Windows public matrix;
 - no route, generation, pending, duplicate-free, or owner-exit regression.
+
+Current cross-platform status after the full-magazine churn fix:
+
+```text
+Linux correctness/local:
+  GO
+
+Linux focused remote90:
+  near-neutral (-1.22%), RSS neutral
+
+Windows local and fixed MT remote follow-up:
+  GO candidate signal
+
+public default:
+  HOLD until the broader public matrix is rerun
+```

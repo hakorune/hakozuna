@@ -41,6 +41,15 @@ pass. Status: GO Windows candidate / HOLD default pending Linux and full gates.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 
+Linux commit `652fa283` stops active-hint replacement when Mag16 is full.
+Linux focused remote90 is now near-neutral (-1.22%) with equal peak RSS, while
+focused local remains +7.66%. Windows follow-up R5 also remains positive:
+local 16..256 / 16..2048 / 16..4096 improve 2.45x / 1.33x / 2.88x in the
+long-lived A/B, and the fixed MT remote row improves 124.891M to 131.737M while
+median peak RSS falls from 32.20 MiB to 18.71 MiB. Effective remote ratios
+differ, so do not promote a remote-speed claim. Correctness/local candidacy is
+GO on both OSes; default promotion remains HOLD pending the public full gate.
+
 Runner policy:
 
 ```text
