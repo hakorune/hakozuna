@@ -185,12 +185,15 @@ static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
   return NULL;
 }
 
-static void h8_reusable_span_mag_replace_active(H8ThreadCtx* ctx,
+static void h8_reusable_span_mag_note_local_free(H8ThreadCtx* ctx,
                                                 H8Span* span) {
   const uint32_t class_id = span->class_id;
   H8Span* old = ctx->active_spans[class_id];
   uint8_t* count = &ctx->reusable_span_count[class_id];
-  if (old && old != span && *count < 16u) {
+  if (old && old != span) {
+    if (*count == 16u) {
+      return;
+    }
     ctx->reusable_span_mag[class_id][(*count)++] = old;
   }
   ctx->active_spans[class_id] = span;
@@ -407,7 +410,7 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
 #if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
-  h8_reusable_span_mag_replace_active(ctx, span);
+  h8_reusable_span_mag_note_local_free(ctx, span);
 #else
   ctx->active_spans[span->class_id] = span;
 #endif

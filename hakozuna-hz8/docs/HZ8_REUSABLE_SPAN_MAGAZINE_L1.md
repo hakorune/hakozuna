@@ -86,5 +86,16 @@ MiB to 31.00 MiB. Linux correctness is GO; broad default promotion remains
 HOLD. Full results are in
 `docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md`.
 
+### Linux remote follow-up
+
+Root-cause attribution found that a full Mag16 still replaced the active span
+on every local free. With no inventory slot available, that discarded a usable
+active hint without preserving it. The candidate now keeps the current active
+span when the magazine is full; this remains inside the Mag16 compile-time box.
+
+A fresh-process focused remote90 repeat-30 reduced the observed gap to -1.22%
+with equal 8.125 MiB peak RSS and near-equal post RSS. Focused local repeat-5
+remained positive at +7.66%. GCC/Clang smoke and safety stress still pass.
+
 This candidate is HZ8-native. It imports the lesson that reusable front-end
 inventory must remain visible, not an HZ11 transfer-cache implementation.

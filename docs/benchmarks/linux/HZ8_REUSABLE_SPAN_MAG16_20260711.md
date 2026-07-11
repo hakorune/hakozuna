@@ -55,3 +55,22 @@ HZ8 public default: unchanged
 
 Mag16 is a strong local/retention candidate, but the small remote90 regression
 must be resolved or isolated to a workload-specific lane before promotion.
+
+## Remote Follow-up
+
+The first remote result exposed active-hint churn after the magazine reached
+capacity. Local frees continued replacing the active span even though the
+displaced span could not be added to the full inventory. The candidate now
+retains the active span when Mag16 is full.
+
+Focused fresh-process repeat-30 after the fix:
+
+| Metric | HZ8 v2 | Mag16 |
+|---|---:|---:|
+| small remote90 ops/s | 31.627 M | 31.241 M (-1.22%) |
+| peak RSS | 8.125 MiB | 8.125 MiB |
+| post RSS | 4.746 MiB | 4.762 MiB |
+
+Focused local repeat-5 improved from 259.88 M to 279.79 M ops/s (+7.66%).
+The large initial remote regression and RSS increase are no longer reproduced,
+but default promotion remains HOLD pending the full public matrix refresh.
