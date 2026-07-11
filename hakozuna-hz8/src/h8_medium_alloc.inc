@@ -396,6 +396,9 @@ static void* h8_medium_run_alloc_active_hit(H8ThreadCtx* ctx,
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
 #endif
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_note_alloc(run, slot);
+#endif
 #if defined(H8_HZ9_MEDIUM_LOCAL_MAG_SHADOW)
   h8_hz9_local_mag_shadow_note_alloc(run, slot);
 #endif

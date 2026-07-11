@@ -23,6 +23,9 @@
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
 #include "h8_reclaim_shadow.h"
 #endif
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+#include "h8_medium_page_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #elif defined(HZ_BENCH_USE_HZ12)
@@ -591,6 +594,23 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
 #endif
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
         h8_reclaim_shadow_dump();
+#endif
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+        {
+            H8MediumPageShadowStats ps = h8_medium_page_shadow_stats();
+            fprintf(out,
+                    "[H8_MEDIUM_PAGE_SHADOW] lookup=%llu hit=%llu miss=%llu "
+                    "run_mismatch=%llu exact_valid=%llu exact_invalid=%llu "
+                    "state_match=%llu state_mismatch=%llu\n",
+                    (unsigned long long)ps.lookup,
+                    (unsigned long long)ps.hit,
+                    (unsigned long long)ps.miss,
+                    (unsigned long long)ps.run_mismatch,
+                    (unsigned long long)ps.exact_valid,
+                    (unsigned long long)ps.exact_invalid,
+                    (unsigned long long)ps.state_match,
+                    (unsigned long long)ps.state_mismatch);
+        }
 #endif
     }
 #elif defined(HZ_BENCH_USE_HZ11)

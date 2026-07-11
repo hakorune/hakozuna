@@ -172,3 +172,29 @@ time when the diagnostic flag is absent, so the default free path receives no
 stub call or counter.
 
 P0 classification result: GO. P1 page-state shadow is next.
+
+## P1 Windows Result
+
+The detached radix record now mirrors one live bit per medium slot. The bit is
+published after the current HZ8 allocation state and cleared after a successful
+HZ8 local/collected free. Before free mutation, the diagnostic compares the
+shadow bit with all three current authority signals: tagged `slot_state`,
+`allocated_mask`, and `free_mask`.
+
+Results:
+
+| Workload | State match | State mismatch | Run mismatch | Exact invalid |
+|---|---:|---:|---:|---:|
+| fixed 8K local | 203,840 | 0 | 0 | 0 |
+| interior + valid + duplicate smoke | 2 | 0 | 0 | 1 |
+| fixed 8K remote90, T=8 | 800,800 | 0 | 0 | 0 |
+
+The remote row reached effective remote 90.01% with zero fallback and zero
+allocation failure. Shadow state remained equal before remote publication and
+after owner-side collection. Duplicate free remained non-reusable: its exact
+address classified as page/slot identity, while both shadow and HZ8 authority
+reported non-live state.
+
+All P1 hooks and atomics are diagnostic-only and preprocess out of the default
+build. P1 result: GO. P2 fixed-8K behavior remains HOLD until its route and
+lifecycle adapter is implemented as an opt-in sibling.

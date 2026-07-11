@@ -125,6 +125,11 @@ function Invoke-Hz8MtRemoteBuilds {
             ExtraFlags = @("/DH8_MEDIUM_ENABLE_LOCAL_FAST_TIER=1")
         },
         @{
+            Name = "hz8-medium-pageshadow"
+            Output = "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"
+            ExtraFlags = @("/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1")
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")

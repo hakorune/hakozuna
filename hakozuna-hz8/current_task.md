@@ -90,6 +90,13 @@ exact-invalid. The interior/duplicate smoke records two exact addresses and
 one interior invalid while keeping run mismatch zero. Default builds preprocess
 all hooks away. P0 is GO; implement P1 detached live/free state comparison next.
 
+P1 detached state shadow is now GO. Fixed 8K local reports 203,840 state
+matches and zero mismatch. The interior/duplicate smoke reports two state
+matches, one exact-invalid interior pointer, and zero mismatch. Fixed 8K MT
+remote90 at T=8 reports 800,800 state matches, zero state/run mismatch,
+effective remote 90.01%, and zero fallback/failure. P2 may now begin only as an
+opt-in fixed-8K behavior sibling; default HZ8 remains unchanged.
+
 Current Windows attribution after the public matrix:
 
 ```text

@@ -758,11 +758,14 @@ int main(int argc, char** argv) {
     {
         H8MediumPageShadowStats s = h8_medium_page_shadow_stats();
         printf("\n[H8_MEDIUM_PAGE_SHADOW] lookup=%llu hit=%llu miss=%llu "
-               "run_mismatch=%llu exact_valid=%llu exact_invalid=%llu\n",
+               "run_mismatch=%llu exact_valid=%llu exact_invalid=%llu "
+               "state_match=%llu state_mismatch=%llu\n",
                (unsigned long long)s.lookup, (unsigned long long)s.hit,
                (unsigned long long)s.miss, (unsigned long long)s.run_mismatch,
                (unsigned long long)s.exact_valid,
-               (unsigned long long)s.exact_invalid);
+               (unsigned long long)s.exact_invalid,
+               (unsigned long long)s.state_match,
+               (unsigned long long)s.state_mismatch);
     }
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_SPEED_ATTRIBUTION_L0)

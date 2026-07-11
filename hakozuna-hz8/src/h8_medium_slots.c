@@ -1,5 +1,6 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
+#include "h8_medium_page_shadow.h"
 
 #include <stdatomic.h>
 #include <stdbool.h>
@@ -58,6 +59,9 @@ void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run) {
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
                         memory_order_release);
+#endif
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_note_alloc(run, slot);
 #endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_alloc_slot_store_ns,
@@ -201,6 +205,9 @@ bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
 #endif
   run->allocated_mask &= ~bit;
   run->free_mask |= bit;
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
+  h8_medium_page_shadow_note_free(run, slot);
+#endif
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_free_mask_ns,
                (size_t)(h8_medium_slots_now_ns() - section_start));
