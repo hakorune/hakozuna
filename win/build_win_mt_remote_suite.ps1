@@ -115,6 +115,11 @@ function Invoke-Hz8MtRemoteBuilds {
             ExtraFlags = @("/DH8_REUSABLE_SPAN_MAGAZINE_L1=0")
         },
         @{
+            Name = "hz8-v2-mag32"
+            Output = "bench_random_mixed_mt_remote_hz8_v2_mag32.exe"
+            ExtraFlags = @("/DH8_REUSABLE_SPAN_MAG_CAP=32")
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")

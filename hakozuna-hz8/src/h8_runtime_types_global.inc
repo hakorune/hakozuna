@@ -181,6 +181,11 @@ typedef struct H8Global {
   atomic_size_t local_bump_alloc;
   atomic_size_t local_slow_collect;
   atomic_size_t local_span_commit;
+  atomic_size_t reusable_mag_pop_attempt;
+  atomic_size_t reusable_mag_pop_hit;
+  atomic_size_t reusable_mag_pop_reject;
+  atomic_size_t reusable_mag_push;
+  atomic_size_t reusable_mag_full_preserve;
   atomic_size_t local_find_scan;
   atomic_size_t local_find_scan_span;
   atomic_size_t local_active_hint_null;

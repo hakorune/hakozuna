@@ -164,7 +164,7 @@ struct H8ThreadCtx {
   H8OwnerRecord* owner;
   H8Span* active_spans[H8_CLASS_COUNT];
 #if H8_REUSABLE_SPAN_MAGAZINE_L1
-  H8Span* reusable_span_mag[H8_CLASS_COUNT][16];
+  H8Span* reusable_span_mag[H8_CLASS_COUNT][H8_REUSABLE_SPAN_MAG_CAP];
   uint8_t reusable_span_count[H8_CLASS_COUNT];
 #endif
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];

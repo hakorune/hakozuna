@@ -1,5 +1,20 @@
 # HZ8 Research Integration Roadmap L0
 
+## Post-Mag16 Order
+
+Mag16 is promoted to the HZ8 v2 default. The next work is intentionally kept
+inside HZ8:
+
+1. freeze a cross-allocator public matrix for the new default;
+2. attribute the remaining medium/mixed peak-retention weakness;
+3. reuse the HZ12 reclaim contract only through an HZ8-native shadow box;
+4. reopen HZ11 or HZ12 implementation work only when the shadow identifies a
+   missing contract that cannot be expressed in HZ8.
+
+HZ10-HZ12 remain evidence suppliers, not allocator cores to merge. No new
+production hot-path counters, ownership reads, or atomics are permitted during
+the attribution step.
+
 ## Purpose
 
 HZ8 remains the public balanced allocator and the only normal user entry in

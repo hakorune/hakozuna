@@ -9,6 +9,58 @@ promotion status from build target names alone.
 
 ## Restart Surface: HZ8 Reclaim Integration
 
+## Next Development Order
+
+HZ8 is the active public integration line. Keep HZ10-HZ12 frozen as research
+suppliers unless a new measured HZ8 weakness requires reopening one contract.
+
+```text
+Step 1: Mag16 public full matrix
+  compare hz8-v2 with hz3/hz4/hz5/hz6/mimalloc/tcmalloc
+  record throughput plus peak/post RSS where the runner supports both
+  identify the next weakness from current measurements, not old snapshots
+
+Step 2: medium retention attribution
+  target long-lived mixed-size peak RSS
+  diagnostic/shadow lane only
+  no production malloc/free counters or atomics
+
+Step 3: HZ8-native reclaim shadow
+  import only the HZ12 bounded reclaim contract
+  do not merge the HZ12 allocator core or ownership hot path
+  behavior work requires a measurable reclaimable-byte target first
+```
+
+Do not open another allocator generation for these steps. Small-span inventory
+is now handled by default Mag16; the next candidate must address a different,
+measured retention boundary.
+
+Current Windows attribution after the public matrix:
+
+```text
+balanced:
+  mag pop 21,105 / hit 8,625 / reject 435
+  span commit 12,552
+  full-preserve 424,298
+
+wide_ws:
+  mag pop 8,595 / hit 1,924 / reject 61
+  span commit 6,735
+  full-preserve 476,423
+```
+
+The residual commit count tracks empty Mag pop attempts, not owner-list scan
+steps (still zero). Test `hz8-v2-mag32` once as a research capacity boundary.
+Do not change the Mag16 default unless balanced/wide peak RSS improves without
+remote or local throughput regression.
+
+Windows Mag32 clears that local gate: balanced/wide/larger R5 improve by about
+38%/43%/13%, while peak-RSS spot checks fall from 790.57/399.18/193.41 MiB to
+450.70/343.69/159.01 MiB. Fixed MT remote R5 is near-neutral, but effective
+remote ratios differ. Status: GO Windows candidate / HOLD default pending
+Linux local, remote, RSS, and GCC/Clang safety. See
+`docs/HZ8_REUSABLE_SPAN_MAG32_L1.md`.
+
 Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
 line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator
 cores to merge.

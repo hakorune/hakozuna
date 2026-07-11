@@ -30,6 +30,7 @@ $LegacyExecutables = @(
     @{ Name = "hz7-v2-remote-natural"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz7_v2_remote_natural.exe") },
     @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2.exe") },
     @{ Name = "hz8-v2-nomag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2_nomag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-v2-mag32"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2_mag32.exe"); Hz8Research = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },

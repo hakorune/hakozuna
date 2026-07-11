@@ -7,6 +7,7 @@
 - `HZ8_WINDOWS_LANE_STATUS_L1.md`: supported/candidate/diagnostic lane map
 - `HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`: HZ10-HZ12 evidence integration
 - `HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`: current Windows speed/RSS candidate
+- `HZ8_REUSABLE_SPAN_MAG32_L1.md`: bounded post-Mag16 capacity candidate
 
 ## Frozen Public Baseline
 

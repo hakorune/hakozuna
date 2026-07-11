@@ -200,6 +200,11 @@ typedef struct H8DebugStats {
   size_t local_bump_alloc;
   size_t local_slow_collect;
   size_t local_span_commit;
+  size_t reusable_mag_pop_attempt;
+  size_t reusable_mag_pop_hit;
+  size_t reusable_mag_pop_reject;
+  size_t reusable_mag_push;
+  size_t reusable_mag_full_preserve;
   size_t local_find_scan;
   size_t local_find_scan_span;
   size_t local_active_hint_null;

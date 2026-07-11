@@ -167,6 +167,16 @@
       atomic_load_explicit(&h8g.local_slow_collect, memory_order_acquire);
   out->local_span_commit =
       atomic_load_explicit(&h8g.local_span_commit, memory_order_acquire);
+  out->reusable_mag_pop_attempt = atomic_load_explicit(
+      &h8g.reusable_mag_pop_attempt, memory_order_acquire);
+  out->reusable_mag_pop_hit = atomic_load_explicit(
+      &h8g.reusable_mag_pop_hit, memory_order_acquire);
+  out->reusable_mag_pop_reject = atomic_load_explicit(
+      &h8g.reusable_mag_pop_reject, memory_order_acquire);
+  out->reusable_mag_push = atomic_load_explicit(
+      &h8g.reusable_mag_push, memory_order_acquire);
+  out->reusable_mag_full_preserve = atomic_load_explicit(
+      &h8g.reusable_mag_full_preserve, memory_order_acquire);
   out->local_find_scan =
       atomic_load_explicit(&h8g.local_find_scan, memory_order_acquire);
   out->local_find_scan_span =

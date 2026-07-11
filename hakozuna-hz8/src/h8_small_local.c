@@ -174,13 +174,16 @@ static void h8_debug_record_active_full_pending(size_t pending) {
 static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
                                        H8OwnerRecord* owner,
                                        uint32_t class_id) {
+  H8_DEBUG_INC(reusable_mag_pop_attempt);
   uint8_t* count = &ctx->reusable_span_count[class_id];
   while (*count != 0u) {
     H8Span* span = ctx->reusable_span_mag[class_id][--(*count)];
     if (h8_active_hint_matches(span, owner, class_id) &&
         !h8_span_local_exhausted(span)) {
+      H8_DEBUG_INC(reusable_mag_pop_hit);
       return span;
     }
+    H8_DEBUG_INC(reusable_mag_pop_reject);
   }
   return NULL;
 }
@@ -191,10 +194,12 @@ static void h8_reusable_span_mag_note_local_free(H8ThreadCtx* ctx,
   H8Span* old = ctx->active_spans[class_id];
   uint8_t* count = &ctx->reusable_span_count[class_id];
   if (old && old != span) {
-    if (*count == 16u) {
+    if (*count == H8_REUSABLE_SPAN_MAG_CAP) {
+      H8_DEBUG_INC(reusable_mag_full_preserve);
       return;
     }
     ctx->reusable_span_mag[class_id][(*count)++] = old;
+    H8_DEBUG_INC(reusable_mag_push);
   }
   ctx->active_spans[class_id] = span;
 }

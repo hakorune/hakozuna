@@ -22,6 +22,9 @@
 #ifndef H8_REUSABLE_SPAN_MAGAZINE_L1
 #define H8_REUSABLE_SPAN_MAGAZINE_L1 1
 #endif
+#ifndef H8_REUSABLE_SPAN_MAG_CAP
+#define H8_REUSABLE_SPAN_MAG_CAP 16u
+#endif
 
 #if !defined(H8_LIKELY)
 #if defined(__GNUC__) || defined(__clang__)

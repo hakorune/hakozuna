@@ -743,12 +743,17 @@ int main(int argc, char** argv) {
         H8DebugStats s = h8_debug_stats();
         printf("[H8_SPEED_ATTR] active_hit=%zu active_miss=%zu "
                "freelist=%zu bump=%zu slow_collect=%zu span_commit=%zu "
+               "mag_pop=%zu mag_hit=%zu mag_reject=%zu mag_push=%zu "
+               "mag_full_preserve=%zu "
                "find_scan=%zu find_steps=%zu find_usable=%zu find_full=%zu "
                "pending_collect=%zu medium_route=%zu medium_route_steps=%zu "
                "medium_collect_calls=%zu medium_collect_runs=%zu\n",
                s.local_active_hit, s.local_active_miss,
                s.local_freelist_pop, s.local_bump_alloc,
                s.local_slow_collect, s.local_span_commit,
+               s.reusable_mag_pop_attempt, s.reusable_mag_pop_hit,
+               s.reusable_mag_pop_reject, s.reusable_mag_push,
+               s.reusable_mag_full_preserve,
                s.local_find_scan, s.local_find_scan_span,
                s.local_find_scan_span_usable, s.local_find_scan_span_full,
                s.pending_collect_call_count, s.medium_route_lookup_count,
