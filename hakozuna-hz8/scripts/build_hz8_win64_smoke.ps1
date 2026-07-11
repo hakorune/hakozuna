@@ -4,6 +4,7 @@ $root = Split-Path -Parent $PSScriptRoot
 $outExe = Join-Path $root "h8_smoke_win.exe"
 $outShadowExe = Join-Path $root "h8_smoke_adaptive_shadow_win.exe"
 $outReclaimShadowExe = Join-Path $root "h8_smoke_reclaim_shadow_win.exe"
+$outReusableMagExe = Join-Path $root "h8_smoke_reusable_span_mag16_win.exe"
 
 $clang = (Get-Command clang-cl -ErrorAction Stop).Source
 
@@ -37,6 +38,28 @@ if ($LASTEXITCODE -ne 0) {
   throw "h8_smoke_win adoption run failed with exit code $LASTEXITCODE"
 }
 
+Remove-Item Env:H8_SMOKE_REGULAR_ADOPTION -ErrorAction SilentlyContinue
+
+& $clang /nologo /D_CRT_SECURE_NO_WARNINGS `
+  /I (Join-Path $root "include") `
+  /I (Join-Path $root "src") `
+  /DH8_ENABLE_DEBUG_STATS `
+  /DH8_REUSABLE_SPAN_MAGAZINE_L1 `
+  /Fe$outReusableMagExe `
+  $sources `
+  $smoke
+
+if ($LASTEXITCODE -ne 0) {
+  throw "reusable span magazine clang-cl failed with exit code $LASTEXITCODE"
+}
+
+Write-Host "built $outReusableMagExe"
+
+$env:H8_SMOKE_REGULAR_ADOPTION = '0'
+& $outReusableMagExe
+if ($LASTEXITCODE -ne 0) {
+  throw "h8_smoke_reusable_span_mag16_win failed with exit code $LASTEXITCODE"
+}
 Remove-Item Env:H8_SMOKE_REGULAR_ADOPTION -ErrorAction SilentlyContinue
 
 & $clang /nologo /D_CRT_SECURE_NO_WARNINGS `

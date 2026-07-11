@@ -27,6 +27,13 @@ small rows show an exact active-miss/span-commit coupling and zero owner-list
 scan steps when pending is empty. In 16-4096 churn: active miss 80,538, slow
 collect 80,538, span commit 80,538, find steps zero. The next narrow box is an
 O(1) owner-local reusable-span hint, not an HZ11 core or transfer-cache import.
+
+`HZ8ReusableSpanMagazine-L1` Mag16 is now the Windows candidate. It preserves
+up to 16 displaced owner-local active hints per class and validates each hint
+before reuse. Windows R5 improved 16..256 by 3.15x, 16..2048 by 2.56x, and
+16..4096 by 4.11x. The 16..4096 peak fell about 58%, and remote90 median stayed
+near-neutral while committed small-span bytes fell about 43%. Windows smokes
+pass. Status: GO Windows candidate / HOLD default pending Linux and full gates.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 

@@ -189,6 +189,14 @@ same-class span hint when local free makes a span reusable, validate it on
 active miss, and fall back to the frozen path on stale/full hints. Keep remote
 collector publication as a later, separately measured extension.
 
+The single-hint reading was refined during implementation: HZ8 already uses
+`active_spans[class]` as one reusable hint. Local frees overwrite that pointer,
+losing previously reusable spans. `HZ8ReusableSpanMagazine-L1` therefore keeps
+the displaced hints in a bounded 16-entry owner-local stack per class.
+
+Windows status: `GO(candidate) / HOLD(default)`; see
+`HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`.
+
 ## Non-Goals
 
 - no HZ10/HZ11/HZ12 whole-core merge;

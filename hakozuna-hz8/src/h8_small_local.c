@@ -170,6 +170,33 @@ static void h8_debug_record_active_full_pending(size_t pending) {
 #define H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT 8u
 #endif
 
+#if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
+static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
+                                       H8OwnerRecord* owner,
+                                       uint32_t class_id) {
+  uint8_t* count = &ctx->reusable_span_count[class_id];
+  while (*count != 0u) {
+    H8Span* span = ctx->reusable_span_mag[class_id][--(*count)];
+    if (h8_active_hint_matches(span, owner, class_id) &&
+        !h8_span_local_exhausted(span)) {
+      return span;
+    }
+  }
+  return NULL;
+}
+
+static void h8_reusable_span_mag_replace_active(H8ThreadCtx* ctx,
+                                                H8Span* span) {
+  const uint32_t class_id = span->class_id;
+  H8Span* old = ctx->active_spans[class_id];
+  uint8_t* count = &ctx->reusable_span_count[class_id];
+  if (old && old != span && *count < 16u) {
+    ctx->reusable_span_mag[class_id][(*count)++] = old;
+  }
+  ctx->active_spans[class_id] = span;
+}
+#endif
+
 static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
                                    uint32_t class_id) {
   H8_DEBUG_INC(local_find_scan);
@@ -256,6 +283,14 @@ void* h8_malloc_inner(size_t size) {
     }
 #if !defined(H8_ENABLE_DEBUG_STATS)
     owner = h8_ctx_owner_assume(ctx);
+#endif
+#if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
+    span = h8_reusable_span_mag_pop(ctx, owner, class_id);
+    if (span) {
+      ctx->active_spans[class_id] = span;
+      ptr = h8_small_alloc_from_span(span);
+      if (ptr) return ptr;
+    }
 #endif
     size_t pending_before =
         atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
@@ -371,7 +406,11 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   }
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
+#if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
+  h8_reusable_span_mag_replace_active(ctx, span);
+#else
   ctx->active_spans[span->class_id] = span;
+#endif
   return true;
 }
 

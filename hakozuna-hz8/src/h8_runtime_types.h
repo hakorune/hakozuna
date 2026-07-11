@@ -163,6 +163,10 @@ struct H8OwnerRecord {
 struct H8ThreadCtx {
   H8OwnerRecord* owner;
   H8Span* active_spans[H8_CLASS_COUNT];
+#if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
+  H8Span* reusable_span_mag[H8_CLASS_COUNT][16];
+  uint8_t reusable_span_count[H8_CLASS_COUNT];
+#endif
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_last_alloc_run;
   uint8_t medium_collect_credit;
