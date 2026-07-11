@@ -53,7 +53,7 @@ docs/HZ8_WINDOWS_LANE_STATUS_L1.md
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill + remote span-lease publish
+  HZ8 v2 / KeepRefill + remote span-lease publish + Mag16
 
 recommended default:
   yes
@@ -69,7 +69,7 @@ next research track:
   HZ12 contributes a reclaim contract, not a core implementation
   Windows speed/RSS candidate: ReusableSpanMagazine-L1 Mag16
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
-  default promotion remains on hold pending Linux and full public gates
+  promoted to the cross-platform default after Linux/Windows gates
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md

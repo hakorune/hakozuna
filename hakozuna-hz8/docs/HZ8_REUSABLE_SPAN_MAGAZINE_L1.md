@@ -66,12 +66,10 @@ Windows candidate:
   GO
 
 HZ8 default promotion:
-  HOLD
+  PROMOTED after cross-platform and broader Windows gates
 
-remaining gates:
-  Linux GCC/Clang smoke and safety stress
-  Linux paired local/remote/RSS matrix
-  Windows broader public rows and repeatable effective-remote control
+control lane:
+  hz8-v2-nomag
 ```
 
 ## Linux Gate
@@ -80,11 +78,12 @@ Ubuntu x86_64 GCC and Clang smoke/safety stress pass. Paired repeat-5 local
 churn confirms large throughput and peak-RSS improvements, including
 16..4096 peak RSS reduction from about 4.93 GiB to 2.02 GiB.
 
-The public remote matrix is mixed: main remote90 improves about 10%, but small
+The initial public remote matrix was mixed: main remote90 improved about 10%, but small
 remote90 throughput regresses about 9.7% and peak RSS rises from about 20.75
-MiB to 31.00 MiB. Linux correctness is GO; broad default promotion remains
-HOLD. Full results are in
-`docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md`.
+MiB to 31.00 MiB. Linux correctness was GO, but broad default promotion was
+initially held. Full results are in
+`docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md`. The subsequent
+full-magazine churn fix removed that blocker.
 
 ### Linux remote follow-up
 
@@ -131,3 +130,18 @@ the Linux full-magazine regression does not reproduce on Windows: throughput
 remains positive/neutral and peak RSS is lower. One initial baseline process
 ended with a non-reproducing Windows fast-fail; direct reruns and all ten runs
 in the recorded R5 completed successfully.
+
+## Promotion
+
+The broader Windows repeat-5 gate remained positive after the churn fix:
+
+| Row | No-Mag median | Mag16 median | Ratio |
+|---|---:|---:|---:|
+| balanced | 18.60M | 52.85M | 2.84x |
+| wide_ws | 32.86M | 55.15M | 1.68x |
+| larger_sizes | 14.27M | 22.75M | 1.59x |
+
+Together with Linux GCC/Clang safety, Linux focused local/remote, Windows
+smoke, long-lived local A/B, and fixed MT remote R5, this clears the default
+gate. `H8_REUSABLE_SPAN_MAGAZINE_L1` now defaults to `1`; define it as `0` only
+for the explicit pre-promotion control lane.

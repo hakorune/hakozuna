@@ -3,8 +3,10 @@
 Status: public-release preparation / paper input.
 
 HZ8 is the recommended Hakozuna allocator line.  The current default is
-HZ8-v2 / KeepRefill plus the preload-surface and remote span-lease publish
-hardening fixes, with HZ8-v1.1 kept as the frozen comparison baseline.
+HZ8-v2 / KeepRefill plus the preload-surface, remote span-lease publish
+hardening, and Mag16 reusable small-span inventory, with HZ8-v1.1 kept as the
+frozen comparison baseline. The pre-promotion no-Mag behavior remains only as
+the explicit `hz8-v2-nomag` research control.
 
 LargeDirectOwned and LargeDirectShardedHotCache-L1 are not release defaults.
 They are opt-in evidence lanes showing that the `cross128_r90` weakness is

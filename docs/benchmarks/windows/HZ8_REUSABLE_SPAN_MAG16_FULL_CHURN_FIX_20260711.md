@@ -52,5 +52,13 @@ cross-platform correctness/local candidate:
   GO
 
 default promotion:
-  HOLD pending the broader public matrix
+  PROMOTED after broader Windows R5
+```
+
+Broader Windows R5 medians:
+
+```text
+balanced:     18.60M -> 52.85M (2.84x)
+wide_ws:      32.86M -> 55.15M (1.68x)
+larger_sizes: 14.27M -> 22.75M (1.59x)
 ```

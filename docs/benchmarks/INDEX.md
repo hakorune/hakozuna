@@ -89,7 +89,7 @@ This page is the public pointer list for dated benchmark summaries.
   mimalloc and tcmalloc.
 - [HZ8 Reusable Span Magazine Mag16 Linux gate](linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md):
   GCC/Clang safety pass and paired local/remote/RSS gate; correctness GO,
-  default promotion HOLD.
+  full-magazine follow-up clears the initial remote blocker.
 - [HZ8 Reusable Span Magazine full-magazine Windows follow-up](windows/HZ8_REUSABLE_SPAN_MAG16_FULL_CHURN_FIX_20260711.md):
-  post-fix local long-lived R5 and fixed MT remote R5; candidate GO,
-  public default promotion HOLD.
+  post-fix local long-lived R5, fixed MT remote R5, and broader Windows R5;
+  Mag16 promoted to the HZ8 v2 default.

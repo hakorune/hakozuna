@@ -44,7 +44,7 @@ HZ8 論文 Zenodo record:
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill + remote span-lease publish
+  HZ8 v2 / KeepRefill + remote span-lease publish + Mag16
 
 recommended default:
   yes
@@ -73,7 +73,8 @@ windows bring-up lane:
 HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy
 pressure fixとしてdefault化しています。現行defaultには、LD_PRELOAD host
 互換性のための`malloc_usable_size` / aligned allocation surfaceと、xmalloc型の
-remote publish stormを止めるspan-lease remote publish / bounded backoffも含みます。
+remote publish stormを止めるspan-lease remote publish / bounded backoff、
+owner-local reusable small-span inventoryであるMag16も含みます。
 
 ```text
 small:
@@ -147,6 +148,7 @@ HZ9は、HZ8とは違う明確なpublic promiseを証明するまで、opt-inの
 
 ```text
 MediumKeepRefillEmpty-L1
+ReusableSpanMagazine-L1 Mag16
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
   make bench-mediumkeeprefillempty
   make bench-release-mediumkeeprefillempty

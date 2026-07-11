@@ -163,7 +163,7 @@ struct H8OwnerRecord {
 struct H8ThreadCtx {
   H8OwnerRecord* owner;
   H8Span* active_spans[H8_CLASS_COUNT];
-#if defined(H8_REUSABLE_SPAN_MAGAZINE_L1)
+#if H8_REUSABLE_SPAN_MAGAZINE_L1
   H8Span* reusable_span_mag[H8_CLASS_COUNT][16];
   uint8_t reusable_span_count[H8_CLASS_COUNT];
 #endif

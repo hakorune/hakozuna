@@ -32,12 +32,12 @@ scan steps when pending is empty. In 16-4096 churn: active miss 80,538, slow
 collect 80,538, span commit 80,538, find steps zero. The next narrow box is an
 O(1) owner-local reusable-span hint, not an HZ11 core or transfer-cache import.
 
-`HZ8ReusableSpanMagazine-L1` Mag16 is now the Windows candidate. It preserves
+`HZ8ReusableSpanMagazine-L1` Mag16 is now part of the HZ8 v2 default. It preserves
 up to 16 displaced owner-local active hints per class and validates each hint
 before reuse. Windows R5 improved 16..256 by 3.15x, 16..2048 by 2.56x, and
 16..4096 by 4.11x. The 16..4096 peak fell about 58%, and remote90 median stayed
 near-neutral while committed small-span bytes fell about 43%. Windows smokes
-pass. Status: GO Windows candidate / HOLD default pending Linux and full gates.
+pass. Status: PROMOTED after Linux and Windows gates.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 
@@ -48,16 +48,18 @@ local 16..256 / 16..2048 / 16..4096 improve 2.45x / 1.33x / 2.88x in the
 long-lived A/B, and the fixed MT remote row improves 124.891M to 131.737M while
 median peak RSS falls from 32.20 MiB to 18.71 MiB. Effective remote ratios
 differ, so do not promote a remote-speed claim. Correctness/local candidacy is
-GO on both OSes; default promotion remains HOLD pending the public full gate.
+GO on both OSes. A broader Windows R5 gate also remained positive: balanced,
+wide_ws, and larger_sizes improved by 2.84x, 1.68x, and 1.59x respectively.
+Mag16 is now default; `hz8-v2-nomag` is the explicit research control.
 
 Runner policy:
 
 ```text
 normal comparison:
   hz8-v2
-  hz8-reusable-span-mag16
 
 research-only (requires -IncludeHz8Research):
+  hz8-v2-nomag
   hz8-v3-adaptive-shadow
   hz8-reclaim-shadow
   hz8-speed-attribution

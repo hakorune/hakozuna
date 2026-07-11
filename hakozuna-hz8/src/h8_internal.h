@@ -19,6 +19,10 @@
 #define H8_DIRECT_FALLBACK_LIMIT (128u * 1024u)
 #define H8_CACHELINE_BYTES 64u
 
+#ifndef H8_REUSABLE_SPAN_MAGAZINE_L1
+#define H8_REUSABLE_SPAN_MAGAZINE_L1 1
+#endif
+
 #if !defined(H8_LIKELY)
 #if defined(__GNUC__) || defined(__clang__)
 #define H8_LIKELY(expr) __builtin_expect(!!(expr), 1)

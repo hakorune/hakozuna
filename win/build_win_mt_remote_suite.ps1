@@ -110,6 +110,11 @@ function Invoke-Hz8MtRemoteBuilds {
     foreach ($variant in @(
         @{ Name = "hz8-v2"; Output = "bench_random_mixed_mt_remote_hz8_v2.exe"; ExtraFlags = @() },
         @{
+            Name = "hz8-v2-nomag"
+            Output = "bench_random_mixed_mt_remote_hz8_v2_nomag.exe"
+            ExtraFlags = @("/DH8_REUSABLE_SPAN_MAGAZINE_L1=0")
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
@@ -118,11 +123,6 @@ function Invoke-Hz8MtRemoteBuilds {
             Name = "hz8-reclaim-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"
             ExtraFlags = @("/DH8_RECLAIM_ADAPTER_SHADOW_L0=1")
-        },
-        @{
-            Name = "hz8-reusable-span-mag16"
-            Output = "bench_random_mixed_mt_remote_hz8_reusable_span_mag16.exe"
-            ExtraFlags = @("/DH8_REUSABLE_SPAN_MAGAZINE_L1=1")
         }
     )) {
         Write-Host "Building: mt_remote ($($variant.Name))"
