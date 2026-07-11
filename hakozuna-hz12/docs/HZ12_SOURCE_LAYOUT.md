@@ -8,7 +8,9 @@ include/hz12.h
 
 src/hz12_span.*
   arena, span class route, returned-object sink, and P0-D checkpoint-local
-  unique/aligned returned-slot snapshot primitive
+  unique/aligned returned-slot snapshot primitive. Retirement-only bounded
+  batch snapshots validate up to 64 same-class spans per traversal while
+  keeping P4 advisory and P1 authority scans separate.
 
 src/hz12_thread_cache.*
   malloc/free front cache and current span

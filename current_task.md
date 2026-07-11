@@ -25,7 +25,9 @@ Current direction:
   replacement.
   HZ12 in hakozuna-hz12/: Windows-first advisory-ownership research line.
   It starts shadow-only from HZ11 cross-owner evidence and targets reclaimable
-  spans / low RSS without adding owner work to the free hot path.
+  spans / low RSS without adding owner work to the free hot path. Its bounded
+  retirement behavior now passes the repeated-generation safety/RSS/latency
+  gate using separate cold P4 advisory and P1 authority batch snapshots.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:

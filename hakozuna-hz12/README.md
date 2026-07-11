@@ -117,6 +117,8 @@ docs/HZ12_WINDOWS_BOUNDED_RETIRED_DETACH_L5C.md
 docs/HZ12_WINDOWS_BOUNDED_RETIRED_DECOMMIT_L5D.md
 docs/HZ12_WINDOWS_RETIRED_DEPOT_CYCLE_L5E.md
 docs/HZ12_WINDOWS_RETIRED_SPAN_RECYCLE_L5F.md
+docs/HZ12_WINDOWS_RETURNED_BATCH_SNAPSHOT_L1.md
+docs/HZ12_WINDOWS_RETIREMENT_TURNOVER_GATE.md
 docs/HZ12_WINDOWS_MEASUREMENT_TABLE_20260710.md
 docs/HZ12_WINDOWS_TCMALLOC_HOTPATH_AUDIT_20260710.md
 docs/HZ12_SOURCE_LAYOUT.md
@@ -201,6 +203,12 @@ to the depot. It touched 9,984..10,048 class-dependent slots per run, released
 4.00 MiB again, and reported zero address, generation, or lifecycle failures.
 The bounded Windows mechanism is complete; automatic reclaim policy remains
 out of scope.
+
+The retirement-only P4/P1 behavior now uses separate bounded batch snapshots
+instead of scanning one class sink once per span. Eight-generation turnover
+repeat-5 keeps depot count 64 and limbo zero while reducing retirement p99 from
+approximately 9.4-10.3 ms to 0.668-1.039 ms. This is a cold-path lifecycle
+result; malloc/free behavior and the speed lane remain unchanged.
 
 The provenance-safe Windows cross-owner runner now separates allocator behavior
 from diagnostics. In R5, the counter-free/accounting-free owner-inbox mechanism

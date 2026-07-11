@@ -358,6 +358,127 @@ int hz12_returned_snapshot_span(uint8_t class_id, const void* span_base,
   return 1;
 }
 
+static int hz12_returned_batch_target(const uint8_t* target_by_span,
+                                      const void* ptr) {
+  const uintptr_t offset = (uintptr_t)ptr - (uintptr_t)hz12_arena_base;
+  uint32_t span_id;
+  if ((uintptr_t)ptr < (uintptr_t)hz12_arena_base ||
+      offset >= (uintptr_t)HZ12_ARENA_BYTES) {
+    return -1;
+  }
+  span_id = (uint32_t)(offset >> HZ12_SPAN_SHIFT);
+  return target_by_span[span_id] == 0u
+      ? -1 : (int)target_by_span[span_id] - 1;
+}
+
+static int hz12_returned_batch(uint8_t class_id,
+                               const void* const* span_bases,
+                               uint32_t count,
+                               H12ReturnedSpanSnapshot* out,
+                               int detach_complete) {
+  uint8_t target_by_span[HZ12_SPAN_COUNT];
+  uint64_t slots[HZ12_RETURNED_BATCH_MAX]
+                [HZ12_SPAN_BYTES / HZ12_MIN_SIZE / 64u];
+  const size_t slot_bytes = hz12_class_slot_size(class_id);
+  H12Returned* returned;
+  void* current;
+  uint32_t i;
+  if (!out || !span_bases || count == 0u ||
+      count > HZ12_RETURNED_BATCH_MAX || class_id >= HZ12_CLASS_COUNT ||
+      slot_bytes == 0u || !hz12_arena_base) {
+    return 0;
+  }
+  memset(target_by_span, 0, sizeof(target_by_span));
+  memset(slots, 0, sizeof(slots));
+  memset(out, 0, sizeof(*out) * count);
+  for (i = 0u; i < count; ++i) {
+    const uintptr_t value = (uintptr_t)span_bases[i];
+    const uintptr_t base = (uintptr_t)hz12_arena_base;
+    uintptr_t offset;
+    uint32_t span_id;
+    if (value < base) return 0;
+    offset = value - base;
+    if (offset >= (uintptr_t)HZ12_ARENA_BYTES ||
+        (offset & (HZ12_SPAN_BYTES - 1u)) != 0u) {
+      return 0;
+    }
+    span_id = (uint32_t)(offset >> HZ12_SPAN_SHIFT);
+    if (target_by_span[span_id] != 0u) return 0;
+    target_by_span[span_id] = (uint8_t)(i + 1u);
+    out[i].slot_capacity = (uint32_t)(HZ12_SPAN_BYTES / slot_bytes);
+  }
+  returned = &hz12_returned[class_id];
+  hz12_mutex_lock(&returned->lock);
+  current = returned->head;
+  while (current) {
+    void* next = *(void**)current;
+    int target = hz12_returned_batch_target(target_by_span, current);
+    if (target >= 0) {
+      const uintptr_t offset = (uintptr_t)current -
+          (uintptr_t)span_bases[target];
+      H12ReturnedSpanSnapshot* snapshot = &out[target];
+      uint32_t slot;
+      uint32_t word;
+      uint64_t mask;
+      snapshot->objects += 1u;
+      if ((offset % slot_bytes) != 0u) {
+        snapshot->invalid_slots += 1u;
+        current = next;
+        continue;
+      }
+      slot = (uint32_t)(offset / slot_bytes);
+      if (slot >= snapshot->slot_capacity) {
+        snapshot->invalid_slots += 1u;
+        current = next;
+        continue;
+      }
+      word = slot / 64u;
+      mask = UINT64_C(1) << (slot % 64u);
+      if ((slots[target][word] & mask) != 0u) {
+        snapshot->duplicate_slots += 1u;
+      } else {
+        slots[target][word] |= mask;
+        snapshot->unique_slots += 1u;
+      }
+    }
+    current = next;
+  }
+  for (i = 0u; i < count; ++i) {
+    out[i].complete = (uint8_t)(
+        out[i].unique_slots == out[i].slot_capacity &&
+        out[i].objects == out[i].slot_capacity &&
+        out[i].duplicate_slots == 0u && out[i].invalid_slots == 0u);
+  }
+  if (detach_complete) {
+    void** link = &returned->head;
+    while (*link) {
+      current = *link;
+      int target = hz12_returned_batch_target(target_by_span, current);
+      if (target >= 0 && out[target].complete) {
+        *link = *(void**)current;
+      } else {
+        link = (void**)current;
+      }
+    }
+  }
+  hz12_mutex_unlock(&returned->lock);
+  return 1;
+}
+
+int hz12_returned_snapshot_batch(uint8_t class_id,
+                                 const void* const* span_bases,
+                                 uint32_t count,
+                                 H12ReturnedSpanSnapshot* out) {
+  return hz12_returned_batch(class_id, span_bases, count, out, 0);
+}
+
+int hz12_returned_detach_complete_batch(uint8_t class_id,
+                                        const void* const* span_bases,
+                                        uint32_t count,
+                                        H12ReturnedSpanSnapshot* out) {
+  return hz12_returned_batch(class_id, span_bases, count, out, 1);
+}
+
 void hz12_returned_lock_probe(uint8_t class_id) {
   H12Returned* returned;
   if (class_id >= HZ12_CLASS_COUNT) return;

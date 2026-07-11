@@ -10,6 +10,34 @@
 
 #include <string.h>
 
+typedef struct H12SnapshotCandidate {
+  void* span_base;
+  uint8_t class_id;
+  uint8_t detached;
+} H12SnapshotCandidate;
+
+static int h12_snapshot_select_batch(uint8_t class_id,
+                                     const void* const* spans,
+                                     uint32_t count,
+                                     H12SnapshotCandidate* selected,
+                                     uint32_t* selected_count,
+                                     uint32_t limit) {
+  H12ReturnedSpanSnapshot snapshots[HZ12_RETURNED_BATCH_MAX];
+  uint32_t i;
+  if (!hz12_returned_snapshot_batch(class_id, spans, count, snapshots)) {
+    return 0;
+  }
+  for (i = 0u; i < count && *selected_count < limit; ++i) {
+    if (snapshots[i].complete) {
+      selected[*selected_count].span_base = (void*)spans[i];
+      selected[*selected_count].class_id = class_id;
+      selected[*selected_count].detached = 0u;
+      *selected_count += 1u;
+    }
+  }
+  return 1;
+}
+
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -57,11 +85,20 @@ static int h12_snapshot_rollback_decommitted(void* span_base,
 int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
                                          uint32_t budget,
                                          H12SnapshotReclaimResult* out) {
+  H12SnapshotCandidate candidates[HZ12_RETURNED_BATCH_MAX];
+  const void* pending_spans[HZ12_CLASS_COUNT][HZ12_RETURNED_BATCH_MAX];
+  uint32_t pending_counts[HZ12_CLASS_COUNT];
+  const void* class_spans[HZ12_RETURNED_BATCH_MAX];
+  uint32_t class_indices[HZ12_RETURNED_BATCH_MAX];
+  H12ReturnedSpanSnapshot snapshots[HZ12_RETURNED_BATCH_MAX];
+  uint32_t candidate_count = 0u;
+  uint32_t class_id;
   uint32_t pending = 0u;
   uint32_t span_id;
   int entered = 0;
   if (!out || budget == 0u || budget > 64u) return 0;
   memset(out, 0, sizeof(*out));
+  memset(pending_counts, 0, sizeof(pending_counts));
   out->budget = budget;
   if (!h12_owner_retire_gate_ready(owner) ||
       !hz12_flush_owner_route_pending(owner.slot, owner.generation, &pending) ||
@@ -72,12 +109,9 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
   entered = 1;
   out->reserved = h12_span_depot_core_reserve(budget);
   if (out->reserved == 0u) goto done;
-  for (span_id = 0u;
-       span_id < HZ12_SPAN_COUNT && out->detached < out->reserved;
-       ++span_id) {
+  for (span_id = 0u; span_id < HZ12_SPAN_COUNT &&
+       candidate_count < out->reserved; ++span_id) {
     H12OwnerToken observed;
-    H12ReturnedSpanSnapshot snapshot;
-    void* span_base;
     uint8_t class_plus_one;
     if (!h12_span_owner_shadow_query(span_id, &observed) ||
         observed.slot != owner.slot ||
@@ -86,21 +120,61 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
     }
     class_plus_one = hz12_span_class[span_id];
     if (class_plus_one == 0u) continue;
-    span_base = hz12_arena_base + ((size_t)span_id << HZ12_SPAN_SHIFT);
-    if (!hz12_returned_snapshot_span(
-            (uint8_t)(class_plus_one - 1u), span_base, &snapshot) ||
-        !snapshot.complete) {
-      continue;
+    class_id = (uint32_t)(class_plus_one - 1u);
+    pending_spans[class_id][pending_counts[class_id]++] =
+        hz12_arena_base + ((size_t)span_id << HZ12_SPAN_SHIFT);
+    if (pending_counts[class_id] == HZ12_RETURNED_BATCH_MAX) {
+      if (!h12_snapshot_select_batch((uint8_t)class_id,
+              pending_spans[class_id], pending_counts[class_id], candidates,
+              &candidate_count, out->reserved)) {
+        out->failed += 1u;
+        break;
+      }
+      pending_counts[class_id] = 0u;
     }
-    out->candidates += 1u;
-    if (!hz12_returned_detach_complete_span(
-            (uint8_t)(class_plus_one - 1u), span_base, &snapshot)) {
+  }
+  if (out->failed != 0u) goto restore_detached;
+  for (class_id = 0u; class_id < HZ12_CLASS_COUNT &&
+       candidate_count < out->reserved; ++class_id) {
+    if (pending_counts[class_id] != 0u &&
+        !h12_snapshot_select_batch((uint8_t)class_id,
+            pending_spans[class_id], pending_counts[class_id], candidates,
+            &candidate_count, out->reserved)) {
+      out->failed += 1u;
+      goto restore_detached;
+    }
+  }
+  for (class_id = 0u; class_id < HZ12_CLASS_COUNT; ++class_id) {
+    uint32_t count = 0u;
+    uint32_t i;
+    for (i = 0u; i < candidate_count; ++i) {
+      if (candidates[i].class_id == class_id) {
+        class_spans[count] = candidates[i].span_base;
+        class_indices[count++] = i;
+      }
+    }
+    if (count == 0u) continue;
+    if (!hz12_returned_detach_complete_batch((uint8_t)class_id,
+                                              class_spans, count,
+                                              snapshots)) {
       out->failed += 1u;
       break;
     }
-    if (!hz12_span_route_detach(span_base,
-                               (uint8_t)(class_plus_one - 1u))) {
-      h12_snapshot_restore_span((uint8_t)(class_plus_one - 1u), span_base);
+    for (i = 0u; i < count; ++i) {
+      if (snapshots[i].complete) {
+        candidates[class_indices[i]].detached = 1u;
+        out->candidates += 1u;
+      }
+    }
+  }
+  if (out->failed != 0u) goto restore_detached;
+  for (span_id = 0u; span_id < candidate_count; ++span_id) {
+    void* span_base = candidates[span_id].span_base;
+    class_id = candidates[span_id].class_id;
+    if (!candidates[span_id].detached) continue;
+    if (!hz12_span_route_detach(span_base, (uint8_t)class_id)) {
+      h12_snapshot_restore_span((uint8_t)class_id, span_base);
+      candidates[span_id].detached = 0u;
       out->failed += 1u;
       break;
     }
@@ -108,8 +182,9 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
 #if defined(_WIN32)
     if (!VirtualFree(span_base, HZ12_SPAN_BYTES, MEM_DECOMMIT)) {
       (void)hz12_span_route_attach(span_base,
-                                  (uint8_t)(class_plus_one - 1u));
-      h12_snapshot_restore_span((uint8_t)(class_plus_one - 1u), span_base);
+                                  (uint8_t)class_id);
+      h12_snapshot_restore_span((uint8_t)class_id, span_base);
+      candidates[span_id].detached = 0u;
       out->failed += 1u;
       break;
     }
@@ -118,24 +193,37 @@ int h12_snapshot_reclaim_retired_bounded(H12OwnerToken owner,
     if (!h12_shadow_clear_token_if(span_base, owner.slot, owner.generation) ||
         !h12_span_owner_shadow_clear_if(span_base, owner)) {
       if (!h12_snapshot_rollback_decommitted(
-              span_base, (uint8_t)(class_plus_one - 1u), owner)) {
+              span_base, (uint8_t)class_id, owner)) {
         out->limbo_spans += 1u;
       }
+      candidates[span_id].detached = 0u;
       out->failed += 1u;
       break;
     }
     out->owner_cleared += 1u;
     if (!h12_span_depot_core_put_reserved(
-            span_base, (uint8_t)(class_plus_one - 1u))) {
+            span_base, (uint8_t)class_id)) {
       if (!h12_snapshot_rollback_decommitted(
-              span_base, (uint8_t)(class_plus_one - 1u), owner)) {
+              span_base, (uint8_t)class_id, owner)) {
         out->limbo_spans += 1u;
       }
+      candidates[span_id].detached = 0u;
       out->failed += 1u;
       break;
     }
     out->depot_inserted += 1u;
+    candidates[span_id].detached = 0u;
 #endif
+  }
+restore_detached:
+  if (out->failed != 0u) {
+    for (span_id = 0u; span_id < candidate_count; ++span_id) {
+      if (candidates[span_id].detached) {
+        h12_snapshot_restore_span(candidates[span_id].class_id,
+                                  candidates[span_id].span_base);
+        candidates[span_id].detached = 0u;
+      }
+    }
   }
 done:
   if (out->reserved > out->depot_inserted) {

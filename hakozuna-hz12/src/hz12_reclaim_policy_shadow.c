@@ -8,17 +8,35 @@
 
 #include <string.h>
 
+static void h12_shadow_snapshot_batch(uint8_t class_id,
+                                      const void* const* spans,
+                                      uint32_t count,
+                                      H12ReclaimPolicyShadow* out) {
+  H12ReturnedSpanSnapshot snapshots[HZ12_RETURNED_BATCH_MAX];
+  uint32_t i;
+  if (!hz12_returned_snapshot_batch(class_id, spans, count, snapshots)) {
+    out->incomplete_spans += count;
+    return;
+  }
+  for (i = 0u; i < count; ++i) {
+    if (snapshots[i].complete) out->complete_spans += 1u;
+    else out->incomplete_spans += 1u;
+  }
+}
+
 int h12_reclaim_policy_shadow_query(H12OwnerToken owner,
                                     H12ReclaimPolicyShadow* out) {
+  const void* spans[HZ12_CLASS_COUNT][HZ12_RETURNED_BATCH_MAX];
+  uint32_t span_counts[HZ12_CLASS_COUNT];
   uint32_t span_id;
   if (!out || owner.generation == 0u) return 0;
   memset(out, 0, sizeof(*out));
+  memset(span_counts, 0, sizeof(span_counts));
   out->owner_gate_open = (uint8_t)h12_owner_retire_gate_ready(owner);
   out->flush_owner_found = (uint8_t)hz12_flush_owner_route_pending(
       owner.slot, owner.generation, &out->flush_owner_pending);
   for (span_id = 0u; span_id < HZ12_SPAN_COUNT; ++span_id) {
     H12OwnerToken observed;
-    H12ReturnedSpanSnapshot snapshot;
     void* span_base;
     uint8_t class_plus_one;
     if (!h12_span_owner_shadow_query(span_id, &observed) ||
@@ -33,12 +51,20 @@ int h12_reclaim_policy_shadow_query(H12OwnerToken owner,
       continue;
     }
     span_base = hz12_arena_base + ((size_t)span_id << HZ12_SPAN_SHIFT);
-    if (hz12_returned_snapshot_span((uint8_t)(class_plus_one - 1u),
-                                    span_base, &snapshot) &&
-        snapshot.complete) {
-      out->complete_spans += 1u;
-    } else {
-      out->incomplete_spans += 1u;
+    {
+      const uint8_t class_id = (uint8_t)(class_plus_one - 1u);
+      uint32_t* count = &span_counts[class_id];
+      spans[class_id][(*count)++] = span_base;
+      if (*count == HZ12_RETURNED_BATCH_MAX) {
+        h12_shadow_snapshot_batch(class_id, spans[class_id], *count, out);
+        *count = 0u;
+      }
+    }
+  }
+  for (span_id = 0u; span_id < HZ12_CLASS_COUNT; ++span_id) {
+    if (span_counts[span_id] != 0u) {
+      h12_shadow_snapshot_batch((uint8_t)span_id, spans[span_id],
+                                span_counts[span_id], out);
     }
   }
   out->reclaimable_bytes = (uint64_t)out->complete_spans * HZ12_SPAN_BYTES;
