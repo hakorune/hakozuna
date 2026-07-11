@@ -52,6 +52,11 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraFlags = @("/DH8_REUSABLE_SPAN_MAG_CAP=32")
         },
         @{
+            Name = "hz8-v2-mediumlocalfast"
+            Output = "bench_mixed_ws_hz8_v2_mediumlocalfast.exe"
+            ExtraFlags = @("/DH8_MEDIUM_ENABLE_LOCAL_FAST_TIER=1")
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")

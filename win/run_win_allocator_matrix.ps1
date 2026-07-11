@@ -33,6 +33,7 @@ $Executables = @(
     @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe") },
     @{ Name = "hz8-v2-nomag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_nomag.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-mag32"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_mag32.exe"); Hz8Research = $true },
+    @{ Name = "hz8-v2-mediumlocalfast"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_mediumlocalfast.exe"); Hz8Research = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true },

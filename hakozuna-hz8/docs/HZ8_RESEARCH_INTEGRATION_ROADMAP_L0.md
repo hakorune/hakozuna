@@ -185,6 +185,45 @@ mechanism for a separate shadow-first experiment.
 This is now the active next task under the name
 `HZ8SpeedAdapterAttribution-L0`.
 
+The first post-Mag16 medium/local behavior check is not a new mechanism.
+`MediumLocalFastTierActiveRun-L1` already exists behind
+`H8_MEDIUM_ENABLE_LOCAL_FAST_TIER` and was previously placed on HOLD. Windows
+now exposes it as `hz8-v2-mediumlocalfast`, excluded from normal matrices unless
+`-IncludeHz8Research` is supplied. This recheck answers whether the current
+Mag16/default code shape changes the old result without mixing in new counters,
+atomics, or another cache design.
+
+Recheck gate:
+
+- medium/local throughput must improve materially;
+- main/local and fixed medium slices must not regress more than 3%;
+- small and remote rows must not regress more than 5%;
+- peak/post RSS must remain within 5%;
+- safety gates remain zero.
+
+If the candidate fails again, freeze the active-run fast-tier family. The next
+medium/local design must remove fixed-cost work from the common entry rather
+than add another branch or per-run state field.
+
+Windows closeout (2026-07-11):
+
+| Row | Baseline | Candidate | Ratio |
+|---|---:|---:|---:|
+| balanced | 68.84M | 67.18M | 0.976 |
+| larger_sizes | 32.57M | 31.61M | 0.971 |
+| fixed 8K | 66.05M | 64.08M | 0.970 |
+| fixed 16K | 38.12M | 37.60M | 0.986 |
+
+These are long AB repeat-5 medians with iteration counts raised by 10x over
+the quick matrix rows. The candidate is NO-GO and the active-run fast-tier
+family is frozen. The Windows research row remains available only to reproduce
+the decision; it is excluded from normal matrices.
+
+A one-run MT remote smoke agreed with the closeout direction: 120.93M ops/s
+for the candidate versus 125.90M for default HZ8, with peak RSS increasing
+from 18,672 KiB to 20,020 KiB. This row is supporting evidence only because
+the effective remote ratios differed; it is not used as the primary gate.
+
 Windows diagnostic result:
 
 | Row | Active miss | Slow collect | Span commit | Owner scan steps |

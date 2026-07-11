@@ -9,6 +9,7 @@
 - `HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`: HZ10-HZ12 evidence integration
 - `HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`: current Windows speed/RSS candidate
 - `HZ8_REUSABLE_SPAN_MAG32_L1.md`: larger/local opt-in capacity candidate
+- `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost audit
 
 ## Frozen Public Baseline
 

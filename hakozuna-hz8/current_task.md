@@ -15,15 +15,15 @@ HZ8 is the active public integration line. Keep HZ10-HZ12 frozen as research
 suppliers unless a new measured HZ8 weakness requires reopening one contract.
 
 ```text
-Step 1: Mag16 public full matrix
-  compare hz8-v2 with hz3/hz4/hz5/hz6/mimalloc/tcmalloc
-  record throughput plus peak/post RSS where the runner supports both
-  identify the next weakness from current measurements, not old snapshots
+Step 1: MediumLocalFastTier current-default recheck
+  reuse the existing opt-in implementation and attribution
+  compare hz8-v2 with hz8-v2-mediumlocalfast on Windows
+  keep the candidate research-only and production counters off
 
-Step 2: medium retention attribution
-  target long-lived mixed-size peak RSS
-  diagnostic/shadow lane only
-  no production malloc/free counters or atomics
+Step 2: decide the medium/local box
+  close again if local gain is absent or remote/small regresses over 5%
+  retain as an opt-in only if the gain is profile-scoped
+  promote only after repeatable Windows and Linux Pareto improvement
 
 Step 3: HZ8-native reclaim shadow
   import only the HZ12 bounded reclaim contract
@@ -34,6 +34,38 @@ Step 3: HZ8-native reclaim shadow
 Do not open another allocator generation for these steps. Small-span inventory
 is now handled by default Mag16; the next candidate must address a different,
 measured retention boundary.
+
+The current public matrix fixes the next measured speed gap. HZ8 reaches about
+24-26% of tcmalloc on main/medium local rows while retaining much lower post
+RSS. Existing attribution already excludes first-touch, remote protocol, and
+64K geometry as the primary medium-local limiter. An older active-run local
+fast tier reached near-perfect reuse but was HOLD because it enlarged the hot
+path and regressed the then-current broad gate. Re-run that exact behavior on
+the current Mag16 default before designing another medium cache.
+
+The Windows recheck is complete and remains NO-GO. A long AB repeat-5 median
+with production counters disabled measured candidate/baseline ratios of 0.976
+on balanced, 0.971 on larger_sizes, 0.970 on fixed 8K, and 0.986 on fixed 16K.
+The short matrix signal that initially looked positive did not survive the
+longer run. Keep `hz8-v2-mediumlocalfast` as reproducibility evidence only and
+do not add another active-run branch, mask, or per-run fast state. The next
+medium/local investigation must reduce common-entry fixed cost or change the
+substrate outside the HZ8 medium hot path.
+
+Active next box: `HZ8MediumFixed8KCostAudit-L0`. Audit the release-equivalent
+fixed 8K alloc/free path before another behavior change. Separate removable
+decode/call/layout work from required fail-closed validation and state writes.
+If removable work is at least 30% of the path, open one common-entry trim box;
+otherwise compare the existing HZ10 intrusive-page/O(1)-pagemap substrate via
+an HZ8-native shadow contract. See `docs/HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`.
+
+L0 measured HZ8 at 65.447M / 258.09 process cycles per logical fixed-8K
+operation versus tcmalloc at 213.284M / 76.60 cycles. The audited HZ8 medium
+alloc/free objects contain no locked RMW, while the static alloc/free bodies
+remain large. This rules out atomic contention as the primary explanation but
+does not yet prove which cold blocks execute. Active next step: isolate and
+classify the active-run alloc and same-owner free basic blocks. Do not implement
+another cache or remove a safety check before that split is complete.
 
 Current Windows attribution after the public matrix:
 
@@ -119,6 +151,8 @@ normal comparison:
 
 research-only (requires -IncludeHz8Research):
   hz8-v2-nomag
+  hz8-v2-mag32
+  hz8-v2-mediumlocalfast
   hz8-v3-adaptive-shadow
   hz8-reclaim-shadow
   hz8-speed-attribution
