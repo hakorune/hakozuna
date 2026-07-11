@@ -85,4 +85,5 @@ This page is the public pointer list for dated benchmark summaries.
   bounded 64-span `MADV_DONTNEED` reclaim, 8 generation reuse, repeat-5;
   limbo 0 and run-median retirement p50 1.089 ms.
 - [HZ8 / HZ11 / HZ12 Linux allocator comparison](linux/HZ8_HZ11_HZ12_ALLOCATOR_COMPARE_20260711.md):
-  common 8-thread random-mixed repeat-5 against mimalloc and tcmalloc.
+  common random-mixed throughput plus corrected HZ8 peak/post RSS audit against
+  mimalloc and tcmalloc.
