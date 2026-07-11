@@ -15,6 +15,7 @@ $TokenRetireLive = Join-Path $Hz12Root "bench\bench_hz12_token_retire_live.c"
 $TokenXownerPipeline = Join-Path $Hz12Root "bench\bench_hz12_token_xowner_pipeline.c"
 $WideWsReclaimShadow = Join-Path $Hz12Root "bench\bench_hz12_widews_reclaim_shadow.c"
 $WideWsOwnerLedgerShadow = Join-Path $Hz12Root "bench\bench_hz12_widews_owner_ledger_shadow.c"
+$RetirementTurnover = Join-Path $Hz12Root "bench\bench_hz12_retirement_turnover.c"
 $AdoptionSmoke = Join-Path $Hz12Root "tests\hz12_owner_adoption_shadow_smoke.c"
 $RetiredAdoptionSmoke = Join-Path $Hz12Root "tests\hz12_retired_inbox_adoption_smoke.c"
 $WholeSpanSmoke = Join-Path $Hz12Root "tests\hz12_whole_span_accounting_smoke.c"
@@ -67,6 +68,9 @@ $Hz12Sources = @(
 
 foreach ($path in @($Bench, $InboxBench, $TokenRetireLive, $TokenXownerPipeline, $WideWsReclaimShadow, $WideWsOwnerLedgerShadow, $AdoptionSmoke, $RetiredAdoptionSmoke, $WholeSpanSmoke, $DepotCycleSmoke, $DepotCapSmoke, $OwnerRegistrySmoke, $TokenInboxSmoke, $OwnerEpochSmoke, $OwnerRetireGateSmoke, $RetiredReclaimShadowSmoke, $OwnerBatchLedgerSmoke, $OwnerBatchLedgerBoundarySmoke, $OwnerBatchLedgerXownerSmoke, $Shadow, $Inbox, $Accounting, $ReclaimGate, $SpanDetach, $SpanDecommit, $SpanDepot, $SpanDepotCore, $OwnerRegistry, $TokenInbox, $OwnerEpoch, $OwnerRetireGate, $SpanOwnerShadow, $RetiredReclaimShadow, $RetiredReclaimDetach, $RetiredReclaimDecommit, $RetiredReclaimDepotCycle, $ReclaimCarveDiag, $RetiredReclaimRecycle, $OwnerBatchLedger, $OwnerBatchLedgerCompare, $OwnerLedgerRetireGate, $SnapshotReclaim, $SnapshotRecycle, $ReclaimPolicyShadow, $ReclaimEntry) + $Hz12Sources) {
     if (-not (Test-Path $path)) { throw "Missing HZ12 shadow source: $path" }
+}
+if (-not (Test-Path $RetirementTurnover)) {
+    throw "Missing HZ12 turnover source: $RetirementTurnover"
 }
 if ($InboxCap -lt 1) { throw "InboxCap must be positive." }
 if ($DrainInterval -lt 1 -or ($DrainInterval -band ($DrainInterval - 1)) -ne 0) {
@@ -574,6 +578,28 @@ $wideWsReclaimPolicyBehaviorArgs = @(
     "/out:$(Join-Path $OutDir 'bench_hz12_widews_reclaim_policy_behavior.exe')"
 )
 & clang-cl @wideWsReclaimPolicyBehaviorArgs
+if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
+
+$retirementTurnoverArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/I$(Join-Path $RepoRoot 'win')",
+    "/I$(Join-Path $Hz12Root 'src')",
+    "/I$(Join-Path $Hz12Root 'include')",
+    "/DHZ12_CLASSIFY_SPAN=1",
+    "/DHZ12_CACHE_CAP=256",
+    "/DHZ12_FLUSH_OWNER_ROUTE=1",
+    "/DHZ12_FLUSH_OWNER_COLD_SPAN=1",
+    "/DHZ12_FLUSH_OWNER_INBOX_CAP=2048",
+    $RetirementTurnover, $Shadow, $SpanOwnerShadow,
+    $OwnerRetireGate, $OwnerEpoch, $TokenInbox, $OwnerRegistry,
+    $ReclaimPolicyShadow, $SnapshotReclaim, $SnapshotRecycle,
+    $SpanDepotCore, $ReclaimEntry,
+    (Join-Path $Hz12Root "src\hz12_flush_owner_route.c")
+) + $Hz12Sources + @(
+    "psapi.lib", "/link",
+    "/out:$(Join-Path $OutDir 'bench_hz12_retirement_turnover.exe')"
+)
+& clang-cl @retirementTurnoverArgs
 if ($LASTEXITCODE -ne 0) { throw "clang-cl failed: $LASTEXITCODE" }
 
 $wideWsSnapshotRecycleArgs = @(

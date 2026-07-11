@@ -174,6 +174,26 @@ int h12_owner_epoch_ready_to_dead(H12OwnerToken owner) {
   return ready;
 }
 
+int h12_owner_epoch_finish_retire(H12OwnerToken owner) {
+  int finished = 0;
+  if (!h12_owner_epoch_initialized || owner.generation == 0u ||
+      !h12_owner_epoch_ready_to_dead(owner)) {
+    return 0;
+  }
+  hz12_mutex_lock(&h12_owner_epoch_lock);
+  if (h12_owner_epoch_retire.active &&
+      h12_owner_epoch_retire.owner.slot == owner.slot &&
+      h12_owner_epoch_retire.owner.generation == owner.generation) {
+    h12_owner_epoch_retire.active = 0;
+    h12_owner_epoch_retire.participant_count = 0u;
+    memset(h12_owner_epoch_retire.participant_generation, 0,
+           sizeof(h12_owner_epoch_retire.participant_generation));
+    finished = 1;
+  }
+  hz12_mutex_unlock(&h12_owner_epoch_lock);
+  return finished;
+}
+
 void h12_owner_epoch_stats(H12OwnerEpochStats* out) {
   if (!out || !h12_owner_epoch_initialized) return;
   hz12_mutex_lock(&h12_owner_epoch_lock);

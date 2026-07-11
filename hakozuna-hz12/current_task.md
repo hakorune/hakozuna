@@ -656,3 +656,12 @@ zero and about 3.99 MiB working-set reduction. Keep this as opt-in evidence.
 Default promotion remains closed until an application-like repeated
 thread-retirement workload proves bounded depot occupancy, stale-generation
 safety, and acceptable total retirement latency.
+
+Repeated retirement turnover result: an eight-generation single-process lane
+now circulates the same 64 spans through worker allocation, cross-thread free,
+P4/P1 retirement reclaim, and the bounded depot. Generation advanced exactly
+1..8, depot ended at 64, limbo remained zero, post RSS stayed 6.23-6.26 MiB,
+and peak RSS stayed 10.25-10.28 MiB. Repeat-5 retirement p99 ranged from about
+9.40 to 10.31 ms; one run exceeded the strict 10 ms gate. Decision: HOLD,
+retirement latency gate. Do not promote the profile. If reopened, reduce the
+cold repeated sink scan or add an owner-span index without changing hot paths.

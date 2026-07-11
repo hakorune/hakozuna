@@ -33,6 +33,7 @@ int h12_owner_epoch_unregister(H12OwnerEpochParticipant participant);
 int h12_owner_epoch_begin_retire(H12OwnerToken owner);
 int h12_owner_epoch_checkpoint(H12OwnerEpochParticipant participant);
 int h12_owner_epoch_ready_to_dead(H12OwnerToken owner);
+int h12_owner_epoch_finish_retire(H12OwnerToken owner);
 void h12_owner_epoch_stats(H12OwnerEpochStats* out);
 void h12_owner_epoch_dump(FILE* out);
 
