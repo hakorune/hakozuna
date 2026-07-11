@@ -61,6 +61,11 @@ remote ratios differ. Status: GO Windows candidate / HOLD default pending
 Linux local, remote, RSS, and GCC/Clang safety. See
 `docs/HZ8_REUSABLE_SPAN_MAG32_L1.md`.
 
+Per-class balanced attribution is concentrated in class 7: 12,187 of 12,457
+empty pops (about 98%), with classes 4/5/6 contributing 8/29/233. Replacement
+policy work is closed; the reusable spans are fungible. The next and only gate
+is Linux Mag16/Mag32 A/A-calibrated R5 with matched effective remote ratio.
+
 Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
 line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator
 cores to merge.

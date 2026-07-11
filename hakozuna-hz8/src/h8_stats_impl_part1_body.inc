@@ -177,6 +177,12 @@
       &h8g.reusable_mag_push, memory_order_acquire);
   out->reusable_mag_full_preserve = atomic_load_explicit(
       &h8g.reusable_mag_full_preserve, memory_order_acquire);
+  for (size_t i = 0; i < H8_CLASS_COUNT; ++i) {
+    out->reusable_mag_empty_pop_by_class[i] = atomic_load_explicit(
+        &h8g.reusable_mag_empty_pop_by_class[i], memory_order_acquire);
+    out->reusable_mag_depth_low_water_by_class[i] = atomic_load_explicit(
+        &h8g.reusable_mag_depth_low_water_by_class[i], memory_order_acquire);
+  }
   out->local_find_scan =
       atomic_load_explicit(&h8g.local_find_scan, memory_order_acquire);
   out->local_find_scan_span =

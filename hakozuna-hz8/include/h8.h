@@ -4,6 +4,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define H8_DEBUG_SMALL_CLASS_CAP 11u
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -205,6 +207,8 @@ typedef struct H8DebugStats {
   size_t reusable_mag_pop_reject;
   size_t reusable_mag_push;
   size_t reusable_mag_full_preserve;
+  size_t reusable_mag_empty_pop_by_class[H8_DEBUG_SMALL_CLASS_CAP];
+  size_t reusable_mag_depth_low_water_by_class[H8_DEBUG_SMALL_CLASS_CAP];
   size_t local_find_scan;
   size_t local_find_scan_span;
   size_t local_active_hint_null;

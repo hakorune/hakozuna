@@ -58,6 +58,12 @@ static H8OwnerRecord* h8_owner_free_stack_pop(void) {
 static void h8_init_once(void) {
   h8_system_init();
   h8_platform_mutex_init(&h8g.owner_lock);
+#if defined(H8_ENABLE_DEBUG_STATS)
+  for (uint32_t i = 0; i < H8_CLASS_COUNT; ++i) {
+    atomic_store_explicit(&h8g.reusable_mag_depth_low_water_by_class[i],
+                          H8_REUSABLE_SPAN_MAG_CAP, memory_order_relaxed);
+  }
+#endif
   atomic_store_explicit(&h8g.regular_adoption_enabled,
                         h8_parse_env_bool(getenv("H8_ENABLE_REGULAR_ADOPTION")),
                         memory_order_relaxed);

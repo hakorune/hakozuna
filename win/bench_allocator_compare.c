@@ -760,6 +760,13 @@ int main(int argc, char** argv) {
                s.medium_route_lookup_step_count,
                s.medium_remote_collect_call_count,
                s.medium_remote_collect_run_count);
+        printf("[H8_MAG_CLASS]");
+        for (size_t i = 0; i < H8_DEBUG_SMALL_CLASS_CAP; ++i) {
+            printf(" c%zu_empty=%zu c%zu_low=%zu", i,
+                   s.reusable_mag_empty_pop_by_class[i], i,
+                   s.reusable_mag_depth_low_water_by_class[i]);
+        }
+        printf("\n");
     }
 #endif
     fflush(stdout);

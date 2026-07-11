@@ -171,11 +171,34 @@ static void h8_debug_record_active_full_pending(size_t pending) {
 #endif
 
 #if H8_REUSABLE_SPAN_MAGAZINE_L1
+#if defined(H8_ENABLE_DEBUG_STATS)
+static void h8_reusable_span_mag_record_pop_depth(uint32_t class_id,
+                                                  size_t depth) {
+  if (depth == 0u) {
+    atomic_fetch_add_explicit(&h8g.reusable_mag_empty_pop_by_class[class_id], 1,
+                              memory_order_relaxed);
+  }
+  atomic_size_t* low = &h8g.reusable_mag_depth_low_water_by_class[class_id];
+  size_t current = atomic_load_explicit(low, memory_order_relaxed);
+  while (depth < current &&
+         !atomic_compare_exchange_weak_explicit(
+             low, &current, depth, memory_order_relaxed, memory_order_relaxed)) {
+  }
+}
+#else
+static inline void h8_reusable_span_mag_record_pop_depth(uint32_t class_id,
+                                                         size_t depth) {
+  (void)class_id;
+  (void)depth;
+}
+#endif
+
 static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
                                        H8OwnerRecord* owner,
                                        uint32_t class_id) {
   H8_DEBUG_INC(reusable_mag_pop_attempt);
   uint8_t* count = &ctx->reusable_span_count[class_id];
+  h8_reusable_span_mag_record_pop_depth(class_id, *count);
   while (*count != 0u) {
     H8Span* span = ctx->reusable_span_mag[class_id][--(*count)];
     if (h8_active_hint_matches(span, owner, class_id) &&

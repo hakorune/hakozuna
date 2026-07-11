@@ -17,6 +17,46 @@ balanced: pop 21,105 / hit 8,625 / reject 435 / commit 12,552
 wide_ws:  pop 8,595 / hit 1,924 / reject 61 / commit 6,735
 ```
 
+The follow-up per-class diagnostic on balanced attributes empty pops as:
+
+```text
+class 4:      8
+class 5:     29
+class 6:    233
+class 7: 12,187
+other active classes: 0
+```
+
+Class 7 accounts for about 98% of empty pops. Its depth low-water reaches zero;
+classes without demand retain the initialized low-water of 16. This supports a
+class-specific phase-amplitude interpretation rather than owner scanning or a
+generic replacement-policy failure.
+
+## Design review disposition
+
+```text
+root cause:
+  bounded inventory capacity / phase amplitude
+
+replacement policy:
+  CLOSED / NO-GO
+  reusable empty spans are fungible; FIFO/LRU/ring does not add information
+
+full-preserve count:
+  event evidence only, not the capacity proof
+
+next experiment:
+  Linux Mag16/Mag32 A/A-calibrated R5
+  match effective remote percentage before interpreting remote throughput
+
+future bridge:
+  magazine tail decommit may become the HZ8-native receiver of the HZ12
+  bounded reclaim contract, but only after Mag32 promotion is decided
+```
+
+Do not test Mag64 unless Mag32 still shows residual class-attributed empty pops
+after passing the cross-platform gate.
+
 ## Windows gates
 
 | Row | Mag16 | Mag32 | Change | Mag16 peak | Mag32 peak |
