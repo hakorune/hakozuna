@@ -18,10 +18,12 @@ and passes paired throughput, peak/post-RSS, safety, and portability gates.
 
 ## Current Target
 
-HZ8 already reproduces low post-workload RSS on its public Linux matrix. The
-remaining measured RSS weakness is different: a long-lived owner under mixed
-16-4096-byte churn retains empty medium backing and reached a 4.9 GiB peak in
-the attribution probe before owner-exit cleanup.
+HZ8 already reproduces low post-workload RSS on its public Linux matrix. A
+generic long-lived-owner 16-4096-byte probe reached a 4.9 GiB peak before
+owner-exit cleanup. This range belongs to HZ8's small span classes, not its
+4097-byte-and-up MediumRun layer. Earlier HZ8 evidence also identifies a
+similar phase-separated shape as peak-live/first-touch stress, so reclaimable
+retention is not yet proven as the cause.
 
 HZ12 proves on Windows and Linux that a bounded retirement contract can:
 
@@ -32,9 +34,10 @@ HZ12 proves on Windows and Linux that a bounded retirement contract can:
 - recycle the same virtual addresses through a bounded depot;
 - complete eight owner generations with zero limbo spans.
 
-The next question is not whether HZ8 should become HZ12. It is whether HZ8's
-native medium runs can use the same contract to reduce peak retention without
-losing HZ8's balanced default.
+The next question is not whether HZ8 should become HZ12. It is whether the
+small-span peak contains complete reclaimable spans at all. L0 must separate
+reclaimable, active, live, pending, and non-owned-state blockers before any
+behavior design begins.
 
 ## Task Order
 
@@ -50,18 +53,46 @@ losing HZ8's balanced default.
 
 At existing owner retirement and medium maintenance checkpoints only:
 
-- identify HZ8-native medium reclaim units;
-- attribute active, pending, retained-empty, and complete units;
+- inspect HZ8-native small spans only at the existing refill slow path;
+- attribute active, pending, live, state-blocked, and complete units;
 - report reclaimable bytes and owner-generation state;
 - model a bounded reclaim budget;
 - perform no detach, discard, or allocation-policy change.
 
-The shadow must use HZ8 slot-state and pending bitmap authority. HZ12 owner
-metadata is a design reference, not safety authority to copy.
+The shadow must use HZ8 slot-state, used-count derivation, and pending bitmap
+authority. HZ12 owner metadata is a design reference, not safety authority to
+copy. MediumRun reclaim is a separate future question and must not be inferred
+from a 16-4096-byte row.
 
 Open L1 only if the long-lived churn row exposes a stable material reclaimable
 peak and ordinary public rows do not pay a diagnostic cost in feature-off
-builds.
+builds. If blocked-live bytes dominate, close this reclaim hypothesis and
+classify the row as peak-live/size-policy evidence.
+
+Windows L0 result: `ACCEPT` as an owner-retirement upper-bound witness.
+
+```text
+generic 16..4096, T=8, ws=1024:
+  owner-exit spans: 80,538
+  complete reclaimable: 80,538 / 5.278 GiB
+  blocked live/pending/state: 0 / 0 / 0
+
+remote90 default shape, T=16:
+  owner-exit spans: 51,927
+  complete reclaimable: 26,574 / 1.742 GiB
+  blocked live: 25,353
+  blocked pending/state: 0 / 0
+```
+
+The first implementation incorrectly scanned an owner list at every refill
+and was discarded before commit. The accepted implementation piggybacks on the
+existing owner-exit walk, visits each physical span once, and adds no hot-path
+hook. Paired generic R3 remained within the normal Windows noise band.
+
+This proves that a material parking lot exists by retirement. It does not yet
+prove when each span became complete during owner lifetime. L1 therefore needs
+a bounded maintenance admission rule; it must not continuously rescan every
+owner span.
 
 ### Task 2: ReclaimAdapterBehavior-L1
 
@@ -86,7 +117,7 @@ limbo is never an accepted fallback.
 
 Measure default HZ8 and the opt-in sibling on both operating systems:
 
-- long-lived mixed-size medium churn;
+- long-lived mixed-size small-span churn;
 - HZ8 public small/main/medium local and remote rows;
 - owner-generation turnover;
 - peak RSS and post RSS;
@@ -95,7 +126,7 @@ Measure default HZ8 and the opt-in sibling on both operating systems:
 
 Experimental acceptance:
 
-- long-lived medium peak RSS improves by at least 25%;
+- the targeted long-lived peak RSS improves by at least 25%;
 - public local throughput remains within -3%;
 - public remote rows remain within -5%;
 - post RSS does not regress materially;

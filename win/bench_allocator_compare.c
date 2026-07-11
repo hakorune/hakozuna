@@ -21,6 +21,9 @@
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
 #include "h8_adaptive_shadow.h"
 #endif
+#if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
+#include "h8_reclaim_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #include "hz11_class_diag.h"
@@ -731,6 +734,9 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ8) && \
     defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
     h8_adaptive_shadow_dump();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
+    h8_reclaim_shadow_dump();
 #endif
     fflush(stdout);
     free(args);

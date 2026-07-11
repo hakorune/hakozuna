@@ -9,18 +9,20 @@ Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
 line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator
 cores to merge.
 
-The next box is `HZ8ReclaimAdapterShadow-L0`. It must attribute long-lived
-medium peak retention at existing owner/lifecycle slow-path checkpoints and
-model whether HZ8-native complete runs can satisfy HZ12's bounded retirement
-contract. It changes no allocator behavior.
+`HZ8ReclaimAdapterShadow-L0` is implemented at the existing owner-exit span
+walk. It adds no list scan and no malloc/free hook. Windows evidence found
+80,538 complete spans / 5.278 GiB in generic 16-4096 churn and 26,574 complete
+spans / 1.742 GiB in the remote90 default shape. Live, pending, and state
+blockers were zero for those complete sets.
 
-If L0 proves a material reclaimable peak, open opt-in
-`HZ8ReclaimAdapterBehavior-L1`: bounded native-run detach, OS-specific discard,
+L0 is ACCEPTED as a retirement upper-bound witness. The next box is opt-in
+`HZ8ReclaimAdapterBehavior-L1`: bounded live-owner native-span detach,
+OS-specific discard,
 rollback, and reuse. Preserve HZ8 route/slot-state authority and pending bitmap
 protocol. Do not copy HZ12's span core or add owner/counter/atomic work to
 malloc/free.
 
-Promotion requires paired Windows/Linux evidence: long-lived medium peak RSS
+Promotion requires paired Windows/Linux evidence: long-lived small-span peak RSS
 improves materially, public throughput rows stay within gate, post RSS does not
 regress, and invalid/stale/double-free/rollback/limbo checks remain clean.
 Design and task order:

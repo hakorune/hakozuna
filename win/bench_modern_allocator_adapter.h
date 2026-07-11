@@ -20,6 +20,9 @@
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
 #include "h8_adaptive_shadow.h"
 #endif
+#if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
+#include "h8_reclaim_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #elif defined(HZ_BENCH_USE_HZ12)
@@ -585,6 +588,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                 s.remote_collect_count);
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
         h8_adaptive_shadow_dump();
+#endif
+#if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
+        h8_reclaim_shadow_dump();
 #endif
     }
 #elif defined(HZ_BENCH_USE_HZ11)

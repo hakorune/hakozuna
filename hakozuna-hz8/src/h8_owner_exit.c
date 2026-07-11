@@ -103,6 +103,7 @@ void h8_owner_exit(H8OwnerRecord* owner) {
   while (span) {
     H8Span* next = span->next_owned;
     size_t used = h8_used_count_load_owner_exit(span);
+    h8_reclaim_shadow_note_owner_exit_span(h8_tls_ctx, span, used);
 #if defined(H8_ENABLE_DEBUG_STATS)
     size_t derived = h8_slot_allocated_count_quiescent(span);
     if (derived != used) {
