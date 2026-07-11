@@ -93,3 +93,6 @@ This page is the public pointer list for dated benchmark summaries.
 - [HZ8 Reusable Span Magazine full-magazine Windows follow-up](windows/HZ8_REUSABLE_SPAN_MAG16_FULL_CHURN_FIX_20260711.md):
   post-fix local long-lived R5, fixed MT remote R5, and broader Windows R5;
   Mag16 promoted to the HZ8 v2 default.
+- [HZ8 Reusable Span Magazine Mag32 Linux gate](linux/HZ8_REUSABLE_SPAN_MAG32_20260711.md):
+  A/A-calibrated GCC/Clang and paired local/remote/RSS gate; larger-size GO,
+  global default promotion HOLD.

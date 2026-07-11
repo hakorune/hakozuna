@@ -76,3 +76,22 @@ Windows candidate: GO
 HZ8 default: keep Mag16
 Mag32 promotion: HOLD pending Linux local/remote/RSS and safety gates
 ```
+
+## Linux Gate
+
+GCC and Clang smoke/safety pass for Mag16 and Mag32. Local paired repeat-5 is
+strongly positive for 16..2048 and 16..4096, with large peak-RSS reductions,
+but 16..256 regresses 9.4%. A deterministic remote repeat-5 with identical
+90.07925% effective remote work measures -2.1%, near-equal post RSS, and a
+small peak-RSS increase.
+
+```text
+Linux correctness: GO
+larger local ranges: GO
+global Mag32 promotion: HOLD
+HZ8 default: keep Mag16
+```
+
+Full results: `docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG32_20260711.md`.
+The next capacity experiment should be class-7-specific rather than a global
+Mag64 or an unconditional Mag32 promotion.
