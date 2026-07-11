@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_medium_page_backend.h"
 #include "h8_used_count.h"
 
 #include <errno.h>
@@ -273,6 +274,14 @@ void* h8_malloc_inner(size_t size) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
+    if (size == 8192u) {
+      if (!h8_thread_ctx_fast()) {
+        return NULL;
+      }
+      return h8_medium_page_backend_malloc(size);
+    }
+#endif
     if (size <= H8_MEDIUM_MAX_SIZE) {
       uint32_t medium_class_id = h8_medium_class_for_size_fast(size);
       return h8_medium_malloc_class_inner(medium_class_id);
@@ -455,6 +464,16 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
+    bool page_backend_owned = false;
+    if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
+      return;
+    }
+    if (page_backend_owned) {
+      h8_fail_invalid_free();
+      return;
+    }
+#endif
 #if defined(H8_LARGE_DIRECT_OWNED_L1)
     bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
     bool direct_owned = false;

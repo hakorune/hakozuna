@@ -198,3 +198,44 @@ reported non-live state.
 All P1 hooks and atomics are diagnostic-only and preprocess out of the default
 build. P1 result: GO. P2 fixed-8K behavior remains HOLD until its route and
 lifecycle adapter is implemented as an opt-in sibling.
+
+## P2 Windows Local Result
+
+The first behavior sibling delegates exact 8K allocation to the existing HZ10
+page substrate and adapts free through the HZ10 pagemap. The adapter rejects
+MISS, interior INVALID, and already-free intrusive markers before calling the
+HZ10 free path. HZ8 initialization is forced before delegation so a returned
+page can never escape through the pre-init CRT fallback.
+
+Fixed 8K local repeat-5:
+
+| Allocator | Median ops/s | Relative to HZ8 |
+|---|---:|---:|
+| HZ8 v2 | 66.66M | 1.00x |
+| page8k local sibling | 147.94M | 2.22x |
+| tcmalloc | 210.29M | 3.15x |
+
+The dedicated adapter smoke passes interior INVALID, one valid free, and
+duplicate INVALID. This confirms the local substrate signal and preserves the
+minimum exact/free safety boundary.
+
+Cross-owner pressure is not safe yet. The direct HZ10 remote lifecycle passes
+small controls but crashes reproducibly at T=8 remote90 between 2K and 5K
+iterations. Therefore:
+
+```text
+local architecture evidence:
+  GO
+
+HZ8 general behavior candidate:
+  NO-GO / HOLD
+
+normal or MT runner exposure:
+  forbidden
+```
+
+The retained row is named `hz8-medium-page8k-local`, requires
+`-IncludeHz8Research`, disables realloc, and must not be used for remote or
+general allocator claims. The next behavior work must replace the direct HZ10
+remote lifecycle with an HZ8-owned bounded remote adapter; increasing remote
+capacity or hiding the crash is not acceptable.

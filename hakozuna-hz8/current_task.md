@@ -97,6 +97,14 @@ remote90 at T=8 reports 800,800 state matches, zero state/run mismatch,
 effective remote 90.01%, and zero fallback/failure. P2 may now begin only as an
 opt-in fixed-8K behavior sibling; default HZ8 remains unchanged.
 
+P2 local evidence reaches 147.94M fixed-8K ops/s versus HZ8 66.66M and
+tcmalloc 210.29M. Interior/valid/duplicate adapter smoke passes. Direct HZ10
+remote lifecycle is a blocker: T=8 remote90 passes short 1K/2K controls but
+access-violates at 5K and above. Keep `hz8-medium-page8k-local` research-only,
+remove it from MT runners, and do not promote behavior. Next design box is an
+HZ8-owned bounded remote adapter for the page substrate, not another capacity
+knob and not direct HZ10 remote reuse.
+
 Current Windows attribution after the public matrix:
 
 ```text

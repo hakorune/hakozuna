@@ -29,6 +29,13 @@ function Invoke-Hz8AllocatorMatrixBuild {
     }
     $Hz8Sources = Get-ChildItem (Join-Path $Hz8Root "src") -Filter "*.c" |
         ForEach-Object { $_.FullName }
+    $Hz10Root = Join-Path $RepoRoot "hakozuna-hz10"
+    $Hz10PageSources = @(
+        "hz10_public_entry.c", "hz10_public_entry_owner.c", "hz10_class_pages.c",
+        "hz10_retired_ready.c", "hz10_size_class.c", "hz10_large_alloc.c",
+        "hz10_pooled_page.c", "hz10_page_pool.c", "hz10_remote_stack.c",
+        "hz10_freelist_page.c", "hz10_pagemap.c", "hz10_platform.c"
+    ) | ForEach-Object { Join-Path $Hz10Root "src\$_" }
     $Hz8CommonFlags = @(
         "/DHZ_BENCH_USE_HZ8=1",
         "/DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE=1",
@@ -62,6 +69,17 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraFlags = @("/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1")
         },
         @{
+            Name = "hz8-medium-page8k-local"
+            Output = "bench_mixed_ws_hz8_medium_page8k_local.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1=1",
+                "/DHZ_BENCH_DISABLE_REALLOC=1",
+                "/I$Hz10Root\src",
+                "/I$RepoRoot\win\include"
+            )
+            ExtraSources = $Hz10PageSources
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
@@ -88,6 +106,9 @@ function Invoke-Hz8AllocatorMatrixBuild {
         $args += $Hz8CommonFlags
         $args += $variant.ExtraFlags
         $args += $Hz8Sources
+        if ($variant.ExtraSources) {
+            $args += $variant.ExtraSources
+        }
         $args += $CompareSource
         $args += "psapi.lib"
         $args += "/Fe:$output"
@@ -113,6 +134,25 @@ function Invoke-Hz8AllocatorMatrixBuild {
     & $Compiler.Source @shadowSmokeArgs
     if ($LASTEXITCODE -ne 0) {
         throw "HZ8 medium page shadow smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageBackendSmoke = Join-Path $Hz8Root "tests\h8_medium_page_backend_smoke.c"
+    $pageBackendSmokeOut = Join-Path $OutDir "h8_medium_page_backend_smoke.exe"
+    $pageBackendSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src", "/I$Hz10Root\src",
+        "/I$RepoRoot\win\include",
+        "/DH8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1=1"
+    )
+    $pageBackendSmokeArgs += $Hz8CommonFlags
+    $pageBackendSmokeArgs += $Hz8Sources
+    $pageBackendSmokeArgs += $Hz10PageSources
+    $pageBackendSmokeArgs += $pageBackendSmoke
+    $pageBackendSmokeArgs += "/Fe:$pageBackendSmokeOut"
+    Write-Host "[hz8-win] building h8_medium_page_backend_smoke.exe"
+    & $Compiler.Source @pageBackendSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page backend smoke build failed with exit code $LASTEXITCODE"
     }
 }
 
