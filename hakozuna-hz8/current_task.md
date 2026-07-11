@@ -3,31 +3,32 @@
 This file is the short HZ8 orientation ledger. Keep detailed chronology in
 `bench_results/` and stable design records under `docs/`.
 
-## Restart Surface: HZ8 v3 Adaptive Integration L0
+## Restart Surface: HZ8 Reclaim Integration
 
-Keep HZ8 v2 / KeepRefill frozen as the public default. Begin v3 only as a
-diagnostic research track inside the HZ8 family. The first box is
-`HZ8AdaptiveTransferShadow-L0`: observe class-local refill, reusable-transfer,
-remote-drain, and retained-byte pressure at existing slow-path checkpoints and
-recommend BALANCED / TRANSFER_PRESSURE / RSS_PRESSURE without changing allocator
-behavior.
+Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
+line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator
+cores to merge.
 
-Do not copy HZ11/HZ12 cores into HZ8. Import only the proven contracts: bounded
-batch transfer from HZ11 and cold-path reclaim authority from HZ12. No hot-path
-profile checks, production counters, or default-lane changes are allowed.
-Design and gates: `docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md`.
+The next box is `HZ8ReclaimAdapterShadow-L0`. It must attribute long-lived
+medium peak retention at existing owner/lifecycle slow-path checkpoints and
+model whether HZ8-native complete runs can satisfy HZ12's bounded retirement
+contract. It changes no allocator behavior.
 
-L0 result: ACCEPT on Windows. Feature-off smoke remains clean; the diagnostic
-smoke observes slow-path recommendations. Same-owner balanced/wide_ws report no
-transfer pressure, while remote90 R3 reports 10.4K..11.1K transfer
-recommendations and 10.3K..11.0K remote collector checkpoints.
+If L0 proves a material reclaimable peak, open opt-in
+`HZ8ReclaimAdapterBehavior-L1`: bounded native-run detach, OS-specific discard,
+rollback, and reuse. Preserve HZ8 route/slot-state authority and pending bitmap
+protocol. Do not copy HZ12's span core or add owner/counter/atomic work to
+malloc/free.
 
-L1 feasibility result: CLOSED / NO-GO. HZ8 already bulk-splices pending bitmap
-words into the owner free list. A larger collector budget was previously
-throughput-neutral and increased RSS; an ownerless second sink and ownership
-transfer violate the frozen HZ8 contract. Keep L0 as diagnostic evidence only.
-Do not implement an adaptive transfer behavior or change the HZ8 v2 default.
-HZ11 fine128 remains the broad-MT opt-in line.
+Promotion requires paired Windows/Linux evidence: long-lived medium peak RSS
+improves materially, public throughput rows stay within gate, post RSS does not
+regress, and invalid/stale/double-free/rollback/limbo checks remain clean.
+Design and task order:
+`docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
+
+The prior adaptive-transfer track is closed. Its L0 shadow was valid evidence,
+but L1 was NO-GO because HZ8 already bulk-splices pending bitmap words. Do not
+reopen transfer tuning without a new measured weakness.
 
 ## Frozen Baselines
 

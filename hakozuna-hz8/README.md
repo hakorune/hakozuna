@@ -52,11 +52,11 @@ release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
 
 next research track:
-  HZ8 v3 adaptive integration (diagnostic-only L0)
-  docs/HZ8_V3_ADAPTIVE_INTEGRATION_L0.md
+  HZ8 reclaim integration (shadow-first)
+  docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
   HZ8 v2 remains the public/recommended default
-  Windows L0 shadow gate accepted as evidence
-  L1 transfer behavior closed: existing batching is already the safe HZ8 form
+  prior adaptive-transfer L1 is closed: existing batching is sufficient
+  HZ12 contributes a reclaim contract, not a core implementation
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md

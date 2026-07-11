@@ -28,6 +28,10 @@ Current direction:
   spans / low RSS without adding owner work to the free hot path. Its bounded
   retirement behavior now passes the repeated-generation safety/RSS/latency
   gate using separate cold P4 advisory and P1 authority batch snapshots.
+  The next family-level task is HZ8 ReclaimAdapter-L1. HZ8 remains the public
+  integration line; HZ10/HZ11/HZ12 remain research suppliers. Import only a
+  mechanism that improves an identified HZ8 cell under paired throughput,
+  peak/post-RSS, safety, and Windows/Linux gates. Do not merge allocator cores.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
@@ -37,34 +41,31 @@ Current strength:
   HZ11 has allocator behavior and evidence. Current Windows selected bring-up
   row is hz11-span-cache256; Windows classbatch16 is matrix candidate-watch
   only. Linux fine128 remains the general opt-in evidence lane.
+  HZ12 bounded retirement is GO on Windows and Linux, but its common-workload
+  throughput does not replace HZ8/HZ11. Its next value is as reclaim-contract
+  evidence for HZ8's long-lived medium peak-retention weakness.
 ```
 
 ## Read First
 
 ```text
-  HZ8 active orientation:
+HZ8 active orientation:
   hakozuna-hz8/current_task.md
   hakozuna-hz8/README.md
-
 HZ9 archived orientation:
   hakozuna-hz9/README.md
-  hakozuna-hz9/docs/HZ9_PHASES.md
-  hakozuna-hz9/docs/HZ9_LOCAL_SLAB_PUBLIC_ENTRY_L0.md
-
 HZ10 next-substrate orientation:
   hakozuna-hz10/README.md
   hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
-
 HZ11 speed-first orientation:
   hakozuna-hz11/README.md
   hakozuna-hz11/docs/HZ11_POSITIONING_L0.md
-  hakozuna-hz11/docs/HZ11_FINE128_REAL_APP_POSITIONING_L1.md
-  hakozuna-hz11/docs/HZ11_WINDOWS_LANE_STATUS_L1.md
-
 HZ12 advisory-ownership orientation:
   hakozuna-hz12/README.md
   hakozuna-hz12/docs/HZ12_CHARTER_L0.md
   hakozuna-hz12/docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
+HZ8 integration roadmap:
+  hakozuna-hz8/docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
 
 Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```
