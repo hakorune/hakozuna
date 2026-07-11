@@ -24,6 +24,8 @@
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
 #include "h8_reclaim_shadow.h"
 #endif
+#elif defined(HZ_BENCH_USE_HZ10)
+#include "hz10_public_entry.h"
 #elif defined(HZ_BENCH_USE_HZ11)
 #include "hz11.h"
 #include "hz11_class_diag.h"
@@ -205,6 +207,9 @@ static inline void* bench_alloc(ThreadArg* ta, size_t size) {
 #elif defined(HZ_BENCH_USE_HZ8)
     (void)ta;
     return h8_malloc(size);
+#elif defined(HZ_BENCH_USE_HZ10)
+    (void)ta;
+    return hz10_malloc(size);
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_malloc(size);
@@ -249,6 +254,11 @@ static inline void* bench_realloc(ThreadArg* ta, void* ptr, size_t size) {
 #elif defined(HZ_BENCH_USE_HZ8)
     (void)ta;
     return h8_realloc(ptr, size);
+#elif defined(HZ_BENCH_USE_HZ10)
+    (void)ta;
+    (void)ptr;
+    (void)size;
+    return NULL;
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     return hz11_realloc(ptr, size);
@@ -283,6 +293,9 @@ static inline void bench_free(ThreadArg* ta, void* ptr) {
 #elif defined(HZ_BENCH_USE_HZ8)
     (void)ta;
     h8_free(ptr);
+#elif defined(HZ_BENCH_USE_HZ10)
+    (void)ta;
+    (void)hz10_free(ptr);
 #elif defined(HZ_BENCH_USE_HZ11)
     (void)ta;
     hz11_free(ptr);

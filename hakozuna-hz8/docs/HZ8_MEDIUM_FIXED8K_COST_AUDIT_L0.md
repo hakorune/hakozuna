@@ -97,3 +97,41 @@ The next audit should identify the executed active-run allocation and
 same-owner free blocks, then classify each load/check/write as redundant shape
 or required contract. If required contract dominates, proceed to the existing
 HZ10 substrate shadow rather than weakening HZ8 safety.
+
+The audit tool now builds that HZ10 substrate as a private sibling using the
+same Windows `bench_allocator_compare` source. It is not registered in the
+normal allocator matrix and does not change either allocator. Its purpose is
+to measure whether the existing intrusive-page/O(1)-pagemap shape provides the
+missing fixed-8K cost boundary before any HZ8 contract-import design begins.
+
+## HZ10 Substrate Shadow Result
+
+Windows repeat-3, same fixed 8K runner:
+
+| Allocator | Median ops/s | Median process cycles/op | Relative to HZ8 |
+|---|---:|---:|---:|
+| HZ8 v2 | 66.105M | 254.50 | 1.00x |
+| HZ10 substrate shadow | 184.485M | 94.74 | 2.79x |
+| tcmalloc | 216.546M | 75.10 | 3.28x |
+
+The existing HZ10 shape recovers most of the fixed-8K gap without an HZ8
+common-entry trim. It reaches about 85% of tcmalloc throughput and reduces the
+cycle cost by about 63% relative to HZ8. This exceeds the 30% substrate gate by
+a wide margin.
+
+Decision:
+
+```text
+common-entry trim:
+  CLOSED as the primary track
+
+HZ10 substrate shadow:
+  GO as architecture evidence
+
+direct merge/default promotion:
+  NOT AUTHORIZED
+```
+
+The HZ10 shadow does not yet carry the complete HZ8 route, ownership,
+remote-pending, owner-exit, or low-post-RSS contract. The next box is therefore
+a contract-delta design, not a source copy or default lane.

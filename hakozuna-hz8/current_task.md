@@ -67,6 +67,23 @@ does not yet prove which cold blocks execute. Active next step: isolate and
 classify the active-run alloc and same-owner free basic blocks. Do not implement
 another cache or remove a safety check before that split is complete.
 
+The HZ10 substrate sibling is now connected only inside the audit tool. On the
+same Windows fixed-8K repeat-3 it measured 184.485M / 94.74 cycles, versus HZ8
+66.105M / 254.50 cycles and tcmalloc 216.546M / 75.10 cycles. This is a 2.79x
+HZ8 improvement and about 85% of tcmalloc throughput. The substrate gate is
+GO; incremental HZ8 medium-entry trimming is no longer the primary track.
+
+Next: write the HZ8/HZ10 contract delta before behavior integration. Preserve
+MISS/VALID/INVALID, fail-closed stale/duplicate handling, owner generation,
+bounded remote pending, owner-exit recovery, and low post-RSS. Do not copy the
+HZ10 public entry wholesale or expose the shadow in the normal matrix.
+
+The contract delta is now fixed in
+`docs/HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`. Active implementation
+order is P0 classification shadow, then P1 detached page-state shadow, then an
+opt-in fixed-8K behavior sibling. P2 is not authorized until P0/P1 report zero
+route/generation/state disagreements.
+
 Current Windows attribution after the public matrix:
 
 ```text

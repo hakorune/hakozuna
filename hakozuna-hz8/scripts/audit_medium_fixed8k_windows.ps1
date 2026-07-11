@@ -8,6 +8,7 @@ $ErrorActionPreference = "Stop"
 
 $Hz8Root = Split-Path -Parent $PSScriptRoot
 $RepoRoot = Split-Path -Parent $Hz8Root
+$Hz10Root = Join-Path $RepoRoot "hakozuna-hz10"
 $SuiteDir = Join-Path $RepoRoot "out_win_suite"
 $Compiler = (Get-Command "clang-cl" -ErrorAction Stop).Source
 $Objdump = (Get-Command "llvm-objdump" -ErrorAction Stop).Source
@@ -69,6 +70,24 @@ foreach ($item in $objects) {
     & $Objdump -dr --no-show-raw-insn $obj |
         Set-Content -Encoding ascii (Join-Path $OutputDir ($item.Name + ".asm.txt"))
 }
+
+$hz10Bench = Join-Path $OutputDir "bench_mixed_ws_hz10_substrate_shadow.exe"
+$hz10Sources = @(
+    "hz10_public_entry.c", "hz10_public_entry_owner.c", "hz10_class_pages.c",
+    "hz10_retired_ready.c", "hz10_size_class.c", "hz10_large_alloc.c",
+    "hz10_pooled_page.c", "hz10_page_pool.c", "hz10_remote_stack.c",
+    "hz10_freelist_page.c", "hz10_pagemap.c", "hz10_platform.c"
+) | ForEach-Object { Join-Path $Hz10Root "src\$_" }
+$hz10Args = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/DHZ_BENCH_USE_HZ10=1", "/DHZ_BENCH_DISABLE_REALLOC=1",
+    "/I$Hz10Root\src", "/I$RepoRoot\win\include"
+) + $hz10Sources + @((Join-Path $RepoRoot "win\bench_allocator_compare.c"), "/Fe:$hz10Bench")
+& $Compiler @hz10Args
+if ($LASTEXITCODE -ne 0) {
+    throw "HZ10 substrate shadow build failed"
+}
+$manifest.Add("hz10_shadow_flags=$($hz10Args -join ' ')")
 
 function Get-FunctionStats {
     param(
@@ -199,7 +218,7 @@ function Invoke-Fixed8K {
 
 $bench = @(
     Invoke-Fixed8K "hz8-v2" (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe")
-    Invoke-Fixed8K "hz10" (Join-Path $SuiteDir "bench_mixed_ws_hz10.exe")
+    Invoke-Fixed8K "hz10-substrate-shadow" $hz10Bench
     Invoke-Fixed8K "tcmalloc" (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe")
 ) | Where-Object { $_ }
 $bench | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "fixed8k_repeat.csv")
