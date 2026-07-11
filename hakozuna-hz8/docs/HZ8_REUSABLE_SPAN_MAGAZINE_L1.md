@@ -74,5 +74,17 @@ remaining gates:
   Windows broader public rows and repeatable effective-remote control
 ```
 
+## Linux Gate
+
+Ubuntu x86_64 GCC and Clang smoke/safety stress pass. Paired repeat-5 local
+churn confirms large throughput and peak-RSS improvements, including
+16..4096 peak RSS reduction from about 4.93 GiB to 2.02 GiB.
+
+The public remote matrix is mixed: main remote90 improves about 10%, but small
+remote90 throughput regresses about 9.7% and peak RSS rises from about 20.75
+MiB to 31.00 MiB. Linux correctness is GO; broad default promotion remains
+HOLD. Full results are in
+`docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md`.
+
 This candidate is HZ8-native. It imports the lesson that reusable front-end
 inventory must remain visible, not an HZ11 transfer-cache implementation.

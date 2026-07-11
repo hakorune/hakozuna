@@ -87,3 +87,6 @@ This page is the public pointer list for dated benchmark summaries.
 - [HZ8 / HZ11 / HZ12 Linux allocator comparison](linux/HZ8_HZ11_HZ12_ALLOCATOR_COMPARE_20260711.md):
   common random-mixed throughput plus corrected HZ8 peak/post RSS audit against
   mimalloc and tcmalloc.
+- [HZ8 Reusable Span Magazine Mag16 Linux gate](linux/HZ8_REUSABLE_SPAN_MAG16_20260711.md):
+  GCC/Clang safety pass and paired local/remote/RSS gate; correctness GO,
+  default promotion HOLD.

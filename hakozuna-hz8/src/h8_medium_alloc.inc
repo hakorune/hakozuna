@@ -518,6 +518,7 @@ void* h8_medium_malloc_class_inner(uint32_t class_id) {
   bool did_capacity_collect = false;
   bool saw_active_miss = false;
 retry_owner_capacity:
+  ;
   H8MediumRun* active = ctx ? ctx->active_medium_runs[class_id] : NULL;
   uint64_t expected_owner_word =
       (ctx && ctx->owner) ? h8_medium_owner_word_for(ctx->owner) : 0;
