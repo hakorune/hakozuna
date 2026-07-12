@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_medium_page_backend.h"
 #include "h8_medium_page8k_remote.h"
 
 #include <stdlib.h>
@@ -199,6 +200,12 @@ H8RouteKind h8_route_inner(void* ptr) {
       if (direct_exact_route != H8_ROUTE_MISS) {
         return direct_exact_route;
       }
+    }
+#endif
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+    H8RouteKind page_route = h8_medium_page_backend_route(ptr);
+    if (page_route != H8_ROUTE_MISS) {
+      return page_route;
     }
 #endif
     H8RouteKind medium_route = h8_medium_route_inner(ptr);

@@ -135,3 +135,86 @@ direct merge/default promotion:
 The HZ10 shadow does not yet carry the complete HZ8 route, ownership,
 remote-pending, owner-exit, or low-post-RSS contract. The next box is therefore
 a contract-delta design, not a source copy or default lane.
+
+## L1 Active-Block Path Audit
+
+The L1 diagnostic target is available as:
+
+```text
+make -C hakozuna-hz8 audit-fixed8k-path
+```
+
+It uses release-equivalent HZ8 flags plus `H8_ENABLE_DEBUG_STATS` in a
+diagnostic-only binary. The benchmark repeatedly performs same-owner
+`8192`-byte allocation/free pairs after warmup and reports the already-existing
+stage totals for active allocation and local free:
+
+```text
+active allocation:
+  precheck
+  mark-live
+  mask update
+  slot-state store
+  pointer formation
+
+same-owner free:
+  pointer decode
+  slot-state/pending validation
+  slot-state store
+  mask update
+  empty/retention transition
+```
+
+The target adds no production counter, atomic, or behavior flag. Use its stage
+totals only to classify executed blocks; do not compare its diagnostic timing
+directly with release throughput. A behavior change remains blocked until a
+stage is shown to be removable without weakening MISS/VALID/INVALID,
+generation, pending, and owner-exit contracts.
+
+## L1 Native Results
+
+The same diagnostic target was built and run by
+`scripts/audit_medium_fixed8k_windows.ps1` on native Windows. This is a
+single-run attribution check with 250,000 same-owner allocation/free pairs,
+not a paper throughput measurement:
+
+```text
+fixed8k_path_audit iterations=250000 allocs=250000 frees=250000
+  active_hits=250000 owner_free_hits=250000 active_miss=0
+  alloc_precheck_ns=5077500 alloc_mark_live_ns=74014600
+  alloc_mask_ns=4970500 alloc_slot_store_ns=4959500 alloc_ptr_ns=5002900
+  free_decode_ns=5434500 free_state_ns=5010700 free_pending_ns=4979100
+  free_slot_store_ns=6403600 free_mask_ns=4953300 free_empty_ns=5634600
+```
+
+The Linux/WSL diagnostic run also completed with 250,000 active hits,
+250,000 owner-matched frees, and zero active misses. On the Windows run,
+`mark-live` is the largest measured diagnostic stage, while the other
+allocation stages and all free stages are materially smaller and of similar
+order. Assembly review found that this measured dominance is primarily the
+debug-only residency/retention shadow, diagnostic lock, and timing hooks in
+the audit build; the release path uses the inline production transition and
+does not pay that diagnostic cost.
+
+The same review found no clearly removable fixed-cost block in the release
+active path. Owner/generation validation, pointer decode/range checks,
+slot-state transitions, masks, pending exclusion, and the directory-to-run
+authority boundary are all part of the fail-closed contract. The generic
+division block is present in the object but is not executed for fixed 8K
+power-of-two decoding.
+
+Decision:
+
+```text
+GO:
+  retain the audit as cross-platform attribution evidence
+
+HOLD:
+  future feature-off assembly review only if a new release regression appears
+
+NO-GO:
+  treating diagnostic mark-live timing as production cycle cost
+  removing state/generation checks
+  adding another fixed-8K cache or cap ladder
+  promoting the HZ10 shadow without the complete HZ8 contract
+```

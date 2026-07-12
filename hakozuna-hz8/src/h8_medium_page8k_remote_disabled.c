@@ -42,12 +42,27 @@ H8Page8KRemoteStats h8_page8k_remote_stats(void) {
   memset(&out, 0, sizeof(out));
   return out;
 }
+bool h8_page8k_remote_accepts_size(size_t size) {
+  (void)size;
+  return false;
+}
 void* h8_page8k_remote_malloc_current(size_t size) {
   (void)size;
   return NULL;
 }
 bool h8_page8k_remote_free_current(void* ptr, bool* owned_out) {
   (void)ptr;
+  if (owned_out) *owned_out = false;
+  return false;
+}
+H8RouteKind h8_page8k_remote_route_current(const void* ptr) {
+  (void)ptr;
+  return H8_ROUTE_MISS;
+}
+bool h8_page8k_remote_usable_size_current(const void* ptr, size_t* usable_out,
+                                          bool* owned_out) {
+  (void)ptr;
+  if (usable_out) *usable_out = 0;
   if (owned_out) *owned_out = false;
   return false;
 }

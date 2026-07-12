@@ -1,6 +1,8 @@
 #ifndef H8_MEDIUM_PAGE8K_REMOTE_H
 #define H8_MEDIUM_PAGE8K_REMOTE_H
 
+#include "../include/h8.h"
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -9,6 +11,8 @@ typedef struct H8Page8KRemoteOwner H8Page8KRemoteOwner;
 typedef struct H8Page8KRemotePage H8Page8KRemotePage;
 
 typedef struct H8Page8KRemoteStats {
+  uint64_t range_eligible_alloc;
+  uint64_t range_served_alloc;
   uint64_t remote_claim_attempt;
   uint64_t remote_claim_success;
   uint64_t remote_claim_reject;
@@ -47,8 +51,13 @@ bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
 size_t h8_page8k_remote_drain(H8Page8KRemoteOwner* owner);
 bool h8_page8k_remote_quiescent(const H8Page8KRemotePage* page);
 H8Page8KRemoteStats h8_page8k_remote_stats(void);
+bool h8_page8k_remote_accepts_size(size_t size);
 void* h8_page8k_remote_malloc_current(size_t size);
 bool h8_page8k_remote_free_current(void* ptr, bool* owned_out);
+H8RouteKind h8_page8k_remote_route_current(const void* ptr);
+bool h8_page8k_remote_usable_size_current(const void* ptr,
+                                          size_t* usable_out,
+                                          bool* owned_out);
 size_t h8_page8k_remote_drain_all_control(void);
 void h8_page8k_remote_thread_shutdown(void);
 bool h8_page8k_remote_owner_close(H8Page8KRemoteOwner* owner);

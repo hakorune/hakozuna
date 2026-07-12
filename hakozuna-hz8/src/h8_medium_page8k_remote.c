@@ -77,6 +77,8 @@ static H8Page8KRemoteOwner* g_orphan_owner;
 static _Atomic uint32_t g_next_owner_token = 1u;
 static _Thread_local H8Page8KRemoteOwner* g_current_owner;
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+static _Atomic uint64_t g_range_eligible_alloc;
+static _Atomic uint64_t g_range_served_alloc;
 static _Atomic uint64_t g_remote_claim_attempt;
 static _Atomic uint64_t g_remote_claim_success;
 static _Atomic uint64_t g_remote_claim_reject;
@@ -159,6 +161,42 @@ static H8Page8KRemotePage* h8_page8k_classify(const void* ptr) {
     }
   }
   return result;
+}
+
+static bool h8_page8k_slot_index(const H8Page8KRemotePage* page,
+                                 const void* ptr, uint8_t* slot_out) {
+  uintptr_t offset = (uintptr_t)ptr - (uintptr_t)page->base;
+  if ((offset % H8_PAGE8K_BYTES) != 0u) return false;
+  uint8_t slot = (uint8_t)(offset / H8_PAGE8K_BYTES);
+  if (slot >= H8_PAGE8K_SLOT_COUNT) return false;
+  if (slot_out) *slot_out = slot;
+  return true;
+}
+
+static H8RouteKind h8_page8k_route(const void* ptr, bool* owned_out) {
+  if (owned_out) *owned_out = false;
+  H8Page8KRemotePage* page = h8_page8k_classify(ptr);
+  if (!page) return H8_ROUTE_MISS;
+  if (owned_out) *owned_out = true;
+  uint8_t slot = 0;
+  if (!h8_page8k_slot_index(page, ptr, &slot)) return H8_ROUTE_INVALID;
+  uint8_t state = atomic_load_explicit(&page->slot_state[slot],
+                                       memory_order_acquire);
+  return state == H8_PAGE8K_SLOT_ALLOCATED ? H8_ROUTE_VALID
+                                           : H8_ROUTE_INVALID;
+}
+
+H8RouteKind h8_page8k_remote_route_current(const void* ptr) {
+  return h8_page8k_route(ptr, NULL);
+}
+
+bool h8_page8k_remote_usable_size_current(const void* ptr, size_t* usable_out,
+                                          bool* owned_out) {
+  if (usable_out) *usable_out = 0;
+  H8RouteKind route = h8_page8k_route(ptr, owned_out);
+  if (route != H8_ROUTE_VALID) return false;
+  if (usable_out) *usable_out = H8_PAGE8K_BYTES;
+  return true;
 }
 
 static H8Page8KRemoteOwner* h8_page8k_page_owner(
@@ -526,6 +564,8 @@ H8Page8KRemoteStats h8_page8k_remote_stats(void) {
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
 #define H8_PAGE8K_LOAD(field) \
   out.field = atomic_load_explicit(&g_##field, memory_order_relaxed)
+  H8_PAGE8K_LOAD(range_eligible_alloc);
+  H8_PAGE8K_LOAD(range_served_alloc);
   H8_PAGE8K_LOAD(remote_claim_attempt);
   H8_PAGE8K_LOAD(remote_claim_success);
   H8_PAGE8K_LOAD(remote_claim_reject);
@@ -670,6 +710,14 @@ void h8_page8k_remote_thread_shutdown(void) {
   h8_page8k_remote_owner_destroy(owner);
 }
 
+bool h8_page8k_remote_accepts_size(size_t size) {
+#if defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
+  return size >= 4097u && size <= H8_PAGE8K_BYTES;
+#else
+  return size == H8_PAGE8K_BYTES;
+#endif
+}
+
 static H8Page8KRemoteOwner* h8_page8k_current_owner(void) {
   if (!g_current_owner) {
     uint32_t token =
@@ -680,44 +728,65 @@ static H8Page8KRemoteOwner* h8_page8k_current_owner(void) {
 }
 
 void* h8_page8k_remote_malloc_current(size_t size) {
-  if (size != H8_PAGE8K_BYTES) return NULL;
+  if (!h8_page8k_remote_accepts_size(size)) return NULL;
+#if defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
+  H8_PAGE8K_STAT_INC(range_eligible_alloc);
+#endif
   H8Page8KRemoteOwner* owner = h8_page8k_current_owner();
   if (!owner) return NULL;
   if (owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
-    if (ptr) return ptr;
+    if (ptr) {
+      H8_PAGE8K_STAT_INC(range_served_alloc);
+      return ptr;
+    }
   }
   for (;;) {
     H8Page8KRemotePage* page = h8_page8k_available_pop(owner);
     if (!page) break;
     owner->active_page = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
-    if (ptr) return ptr;
+    if (ptr) {
+      H8_PAGE8K_STAT_INC(range_served_alloc);
+      return ptr;
+    }
     owner->active_page = NULL;
   }
   h8_page8k_remote_drain(owner);
   if (owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
-    if (ptr) return ptr;
+    if (ptr) {
+      H8_PAGE8K_STAT_INC(range_served_alloc);
+      return ptr;
+    }
   }
   for (;;) {
     H8Page8KRemotePage* page = h8_page8k_available_pop(owner);
     if (!page) break;
     owner->active_page = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
-    if (ptr) return ptr;
+    if (ptr) {
+      H8_PAGE8K_STAT_INC(range_served_alloc);
+      return ptr;
+    }
     owner->active_page = NULL;
   }
   if (h8_page8k_remote_adopt_one(owner) && owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
-    if (ptr) return ptr;
+    if (ptr) {
+      H8_PAGE8K_STAT_INC(range_served_alloc);
+      return ptr;
+    }
   }
   if (owner->page_count >= H8_PAGE8K_OWNER_PAGE_CAP) {
     H8_PAGE8K_STAT_INC(page_cap_reject);
     return NULL;
   }
   H8Page8KRemotePage* page = h8_page8k_remote_page_create(owner);
-  return page ? h8_page8k_remote_alloc(owner, page) : NULL;
+  if (!page) return NULL;
+  void* ptr = h8_page8k_remote_alloc(owner, page);
+  if (ptr) H8_PAGE8K_STAT_INC(range_served_alloc);
+  return ptr;
 }
 
 bool h8_page8k_remote_free_current(void* ptr, bool* owned_out) {

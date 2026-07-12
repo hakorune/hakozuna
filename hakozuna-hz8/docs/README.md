@@ -9,8 +9,10 @@
 - `HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`: HZ10-HZ12 evidence integration
 - `HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`: current Windows speed/RSS candidate
 - `HZ8_REUSABLE_SPAN_MAG32_L1.md`: larger/local opt-in capacity candidate
-- `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost audit
+- `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost and L1 path audit
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
+- `HZ8_PAGE8K_API_SURFACE_F1.md`: R3 route, usable-size, and realloc contract
+- `HZ8_PAGE8K_RANGE4097_L1.md`: closed 4097..8192 page-geometry probe
 - `HZ8_SMALL_AVAILABLE_INDEX_L1.md`: Windows exact-4KiB O(1) reuse evidence
 - `HZ8_SMALL_AVAILABLE_CLASS_SWEEP_L0.md`: closed 1KiB/2KiB/4KiB class expansion
 

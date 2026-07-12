@@ -174,6 +174,33 @@ $callTargets = @(
 )
 $callTargets | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "call_targets.csv")
 
+$pathAuditExe = Join-Path $OutputDir "h8_medium_fixed8k_path_audit.exe"
+$pathAuditSources = Get-ChildItem (Join-Path $Hz8Root "src") -Filter "*.c" |
+    ForEach-Object { $_.FullName }
+$pathAuditArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/DH8_ENABLE_DEBUG_STATS=1",
+    "/DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4",
+    "/DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1=1",
+    "/DH8_MEDIUM_KEEP_REFILL_EMPTY_L1=1",
+    "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
+    "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1",
+    "/DH8_REUSABLE_SPAN_MAGAZINE_L1=1",
+    "/I$Hz8Root\include", "/I$Hz8Root\src"
+) + $pathAuditSources + @(
+    (Join-Path $Hz8Root "tests\h8_medium_fixed8k_path_audit.c"),
+    "/Fe:$pathAuditExe"
+)
+& $Compiler @pathAuditArgs
+if ($LASTEXITCODE -ne 0) {
+    throw "HZ8 fixed8K path audit build failed"
+}
+$pathAuditOutput = & $pathAuditExe 2>&1
+$pathAuditOutput | Set-Content -Encoding ascii (Join-Path $OutputDir "path_audit.txt")
+$manifest.Add("path_audit_flags=$($pathAuditArgs -join ' ')")
+
 function Invoke-Fixed8K {
     param([string]$Name, [string]$Path)
     if (-not (Test-Path $Path)) { return $null }
@@ -255,6 +282,14 @@ foreach ($row in $bench) {
 }
 $summary.Add("")
 $summary.Add("Static instruction counts are attribution aids, not cycle measurements. Calls may inline or share cold blocks; inspect the saved assembly before assigning contract cost.")
+$summary.Add("")
+$summary.Add("## L1 Active-Block Path Audit")
+$summary.Add("")
+$summary.Add("The diagnostic same-owner fixed-8K path audit output is saved in `path_audit.txt`.")
+$summary.Add("")
+foreach ($line in $pathAuditOutput) {
+    $summary.Add("    " + $line.ToString())
+}
 $summary | Set-Content -Encoding utf8 (Join-Path $OutputDir "HZ8_MEDIUM_FIXED8K_COST_AUDIT.md")
 
 Write-Host "Wrote HZ8 medium fixed8K audit: $OutputDir"

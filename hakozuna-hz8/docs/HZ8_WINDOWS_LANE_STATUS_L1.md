@@ -15,6 +15,7 @@ promotion candidates, diagnostics, and closed experiments.
 |---|---|---|
 | `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
 | `hz8-r3-page8k-integrated` | Windows selected opt-in / global HOLD | Exact-8KiB detached-page substrate; strong Windows local result with neutral application gates |
+| `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 
 Windows local and RSS gates are positive, but Linux small/remote gates block a
@@ -42,10 +43,16 @@ row unless research controls are requested explicitly.
 | `hz8-reclaim-shadow` | diagnostic evidence | Owner-retirement reclaimable upper bound |
 | `hz8-magazine-tail-shadow` | diagnostic evidence / closed | Source-refill checkpoint upper bound; behavior NO-GO at only 1.0-1.2MiB maximum |
 | `hz8-speed-attribution` | diagnostic-only | Existing hot counter attribution; never a speed result |
+| `hz8-medium-fixed8k-cost-audit` | diagnostic-only | Cross-platform active-block path attribution; no behavior or promotion claim |
 | `hz8-small-available2k4k` | Windows evidence / global NO-GO | Large fixed 2K/4K gains, but Windows wide reaches -5% and Linux directional rows regress |
 
 Research rows are excluded from normal runs. Use `-IncludeHz8Research`
 explicitly when they are needed.
+
+The fixed-8K cost audit is now complete on native Windows and Linux/WSL:
+250,000 same-owner active hits, 250,000 owner-matched frees, and zero active
+misses in each diagnostic run. The audit identifies the executed path but does
+not justify removing state/generation checks or adding another cache.
 
 Build target existence is not a support claim. Candidate, evidence,
 diagnostic, and closed rows may all remain buildable so old measurements can

@@ -275,9 +275,9 @@ void* h8_malloc_inner(size_t size) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
-#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1) || \
+#if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
-    if (size == 8192u) {
+    if (h8_medium_page_backend_accepts_size(size)) {
       if (!h8_thread_ctx_fast()) {
         return NULL;
       }
@@ -477,7 +477,7 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
-#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1) || \
+#if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
     bool page_backend_owned = false;
     if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
@@ -624,6 +624,17 @@ bool h8_usable_size_inner(void* ptr, size_t* usable_out, bool* owned_out) {
     return false;
   }
 #endif
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+  bool page_owned = false;
+  if (h8_medium_page_backend_usable_size(ptr, usable_out, &page_owned)) {
+    if (owned_out) *owned_out = true;
+    return true;
+  }
+  if (page_owned) {
+    if (owned_out) *owned_out = true;
+    return false;
+  }
+#endif
   bool medium_owned = false;
   if (h8_medium_usable_size_inner(ptr, usable_out, &medium_owned)) {
     if (owned_out) {
@@ -673,6 +684,17 @@ void* h8_realloc_inner(void* ptr, size_t size) {
       return NULL;
     }
   } else {
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+    bool page_owned = false;
+    bool page_valid = h8_medium_page_backend_usable_size(
+        ptr, &old_size, &page_owned);
+    if (page_valid) {
+      owned = true;
+    } else if (page_owned) {
+      errno = EINVAL;
+      return NULL;
+    }
+#endif
 #if defined(H8_LARGE_DIRECT_OWNED_L1)
     bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
     bool direct_owned = false;
@@ -707,6 +729,12 @@ void* h8_realloc_inner(void* ptr, size_t size) {
   if (!owned) {
     return h8_sys_realloc(ptr, size);
   }
+
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+  if (size == old_size && h8_medium_page_backend_route(ptr) == H8_ROUTE_VALID) {
+    return ptr;
+  }
+#endif
 
   void* next = h8_malloc_inner(size);
   if (!next) {

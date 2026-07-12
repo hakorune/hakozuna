@@ -7,27 +7,39 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 Medium Page8K R3 Complete
+## Restart Surface: HZ8 Page8K API Surface F1
 
 ## Next Development Order
 
-HZ8 is the active public integration line. The HZ10-informed page8K substrate
-has completed P0 classification, P1 state shadow, R1/R2 lifecycle, residency,
-and R3 real-entry integration. Public default remains unchanged.
+HZ8 is the active public integration line. R3 has completed P0 classification,
+P1 state shadow, R1/R2 lifecycle, residency, and real-entry integration. Before
+class-wide performance work, close the API surface gap: route, usable_size,
+and realloc must recognize page8K-owned pointers.
 
 ```text
-Step 1: freeze R3 as an opt-in profile
-  hz8-r3-page8k-integrated is Windows selected opt-in
-  Linux correctness-neutral opt-in; remote is correctness evidence
-  production counters and public default remain unchanged
+Step 1: R3 API Surface F1 is implemented
+  route VALID/INVALID/MISS now consults the page registry
+  usable_size returns 8192 only for an exact live slot
+  realloc never forwards an owned page pointer to CRT/system
+  Linux API smoke, existing page8K smoke, safety stress, and default smoke pass
 
-Step 2: keep the ownership boundary
+Step 2: finish native-platform verification
+  build the same API smoke in the Windows suite
+  rerun page8K lifecycle/residency/safety checks
+  Linux and Windows F1 API/lifecycle gates now pass
+  keep the R3 row opt-in until application-like gates are complete
+
+Step 3: keep the ownership boundary
   do not merge the HZ10 public entry or remote lifecycle wholesale
   do not reopen page-cap, queue, or available-index tuning
   keep owned-looking INVALID fail-closed and RSS bounded
 
-Step 3: next work requires a new measured target
-  prefer application-like paired evidence over fixed-size micro knobs
+Step 4: measure the next target
+  after F1, evaluate 4097..8192 on unchanged 8KiB geometry
+  use the opt-in H8_MEDIUM_PAGE8K_RANGE4097_L1 lane
+  use diagnostic-only eligible/served attribution
+  the first Windows focused result is correctness GO but speed NO-GO (-12.7%)
+  freeze the range lane as evidence; do not open a geometry/cap ladder
   reopen promotion only with Windows and native-Ubuntu Pareto evidence
   do not open another allocator generation
 ```
@@ -40,28 +52,33 @@ replacement for the public HZ8 balanced contract.
 The current public matrix fixes the remaining measured speed gap. HZ8 reaches
 about 24-26% of tcmalloc on main/medium local rows while retaining much lower
 post RSS. The fixed-8K audit showed the page substrate is the high-ROI speed
-direction; its R3 behavior is now complete and must be judged as an opt-in
-profile, not silently folded into the default.
+direction; its R3 API surface is now complete on Linux and must be judged as
+an opt-in profile, not silently folded into the default.
 
 The earlier `hz8-v2-mediumlocalfast` recheck remains NO-GO. Keep it as
 reproducibility evidence only and do not add another active-run branch, mask,
 or per-run fast state. The page8K substrate is the approved substrate change;
 any broader medium expansion needs a new application-like gate.
 
-Active next box: `HZ8MediumFixed8KCostAudit-L0`. Audit the release-equivalent
-fixed 8K alloc/free path before another behavior change. Separate removable
-decode/call/layout work from required fail-closed validation and state writes.
-If removable work is at least 30% of the path, open one common-entry trim box;
-otherwise compare the existing HZ10 intrusive-page/O(1)-pagemap substrate via
-an HZ8-native shadow contract. See `docs/HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`.
+The fixed-8K cost audit remains historical evidence rather than the next
+behavior box. Its HZ10 substrate comparison explains why the page8K lane was
+opened, but it does not authorize copying the HZ10 public entry wholesale.
+The narrow 4097..8192 eligibility/served probe has now been measured and
+closed as a speed-candidate NO-GO. Do not reopen it through cap or geometry
+ladder tuning; keep the result as reproducible evidence only.
 
 L0 measured HZ8 at 65.447M / 258.09 process cycles per logical fixed-8K
 operation versus tcmalloc at 213.284M / 76.60 cycles. The audited HZ8 medium
 alloc/free objects contain no locked RMW, while the static alloc/free bodies
-remain large. This rules out atomic contention as the primary explanation but
-does not yet prove which cold blocks execute. Active next step: isolate and
-classify the active-run alloc and same-owner free basic blocks. Do not implement
-another cache or remove a safety check before that split is complete.
+remain large. This rules out atomic contention as the primary explanation.
+The L1 active-block audit is now complete on Linux/WSL and native Windows:
+250,000 same-owner active hits, 250,000 owner-matched frees, and zero active
+misses on both diagnostic runs. Its stage totals are attribution aids only;
+they do not authorize removing the mark-live, slot-state, mask, or generation
+checks from the production path. Worker assembly review confirmed that the
+largest measured `mark-live` stage is dominated by diagnostic residency,
+retention, lock, and timer hooks; it is not a release hot-path cycle result.
+No contract-free fixed-cost block was identified in the release active path.
 
 The HZ10 substrate sibling is now connected only inside the audit tool. On the
 same Windows fixed-8K repeat-3 it measured 184.485M / 94.74 cycles, versus HZ8
@@ -69,10 +86,24 @@ same Windows fixed-8K repeat-3 it measured 184.485M / 94.74 cycles, versus HZ8
 HZ8 improvement and about 85% of tcmalloc throughput. The substrate gate is
 GO; incremental HZ8 medium-entry trimming is no longer the primary track.
 
-Next: write the HZ8/HZ10 contract delta before behavior integration. Preserve
+The HZ8/HZ10 contract delta is fixed in
+`docs/HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`. Preserve
 MISS/VALID/INVALID, fail-closed stale/duplicate handling, owner generation,
 bounded remote pending, owner-exit recovery, and low post-RSS. Do not copy the
 HZ10 public entry wholesale or expose the shadow in the normal matrix.
+
+Next decision: keep common-entry trimming closed unless a future assembly
+review identifies a contract-free block with a reproducible release gain.
+Treat the HZ10 substrate as an opt-in contract-import research lane, not as a
+default merge. Do not add another cache, counter, atomic, or geometry ladder
+for the fixed-8K row. Use the feature-off release assembly as the baseline for
+any future audit; do not optimize from diagnostic timing totals.
+
+The native boundary cleanup is now implemented: the HZ8 R3 page backend is the
+only behavior path, while the old direct HZ10 adapter is named
+`H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1` and is evidence-only. The two flags cannot be
+combined. Any future speed work must improve the HZ8-native backend behind the
+existing route, ownership, remote, and RSS contracts.
 
 The contract delta is now fixed in
 `docs/HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`. Active implementation

@@ -262,3 +262,25 @@ remote throughput claim: HOLD
 
 Do not restart the old direct-HZ10 remote path. Any future promotion must use
 the integrated R3 lane and paired application-like plus native-platform gates.
+
+## Native Boundary Cleanup
+
+The HZ8 R3 implementation in `h8_medium_page8k_remote.c` is the native page
+backend. The older direct HZ10 adapter remains available only as an explicit
+`H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1` evidence build. The build rejects combining
+that shadow flag with the HZ8-native R3 behavior flag, so a shadow result
+cannot silently become an HZ8 implementation dependency.
+
+This cleanup does not change allocation behavior or performance. It makes the
+import boundary explicit:
+
+```text
+HZ10 evidence:
+  intrusive page shape and pagemap idea
+
+HZ8 implementation:
+  HZ8 page registry and route authority
+  HZ8 owner/generation/slot/pending lifecycle
+  HZ8 bounded remote and owner-exit recovery
+  HZ8 API and RSS contract
+```
