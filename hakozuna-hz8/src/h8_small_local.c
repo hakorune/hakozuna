@@ -274,12 +274,16 @@ void* h8_malloc_inner(size_t size) {
     size = 1;
   }
   if (size > H8_MAX_SMALL_SIZE) {
-#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1) || \
+    defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
     if (size == 8192u) {
       if (!h8_thread_ctx_fast()) {
         return NULL;
       }
-      return h8_medium_page_backend_malloc(size);
+      void* page_ptr = h8_medium_page_backend_malloc(size);
+      if (page_ptr) {
+        return page_ptr;
+      }
     }
 #endif
     if (size <= H8_MEDIUM_MAX_SIZE) {
@@ -464,7 +468,8 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
-#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
+#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1) || \
+    defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
     bool page_backend_owned = false;
     if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
       return;

@@ -51,8 +51,11 @@ $BenchSrc = Join-Path $RepoRoot "win\bench_redis_workload_compare.c"
 $BenchHz6Diag = Join-Path $RepoRoot "win\bench_redis_hz6_diag.c"
 $Hz3Dir = Join-Path $RepoRoot "hakozuna"
 $Hz4Dir = Join-Path $RepoRoot "hakozuna-mt"
+$Hz8Dir = Join-Path $RepoRoot "hakozuna-hz8"
 $Hz3Lib = Join-Path $Hz3Dir "out_win\hz3_win.lib"
 $Hz4Lib = Join-Path $Hz4Dir "out_win_bench\hz4_win.lib"
+$Hz8Sources = Get-ChildItem (Join-Path $Hz8Dir "src") -Filter "*.c" |
+    ForEach-Object { $_.FullName }
 
 $BaseFlags = @(
     "/nologo",
@@ -126,6 +129,34 @@ Invoke-AppLikeHz5BenchBuild `
     -RepoRoot $RepoRoot `
     -BenchSrc $BenchSrc `
     -OutputPath (Join-Path $OutDir "bench_redis_workload_hz5_policy.exe")
+
+$Hz8Flags = @(
+    "/I$Hz8Dir\include", "/I$Hz8Dir\src",
+    "/DHZ_BENCH_USE_HZ8=1",
+    "/DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1=1",
+    "/DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4",
+    "/DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1=1",
+    "/DH8_MEDIUM_KEEP_REFILL_EMPTY_L1=1",
+    "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
+    "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
+)
+foreach ($variant in @(
+    @{ Name = "hz8-v2"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
+    @{
+        Name = "hz8-r3-page8k-integrated"
+        Output = "bench_redis_workload_hz8_page8k_r3.exe"
+        ExtraFlags = @(
+            "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+            "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+            "/DHZ_BENCH_DISABLE_REALLOC=1"
+        )
+    }
+)) {
+    Write-Host "Building: redis workload ($($variant.Name))"
+    $output = Join-Path $OutDir $variant.Output
+    Invoke-Checked $Cc ($BaseFlags + $Hz8Flags + $variant.ExtraFlags + $Hz8Sources + @($BenchSrc, "/link", "/out:$output"))
+}
 
 Invoke-AppLikeHz6BenchBuilds `
     -Compiler $Cc `

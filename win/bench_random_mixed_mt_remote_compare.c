@@ -6,6 +6,9 @@
 #include <stdlib.h>
 
 #include "bench_modern_allocator_adapter.h"
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+#include "h8_medium_page8k_remote.h"
+#endif
 
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
@@ -301,6 +304,10 @@ int main(int argc, char** argv) {
         }
     }
 
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+    (void)h8_page8k_remote_drain_all_control();
+#endif
+
     dt = (double)(end_ns - start_ns) / 1e9;
     printf("bench_random_mixed_mt_remote: threads=%u ops=%llu time=%.6f ops/s=%.2f\n",
            threads, (unsigned long long)total_ops, dt, (dt > 0.0) ? ((double)total_ops / dt) : 0.0);
@@ -311,6 +318,32 @@ int main(int argc, char** argv) {
            (unsigned long long)total_remote_received);
     printf("[ALLOC_FAILURES] count=%llu\n",
            (unsigned long long)total_alloc_failures);
+#if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+    {
+        H8Page8KRemoteStats page8k = h8_page8k_remote_stats();
+        printf("[H8_PAGE8K] claim=%llu reject=%llu publish=%llu notify=%llu "
+               "dirty=%llu drain_pages=%llu drain_slots=%llu cap_reject=%llu "
+               "depth_max=%llu lost=%llu drain_all_owners=%llu "
+               "drain_all_limit=%llu owner_close=%llu orphan_adopt=%llu "
+               "publish_retry=%llu skipped_live=%llu\n",
+               (unsigned long long)page8k.remote_claim_success,
+               (unsigned long long)page8k.remote_claim_reject,
+               (unsigned long long)page8k.pending_publish,
+               (unsigned long long)page8k.queue_notify,
+               (unsigned long long)page8k.queue_dirty,
+               (unsigned long long)page8k.drain_pages,
+               (unsigned long long)page8k.drain_slots,
+               (unsigned long long)page8k.page_cap_reject,
+               (unsigned long long)page8k.inbox_depth_max,
+               (unsigned long long)page8k.lost_notification,
+               (unsigned long long)page8k.drain_all_owner_visits,
+               (unsigned long long)page8k.drain_all_limit,
+               (unsigned long long)page8k.owner_close,
+               (unsigned long long)page8k.orphan_adopt,
+               (unsigned long long)page8k.publish_retry,
+               (unsigned long long)page8k.drain_all_skipped_live);
+    }
+#endif
     hz_bench_dump_stats(stdout, "mt_remote_main_final");
     rc = 0;
 

@@ -3,6 +3,7 @@ param(
     [int]$Runs = 5,
     [int]$TimeoutSeconds = 60,
     [switch]$IncludeHz6CapacityControls,
+    [switch]$IncludeHz8Research,
     [switch]$ContinueOnFailure
 )
 
@@ -23,6 +24,8 @@ $Executables = @(
     @{ Name = "hz3"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz3.exe") },
     @{ Name = "hz4"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz4.exe") },
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz5_policy.exe") },
+    @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_v2.exe") },
+    @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_r3.exe"); Hz8Research = $true },
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_appcap.exe") },
@@ -32,6 +35,10 @@ $Executables = @(
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_redis_workload_tcmalloc.exe") }
 )
+
+if (-not $IncludeHz8Research) {
+    $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+}
 
 if ($IncludeHz6CapacityControls) {
     $Executables = @(

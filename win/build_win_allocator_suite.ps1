@@ -80,6 +80,15 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraSources = $Hz10PageSources
         },
         @{
+            Name = "hz8-r3-page8k-integrated"
+            Output = "bench_mixed_ws_hz8_medium_page8k_remote.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DHZ_BENCH_DISABLE_REALLOC=1"
+            )
+        },
+        @{
             Name = "hz8-v3-adaptive-shadow"
             Output = "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"
             ExtraFlags = @("/DH8_ADAPTIVE_TRANSFER_SHADOW_L0=1")
@@ -153,6 +162,114 @@ function Invoke-Hz8AllocatorMatrixBuild {
     & $Compiler.Source @pageBackendSmokeArgs
     if ($LASTEXITCODE -ne 0) {
         throw "HZ8 medium page backend smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageRemoteSmoke = Join-Path $Hz8Root "tests\h8_medium_page8k_remote_smoke.c"
+    $pageRemoteSmokeOut = Join-Path $OutDir "h8_medium_page8k_remote_smoke.exe"
+    $pageRemoteSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageRemoteSmoke,
+        "/Fe:$pageRemoteSmokeOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_remote_smoke.exe"
+    & $Compiler.Source @pageRemoteSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k remote smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageRemoteStress = Join-Path $Hz8Root "tests\h8_medium_page8k_remote_stress.c"
+    $pageRemoteStressOut = Join-Path $OutDir "h8_medium_page8k_remote_stress.exe"
+    $pageRemoteStressArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageRemoteStress,
+        "/Fe:$pageRemoteStressOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_remote_stress.exe"
+    & $Compiler.Source @pageRemoteStressArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k remote stress build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageLifecycleSmoke = Join-Path $Hz8Root "tests\h8_medium_page8k_lifecycle_smoke.c"
+    $pageLifecycleSmokeOut = Join-Path $OutDir "h8_medium_page8k_lifecycle_smoke.exe"
+    $pageLifecycleSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageLifecycleSmoke,
+        "/Fe:$pageLifecycleSmokeOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_lifecycle_smoke.exe"
+    & $Compiler.Source @pageLifecycleSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k lifecycle smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageLifecycleStress = Join-Path $Hz8Root "tests\h8_medium_page8k_lifecycle_stress.c"
+    $pageLifecycleStressOut = Join-Path $OutDir "h8_medium_page8k_lifecycle_stress.exe"
+    $pageLifecycleStressArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageLifecycleStress,
+        "/Fe:$pageLifecycleStressOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_lifecycle_stress.exe"
+    & $Compiler.Source @pageLifecycleStressArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k lifecycle stress build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageResidencySmoke = Join-Path $Hz8Root "tests\h8_medium_page8k_residency_smoke.c"
+    $pageResidencySmokeOut = Join-Path $OutDir "h8_medium_page8k_residency_smoke.exe"
+    $pageResidencySmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageResidencySmoke,
+        "/Fe:$pageResidencySmokeOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_residency_smoke.exe"
+    & $Compiler.Source @pageResidencySmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k residency smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageTurnoverSmoke = Join-Path $Hz8Root "tests\h8_medium_page8k_thread_turnover_smoke.c"
+    $pageTurnoverSmokeOut = Join-Path $OutDir "h8_medium_page8k_thread_turnover_smoke.exe"
+    $pageTurnoverSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageTurnoverSmoke,
+        "/Fe:$pageTurnoverSmokeOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page8k_thread_turnover_smoke.exe"
+    & $Compiler.Source @pageTurnoverSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 medium page8k thread turnover smoke build failed with exit code $LASTEXITCODE"
     }
 }
 

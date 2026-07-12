@@ -105,6 +105,94 @@ remove it from MT runners, and do not promote behavior. Next design box is an
 HZ8-owned bounded remote adapter for the page substrate, not another capacity
 knob and not direct HZ10 remote reuse.
 
+P2-R1 is now fixed in
+`docs/HZ8_MEDIUM_PAGE8K_REMOTE_ADAPTER_L1.md`. Reuse only the HZ10-derived
+intrusive-page idea. HZ8 owns identity, slot state, pending publication,
+qstate, inbox drain, and lifecycle. R1 is exact-8K protocol proof with no page
+destroy/reuse or owner exit; R2 adds close-publish fencing, hard exit drain,
+adoption, generation reuse, retirement, and RSS gates. R1 stays diagnostic and
+must not enter the normal matrix or the default hot path.
+
+The first dedicated Windows MT smoke is green: eight remote claims collapse to
+one page notification, owner drain returns all eight slots exactly once,
+interior and duplicate frees reject, and final pending/qstate is `0/IDLE`.
+This proves the R1 state machine skeleton only. Next is a sustained concurrent
+publish/drain stress before connecting the module to an allocator behavior row.
+
+Sustained MPSC stress is now GO: four producers, 10,000 rounds, and 80,000
+remote claims produced 80,000 owner drains with zero reject, duplicate,
+interior, or lost-notification result. Inbox depth stayed bounded at one page
+and final state was `pending=0/qstate=IDLE`. Next is the opt-in HZ8 owner bridge;
+do not add owner-exit/reuse until that behavior row preserves this equality.
+
+The opt-in behavior bridge now completes exact-8K T=8 remote90 beyond the old
+HZ10 crash boundary. At 500K diagnostic load it reports 1,780,137 claims and
+the same drain count, zero reject/lost notification/allocation failure, and
+23,377 owner-page-cap transitions to the existing HZ8 medium path. Final
+equality uses an untimed post-join hard-drain control because R2 owner close and
+adoption are not implemented. Atomic-free speed R5 is unstable (about
+8.5M..20.3M, median about 9.4M), so performance/default promotion is HOLD.
+Next architecture work is R2 lifecycle plus an owner-local available-page
+index, not a page-cap ladder.
+
+The owner-local active/available index and intrusive MPSC page inbox are now
+implemented. Four-producer protocol stress passes 100 consecutive runs. They
+only move remote90 speed from about 9.4M to 10.1M median; diagnostic equality
+remains exact, but page-cap transitions rise to 408,552. Local0 is still a
+strong signal at 260.50M versus HZ8 143.80M, though below tcmalloc 433.74M.
+Freeze R1 performance tuning. The next valid step is R2 owner close/adoption;
+do not tune cap, queue, or available-index policy further.
+
+R2 owner close/adoption is now implemented as a research box. Page-local
+publish fences protect owner reassignment; thread shutdown closes publication,
+waits refs, drains, and moves pages to a permanent orphan. Allocation miss can
+adopt one drained orphan page. Lifecycle smoke passes close/adopt and full
+8-slot reuse. Windows T=8 remote90 500K reports exact claim/drain equality
+(1,499,831), zero allocation failure/lost notification, and no drain-all limit.
+Correctness is GO; throughput remains about 8.7M diagnostic, so promotion stays
+HOLD. Next evidence should stress concurrent close/publish and repeated owner
+generation turnover before any RSS/decommit work.
+
+Concurrent lifecycle stress is now GO across 1,000 owner generations. It
+records 40 real close/publish retries while preserving 1,000 close/adopt and
+8,000 claim/drain equality with zero reject or lost notification. The R2
+ownership transition contract is therefore established. Keep performance HOLD;
+the next separate box is page retirement/decommit and bounded orphan residency.
+
+Bounded orphan residency is now implemented. At most 16 empty orphan pages
+(1MiB) remain resident; additional fully quiescent pages decommit in 64KiB
+units and recommit at the same address after adoption. A 32-page smoke produces
+16 decommits, 16 recommits, zero failure, and zero final orphan-resident pages.
+The policy is split into `h8_medium_page8k_residency.inc`; core remains below
+800 lines. Next evaluation is RSS turnover plus remote safety, not another cap
+ladder.
+
+Cross-platform audit fixed two lifecycle gaps: page backing is now explicitly
+64KiB aligned on Linux as well as Windows, and thread shutdown removes its dead
+owner record after orphan handoff. Strict Linux GCC C11 build/residency smoke
+passes. A 1,000-generation turnover smoke ends with exactly one owner-list
+entry (the permanent orphan), proving dead owner records do not accumulate.
+
+External review blockers F1-F3 are fixed: seq_cst close/ref validation,
+type-stable token-validated owner records, and quiescent-only
+`drain_all_control`. Windows full suite and lifecycle repeat-100 pass.
+
+R3 is now connected to the real HZ8 medium entry as
+`hz8-r3-page8k-integrated`; its counters remain in a separate diagnostic
+binary. Corrected Windows AB/BA repeat-5 medians are +81.77% fixed-8K local,
++11.80% balanced, +3.72% wide_ws, and +11.94% larger_sizes. Repeat-3 median
+peak RSS is no higher than HZ8 v2 on all four rows. The rebuilt remote90
+control has zero allocation failure, reject, and lost notification, and all
+six protocol/lifecycle/residency smokes pass.
+
+R3 final posture: Windows performance candidate GO; Linux correctness-neutral
+opt-in GO; public default unchanged. Redis-like Windows R5 is -0.04%, while
+Linux fixed-8K R5 is -0.21% with lower median peak RSS. Remote90 remains
+correctness evidence. The Windows speed gain is platform-specific.
+has zero failure and 473 real publish retries; Linux strict C11 build passes.
+R2 is closed as correctness evidence. Default/performance promotion remains
+HOLD; only an R3 integrated medium-entry shadow may reopen the track.
+
 Current Windows attribution after the public matrix:
 
 ```text

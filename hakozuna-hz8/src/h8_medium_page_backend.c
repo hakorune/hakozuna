@@ -1,5 +1,13 @@
 #include "h8_medium_page_backend.h"
-#if defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+#include "h8_medium_page8k_remote.h"
+void* h8_medium_page_backend_malloc(size_t size) {
+  return h8_page8k_remote_malloc_current(size);
+}
+bool h8_medium_page_backend_free(void* ptr, bool* owned_out) {
+  return h8_page8k_remote_free_current(ptr, owned_out);
+}
+#elif defined(H8_MEDIUM_PAGE_SUBSTRATE_FIXED8K_L1)
 #include "hz10_freelist_page.h"
 #include "hz10_pagemap.h"
 #include "hz10_public_entry.h"

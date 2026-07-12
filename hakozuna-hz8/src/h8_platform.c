@@ -1,3 +1,7 @@
+#if !defined(_WIN32) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE
+#endif
+
 #include "h8_platform.h"
 
 #if defined(_WIN32)
@@ -101,6 +105,13 @@ void* h8_platform_reserve_rw(size_t bytes) {
   return VirtualAlloc(NULL, bytes, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 }
 
+void* h8_platform_reserve_rw_aligned(size_t bytes, size_t alignment) {
+  void* ptr = h8_platform_reserve_rw(bytes);
+  if (ptr && ((uintptr_t)ptr & (alignment - 1u)) == 0u) return ptr;
+  h8_platform_release(ptr, bytes);
+  return NULL;
+}
+
 void h8_platform_release(void* ptr, size_t bytes) {
   (void)bytes;
   if (ptr) {
@@ -110,6 +121,10 @@ void h8_platform_release(void* ptr, size_t bytes) {
 
 int h8_platform_purge(void* ptr, size_t bytes) {
   return VirtualAlloc(ptr, bytes, MEM_RESET, PAGE_READWRITE) ? 0 : -1;
+}
+
+int h8_platform_decommit(void* ptr, size_t bytes) {
+  return VirtualFree(ptr, bytes, MEM_DECOMMIT) ? 0 : -1;
 }
 
 #else
@@ -194,6 +209,20 @@ void* h8_platform_reserve_rw(size_t bytes) {
   return ptr == MAP_FAILED ? NULL : ptr;
 }
 
+void* h8_platform_reserve_rw_aligned(size_t bytes, size_t alignment) {
+  if (alignment == 0u || (alignment & (alignment - 1u)) != 0u) return NULL;
+  size_t total = bytes + alignment;
+  void* raw = h8_platform_reserve_rw(total);
+  if (!raw) return NULL;
+  uintptr_t start = (uintptr_t)raw;
+  uintptr_t aligned = (start + alignment - 1u) & ~(uintptr_t)(alignment - 1u);
+  size_t prefix = (size_t)(aligned - start);
+  size_t suffix = total - prefix - bytes;
+  if (prefix != 0u) munmap((void*)start, prefix);
+  if (suffix != 0u) munmap((void*)(aligned + bytes), suffix);
+  return (void*)aligned;
+}
+
 void h8_platform_release(void* ptr, size_t bytes) {
   if (ptr && bytes) {
     munmap(ptr, bytes);
@@ -202,6 +231,10 @@ void h8_platform_release(void* ptr, size_t bytes) {
 
 int h8_platform_purge(void* ptr, size_t bytes) {
   return madvise(ptr, bytes, MADV_DONTNEED);
+}
+
+int h8_platform_decommit(void* ptr, size_t bytes) {
+  return madvise(ptr, bytes, MADV_DONTNEED) == 0 ? 0 : -1;
 }
 
 #endif

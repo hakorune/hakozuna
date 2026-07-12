@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_medium_page8k_remote.h"
 
 #include <stdlib.h>
 #include <stdbool.h>
@@ -177,6 +178,9 @@ void h8_thread_shutdown(void* arg) {
   if (h8_tls_ctx == ctx) {
     h8_tls_ctx = NULL;
   }
+#if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+  h8_page8k_remote_thread_shutdown();
+#endif
   h8_owner_exit(ctx->owner);
   h8_sys_free(ctx);
 }
