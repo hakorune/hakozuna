@@ -88,6 +88,15 @@ function Invoke-Hz8AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz8-r3-page8k-target-dispatch"
+            Output = "bench_mixed_ws_hz8_medium_page8k_target_dispatch.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1"
+            )
+        },
+        @{
             Name = "hz8-r3-page8k-range4097"
             Output = "bench_mixed_ws_hz8_medium_page8k_range4097.exe"
             ExtraFlags = @(

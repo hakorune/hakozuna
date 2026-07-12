@@ -37,6 +37,7 @@ $Executables = @(
     @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_pageshadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-medium-page8k-local"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_local.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_target_dispatch.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-range4097"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_range4097.exe"); Hz8Research = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },

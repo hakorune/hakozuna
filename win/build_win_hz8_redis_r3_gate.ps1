@@ -35,6 +35,16 @@ foreach ($variant in @(
             "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
             "/DHZ_BENCH_DISABLE_REALLOC=1"
         )
+    },
+    @{
+        Name = "hz8-r3-page8k-target-dispatch"
+        Output = "bench_redis_workload_hz8_page8k_target_dispatch.exe"
+        ExtraFlags = @(
+            "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+            "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+            "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+            "/DHZ_BENCH_DISABLE_REALLOC=1"
+        )
     }
 )) {
     $output = Join-Path $OutDir $variant.Output

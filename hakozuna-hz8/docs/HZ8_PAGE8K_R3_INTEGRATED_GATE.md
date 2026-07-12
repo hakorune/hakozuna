@@ -170,6 +170,10 @@ pwsh win/build_win_hz8_redis_r3_gate.ps1
 pwsh win/run_win_redis_workload_paper.ps1 -IncludeHz8Research
 ```
 
+The focused builder and the normal research-only Windows suites expose
+`hz8-r3-page8k-target-dispatch` alongside v2 and integrated R3. It remains
+excluded unless `-IncludeHz8Research` is specified.
+
 The Redis-like row is a no-regression check because its default size range does
 not target exact 8KiB. Accept only when R3 remains within -5% throughput and
 +5% peak RSS of HZ8 v2. It is not evidence for an 8KiB speed claim.

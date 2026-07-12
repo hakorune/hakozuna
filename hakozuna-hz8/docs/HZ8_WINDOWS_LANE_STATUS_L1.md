@@ -15,6 +15,7 @@ promotion candidates, diagnostics, and closed experiments.
 |---|---|---|
 | `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
 | `hz8-r3-page8k-integrated` | Windows selected opt-in / global HOLD | Exact-8KiB detached-page substrate; strong Windows local result with neutral application gates |
+| `hz8-r3-page8k-target-dispatch` | Windows validation pending / global HOLD | R3 child lane that avoids non-target alloc dispatch and owner creation on free miss; native Ubuntu fixed8K +31.90% |
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 
@@ -30,6 +31,11 @@ The R3 page8K row improves Windows fixed-8K local throughput by 81.77% and
 passes balanced, wide working-set, larger-size, remote-safety, and two
 Redis-like no-regression gates. Linux fixed-8K is neutral (-0.21%), so R3 is a
 Windows selected opt-in rather than a cross-platform default.
+
+The target-dispatch child is not a Windows selection yet. Native Ubuntu R10
+cleared the fixed8K gate (`+31.90%`) and preserved median RSS, but balanced
+(`-3.72%`) and larger_sizes (`-10.71%`) keep the cross-platform gate on HOLD.
+Windows must compare v2, integrated R3, and target dispatch in the same batch.
 
 The normal allocator matrix and MT remote runner include only the public HZ8
 row unless research controls are requested explicitly.
@@ -88,6 +94,7 @@ LargeDirect cache variants:
 
 # Add diagnostic research rows intentionally.
 .\win\run_win_allocator_matrix.ps1 -ListOnly -IncludeHz8Research
+.\win\run_win_redis_workload_paper.ps1 -IncludeHz8Research -Runs 10
 ```
 
 ## Promotion Gate

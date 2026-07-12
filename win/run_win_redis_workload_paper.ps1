@@ -26,6 +26,7 @@ $Executables = @(
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz5_policy.exe") },
     @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_v2.exe") },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_r3.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_target_dispatch.exe"); Hz8Research = $true },
     @{ Name = "hz6-strict-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_strict_appcap.exe") },
     @{ Name = "hz6-speed-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_speed_appcap.exe") },
     @{ Name = "hz6-rss-appcap"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz6_rss_appcap.exe") },
