@@ -149,6 +149,13 @@ local AB/BA repeat-5 medians were 558.78M for HZ8 v2 and 557.60M for R3
 speed gain therefore does not reproduce on Linux; Linux classifies R3 as a
 correctness-neutral opt-in rather than a performance lane.
 
+Native Ubuntu x86_64 then ran the full alternating AB/BA repeat-5 gate. R3
+changed fixed8K by `+12.36%`, balanced by `-6.62%`, wide_ws by `-0.23%`, and
+larger_sizes by `-13.20%`. The Redis-like aggregate changed by `-0.37%`, while
+its median peak RSS increased by `+5.48%`. GCC and Clang smoke/safety passed,
+but the performance and RSS bounds did not. See
+`docs/benchmarks/linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md`.
+
 Final lane posture:
 
 ```text
@@ -156,7 +163,8 @@ Windows:
   R3 selected opt-in performance candidate: GO
 
 Linux:
-  R3 correctness / neutral control: GO
+  R3 correctness / opt-in research control: GO
+  R3 performance promotion: NO-GO
 
 Cross-platform public default:
   HOLD; keep HZ8 v2 unchanged

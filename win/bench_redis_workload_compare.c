@@ -1,4 +1,4 @@
-// Windows-native Redis-style workload benchmark.
+// Native Redis-style workload benchmark.
 // Usage: bench_redis_workload_compare [threads] [cycles] [ops_per_cycle] [min_size] [max_size]
 
 #include <stdint.h>
@@ -12,11 +12,16 @@
 #include "bench_redis_hz6_diag.h"
 #endif
 
+#if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
 #include <windows.h>
 #include <process.h>
+#else
+#include <pthread.h>
+#include <time.h>
+#endif
 
 typedef enum RedisOp {
     REDIS_SET = 0,
@@ -47,6 +52,27 @@ static const char* kOpNames[REDIS_OP_COUNT] = {
 static uint32_t g_threads = 4;
 static uint32_t g_pool_capacity = 0;
 
+#if !defined(_WIN32)
+static void print_linux_rss(void) {
+    FILE* status = fopen("/proc/self/status", "r");
+    char line[256];
+    unsigned long post_kib = 0;
+    unsigned long peak_kib = 0;
+
+    if (!status) {
+        return;
+    }
+    while (fgets(line, sizeof(line), status)) {
+        if (sscanf(line, "VmRSS: %lu kB", &post_kib) == 1) {
+            continue;
+        }
+        (void)sscanf(line, "VmHWM: %lu kB", &peak_kib);
+    }
+    fclose(status);
+    printf("[BENCH_RSS] post_kib=%lu peak_kib=%lu\n", post_kib, peak_kib);
+}
+#endif
+
 static uint32_t parse_u32(const char* s, uint32_t def) {
     if (!s) {
         return def;
@@ -70,6 +96,7 @@ static uint32_t rng_next(uint32_t* s) {
 }
 
 static uint64_t now_ns(void) {
+#if defined(_WIN32)
     LARGE_INTEGER freq;
     LARGE_INTEGER counter;
     QueryPerformanceFrequency(&freq);
@@ -79,6 +106,13 @@ static uint64_t now_ns(void) {
         uint64_t rem = (uint64_t)(counter.QuadPart % freq.QuadPart);
         return (whole * 1000000000ULL) + ((rem * 1000000000ULL) / (uint64_t)freq.QuadPart);
     }
+#else
+    struct timespec ts;
+    if (clock_gettime(CLOCK_MONOTONIC, &ts) != 0) {
+        return 0;
+    }
+    return ((uint64_t)ts.tv_sec * 1000000000ULL) + (uint64_t)ts.tv_nsec;
+#endif
 }
 
 static inline size_t pick_size(uint32_t r, size_t min_size, size_t max_size) {
@@ -101,14 +135,18 @@ static char* alloc_string(uint32_t* seed, size_t min_size, size_t max_size, uint
         hz_bench_dump_stats(stderr, "redis_alloc_string_fail");
         return NULL;
     }
-    _snprintf(ptr, size, "key-%u", ordinal);
+    snprintf(ptr, size, "key-%u", ordinal);
     if (size > 1) {
         ptr[size - 1] = '\0';
     }
     return ptr;
 }
 
+#if defined(_WIN32)
 static unsigned __stdcall redis_worker(void* raw_arg) {
+#else
+static void* redis_worker(void* raw_arg) {
+#endif
     ThreadArg* arg = (ThreadArg*)raw_arg;
     char** pool = NULL;
     uint32_t count = 0;
@@ -121,7 +159,11 @@ static unsigned __stdcall redis_worker(void* raw_arg) {
     pool = (char**)calloc(g_pool_capacity, sizeof(char*));
     if (!pool) {
         hz_bench_allocator_thread_teardown();
+#if defined(_WIN32)
         return 0;
+#else
+        return NULL;
+#endif
     }
 
     for (i = 0; i < g_pool_capacity / 2u; ++i) {
@@ -212,12 +254,20 @@ static unsigned __stdcall redis_worker(void* raw_arg) {
 #endif
     free(pool);
     hz_bench_allocator_thread_teardown();
+#if defined(_WIN32)
     return 0;
+#else
+    return NULL;
+#endif
 }
 
 static void run_pattern(RedisOp op, uint32_t threads, uint32_t cycles, uint32_t ops_per_cycle, uint32_t min_size, uint32_t max_size) {
     ThreadArg* args = NULL;
+#if defined(_WIN32)
     HANDLE* handles = NULL;
+#else
+    pthread_t* handles = NULL;
+#endif
     uint64_t start_ns;
     uint64_t end_ns;
     uint64_t total_ops = 0;
@@ -225,7 +275,7 @@ static void run_pattern(RedisOp op, uint32_t threads, uint32_t cycles, uint32_t 
     uint32_t i;
 
     args = (ThreadArg*)calloc(threads, sizeof(ThreadArg));
-    handles = (HANDLE*)calloc(threads, sizeof(HANDLE));
+    handles = calloc(threads, sizeof(*handles));
     if (!args || !handles) {
         fprintf(stderr, "run_pattern: allocation failed\n");
         free(handles);
@@ -243,6 +293,7 @@ static void run_pattern(RedisOp op, uint32_t threads, uint32_t cycles, uint32_t 
         args[i].seed = 0x12345678u + (i * 977u) + (uint32_t)op;
         args[i].ops_done = 0;
         {
+#if defined(_WIN32)
             uintptr_t h = _beginthreadex(NULL, 0, redis_worker, &args[i], 0, NULL);
             if (h == 0) {
                 fprintf(stderr, "run_pattern: thread start failed at thread=%u\n", i);
@@ -250,18 +301,34 @@ static void run_pattern(RedisOp op, uint32_t threads, uint32_t cycles, uint32_t 
                 break;
             }
             handles[i] = (HANDLE)h;
+#else
+            int err = pthread_create(&handles[i], NULL, redis_worker, &args[i]);
+            if (err != 0) {
+                fprintf(stderr, "run_pattern: thread start failed at thread=%u error=%d\n", i, err);
+                threads = i;
+                break;
+            }
+#endif
         }
     }
 
+#if defined(_WIN32)
     if (threads > 0) {
         WaitForMultipleObjects((DWORD)threads, handles, TRUE, INFINITE);
     }
+#else
+    for (i = 0; i < threads; ++i) {
+        (void)pthread_join(handles[i], NULL);
+    }
+#endif
     end_ns = now_ns();
 
     for (i = 0; i < threads; ++i) {
         total_ops += args[i].ops_done;
         if (handles[i]) {
+#if defined(_WIN32)
             CloseHandle(handles[i]);
+#endif
         }
     }
 
@@ -305,6 +372,10 @@ int main(int argc, char** argv) {
     for (op = 0; op < REDIS_OP_COUNT; ++op) {
         run_pattern((RedisOp)op, threads, cycles, ops_per_cycle, min_size, max_size);
     }
+
+#if !defined(_WIN32)
+    print_linux_rss();
+#endif
 
     return 0;
 }

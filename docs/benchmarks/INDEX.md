@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 Page8K R3 native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md)
 - [Allocator line integrated matrix: HZ3/HZ4/HZ8/HZ10, 2026-07-07](./20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md)
 - [Windows HZ11 L1 allocator matrix connectivity, 2026-07-09](./windows/hz11_l1_allocator_matrix_connectivity/20260709_143810_allocator_matrix.md)
 - [Windows HZ11 L2 span-transfer matrix probe, 2026-07-09](./windows/hz11_l2_span_transfer_matrix_probe/20260709_170332_allocator_matrix.md)
@@ -79,6 +80,13 @@ This page is the public pointer list for dated benchmark summaries.
 - [Cross-platform benchmark conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
 - [HZ6 remote pending inbox plan](../../hakozuna-hz6/docs/HZ6_REMOTE_PENDING_INBOX_PLAN.md)
 - [Mac benchmark prep order](../MAC_BENCH_PREP.md)
+
+# 2026-07-12
+
+- [HZ8 Page8K R3 native Ubuntu gate](linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md):
+  GCC/Clang safety pass and alternating AB/BA R5; fixed8K improved 12.36%,
+  but balanced/larger regressions keep R3 opt-in and the public default on HZ8 v2.
+
 # 2026-07-11
 
 - [HZ12 Linux retirement turnover](linux/HZ12_RETIREMENT_TURNOVER_20260711.md):
