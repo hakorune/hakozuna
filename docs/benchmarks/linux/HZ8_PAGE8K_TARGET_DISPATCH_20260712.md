@@ -63,3 +63,69 @@ HZ8 v2 public default: unchanged
 
 Raw logs are under
 `private/raw-results/linux/hz8_page8k_target_dispatch_v2_r10_20260712/`.
+
+## Post-Windows Native Revalidation
+
+After Windows commit `967cc637`, native Ubuntu rebuilt both speed binaries and
+reran fresh-process alternating AB/BA R10. The original iteration counts gave:
+
+| Row | HZ8 v2 ops/s | Target ops/s | Delta |
+|---|---:|---:|---:|
+| fixed8K | 206.489M | 262.406M | +27.08% |
+| balanced | 249.889M | 252.745M | +1.14% |
+| wide_ws | 254.324M | 258.748M | +1.74% |
+| larger_sizes | 105.702M | 98.965M | -6.37% |
+
+Because individual processes complete quickly, a second R10 increased every
+iteration count by 10 while preserving threads, size ranges, interleaving, and
+live windows:
+
+| Row | HZ8 v2 ops/s | Target ops/s | Delta |
+|---|---:|---:|---:|
+| fixed8K | 190.964M | 236.865M | +24.04% |
+| balanced | 254.549M | 253.987M | -0.22% |
+| wide_ws | 254.410M | 248.994M | -2.13% |
+| larger_sizes | 117.531M | 108.310M | -7.85% |
+
+Median RSS stayed in the same 1.5-1.9MiB process band. The long rows remove a
+consistent small-only regression hypothesis: balanced and wide_ws remain
+inside their control bounds. Larger_sizes still misses its `-5%` gate, and the
+fixed8K gain does not stably clear `+30%` on native Ubuntu.
+
+The Linux diagnostic-only lane confirmed dispatch wiring:
+
+```text
+fixed8K:
+  alloc attempt / served: 4,000,000 / 4,000,000
+  free owned / success:    4,000,000 / 4,000,000
+  free miss:               0
+  owner create:            8
+
+larger_sizes:
+  alloc attempt / served:  49 / 49
+  free attempt:            309,536
+  free owned / success:    49 / 49
+  free miss:               309,487
+  owner create:            4
+```
+
+The speed binary contains no diagnostic counters. Relative to HZ8 v2, target
+dispatch adds 32 bytes to `h8_free_inner`, 101 bytes to `h8_malloc_inner`, and
+about 5KiB to total text; both hot entrypoints move about 4KiB in the image.
+The long small-only rows are neutral, while the larger diagnostic row exposes
+one classifier miss for almost every non-small free. The remaining larger-size
+regression is therefore attributed primarily to page-classifier fixed cost,
+not a general small-path layout regression.
+
+Updated decision:
+
+```text
+Windows TargetDispatch opt-in: GO
+native Ubuntu correctness/research lane: GO
+native Ubuntu full performance gate: HOLD
+cross-platform public default: HZ8 v2 unchanged
+```
+
+Revalidation logs are retained under
+`private/raw-results/linux/hz8_page8k_target_dispatch_revalidation_r10_20260712/`
+and `private/raw-results/linux/hz8_page8k_target_dispatch_long_r10_20260712/`.

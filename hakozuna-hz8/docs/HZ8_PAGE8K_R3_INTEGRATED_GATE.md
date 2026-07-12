@@ -135,6 +135,15 @@ thread/working-set shape, or diagnostic counters is not promotion evidence.
 Remote90 remains lifecycle evidence because effective remote percentage can
 fall when the benchmark ring uses local fallback.
 
+Native Linux exposes matching diagnostic-only targets:
+
+```text
+make -C hakozuna-hz8 smoke-page8k-api-r3-target-dispatch-diag
+make -C hakozuna-hz8 bench-release-page8k-r3-target-dispatch-diag
+```
+
+These targets are attribution-only and must not be used for throughput.
+
 #### Windows Revalidation Result
 
 The authoritative Windows fixed-8K row and the three control rows ran as
@@ -166,6 +175,15 @@ The maximum increase is `1.00MiB` (`0.13%`) and is treated as measurement
 parity, not an RSS improvement claim. TargetDispatch is a Windows opt-in GO;
 the public HZ8 v2 default remains unchanged because the native-Ubuntu control
 rows do not yet clear the cross-platform gate.
+
+Native Ubuntu revalidation after this Windows commit did not reproduce the old
+`larger_sizes -10.71%` magnitude exactly, but the regression remained outside
+gate: `-6.37%` at the original iteration count and `-7.85%` with 10x longer
+runs. Diagnostic attribution reported 49 page-owned frees and 309,487 page
+classifier misses in the focused larger row. The corresponding long balanced
+and wide rows were `-0.22%` and `-2.13%`, so general small-path code layout is
+not the primary larger-size explanation. Native fixed8K measured `+27.08%` and
+`+24.04%` in these two batches; cross-platform default promotion remains HOLD.
 
 ### Address Filter Follow-up
 

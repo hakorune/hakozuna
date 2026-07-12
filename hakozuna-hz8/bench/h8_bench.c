@@ -1,5 +1,8 @@
 #include "../include/h8.h"
 #include "../src/h8_medium.h"
+#if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+#include "../src/h8_medium_page8k_remote.h"
+#endif
 #include "h8_bench_support.h"
 
 #include <pthread.h>
@@ -390,6 +393,21 @@ int main(int argc, char** argv) {
 #endif
   };
   h8_bench_print_final_report(&report);
+
+#if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+  H8Page8KRemoteStats page8k = h8_page8k_remote_stats();
+  printf("page8k_target_dispatch alloc_attempt=%llu alloc_served=%llu "
+         "free_attempt=%llu free_owner_present=%llu free_owned=%llu "
+         "free_success=%llu free_miss=%llu owner_create=%llu\n",
+         (unsigned long long)page8k.dispatch_alloc_attempt,
+         (unsigned long long)page8k.dispatch_alloc_served,
+         (unsigned long long)page8k.dispatch_free_attempt,
+         (unsigned long long)page8k.dispatch_free_owner_present,
+         (unsigned long long)page8k.dispatch_free_owned,
+         (unsigned long long)page8k.dispatch_free_success,
+         (unsigned long long)page8k.dispatch_free_miss,
+         (unsigned long long)page8k.owner_create);
+#endif
 
   free(throughput);
   free(rss);
