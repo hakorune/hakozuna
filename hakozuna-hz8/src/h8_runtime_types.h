@@ -108,6 +108,9 @@ struct H8Span {
   struct H8Span* next_pending;
   struct H8Span* next_orphan;
   struct H8Span* next_orphan_class;
+#if defined(H8_SMALL_AVAILABLE_INDEX_L1)
+  bool small_available_indexed;
+#endif
 };
 
 _Static_assert(_Alignof(H8Span) >= H8_CACHELINE_BYTES,
@@ -166,6 +169,9 @@ struct H8ThreadCtx {
 #if H8_REUSABLE_SPAN_MAGAZINE_L1
   H8Span* reusable_span_mag[H8_CLASS_COUNT][H8_REUSABLE_SPAN_MAG_CAP];
   uint8_t reusable_span_count[H8_CLASS_COUNT];
+#endif
+#if defined(H8_SMALL_AVAILABLE_INDEX_L1)
+  H8Span* small_available_head[H8_CLASS_COUNT];
 #endif
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_last_alloc_run;

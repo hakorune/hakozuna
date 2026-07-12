@@ -220,6 +220,7 @@ static void h8_reusable_span_mag_note_local_free(H8ThreadCtx* ctx,
   if (old && old != span) {
     if (*count == H8_REUSABLE_SPAN_MAG_CAP) {
       H8_DEBUG_INC(reusable_mag_full_preserve);
+      h8_small_available_index_push(ctx, span);
       return;
     }
     ctx->reusable_span_mag[class_id][(*count)++] = old;
@@ -336,6 +337,12 @@ void* h8_malloc_inner(size_t size) {
       if (ptr) return ptr;
     }
 #endif
+    span = h8_small_available_index_pop(ctx, owner, class_id);
+    if (span) {
+      ctx->active_spans[class_id] = span;
+      ptr = h8_small_alloc_from_span(span);
+      if (ptr) return ptr;
+    }
     size_t pending_before =
         atomic_load_explicit(&owner->pending_span_count, memory_order_acquire);
     if (pending_before > 0) {

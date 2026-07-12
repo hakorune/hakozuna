@@ -15,6 +15,7 @@ promotion candidates, diagnostics, and closed experiments.
 |---|---|---|
 | `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
 | `hz8-r3-page8k-integrated` | Windows selected opt-in / global HOLD | Exact-8KiB detached-page substrate; strong Windows local result with neutral application gates |
+| `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 
 Windows local and RSS gates are positive, but Linux small/remote gates block a
 cross-platform default promotion. Keep this row behind

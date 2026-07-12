@@ -191,7 +191,7 @@ GO; public default unchanged. Windows Redis-like gates are -0.04% (small) and
 correctness evidence. The Windows speed gain is platform-specific.
 
 MagazineTailReclaim is CLOSED at 1.0-1.2MiB maximum hypothetical tail bytes.
-Page4K is CLOSED; SmallAvailableIndex-L1 opens after 2,061 hidden spans/commit.
+SmallAvailableIndex is Windows GO: fixed-4KiB is ~9.7x with far lower RSS.
 has zero failure and 473 real publish retries; Linux strict C11 build passes.
 R2 is closed as correctness evidence. Default/performance promotion remains
 HOLD; only an R3 integrated medium-entry shadow may reopen the track.

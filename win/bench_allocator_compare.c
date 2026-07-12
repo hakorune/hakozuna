@@ -33,6 +33,9 @@
 #if defined(H8_SMALL_REUSE_VISIBILITY_SHADOW_L0)
 #include "h8_small_reuse_visibility_shadow.h"
 #endif
+#if defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
+#include "h8_small_available_index.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ10)
 #include "hz10_public_entry.h"
 #elif defined(HZ_BENCH_USE_HZ11)
@@ -767,6 +770,9 @@ int main(int argc, char** argv) {
 #if defined(HZ_BENCH_USE_HZ8) && \
     defined(H8_SMALL_REUSE_VISIBILITY_SHADOW_L0)
     h8_small_reuse_visibility_dump();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
+    h8_small_available_index_dump();
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
     {

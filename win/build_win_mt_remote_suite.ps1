@@ -162,6 +162,19 @@ function Invoke-Hz8MtRemoteBuilds {
             Name = "hz8-magazine-tail-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_magazine_tail_shadow.exe"
             ExtraFlags = @("/DH8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0=1")
+        },
+        @{
+            Name = "hz8-small-available4k"
+            Output = "bench_random_mixed_mt_remote_hz8_small_available4k.exe"
+            ExtraFlags = @("/DH8_SMALL_AVAILABLE_INDEX_L1=1")
+        },
+        @{
+            Name = "hz8-small-available4k-diag"
+            Output = "bench_random_mixed_mt_remote_hz8_small_available4k_diag.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_AVAILABLE_INDEX_L1=1",
+                "/DH8_SMALL_AVAILABLE_INDEX_DIAG=1"
+            )
         }
     )) {
         Write-Host "Building: mt_remote ($($variant.Name))"
