@@ -11,6 +11,8 @@
 - `HZ8_REUSABLE_SPAN_MAG32_L1.md`: larger/local opt-in capacity candidate
 - `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost audit
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
+- `HZ8_SMALL_AVAILABLE_INDEX_L1.md`: Windows exact-4KiB O(1) reuse evidence
+- `HZ8_SMALL_AVAILABLE_CLASS_SWEEP_L0.md`: closed 1KiB/2KiB/4KiB class expansion
 
 ## Frozen Public Baseline
 
@@ -27,3 +29,18 @@
 
 Long experiment chronology belongs in `archive/` or `bench_results/`, not in
 `current_task.md`.
+
+## Lane Visibility
+
+```text
+normal public matrix:
+  hz8-v2 only
+
+explicit research matrix:
+  pass -IncludeHz8Research
+  includes opt-in, diagnostic, evidence, and closed reproducibility rows
+
+closed lane:
+  build target may remain for reproducibility
+  never infer default or promotion status from target existence
+```

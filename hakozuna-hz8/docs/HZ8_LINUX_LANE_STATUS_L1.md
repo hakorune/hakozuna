@@ -42,7 +42,7 @@ make -C hakozuna-hz8 preload-reusable-span-mag32
 make -C hakozuna-hz8 smoke-reusable-span-mag32
 make -C hakozuna-hz8 safety-stress-reusable-span-mag32
 
-# Reproducibility-only Windows-transfer control; not a Linux candidate.
+# Reproducibility-only Windows controls; not Linux candidates.
 make -C hakozuna-hz8 bench-release-small-available4k
 make -C hakozuna-hz8 bench-release-small-available2k4k
 ```

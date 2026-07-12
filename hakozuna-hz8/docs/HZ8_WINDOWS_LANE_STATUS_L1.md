@@ -21,6 +21,10 @@ Windows local and RSS gates are positive, but Linux small/remote gates block a
 cross-platform default promotion. Keep this row behind
 `-IncludeHz8Research` in normal Windows runners.
 
+The 2KiB+4KiB expansion is not another candidate. It remains buildable only
+to reproduce the class-sweep result; its Windows `wide_ws` row reaches the
+-5% boundary and its Linux directional gate fails.
+
 The R3 page8K row improves Windows fixed-8K local throughput by 81.77% and
 passes balanced, wide working-set, larger-size, remote-safety, and two
 Redis-like no-regression gates. Linux fixed-8K is neutral (-0.21%), so R3 is a
@@ -42,6 +46,10 @@ row unless research controls are requested explicitly.
 
 Research rows are excluded from normal runs. Use `-IncludeHz8Research`
 explicitly when they are needed.
+
+Build target existence is not a support claim. Candidate, evidence,
+diagnostic, and closed rows may all remain buildable so old measurements can
+be reproduced; the status tables on this page are authoritative.
 
 ## Closed Lanes
 

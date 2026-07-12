@@ -64,12 +64,10 @@ recommended default:
 release record:
   docs/HZ8_MEDIUM_KEEP_REFILL_EMPTY_L1.md
 
-next research track:
-  HZ8 reclaim integration (shadow-first)
-  docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
+research lane registry:
+  docs/HZ8_WINDOWS_LANE_STATUS_L1.md
+  docs/HZ8_LINUX_LANE_STATUS_L1.md
   HZ8 v2 remains the public/recommended default
-  prior adaptive-transfer L1 is closed: existing batching is sufficient
-  HZ12 contributes a reclaim contract, not a core implementation
   cross-platform default: ReusableSpanMagazine-L1 Mag16
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
   promoted to the cross-platform default after Linux/Windows gates
@@ -77,8 +75,11 @@ next research track:
   docs/HZ8_REUSABLE_SPAN_MAG32_L1.md
   Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated
   docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md
-  Windows exact-4KiB selected opt-in: hz8-small-available4k
+  Windows exact-4KiB evidence/control: hz8-small-available4k
   docs/HZ8_SMALL_AVAILABLE_INDEX_L1.md
+  not a Linux or cross-platform default
+  2KiB+4KiB class expansion: closed / reproducibility-only
+  docs/HZ8_SMALL_AVAILABLE_CLASS_SWEEP_L0.md
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md
