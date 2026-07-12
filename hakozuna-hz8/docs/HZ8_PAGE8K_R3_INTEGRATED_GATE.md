@@ -100,6 +100,73 @@ returns without allocating owner state. The old R3 target remains available as
 the immediate A/B rollback. Measure this box against old R3 first so
 route-shape attribution is not mixed with a default-promotion claim.
 
+### Windows TargetDispatch Revalidation
+
+The old Windows result in the next section belongs to the original integrated
+R3 lane. It must not be reused as a TargetDispatch result. The first Windows
+TargetDispatch matrix showed a positive balanced signal but did not reproduce
+the native-Ubuntu fixed-8K gain consistently. Revalidate the exact row before
+any behavior or default decision.
+
+```text
+control:
+  hz8-v2
+
+rollback sibling:
+  hz8-r3-page8k-integrated
+
+candidate:
+  hz8-r3-page8k-target-dispatch
+
+authoritative Windows row:
+  T=8, iters=500000, ws=400, size=8192, remote=0
+  fresh-process alternating AB/BA repeat-10
+
+diagnostic sibling only:
+  H8_PAGE8K_REMOTE_DIAGNOSTIC=1
+  dispatch alloc attempt / served
+  dispatch free attempt / owner-present / owned / success / miss
+  TLS owner creation
+```
+
+The diagnostic sibling may contain relaxed atomic counters. The speed sibling
+must not. A fixed-8K result with a missing run, grouped execution, a different
+thread/working-set shape, or diagnostic counters is not promotion evidence.
+Remote90 remains lifecycle evidence because effective remote percentage can
+fall when the benchmark ring uses local fallback.
+
+#### Windows Revalidation Result
+
+The authoritative Windows fixed-8K row and the three control rows ran as
+fresh processes in alternating AB/BA order. Values are repeat-10 medians.
+
+| Row | HZ8 v2 | TargetDispatch | Delta |
+|---|---:|---:|---:|
+| fixed8K | 106.186M | 180.292M | +69.8% |
+| balanced | 48.912M | 48.741M | -0.35% |
+| wide_ws | 47.763M | 48.900M | +2.38% |
+| larger_sizes | 21.851M | 21.396M | -2.08% |
+
+All runs completed with zero allocation failure. The diagnostic sibling
+reported `2,000,789` exact alloc attempts and services, `2,000,789` owned and
+successful frees, and eight owner creations. The additional `31,464` free
+misses are non-page cleanup/classification traffic and did not create owners.
+This closes dispatch wiring as a cause of the earlier weak result.
+
+Repeat-3 median peak working set remained near the HZ8 v2 control:
+
+| Row | HZ8 v2 | TargetDispatch |
+|---|---:|---:|
+| fixed8K | 21.16MiB | 20.59MiB |
+| balanced | 789.78MiB | 790.78MiB |
+| wide_ws | 428.11MiB | 428.30MiB |
+| larger_sizes | 297.85MiB | 297.35MiB |
+
+The maximum increase is `1.00MiB` (`0.13%`) and is treated as measurement
+parity, not an RSS improvement claim. TargetDispatch is a Windows opt-in GO;
+the public HZ8 v2 default remains unchanged because the native-Ubuntu control
+rows do not yet clear the cross-platform gate.
+
 ### Address Filter Follow-up
 
 A monotonic min/max address filter was tested after target dispatch and removed.

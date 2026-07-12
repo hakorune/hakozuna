@@ -321,11 +321,22 @@ int main(int argc, char** argv) {
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
     {
         H8Page8KRemoteStats page8k = h8_page8k_remote_stats();
-        printf("[H8_PAGE8K] claim=%llu reject=%llu publish=%llu notify=%llu "
+        printf("[H8_PAGE8K] alloc_attempt=%llu alloc_served=%llu "
+               "free_attempt=%llu free_owner_present=%llu free_owned=%llu "
+               "free_success=%llu free_miss=%llu owner_create=%llu "
+               "claim=%llu reject=%llu publish=%llu notify=%llu "
                "dirty=%llu drain_pages=%llu drain_slots=%llu cap_reject=%llu "
                "depth_max=%llu lost=%llu drain_all_owners=%llu "
                "drain_all_limit=%llu owner_close=%llu orphan_adopt=%llu "
                "publish_retry=%llu skipped_live=%llu\n",
+               (unsigned long long)page8k.dispatch_alloc_attempt,
+               (unsigned long long)page8k.dispatch_alloc_served,
+               (unsigned long long)page8k.dispatch_free_attempt,
+               (unsigned long long)page8k.dispatch_free_owner_present,
+               (unsigned long long)page8k.dispatch_free_owned,
+               (unsigned long long)page8k.dispatch_free_success,
+               (unsigned long long)page8k.dispatch_free_miss,
+               (unsigned long long)page8k.owner_create,
                (unsigned long long)page8k.remote_claim_success,
                (unsigned long long)page8k.remote_claim_reject,
                (unsigned long long)page8k.pending_publish,

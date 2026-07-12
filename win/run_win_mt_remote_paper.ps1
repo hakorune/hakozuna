@@ -36,6 +36,7 @@ $LegacyExecutables = @(
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-integrated-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page8k-target-dispatch-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch_diag.exe"); Hz8Research = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-magazine-tail-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_magazine_tail_shadow.exe"); Hz8Research = $true },

@@ -87,6 +87,27 @@ int main(void) {
 #endif
 #endif
 
+#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1) && \
+    defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+  H8Page8KRemoteStats dispatch_stats = h8_page8k_remote_stats();
+  if (dispatch_stats.dispatch_alloc_attempt == 0u ||
+      dispatch_stats.dispatch_alloc_attempt !=
+          dispatch_stats.dispatch_alloc_served ||
+      dispatch_stats.dispatch_free_owned !=
+          dispatch_stats.dispatch_free_success ||
+      dispatch_stats.owner_create == 0u) {
+    return fail("target dispatch attribution disagrees");
+  }
+  printf("target dispatch alloc=%llu served=%llu free_owned=%llu "
+         "free_success=%llu free_miss=%llu owner_create=%llu\n",
+         (unsigned long long)dispatch_stats.dispatch_alloc_attempt,
+         (unsigned long long)dispatch_stats.dispatch_alloc_served,
+         (unsigned long long)dispatch_stats.dispatch_free_owned,
+         (unsigned long long)dispatch_stats.dispatch_free_success,
+         (unsigned long long)dispatch_stats.dispatch_free_miss,
+         (unsigned long long)dispatch_stats.owner_create);
+#endif
+
   puts("page8k api smoke: PASS");
   return 0;
 }

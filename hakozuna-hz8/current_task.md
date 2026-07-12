@@ -7,41 +7,47 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 Page8K API Surface F1
+## Restart Surface: HZ8 Page8K TargetDispatch Windows Gate
 
 ## Next Development Order
 
-HZ8 is the active public integration line. R3 has completed P0 classification,
-P1 state shadow, R1/R2 lifecycle, residency, and real-entry integration. Before
-class-wide performance work, close the API surface gap: route, usable_size,
-and realloc must recognize page8K-owned pointers.
+HZ8 is the active public integration line. R3 has completed ownership,
+generation, remote publication, API-surface, residency, and real-entry
+correctness work. `TargetDispatch-L1` is now the only active Page8K speed box.
+The Windows fixed-8K discrepancy is closed: the first matrix used a different
+`T=4/ws=1024` row, while the authoritative `T=8/ws=400` gate reproduces a
+strong gain.
 
 ```text
-Step 1: R3 API Surface F1 is implemented
-  route VALID/INVALID/MISS now consults the page registry
-  usable_size returns 8192 only for an exact live slot
-  realloc never forwards an owned page pointer to CRT/system
-  Linux API smoke, existing page8K smoke, safety stress, and default smoke pass
+Step 1: measurement identity is fixed
+  control is hz8-v2
+  old R3 is hz8-r3-page8k-integrated
+  candidate is hz8-r3-page8k-target-dispatch
+  fixed8K is T=8, iters=500000, ws=400, size=8192, remote=0
+  use alternating AB/BA fresh-process repeat-10
 
-Step 2: finish native-platform verification
-  build the same API smoke in the Windows suite
-  rerun page8K lifecycle/residency/safety checks
-  Linux and Windows F1 API/lifecycle gates now pass
-  keep the R3 row opt-in until application-like gates are complete
+Step 2: diagnostic-only dispatch attribution is implemented
+  count exact alloc dispatch and service
+  count free dispatch with/without an existing TLS owner
+  count owned hit, classifier miss, successful free, and owner creation
+  compile these atomics only with H8_PAGE8K_REMOTE_DIAGNOSTIC
+  keep the speed candidate free of diagnostic counters
 
-Step 3: keep the ownership boundary
-  do not merge the HZ10 public entry or remote lifecycle wholesale
-  do not reopen page-cap, queue, or available-index tuning
-  keep owned-looking INVALID fail-closed and RSS bounded
+Step 3: Windows discrepancy is classified
+  exact alloc attempt == served for 2,000,789 allocations
+  owned free == successful free for 2,000,789 frees
+  owner creation == 8, one per worker
+  no dispatch wiring or backend behavior repair is required
+  the earlier weak row was a benchmark-shape mismatch
 
-Step 4: measure the next target
-  after F1, evaluate 4097..8192 on unchanged 8KiB geometry
-  use the opt-in H8_MEDIUM_PAGE8K_RANGE4097_L1 lane
-  use diagnostic-only eligible/served attribution
-  the first Windows focused result is correctness GO but speed NO-GO (-12.7%)
-  freeze the range lane as evidence; do not open a geometry/cap ladder
-  reopen promotion only with Windows and native-Ubuntu Pareto evidence
-  do not open another allocator generation
+Step 4: Windows speed gate is complete
+  fixed8K +69.8%
+  balanced -0.35%
+  wide_ws +2.38%
+  larger_sizes -2.08%
+  allocation failure remains zero
+  repeat-3 peak RSS is within +1.00MiB / +0.13% of HZ8 v2
+  keep TargetDispatch as Windows opt-in GO / global default HOLD
 ```
 
 Small-span inventory is handled by default Mag16. SmallAvailableIndex class
@@ -259,24 +265,10 @@ Keep HZ8 v2 / KeepRefill frozen as the public default. HZ8 is the integration
 line; HZ10, HZ11, and HZ12 remain research suppliers rather than allocator
 cores to merge.
 
-`HZ8ReclaimAdapterShadow-L0` is implemented at the existing owner-exit span
-walk. It adds no list scan and no malloc/free hook. Windows evidence found
-80,538 complete spans / 5.278 GiB in generic 16-4096 churn and 26,574 complete
-spans / 1.742 GiB in the remote90 default shape. Live, pending, and state
-blockers were zero for those complete sets.
-
-L0 is ACCEPTED as a retirement upper-bound witness. Live-owner
-`HZ8ReclaimAdapterBehavior-L1` is CLOSED / NO-GO: cursor and head-window
-variants reduced the 5 GiB peak by less than 1% in the repeatable runs while
-regressing throughput by roughly 10-33%. The complete spans become visible too
-late for commit-time bounded scanning. Do not add a free-hot-path candidate
-queue to rescue this track.
-
-`HZ8SpeedAdapterAttribution-L0` is active in a diagnostic-only build. Windows
-small rows show an exact active-miss/span-commit coupling and zero owner-list
-scan steps when pending is empty. In 16-4096 churn: active miss 80,538, slow
-collect 80,538, span commit 80,538, find steps zero. The next narrow box is an
-O(1) owner-local reusable-span hint, not an HZ11 core or transfer-cache import.
+ReclaimAdapter L0 remains an accepted retirement witness; its live-owner
+behavior variants are closed NO-GO. SpeedAdapter attribution led to the Mag16
+owner-local reusable-span inventory. Keep both histories in
+`docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md` rather than this restart file.
 
 `HZ8ReusableSpanMagazine-L1` Mag16 is now part of the HZ8 v2 default. It preserves
 up to 16 displaced owner-local active hints per class and validates each hint
@@ -287,31 +279,14 @@ pass. Status: PROMOTED after Linux and Windows gates.
 Design and task order:
 `docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`.
 
-Linux commit `652fa283` stops active-hint replacement when Mag16 is full.
-Linux focused remote90 is now near-neutral (-1.22%) with equal peak RSS, while
-focused local remains +7.66%. Windows follow-up R5 also remains positive:
-local 16..256 / 16..2048 / 16..4096 improve 2.45x / 1.33x / 2.88x in the
-long-lived A/B, and the fixed MT remote row improves 124.891M to 131.737M while
-median peak RSS falls from 32.20 MiB to 18.71 MiB. Effective remote ratios
-differ, so do not promote a remote-speed claim. Correctness/local candidacy is
-GO on both OSes. A broader Windows R5 gate also remained positive: balanced,
-wide_ws, and larger_sizes improved by 2.84x, 1.68x, and 1.59x respectively.
-Mag16 is now default; `hz8-v2-nomag` is the explicit research control.
+Mag16 correctness and local gates pass on Windows and Linux; remote evidence
+is near-neutral but uses differing effective remote ratios. Mag16 is default,
+and `hz8-v2-nomag` remains the explicit research control. Detailed numbers are
+in `docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`.
 
-Runner policy:
-
-```text
-normal comparison:
-  hz8-v2
-
-research-only (requires -IncludeHz8Research):
-  hz8-v2-nomag
-  hz8-v2-mag32
-  hz8-v2-mediumlocalfast
-  hz8-v3-adaptive-shadow
-  hz8-reclaim-shadow
-  hz8-speed-attribution
-```
+Runner policy: normal comparisons expose `hz8-v2` only. All control,
+diagnostic, Mag32, Page8K, adaptive, and reclaim siblings require
+`-IncludeHz8Research`; the Windows lane map is the status authority.
 
 The prior adaptive-transfer track is closed. Its L0 shadow was valid evidence,
 but L1 was NO-GO because HZ8 already bulk-splices pending bitmap words. Do not

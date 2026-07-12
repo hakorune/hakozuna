@@ -77,6 +77,14 @@ static H8Page8KRemoteOwner* g_orphan_owner;
 static _Atomic uint32_t g_next_owner_token = 1u;
 static _Thread_local H8Page8KRemoteOwner* g_current_owner;
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+static _Atomic uint64_t g_dispatch_alloc_attempt;
+static _Atomic uint64_t g_dispatch_alloc_served;
+static _Atomic uint64_t g_dispatch_free_attempt;
+static _Atomic uint64_t g_dispatch_free_owner_present;
+static _Atomic uint64_t g_dispatch_free_owned;
+static _Atomic uint64_t g_dispatch_free_success;
+static _Atomic uint64_t g_dispatch_free_miss;
+static _Atomic uint64_t g_owner_create;
 static _Atomic uint64_t g_range_eligible_alloc;
 static _Atomic uint64_t g_range_served_alloc;
 static _Atomic uint64_t g_remote_claim_attempt;
@@ -564,6 +572,14 @@ H8Page8KRemoteStats h8_page8k_remote_stats(void) {
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
 #define H8_PAGE8K_LOAD(field) \
   out.field = atomic_load_explicit(&g_##field, memory_order_relaxed)
+  H8_PAGE8K_LOAD(dispatch_alloc_attempt);
+  H8_PAGE8K_LOAD(dispatch_alloc_served);
+  H8_PAGE8K_LOAD(dispatch_free_attempt);
+  H8_PAGE8K_LOAD(dispatch_free_owner_present);
+  H8_PAGE8K_LOAD(dispatch_free_owned);
+  H8_PAGE8K_LOAD(dispatch_free_success);
+  H8_PAGE8K_LOAD(dispatch_free_miss);
+  H8_PAGE8K_LOAD(owner_create);
   H8_PAGE8K_LOAD(range_eligible_alloc);
   H8_PAGE8K_LOAD(range_served_alloc);
   H8_PAGE8K_LOAD(remote_claim_attempt);
@@ -720,6 +736,7 @@ bool h8_page8k_remote_accepts_size(size_t size) {
 
 static H8Page8KRemoteOwner* h8_page8k_current_owner(void) {
   if (!g_current_owner) {
+    H8_PAGE8K_STAT_INC(owner_create);
     uint32_t token =
         atomic_fetch_add_explicit(&g_next_owner_token, 1u, memory_order_relaxed);
     g_current_owner = h8_page8k_remote_owner_create(token);
@@ -729,6 +746,7 @@ static H8Page8KRemoteOwner* h8_page8k_current_owner(void) {
 
 void* h8_page8k_remote_malloc_current(size_t size) {
   if (!h8_page8k_remote_accepts_size(size)) return NULL;
+  H8_PAGE8K_STAT_INC(dispatch_alloc_attempt);
 #if defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
   H8_PAGE8K_STAT_INC(range_eligible_alloc);
 #endif
@@ -737,6 +755,7 @@ void* h8_page8k_remote_malloc_current(size_t size) {
   if (owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
     if (ptr) {
+      H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
@@ -747,6 +766,7 @@ void* h8_page8k_remote_malloc_current(size_t size) {
     owner->active_page = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
     if (ptr) {
+      H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
@@ -756,6 +776,7 @@ void* h8_page8k_remote_malloc_current(size_t size) {
   if (owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
     if (ptr) {
+      H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
@@ -766,6 +787,7 @@ void* h8_page8k_remote_malloc_current(size_t size) {
     owner->active_page = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
     if (ptr) {
+      H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
@@ -774,6 +796,7 @@ void* h8_page8k_remote_malloc_current(size_t size) {
   if (h8_page8k_remote_adopt_one(owner) && owner->active_page) {
     void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
     if (ptr) {
+      H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
@@ -785,13 +808,24 @@ void* h8_page8k_remote_malloc_current(size_t size) {
   H8Page8KRemotePage* page = h8_page8k_remote_page_create(owner);
   if (!page) return NULL;
   void* ptr = h8_page8k_remote_alloc(owner, page);
-  if (ptr) H8_PAGE8K_STAT_INC(range_served_alloc);
+  if (ptr) {
+    H8_PAGE8K_STAT_INC(dispatch_alloc_served);
+    H8_PAGE8K_STAT_INC(range_served_alloc);
+  }
   return ptr;
 }
 
 bool h8_page8k_remote_free_current(void* ptr, bool* owned_out) {
 #if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1)
-  return h8_page8k_remote_free(g_current_owner, ptr, owned_out);
+  H8_PAGE8K_STAT_INC(dispatch_free_attempt);
+  if (g_current_owner) H8_PAGE8K_STAT_INC(dispatch_free_owner_present);
+  bool owned = false;
+  bool freed = h8_page8k_remote_free(g_current_owner, ptr, &owned);
+  if (owned) H8_PAGE8K_STAT_INC(dispatch_free_owned);
+  else H8_PAGE8K_STAT_INC(dispatch_free_miss);
+  if (freed) H8_PAGE8K_STAT_INC(dispatch_free_success);
+  if (owned_out) *owned_out = owned;
+  return freed;
 #else
   H8Page8KRemoteOwner* owner = h8_page8k_current_owner();
   if (!owner) {

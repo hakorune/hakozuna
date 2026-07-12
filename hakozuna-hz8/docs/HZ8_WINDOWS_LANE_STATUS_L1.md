@@ -15,7 +15,7 @@ promotion candidates, diagnostics, and closed experiments.
 |---|---|---|
 | `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
 | `hz8-r3-page8k-integrated` | Windows selected opt-in / global HOLD | Exact-8KiB detached-page substrate; strong Windows local result with neutral application gates |
-| `hz8-r3-page8k-target-dispatch` | Windows validation pending / global HOLD | R3 child lane that avoids non-target alloc dispatch and owner creation on free miss; native Ubuntu fixed8K +31.90% |
+| `hz8-r3-page8k-target-dispatch` | Windows opt-in GO / global HOLD | R3 child lane; Windows fixed8K +69.8% with neutral control rows, native Ubuntu fixed8K +31.90% |
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 
@@ -32,10 +32,12 @@ passes balanced, wide working-set, larger-size, remote-safety, and two
 Redis-like no-regression gates. Linux fixed-8K is neutral (-0.21%), so R3 is a
 Windows selected opt-in rather than a cross-platform default.
 
-The target-dispatch child is not a Windows selection yet. Native Ubuntu R10
-cleared the fixed8K gate (`+31.90%`) and preserved median RSS, but balanced
-(`-3.72%`) and larger_sizes (`-10.71%`) keep the cross-platform gate on HOLD.
-Windows must compare v2, integrated R3, and target dispatch in the same batch.
+The target-dispatch child clears the Windows speed gate: fixed8K `+69.8%`,
+balanced `-0.35%`, wide_ws `+2.38%`, and larger_sizes `-2.08%` versus HZ8 v2
+in alternating AB/BA R10. Repeat-3 peak RSS is effectively neutral; the
+largest increase is `+1.00MiB` (`+0.13%`) on balanced. Native Ubuntu clears
+fixed8K (`+31.90%`) but its balanced and larger_sizes rows still block a
+cross-platform default promotion.
 
 The normal allocator matrix and MT remote runner include only the public HZ8
 row unless research controls are requested explicitly.
@@ -50,6 +52,7 @@ row unless research controls are requested explicitly.
 | `hz8-magazine-tail-shadow` | diagnostic evidence / closed | Source-refill checkpoint upper bound; behavior NO-GO at only 1.0-1.2MiB maximum |
 | `hz8-speed-attribution` | diagnostic-only | Existing hot counter attribution; never a speed result |
 | `hz8-medium-fixed8k-cost-audit` | diagnostic-only | Cross-platform active-block path attribution; no behavior or promotion claim |
+| `hz8-r3-page8k-target-dispatch-diag` | diagnostic-only | Exact dispatch/service, free ownership, classifier miss, and owner-creation attribution |
 | `hz8-small-available2k4k` | Windows evidence / global NO-GO | Large fixed 2K/4K gains, but Windows wide reaches -5% and Linux directional rows regress |
 
 Research rows are excluded from normal runs. Use `-IncludeHz8Research`

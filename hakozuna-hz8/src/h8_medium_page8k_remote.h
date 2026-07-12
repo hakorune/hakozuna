@@ -11,6 +11,14 @@ typedef struct H8Page8KRemoteOwner H8Page8KRemoteOwner;
 typedef struct H8Page8KRemotePage H8Page8KRemotePage;
 
 typedef struct H8Page8KRemoteStats {
+  uint64_t dispatch_alloc_attempt;
+  uint64_t dispatch_alloc_served;
+  uint64_t dispatch_free_attempt;
+  uint64_t dispatch_free_owner_present;
+  uint64_t dispatch_free_owned;
+  uint64_t dispatch_free_success;
+  uint64_t dispatch_free_miss;
+  uint64_t owner_create;
   uint64_t range_eligible_alloc;
   uint64_t range_served_alloc;
   uint64_t remote_claim_attempt;

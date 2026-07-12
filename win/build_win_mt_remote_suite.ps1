@@ -149,6 +149,17 @@ function Invoke-Hz8MtRemoteBuilds {
             )
         },
         @{
+            Name = "hz8-r3-page8k-target-dispatch-diag"
+            Output = "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch_diag.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+                "/DHZ_BENCH_DISABLE_REALLOC=1"
+            )
+        },
+        @{
             Name = "hz8-r3-page8k-integrated-diag"
             Output = "bench_random_mixed_mt_remote_hz8_medium_page8k_remote_diag.exe"
             ExtraFlags = @(

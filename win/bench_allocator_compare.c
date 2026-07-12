@@ -18,6 +18,9 @@
 #include "hz5_policy.h"
 #elif defined(HZ_BENCH_USE_HZ8)
 #include "h8.h"
+#if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+#include "h8_medium_page8k_remote.h"
+#endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
 #include "h8_medium_page_shadow.h"
 #endif
@@ -773,6 +776,22 @@ int main(int argc, char** argv) {
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
     h8_small_available_index_dump();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
+    {
+        H8Page8KRemoteStats s = h8_page8k_remote_stats();
+        printf("[H8_PAGE8K_DISPATCH] alloc_attempt=%llu alloc_served=%llu "
+               "free_attempt=%llu free_owner_present=%llu free_owned=%llu "
+               "free_success=%llu free_miss=%llu owner_create=%llu\n",
+               (unsigned long long)s.dispatch_alloc_attempt,
+               (unsigned long long)s.dispatch_alloc_served,
+               (unsigned long long)s.dispatch_free_attempt,
+               (unsigned long long)s.dispatch_free_owner_present,
+               (unsigned long long)s.dispatch_free_owned,
+               (unsigned long long)s.dispatch_free_success,
+               (unsigned long long)s.dispatch_free_miss,
+               (unsigned long long)s.owner_create);
+    }
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
     {

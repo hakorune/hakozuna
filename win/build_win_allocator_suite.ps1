@@ -97,6 +97,16 @@ function Invoke-Hz8AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz8-r3-page8k-target-dispatch-diag"
+            Output = "bench_mixed_ws_hz8_medium_page8k_target_dispatch_diag.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1"
+            )
+        },
+        @{
             Name = "hz8-r3-page8k-range4097"
             Output = "bench_mixed_ws_hz8_medium_page8k_range4097.exe"
             ExtraFlags = @(
@@ -379,6 +389,25 @@ function Invoke-Hz8AllocatorMatrixBuild {
     & $Compiler.Source @pageApiSmokeArgs
     if ($LASTEXITCODE -ne 0) {
         throw "HZ8 page8k API smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageApiTargetSmokeOut = Join-Path $OutDir "h8_page8k_api_target_dispatch_smoke.exe"
+    $pageApiTargetSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+        "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1"
+    )
+    $pageApiTargetSmokeArgs += $Hz8CommonFlags
+    $pageApiTargetSmokeArgs += $Hz8Sources
+    $pageApiTargetSmokeArgs += $pageApiSmoke
+    $pageApiTargetSmokeArgs += "/Fe:$pageApiTargetSmokeOut"
+    Write-Host "[hz8-win] building h8_page8k_api_target_dispatch_smoke.exe"
+    & $Compiler.Source @pageApiTargetSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 page8k TargetDispatch API smoke build failed with exit code $LASTEXITCODE"
     }
 
     $pageApiRangeSmokeOut = Join-Path $OutDir "h8_page8k_api_range_smoke.exe"
