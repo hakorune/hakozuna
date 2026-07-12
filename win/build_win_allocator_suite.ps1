@@ -134,6 +134,25 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_SPEED_ATTRIBUTION_L0=1",
                 "/DH8_ENABLE_DEBUG_STATS=1"
             )
+        },
+        @{
+            Name = "hz8-small-available2k4k"
+            Output = "bench_mixed_ws_hz8_small_available2k4k.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_AVAILABLE_INDEX_L1=1",
+                "/DH8_SMALL_AVAILABLE_CLASS_MASK=0x180u"
+            )
+        },
+        @{
+            Name = "hz8-small-available2k4k-diag"
+            Output = "bench_mixed_ws_hz8_small_available2k4k_diag.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_AVAILABLE_INDEX_L1=1",
+                "/DH8_SMALL_AVAILABLE_CLASS_MASK=0x180u",
+                "/DH8_SMALL_AVAILABLE_INDEX_DIAG=1",
+                "/DH8_SPEED_ATTRIBUTION_L0=1",
+                "/DH8_ENABLE_DEBUG_STATS=1"
+            )
         }
     )) {
         $output = Join-Path $OutDir $variant.Output
@@ -158,20 +177,29 @@ function Invoke-Hz8AllocatorMatrixBuild {
     }
 
     $smallAvailableSmoke = Join-Path $Hz8Root "tests\h8_smoke.c"
-    $smallAvailableSmokeOut = Join-Path $OutDir "h8_smoke_small_available4k.exe"
-    $smallAvailableSmokeArgs = @(
-        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
-        "/I$Hz8Root\include", "/I$Hz8Root\src",
-        "/DH8_SMALL_AVAILABLE_INDEX_L1=1"
-    )
-    $smallAvailableSmokeArgs += $Hz8CommonFlags
-    $smallAvailableSmokeArgs += $Hz8Sources
-    $smallAvailableSmokeArgs += $smallAvailableSmoke
-    $smallAvailableSmokeArgs += "/Fe:$smallAvailableSmokeOut"
-    Write-Host "[hz8-win] building h8_smoke_small_available4k.exe"
-    & $Compiler.Source @smallAvailableSmokeArgs
-    if ($LASTEXITCODE -ne 0) {
-        throw "HZ8 small available index safety build failed with exit code $LASTEXITCODE"
+    foreach ($smokeVariant in @(
+        @{ Output = "h8_smoke_small_available4k.exe"; ExtraFlags = @() },
+        @{
+            Output = "h8_smoke_small_available2k4k.exe"
+            ExtraFlags = @("/DH8_SMALL_AVAILABLE_CLASS_MASK=0x180u")
+        }
+    )) {
+        $smallAvailableSmokeOut = Join-Path $OutDir $smokeVariant.Output
+        $smallAvailableSmokeArgs = @(
+            "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+            "/I$Hz8Root\include", "/I$Hz8Root\src",
+            "/DH8_SMALL_AVAILABLE_INDEX_L1=1"
+        )
+        $smallAvailableSmokeArgs += $Hz8CommonFlags
+        $smallAvailableSmokeArgs += $smokeVariant.ExtraFlags
+        $smallAvailableSmokeArgs += $Hz8Sources
+        $smallAvailableSmokeArgs += $smallAvailableSmoke
+        $smallAvailableSmokeArgs += "/Fe:$smallAvailableSmokeOut"
+        Write-Host "[hz8-win] building $($smokeVariant.Output)"
+        & $Compiler.Source @smallAvailableSmokeArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "HZ8 small available index smoke build failed with exit code $LASTEXITCODE"
+        }
     }
 
     $shadowSmoke = Join-Path $Hz8Root "tests\h8_medium_page_shadow_smoke.c"

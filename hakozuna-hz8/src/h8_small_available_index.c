@@ -4,7 +4,14 @@
 
 #include <stdio.h>
 
-#define H8_SMALL_AVAILABLE_CLASS 8u
+#ifndef H8_SMALL_AVAILABLE_CLASS_MASK
+#define H8_SMALL_AVAILABLE_CLASS_MASK (1u << 8u)
+#endif
+
+static bool h8_small_available_class_enabled(uint32_t class_id) {
+  return class_id < H8_CLASS_COUNT &&
+         (H8_SMALL_AVAILABLE_CLASS_MASK & (1u << class_id)) != 0u;
+}
 
 #if defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
 static _Atomic uint64_t g_push;
@@ -35,7 +42,8 @@ static bool h8_small_available_valid(H8Span* span, H8OwnerRecord* owner,
 }
 
 void h8_small_available_index_push(H8ThreadCtx* ctx, H8Span* span) {
-  if (!ctx || !span || span->class_id != H8_SMALL_AVAILABLE_CLASS) return;
+  if (!ctx || !span ||
+      !h8_small_available_class_enabled(span->class_id)) return;
   if (span->small_available_indexed) {
     H8_AVAILABLE_INC(g_duplicate);
     return;
@@ -49,7 +57,7 @@ void h8_small_available_index_push(H8ThreadCtx* ctx, H8Span* span) {
 H8Span* h8_small_available_index_pop(H8ThreadCtx* ctx,
                                      H8OwnerRecord* owner,
                                      uint32_t class_id) {
-  if (!ctx || class_id != H8_SMALL_AVAILABLE_CLASS) return NULL;
+  if (!ctx || !h8_small_available_class_enabled(class_id)) return NULL;
   H8_AVAILABLE_INC(g_pop_attempt);
   while (ctx->small_available_head[class_id]) {
     H8Span* span = ctx->small_available_head[class_id];

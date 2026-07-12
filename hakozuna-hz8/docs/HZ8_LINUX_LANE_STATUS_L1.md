@@ -32,6 +32,7 @@ an explicit compile-time/output lane; do not switch it at runtime.
 | class-7 detached TLS sidecar | NO-GO | Preserved 16..2048 benefit but not 16..4096; remote R20 regressed |
 | Mag64 | CLOSED / untested | Capacity tuning stops after the detached-sidecar gate |
 | `hz8-small-available4k` | WSL NO-GO | Windows O(1) visibility win does not transfer; fixed4K, balanced, and larger_sizes regress |
+| `hz8-small-available2k4k` | WSL NO-GO | Fixed4K improves, but fixed2K, wide_ws, and larger_sizes regress; class expansion closed |
 
 ## Commands
 
@@ -43,6 +44,7 @@ make -C hakozuna-hz8 safety-stress-reusable-span-mag32
 
 # Reproducibility-only Windows-transfer control; not a Linux candidate.
 make -C hakozuna-hz8 bench-release-small-available4k
+make -C hakozuna-hz8 bench-release-small-available2k4k
 ```
 
 ## Promotion Rule

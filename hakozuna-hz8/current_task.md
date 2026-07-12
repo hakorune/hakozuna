@@ -7,28 +7,28 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 Reclaim Integration
+## Restart Surface: HZ8 SmallAvailableIndex Closed
 
 ## Next Development Order
 
-HZ8 is the active public integration line. Keep HZ10-HZ12 frozen as research
-suppliers unless a new measured HZ8 weakness requires reopening one contract.
+HZ8 is the active public integration line. Public default remains unchanged.
+SmallAvailableIndex class expansion is closed: Windows wins do not transfer
+cleanly to Linux, and the narrowed candidate regresses wide workloads.
 
 ```text
-Step 1: MediumLocalFastTier current-default recheck
-  reuse the existing opt-in implementation and attribution
-  compare hz8-v2 with hz8-v2-mediumlocalfast on Windows
-  keep the candidate research-only and production counters off
+Step 1: freeze SmallAvailableIndex evidence
+  class8-only remains a Windows OS-specific control
+  2K+4K mask remains research-only
+  production counters and public default remain unchanged
 
-Step 2: decide the medium/local box
-  close again if local gain is absent or remote/small regresses over 5%
-  retain as an opt-in only if the gain is profile-scoped
-  promote only after repeatable Windows and Linux Pareto improvement
+Step 2: choose a different measured weakness
+  do not reopen class masks, replacement policy, or capacity ladders
+  prefer application-like evidence over another fixed-size micro knob
 
-Step 3: HZ8-native reclaim shadow
-  import only the HZ12 bounded reclaim contract
-  do not merge the HZ12 allocator core or ownership hot path
-  behavior work requires a measurable reclaimable-byte target first
+Step 3: retain the HZ8 public contract
+  Mag16 stays the balanced cross-platform default
+  OS-specific backends may remain opt-in when semantics stay shared
+  reopen promotion only with Windows and native-Ubuntu Pareto evidence
 ```
 
 Do not open another allocator generation for these steps. Small-span inventory
@@ -191,7 +191,7 @@ GO; public default unchanged. Windows Redis-like gates are -0.04% (small) and
 correctness evidence. The Windows speed gain is platform-specific.
 
 MagazineTailReclaim is CLOSED at 1.0-1.2MiB maximum hypothetical tail bytes.
-SmallAvailableIndex is Windows GO (~9.7x), WSL Linux NO-GO, default HOLD.
+Active L0 sweeps hidden reuse at Windows fixed 1KiB/2KiB; 4KiB stays opt-in.
 has zero failure and 473 real publish retries; Linux strict C11 build passes.
 R2 is closed as correctness evidence. Default/performance promotion remains
 HOLD; only an R3 integrated medium-entry shadow may reopen the track.

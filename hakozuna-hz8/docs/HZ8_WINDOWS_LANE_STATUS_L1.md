@@ -38,6 +38,7 @@ row unless research controls are requested explicitly.
 | `hz8-reclaim-shadow` | diagnostic evidence | Owner-retirement reclaimable upper bound |
 | `hz8-magazine-tail-shadow` | diagnostic evidence / closed | Source-refill checkpoint upper bound; behavior NO-GO at only 1.0-1.2MiB maximum |
 | `hz8-speed-attribution` | diagnostic-only | Existing hot counter attribution; never a speed result |
+| `hz8-small-available2k4k` | Windows evidence / global NO-GO | Large fixed 2K/4K gains, but Windows wide reaches -5% and Linux directional rows regress |
 
 Research rows are excluded from normal runs. Use `-IncludeHz8Research`
 explicitly when they are needed.
