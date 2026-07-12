@@ -75,6 +75,8 @@ Linux lane registry:
   larger/local opt-in: hz8-v2-mag32
   Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated
   docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md
+  Windows exact-4KiB selected opt-in: hz8-small-available4k
+  docs/HZ8_SMALL_AVAILABLE_INDEX_L1.md
 ```
 
 HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy

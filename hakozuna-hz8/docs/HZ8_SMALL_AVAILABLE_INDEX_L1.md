@@ -84,3 +84,27 @@ The first candidate added another pointer to every `H8Span` and produced a
 noisy wide_ws regression. Reusing `next_orphan_class` while the span is
 `OWNED_ACTIVE` removed that metadata expansion. Membership is cleared before
 owner exit, before the link regains its orphan-list meaning.
+
+## WSL Linux Gate
+
+WSL Ubuntu on the same checkout passed GCC `-Werror`, preload, smoke, and
+safety stress. Alternating repeat-5 medians were:
+
+| Row | HZ8 v2 | Candidate | Delta |
+|---|---:|---:|---:|
+| fixed 4KiB | 555.11M | 512.61M | -7.7% |
+| balanced | 535.00M | 498.96M | -6.7% |
+| wide_ws | 470.98M | 495.93M | +5.3% |
+| larger_sizes | 213.80M | 191.72M | -10.3% |
+| fixed 4KiB remote90 | 35.74M | 38.81M | +8.6% |
+
+The Linux baseline already finds/reuses 4KiB spans efficiently enough that the
+Windows index does not pay for itself. WSL is sufficient to block a shared
+default promotion; native Ubuntu is required only if Linux promotion is ever
+reopened.
+
+```text
+Windows: candidate GO
+Linux/WSL: NO-GO
+cross-platform default: HOLD
+```

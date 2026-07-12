@@ -2,6 +2,7 @@
 .PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache preload-largedirectshardedhotshadow preload-largedirectshardedhotcache preload-remotespanlease bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache bench-release-largedirectshardedhotshadow bench-release-largedirectshardedhot128_32 bench-release-largedirectshardedhot128_64 bench-release-largedirectshardedhot192_32 bench-release-largedirectshardedhotcache
 .PHONY: preload-reusable-span-mag32 smoke-reusable-span-mag32 safety-stress-reusable-span-mag32 bench-release-reusable-span-mag32
 .PHONY: preload-page8k-r3 smoke-page8k-r3 safety-stress-page8k-r3 bench-release-page8k-r3
+.PHONY: preload-small-available4k smoke-small-available4k safety-stress-small-available4k bench-release-small-available4k
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -16,6 +17,7 @@ MEDIUM_BUDGET_CFLAGS ?= -DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE
 MEDIUM_COLLECT_CFLAGS ?=
 HZ8_DEFAULT_CFLAGS := $(MEDIUM_BUDGET_CFLAGS) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_MEDIUM_KEEP_REFILL_EMPTY_L1 -DH8_REMOTE_SPAN_LEASE_PUBLISH_L1 -DH8_REMOTE_TRANSITION_BACKOFF_L1 -DH8_REUSABLE_SPAN_MAGAZINE_L1=1
 HZ8_PAGE8K_R3_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_MEDIUM_PAGE8K_REMOTE_L1=1 -DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1
+HZ8_SMALL_AVAILABLE4K_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_SMALL_AVAILABLE_INDEX_L1=1
 HZ8_LARGE_DIRECT_DEFAULT_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_OWNED_L1
 HZ8_LARGE_DIRECT_MMAP_CFLAGS := $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_MMAP_PAYLOAD_L1
 HZ8_LARGE_DIRECT_PURGE_CACHE_CFLAGS := $(HZ8_LARGE_DIRECT_MMAP_CFLAGS) -DH8_LARGE_DIRECT_PURGE_CACHE_L1
@@ -49,6 +51,8 @@ preload-reusable-span-mag32: $(ROOT)/libhakozuna_hz8_preload_reusable_span_mag32
 
 preload-page8k-r3: $(ROOT)/libhakozuna_hz8_preload_page8k_r3.so
 
+preload-small-available4k: $(ROOT)/libhakozuna_hz8_preload_small_available4k.so
+
 preload-remotespanlease: $(ROOT)/libhakozuna_hz8_preload_remotespanlease.so
 
 preload-smoke: $(ROOT)/h8_preload_smoke $(ROOT)/libhakozuna_hz8_preload.so
@@ -62,6 +66,8 @@ smoke-reusable-span-mag32: $(ROOT)/h8_smoke_reusable_span_mag32
 
 smoke-page8k-r3: $(ROOT)/h8_smoke_page8k_r3
 
+smoke-small-available4k: $(ROOT)/h8_smoke_small_available4k
+
 smoke-largedirect: $(ROOT)/h8_smoke_largedirect
 
 smoke-mediumupper48: $(ROOT)/h8_smoke_mediumupper48
@@ -73,6 +79,8 @@ safety-stress-reusable-span-mag16: $(ROOT)/h8_safety_stress_reusable_span_mag16
 safety-stress-reusable-span-mag32: $(ROOT)/h8_safety_stress_reusable_span_mag32
 
 safety-stress-page8k-r3: $(ROOT)/h8_safety_stress_page8k_r3
+
+safety-stress-small-available4k: $(ROOT)/h8_safety_stress_small_available4k
 
 medium-lazy-saturation: $(ROOT)/h8_medium_lazy_saturation
 	$(ROOT)/h8_medium_lazy_saturation
@@ -126,6 +134,8 @@ bench-release-reusable-span-mag16: $(ROOT)/h8_bench_release_reusable_span_mag16
 bench-release-reusable-span-mag32: $(ROOT)/h8_bench_release_reusable_span_mag32
 
 bench-release-page8k-r3: $(ROOT)/h8_bench_release_page8k_r3
+
+bench-release-small-available4k: $(ROOT)/h8_bench_release_small_available4k
 
 bench-release-audit: $(ROOT)/h8_bench_release_audit
 
@@ -269,6 +279,9 @@ $(ROOT)/libhakozuna_hz8_preload_reusable_span_mag32.so: $(SRC) $(HEADERS)
 $(ROOT)/libhakozuna_hz8_preload_page8k_r3.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_PAGE8K_R3_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/libhakozuna_hz8_preload_small_available4k.so: $(SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_SMALL_AVAILABLE4K_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/libhakozuna_hz8_preload_remotespanlease.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -326,6 +339,9 @@ $(ROOT)/h8_smoke_reusable_span_mag32: $(SMOKE_SRC) $(HEADERS)
 $(ROOT)/h8_smoke_page8k_r3: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_R3_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_smoke_small_available4k: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_SMALL_AVAILABLE4K_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_smoke_largedirect: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(MEDIUM_BUDGET_CFLAGS) $(INC) -DH8_LARGE_DIRECT_OWNED_L1 -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -343,6 +359,9 @@ $(ROOT)/h8_safety_stress_reusable_span_mag32: $(SAFETY_STRESS_SRC) $(HEADERS)
 
 $(ROOT)/h8_safety_stress_page8k_r3: $(SAFETY_STRESS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_R3_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_safety_stress_small_available4k: $(SAFETY_STRESS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_SMALL_AVAILABLE4K_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_medium_lazy_saturation: $(MEDIUM_LAZY_SATURATION_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(INC) -DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE -o $@ $(MEDIUM_LAZY_SATURATION_SRC) $(LDFLAGS) $(LDLIBS)
@@ -424,6 +443,9 @@ $(ROOT)/h8_bench_release_reusable_span_mag32: $(SRC) $(ROOT)/bench/h8_bench.c $(
 
 $(ROOT)/h8_bench_release_page8k_r3: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_PAGE8K_R3_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_release_small_available4k: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_SMALL_AVAILABLE4K_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_largedirectdefault: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -537,6 +559,7 @@ clean:
 	rm -f $(ROOT)/libhakozuna_hz8_preload_reusable_span_mag16.so $(ROOT)/h8_smoke_reusable_span_mag16 $(ROOT)/h8_safety_stress_reusable_span_mag16 $(ROOT)/h8_bench_release_reusable_span_mag16
 	rm -f $(ROOT)/libhakozuna_hz8_preload_reusable_span_mag32.so $(ROOT)/h8_smoke_reusable_span_mag32 $(ROOT)/h8_safety_stress_reusable_span_mag32 $(ROOT)/h8_bench_release_reusable_span_mag32
 	rm -f $(ROOT)/libhakozuna_hz8_preload_page8k_r3.so $(ROOT)/h8_smoke_page8k_r3 $(ROOT)/h8_safety_stress_page8k_r3 $(ROOT)/h8_bench_release_page8k_r3
+	rm -f $(ROOT)/libhakozuna_hz8_preload_small_available4k.so $(ROOT)/h8_smoke_small_available4k $(ROOT)/h8_safety_stress_small_available4k $(ROOT)/h8_bench_release_small_available4k
 	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/libhakozuna_hz8_preload_mediumnolazy.so $(ROOT)/libhakozuna_hz8_preload_medium64k2.so $(ROOT)/libhakozuna_hz8_preload_mediumchunk.so $(ROOT)/libhakozuna_hz8_preload_mediummadvfree.so $(ROOT)/libhakozuna_hz8_preload_mediumlazy.so $(ROOT)/libhakozuna_hz8_preload_keeprefill.so $(ROOT)/h8_smoke $(ROOT)/h8_smoke_mediumupper48 $(ROOT)/h8_safety_stress $(ROOT)/h8_medium_lazy_saturation $(ROOT)/h8_preload_smoke $(ROOT)/h8_bench $(ROOT)/h8_bench_medium64k2 $(ROOT)/h8_bench_mediumchunk $(ROOT)/h8_bench_mediumshardchunk $(ROOT)/h8_bench_mediumupper48 $(ROOT)/h8_bench_mediumv12_48k2 $(ROOT)/h8_bench_mediumfreecache $(ROOT)/h8_bench_mediumrefillhint $(ROOT)/h8_bench_mediumrefillcandidate $(ROOT)/h8_bench_mediumavailable $(ROOT)/h8_bench_mediumdemand64 $(ROOT)/h8_bench_mediumlocalfasttier $(ROOT)/h8_bench_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_audit $(ROOT)/h8_bench_release_upper1p5 $(ROOT)/h8_bench_release_upper3072 $(ROOT)/h8_bench_release_mediumnolazy $(ROOT)/h8_bench_release_mediumfreecache $(ROOT)/h8_bench_release_mediumrefillhint $(ROOT)/h8_bench_release_mediumrefillcandidate $(ROOT)/h8_bench_release_mediumavailable $(ROOT)/h8_bench_release_mediumavailableinline $(ROOT)/h8_bench_release_mediumdemand64 $(ROOT)/h8_bench_release_mediumlocalfasttier $(ROOT)/h8_bench_release_mediumkeeprefillempty $(ROOT)/h8_bench_release_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release_mediumceiling_noslotstate $(ROOT)/h8_bench_release_mediumceiling_freepending $(ROOT)/h8_bench_release_mediumceiling_combined $(ROOT)/h8_bench_release_mediummadvfree $(ROOT)/h8_bench_release_mediumlazy $(ROOT)/h8_bench_release_medium64k2 $(ROOT)/h8_bench_release_mediumchunk $(ROOT)/h8_bench_release_mediumshardchunk $(ROOT)/h8_bench_release_mediumupper48 $(ROOT)/h8_bench_release_mediumv12_48k2 $(ROOT)/h8_remote_micro $(ROOT)/h8_remote_micro_release
 	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirectdefault.so $(ROOT)/h8_bench_release_largedirectdefault
 	rm -f $(ROOT)/libhakozuna_hz8_preload_largedirectmmap.so $(ROOT)/h8_bench_release_largedirectmmap
