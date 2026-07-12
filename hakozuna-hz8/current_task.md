@@ -7,50 +7,46 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 SmallAvailableIndex Closed
+## Restart Surface: HZ8 Medium Page8K R3 Complete
 
 ## Next Development Order
 
-HZ8 is the active public integration line. Public default remains unchanged.
-SmallAvailableIndex class expansion is closed: Windows wins do not transfer
-cleanly to Linux, and the narrowed candidate regresses wide workloads.
+HZ8 is the active public integration line. The HZ10-informed page8K substrate
+has completed P0 classification, P1 state shadow, R1/R2 lifecycle, residency,
+and R3 real-entry integration. Public default remains unchanged.
 
 ```text
-Step 1: freeze SmallAvailableIndex evidence
-  class8-only remains a Windows OS-specific control
-  2K+4K mask remains research-only
+Step 1: freeze R3 as an opt-in profile
+  hz8-r3-page8k-integrated is Windows selected opt-in
+  Linux correctness-neutral opt-in; remote is correctness evidence
   production counters and public default remain unchanged
 
-Step 2: choose a different measured weakness
-  do not reopen class masks, replacement policy, or capacity ladders
-  prefer application-like evidence over another fixed-size micro knob
+Step 2: keep the ownership boundary
+  do not merge the HZ10 public entry or remote lifecycle wholesale
+  do not reopen page-cap, queue, or available-index tuning
+  keep owned-looking INVALID fail-closed and RSS bounded
 
-Step 3: retain the HZ8 public contract
-  Mag16 stays the balanced cross-platform default
-  OS-specific backends may remain opt-in when semantics stay shared
+Step 3: next work requires a new measured target
+  prefer application-like paired evidence over fixed-size micro knobs
   reopen promotion only with Windows and native-Ubuntu Pareto evidence
+  do not open another allocator generation
 ```
 
-Do not open another allocator generation for these steps. Small-span inventory
-is now handled by default Mag16; the next candidate must address a different,
-measured retention boundary.
+Small-span inventory is handled by default Mag16. SmallAvailableIndex class
+expansion is closed because the Windows gain did not transfer cleanly to Linux.
+The page8K substrate is a separate Windows-focused speed/control lane, not a
+replacement for the public HZ8 balanced contract.
 
-The current public matrix fixes the next measured speed gap. HZ8 reaches about
-24-26% of tcmalloc on main/medium local rows while retaining much lower post
-RSS. Existing attribution already excludes first-touch, remote protocol, and
-64K geometry as the primary medium-local limiter. An older active-run local
-fast tier reached near-perfect reuse but was HOLD because it enlarged the hot
-path and regressed the then-current broad gate. Re-run that exact behavior on
-the current Mag16 default before designing another medium cache.
+The current public matrix fixes the remaining measured speed gap. HZ8 reaches
+about 24-26% of tcmalloc on main/medium local rows while retaining much lower
+post RSS. The fixed-8K audit showed the page substrate is the high-ROI speed
+direction; its R3 behavior is now complete and must be judged as an opt-in
+profile, not silently folded into the default.
 
-The Windows recheck is complete and remains NO-GO. A long AB repeat-5 median
-with production counters disabled measured candidate/baseline ratios of 0.976
-on balanced, 0.971 on larger_sizes, 0.970 on fixed 8K, and 0.986 on fixed 16K.
-The short matrix signal that initially looked positive did not survive the
-longer run. Keep `hz8-v2-mediumlocalfast` as reproducibility evidence only and
-do not add another active-run branch, mask, or per-run fast state. The next
-medium/local investigation must reduce common-entry fixed cost or change the
-substrate outside the HZ8 medium hot path.
+The earlier `hz8-v2-mediumlocalfast` recheck remains NO-GO. Keep it as
+reproducibility evidence only and do not add another active-run branch, mask,
+or per-run fast state. The page8K substrate is the approved substrate change;
+any broader medium expansion needs a new application-like gate.
 
 Active next box: `HZ8MediumFixed8KCostAudit-L0`. Audit the release-equivalent
 fixed 8K alloc/free path before another behavior change. Separate removable
@@ -80,21 +76,20 @@ HZ10 public entry wholesale or expose the shadow in the normal matrix.
 
 The contract delta is now fixed in
 `docs/HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`. Active implementation
-order is P0 classification shadow, then P1 detached page-state shadow, then an
-opt-in fixed-8K behavior sibling. P2 is not authorized until P0/P1 report zero
-route/generation/state disagreements.
+order is complete through the opt-in fixed-8K behavior sibling. P0/P1/R1/R2
+and R3 results are recorded in the linked contract and adapter documents.
 
-P0 classification shadow is implemented and passes the Windows fixed 8K/16K
-valid rows with 203,840/203,840 hits, zero miss, zero run mismatch, and zero
-exact-invalid. The interior/duplicate smoke records two exact addresses and
-one interior invalid while keeping run mismatch zero. Default builds preprocess
-all hooks away. P0 is GO; implement P1 detached live/free state comparison next.
+Historical P0 classification shadow passed the Windows fixed 8K/16K valid rows
+with 203,840/203,840 hits, zero miss, zero run mismatch, and zero exact-invalid.
+The interior/duplicate smoke recorded two exact addresses and one interior
+invalid while keeping run mismatch zero. Default builds preprocess all hooks
+away. P0 is closed as GO evidence.
 
-P1 detached state shadow is now GO. Fixed 8K local reports 203,840 state
+P1 detached state shadow is GO. Fixed 8K local reports 203,840 state
 matches and zero mismatch. The interior/duplicate smoke reports two state
 matches, one exact-invalid interior pointer, and zero mismatch. Fixed 8K MT
 remote90 at T=8 reports 800,800 state matches, zero state/run mismatch,
-effective remote 90.01%, and zero fallback/failure. P2 may now begin only as an
+effective remote 90.01%, and zero fallback/failure. This authorized the
 opt-in fixed-8K behavior sibling; default HZ8 remains unchanged.
 
 P2 local evidence reaches 147.94M fixed-8K ops/s versus HZ8 66.66M and

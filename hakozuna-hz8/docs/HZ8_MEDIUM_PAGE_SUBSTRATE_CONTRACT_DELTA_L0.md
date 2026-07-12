@@ -239,3 +239,26 @@ The retained row is named `hz8-medium-page8k-local`, requires
 general allocator claims. The next behavior work must replace the direct HZ10
 remote lifecycle with an HZ8-owned bounded remote adapter; increasing remote
 capacity or hiding the crash is not acceptable.
+
+## Current Closeout
+
+The historical P2 section above records the pre-adapter state. The required
+HZ8-owned adapter, R2 lifecycle, bounded orphan residency, and R3 real-entry
+integration were subsequently implemented in
+`HZ8_MEDIUM_PAGE8K_REMOTE_ADAPTER_L1.md` and
+`HZ8_PAGE8K_R3_INTEGRATED_GATE.md`.
+
+Current decision:
+
+```text
+P0 classification: GO
+P1 page-state shadow: GO
+R1/R2 remote and lifecycle safety: GO as research evidence
+R3 Windows integrated opt-in: GO
+R3 Linux correctness-neutral opt-in: GO
+public HZ8 default: unchanged
+remote throughput claim: HOLD
+```
+
+Do not restart the old direct-HZ10 remote path. Any future promotion must use
+the integrated R3 lane and paired application-like plus native-platform gates.
