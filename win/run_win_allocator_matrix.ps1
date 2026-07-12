@@ -41,6 +41,7 @@ $Executables = @(
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-magazine-tail-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_magazine_tail_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-reuse-visibility"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_reuse_visibility.exe"); Hz8Research = $true },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
     @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },

@@ -49,6 +49,7 @@
 #include "h8_runtime_types.h"
 #include "h8_reclaim_shadow.h"
 #include "h8_magazine_tail_shadow.h"
+#include "h8_small_reuse_visibility_shadow.h"
 
 #if defined(__linux__) && defined(__ELF__) && defined(__x86_64__)
 #define H8_TLS_FAST __attribute__((tls_model("initial-exec"), visibility("hidden")))

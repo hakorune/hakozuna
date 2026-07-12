@@ -110,6 +110,15 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_SPEED_ATTRIBUTION_L0=1",
                 "/DH8_ENABLE_DEBUG_STATS=1"
             )
+        },
+        @{
+            Name = "hz8-small-reuse-visibility"
+            Output = "bench_mixed_ws_hz8_small_reuse_visibility.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_REUSE_VISIBILITY_SHADOW_L0=1",
+                "/DH8_SPEED_ATTRIBUTION_L0=1",
+                "/DH8_ENABLE_DEBUG_STATS=1"
+            )
         }
     )) {
         $output = Join-Path $OutDir $variant.Output
