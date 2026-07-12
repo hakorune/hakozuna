@@ -24,6 +24,9 @@
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
 #include "h8_medium_page_shadow.h"
 #endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#include "h8_medium_domain_shadow.h"
+#endif
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
 #include "h8_adaptive_shadow.h"
 #endif
@@ -805,6 +808,26 @@ int main(int argc, char** argv) {
                (unsigned long long)s.exact_invalid,
                (unsigned long long)s.state_match,
                (unsigned long long)s.state_mismatch);
+    }
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+    {
+        H8MediumDomainShadowStats s = h8_medium_domain_shadow_stats();
+        printf("[H8_MEDIUM_DOMAIN] lookup=%llu medium_hit=%llu "
+               "page8k_hit=%llu miss=%llu kind_match=%llu "
+               "kind_mismatch=%llu register_conflict=%llu "
+               "medium_register=%llu medium_unregister=%llu "
+               "page8k_register=%llu\n",
+               (unsigned long long)s.lookup,
+               (unsigned long long)s.medium_hit,
+               (unsigned long long)s.page8k_hit,
+               (unsigned long long)s.miss,
+               (unsigned long long)s.kind_match,
+               (unsigned long long)s.kind_mismatch,
+               (unsigned long long)s.register_conflict,
+               (unsigned long long)s.medium_register,
+               (unsigned long long)s.medium_unregister,
+               (unsigned long long)s.page8k_register);
     }
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_SPEED_ATTRIBUTION_L0)

@@ -3,6 +3,9 @@
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
 #include "../src/h8_medium_page8k_remote.h"
 #endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#include "../src/h8_medium_domain_shadow.h"
+#endif
 #include "h8_bench_support.h"
 
 #include <pthread.h>
@@ -407,6 +410,23 @@ int main(int argc, char** argv) {
          (unsigned long long)page8k.dispatch_free_success,
          (unsigned long long)page8k.dispatch_free_miss,
          (unsigned long long)page8k.owner_create);
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+  H8MediumDomainShadowStats domain = h8_medium_domain_shadow_stats();
+  printf("medium_domain lookup=%llu medium_hit=%llu page8k_hit=%llu "
+         "miss=%llu kind_match=%llu kind_mismatch=%llu "
+         "register_conflict=%llu medium_register=%llu "
+         "medium_unregister=%llu page8k_register=%llu\n",
+         (unsigned long long)domain.lookup,
+         (unsigned long long)domain.medium_hit,
+         (unsigned long long)domain.page8k_hit,
+         (unsigned long long)domain.miss,
+         (unsigned long long)domain.kind_match,
+         (unsigned long long)domain.kind_mismatch,
+         (unsigned long long)domain.register_conflict,
+         (unsigned long long)domain.medium_register,
+         (unsigned long long)domain.medium_unregister,
+         (unsigned long long)domain.page8k_register);
 #endif
 
   free(throughput);

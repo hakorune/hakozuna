@@ -1,7 +1,7 @@
 .PHONY: all clean smoke smoke-reusable-span-mag16 smoke-mediumupper48 safety-stress safety-stress-reusable-span-mag16 medium-lazy-saturation preload preload-reusable-span-mag16 preload-smoke bench bench-activefulldefer8 bench-defer4mediumcapacity bench-defer8mediumcapacity bench-remoteactivefullbudget bench-mediumcapacitybudget bench-medium64k2 bench-mediumchunk bench-mediumshardchunk bench-mediumupper48 bench-mediumv12_48k2 bench-mediumfreecache bench-mediumrefillhint bench-mediumrefillcandidate bench-mediumavailable bench-mediumdemand64 bench-mediumlocalfasttier bench-hz9mediumlocalmagshadow bench-release bench-release-reusable-span-mag16 bench-release-audit bench-release-upper1p5 bench-release-upper3072 bench-release-mediumnolazy bench-release-mediumfreecache bench-release-mediumrefillhint bench-release-mediumrefillcandidate bench-release-mediumavailable bench-release-mediumavailableinline bench-release-mediumdemand64 bench-release-mediumlocalfasttier bench-release-hz9mediumlocalmagshadow bench-release-mediumceiling-noslotstate bench-release-mediumceiling-freepending bench-release-mediumceiling-combined bench-release-mediummadvfree bench-release-mediumlazy bench-release-medium64k2 bench-release-mediumchunk bench-release-mediumshardchunk bench-release-mediumupper48 bench-release-mediumv12_48k2 preload-mediumnolazy preload-medium64k2 preload-mediumchunk preload-mediummadvfree preload-mediumlazy preload-mediumkeeprefillempty medium-v1-gate medium-retention-closeout medium-retention-closeout-chunk medium-retention-closeout-madvfree medium-retention-closeout-lazy medium-chunk-paired-gate medium-shardchunk-paired-gate medium-lazy-paired-gate medium-sizepolicy-paired-gate medium-64k2-budget-paired-gate remote-micro remote-micro-release
 .PHONY: preload-largedirectdefault preload-largedirectmmap preload-largedirectpurgecache preload-largedirectrecyclecache preload-largedirecthotcoldshadow preload-largedirecthotcoldcache preload-largedirectshardedhotshadow preload-largedirectshardedhotcache preload-remotespanlease bench-release-largedirectdefault bench-release-largedirectmmap bench-release-largedirectpurgecache bench-release-largedirectrecyclecache bench-release-largedirecthotcoldshadow bench-release-largedirecthotcoldcache bench-release-largedirectshardedhotshadow bench-release-largedirectshardedhot128_32 bench-release-largedirectshardedhot128_64 bench-release-largedirectshardedhot192_32 bench-release-largedirectshardedhotcache
 .PHONY: preload-reusable-span-mag32 smoke-reusable-span-mag32 safety-stress-reusable-span-mag32 bench-release-reusable-span-mag32
-.PHONY: preload-page8k-r3 smoke-page8k-r3 smoke-page8k-api-r3 safety-stress-page8k-r3 bench-release-page8k-r3 preload-page8k-r3-target-dispatch smoke-page8k-r3-target-dispatch smoke-page8k-api-r3-target-dispatch smoke-page8k-api-r3-target-dispatch-diag safety-stress-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch-diag preload-page8k-range4097 smoke-page8k-range4097 safety-stress-page8k-range4097 bench-release-page8k-range4097 audit-fixed8k-path
+.PHONY: preload-page8k-r3 smoke-page8k-r3 smoke-page8k-api-r3 safety-stress-page8k-r3 bench-release-page8k-r3 preload-page8k-r3-target-dispatch smoke-page8k-r3-target-dispatch smoke-page8k-api-r3-target-dispatch smoke-page8k-api-r3-target-dispatch-diag safety-stress-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch-diag smoke-page8k-r3-unified-domain-shadow safety-stress-page8k-r3-unified-domain-shadow bench-release-page8k-r3-unified-domain-shadow preload-page8k-range4097 smoke-page8k-range4097 safety-stress-page8k-range4097 bench-release-page8k-range4097 audit-fixed8k-path
 .PHONY: preload-small-available4k smoke-small-available4k safety-stress-small-available4k bench-release-small-available4k
 .PHONY: preload-small-available2k4k smoke-small-available2k4k safety-stress-small-available2k4k bench-release-small-available2k4k
 .NOTPARALLEL: clean
@@ -19,6 +19,7 @@ MEDIUM_COLLECT_CFLAGS ?=
 HZ8_DEFAULT_CFLAGS := $(MEDIUM_BUDGET_CFLAGS) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_MEDIUM_KEEP_REFILL_EMPTY_L1 -DH8_REMOTE_SPAN_LEASE_PUBLISH_L1 -DH8_REMOTE_TRANSITION_BACKOFF_L1 -DH8_REUSABLE_SPAN_MAGAZINE_L1=1
 HZ8_PAGE8K_R3_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_MEDIUM_PAGE8K_REMOTE_L1=1 -DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1
 HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS := $(HZ8_PAGE8K_R3_CFLAGS) -DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1
+HZ8_UNIFIED_MEDIUM_DOMAIN_SHADOW_CFLAGS := $(HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS) -DH8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0=1
 HZ8_PAGE8K_RANGE4097_CFLAGS := $(HZ8_PAGE8K_R3_CFLAGS) -DH8_MEDIUM_PAGE8K_RANGE4097_L1=1
 HZ8_SMALL_AVAILABLE4K_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_SMALL_AVAILABLE_INDEX_L1=1
 HZ8_SMALL_AVAILABLE2K4K_CFLAGS := $(HZ8_SMALL_AVAILABLE4K_CFLAGS) -DH8_SMALL_AVAILABLE_CLASS_MASK=0x180u
@@ -78,6 +79,8 @@ smoke-page8k-r3: $(ROOT)/h8_smoke_page8k_r3
 
 smoke-page8k-r3-target-dispatch: $(ROOT)/h8_smoke_page8k_r3_target_dispatch
 
+smoke-page8k-r3-unified-domain-shadow: $(ROOT)/h8_smoke_page8k_r3_unified_domain_shadow
+
 smoke-page8k-api-r3-target-dispatch: $(ROOT)/h8_page8k_api_smoke_target_dispatch
 
 smoke-page8k-api-r3-target-dispatch-diag: $(ROOT)/h8_page8k_api_smoke_target_dispatch_diag
@@ -105,6 +108,8 @@ safety-stress-reusable-span-mag32: $(ROOT)/h8_safety_stress_reusable_span_mag32
 safety-stress-page8k-r3: $(ROOT)/h8_safety_stress_page8k_r3
 
 safety-stress-page8k-r3-target-dispatch: $(ROOT)/h8_safety_stress_page8k_r3_target_dispatch
+
+safety-stress-page8k-r3-unified-domain-shadow: $(ROOT)/h8_safety_stress_page8k_r3_unified_domain_shadow
 
 safety-stress-page8k-range4097: $(ROOT)/h8_safety_stress_page8k_range4097
 
@@ -168,6 +173,8 @@ bench-release-page8k-r3: $(ROOT)/h8_bench_release_page8k_r3
 bench-release-page8k-r3-target-dispatch: $(ROOT)/h8_bench_release_page8k_r3_target_dispatch
 
 bench-release-page8k-r3-target-dispatch-diag: $(ROOT)/h8_bench_release_page8k_r3_target_dispatch_diag
+
+bench-release-page8k-r3-unified-domain-shadow: $(ROOT)/h8_bench_release_page8k_r3_unified_domain_shadow
 
 bench-release-page8k-range4097: $(ROOT)/h8_bench_release_page8k_range4097
 
@@ -389,6 +396,9 @@ $(ROOT)/h8_smoke_page8k_r3: $(SMOKE_SRC) $(HEADERS)
 $(ROOT)/h8_smoke_page8k_r3_target_dispatch: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_smoke_page8k_r3_unified_domain_shadow: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_UNIFIED_MEDIUM_DOMAIN_SHADOW_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_page8k_api_smoke: $(SRC) $(ROOT)/tests/h8_page8k_api_smoke.c $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_R3_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/tests/h8_page8k_api_smoke.c $(LDFLAGS) $(LDLIBS)
 
@@ -427,6 +437,9 @@ $(ROOT)/h8_safety_stress_page8k_r3: $(SAFETY_STRESS_SRC) $(HEADERS)
 
 $(ROOT)/h8_safety_stress_page8k_r3_target_dispatch: $(SAFETY_STRESS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_safety_stress_page8k_r3_unified_domain_shadow: $(SAFETY_STRESS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_UNIFIED_MEDIUM_DOMAIN_SHADOW_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_safety_stress_page8k_range4097: $(SAFETY_STRESS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_PAGE8K_RANGE4097_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -526,6 +539,9 @@ $(ROOT)/h8_bench_release_page8k_r3_target_dispatch: $(SRC) $(ROOT)/bench/h8_benc
 
 $(ROOT)/h8_bench_release_page8k_r3_target_dispatch_diag: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_PAGE8K_REMOTE_DIAGNOSTIC=1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_release_page8k_r3_unified_domain_shadow: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_UNIFIED_MEDIUM_DOMAIN_SHADOW_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_page8k_range4097: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_PAGE8K_RANGE4097_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -649,6 +665,7 @@ clean:
 	rm -f $(ROOT)/libhakozuna_hz8_preload_reusable_span_mag32.so $(ROOT)/h8_smoke_reusable_span_mag32 $(ROOT)/h8_safety_stress_reusable_span_mag32 $(ROOT)/h8_bench_release_reusable_span_mag32
 	rm -f $(ROOT)/libhakozuna_hz8_preload_page8k_r3.so $(ROOT)/h8_smoke_page8k_r3 $(ROOT)/h8_page8k_api_smoke $(ROOT)/h8_safety_stress_page8k_r3 $(ROOT)/h8_bench_release_page8k_r3 $(ROOT)/libhakozuna_hz8_preload_page8k_range4097.so $(ROOT)/h8_page8k_api_range_smoke $(ROOT)/h8_safety_stress_page8k_range4097 $(ROOT)/h8_bench_release_page8k_range4097 $(ROOT)/h8_medium_fixed8k_path_audit
 	rm -f $(ROOT)/libhakozuna_hz8_preload_page8k_r3_target_dispatch.so $(ROOT)/h8_smoke_page8k_r3_target_dispatch $(ROOT)/h8_page8k_api_smoke_target_dispatch $(ROOT)/h8_page8k_api_smoke_target_dispatch_diag $(ROOT)/h8_safety_stress_page8k_r3_target_dispatch $(ROOT)/h8_bench_release_page8k_r3_target_dispatch $(ROOT)/h8_bench_release_page8k_r3_target_dispatch_diag
+	rm -f $(ROOT)/h8_smoke_page8k_r3_unified_domain_shadow $(ROOT)/h8_safety_stress_page8k_r3_unified_domain_shadow $(ROOT)/h8_bench_release_page8k_r3_unified_domain_shadow
 	rm -f $(ROOT)/libhakozuna_hz8_preload_small_available4k.so $(ROOT)/h8_smoke_small_available4k $(ROOT)/h8_safety_stress_small_available4k $(ROOT)/h8_bench_release_small_available4k
 	rm -f $(ROOT)/libhakozuna_hz8_preload_small_available2k4k.so $(ROOT)/h8_smoke_small_available2k4k $(ROOT)/h8_safety_stress_small_available2k4k $(ROOT)/h8_bench_release_small_available2k4k
 	rm -f $(ROOT)/libhakozuna_hz8_preload.so $(ROOT)/libhakozuna_hz8_preload_mediumnolazy.so $(ROOT)/libhakozuna_hz8_preload_medium64k2.so $(ROOT)/libhakozuna_hz8_preload_mediumchunk.so $(ROOT)/libhakozuna_hz8_preload_mediummadvfree.so $(ROOT)/libhakozuna_hz8_preload_mediumlazy.so $(ROOT)/libhakozuna_hz8_preload_keeprefill.so $(ROOT)/h8_smoke $(ROOT)/h8_smoke_mediumupper48 $(ROOT)/h8_safety_stress $(ROOT)/h8_medium_lazy_saturation $(ROOT)/h8_preload_smoke $(ROOT)/h8_bench $(ROOT)/h8_bench_medium64k2 $(ROOT)/h8_bench_mediumchunk $(ROOT)/h8_bench_mediumshardchunk $(ROOT)/h8_bench_mediumupper48 $(ROOT)/h8_bench_mediumv12_48k2 $(ROOT)/h8_bench_mediumfreecache $(ROOT)/h8_bench_mediumrefillhint $(ROOT)/h8_bench_mediumrefillcandidate $(ROOT)/h8_bench_mediumavailable $(ROOT)/h8_bench_mediumdemand64 $(ROOT)/h8_bench_mediumlocalfasttier $(ROOT)/h8_bench_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release $(ROOT)/h8_bench_release_audit $(ROOT)/h8_bench_release_upper1p5 $(ROOT)/h8_bench_release_upper3072 $(ROOT)/h8_bench_release_mediumnolazy $(ROOT)/h8_bench_release_mediumfreecache $(ROOT)/h8_bench_release_mediumrefillhint $(ROOT)/h8_bench_release_mediumrefillcandidate $(ROOT)/h8_bench_release_mediumavailable $(ROOT)/h8_bench_release_mediumavailableinline $(ROOT)/h8_bench_release_mediumdemand64 $(ROOT)/h8_bench_release_mediumlocalfasttier $(ROOT)/h8_bench_release_mediumkeeprefillempty $(ROOT)/h8_bench_release_hz9mediumlocalmagshadow $(ROOT)/h8_bench_release_mediumceiling_noslotstate $(ROOT)/h8_bench_release_mediumceiling_freepending $(ROOT)/h8_bench_release_mediumceiling_combined $(ROOT)/h8_bench_release_mediummadvfree $(ROOT)/h8_bench_release_mediumlazy $(ROOT)/h8_bench_release_medium64k2 $(ROOT)/h8_bench_release_mediumchunk $(ROOT)/h8_bench_release_mediumshardchunk $(ROOT)/h8_bench_release_mediumupper48 $(ROOT)/h8_bench_release_mediumv12_48k2 $(ROOT)/h8_remote_micro $(ROOT)/h8_remote_micro_release

@@ -1,5 +1,6 @@
 #include "h8_internal.h"
 #include "h8_medium.h"
+#include "h8_medium_domain_shadow.h"
 #include "h8_medium_page_shadow.h"
 
 #define H8_MEDIUM_DIRECTORY_CAP 65536u
@@ -154,6 +155,9 @@ static void h8_medium_directory_insert_locked(H8MediumRun* run) {
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_register(run);
 #endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+  h8_medium_domain_shadow_register_medium(run);
+#endif
 }
 
 static void h8_medium_directory_remove_locked(H8MediumRun* run) {
@@ -164,6 +168,9 @@ static void h8_medium_directory_remove_locked(H8MediumRun* run) {
   }
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_unregister(run);
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+  h8_medium_domain_shadow_unregister_medium(run);
 #endif
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {
     _Atomic(H8MediumRun*)* slot = &directory[n];

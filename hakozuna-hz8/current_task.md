@@ -7,47 +7,52 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 Page8K TargetDispatch Windows Gate
+## Restart Surface: HZ8 Unified Medium Domain L0
 
 ## Next Development Order
 
-HZ8 is the active public integration line. R3 has completed ownership,
-generation, remote publication, API-surface, residency, and real-entry
-correctness work. `TargetDispatch-L1` is now the only active Page8K speed box.
-The Windows fixed-8K discrepancy is closed: the first matrix used a different
-`T=4/ws=1024` row, while the authoritative `T=8/ws=400` gate reproduces a
-strong gain.
+HZ8 is the active public integration line. TargetDispatch is Windows opt-in GO
+and Ubuntu correctness/research GO. Native Ubuntu repeats show stable Page8K
+benefit but fail the cross-platform default gate: fixed8K reaches +24% to
++27%, while larger_sizes remains -6% to -8%.
 
 ```text
-Step 1: measurement identity is fixed
-  control is hz8-v2
-  old R3 is hz8-r3-page8k-integrated
-  candidate is hz8-r3-page8k-target-dispatch
-  fixed8K is T=8, iters=500000, ws=400, size=8192, remote=0
-  use alternating AB/BA fresh-process repeat-10
+Step 1: freeze the cause
+  Ubuntu larger_sizes has 49 Page8K-owned frees
+  the same row has 309,487 Page8K classifier misses
+  generic medium then performs its own directory lookup
+  repeated Page8K MISS before medium authority is the active pressure
 
-Step 2: diagnostic-only dispatch attribution is implemented
-  count exact alloc dispatch and service
-  count free dispatch with/without an existing TLS owner
-  count owned hit, classifier miss, successful free, and owner creation
-  compile these atomics only with H8_PAGE8K_REMOTE_DIAGNOSTIC
-  keep the speed candidate free of diagnostic counters
+Step 2: implement UnifiedMediumDomain-L0
+  sparse 64KiB quantum directory
+  tagged NONE / MEDIUM_RUN / PAGE8K entries
+  dual-publish beside current medium and Page8K registries
+  compare one shadow lookup with the current Page8K-first authority
+  diagnostic-only counters; no behavior or speed-lane atomics
 
-Step 3: Windows discrepancy is classified
-  exact alloc attempt == served for 2,000,789 allocations
-  owned free == successful free for 2,000,789 frees
-  owner creation == 8, one per worker
-  no dispatch wiring or backend behavior repair is required
-  the earlier weak row was a benchmark-shape mismatch
+  status 2026-07-12:
+    implementation and dedicated Windows/Linux lanes are present
+    Windows fixed8K and 16K..64K focused probes have zero mismatch/conflict
+    WSL GCC fixed8K has 20,000/20,000 kind matches
 
-Step 4: Windows speed gate is complete
-  fixed8K +69.8%
-  balanced -0.35%
-  wide_ws +2.38%
-  larger_sizes -2.08%
-  allocation failure remains zero
-  repeat-3 peak RSS is within +1.00MiB / +0.13% of HZ8 v2
-  keep TargetDispatch as Windows opt-in GO / global default HOLD
+Step 3: L0 acceptance
+  kind mismatch = 0
+  registration conflict = 0
+  larger_sizes medium hits explain the prior Page8K MISS population
+  Windows/Linux API and safety smoke pass
+
+  current:
+    Windows build/focused run PASS
+    WSL GCC -Werror build/focused run PASS
+    dedicated WSL smoke/safety stress PASS
+    owner exit 8 / handoff 68 / remote free 8,192 remain safe
+    Clang blocked by two pre-existing medium unused-variable warnings
+
+Step 4: only then consider L1
+  opt-in free dispatch through the unified directory
+  backend remains VALID/INVALID authority
+  old registries remain diagnostic oracles
+  public HZ8 v2 default remains unchanged
 ```
 
 Small-span inventory is handled by default Mag16. SmallAvailableIndex class

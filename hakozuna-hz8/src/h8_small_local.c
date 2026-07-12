@@ -1,4 +1,5 @@
 #include "h8_internal.h"
+#include "h8_medium_domain_shadow.h"
 #include "h8_medium_page_backend.h"
 #include "h8_used_count.h"
 
@@ -481,13 +482,25 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+    H8MediumDomainProbe medium_domain_probe =
+        h8_medium_domain_shadow_lookup(ptr);
+#endif
 #if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
     bool page_backend_owned = false;
     if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_PAGE8K);
+#endif
       return;
     }
     if (page_backend_owned) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_PAGE8K);
+#endif
       h8_fail_invalid_free();
       return;
     }
@@ -496,25 +509,49 @@ void h8_free_inner(void* ptr) {
     bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
     bool direct_owned = false;
     if (direct_maybe && h8_direct_large_free_exact_inner(ptr, &direct_owned)) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_NONE);
+#endif
       return;
     }
 #endif
     bool medium_owned = false;
     if (h8_medium_free_inner(ptr, &medium_owned)) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_RUN);
+#endif
       return;
     }
     if (medium_owned) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_RUN);
+#endif
       h8_fail_invalid_free();
       return;
     }
 #if defined(H8_LARGE_DIRECT_OWNED_L1)
     if (direct_maybe && h8_direct_large_free_inner(ptr, &direct_owned)) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_NONE);
+#endif
       return;
     }
     if (direct_owned) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+      h8_medium_domain_shadow_compare(medium_domain_probe,
+                                      H8_MEDIUM_DOMAIN_NONE);
+#endif
       h8_fail_invalid_free();
       return;
     }
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+    h8_medium_domain_shadow_compare(medium_domain_probe,
+                                    H8_MEDIUM_DOMAIN_NONE);
 #endif
     H8_DEBUG_INC(miss_count);
     h8_sys_free(ptr);

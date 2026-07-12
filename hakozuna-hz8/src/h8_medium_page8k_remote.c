@@ -1,5 +1,6 @@
 #include "h8_medium_page8k_remote.h"
 
+#include "h8_medium_domain_shadow.h"
 #include "h8_platform.h"
 
 #include <stdatomic.h>
@@ -440,6 +441,9 @@ H8Page8KRemotePage* h8_page8k_remote_page_create(
     free(page);
     return NULL;
   }
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+  h8_medium_domain_shadow_register_page8k(page->base, page);
+#endif
   page->owner_next = owner->pages;
   owner->pages = page;
   ++owner->page_count;
