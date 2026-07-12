@@ -155,7 +155,8 @@ static void h8_medium_directory_insert_locked(H8MediumRun* run) {
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_register(run);
 #endif
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
   h8_medium_domain_shadow_register_medium(run);
 #endif
 }
@@ -169,7 +170,8 @@ static void h8_medium_directory_remove_locked(H8MediumRun* run) {
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_unregister(run);
 #endif
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
   h8_medium_domain_shadow_unregister_medium(run);
 #endif
   for (size_t n = 0; n < H8_MEDIUM_DIRECTORY_CAP; ++n) {

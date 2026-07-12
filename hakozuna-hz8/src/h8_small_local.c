@@ -482,12 +482,50 @@ void h8_free_inner(void* ptr) {
     return;
   }
   if (!h8_arena_contains(ptr)) {
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
     H8MediumDomainProbe medium_domain_probe =
         h8_medium_domain_shadow_lookup(ptr);
 #endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    bool page_backend_checked = false;
+    bool medium_backend_checked = false;
+    if (medium_domain_probe.kind == H8_MEDIUM_DOMAIN_PAGE8K) {
+      bool page_backend_owned = false;
+      page_backend_checked = true;
+      if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
+        return;
+      }
+      if (page_backend_owned) {
+        h8_fail_invalid_free();
+        return;
+      }
+    } else if (medium_domain_probe.kind == H8_MEDIUM_DOMAIN_RUN) {
+      bool medium_owned = false;
+      medium_backend_checked = true;
+      if (h8_medium_free_inner(ptr, &medium_owned)) {
+        return;
+      }
+      if (medium_owned) {
+        h8_fail_invalid_free();
+        return;
+      }
+      bool page_backend_owned = false;
+      page_backend_checked = true;
+      if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
+        return;
+      }
+      if (page_backend_owned) {
+        h8_fail_invalid_free();
+        return;
+      }
+    }
+#endif
 #if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    if (!page_backend_checked) {
+#endif
     bool page_backend_owned = false;
     if (h8_medium_page_backend_free(ptr, &page_backend_owned)) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
@@ -504,6 +542,9 @@ void h8_free_inner(void* ptr) {
       h8_fail_invalid_free();
       return;
     }
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    }
+#endif
 #endif
 #if defined(H8_LARGE_DIRECT_OWNED_L1)
     bool direct_maybe = h8_direct_large_maybe_contains_hot(ptr);
@@ -516,22 +557,28 @@ void h8_free_inner(void* ptr) {
       return;
     }
 #endif
-    bool medium_owned = false;
-    if (h8_medium_free_inner(ptr, &medium_owned)) {
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
-      h8_medium_domain_shadow_compare(medium_domain_probe,
-                                      H8_MEDIUM_DOMAIN_RUN);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    if (!medium_backend_checked) {
 #endif
-      return;
-    }
-    if (medium_owned) {
+      bool medium_owned = false;
+      if (h8_medium_free_inner(ptr, &medium_owned)) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
-      h8_medium_domain_shadow_compare(medium_domain_probe,
-                                      H8_MEDIUM_DOMAIN_RUN);
+        h8_medium_domain_shadow_compare(medium_domain_probe,
+                                        H8_MEDIUM_DOMAIN_RUN);
 #endif
-      h8_fail_invalid_free();
-      return;
+        return;
+      }
+      if (medium_owned) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+        h8_medium_domain_shadow_compare(medium_domain_probe,
+                                        H8_MEDIUM_DOMAIN_RUN);
+#endif
+        h8_fail_invalid_free();
+        return;
+      }
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
     }
+#endif
 #if defined(H8_LARGE_DIRECT_OWNED_L1)
     if (direct_maybe && h8_direct_large_free_inner(ptr, &direct_owned)) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)

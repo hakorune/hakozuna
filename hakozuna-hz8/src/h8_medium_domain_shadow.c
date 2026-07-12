@@ -2,7 +2,8 @@
 
 #include "h8_internal.h"
 
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
 
 #define H8_MD_LEAF_BITS 15u
 #define H8_MD_ROOT_BITS 17u
@@ -16,6 +17,7 @@ typedef struct H8MediumDomainLeaf {
 } H8MediumDomainLeaf;
 
 static _Atomic(H8MediumDomainLeaf*) h8_md_root[H8_MD_ROOT_COUNT];
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
 static _Atomic uint64_t h8_md_lookup;
 static _Atomic uint64_t h8_md_medium_hit;
 static _Atomic uint64_t h8_md_page8k_hit;
@@ -26,6 +28,11 @@ static _Atomic uint64_t h8_md_register_conflict;
 static _Atomic uint64_t h8_md_medium_register;
 static _Atomic uint64_t h8_md_medium_unregister;
 static _Atomic uint64_t h8_md_page8k_register;
+#define H8_MD_COUNT(name) \
+  atomic_fetch_add_explicit(&(name), 1u, memory_order_relaxed)
+#else
+#define H8_MD_COUNT(name) ((void)0)
+#endif
 
 static uint32_t h8_md_key(uintptr_t addr) {
   return (uint32_t)(addr / H8_MEDIUM_QUANTUM_BYTES);
@@ -66,8 +73,7 @@ static void h8_md_register_quantum(uintptr_t addr, const void* record,
   H8MediumDomainLeaf* leaf = h8_md_leaf(key, true);
   uintptr_t tagged = h8_md_tag(record, kind);
   if (!leaf || tagged == 0u) {
-    atomic_fetch_add_explicit(&h8_md_register_conflict, 1u,
-                              memory_order_relaxed);
+    H8_MD_COUNT(h8_md_register_conflict);
     return;
   }
   _Atomic uintptr_t* slot = &leaf->slots[key & H8_MD_LEAF_MASK];
@@ -75,8 +81,7 @@ static void h8_md_register_quantum(uintptr_t addr, const void* record,
   if (!atomic_compare_exchange_strong_explicit(
           slot, &expected, tagged, memory_order_release, memory_order_acquire) &&
       expected != tagged) {
-    atomic_fetch_add_explicit(&h8_md_register_conflict, 1u,
-                              memory_order_relaxed);
+    H8_MD_COUNT(h8_md_register_conflict);
   }
 }
 
@@ -90,7 +95,7 @@ void h8_medium_domain_shadow_register_medium(H8MediumRun* run) {
        quantum += H8_MEDIUM_QUANTUM_BYTES) {
     h8_md_register_quantum(quantum, run, H8_MEDIUM_DOMAIN_RUN);
   }
-  atomic_fetch_add_explicit(&h8_md_medium_register, 1u, memory_order_relaxed);
+  H8_MD_COUNT(h8_md_medium_register);
 }
 
 void h8_medium_domain_shadow_unregister_medium(H8MediumRun* run) {
@@ -112,24 +117,22 @@ void h8_medium_domain_shadow_unregister_medium(H8MediumRun* run) {
     if (!atomic_compare_exchange_strong_explicit(
             slot, &expected, 0u, memory_order_release, memory_order_acquire) &&
         expected != 0u) {
-      atomic_fetch_add_explicit(&h8_md_register_conflict, 1u,
-                                memory_order_relaxed);
+      H8_MD_COUNT(h8_md_register_conflict);
     }
   }
-  atomic_fetch_add_explicit(&h8_md_medium_unregister, 1u,
-                            memory_order_relaxed);
+  H8_MD_COUNT(h8_md_medium_unregister);
 }
 
 void h8_medium_domain_shadow_register_page8k(void* base, const void* record) {
   h8_md_register_quantum((uintptr_t)base, record, H8_MEDIUM_DOMAIN_PAGE8K);
-  atomic_fetch_add_explicit(&h8_md_page8k_register, 1u, memory_order_relaxed);
+  H8_MD_COUNT(h8_md_page8k_register);
 }
 
 H8MediumDomainProbe h8_medium_domain_shadow_lookup(const void* ptr) {
   H8MediumDomainProbe probe = {H8_MEDIUM_DOMAIN_NONE, NULL};
-  atomic_fetch_add_explicit(&h8_md_lookup, 1u, memory_order_relaxed);
+  H8_MD_COUNT(h8_md_lookup);
   if (!ptr) {
-    atomic_fetch_add_explicit(&h8_md_miss, 1u, memory_order_relaxed);
+    H8_MD_COUNT(h8_md_miss);
     return probe;
   }
   uint32_t key = h8_md_key((uintptr_t)ptr);
@@ -141,26 +144,34 @@ H8MediumDomainProbe h8_medium_domain_shadow_lookup(const void* ptr) {
   probe.kind = (H8MediumDomainKind)(tagged & H8_MD_TAG_MASK);
   probe.record = (const void*)(tagged & ~H8_MD_TAG_MASK);
   if (probe.kind == H8_MEDIUM_DOMAIN_RUN) {
-    atomic_fetch_add_explicit(&h8_md_medium_hit, 1u, memory_order_relaxed);
+    H8_MD_COUNT(h8_md_medium_hit);
   } else if (probe.kind == H8_MEDIUM_DOMAIN_PAGE8K) {
-    atomic_fetch_add_explicit(&h8_md_page8k_hit, 1u, memory_order_relaxed);
+    H8_MD_COUNT(h8_md_page8k_hit);
   } else {
     probe.kind = H8_MEDIUM_DOMAIN_NONE;
     probe.record = NULL;
-    atomic_fetch_add_explicit(&h8_md_miss, 1u, memory_order_relaxed);
+    H8_MD_COUNT(h8_md_miss);
   }
   return probe;
 }
 
 void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
                                      H8MediumDomainKind expected) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
   _Atomic uint64_t* counter = probe.kind == expected ? &h8_md_kind_match
                                                       : &h8_md_kind_mismatch;
   atomic_fetch_add_explicit(counter, 1u, memory_order_relaxed);
+#else
+  (void)probe;
+  (void)expected;
+#endif
 }
 
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
 #define H8_MD_LOAD(name) atomic_load_explicit(&(name), memory_order_relaxed)
+#endif
 H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
   H8MediumDomainShadowStats stats = {
       H8_MD_LOAD(h8_md_lookup),
       H8_MD_LOAD(h8_md_medium_hit),
@@ -173,8 +184,15 @@ H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void) {
       H8_MD_LOAD(h8_md_medium_unregister),
       H8_MD_LOAD(h8_md_page8k_register)};
   return stats;
+#else
+  H8MediumDomainShadowStats stats = {0};
+  return stats;
+#endif
 }
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
 #undef H8_MD_LOAD
+#endif
+#undef H8_MD_COUNT
 
 #else
 
