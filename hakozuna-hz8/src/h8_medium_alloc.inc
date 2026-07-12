@@ -393,8 +393,7 @@ static void* h8_medium_run_alloc_active_hit(H8ThreadCtx* ctx,
   section_start = h8_medium_now_ns();
 #endif
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
-  atomic_store_explicit(&run->slot_state[slot], H8_SLOT_ALLOCATED,
-                        memory_order_release);
+  h8_medium_slot_state_store_release(run, slot, H8_SLOT_ALLOCATED);
 #endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_note_alloc(run, slot);

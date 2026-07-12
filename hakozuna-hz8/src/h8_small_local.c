@@ -483,9 +483,23 @@ void h8_free_inner(void* ptr) {
   }
   if (!h8_arena_contains(ptr)) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
     H8MediumDomainProbe medium_domain_probe =
         h8_medium_domain_shadow_lookup(ptr);
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
+    if (medium_domain_probe.kind == H8_MEDIUM_DOMAIN_PAGE8K) {
+      bool page_backend_owned = false;
+      if (h8_medium_page_backend_free_record(
+              medium_domain_probe.record, ptr, &page_backend_owned)) {
+        return;
+      }
+      if (page_backend_owned) {
+        h8_fail_invalid_free();
+        return;
+      }
+    }
 #endif
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
     bool page_backend_checked = false;

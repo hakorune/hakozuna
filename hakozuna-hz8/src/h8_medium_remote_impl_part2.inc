@@ -34,6 +34,7 @@
 #endif
     atomic_fetch_and_explicit(&run->pending_bits[0], ~bits,
                               memory_order_acq_rel);
+    h8_medium_pending_state_note(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
     H8_DEBUG_ADD(medium_collect_pending_clear_ns,
                  (size_t)(h8_medium_remote_now_ns() - section_start));
@@ -92,13 +93,14 @@
   H8_DEBUG_ADD(medium_collect_empty_ns,
                (size_t)(h8_medium_remote_now_ns() - section_start));
 #endif
-  h8_platform_mutex_unlock(&run->lock);
+  h8_medium_run_unlock_backend(run);
   h8_medium_debug_writer_exit(run);
 
   uint8_t expected_finish = H8_Q_DRAINING;
   if (atomic_compare_exchange_strong_explicit(&run->qstate, &expected_finish,
                                               H8_Q_IDLE, memory_order_acq_rel,
                                               memory_order_acquire)) {
+    h8_medium_pending_state_note(run);
     uint64_t pending =
         atomic_load_explicit(&run->pending_bits[0], memory_order_acquire);
     if ((pending & valid) != 0) {
@@ -113,6 +115,7 @@
                                                 H8_Q_QUEUED,
                                                 memory_order_acq_rel,
                                                 memory_order_acquire)) {
+      h8_medium_pending_state_note(run);
       H8_DEBUG_INC(qstate_dirty_requeue);
       return true;
     }

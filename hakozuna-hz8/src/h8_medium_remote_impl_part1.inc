@@ -183,6 +183,7 @@ static void h8_medium_signal_work(H8OwnerRecord* owner, H8MediumRun* run) {
                                                 H8_Q_QUEUED,
                                                 memory_order_acq_rel,
                                                 memory_order_acquire)) {
+        h8_medium_pending_state_note(run);
         h8_medium_pending_queue_push(owner, run);
         return;
       }
@@ -195,6 +196,7 @@ static void h8_medium_signal_work(H8OwnerRecord* owner, H8MediumRun* run) {
                                                 H8_Q_DRAINING_DIRTY,
                                                 memory_order_acq_rel,
                                                 memory_order_acquire)) {
+        h8_medium_pending_state_note(run);
         H8_DEBUG_INC(qstate_dirty_set);
         return;
       }
@@ -216,6 +218,7 @@ static void h8_medium_mark_dirty_if_draining(H8MediumRun* run) {
                                               H8_Q_DRAINING_DIRTY,
                                               memory_order_acq_rel,
                                               memory_order_acquire)) {
+    h8_medium_pending_state_note(run);
     H8_DEBUG_INC(qstate_dirty_self_set);
   }
 }
@@ -301,6 +304,7 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
 #endif
   uint64_t old_word =
       atomic_fetch_or_explicit(&run->pending_bits[0], bit, memory_order_acq_rel);
+  h8_medium_pending_state_note(run);
   H8_DEBUG_ADD(medium_remote_pending_claim_ns,
                (size_t)(h8_medium_remote_now_ns() - claim_start));
   if (old_word & bit) {
@@ -314,6 +318,7 @@ H8PublishResult h8_medium_remote_publish(H8MediumRun* run, void* ptr) {
     bool draining = h8_medium_claim_accepted_by_collector(run);
     uint64_t rollback = atomic_fetch_and_explicit(
         &run->pending_bits[0], ~bit, memory_order_acq_rel);
+    h8_medium_pending_state_note(run);
     if ((rollback & bit) == 0) {
       H8_DEBUG_INC(medium_remote_lockless_claim_rollback_accepted);
       result = H8_PUBLISH_OK;
@@ -469,9 +474,10 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
                                                memory_order_acquire)) {
     return false;
   }
+  h8_medium_pending_state_note(run);
 
   h8_medium_debug_writer_enter(run, owner, H8_MEDIUM_WRITER_OWNER_COLLECT);
-  h8_platform_mutex_lock(&run->lock);
+  h8_medium_run_lock_backend(run);
   uint64_t bits = atomic_load_explicit(&run->pending_bits[0],
                                        memory_order_acquire);
   uint64_t valid = run->slot_count == 64u
@@ -491,8 +497,7 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
     uint32_t state =
         atomic_load_explicit(&run->slot_state[slot], memory_order_acquire);
     if (h8_slot_state_tag(state) == (H8_SLOT_ALLOCATED >> H8_SLOT_TAG_SHIFT)) {
-      atomic_store_explicit(&run->slot_state[slot],
-                            H8_SLOT_FREE | H8_SLOT_NONE,
-                            memory_order_release);
+      h8_medium_slot_state_store_release(run, slot,
+                                        H8_SLOT_FREE | H8_SLOT_NONE);
       accepted |= bit;
       ++collected;

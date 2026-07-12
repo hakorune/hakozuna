@@ -12,6 +12,7 @@
 - `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost and L1 path audit
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_L0.md`: diagnostic shared Page8K/medium dispatch directory
+- `HZ8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0.md`: type-stable medium route-record lifetime proof
 - `HZ8_PAGE8K_API_SURFACE_F1.md`: R3 route, usable-size, and realloc contract
 - `HZ8_PAGE8K_RANGE4097_L1.md`: closed 4097..8192 page-geometry probe
 - `HZ8_SMALL_AVAILABLE_INDEX_L1.md`: Windows exact-4KiB O(1) reuse evidence

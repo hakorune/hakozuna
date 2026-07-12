@@ -56,6 +56,8 @@ void* h8_page8k_remote_alloc(H8Page8KRemoteOwner* owner,
                              H8Page8KRemotePage* page);
 bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
                            bool* owned_out);
+bool h8_page8k_remote_free_record_current(const void* record, void* ptr,
+                                           bool* owned_out);
 size_t h8_page8k_remote_drain(H8Page8KRemoteOwner* owner);
 bool h8_page8k_remote_quiescent(const H8Page8KRemotePage* page);
 H8Page8KRemoteStats h8_page8k_remote_stats(void);

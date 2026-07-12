@@ -7,7 +7,7 @@ Stable documentation starts at `docs/README.md`. Windows benchmark lane
 status is centralized in `docs/HZ8_WINDOWS_LANE_STATUS_L1.md`; do not infer
 promotion status from build target names alone.
 
-## Restart Surface: HZ8 Unified Medium Domain L0
+## Restart Surface: HZ8 Unified Medium Domain StableRecord L0
 
 ## Next Development Order
 
@@ -54,6 +54,77 @@ Step 4: only then consider L1
   old registries remain diagnostic oracles
   public HZ8 v2 default remains unchanged
 ```
+
+Native Ubuntu has now closed the kind-only behavior experiment:
+
+```text
+fixed8K: -17.04%
+balanced: -1.26%
+wide_ws: -3.96%
+larger_sizes: +2.87%
+result: performance NO-GO
+```
+
+Do not tune or promote kind-only L1. The active research box is
+`UnifiedMediumDomainStableRecord-L0`: fixed-cap, non-reused records with
+`LIVE -> CLOSING -> TOMBSTONE`, high-address fallback, and explicit tag
+alignment. It is diagnostic-only and has passed the initial WSL GCC smoke and
+safety gates. Windows focused medium observed 323 records and 50,959 LIVE
+lookups with 15,504 pool bytes and zero fallback/backend/geometry mismatch.
+Record handoff remains blocked until validation-core lifetime and native
+Ubuntu evidence pass. Sequential same-address turnover now passes 10,000
+generations with distinct records, TOMBSTONE observation, and high-address
+fallback. Raw `H8MediumRun*` handoff is forbidden.
+
+The concurrent record-only gate now passes on WSL and Windows: one reader
+observes records while one writer performs another 10,000 same-address
+publish/remove cycles. The remaining blocker is intentionally narrower:
+`H8MediumRun`, slot-state, pending bitmap, and lock lifetime are not stable
+after unregister. Do not implement record handoff until that validation core
+is moved into stable storage or protected by a cold-path quiescence proof.
+
+StableValidationCore-L0A is now complete for immutable exact geometry. The
+same-address test alternates 16KiB shift geometry and 24KiB modulo geometry;
+base and the second slot are exact, interior `base+1` and TOMBSTONE are
+invalid, with zero authority mismatch on WSL and Windows. The next box is only
+the mutable slot-state/pending/lock lifetime, not another classifier variant.
+
+Next implementation is `StableSlotState-L0` only. Route all authority
+slot-state stores through one release-store helper, mirror successful CAS
+transitions after commit, initialize/final-sync the bounded record mirror, and
+require zero mismatch. Do not combine pending bitmap, qstate, lock migration,
+or behavior dispatch into this box.
+
+StableSlotState-L0 now passes WSL and Windows smoke. Registered-run updates are
+mirrored through the common store helper; unregister final comparison reports
+zero mismatch, zero bound fallback, and zero writer after CLOSING. The 12
+pre-publication stores are absorbed by registration snapshot and tracked
+separately. Freeze this box as GO diagnostic evidence. Next isolate pending
+bitmap/qstate lifetime; do not promote the mirror to behavior authority.
+
+Implement `StablePendingState-L0` next: mirror pending bitmap,
+pending-word mask, and qstate after successful authority mutations, then judge
+only the CLOSING final snapshot. Keep lock migration and behavior dispatch out
+of this box.
+
+StablePendingState-L0 now passes WSL and Windows. The live-owner 16KiB
+roundtrip observes five pending/qstate mutations and 20,000 final snapshots,
+with zero final mismatch and zero update after CLOSING. Freeze pending/qstate
+as GO diagnostic evidence. The only remaining lifetime boundary before a
+record-handoff experiment is synchronization: the current run-embedded lock
+cannot outlive `H8MediumRun`.
+
+Implement `StableLock-L1 diagnostic` next. Embed a never-reused mutex in the
+stable record, redirect only the stable research lane's run-lock helper, and
+hold that mutex across CLOSING/final snapshot/TOMBSTONE. Pre-publication and
+pool-fallback runs may use the old lock. Do not enable record dispatch yet.
+
+StableLock-L1 diagnostic now passes WSL and Windows without deadlock. Ordinary
+medium and remote collector locking share the backend helper; published runs
+use the stable mutex, unregister holds it through CLOSING/final snapshots/
+TOMBSTONE, and unlock mismatch is zero. Freeze the lifetime mechanism as GO
+evidence. The next box may finally test record-based backend entry, but must
+remain opt-in and retain the old backend as an oracle/fallback.
 
 Small-span inventory is handled by default Mag16. SmallAvailableIndex class
 expansion is closed because the Windows gain did not transfer cleanly to Linux.
@@ -751,6 +822,37 @@ LargeDirect default promotion:
 ```
 
 ## Hold
+
+## Unified Page8K Record Experiment
+
+```text
+lane:
+  hz8-r3-unified-page8k-record
+
+scope:
+  unified Page8K hit -> known-record free
+  remove duplicate Page8K registry lookup
+  generic medium authority unchanged
+  unified miss -> complete legacy fallback chain
+  no production counters/atomics
+
+gate:
+  fixed8K vs TargetDispatch: target within -3%, no-go below -5%
+  balanced/wide_ws/larger_sizes: attribution only
+  smoke and safety stress PASS
+  owned-invalid remains fail-closed
+
+status:
+  GO research candidate
+  WSL fixed8K R5: +5.75%
+  Windows ABAB R10:
+    fixed8K -1.68%
+    balanced +3.86%
+    wide_ws +0.46%
+    larger_sizes -0.07%
+  smoke/safety PASS
+  public default unchanged
+```
 
 ```text
 LargeDirectHotColdCache-L1:

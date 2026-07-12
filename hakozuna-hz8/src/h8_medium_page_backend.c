@@ -14,6 +14,10 @@ bool h8_medium_page_backend_accepts_size(size_t size) {
 bool h8_medium_page_backend_free(void* ptr, bool* owned_out) {
   return h8_page8k_remote_free_current(ptr, owned_out);
 }
+bool h8_medium_page_backend_free_record(const void* record, void* ptr,
+                                        bool* owned_out) {
+  return h8_page8k_remote_free_record_current(record, ptr, owned_out);
+}
 H8RouteKind h8_medium_page_backend_route(const void* ptr) {
   return h8_page8k_remote_route_current(ptr);
 }
@@ -45,6 +49,11 @@ bool h8_medium_page_backend_free(void* ptr, bool* owned_out) {
   if (hz10_freelist_page_is_marked_local_free(page, ptr)) return false;
   return hz10_free(ptr) != 0;
 }
+bool h8_medium_page_backend_free_record(const void* record, void* ptr,
+                                        bool* owned_out) {
+  (void)record;
+  return h8_medium_page_backend_free(ptr, owned_out);
+}
 H8RouteKind h8_medium_page_backend_route(const void* ptr) {
   (void)ptr;
   return H8_ROUTE_MISS;
@@ -63,6 +72,13 @@ bool h8_medium_page_backend_accepts_size(size_t size) {
   return false;
 }
 bool h8_medium_page_backend_free(void* ptr, bool* owned_out) {
+  (void)ptr;
+  if (owned_out) *owned_out = false;
+  return false;
+}
+bool h8_medium_page_backend_free_record(const void* record, void* ptr,
+                                        bool* owned_out) {
+  (void)record;
   (void)ptr;
   if (owned_out) *owned_out = false;
   return false;

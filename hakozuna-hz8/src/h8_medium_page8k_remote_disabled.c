@@ -29,6 +29,14 @@ bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
   if (owned_out) *owned_out = false;
   return false;
 }
+
+bool h8_page8k_remote_free_record_current(const void* record, void* ptr,
+                                           bool* owned_out) {
+  (void)record;
+  (void)ptr;
+  if (owned_out) *owned_out = false;
+  return false;
+}
 size_t h8_page8k_remote_drain(H8Page8KRemoteOwner* owner) {
   (void)owner;
   return 0u;

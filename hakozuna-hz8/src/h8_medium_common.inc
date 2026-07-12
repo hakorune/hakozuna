@@ -324,7 +324,7 @@ static void h8_medium_lock_run(H8MediumRun* run) {
 #if defined(H8_ENABLE_DEBUG_STATS)
   uint64_t start = h8_medium_now_ns();
 #endif
-  h8_platform_mutex_lock(&run->lock);
+  h8_medium_run_lock_backend(run);
 #if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_run_lock_wait_ns,
                (size_t)(h8_medium_now_ns() - start));
@@ -332,7 +332,7 @@ static void h8_medium_lock_run(H8MediumRun* run) {
 }
 
 static void h8_medium_unlock_run(H8MediumRun* run) {
-  h8_platform_mutex_unlock(&run->lock);
+  h8_medium_run_unlock_backend(run);
 }
 
 static uint64_t h8_medium_owner_word_for(const H8OwnerRecord* owner) {

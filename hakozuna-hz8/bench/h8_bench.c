@@ -3,7 +3,8 @@
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
 #include "../src/h8_medium_page8k_remote.h"
 #endif
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
 #include "../src/h8_medium_domain_shadow.h"
 #endif
 #include "h8_bench_support.h"
@@ -411,12 +412,30 @@ int main(int argc, char** argv) {
          (unsigned long long)page8k.dispatch_free_miss,
          (unsigned long long)page8k.owner_create);
 #endif
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0)
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
   H8MediumDomainShadowStats domain = h8_medium_domain_shadow_stats();
   printf("medium_domain lookup=%llu medium_hit=%llu page8k_hit=%llu "
          "miss=%llu kind_match=%llu kind_mismatch=%llu "
          "register_conflict=%llu medium_register=%llu "
-         "medium_unregister=%llu page8k_register=%llu\n",
+         "medium_unregister=%llu page8k_register=%llu high_addr=%llu "
+         "stable_alloc=%llu stable_fallback=%llu stable_live=%llu "
+         "stable_closing=%llu stable_tombstone=%llu "
+         "stable_backend_mismatch=%llu stable_geometry_mismatch=%llu "
+         "stable_unregister_missing=%llu stable_current_bytes=%llu "
+         "stable_peak_bytes=%llu stable_turnover_pass=%llu "
+         "stable_turnover_fail=%llu stable_reuse_detected=%llu "
+         "stable_exact_valid=%llu stable_exact_invalid=%llu "
+         "stable_exact_tombstone=%llu stable_exact_mismatch=%llu "
+         "stable_slot_init=%llu stable_slot_sync=%llu "
+         "stable_slot_mismatch=%llu stable_slot_bound=%llu "
+         "stable_slot_final=%llu stable_slot_after_closing=%llu "
+         "stable_slot_without_record=%llu stable_pending_init=%llu "
+         "stable_pending_sync=%llu stable_pending_final=%llu "
+         "stable_pending_mismatch=%llu stable_pending_after_closing=%llu "
+         "stable_pending_without_record=%llu stable_lock=%llu "
+         "stable_lock_fallback=%llu stable_unlock_mismatch=%llu "
+         "stable_unregister_lock=%llu\n",
          (unsigned long long)domain.lookup,
          (unsigned long long)domain.medium_hit,
          (unsigned long long)domain.page8k_hit,
@@ -426,7 +445,42 @@ int main(int argc, char** argv) {
          (unsigned long long)domain.register_conflict,
          (unsigned long long)domain.medium_register,
          (unsigned long long)domain.medium_unregister,
-         (unsigned long long)domain.page8k_register);
+         (unsigned long long)domain.page8k_register,
+         (unsigned long long)domain.high_address_fallback,
+         (unsigned long long)domain.stable_record_alloc,
+         (unsigned long long)domain.stable_record_pool_fallback,
+         (unsigned long long)domain.stable_live_lookup,
+         (unsigned long long)domain.stable_closing_lookup,
+         (unsigned long long)domain.stable_tombstone_lookup,
+         (unsigned long long)domain.stable_backend_mismatch,
+         (unsigned long long)domain.stable_geometry_mismatch,
+         (unsigned long long)domain.stable_unregister_missing,
+         (unsigned long long)domain.stable_pool_current_bytes,
+         (unsigned long long)domain.stable_pool_peak_bytes,
+         (unsigned long long)domain.stable_turnover_pass,
+         (unsigned long long)domain.stable_turnover_fail,
+         (unsigned long long)domain.stable_record_reuse_detected,
+         (unsigned long long)domain.stable_exact_valid,
+         (unsigned long long)domain.stable_exact_invalid,
+         (unsigned long long)domain.stable_exact_tombstone,
+         (unsigned long long)domain.stable_exact_mismatch,
+         (unsigned long long)domain.stable_slot_init,
+         (unsigned long long)domain.stable_slot_sync,
+         (unsigned long long)domain.stable_slot_mismatch,
+         (unsigned long long)domain.stable_slot_bound_fallback,
+         (unsigned long long)domain.stable_slot_final_sync,
+         (unsigned long long)domain.stable_slot_sync_after_closing,
+         (unsigned long long)domain.stable_slot_note_without_record,
+         (unsigned long long)domain.stable_pending_init,
+         (unsigned long long)domain.stable_pending_sync,
+         (unsigned long long)domain.stable_pending_final_sync,
+         (unsigned long long)domain.stable_pending_mismatch,
+         (unsigned long long)domain.stable_pending_sync_after_closing,
+         (unsigned long long)domain.stable_pending_note_without_record,
+         (unsigned long long)domain.stable_lock_acquire,
+         (unsigned long long)domain.stable_lock_fallback,
+         (unsigned long long)domain.stable_unlock_mismatch,
+         (unsigned long long)domain.stable_unregister_lock);
 #endif
 
   free(throughput);

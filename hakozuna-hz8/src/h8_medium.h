@@ -152,6 +152,31 @@ typedef struct H8MediumRun {
 #endif
 } H8MediumRun;
 
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+void h8_medium_domain_stable_slot_note(H8MediumRun* run, size_t slot,
+                                       uint32_t committed_state);
+void h8_medium_domain_stable_pending_note(H8MediumRun* run);
+bool h8_medium_domain_stable_lock(H8MediumRun* run);
+bool h8_medium_domain_stable_unlock(H8MediumRun* run);
+#endif
+
+static inline void h8_medium_slot_state_store_release(H8MediumRun* run,
+                                                       size_t slot,
+                                                       uint32_t state) {
+  atomic_store_explicit(&run->slot_state[slot], state, memory_order_release);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+  h8_medium_domain_stable_slot_note(run, slot, state);
+#endif
+}
+
+static inline void h8_medium_pending_state_note(H8MediumRun* run) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+  h8_medium_domain_stable_pending_note(run);
+#else
+  (void)run;
+#endif
+}
+
 typedef struct H8OwnerRecord H8OwnerRecord;
 
 static inline bool h8_medium_size_supported_fast(size_t size) {
@@ -465,8 +490,7 @@ static inline bool h8_medium_local_fast_take_active(H8MediumRun* run,
 #endif
   run->local_fast_mask &= ~bit;
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
-  atomic_store_explicit(&run->slot_state[slot], UINT32_C(1) << 30u,
-                        memory_order_release);
+  h8_medium_slot_state_store_release(run, slot, UINT32_C(1) << 30u);
 #endif
   if (slot_out) {
     *slot_out = slot;
@@ -485,10 +509,8 @@ static inline bool h8_medium_local_fast_store_active_free(H8MediumRun* run,
 #endif
   run->local_fast_mask |= bit;
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
-  atomic_store_explicit(
-      &run->slot_state[slot],
-      (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u),
-      memory_order_release);
+  h8_medium_slot_state_store_release(
+      run, slot, (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u));
 #endif
   return true;
 }
@@ -504,10 +526,8 @@ static inline void h8_medium_local_fast_flush_locked(H8MediumRun* run) {
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
   while (mask) {
     uint32_t slot = (uint32_t)__builtin_ctzll(mask);
-    atomic_store_explicit(
-        &run->slot_state[slot],
-        (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u),
-        memory_order_release);
+    h8_medium_slot_state_store_release(
+        run, slot, (UINT32_C(2) << 30u) | ((UINT32_C(1) << 30u) - 1u));
     mask &= mask - 1;
   }
 #else
@@ -554,8 +574,7 @@ static inline void* h8_medium_run_alloc_local_hot(H8MediumRun* run) {
   run->free_mask &= ~bit;
   run->allocated_mask |= bit;
 #if !defined(H8_MEDIUM_CEILING_ALLOC_NO_SLOT_STATE)
-  atomic_store_explicit(&run->slot_state[slot], (UINT32_C(1) << 30u),
-                        memory_order_release);
+  h8_medium_slot_state_store_release(run, slot, UINT32_C(1) << 30u);
 #endif
   return h8_medium_slot_ptr_fast(run, slot);
 #else
@@ -601,6 +620,8 @@ H8MediumRun* h8_medium_detached_head_locked(uint32_t class_id);
 void h8_medium_detached_add_locked(H8MediumRun* run);
 void h8_medium_detached_remove_locked(H8MediumRun* run);
 bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr);
+void h8_medium_run_lock_backend(H8MediumRun* run);
+void h8_medium_run_unlock_backend(H8MediumRun* run);
 H8MediumRun* h8_medium_directory_find(const void* ptr);
 H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup);
 void h8_medium_register_locked(H8MediumRun* run);

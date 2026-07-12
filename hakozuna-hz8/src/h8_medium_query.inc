@@ -13,6 +13,14 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
 
   H8_DEBUG_INC(medium_free_lookup_count);
   H8MediumRun* run = h8_medium_directory_find(ptr);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+  H8MediumDomainProbe stable_probe = h8_medium_domain_shadow_lookup(ptr);
+  h8_medium_domain_stable_compare(stable_probe, run);
+  bool stable_authority_exact =
+      run && h8_medium_slot_index_from_ptr_checked_fast(run, ptr, NULL);
+  h8_medium_domain_stable_exact_compare(stable_probe, ptr,
+                                        stable_authority_exact);
+#endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
   h8_medium_page_shadow_compare(ptr, run);
 #endif

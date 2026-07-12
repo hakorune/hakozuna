@@ -69,6 +69,9 @@ struct H8Page8KRemotePage {
   bool orphan_resident_counted;
 };
 
+_Static_assert(_Alignof(H8Page8KRemotePage) >= 4u,
+               "Page8K metadata must support two pointer-tag bits");
+
 static h8_platform_mutex_t g_owner_list_lock = H8_PLATFORM_MUTEX_INIT;
 static h8_platform_mutex_t g_transition_lock = H8_PLATFORM_MUTEX_INIT;
 static _Atomic(H8Page8KRemotePage*) g_registry[H8_PAGE8K_REGISTRY_CAP];
@@ -442,7 +445,9 @@ H8Page8KRemotePage* h8_page8k_remote_page_create(
     return NULL;
   }
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
   h8_medium_domain_shadow_register_page8k(page->base, page);
 #endif
   page->owner_next = owner->pages;
@@ -470,13 +475,16 @@ void* h8_page8k_remote_alloc(H8Page8KRemoteOwner* owner,
   return page->base + (size_t)slot * H8_PAGE8K_BYTES;
 }
 
-bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
-                           bool* owned_out) {
+static bool h8_page8k_remote_free_known(H8Page8KRemoteOwner* current_owner,
+                                        H8Page8KRemotePage* page, void* ptr,
+                                        bool* owned_out) {
   if (owned_out) *owned_out = false;
-  H8Page8KRemotePage* page = h8_page8k_classify(ptr);
   if (!page) return false;
+  uintptr_t address = (uintptr_t)ptr;
+  uintptr_t base = (uintptr_t)page->base;
+  if (address < base || address >= base + H8_PAGE8K_RUN_BYTES) return false;
   if (owned_out) *owned_out = true;
-  uintptr_t offset = (uintptr_t)ptr - (uintptr_t)page->base;
+  uintptr_t offset = address - base;
   if ((offset % H8_PAGE8K_BYTES) != 0u) {
     H8_PAGE8K_STAT_INC(interior_reject);
     return false;
@@ -516,6 +524,18 @@ bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
   h8_page8k_queue(page);
   h8_page8k_publish_release(page);
   return true;
+}
+
+bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
+                           bool* owned_out) {
+  H8Page8KRemotePage* page = h8_page8k_classify(ptr);
+  return h8_page8k_remote_free_known(current_owner, page, ptr, owned_out);
+}
+
+bool h8_page8k_remote_free_record_current(const void* record, void* ptr,
+                                           bool* owned_out) {
+  return h8_page8k_remote_free_known(
+      g_current_owner, (H8Page8KRemotePage*)record, ptr, owned_out);
 }
 
 size_t h8_page8k_remote_drain(H8Page8KRemoteOwner* owner) {

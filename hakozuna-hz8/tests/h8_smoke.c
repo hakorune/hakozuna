@@ -1,11 +1,15 @@
 #include "../include/h8.h"
 #include "../src/h8_adaptive_shadow.h"
 #include "../src/h8_medium.h"
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+#include "../src/h8_medium_domain_shadow.h"
+#endif
 
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdatomic.h>
 
 #if defined(_WIN32)
 #ifndef WIN32_LEAN_AND_MEAN
@@ -93,6 +97,104 @@ static void h8_smoke_set_regular_adoption(int enabled) {
   } else {
     unsetenv("H8_ENABLE_REGULAR_ADOPTION");
   }
+}
+#endif
+
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+typedef struct H8StableConcurrentCtx {
+  H8MediumRun run;
+  _Atomic uint32_t slot_state[4];
+  _Atomic uint64_t pending_bits[1];
+  _Atomic int stop;
+  _Atomic uint64_t observations;
+} H8StableConcurrentCtx;
+
+typedef struct H8StablePendingCtx {
+  _Atomic(void*) ptr;
+  _Atomic int ready;
+  _Atomic int release;
+} H8StablePendingCtx;
+
+static h8_smoke_thread_ret_t h8_stable_pending_owner(void* arg) {
+  H8StablePendingCtx* ctx = (H8StablePendingCtx*)arg;
+  void* ptr = h8_malloc(16384u);
+  if (!ptr) {
+    atomic_store_explicit(&ctx->ready, 1, memory_order_release);
+    return H8_SMOKE_THREAD_RETVAL(1);
+  }
+  atomic_store_explicit(&ctx->ptr, ptr, memory_order_release);
+  atomic_store_explicit(&ctx->ready, 1, memory_order_release);
+  while (!atomic_load_explicit(&ctx->release, memory_order_acquire)) {
+    atomic_signal_fence(memory_order_seq_cst);
+  }
+  void* trigger = h8_malloc(16384u);
+  if (trigger) {
+    h8_free(trigger);
+  }
+  return H8_SMOKE_THREAD_RETVAL(0);
+}
+
+static bool h8_stable_pending_live_owner_roundtrip(void) {
+  H8StablePendingCtx ctx = {0};
+  atomic_init(&ctx.ptr, NULL);
+  atomic_init(&ctx.ready, 0);
+  atomic_init(&ctx.release, 0);
+  h8_smoke_thread_t owner;
+  if (h8_smoke_thread_create(&owner, h8_stable_pending_owner, &ctx) != 0) {
+    return false;
+  }
+  while (!atomic_load_explicit(&ctx.ready, memory_order_acquire)) {
+    atomic_signal_fence(memory_order_seq_cst);
+  }
+  void* ptr = atomic_load_explicit(&ctx.ptr, memory_order_acquire);
+  h8_free(ptr);
+  atomic_store_explicit(&ctx.release, 1, memory_order_release);
+  void* result = NULL;
+  return h8_smoke_thread_join(owner, &result) == 0 &&
+         (uintptr_t)result == 0u;
+}
+
+static h8_smoke_thread_ret_t h8_stable_record_reader(void* arg) {
+  H8StableConcurrentCtx* ctx = (H8StableConcurrentCtx*)arg;
+  while (!atomic_load_explicit(&ctx->stop, memory_order_acquire)) {
+    H8MediumDomainProbe probe =
+        h8_medium_domain_shadow_lookup(ctx->run.base);
+    if (probe.kind == H8_MEDIUM_DOMAIN_RUN) {
+      h8_medium_domain_stable_compare(probe, &ctx->run);
+      atomic_fetch_add_explicit(&ctx->observations, 1u, memory_order_relaxed);
+    }
+  }
+  return H8_SMOKE_THREAD_RETVAL(0);
+}
+
+static bool h8_stable_record_concurrent_turnover(void) {
+  H8StableConcurrentCtx ctx = {0};
+  ctx.run.base = (uint8_t*)(uintptr_t)UINT64_C(0x200000000);
+  ctx.run.class_id = 1u;
+  ctx.run.slot_count = 4u;
+  ctx.run.slot_size = 16384u;
+  ctx.run.slot_shift = 14u;
+  ctx.run.run_size = H8_MEDIUM_QUANTUM_BYTES;
+  ctx.run.slot_state = ctx.slot_state;
+  ctx.run.pending_bits = ctx.pending_bits;
+  atomic_init(&ctx.stop, 0);
+  atomic_init(&ctx.observations, 0u);
+  h8_smoke_thread_t reader;
+  if (h8_smoke_thread_create(&reader, h8_stable_record_reader, &ctx) != 0) {
+    return false;
+  }
+  for (size_t i = 0u; i < 10000u; ++i) {
+    h8_medium_domain_shadow_register_medium(&ctx.run);
+    for (size_t spin = 0u; spin < 32u; ++spin) {
+      atomic_signal_fence(memory_order_seq_cst);
+    }
+    h8_medium_domain_shadow_unregister_medium(&ctx.run);
+  }
+  atomic_store_explicit(&ctx.stop, 1, memory_order_release);
+  if (h8_smoke_thread_join(reader, NULL) != 0) {
+    return false;
+  }
+  return atomic_load_explicit(&ctx.observations, memory_order_relaxed) != 0u;
 }
 #endif
 
@@ -550,6 +652,116 @@ int main(void) {
     fprintf(stderr, "large direct route still valid after free\n");
     return 27;
   }
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+  if (!h8_medium_domain_stable_turnover_test(10000u)) {
+    fprintf(stderr, "stable record turnover test failed\n");
+    return 29;
+  }
+  if (!h8_stable_record_concurrent_turnover()) {
+    fprintf(stderr, "stable record concurrent turnover test failed\n");
+    return 30;
+  }
+  if (!h8_stable_pending_live_owner_roundtrip()) {
+    fprintf(stderr, "stable pending live-owner roundtrip failed\n");
+    return 31;
+  }
+  H8MediumDomainShadowStats domain = h8_medium_domain_shadow_stats();
+  if (domain.stable_record_alloc == 0u || domain.stable_live_lookup == 0u ||
+      domain.stable_record_pool_fallback != 0u ||
+      domain.stable_backend_mismatch != 0u ||
+      domain.stable_geometry_mismatch != 0u ||
+      domain.stable_unregister_missing != 0u ||
+      domain.stable_turnover_pass != 1u ||
+      domain.stable_turnover_fail != 0u ||
+      domain.stable_record_reuse_detected != 0u ||
+      domain.stable_tombstone_lookup < 10000u ||
+      domain.stable_exact_valid < 20000u ||
+      domain.stable_exact_invalid < 10000u ||
+      domain.stable_exact_tombstone < 10000u ||
+      domain.stable_exact_mismatch != 0u ||
+      domain.stable_slot_init == 0u || domain.stable_slot_sync == 0u ||
+      domain.stable_slot_mismatch != 0u ||
+      domain.stable_slot_bound_fallback != 0u ||
+      domain.stable_slot_final_sync == 0u ||
+      domain.stable_slot_sync_after_closing != 0u ||
+      domain.stable_pending_init == 0u ||
+      domain.stable_pending_sync == 0u ||
+      domain.stable_pending_final_sync == 0u ||
+      domain.stable_pending_mismatch != 0u ||
+      domain.stable_pending_sync_after_closing != 0u ||
+      domain.stable_lock_acquire == 0u ||
+      domain.stable_unlock_mismatch != 0u ||
+      domain.stable_unregister_lock == 0u ||
+      domain.high_address_fallback == 0u) {
+    fprintf(stderr,
+            "stable record smoke failed alloc=%llu live=%llu fallback=%llu "
+            "backend_mismatch=%llu geometry_mismatch=%llu "
+            "unregister_missing=%llu turnover_pass=%llu "
+            "turnover_fail=%llu reuse=%llu tombstone=%llu "
+            "exact_valid=%llu exact_invalid=%llu exact_tombstone=%llu "
+            "exact_mismatch=%llu slot_init=%llu slot_sync=%llu "
+            "slot_mismatch=%llu slot_bound=%llu slot_final=%llu "
+            "slot_after_closing=%llu mirror_alloc_auth_free=%llu "
+            "mirror_free_auth_alloc=%llu slot_other=%llu "
+            "slot_without_record=%llu pending_init=%llu pending_sync=%llu "
+            "pending_final=%llu pending_mismatch=%llu "
+            "pending_after_closing=%llu pending_without_record=%llu "
+            "lock_acquire=%llu lock_fallback=%llu unlock_mismatch=%llu "
+            "unregister_lock=%llu\n",
+            (unsigned long long)domain.stable_record_alloc,
+            (unsigned long long)domain.stable_live_lookup,
+            (unsigned long long)domain.stable_record_pool_fallback,
+            (unsigned long long)domain.stable_backend_mismatch,
+            (unsigned long long)domain.stable_geometry_mismatch,
+            (unsigned long long)domain.stable_unregister_missing,
+            (unsigned long long)domain.stable_turnover_pass,
+            (unsigned long long)domain.stable_turnover_fail,
+            (unsigned long long)domain.stable_record_reuse_detected,
+            (unsigned long long)domain.stable_tombstone_lookup,
+            (unsigned long long)domain.stable_exact_valid,
+            (unsigned long long)domain.stable_exact_invalid,
+            (unsigned long long)domain.stable_exact_tombstone,
+            (unsigned long long)domain.stable_exact_mismatch,
+            (unsigned long long)domain.stable_slot_init,
+            (unsigned long long)domain.stable_slot_sync,
+            (unsigned long long)domain.stable_slot_mismatch,
+            (unsigned long long)domain.stable_slot_bound_fallback,
+            (unsigned long long)domain.stable_slot_final_sync,
+            (unsigned long long)domain.stable_slot_sync_after_closing,
+            (unsigned long long)
+                domain.stable_slot_mirror_alloc_authority_free,
+            (unsigned long long)
+                domain.stable_slot_mirror_free_authority_alloc,
+            (unsigned long long)domain.stable_slot_other_mismatch,
+            (unsigned long long)domain.stable_slot_note_without_record,
+            (unsigned long long)domain.stable_pending_init,
+            (unsigned long long)domain.stable_pending_sync,
+            (unsigned long long)domain.stable_pending_final_sync,
+            (unsigned long long)domain.stable_pending_mismatch,
+            (unsigned long long)domain.stable_pending_sync_after_closing,
+            (unsigned long long)domain.stable_pending_note_without_record,
+            (unsigned long long)domain.stable_lock_acquire,
+            (unsigned long long)domain.stable_lock_fallback,
+            (unsigned long long)domain.stable_unlock_mismatch,
+            (unsigned long long)domain.stable_unregister_lock);
+    return 32;
+  }
+  printf("stable_domain records=%llu live=%llu tombstone=%llu "
+         "slot_sync=%llu slot_final=%llu pending_sync=%llu "
+         "pending_final=%llu stable_lock=%llu lock_fallback=%llu "
+         "unregister_lock=%llu pool_bytes=%llu\n",
+         (unsigned long long)domain.stable_record_alloc,
+         (unsigned long long)domain.stable_live_lookup,
+         (unsigned long long)domain.stable_tombstone_lookup,
+         (unsigned long long)domain.stable_slot_sync,
+         (unsigned long long)domain.stable_slot_final_sync,
+         (unsigned long long)domain.stable_pending_sync,
+         (unsigned long long)domain.stable_pending_final_sync,
+         (unsigned long long)domain.stable_lock_acquire,
+         (unsigned long long)domain.stable_lock_fallback,
+         (unsigned long long)domain.stable_unregister_lock,
+         (unsigned long long)domain.stable_pool_current_bytes);
 #endif
   H8Stats stats = h8_stats();
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
