@@ -39,6 +39,7 @@ $Executables = @(
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-magazine-tail-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_magazine_tail_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },

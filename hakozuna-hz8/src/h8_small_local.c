@@ -396,6 +396,7 @@ void* h8_malloc_inner(size_t size) {
   }
   if (!span) {
     H8_DEBUG_INC(local_span_commit);
+    h8_magazine_tail_shadow_checkpoint(ctx);
     h8_adaptive_shadow_note_small_refill(
         class_id,
         atomic_load_explicit(&owner->pending_span_count, memory_order_relaxed));

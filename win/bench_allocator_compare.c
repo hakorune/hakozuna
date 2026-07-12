@@ -27,6 +27,9 @@
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
 #include "h8_reclaim_shadow.h"
 #endif
+#if defined(H8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0)
+#include "h8_magazine_tail_shadow.h"
+#endif
 #elif defined(HZ_BENCH_USE_HZ10)
 #include "hz10_public_entry.h"
 #elif defined(HZ_BENCH_USE_HZ11)
@@ -753,6 +756,10 @@ int main(int argc, char** argv) {
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
     h8_reclaim_shadow_dump();
+#endif
+#if defined(HZ_BENCH_USE_HZ8) && \
+    defined(H8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0)
+    h8_magazine_tail_shadow_dump();
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
     {

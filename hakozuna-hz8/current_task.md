@@ -189,6 +189,9 @@ R3 final posture: Windows selected opt-in GO; Linux correctness-neutral opt-in
 GO; public default unchanged. Windows Redis-like gates are -0.04% (small) and
 +1.24% (medium); Linux fixed-8K is -0.21% with lower peak RSS. Remote90 remains
 correctness evidence. The Windows speed gain is platform-specific.
+
+MagazineTailReclaim L0 is CLOSED. Broad rows expose only 1.0-1.2MiB maximum
+hypothetical tail bytes, far below the 8MiB behavior admission threshold.
 has zero failure and 473 real publish retries; Linux strict C11 build passes.
 R2 is closed as correctness evidence. Default/performance promotion remains
 HOLD; only an R3 integrated medium-entry shadow may reopen the track.

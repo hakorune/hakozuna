@@ -99,6 +99,11 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraFlags = @("/DH8_RECLAIM_ADAPTER_SHADOW_L0=1")
         },
         @{
+            Name = "hz8-magazine-tail-shadow"
+            Output = "bench_mixed_ws_hz8_magazine_tail_shadow.exe"
+            ExtraFlags = @("/DH8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0=1")
+        },
+        @{
             Name = "hz8-speed-attribution"
             Output = "bench_mixed_ws_hz8_speed_attribution.exe"
             ExtraFlags = @(

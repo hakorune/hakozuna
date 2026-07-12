@@ -23,6 +23,9 @@
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
 #include "h8_reclaim_shadow.h"
 #endif
+#if defined(H8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0)
+#include "h8_magazine_tail_shadow.h"
+#endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
 #include "h8_medium_page_shadow.h"
 #endif
@@ -594,6 +597,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
 #endif
 #if defined(H8_RECLAIM_ADAPTER_SHADOW_L0)
         h8_reclaim_shadow_dump();
+#endif
+#if defined(H8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0)
+        h8_magazine_tail_shadow_dump();
 #endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
         {

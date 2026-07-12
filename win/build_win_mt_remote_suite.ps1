@@ -157,6 +157,11 @@ function Invoke-Hz8MtRemoteBuilds {
             Name = "hz8-reclaim-shadow"
             Output = "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"
             ExtraFlags = @("/DH8_RECLAIM_ADAPTER_SHADOW_L0=1")
+        },
+        @{
+            Name = "hz8-magazine-tail-shadow"
+            Output = "bench_random_mixed_mt_remote_hz8_magazine_tail_shadow.exe"
+            ExtraFlags = @("/DH8_MAGAZINE_TAIL_RECLAIM_SHADOW_L0=1")
         }
     )) {
         Write-Host "Building: mt_remote ($($variant.Name))"
