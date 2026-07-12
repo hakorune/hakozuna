@@ -277,7 +277,11 @@ void* h8_malloc_inner(size_t size) {
   if (size > H8_MAX_SMALL_SIZE) {
 #if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1)
+    if (size == 8192u) {
+#else
     if (h8_medium_page_backend_accepts_size(size)) {
+#endif
       if (!h8_thread_ctx_fast()) {
         return NULL;
       }

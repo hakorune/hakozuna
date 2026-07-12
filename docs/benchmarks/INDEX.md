@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 Page8K target dispatch native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_TARGET_DISPATCH_20260712.md)
 - [HZ8 Page8K R3 native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md)
 - [Allocator line integrated matrix: HZ3/HZ4/HZ8/HZ10, 2026-07-07](./20260707_allocator_line_integrated_hz3_hz4_hz8_hz10_r10/README.md)
 - [Windows HZ11 L1 allocator matrix connectivity, 2026-07-09](./windows/hz11_l1_allocator_matrix_connectivity/20260709_143810_allocator_matrix.md)
@@ -83,6 +84,9 @@ This page is the public pointer list for dated benchmark summaries.
 
 # 2026-07-12
 
+- [HZ8 Page8K target dispatch native Ubuntu gate](linux/HZ8_PAGE8K_TARGET_DISPATCH_20260712.md):
+  GCC/Clang safety pass and alternating AB/BA R10; fixed8K reaches +31.90%,
+  while balanced/larger keep the full gate and default promotion on HOLD.
 - [HZ8 Page8K R3 native Ubuntu gate](linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md):
   GCC/Clang safety pass and alternating AB/BA R5; fixed8K improved 12.36%,
   but balanced/larger regressions keep R3 opt-in and the public default on HZ8 v2.

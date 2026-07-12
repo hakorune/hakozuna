@@ -66,6 +66,48 @@ no-go:
 Remote90 remains lifecycle evidence only. R3 cannot be promoted from standalone
 page throughput or remote safety; only the integrated paired rows decide.
 
+## Native Target Dispatch Box
+
+The native Ubuntu gate showed that the R3 candidate probes the page8K backend
+for non-target medium allocations and creates a page8K owner on non-page free
+misses. `TargetDispatch-L1` isolates those corrections behind
+`H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1`.
+
+```text
+lane:
+  hz8-r3-page8k-target-dispatch
+
+control:
+  hz8-r3-page8k-integrated
+
+malloc boundary:
+  call the page8K backend only when size == 8192
+
+free boundary:
+  preserve page8K-first authority ordering
+  classify with the existing TLS owner, including NULL
+  do not create a page8K owner on classifier miss
+
+unchanged:
+  page8K ownership, generation, slot-state CAS, remote publication
+  malloc/free diagnostics and public HZ8 v2 default
+```
+
+An authority that reports owned-invalid must fail fast; it must never fall
+through to the next allocator. Passing a NULL current owner remains valid: a
+real page8K pointer follows the existing remote publication path, while a miss
+returns without allocating owner state. The old R3 target remains available as
+the immediate A/B rollback. Measure this box against old R3 first so
+route-shape attribution is not mixed with a default-promotion claim.
+
+### Address Filter Follow-up
+
+A monotonic min/max address filter was tested after target dispatch and removed.
+It did not improve the generic larger-size row and added two atomic loads to
+every page8K free. In paired R5, fixed8K fell from `276.11M` to `238.80M` at
+the median. This shape is `NO-GO`; do not put an always-on address filter in
+front of page authority.
+
 ## Windows Result
 
 The corrected paired run used the explicit benchmark argument list. An earlier

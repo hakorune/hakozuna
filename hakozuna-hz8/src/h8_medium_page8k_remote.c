@@ -790,12 +790,16 @@ void* h8_page8k_remote_malloc_current(size_t size) {
 }
 
 bool h8_page8k_remote_free_current(void* ptr, bool* owned_out) {
+#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1)
+  return h8_page8k_remote_free(g_current_owner, ptr, owned_out);
+#else
   H8Page8KRemoteOwner* owner = h8_page8k_current_owner();
   if (!owner) {
     if (owned_out) *owned_out = false;
     return false;
   }
   return h8_page8k_remote_free(owner, ptr, owned_out);
+#endif
 }
 
 size_t h8_page8k_remote_drain_all_control(void) {
