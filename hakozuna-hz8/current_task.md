@@ -185,9 +185,9 @@ peak RSS is no higher than HZ8 v2 on all four rows. The rebuilt remote90
 control has zero allocation failure, reject, and lost notification, and all
 six protocol/lifecycle/residency smokes pass.
 
-R3 final posture: Windows performance candidate GO; Linux correctness-neutral
-opt-in GO; public default unchanged. Redis-like Windows R5 is -0.04%, while
-Linux fixed-8K R5 is -0.21% with lower median peak RSS. Remote90 remains
+R3 final posture: Windows selected opt-in GO; Linux correctness-neutral opt-in
+GO; public default unchanged. Windows Redis-like gates are -0.04% (small) and
++1.24% (medium); Linux fixed-8K is -0.21% with lower peak RSS. Remote90 remains
 correctness evidence. The Windows speed gain is platform-specific.
 has zero failure and 473 real publish retries; Linux strict C11 build passes.
 R2 is closed as correctness evidence. Default/performance promotion remains

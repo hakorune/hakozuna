@@ -73,6 +73,8 @@ Linux lane registry:
   docs/HZ8_LINUX_LANE_STATUS_L1.md
   public default: hz8-v2 / Mag16
   larger/local opt-in: hz8-v2-mag32
+  Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated
+  docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md
 ```
 
 HZ8-v2はHZ8-v1.1のbalanced baseを維持しつつ、KeepRefillをremote-heavy

@@ -75,6 +75,8 @@ next research track:
   promoted to the cross-platform default after Linux/Windows gates
   larger/local opt-in: hz8-v2-mag32
   docs/HZ8_REUSABLE_SPAN_MAG32_L1.md
+  Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated
+  docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   docs/HZ8_REMOTE_SPAN_LEASE_PUBLISH_L0.md
   docs/HZ8_MEDIUM_RUN_V1_1_RC.md

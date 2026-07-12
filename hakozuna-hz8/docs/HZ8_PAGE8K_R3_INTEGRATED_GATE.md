@@ -137,6 +137,11 @@ pattern throughputs had medians of 1590.27M for HZ8 v2 and 1589.62M for R3
 (-0.04%). Median peak RSS was 16.45MiB and 16.56MiB (+0.64%). Treat this as
 neutral application-like evidence, not as a performance win.
 
+The medium-range Redis-like control (`4096..8192`) also passed repeat-5. Its
+aggregate median changed from 796.76M to 806.61M (+1.24%), while median peak
+RSS changed from 68.40MiB to 68.50MiB (+0.15%). This closes the Windows
+application-like no-regression gate.
+
 WSL Ubuntu GCC `-Werror` builds passed for preload, smoke, safety stress, and
 release bench. The smoke and safety binaries also ran successfully. Fixed-8K
 local AB/BA repeat-5 medians were 558.78M for HZ8 v2 and 557.60M for R3
@@ -148,7 +153,7 @@ Final lane posture:
 
 ```text
 Windows:
-  R3 integrated performance candidate: GO
+  R3 selected opt-in performance candidate: GO
 
 Linux:
   R3 correctness / neutral control: GO

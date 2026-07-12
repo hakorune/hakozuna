@@ -14,10 +14,16 @@ promotion candidates, diagnostics, and closed experiments.
 | Lane | Status | Purpose |
 |---|---|---|
 | `hz8-v2-mag32` | Windows GO / global HOLD | Larger/local capacity candidate; explicit research selection only |
+| `hz8-r3-page8k-integrated` | Windows selected opt-in / global HOLD | Exact-8KiB detached-page substrate; strong Windows local result with neutral application gates |
 
 Windows local and RSS gates are positive, but Linux small/remote gates block a
 cross-platform default promotion. Keep this row behind
 `-IncludeHz8Research` in normal Windows runners.
+
+The R3 page8K row improves Windows fixed-8K local throughput by 81.77% and
+passes balanced, wide working-set, larger-size, remote-safety, and two
+Redis-like no-regression gates. Linux fixed-8K is neutral (-0.21%), so R3 is a
+Windows selected opt-in rather than a cross-platform default.
 
 The normal allocator matrix and MT remote runner include only the public HZ8
 row unless research controls are requested explicitly.
@@ -57,6 +63,7 @@ LargeDirect cache variants:
 # Build HZ8 default, control, and diagnostic artifacts.
 .\win\build_win_allocator_suite.ps1 -OnlyHz8
 .\win\build_win_mt_remote_suite.ps1 -OnlyHz8
+.\win\build_win_hz8_redis_r3_gate.ps1
 
 # List/run normal HZ8 rows.
 .\win\run_win_allocator_matrix.ps1 -ListOnly
