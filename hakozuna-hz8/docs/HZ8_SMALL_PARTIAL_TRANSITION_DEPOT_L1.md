@@ -492,3 +492,36 @@ the focused recovery build/gate as mechanism evidence. It is not registered in
 the normal allocator or MT matrices. The scan was a real LCG recovery cost, but
 it does not explain the common-path regression. Close this optimization family;
 P1 remains the selected research recovery lane.
+
+## Application-Like Gate
+
+Before closing P1 as research-only, measure the existing Windows Redis-like
+five-pattern workload in a dedicated fresh-process AB/BA gate:
+
+```text
+allocators: HZ8 public default, P1 TransitionOnly
+patterns: SET, GET, LPUSH, LPOP, RANDOM
+runs: 5
+speed lane: no depot diagnostic counters
+acceptance: every major pattern >= -3%, peak RSS <= +5%
+```
+
+This gate answers whether the trace-sensitive synthetic regression appears in
+an application-like allocation shape. It does not override the xorshift matrix
+NO-GO and cannot promote P1 by itself.
+
+Windows fresh-process AB/BA R5 passes every Redis-like control:
+
+```text
+SET:    +7.14%
+GET:    +3.48%
+LPUSH:  +3.10%
+LPOP:   +0.17%
+RANDOM: -1.22%
+peak RSS: -1.51%
+```
+
+Combined decision: P1 remains `GO(research) / HOLD(default)`. The application-
+like evidence is positive, but it does not erase the xorshift synthetic
+regression. Close this recovery family here; no Larson expansion, policy
+ladder, or default promotion is justified.

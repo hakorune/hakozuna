@@ -135,3 +135,23 @@ trace but is not the common-path blocker. Keep the lane only in the focused
 reproduction gate; do not register it in normal or MT matrices. The dedicated
 membership smoke passed with owner shutdown cleanup (`owners=4`, zero local and
 remote failures).
+
+## Redis-Like Application Gate
+
+Fresh-process default/P1 AB/BA R5, with diagnostic counters disabled:
+
+| Pattern | Default | P1 | Delta | Peak delta |
+|---|---:|---:|---:|---:|
+| SET | 56.05M | 60.05M | +7.14% | -1.51% |
+| GET | 268.63M | 277.98M | +3.48% | -1.51% |
+| LPUSH | 57.98M | 59.78M | +3.10% | -1.51% |
+| LPOP | 931.19M | 932.77M | +0.17% | -1.51% |
+| RANDOM | 135.77M | 134.12M | -1.22% | -1.51% |
+
+All application-like controls pass. This strengthens P1 as an opt-in research
+lane but does not override the xorshift matrix default NO-GO.
+
+```powershell
+pwsh win/build_win_hz8_redis_r3_gate.ps1
+pwsh win/run_win_hz8_small_partial_redis_gate.ps1 -Runs 5
+```

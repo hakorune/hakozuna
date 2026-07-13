@@ -181,3 +181,8 @@ Windows local and fixed MT remote follow-up:
 public default:
   PROMOTED
 ```
+
+SmallPartialTransitionOnly P1 remains an explicit research lane. Windows
+Redis-like AB/BA R5 passed all five patterns with neutral-to-positive speed and
+lower peak RSS, but the xorshift synthetic matrix still blocks default
+promotion. SmallTierMembership is focused NO-GO evidence only.

@@ -150,6 +150,14 @@ $Hz8DefaultFlags = @(
 )
 foreach ($variant in @(
     @{ Name = "hz8"; Output = "bench_redis_workload_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
+    @{
+        Name = "hz8-small-partial-transition-only"
+        Output = "bench_redis_workload_hz8_small_partial_transition_only.exe"
+        ExtraFlags = $Hz8DefaultFlags + @(
+            "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+            "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+        )
+    },
     @{ Name = "hz8-v2-rollback"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
     @{
         Name = "hz8-r3-page8k-integrated"

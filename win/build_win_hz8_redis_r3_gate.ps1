@@ -24,8 +24,24 @@ $Flags = @(
     "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
     "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
 )
+$DefaultFlags = @(
+    "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+    "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+    "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+    "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+    "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
+)
 
 foreach ($variant in @(
+    @{ Name = "hz8"; Output = "bench_redis_workload_hz8.exe"; ExtraFlags = $DefaultFlags },
+    @{
+        Name = "hz8-small-partial-transition-only"
+        Output = "bench_redis_workload_hz8_small_partial_transition_only.exe"
+        ExtraFlags = $DefaultFlags + @(
+            "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+            "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+        )
+    },
     @{ Name = "hz8-v2"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
     @{
         Name = "hz8-r3-page8k-integrated"

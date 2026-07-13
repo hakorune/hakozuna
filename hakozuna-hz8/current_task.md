@@ -23,7 +23,9 @@ next box:
   DynamicCost-L0: complete
   SmallTierMembership-L1: mechanism GO / default NO-GO
   linear Mag16 scanning is not the xorshift common-path blocker
-  close this recovery optimization family; seek application-like evidence
+  Redis-like five-pattern AB/BA R5: all controls pass (-1.22%..+7.14%)
+  combined verdict: P1 research GO / default HOLD
+  recovery optimization family is closed; do not expand to Larson
 ```
 
 Read first:

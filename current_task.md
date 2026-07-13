@@ -32,8 +32,8 @@ Current direction:
   It preserves LCG recovery but misses the xorshift default gate, so public
   default remains unchanged. O(1) Mag16 tier membership improved the LCG
   recovery trace but failed xorshift controls, so that optimization family is
-  closed. Next work should use application-like evidence, not another policy
-  ladder. HZ12 reclaim remains separate evidence; do not merge allocator cores.
+  closed. Redis-like R5 is positive, but xorshift still blocks P1 default
+  promotion. HZ12 reclaim remains separate evidence; do not merge cores.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
