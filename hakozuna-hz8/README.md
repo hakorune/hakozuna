@@ -58,6 +58,10 @@ docs/HZ8_LINUX_LANE_STATUS_L1.md
 current public line:
   HZ8 v2 / KeepRefill + remote span-lease publish + Mag16
 
+native Linux staged default:
+  HZ8 v2 + GeneralMediumPage + EntryBoundary-L1A
+  rollback: make preload-v2-rollback
+
 recommended default:
   yes
 
@@ -68,6 +72,7 @@ research lane registry:
   docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   docs/HZ8_LINUX_LANE_STATUS_L1.md
   HZ8 v2 remains the public/recommended default
+  Linux default integration is GO; Windows public-lane integration is pending
   cross-platform default: ReusableSpanMagazine-L1 Mag16
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
   promoted to the cross-platform default after Linux/Windows gates

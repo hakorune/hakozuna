@@ -5,12 +5,12 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUTDIR="${OUTDIR:-${ROOT}/bench_results/hz8_page_general_linux_gate_$(date -u +%Y%m%dT%H%M%SZ)}"
 RUNS="${RUNS:-5}"
 WORK_SCALE="${WORK_SCALE:-1}"
-BASELINE="${ROOT}/h8_bench_release"
+BASELINE="${ROOT}/h8_bench_release_v2_rollback"
 GENERAL="${ROOT}/h8_bench_release_page_general"
 CANDIDATE="${ROOT}/h8_bench_release_page_general_entry_boundary"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" bench-release bench-release-page-general \
+make -C "${ROOT}" bench-release-v2-rollback bench-release-page-general \
   bench-release-page-general-entry-boundary \
   smoke-page-general-entry-boundary-api safety-stress-page-general-entry-boundary >/dev/null
 
@@ -22,7 +22,7 @@ commit=$(git -C "${ROOT}" rev-parse HEAD)
 date_utc=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 runs=${RUNS}
 work_scale=${WORK_SCALE}
-baseline_flags=HZ8_DEFAULT_CFLAGS
+baseline_flags=HZ8_V2_ROLLBACK_CFLAGS
 general_flags=HZ8_DEFAULT_CFLAGS,H8_MEDIUM_PAGE8K_REMOTE_L1,H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1,H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1,H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1
 candidate_flags=HZ8_DEFAULT_CFLAGS,H8_MEDIUM_PAGE8K_REMOTE_L1,H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1,H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1,H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1,H8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1
 diagnostic_counters=disabled

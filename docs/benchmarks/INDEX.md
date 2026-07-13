@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 General Medium native Ubuntu default integration, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md)
 - [HZ8 General Medium Page native Ubuntu gate, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md)
 - [HZ8 Unified Medium Domain Kind L1 native Ubuntu NO-GO, 2026-07-12](./linux/HZ8_UNIFIED_MEDIUM_DOMAIN_KIND_L1_20260712.md)
 - [HZ8 Page8K target dispatch native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_TARGET_DISPATCH_20260712.md)
@@ -86,6 +87,9 @@ This page is the public pointer list for dated benchmark summaries.
 
 # 2026-07-13
 
+- [HZ8 General Medium native Ubuntu default integration](linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md):
+  default/rollback R10 improved all six rows, exact rows by 86% to 281%, with
+  GCC/Clang and preload safety PASS; Linux default GO, Windows integration HOLD.
 - [HZ8 General Medium Page native Ubuntu gate](linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md):
   GCC/Clang safety passed; corrected Windows-equivalent slot-ring R20 improved
   exact rows 85.04% to 283.71% while all controls remained within 1%, clearing
