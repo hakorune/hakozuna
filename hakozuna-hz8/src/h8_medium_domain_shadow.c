@@ -5,7 +5,13 @@
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+#define H8_MD_STABLE_STORAGE 1
+#endif
 
 #define H8_MD_LEAF_BITS 15u
 #define H8_MD_ROOT_BITS 17u
@@ -169,7 +175,7 @@ static void h8_md_register_quantum(uintptr_t addr, const void* record,
   }
 }
 
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+#if defined(H8_MD_STABLE_STORAGE)
 static H8MediumDomainStableRecord h8_md_stable_records[H8_MD_STABLE_RECORD_CAP];
 static _Atomic size_t h8_md_stable_record_count;
 
@@ -355,7 +361,7 @@ void h8_medium_domain_shadow_register_medium(H8MediumRun* run) {
   if (!run || !run->base) {
     return;
   }
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+#if defined(H8_MD_STABLE_STORAGE)
   H8MediumDomainStableRecord* stable = h8_md_stable_record_create(run);
   if (!stable) {
     return;
@@ -377,7 +383,7 @@ void h8_medium_domain_shadow_unregister_medium(H8MediumRun* run) {
   if (!run || !run->base) {
     return;
   }
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+#if defined(H8_MD_STABLE_STORAGE)
   H8MediumDomainStableRecord* stable = h8_md_stable_record_find(run);
   if (!stable) {
     H8_MD_COUNT(h8_md_stable_unregister_missing);
@@ -415,7 +421,7 @@ void h8_medium_domain_shadow_unregister_medium(H8MediumRun* run) {
       H8_MD_COUNT(h8_md_register_conflict);
     }
   }
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+#if defined(H8_MD_STABLE_STORAGE)
   atomic_store_explicit(&stable->implementation, NULL, memory_order_release);
   atomic_store_explicit(&stable->state, H8_MD_RECORD_TOMBSTONE,
                         memory_order_release);
@@ -561,6 +567,59 @@ bool h8_medium_domain_stable_exact_compare(H8MediumDomainProbe probe,
   (void)ptr;
   (void)authority_exact;
   return false;
+#endif
+}
+
+H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
+    H8MediumDomainProbe probe, const void* ptr, H8MediumRun** run_out) {
+  if (run_out) *run_out = NULL;
+#if defined(H8_MD_STABLE_STORAGE)
+  if (probe.kind != H8_MEDIUM_DOMAIN_RUN || !probe.record || !ptr) {
+    return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  }
+  H8MediumDomainStableRecord* record =
+      (H8MediumDomainStableRecord*)probe.record;
+  h8_platform_mutex_lock(&record->lock);
+  if (atomic_load_explicit(&record->state, memory_order_acquire) !=
+      H8_MD_RECORD_LIVE) {
+    h8_platform_mutex_unlock(&record->lock);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  }
+  H8MediumRun* run =
+      atomic_load_explicit(&record->implementation, memory_order_acquire);
+  uintptr_t address = (uintptr_t)ptr;
+  size_t payload = (size_t)record->slot_size * (size_t)record->slot_count;
+  if (!run || record->slot_size == 0u || address < record->base ||
+      address - record->base >= payload) {
+    h8_platform_mutex_unlock(&record->lock);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_INVALID;
+  }
+  uintptr_t offset = address - record->base;
+  bool exact = (record->slot_size & (record->slot_size - 1u)) == 0u
+                   ? (offset & ((uintptr_t)record->slot_size - 1u)) == 0u
+                   : (offset % (uintptr_t)record->slot_size) == 0u;
+  if (!exact) {
+    h8_platform_mutex_unlock(&record->lock);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_INVALID;
+  }
+  if (run_out) *run_out = run;
+  return H8_MEDIUM_DOMAIN_ACQUIRE_VALID;
+#else
+  (void)probe;
+  (void)ptr;
+  return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+#endif
+}
+
+void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe) {
+#if defined(H8_MD_STABLE_STORAGE)
+  if (probe.kind == H8_MEDIUM_DOMAIN_RUN && probe.record) {
+    H8MediumDomainStableRecord* record =
+        (H8MediumDomainStableRecord*)probe.record;
+    h8_platform_mutex_unlock(&record->lock);
+  }
+#else
+  (void)probe;
 #endif
 }
 
@@ -726,6 +785,9 @@ H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void) {
 #undef H8_MD_LOAD
 #endif
 #undef H8_MD_COUNT
+#if defined(H8_MD_STABLE_STORAGE)
+#undef H8_MD_STABLE_STORAGE
+#endif
 
 #else
 
@@ -771,6 +833,16 @@ bool h8_medium_domain_stable_lock(H8MediumRun* run) {
 bool h8_medium_domain_stable_unlock(H8MediumRun* run) {
   (void)run;
   return false;
+}
+H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
+    H8MediumDomainProbe probe, const void* ptr, H8MediumRun** run_out) {
+  (void)probe;
+  (void)ptr;
+  if (run_out) *run_out = NULL;
+  return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+}
+void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe) {
+  (void)probe;
 }
 void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
                                      H8MediumDomainKind expected) {

@@ -18,6 +18,12 @@ typedef struct H8MediumDomainProbe {
   const void* record;
 } H8MediumDomainProbe;
 
+typedef enum H8MediumDomainAcquireResult {
+  H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK = 0,
+  H8_MEDIUM_DOMAIN_ACQUIRE_VALID = 1,
+  H8_MEDIUM_DOMAIN_ACQUIRE_INVALID = 2
+} H8MediumDomainAcquireResult;
+
 typedef struct H8MediumDomainShadowStats {
   uint64_t lookup;
   uint64_t medium_hit;
@@ -84,6 +90,9 @@ void h8_medium_domain_stable_slot_note(H8MediumRun* run, size_t slot,
 void h8_medium_domain_stable_pending_note(H8MediumRun* run);
 bool h8_medium_domain_stable_lock(H8MediumRun* run);
 bool h8_medium_domain_stable_unlock(H8MediumRun* run);
+H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
+    H8MediumDomainProbe probe, const void* ptr, H8MediumRun** run_out);
+void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe);
 void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
                                      H8MediumDomainKind expected);
 H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void);

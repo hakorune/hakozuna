@@ -484,9 +484,23 @@ void h8_free_inner(void* ptr) {
   if (!h8_arena_contains(ptr)) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
     H8MediumDomainProbe medium_domain_probe =
         h8_medium_domain_shadow_lookup(ptr);
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+    if (medium_domain_probe.kind == H8_MEDIUM_DOMAIN_RUN) {
+      bool medium_owned = false;
+      if (h8_medium_free_record_same_owner(&medium_domain_probe, ptr,
+                                           &medium_owned)) {
+        return;
+      }
+      if (medium_owned) {
+        h8_fail_invalid_free();
+        return;
+      }
+    }
 #endif
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1)
     if (medium_domain_probe.kind == H8_MEDIUM_DOMAIN_PAGE8K) {

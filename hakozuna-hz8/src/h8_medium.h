@@ -10,6 +10,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+typedef struct H8MediumDomainProbe H8MediumDomainProbe;
+
 #define H8_MEDIUM_MIN_SIZE (H8_MAX_SMALL_SIZE + 1u)
 #define H8_MEDIUM_MAX_SIZE 65536u
 #define H8_MEDIUM_QUANTUM_BYTES 65536u
@@ -629,6 +631,11 @@ void h8_medium_unregister_locked(H8MediumRun* run);
 void* h8_medium_malloc_class_inner(uint32_t class_id);
 void* h8_medium_malloc_inner(size_t size);
 bool h8_medium_free_inner(void* ptr, bool* owned_out);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+bool h8_medium_free_record_same_owner(const H8MediumDomainProbe* probe,
+                                      void* ptr,
+                                      bool* owned_out);
+#endif
 bool h8_medium_usable_size_inner(void* ptr, size_t* usable_out,
                                  bool* owned_out);
 H8RouteKind h8_medium_route_inner(void* ptr);

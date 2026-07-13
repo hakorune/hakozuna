@@ -1,3 +1,54 @@
+ #if defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+bool h8_medium_free_record_same_owner(const H8MediumDomainProbe* probe,
+                                      void* ptr,
+                                      bool* owned_out) {
+  if (owned_out) *owned_out = false;
+  if (!probe) return false;
+  H8MediumRun* run = NULL;
+  H8MediumDomainAcquireResult acquired =
+      h8_medium_domain_stable_acquire_probe(*probe, ptr, &run);
+  if (acquired == H8_MEDIUM_DOMAIN_ACQUIRE_INVALID) {
+    if (owned_out) *owned_out = true;
+    return false;
+  }
+  if (acquired != H8_MEDIUM_DOMAIN_ACQUIRE_VALID || !run) return false;
+
+  H8ThreadCtx* ctx = h8_tls_ctx;
+  uint64_t owner_word =
+      atomic_load_explicit(&run->owner_word, memory_order_acquire);
+  if (!h8_medium_owner_word_matches_ctx(owner_word, ctx)) {
+    h8_medium_domain_stable_release_probe(*probe);
+    return false;
+  }
+
+  if (owned_out) *owned_out = true;
+  h8_medium_debug_writer_enter(run, ctx ? ctx->owner : NULL,
+                               H8_MEDIUM_WRITER_OWNER_LOCAL_FREE);
+  bool keep_empty_live =
+      ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
+      ctx->active_medium_runs[run->class_id] == run;
+  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  if (!ok) {
+    H8_DEBUG_INC(medium_invalid_owned_count);
+  } else if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
+    h8_medium_debug_class_inc(run->class_id,
+                              &h8g.medium_local_free_class_8k,
+                              &h8g.medium_local_free_class_16k,
+                              &h8g.medium_local_free_class_32k,
+                              &h8g.medium_local_free_class_64k);
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+    h8_medium_debug_v12_class_inc(run->class_id,
+                                  &h8g.medium_local_free_class_24k,
+                                  &h8g.medium_local_free_class_48k);
+#endif
+    h8_medium_set_active_run(ctx, run->class_id, run);
+  }
+  h8_medium_debug_writer_exit(run);
+  h8_medium_domain_stable_release_probe(*probe);
+  return ok;
+}
+#endif
+
 bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;

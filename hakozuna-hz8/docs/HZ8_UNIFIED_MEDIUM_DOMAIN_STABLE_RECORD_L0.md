@@ -349,3 +349,36 @@ This confirms that the second Page8K classifier was the important kind-only
 cost. Page8KRecord-L1 is GO as an opt-in research candidate. It does not
 promote UnifiedMediumDomain or change the HZ8 v2 public default. Generic
 medium record handoff remains a separate lifetime/authority experiment.
+
+## MediumRecord L1 Same-Owner Result
+
+The first generic-medium behavior box used the stable record mutex to protect
+the implementation pointer, rechecked LIVE after locking, validated exact
+slot geometry from immutable record fields, and then entered only the existing
+same-owner free scaffold. Foreign ownership and transition cases fell through
+to the complete legacy path. No diagnostic counters or per-free reader
+refcounts were compiled into the speed lane.
+
+WSL build, smoke, and safety stress passed. The performance result is a clear
+NO-GO:
+
+| Row | Page8KRecord-L1 | MediumRecord-L1 | Delta |
+|---|---:|---:|---:|
+| fixed8K | 555.95M | 548.79M | -1.29% |
+| larger_sizes | 348.71M | 186.51M | -46.51% |
+
+The record itself is not the problem: fixed8K remains inside its guard. The
+failure is the per-free stable mutex imposed on a generic-medium same-owner
+path that was previously lockless. Removing one directory lookup cannot repay
+that synchronization cost.
+
+```text
+MediumRecord-L1 stable-mutex behavior: NO-GO / frozen evidence
+raw implementation handoff without lifetime proof: forbidden
+public default: unchanged
+```
+
+A follow-up may proceed only with a lockless owner-lifetime witness stored in
+stable control metadata. It must prove that a matching current owner keeps the
+implementation alive without adding a per-free refcount, CAS, or mutex. Until
+that proof exists, generic medium record handoff remains closed.

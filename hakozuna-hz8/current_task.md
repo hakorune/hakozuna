@@ -15,8 +15,8 @@ latest commit:
   a6c5d845 Add HZ8 stable medium domain records
 
 next box:
-  MediumRecord-L1
-  stable record -> generic medium same-owner free
+  MediumOwnerWitness-L0
+  prove lockless same-owner implementation lifetime in stable metadata
 ```
 
 Read first:
@@ -147,6 +147,25 @@ safety:       all existing gates pass
 If the same-owner box is neutral or negative, close generic record handoff.
 If it is positive, add a separate remote/transition box; do not silently widen
 L1.
+
+Result:
+
+```text
+WSL fixed8K:      -1.29%
+WSL larger_sizes: -46.51%
+safety:           PASS
+decision:         NO-GO / frozen evidence
+cause:            stable mutex replaced a lockless same-owner free path
+```
+
+Next admissible experiment:
+
+```text
+MediumOwnerWitness-L0 shadow only
+mirror owner identity/generation into stable control metadata on cold changes
+prove matching current owner implies implementation lifetime
+no behavior, mutex, refcount, CAS, or production counter
+```
 
 ## Other Lanes
 
