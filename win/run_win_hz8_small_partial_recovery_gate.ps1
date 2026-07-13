@@ -30,7 +30,7 @@ New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
 $missing = @($Allocators | Where-Object { -not (Test-Path $_.Path) })
 if ($ForceBuild -or $missing.Count -ne 0) {
-    & $BuildScript -OnlyHz8
+    & $BuildScript -OnlyHz8 -IncludeHz8Research
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
     }

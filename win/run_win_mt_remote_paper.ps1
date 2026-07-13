@@ -5,6 +5,7 @@ param(
     [string[]]$Allocators,
     [switch]$IncludeHz6Legacy,
     [switch]$IncludeHz8Research,
+    [switch]$IncludeDiagnostics,
     [switch]$SkipHz7TinyRoute,
     [switch]$ContinueOnFailure
 )
@@ -35,16 +36,16 @@ $LegacyExecutables = @(
     @{ Name = "hz8-v2-mediumlocalfast"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2_mediumlocalfast.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-partial-depot"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_partial_depot.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-partial-transition-only"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_partial_transition_only.exe"); Hz8Research = $true },
-    @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch.exe"); Hz8Research = $true },
-    @{ Name = "hz8-r3-page8k-integrated-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote_diag.exe"); Hz8Research = $true },
-    @{ Name = "hz8-r3-page8k-target-dispatch-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page8k-integrated-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote_diag.exe"); Hz8Research = $true; Diagnostic = $true },
+    @{ Name = "hz8-r3-page8k-target-dispatch-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-magazine-tail-shadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_magazine_tail_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-available4k"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_available4k.exe"); Hz8Research = $true },
-    @{ Name = "hz8-small-available4k-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_available4k_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-available4k-diag"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_available4k_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "mimalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_mimalloc.exe") },
     @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_tcmalloc.exe") }
 )
@@ -65,6 +66,9 @@ $Executables = $LegacyExecutables
 if (-not $IncludeHz8Research) {
     $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
 }
+if (-not $IncludeDiagnostics) {
+    $Executables = @($Executables | Where-Object { -not $_.Diagnostic })
+}
 if ($SkipHz7TinyRoute) {
     $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
 }
@@ -72,6 +76,9 @@ if ($IncludeHz6Legacy) {
     $Executables = $LegacyExecutables + $Hz6LegacyExecutables
     if (-not $IncludeHz8Research) {
         $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+    }
+    if (-not $IncludeDiagnostics) {
+        $Executables = @($Executables | Where-Object { -not $_.Diagnostic })
     }
     if ($SkipHz7TinyRoute) {
         $Executables = @($Executables | Where-Object { $_.Name -ne "hz7-tinyroute" })
@@ -89,7 +96,7 @@ if ($Allocators -and $Allocators.Count -gt 0) {
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
     if (($Executables | Where-Object { $_.Name -notlike "hz8-*" }).Count -eq 0) {
-        & $BuildScript -OnlyHz8
+        & $BuildScript -OnlyHz8 -IncludeHz8Research:$IncludeHz8Research
     } else {
         & $BuildScript
     }

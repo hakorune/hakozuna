@@ -9,10 +9,10 @@ Primary family:
   HZ8 allocator development and benchmarking
 
 Current direction:
-  HZ8 is the public recommended balanced allocator line. Current default is
-  HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
-  hardening. Public prep wording was refreshed in README / release drafts;
-  remaining publish work is tag/release packaging, not allocator behavior.
+  HZ8 is the public recommended balanced allocator line. Current Linux and
+  Windows default is Mag16 + KeepRefill + GeneralMediumPage + EntryBoundary,
+  with preload-surface and remote span-lease publish hardening. The previous
+  HZ8-v2 behavior remains an explicit rollback/reproduction lane.
   HZ9 in hakozuna-hz9/ is now frozen archived throughput research evidence.
   HZ9 ProductEntry-L0 and substrate probes remain useful design history, but
   no new HZ9 behavior boxes are active unless an explicit unarchive box is
@@ -28,12 +28,11 @@ Current direction:
   spans / low RSS without adding owner work to the free hot path. Its bounded
   retirement behavior now passes the repeated-generation safety/RSS/latency
   gate using separate cold P4 advisory and P1 authority batch snapshots.
-  HZ8 SmallPartialTransitionDepot P1 is now research GO on Windows and Linux.
-  It preserves LCG recovery but misses the xorshift default gate, so public
-  default remains unchanged. O(1) Mag16 tier membership improved the LCG
-  recovery trace but failed xorshift controls, so that optimization family is
-  closed. Redis-like R5 is positive, but xorshift still blocks P1 default
-  promotion. HZ12 reclaim remains separate evidence; do not merge cores.
+  HZ8 SmallPartialTransitionDepot P1 is research GO on Windows and Linux. It
+  preserves LCG recovery but misses the xorshift default gate. O(1) Mag16 tier
+  membership also failed the xorshift controls. Redis-like R5 is positive,
+  but the recovery family is closed without default promotion. HZ12 reclaim
+  remains separate evidence; do not merge cores.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
@@ -44,8 +43,8 @@ Current strength:
   row is hz11-span-cache256; Windows classbatch16 is matrix candidate-watch
   only. Linux fine128 remains the general opt-in evidence lane.
   HZ12 bounded retirement is GO on Windows and Linux, but its common-workload
-  throughput does not replace HZ8/HZ11. Its next value is as reclaim-contract
-  evidence for HZ8's long-lived medium peak-retention weakness.
+  throughput does not replace HZ8/HZ11. HZ12 reclaim remains separate research
+  evidence; HZ8 reclaim-adapter behavior is closed.
 ```
 
 ## Read First

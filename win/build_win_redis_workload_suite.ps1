@@ -1,5 +1,6 @@
 param(
-    [string]$VcpkgRoot
+    [string]$VcpkgRoot,
+    [switch]$IncludeHz8Research
 )
 
 $ErrorActionPreference = "Stop"
@@ -38,7 +39,7 @@ if (-not $VcpkgRoot) {
 
 . $ModernBuildCommon
 
-& $SuiteBuild
+& $SuiteBuild -IncludeHz8Research:$IncludeHz8Research
 if ($LASTEXITCODE -ne 0) {
     throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
 }
@@ -148,7 +149,7 @@ $Hz8DefaultFlags = @(
     "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
     "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
 )
-foreach ($variant in @(
+$hz8Variants = @(
     @{ Name = "hz8"; Output = "bench_redis_workload_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
     @{
         Name = "hz8-small-partial-transition-only"
@@ -178,7 +179,11 @@ foreach ($variant in @(
             "/DHZ_BENCH_DISABLE_REALLOC=1"
         )
     }
-)) {
+)
+if (-not $IncludeHz8Research) {
+    $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
+}
+foreach ($variant in $hz8Variants) {
     Write-Host "Building: redis workload ($($variant.Name))"
     $output = Join-Path $OutDir $variant.Output
     Invoke-Checked $Cc ($BaseFlags + $Hz8Flags + $variant.ExtraFlags + $Hz8Sources + @($BenchSrc, "/link", "/out:$output"))

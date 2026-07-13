@@ -4,15 +4,16 @@
 
 - `../README.md`: public allocator position and release entry
 - `../current_task.md`: short restart surface
+- `../src/README.md`: source module ownership and cleanup rules
 - `HZ8_WINDOWS_LANE_STATUS_L1.md`: supported/candidate/diagnostic lane map
 - `HZ8_LINUX_LANE_STATUS_L1.md`: Linux default, opt-in, and closed lane map
 - `HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md`: HZ10-HZ12 evidence integration
-- `HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`: current Windows speed/RSS candidate
+- `HZ8_REUSABLE_SPAN_MAGAZINE_L1.md`: promoted Mag16 default record
 - `HZ8_REUSABLE_SPAN_MAG32_L1.md`: larger/local opt-in capacity candidate
 - `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost and L1 path audit
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
 - `HZ8_LINUX_WORKING_SET_PARITY_L0.md`: Windows-equivalent Linux slot-ring benchmark box
-- `HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md`: staged default promotion and rollback boundary
+- `HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md`: completed Linux/Windows default promotion and rollback boundary
 - `HZ8_WINDOWS_DEFAULT_TCMALLOC_R10.md`: promoted Windows default versus tcmalloc R10 frontier
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_L0.md`: diagnostic shared Page8K/medium dispatch directory
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0.md`: type-stable medium route-record lifetime proof
@@ -20,7 +21,7 @@
 - `HZ8_PAGE8K_RANGE4097_L1.md`: closed 4097..8192 page-geometry probe
 - `HZ8_SMALL_AVAILABLE_INDEX_L1.md`: Windows exact-4KiB O(1) reuse evidence
 - `HZ8_SMALL_AVAILABLE_CLASS_SWEEP_L0.md`: closed 1KiB/2KiB/4KiB class expansion
-- `HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md`: transition-only small-span visibility candidate after Mag16 saturation
+- `HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md`: closed recovery-family record; P1 research GO/default HOLD
 - `../../docs/benchmarks/windows/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md`: Windows default/original/P1 LCG and xorshift R5 gate
 
 ## Frozen Public Baseline

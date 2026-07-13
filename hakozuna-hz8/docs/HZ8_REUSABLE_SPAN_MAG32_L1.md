@@ -45,9 +45,9 @@ replacement policy:
 full-preserve count:
   event evidence only, not the capacity proof
 
-next experiment:
+completed experiment:
   Linux Mag16/Mag32 A/A-calibrated R5
-  match effective remote percentage before interpreting remote throughput
+  effective remote percentage was matched before interpreting throughput
 
 future bridge:
   magazine tail decommit may become the HZ8-native receiver of the HZ12
@@ -72,9 +72,9 @@ regression gate rather than a remote-throughput claim.
 ## Decision
 
 ```text
-Windows candidate: GO
+Windows larger/local opt-in: GO
 HZ8 default: keep Mag16
-Mag32 promotion: HOLD pending Linux local/remote/RSS and safety gates
+Mag32 promotion: HOLD after Linux local/remote/RSS and safety gates
 ```
 
 ## Linux Gate
@@ -92,6 +92,6 @@ global Mag32 promotion: HOLD
 HZ8 default: keep Mag16
 ```
 
-Full results: `docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG32_20260711.md`.
-The next capacity experiment should be class-7-specific rather than a global
-Mag64 or an unconditional Mag32 promotion.
+Full results: [Linux Mag32 gate](../../docs/benchmarks/linux/HZ8_REUSABLE_SPAN_MAG32_20260711.md).
+The class-7 detached-sidecar follow-up is NO-GO and Mag64 is closed untested.
+Capacity tuning is closed; Mag32 remains an explicit larger/local opt-in.

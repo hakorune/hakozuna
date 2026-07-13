@@ -10,7 +10,7 @@ each local free can replace it and lose the previous reusable span.
 In the Windows diagnostic 16-4096 row, active miss, slow collect, and span
 commit were all exactly 80,538 while owner-list scan steps were zero.
 
-## Candidate
+## Promoted Mag16 Design
 
 `H8_REUSABLE_SPAN_MAGAZINE_L1` adds a bounded owner-local stack:
 
@@ -28,8 +28,9 @@ stored if capacity remains. Allocation pops and validates stale/full entries
 only after the active span is exhausted. It does not change remote publication,
 route authority, pending bits, MediumRun, or LargeDirect behavior.
 
-The feature is compile-time opt-in. Default HZ8 has no extra fields, branch, or
-hot-path store.
+During candidate evaluation the feature was compile-time opt-in. It is now the
+Mag16 component of the public HZ8 default; `hz8-v2-nomag` preserves the
+pre-promotion control.
 
 ## Windows R5
 

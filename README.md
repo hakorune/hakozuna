@@ -26,8 +26,8 @@ Part of the [hakorune](https://github.com/hakorune) project.
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
   `v2`, `v3`, and `v4`.
 - **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
-  is HZ8-v2 / KeepRefill plus preload-surface and remote span-lease publish
-  hardening.
+  is KeepRefill + remote span-lease publish + Mag16 + GeneralMediumPage +
+  EntryBoundary-L1A. The previous behavior is retained as `hz8-v2-rollback`.
 - **HZ9 (hakozuna-hz9)**: archived standalone throughput research line. It
   remains in-tree as design evidence, but active speed/RSS-aware work has moved
   to HZ10.

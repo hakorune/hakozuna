@@ -51,7 +51,7 @@ if (-not $OutputDir) {
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
 if ($ForceBuild -or -not (Test-Path $BaselinePath) -or -not (Test-Path $CandidatePath)) {
-    & $BuildScript
+    & $BuildScript -IncludeHz8Research
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
     }

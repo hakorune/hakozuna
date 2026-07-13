@@ -7,7 +7,7 @@ where the behavior contract is shared.
 
 | Lane | Build target | Status | Purpose |
 |---|---|---|---|
-| `hz8-general-medium-entry` | `preload` | Linux staged default | HZ8 v2 base plus exact 8K/16K/32K GeneralMediumPage and EntryBoundary-L1A |
+| `hz8` / `hz8-general-medium-entry` | `preload` | public default | HZ8 v2 base plus exact 8K/16K/32K GeneralMediumPage and EntryBoundary-L1A |
 
 Artifact: `libhakozuna_hz8_preload.so`.
 
@@ -66,10 +66,10 @@ make -C hakozuna-hz8 bench-release-small-available2k4k
 
 ## Promotion Rule
 
-The Linux `preload` artifact now selects GeneralMediumPage + EntryBoundary over
-the Mag16 base, with `preload-v2-rollback` as the immediate rollback. The shared
-Windows/Linux public label remains HZ8 v2 until native Windows default
-integration passes. Reopen Mag32 promotion only with an
+The Linux `preload` artifact selects GeneralMediumPage + EntryBoundary over
+the Mag16 base, with `preload-v2-rollback` as the immediate rollback. Native
+Windows integration has also passed, so this is the shared Windows/Linux
+public default. Reopen Mag32 promotion only with an
 application-like cross-platform matrix showing no major small/remote
 regression, no peak/post-RSS regression, and the same direction on Linux and
 Windows. Microbenchmark win count alone is not a promotion argument.

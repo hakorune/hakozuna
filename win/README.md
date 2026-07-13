@@ -51,6 +51,15 @@ powershell -ExecutionPolicy Bypass -File .\win\build_win_allocator_suite.ps1
 powershell -ExecutionPolicy Bypass -File .\win\run_win_allocator_suite.ps1
 ```
 
+HZ8 builds are selected by default. Research and diagnostic rows are explicit:
+
+```powershell
+.\win\build_win_allocator_suite.ps1 -OnlyHz8
+.\win\build_win_allocator_suite.ps1 -OnlyHz8 -IncludeHz8Research
+.\win\run_win_allocator_matrix.ps1 -ListOnly -IncludeHz8Research
+.\win\run_win_allocator_matrix.ps1 -ListOnly -IncludeHz8Research -IncludeDiagnostics
+```
+
 ## Boundary Rules
 
 - Keep Windows toolchain and launcher details in `win/`

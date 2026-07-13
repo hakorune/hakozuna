@@ -2,7 +2,8 @@ param(
     [string]$VcpkgRoot,
     [switch]$DiagnosticHz6Probes,
     [switch]$OnlyHz11,
-    [switch]$OnlyHz8
+    [switch]$OnlyHz8,
+    [switch]$IncludeHz8Research
 )
 
 $ErrorActionPreference = "Stop"
@@ -53,7 +54,7 @@ function Invoke-Hz8AllocatorMatrixBuild {
         "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
         "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
     )
-    foreach ($variant in @(
+    $hz8Variants = @(
         @{ Name = "hz8"; Output = "bench_mixed_ws_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_mixed_ws_hz8_v2.exe"; ExtraFlags = @() },
         @{
@@ -359,7 +360,11 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
             )
         }
-    )) {
+    )
+    if (-not $IncludeHz8Research) {
+        $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
+    }
+    foreach ($variant in $hz8Variants) {
         $output = Join-Path $OutDir $variant.Output
         $args = @(
             "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
@@ -379,6 +384,10 @@ function Invoke-Hz8AllocatorMatrixBuild {
         if ($LASTEXITCODE -ne 0) {
             throw "HZ8 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
         }
+    }
+
+    if (-not $IncludeHz8Research) {
+        return
     }
 
     $smallAvailableSmoke = Join-Path $Hz8Root "tests\h8_smoke.c"

@@ -1,6 +1,7 @@
 param(
     [string]$VcpkgRoot,
-    [switch]$OnlyHz8
+    [switch]$OnlyHz8,
+    [switch]$IncludeHz8Research
 )
 
 $ErrorActionPreference = "Stop"
@@ -114,7 +115,7 @@ $Hz8DefaultFlags = @(
 )
 
 function Invoke-Hz8MtRemoteBuilds {
-    foreach ($variant in @(
+    $hz8Variants = @(
         @{ Name = "hz8"; Output = "bench_random_mixed_mt_remote_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_random_mixed_mt_remote_hz8_v2.exe"; ExtraFlags = @() },
         @{
@@ -220,7 +221,11 @@ function Invoke-Hz8MtRemoteBuilds {
                 "/DH8_SMALL_AVAILABLE_INDEX_DIAG=1"
             )
         }
-    )) {
+    )
+    if (-not $IncludeHz8Research) {
+        $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
+    }
+    foreach ($variant in $hz8Variants) {
         Write-Host "Building: mt_remote ($($variant.Name))"
         $output = Join-Path $OutDir $variant.Output
         Invoke-Checked $Cc ($BaseFlags + $Hz8CommonFlags + $variant.ExtraFlags +

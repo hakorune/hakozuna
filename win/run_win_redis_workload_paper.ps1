@@ -67,7 +67,7 @@ if ($IncludeHz6CapacityControls) {
 }
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    & $BuildScript
+    & $BuildScript -IncludeHz8Research:$IncludeHz8Research
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_redis_workload_suite.ps1 failed with exit code $LASTEXITCODE"
     }

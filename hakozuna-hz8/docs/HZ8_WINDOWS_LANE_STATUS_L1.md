@@ -23,7 +23,7 @@ promotion candidates, diagnostics, and closed experiments.
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 | `hz8-small-partial-depot` | Windows GO / global HOLD | Transition-only same-owner partial-span visibility after Mag16 saturation; R5 balanced +435.73%, wide +178.34%, larger +37.34% |
-| `hz8-small-partial-transition-only` | Windows research GO / default HOLD | P1 reduces original depot fixed cost and retains LCG recovery, but xorshift balanced/wide remain -18.15%/-8.25% vs default |
+| `hz8-small-partial-transition-only` | cross-platform research GO / default HOLD | P1 reduces original depot fixed cost and retains LCG recovery, but the xorshift control matrix blocks default promotion |
 
 Windows local and RSS gates are positive, but Linux small/remote gates block a
 cross-platform default promotion. Keep this row behind
@@ -144,9 +144,13 @@ LargeDirect cache variants:
 ## Commands
 
 ```powershell
-# Build HZ8 default, control, and diagnostic artifacts.
+# Build the HZ8 default artifact.
 .\win\build_win_allocator_suite.ps1 -OnlyHz8
 .\win\build_win_mt_remote_suite.ps1 -OnlyHz8
+
+# Build HZ8 research and diagnostic artifacts intentionally.
+.\win\build_win_allocator_suite.ps1 -OnlyHz8 -IncludeHz8Research
+.\win\build_win_mt_remote_suite.ps1 -OnlyHz8 -IncludeHz8Research
 .\win\build_win_hz8_redis_r3_gate.ps1
 
 # List/run normal HZ8 rows.

@@ -166,7 +166,7 @@ if (-not $ListOnly -and ($ForceBuild -or ($Executables | Where-Object { -not (Te
     } elseif ($OnlyHz11Selected) {
         & $BuildScript -OnlyHz11
     } else {
-        & $BuildScript
+        & $BuildScript -IncludeHz8Research:$IncludeHz8Research
     }
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
