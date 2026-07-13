@@ -693,6 +693,12 @@ int main(void) {
       domain.stable_lock_acquire == 0u ||
       domain.stable_unlock_mismatch != 0u ||
       domain.stable_unregister_lock == 0u ||
+      domain.stable_owner_init == 0u ||
+      domain.stable_owner_sync == 0u ||
+      domain.stable_owner_final_sync == 0u ||
+      domain.stable_owner_mismatch != 0u ||
+      domain.stable_owner_sync_after_closing != 0u ||
+      domain.stable_owner_current_match == 0u ||
       domain.high_address_fallback == 0u) {
     fprintf(stderr,
             "stable record smoke failed alloc=%llu live=%llu fallback=%llu "
@@ -708,7 +714,9 @@ int main(void) {
             "pending_final=%llu pending_mismatch=%llu "
             "pending_after_closing=%llu pending_without_record=%llu "
             "lock_acquire=%llu lock_fallback=%llu unlock_mismatch=%llu "
-            "unregister_lock=%llu\n",
+            "unregister_lock=%llu owner_init=%llu owner_sync=%llu "
+            "owner_final=%llu owner_mismatch=%llu owner_after_close=%llu "
+            "owner_without_record=%llu owner_match=%llu owner_miss=%llu\n",
             (unsigned long long)domain.stable_record_alloc,
             (unsigned long long)domain.stable_live_lookup,
             (unsigned long long)domain.stable_record_pool_fallback,
@@ -744,13 +752,22 @@ int main(void) {
             (unsigned long long)domain.stable_lock_acquire,
             (unsigned long long)domain.stable_lock_fallback,
             (unsigned long long)domain.stable_unlock_mismatch,
-            (unsigned long long)domain.stable_unregister_lock);
+            (unsigned long long)domain.stable_unregister_lock,
+            (unsigned long long)domain.stable_owner_init,
+            (unsigned long long)domain.stable_owner_sync,
+            (unsigned long long)domain.stable_owner_final_sync,
+            (unsigned long long)domain.stable_owner_mismatch,
+            (unsigned long long)domain.stable_owner_sync_after_closing,
+            (unsigned long long)domain.stable_owner_note_without_record,
+            (unsigned long long)domain.stable_owner_current_match,
+            (unsigned long long)domain.stable_owner_current_miss);
     return 32;
   }
   printf("stable_domain records=%llu live=%llu tombstone=%llu "
          "slot_sync=%llu slot_final=%llu pending_sync=%llu "
          "pending_final=%llu stable_lock=%llu lock_fallback=%llu "
-         "unregister_lock=%llu pool_bytes=%llu\n",
+         "unregister_lock=%llu owner_sync=%llu owner_final=%llu "
+         "owner_match=%llu owner_miss=%llu pool_bytes=%llu\n",
          (unsigned long long)domain.stable_record_alloc,
          (unsigned long long)domain.stable_live_lookup,
          (unsigned long long)domain.stable_tombstone_lookup,
@@ -761,6 +778,10 @@ int main(void) {
          (unsigned long long)domain.stable_lock_acquire,
          (unsigned long long)domain.stable_lock_fallback,
          (unsigned long long)domain.stable_unregister_lock,
+         (unsigned long long)domain.stable_owner_sync,
+         (unsigned long long)domain.stable_owner_final_sync,
+         (unsigned long long)domain.stable_owner_current_match,
+         (unsigned long long)domain.stable_owner_current_miss,
          (unsigned long long)domain.stable_pool_current_bytes);
 #endif
   H8Stats stats = h8_stats();

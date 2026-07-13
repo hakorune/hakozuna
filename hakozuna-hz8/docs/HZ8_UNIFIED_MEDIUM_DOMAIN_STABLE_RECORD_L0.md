@@ -382,3 +382,115 @@ A follow-up may proceed only with a lockless owner-lifetime witness stored in
 stable control metadata. It must prove that a matching current owner keeps the
 implementation alive without adding a per-free refcount, CAS, or mutex. Until
 that proof exists, generic medium record handoff remains closed.
+
+## MediumOwnerWitness L0
+
+The stable record now mirrors the packed owner identity. The mirror is
+initialized at record publication and updated only at the existing cold owner
+attach/detach stores. Unregister compares and snapshots the owner word while
+holding the stable mutex after publishing CLOSING. The public and speed lanes
+do not compile these hooks.
+
+The diagnostic free path compares three values without changing behavior:
+
+```text
+stable owner mirror
+legacy H8MediumRun owner authority
+current thread owner slot + generation
+```
+
+Initial WSL smoke evidence:
+
+```text
+owner init:                 20,004
+owner sync:                 7
+owner final sync:           20,000
+owner mirror mismatch:      0
+owner update after CLOSING: 0
+current-owner match:        4
+current-owner miss:         2
+```
+
+This clears owner-word synchronization as L0 evidence. It does not yet prove
+lockless implementation lifetime. Before a behavior sibling, the control
+contract must establish that a current owner match prevents concurrent run
+detach/unregister for the duration of the same-thread free. Any control path
+that can retire a live owner's run from another thread blocks that behavior.
+
+## MediumOwnerWitness L1 Initial Result
+
+The caller audit found that published generic-medium runs are not destroyed at
+runtime. Owner exit detaches them into the ownerless pool; the only calls to
+`h8_medium_run_destroy_scaffold()` are creation failures before registration.
+Under this current lifecycle contract, a stable owner-word match plus
+LIVE/implementation double-check can enter the existing same-owner scaffold
+without the stable mutex. Foreign owner, transition, or uncertain state falls
+through to the complete legacy path.
+
+WSL R5 against Page8KRecord-L1:
+
+| Row | Page8K record | Owner witness | Delta |
+|---|---:|---:|---:|
+| larger_sizes | 276.56M | 338.58M | +22.42% |
+| fixed8K | 480.69M | 464.52M | -3.36% |
+| larger interleaved r90 | 23.03M | 22.26M | -3.35% |
+
+Smoke and safety stress pass. The large local signal is strong, and the
+mutex-induced cliff is gone. The two control rows sit just outside the `-3%`
+target on noisy WSL R5, so this is a HOLD research candidate pending native
+Windows and Ubuntu AB/BA measurement. It is not a default candidate yet.
+
+Any future runtime destruction/reclaim of published medium run metadata would
+invalidate this lifetime proof and must either keep implementation metadata
+type-stable or close this lane.
+
+## MediumOwnerWitness L1 Windows Closure
+
+The first Windows build exposed two integration issues before performance
+could be judged. Cold owner updates found their stable record with a linear
+scan, which became quadratic as run count grew. `H8MediumRun` now retains an
+O(1) backpointer to its type-stable record, with the scan kept only as a
+defensive fallback. OwnerWitness also no longer substitutes the stable mutex
+for the ordinary generic-medium run lock. The witness needs stable publication
+and owner identity, not a second allocation-path lock policy.
+
+After those corrections, the former minimal `16K / ws=64` timeout completes
+normally. WSL smoke and safety stress remain green.
+
+The lock backend audit also found one diagnostic-lane-only mismatch: active
+run demotion tried the embedded run lock directly but released through the
+selected backend. Try-lock now uses the same backend selector as lock/unlock,
+so StableRecord and MediumRecord cannot acquire one mutex and release another.
+
+Native Windows rotated R10 against Page8KRecord-L1 measured:
+
+| Row | Page8KRecord median | OwnerWitness median | Delta |
+|---|---:|---:|---:|
+| fixed8K | 14.339M | 13.941M | -2.77% |
+| balanced | 56.687M | 52.689M | -7.05% |
+| wide_ws | 55.441M | 56.692M | +2.26% |
+| larger_sizes | 22.114M | 21.735M | -1.72% |
+
+A diagnostic-only sibling adds relaxed atomic attribution without changing
+the speed lane. It observed:
+
+| Row | Attempt | Valid | Invalid | Fallback |
+|---|---:|---:|---:|---:|
+| fixed8K | 268,124 | 268,124 | 0 | 0 |
+| larger_sizes | 160,080 | 160,080 | 0 | 0 |
+| balanced | 0 | 0 | 0 | 0 |
+| wide_ws | 0 | 0 | 0 | 0 |
+
+The intended same-owner path is therefore fully visible in the medium rows;
+missing witness coverage does not explain the lack of Windows gain. Conversely,
+the balanced regression cannot be caused by the witness behavior because the
+row never executes it. This closes further owner-witness policy tuning.
+
+```text
+correctness/research status: GO
+cross-platform performance promotion: NO-GO
+public HZ8 v2 default: unchanged
+retained lanes:
+  hz8-r3-owner-witness       speed evidence
+  hz8-r3-owner-witness-diag  diagnostic only
+```

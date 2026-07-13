@@ -148,6 +148,29 @@ function Invoke-Hz8AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz8-r3-owner-witness"
+            Output = "bench_mixed_ws_hz8_owner_witness.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1=1",
+                "/DH8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-r3-owner-witness-diag"
+            Output = "bench_mixed_ws_hz8_owner_witness_diag.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1=1",
+                "/DH8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1=1",
+                "/DH8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG=1"
+            )
+        },
+        @{
             Name = "hz8-r3-page8k-range4097"
             Output = "bench_mixed_ws_hz8_medium_page8k_range4097.exe"
             ExtraFlags = @(

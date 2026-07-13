@@ -49,6 +49,50 @@ bool h8_medium_free_record_same_owner(const H8MediumDomainProbe* probe,
 }
 #endif
 
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+bool h8_medium_free_owner_witness(const H8MediumDomainProbe* probe, void* ptr,
+                                  bool* owned_out) {
+  if (owned_out) *owned_out = false;
+  H8ThreadCtx* ctx = h8_tls_ctx;
+  uint64_t current_owner =
+      (ctx && ctx->owner) ? h8_medium_owner_word_for(ctx->owner) : 0u;
+  H8MediumRun* run = NULL;
+  H8MediumDomainAcquireResult acquired =
+      probe ? h8_medium_domain_owner_witness_acquire(
+                  *probe, ptr, current_owner, &run)
+            : H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  if (acquired == H8_MEDIUM_DOMAIN_ACQUIRE_INVALID) {
+    if (owned_out) *owned_out = true;
+    return false;
+  }
+  if (acquired != H8_MEDIUM_DOMAIN_ACQUIRE_VALID || !run) return false;
+
+  if (owned_out) *owned_out = true;
+  h8_medium_debug_writer_enter(run, ctx->owner,
+                               H8_MEDIUM_WRITER_OWNER_LOCAL_FREE);
+  bool keep_empty_live = run->class_id < H8_MEDIUM_CLASS_COUNT &&
+                         ctx->active_medium_runs[run->class_id] == run;
+  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  if (!ok) {
+    H8_DEBUG_INC(medium_invalid_owned_count);
+  } else if (run->class_id < H8_MEDIUM_CLASS_COUNT) {
+    h8_medium_debug_class_inc(run->class_id,
+                              &h8g.medium_local_free_class_8k,
+                              &h8g.medium_local_free_class_16k,
+                              &h8g.medium_local_free_class_32k,
+                              &h8g.medium_local_free_class_64k);
+#if defined(H8_MEDIUM_V12_48K2_CLASS)
+    h8_medium_debug_v12_class_inc(run->class_id,
+                                  &h8g.medium_local_free_class_24k,
+                                  &h8g.medium_local_free_class_48k);
+#endif
+    h8_medium_set_active_run(ctx, run->class_id, run);
+  }
+  h8_medium_debug_writer_exit(run);
+  return ok;
+}
+#endif
+
 bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   if (owned_out) {
     *owned_out = false;
@@ -67,6 +111,13 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
   H8MediumDomainProbe stable_probe = h8_medium_domain_shadow_lookup(ptr);
   h8_medium_domain_stable_compare(stable_probe, run);
+  uint64_t stable_authority_owner =
+      run ? atomic_load_explicit(&run->owner_word, memory_order_acquire) : 0u;
+  uint64_t stable_current_owner =
+      (ctx && ctx->owner) ? h8_medium_owner_word_for(ctx->owner) : 0u;
+  h8_medium_domain_stable_owner_compare(stable_probe,
+                                        stable_authority_owner,
+                                        stable_current_owner);
   bool stable_authority_exact =
       run && h8_medium_slot_index_from_ptr_checked_fast(run, ptr, NULL);
   h8_medium_domain_stable_exact_compare(stable_probe, ptr,
@@ -322,6 +373,10 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       h8_medium_lazy_purge_shadow_drop(run);
       run->owner_attached = false;
       atomic_store_explicit(&run->owner_word, 0, memory_order_release);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+      h8_medium_domain_stable_owner_note(run, 0u);
+#endif
       h8_medium_unlock_run(run);
       h8_medium_debug_writer_exit(run);
       run->next_owner = NULL;

@@ -102,6 +102,11 @@ typedef struct H8MediumRun {
   uint16_t slot_shift;
   uint32_t run_size;
   _Atomic uint64_t owner_word;
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+  void* stable_domain_record;
+#endif
   _Atomic uint8_t state;
   _Atomic uint8_t qstate;
   _Atomic uint64_t pending_word_mask;
@@ -160,6 +165,10 @@ void h8_medium_domain_stable_slot_note(H8MediumRun* run, size_t slot,
 void h8_medium_domain_stable_pending_note(H8MediumRun* run);
 bool h8_medium_domain_stable_lock(H8MediumRun* run);
 bool h8_medium_domain_stable_unlock(H8MediumRun* run);
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+bool h8_medium_free_owner_witness(const H8MediumDomainProbe* probe, void* ptr,
+                                  bool* owned_out);
 #endif
 
 static inline void h8_medium_slot_state_store_release(H8MediumRun* run,
@@ -624,6 +633,7 @@ void h8_medium_detached_remove_locked(H8MediumRun* run);
 bool h8_medium_ptr_in_run(const H8MediumRun* run, const void* ptr);
 void h8_medium_run_lock_backend(H8MediumRun* run);
 void h8_medium_run_unlock_backend(H8MediumRun* run);
+int h8_medium_run_trylock_backend(H8MediumRun* run);
 H8MediumRun* h8_medium_directory_find(const void* ptr);
 H8MediumRun* h8_medium_find_run_locked(const void* ptr, bool route_lookup);
 void h8_medium_register_locked(H8MediumRun* run);

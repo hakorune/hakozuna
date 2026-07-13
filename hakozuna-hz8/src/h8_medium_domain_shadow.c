@@ -6,10 +6,12 @@
     defined(H8_UNIFIED_MEDIUM_DOMAIN_KIND_L1) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_PAGE8K_RECORD_L1) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
 
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
 #define H8_MD_STABLE_STORAGE 1
 #endif
 
@@ -48,6 +50,7 @@ typedef struct H8MediumDomainStableRecord {
   _Atomic uint64_t pending_bits;
   _Atomic uint64_t pending_word_mask;
   _Atomic uint8_t qstate;
+  _Atomic uint64_t owner_word;
   h8_platform_mutex_t lock;
 } H8MediumDomainStableRecord;
 
@@ -60,7 +63,8 @@ typedef struct H8MediumDomainLeaf {
 
 static _Atomic(H8MediumDomainLeaf*) h8_md_root[H8_MD_ROOT_COUNT];
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG)
 static _Atomic uint64_t h8_md_lookup;
 static _Atomic uint64_t h8_md_medium_hit;
 static _Atomic uint64_t h8_md_page8k_hit;
@@ -107,6 +111,18 @@ static _Atomic uint64_t h8_md_stable_lock_acquire;
 static _Atomic uint64_t h8_md_stable_lock_fallback;
 static _Atomic uint64_t h8_md_stable_unlock_mismatch;
 static _Atomic uint64_t h8_md_stable_unregister_lock;
+static _Atomic uint64_t h8_md_stable_owner_init;
+static _Atomic uint64_t h8_md_stable_owner_sync;
+static _Atomic uint64_t h8_md_stable_owner_final_sync;
+static _Atomic uint64_t h8_md_stable_owner_mismatch;
+static _Atomic uint64_t h8_md_stable_owner_sync_after_closing;
+static _Atomic uint64_t h8_md_stable_owner_note_without_record;
+static _Atomic uint64_t h8_md_stable_owner_current_match;
+static _Atomic uint64_t h8_md_stable_owner_current_miss;
+static _Atomic uint64_t h8_md_owner_witness_attempt;
+static _Atomic uint64_t h8_md_owner_witness_valid;
+static _Atomic uint64_t h8_md_owner_witness_invalid;
+static _Atomic uint64_t h8_md_owner_witness_fallback;
 #define H8_MD_COUNT(name) \
   atomic_fetch_add_explicit(&(name), 1u, memory_order_relaxed)
 #else
@@ -219,15 +235,28 @@ static H8MediumDomainStableRecord* h8_md_stable_record_create(
       &record->qstate,
       atomic_load_explicit(&run->qstate, memory_order_acquire),
       memory_order_relaxed);
+  atomic_store_explicit(
+      &record->owner_word,
+      atomic_load_explicit(&run->owner_word, memory_order_acquire),
+      memory_order_relaxed);
+  H8_MD_COUNT(h8_md_stable_owner_init);
   H8_MD_COUNT(h8_md_stable_pending_init);
   atomic_store_explicit(&record->implementation, run, memory_order_relaxed);
   atomic_store_explicit(&record->state, H8_MD_RECORD_LIVE,
                         memory_order_release);
+  run->stable_domain_record = record;
   H8_MD_COUNT(h8_md_stable_record_alloc);
   return record;
 }
 
 static H8MediumDomainStableRecord* h8_md_stable_record_find(H8MediumRun* run) {
+  if (run && run->stable_domain_record) {
+    H8MediumDomainStableRecord* record = run->stable_domain_record;
+    if (atomic_load_explicit(&record->implementation, memory_order_acquire) ==
+        run) {
+      return record;
+    }
+  }
   size_t count = atomic_load_explicit(&h8_md_stable_record_count,
                                       memory_order_acquire);
   if (count > H8_MD_STABLE_RECORD_CAP) {
@@ -287,6 +316,42 @@ void h8_medium_domain_stable_pending_note(H8MediumRun* run) {
   H8_MD_COUNT(h8_md_stable_pending_sync);
 }
 
+void h8_medium_domain_stable_owner_note(H8MediumRun* run,
+                                        uint64_t committed_owner_word) {
+  H8MediumDomainStableRecord* record = h8_md_stable_record_find(run);
+  if (!record) {
+    H8_MD_COUNT(h8_md_stable_owner_note_without_record);
+    return;
+  }
+  if (atomic_load_explicit(&record->state, memory_order_acquire) !=
+      H8_MD_RECORD_LIVE) {
+    H8_MD_COUNT(h8_md_stable_owner_sync_after_closing);
+    return;
+  }
+  atomic_store_explicit(&record->owner_word, committed_owner_word,
+                        memory_order_release);
+  H8_MD_COUNT(h8_md_stable_owner_sync);
+}
+
+void h8_medium_domain_stable_owner_compare(H8MediumDomainProbe probe,
+                                           uint64_t authority_owner_word,
+                                           uint64_t current_owner_word) {
+  if (probe.kind != H8_MEDIUM_DOMAIN_RUN || !probe.record) return;
+  const H8MediumDomainStableRecord* record = probe.record;
+  if (atomic_load_explicit(&record->state, memory_order_acquire) !=
+      H8_MD_RECORD_LIVE)
+    return;
+  uint64_t mirrored =
+      atomic_load_explicit(&record->owner_word, memory_order_acquire);
+  if (mirrored != authority_owner_word) {
+    H8_MD_COUNT(h8_md_stable_owner_mismatch);
+  } else if (current_owner_word != 0u && mirrored == current_owner_word) {
+    H8_MD_COUNT(h8_md_stable_owner_current_match);
+  } else {
+    H8_MD_COUNT(h8_md_stable_owner_current_miss);
+  }
+}
+
 bool h8_medium_domain_stable_lock(H8MediumRun* run) {
   H8MediumDomainStableRecord* record = h8_md_stable_record_find(run);
   if (!record) {
@@ -308,6 +373,21 @@ bool h8_medium_domain_stable_unlock(H8MediumRun* run) {
   return true;
 }
 
+bool h8_medium_domain_stable_trylock(H8MediumRun* run, int* result_out) {
+  H8MediumDomainStableRecord* record = h8_md_stable_record_find(run);
+  if (!record) {
+    return false;
+  }
+  int result = h8_platform_mutex_trylock(&record->lock);
+  if (result == 0) {
+    H8_MD_COUNT(h8_md_stable_lock_acquire);
+  }
+  if (result_out) {
+    *result_out = result;
+  }
+  return true;
+}
+
 static void h8_md_stable_pending_do_final_sync(
     H8MediumDomainStableRecord* record, H8MediumRun* run) {
   uint64_t bits =
@@ -326,6 +406,19 @@ static void h8_md_stable_pending_do_final_sync(
                         memory_order_release);
   atomic_store_explicit(&record->qstate, qstate, memory_order_release);
   H8_MD_COUNT(h8_md_stable_pending_final_sync);
+}
+
+static void h8_md_stable_owner_do_final_sync(
+    H8MediumDomainStableRecord* record, H8MediumRun* run) {
+  uint64_t owner_word =
+      atomic_load_explicit(&run->owner_word, memory_order_acquire);
+  if (atomic_load_explicit(&record->owner_word, memory_order_acquire) !=
+      owner_word) {
+    H8_MD_COUNT(h8_md_stable_owner_mismatch);
+  }
+  atomic_store_explicit(&record->owner_word, owner_word,
+                        memory_order_release);
+  H8_MD_COUNT(h8_md_stable_owner_final_sync);
 }
 
 static void h8_md_stable_slot_do_final_sync(
@@ -395,6 +488,7 @@ void h8_medium_domain_shadow_unregister_medium(H8MediumRun* run) {
                         memory_order_release);
   h8_md_stable_slot_do_final_sync(stable, run);
   h8_md_stable_pending_do_final_sync(stable, run);
+  h8_md_stable_owner_do_final_sync(stable, run);
   const void* published = stable;
 #else
   const void* published = run;
@@ -623,6 +717,63 @@ void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe) {
 #endif
 }
 
+H8MediumDomainAcquireResult h8_medium_domain_owner_witness_acquire(
+    H8MediumDomainProbe probe, const void* ptr, uint64_t current_owner_word,
+    H8MediumRun** run_out) {
+  if (run_out) *run_out = NULL;
+#if defined(H8_MD_STABLE_STORAGE)
+  H8_MD_COUNT(h8_md_owner_witness_attempt);
+  if (probe.kind != H8_MEDIUM_DOMAIN_RUN || !probe.record || !ptr ||
+      current_owner_word == 0u) {
+    H8_MD_COUNT(h8_md_owner_witness_fallback);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  }
+  H8MediumDomainStableRecord* record =
+      (H8MediumDomainStableRecord*)probe.record;
+  if (atomic_load_explicit(&record->state, memory_order_acquire) !=
+          H8_MD_RECORD_LIVE ||
+      atomic_load_explicit(&record->owner_word, memory_order_acquire) !=
+          current_owner_word) {
+    H8_MD_COUNT(h8_md_owner_witness_fallback);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  }
+  H8MediumRun* run =
+      atomic_load_explicit(&record->implementation, memory_order_acquire);
+  uintptr_t address = (uintptr_t)ptr;
+  size_t payload = (size_t)record->slot_size * (size_t)record->slot_count;
+  if (!run || record->slot_size == 0u || address < record->base ||
+      address - record->base >= payload) {
+    H8_MD_COUNT(h8_md_owner_witness_invalid);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_INVALID;
+  }
+  uintptr_t offset = address - record->base;
+  bool exact = (record->slot_size & (record->slot_size - 1u)) == 0u
+                   ? (offset & ((uintptr_t)record->slot_size - 1u)) == 0u
+                   : (offset % (uintptr_t)record->slot_size) == 0u;
+  if (!exact) {
+    H8_MD_COUNT(h8_md_owner_witness_invalid);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_INVALID;
+  }
+  if (atomic_load_explicit(&record->state, memory_order_acquire) !=
+          H8_MD_RECORD_LIVE ||
+      atomic_load_explicit(&record->owner_word, memory_order_acquire) !=
+          current_owner_word ||
+      atomic_load_explicit(&record->implementation, memory_order_acquire) !=
+          run) {
+    H8_MD_COUNT(h8_md_owner_witness_fallback);
+    return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+  }
+  if (run_out) *run_out = run;
+  H8_MD_COUNT(h8_md_owner_witness_valid);
+  return H8_MEDIUM_DOMAIN_ACQUIRE_VALID;
+#else
+  (void)probe;
+  (void)ptr;
+  (void)current_owner_word;
+  return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
+#endif
+}
+
 bool h8_medium_domain_stable_turnover_test(size_t iterations) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
   if (iterations == 0u || iterations > H8_MD_STABLE_RECORD_CAP / 2u) {
@@ -708,12 +859,14 @@ void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
 }
 
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG)
 #define H8_MD_LOAD(name) atomic_load_explicit(&(name), memory_order_relaxed)
 #endif
 H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void) {
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG)
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
   size_t stable_count = H8_MD_LOAD(h8_md_stable_record_count);
   if (stable_count > H8_MD_STABLE_RECORD_CAP) {
@@ -767,6 +920,18 @@ H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void) {
       H8_MD_LOAD(h8_md_stable_lock_fallback),
       H8_MD_LOAD(h8_md_stable_unlock_mismatch),
       H8_MD_LOAD(h8_md_stable_unregister_lock),
+      H8_MD_LOAD(h8_md_stable_owner_init),
+      H8_MD_LOAD(h8_md_stable_owner_sync),
+      H8_MD_LOAD(h8_md_stable_owner_final_sync),
+      H8_MD_LOAD(h8_md_stable_owner_mismatch),
+      H8_MD_LOAD(h8_md_stable_owner_sync_after_closing),
+      H8_MD_LOAD(h8_md_stable_owner_note_without_record),
+      H8_MD_LOAD(h8_md_stable_owner_current_match),
+      H8_MD_LOAD(h8_md_stable_owner_current_miss),
+      H8_MD_LOAD(h8_md_owner_witness_attempt),
+      H8_MD_LOAD(h8_md_owner_witness_valid),
+      H8_MD_LOAD(h8_md_owner_witness_invalid),
+      H8_MD_LOAD(h8_md_owner_witness_fallback),
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
       sizeof(H8MediumDomainStableRecord) * stable_count,
       sizeof(H8MediumDomainStableRecord) * stable_count};
@@ -826,12 +991,29 @@ void h8_medium_domain_stable_slot_note(H8MediumRun* run, size_t slot,
   (void)committed_state;
 }
 void h8_medium_domain_stable_pending_note(H8MediumRun* run) { (void)run; }
+void h8_medium_domain_stable_owner_note(H8MediumRun* run,
+                                        uint64_t committed_owner_word) {
+  (void)run;
+  (void)committed_owner_word;
+}
+void h8_medium_domain_stable_owner_compare(H8MediumDomainProbe probe,
+                                           uint64_t authority_owner_word,
+                                           uint64_t current_owner_word) {
+  (void)probe;
+  (void)authority_owner_word;
+  (void)current_owner_word;
+}
 bool h8_medium_domain_stable_lock(H8MediumRun* run) {
   (void)run;
   return false;
 }
 bool h8_medium_domain_stable_unlock(H8MediumRun* run) {
   (void)run;
+  return false;
+}
+bool h8_medium_domain_stable_trylock(H8MediumRun* run, int* result_out) {
+  (void)run;
+  if (result_out) *result_out = -1;
   return false;
 }
 H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
@@ -843,6 +1025,15 @@ H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
 }
 void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe) {
   (void)probe;
+}
+H8MediumDomainAcquireResult h8_medium_domain_owner_witness_acquire(
+    H8MediumDomainProbe probe, const void* ptr, uint64_t current_owner_word,
+    H8MediumRun** run_out) {
+  (void)probe;
+  (void)ptr;
+  (void)current_owner_word;
+  if (run_out) *run_out = NULL;
+  return H8_MEDIUM_DOMAIN_ACQUIRE_FALLBACK;
 }
 void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
                                      H8MediumDomainKind expected) {

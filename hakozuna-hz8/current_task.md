@@ -12,11 +12,11 @@ active research line:
   UnifiedMediumDomain
 
 latest commit:
-  a6c5d845 Add HZ8 stable medium domain records
+  51b8ebca Test HZ8 generic medium record handoff
 
 next box:
-  MediumOwnerWitness-L0
-  prove lockless same-owner implementation lifetime in stable metadata
+  freeze UnifiedMediumDomain behavior expansion
+  retain Page8KRecord and OwnerWitness as opt-in evidence
 ```
 
 Read first:
@@ -165,6 +165,93 @@ MediumOwnerWitness-L0 shadow only
 mirror owner identity/generation into stable control metadata on cold changes
 prove matching current owner implies implementation lifetime
 no behavior, mutex, refcount, CAS, or production counter
+```
+
+Initial L0 evidence:
+
+```text
+owner sync:                 7
+owner final sync:           20000
+owner mirror mismatch:      0
+owner update after CLOSING: 0
+current-owner match:        4
+status:                     GO synchronization evidence
+```
+
+Remaining blocker:
+
+```text
+Audit every detach/unregister caller.
+Behavior is allowed only if a matching current owner excludes concurrent
+teardown for the complete free operation without a new hot-path primitive.
+```
+
+Caller audit result:
+
+```text
+published medium runs are process-lifetime metadata today
+owner exit detaches to ownerless pool; it does not unregister/destroy
+destroy_scaffold callers are pre-registration creation failures only
+```
+
+L1 initial WSL R5:
+
+```text
+larger_sizes:            +22.42%
+fixed8K control:          -3.36%
+larger interleaved r90:   -3.35%
+smoke/safety:             PASS
+status:                   HOLD pending native AB/BA
+```
+
+Windows lock/lifetime correction:
+
+```text
+stable-record lookup on owner attach/detach:
+  O(1) H8MediumRun backpointer, linear scan only as fallback
+
+OwnerWitness run locking:
+  existing embedded run lock
+  stable mutex is not substituted into the allocation path
+
+minimal 16K probe:
+  previous apparent hang removed
+```
+
+Windows rotated R10 against Page8KRecord-L1:
+
+| Row | Delta |
+|---|---:|
+| fixed8K | -2.77% |
+| balanced | -7.05% |
+| wide_ws | +2.26% |
+| larger_sizes | -1.72% |
+
+Diagnostic-only attribution:
+
+```text
+fixed8K generic-medium witness:
+  attempt=268124 valid=268124 invalid=0 fallback=0
+
+larger_sizes witness:
+  attempt=160080 valid=160080 invalid=0 fallback=0
+
+balanced / wide_ws witness:
+  attempt=0
+```
+
+Decision:
+
+```text
+MediumOwnerWitness-L1:
+  correctness/research GO
+  cross-platform performance promotion NO-GO
+  opt-in evidence only
+
+The witness reaches the intended path at 100% in the medium rows, but Windows
+does not recover the WSL larger_sizes gain. Do not add more owner-witness
+knobs. The balanced regression cannot be attributed to the behavior because
+that row never invokes it.
 ```
 
 ## Other Lanes

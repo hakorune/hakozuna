@@ -25,7 +25,8 @@
 #include "h8_medium_page_shadow.h"
 #endif
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG)
 #include "h8_medium_domain_shadow.h"
 #endif
 #if defined(H8_ADAPTIVE_TRANSFER_SHADOW_L0)
@@ -813,7 +814,8 @@ int main(int argc, char** argv) {
 #endif
 #if defined(HZ_BENCH_USE_HZ8) && \
     (defined(H8_UNIFIED_MEDIUM_DOMAIN_SHADOW_L0) || \
-     defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0))
+     defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+     defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_DIAG))
     {
         H8MediumDomainShadowStats s = h8_medium_domain_shadow_stats();
         printf("[H8_MEDIUM_DOMAIN] lookup=%llu medium_hit=%llu "
@@ -838,6 +840,8 @@ int main(int argc, char** argv) {
                "stable_pending_without_record=%llu stable_lock=%llu "
                "stable_lock_fallback=%llu stable_unlock_mismatch=%llu "
                "stable_unregister_lock=%llu "
+               "owner_witness_attempt=%llu owner_witness_valid=%llu "
+               "owner_witness_invalid=%llu owner_witness_fallback=%llu "
                "stable_current_bytes=%llu stable_peak_bytes=%llu\n",
                (unsigned long long)s.lookup,
                (unsigned long long)s.medium_hit,
@@ -882,6 +886,10 @@ int main(int argc, char** argv) {
                (unsigned long long)s.stable_lock_fallback,
                (unsigned long long)s.stable_unlock_mismatch,
                (unsigned long long)s.stable_unregister_lock,
+               (unsigned long long)s.owner_witness_attempt,
+               (unsigned long long)s.owner_witness_valid,
+               (unsigned long long)s.owner_witness_invalid,
+               (unsigned long long)s.owner_witness_fallback,
                (unsigned long long)s.stable_pool_current_bytes,
                (unsigned long long)s.stable_pool_peak_bytes);
     }

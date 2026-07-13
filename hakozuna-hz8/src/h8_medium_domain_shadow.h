@@ -71,6 +71,18 @@ typedef struct H8MediumDomainShadowStats {
   uint64_t stable_lock_fallback;
   uint64_t stable_unlock_mismatch;
   uint64_t stable_unregister_lock;
+  uint64_t stable_owner_init;
+  uint64_t stable_owner_sync;
+  uint64_t stable_owner_final_sync;
+  uint64_t stable_owner_mismatch;
+  uint64_t stable_owner_sync_after_closing;
+  uint64_t stable_owner_note_without_record;
+  uint64_t stable_owner_current_match;
+  uint64_t stable_owner_current_miss;
+  uint64_t owner_witness_attempt;
+  uint64_t owner_witness_valid;
+  uint64_t owner_witness_invalid;
+  uint64_t owner_witness_fallback;
   uint64_t stable_pool_current_bytes;
   uint64_t stable_pool_peak_bytes;
 } H8MediumDomainShadowStats;
@@ -88,11 +100,20 @@ bool h8_medium_domain_stable_exact_compare(H8MediumDomainProbe probe,
 void h8_medium_domain_stable_slot_note(H8MediumRun* run, size_t slot,
                                        uint32_t committed_state);
 void h8_medium_domain_stable_pending_note(H8MediumRun* run);
+void h8_medium_domain_stable_owner_note(H8MediumRun* run,
+                                        uint64_t committed_owner_word);
+void h8_medium_domain_stable_owner_compare(H8MediumDomainProbe probe,
+                                           uint64_t authority_owner_word,
+                                           uint64_t current_owner_word);
 bool h8_medium_domain_stable_lock(H8MediumRun* run);
 bool h8_medium_domain_stable_unlock(H8MediumRun* run);
+bool h8_medium_domain_stable_trylock(H8MediumRun* run, int* result_out);
 H8MediumDomainAcquireResult h8_medium_domain_stable_acquire_probe(
     H8MediumDomainProbe probe, const void* ptr, H8MediumRun** run_out);
 void h8_medium_domain_stable_release_probe(H8MediumDomainProbe probe);
+H8MediumDomainAcquireResult h8_medium_domain_owner_witness_acquire(
+    H8MediumDomainProbe probe, const void* ptr, uint64_t current_owner_word,
+    H8MediumRun** run_out);
 void h8_medium_domain_shadow_compare(H8MediumDomainProbe probe,
                                      H8MediumDomainKind expected);
 H8MediumDomainShadowStats h8_medium_domain_shadow_stats(void);

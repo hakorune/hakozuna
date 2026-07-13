@@ -53,6 +53,17 @@ void h8_medium_run_unlock_backend(H8MediumRun* run) {
   h8_platform_mutex_unlock(&run->lock);
 }
 
+int h8_medium_run_trylock_backend(H8MediumRun* run) {
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+  int result = -1;
+  if (h8_medium_domain_stable_trylock(run, &result)) {
+    return result;
+  }
+#endif
+  return h8_platform_mutex_trylock(&run->lock);
+}
+
 H8MediumRun* h8_medium_global_head(void) {
   return h8_medium_runs;
 }
@@ -247,7 +258,8 @@ void h8_medium_register_locked(H8MediumRun* run) {
   h8_medium_runs = run;
   h8_medium_directory_insert_locked(run);
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
   h8_medium_domain_shadow_register_medium(run);
 #endif
 }
@@ -260,7 +272,8 @@ void h8_medium_unregister_locked(H8MediumRun* run) {
       *cur = run->next_global;
       run->next_global = NULL;
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1)
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
       h8_medium_domain_shadow_unregister_medium(run);
 #endif
       h8_medium_directory_remove_locked(run);

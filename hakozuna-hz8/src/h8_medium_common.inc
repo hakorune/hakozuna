@@ -427,6 +427,11 @@ static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
   atomic_store_explicit(&run->owner_word,
                         h8_medium_owner_word_for(ctx->owner),
                         memory_order_release);
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+  h8_medium_domain_stable_owner_note(
+      run, atomic_load_explicit(&run->owner_word, memory_order_acquire));
+#endif
   run->next_owner = ctx->owner->medium_by_class[run->class_id];
   ctx->owner->medium_by_class[run->class_id] = run;
   h8_medium_available_shadow_attach(ctx->owner, run);
@@ -651,7 +656,7 @@ void h8_medium_debug_note_local_fast_flush(H8MediumRun* run, bool owner_exit) {
 #endif
 
 static void h8_medium_demote_active_empty_live(H8MediumRun* run) {
-  if (!run || h8_platform_mutex_trylock(&run->lock) != 0) {
+  if (!run || h8_medium_run_trylock_backend(run) != 0) {
     return;
   }
   uint64_t pending =
