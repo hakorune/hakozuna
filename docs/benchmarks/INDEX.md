@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 Small Partial Depot trace parity and recovery, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Transition Depot native Ubuntu gate, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md)
 - [HZ8 General Medium native Ubuntu default integration, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md)
 - [HZ8 General Medium Page native Ubuntu gate, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md)
@@ -88,6 +89,10 @@ This page is the public pointer list for dated benchmark summaries.
 
 # 2026-07-13
 
+- [HZ8 Small Partial Depot trace parity and recovery](linux/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md):
+  exact Windows LCG parity reproduces Ubuntu gains of `+745%/+197%/+109%`
+  and bounded RSS; P1 halves the xorshift tax but remains HOLD at balanced
+  `-3.45%`, while P2/P3/P4 are NO-GO.
 - [HZ8 Small Partial Transition Depot native Ubuntu gate](linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md):
   GCC/Clang safety and remote-small passed, but balanced `-6.29%` and wide
   `-7.13%` reject cross-platform/default promotion; Windows remains opt-in GO.

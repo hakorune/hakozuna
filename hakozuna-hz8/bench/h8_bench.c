@@ -18,6 +18,73 @@
 #include <stdatomic.h>
 #include <sys/resource.h>
 
+#define H8_TRACE_HASH_LIMIT 65536u
+
+static uint64_t h8_trace_hash_u32(uint64_t hash, uint32_t value) {
+  for (unsigned shift = 0; shift < 32u; shift += 8u) {
+    hash ^= (uint8_t)(value >> shift);
+    hash *= UINT64_C(1099511628211);
+  }
+  return hash;
+}
+
+static int h8_print_windows_lcg_trace(const H8BenchOptions* opt) {
+  if (!opt->working_set_ring || !opt->working_set_lcg) return 0;
+  uint64_t hash = UINT64_C(14695981039346656037);
+  uint64_t class_hist[H8_CLASS_COUNT] = {0};
+  uint64_t allocs = 0;
+  uint64_t frees = 0;
+  uint64_t medium = 0;
+  size_t samples_per_thread = opt->iters_per_thread < H8_TRACE_HASH_LIMIT
+                                  ? opt->iters_per_thread
+                                  : H8_TRACE_HASH_LIMIT;
+  for (int thread = 0; thread < opt->threads; ++thread) {
+    uint8_t* occupied = calloc(opt->live_window, sizeof(*occupied));
+    if (!occupied) return -1;
+    uint32_t state = 1234u + (uint32_t)thread;
+    for (size_t i = 0; i < samples_per_thread; ++i) {
+      uint32_t random = h8_windows_lcg_next(&state);
+      uint32_t index = random % (uint32_t)opt->live_window;
+      uint32_t is_free = occupied[index] ? 1u : 0u;
+      uint32_t size = 0u;
+      uint32_t class_id = H8_CLASS_COUNT;
+      if (is_free) {
+        occupied[index] = 0u;
+        ++frees;
+      } else {
+        occupied[index] = 1u;
+        size_t span = opt->max_size - opt->min_size + 1u;
+        size = (uint32_t)(opt->min_size + (size_t)(random % span));
+        if (size <= H8_MAX_SMALL_SIZE) {
+          class_id = h8_class_for_size(size);
+          ++class_hist[class_id];
+        } else {
+          ++medium;
+        }
+        ++allocs;
+      }
+      hash = h8_trace_hash_u32(hash, (uint32_t)thread);
+      hash = h8_trace_hash_u32(hash, random);
+      hash = h8_trace_hash_u32(hash, index);
+      hash = h8_trace_hash_u32(hash, is_free);
+      hash = h8_trace_hash_u32(hash, size);
+      hash = h8_trace_hash_u32(hash, class_id);
+    }
+    free(occupied);
+  }
+  printf("working_set_trace rng=windows_lcg_v1 samples=%zu hash=%016llx "
+         "alloc=%llu free=%llu class_hist=",
+         samples_per_thread * (size_t)opt->threads,
+         (unsigned long long)hash, (unsigned long long)allocs,
+         (unsigned long long)frees);
+  for (uint32_t class_id = 0; class_id < H8_CLASS_COUNT; ++class_id) {
+    printf("%s%llu", class_id == 0 ? "" : ":",
+           (unsigned long long)class_hist[class_id]);
+  }
+  printf(" medium=%llu\n", (unsigned long long)medium);
+  return 0;
+}
+
 int main(int argc, char** argv) {
   H8BenchOptions opt = {
       .runs = 10,
@@ -28,6 +95,7 @@ int main(int argc, char** argv) {
       .remote_pct = 0,
       .interleaved = 0,
       .working_set_ring = 0,
+      .working_set_lcg = 0,
       .live_window = 0,
   };
   if (h8_parse_options(argc, argv, &opt) != 0 ||
@@ -36,9 +104,16 @@ int main(int argc, char** argv) {
       opt.remote_pct < 0 || opt.remote_pct > 100 ||
       opt.interleaved < 0 || opt.interleaved > 1 ||
       opt.working_set_ring < 0 || opt.working_set_ring > 1 ||
+      opt.working_set_lcg < 0 || opt.working_set_lcg > 1 ||
+      (opt.working_set_lcg && !opt.working_set_ring) ||
       (opt.working_set_ring &&
        (opt.interleaved || opt.remote_pct != 0 || opt.live_window == 0))) {
     h8_usage(argv[0]);
+    return 1;
+  }
+
+  if (h8_print_windows_lcg_trace(&opt) != 0) {
+    fprintf(stderr, "working-set trace allocation failed\n");
     return 1;
   }
 
@@ -151,7 +226,9 @@ int main(int argc, char** argv) {
       th[i].inboxes = inboxes;
       th[i].done = done;
       th[i].barrier = &barrier;
-      th[i].rng = 0x9E3779B9u ^ (uint32_t)(run * 131 + i * 17);
+      th[i].rng = opt.working_set_lcg
+                      ? 1234u + (uint32_t)i
+                      : 0x9E3779B9u ^ (uint32_t)(run * 131 + i * 17);
       th[i].error = 0;
       pthread_create(&tids[i], NULL, h8_bench_thread_main, &th[i]);
     }
@@ -318,9 +395,10 @@ int main(int argc, char** argv) {
   qsort(work_throughput, (size_t)opt.runs, sizeof(*work_throughput),
         h8_cmp_double);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d working_set_ring=%d live_window=%zu bench_attribution=%d class_map_id=%s\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d working_set_ring=%d working_set_lcg=%d live_window=%zu bench_attribution=%d class_map_id=%s\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved, opt.working_set_ring, opt.live_window,
+         opt.remote_pct, opt.interleaved, opt.working_set_ring,
+         opt.working_set_lcg, opt.live_window,
 #if defined(H8_BENCH_ATTRIBUTION)
          1,
 #else

@@ -6,10 +6,17 @@
 controls, but it does not pass the local throughput gate. Keep it as an
 opt-in Windows research lane and do not add it to the shared HZ8 default.
 
+Update: the follow-up [trace parity and recovery gate](HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
+shows this initial NO-GO is specific to the Linux xorshift trace. The exact
+Windows LCG trace reproduces the linear RSS problem and large depot win on
+native Ubuntu. Shared default promotion remains HOLD because the xorshift
+control still misses its throughput guard.
+
 ```text
 Windows behavior: GO
 native Ubuntu correctness: GO
-native Ubuntu performance: NO-GO
+native Ubuntu xorshift control: NO-GO
+native Ubuntu Windows-LCG parity: GO (follow-up)
 cross-platform/default promotion: HOLD
 ```
 
@@ -45,7 +52,8 @@ EntryBoundary. Candidate adds only `H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1`.
 The paired-run median deltas confirm that the two failing rows are not an
 independent-median artifact: balanced is `-6.81%` and wide_ws is `-5.78%`.
 All other throughput medians pass the `-3%` guard. Peak/post RSS is neutral
-within about 0.15 MiB and does not reproduce the large Windows reduction.
+within about 0.15 MiB and does not reproduce the large Windows reduction on
+this xorshift trace. The LCG follow-up does reproduce it.
 
 The remote generator performed exactly the same work in both lanes:
 

@@ -18,9 +18,10 @@ Artifact: `libhakozuna_hz8_preload.so`.
 | `hz8-v2-rollback` | `preload-v2-rollback` | immediate rollback | Previous KeepRefill + span-lease + Mag16 public behavior |
 | `hz8-v2-mag32` | `preload-reusable-span-mag32` | larger/local candidate | Global Mag32 capacity lane for explicit larger-size local workloads |
 | `hz8-small-partial-depot` | `preload-small-partial-depot` | Windows GO / Linux performance NO-GO | FULL-to-AVAILABLE same-owner small-span depot; explicit reproduction only |
+| `hz8-small-partial-transition-only` | `preload-small-partial-transition-only` | best recovery / HOLD default | Full depot with active-free metadata bypass; LCG GO, xorshift balanced `-3.45%` |
 
 Artifacts: `libhakozuna_hz8_preload_reusable_span_mag32.so` and
-`libhakozuna_hz8_preload_small_partial_depot.so`.
+the explicit `libhakozuna_hz8_preload_small_partial_*.so` research siblings.
 
 Mag32 is not included in the normal public matrix. Linux shows large wins and
 peak-RSS reductions for 16..2048 and 16..4096 local churn, but 16..256
@@ -36,6 +37,9 @@ an explicit compile-time/output lane; do not switch it at runtime.
 | Mag64 | CLOSED / untested | Capacity tuning stops after the detached-sidecar gate |
 | `hz8-small-available4k` | WSL NO-GO | Windows O(1) visibility win does not transfer; fixed4K, balanced, and larger_sizes regress |
 | `hz8-small-available2k4k` | WSL NO-GO | Fixed4K improves, but fixed2K, wide_ws, and larger_sizes regress; class expansion closed |
+| `hz8-small-partial-cold-activate` | NO-GO | Empty-pop isolation leaves xorshift balanced/wide below gate |
+| `hz8-small-partial-hint1` | NO-GO | Capacity one loses LCG mixed-row throughput and bounded RSS |
+| `hz8-small-partial-cold-free` | NO-GO | Smaller free text loses to inactive-free call frequency |
 
 ## Commands
 
@@ -51,6 +55,9 @@ make -C hakozuna-hz8 preload-small-partial-depot
 make -C hakozuna-hz8 smoke-small-partial-depot
 make -C hakozuna-hz8 safety-stress-small-partial-depot
 make -C hakozuna-hz8 small-partial-depot-gate
+make -C hakozuna-hz8 preload-small-partial-transition-only
+make -C hakozuna-hz8 smoke-small-partial-transition-only
+make -C hakozuna-hz8 safety-stress-small-partial-transition-only
 
 # Reproducibility-only Windows controls; not Linux candidates.
 make -C hakozuna-hz8 bench-release-small-available4k

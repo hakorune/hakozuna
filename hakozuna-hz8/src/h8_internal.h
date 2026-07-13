@@ -36,6 +36,26 @@
 #error "partial transition depot diagnostics require the behavior lane"
 #endif
 
+#if defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B) && \
+    !defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+#error "transition-only metadata requires the partial depot behavior lane"
+#endif
+
+#if defined(H8_SMALL_PARTIAL_COLD_ACTIVATE_L1B) && \
+    !defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B)
+#error "cold depot activation requires transition-only metadata"
+#endif
+
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C) && \
+    !defined(H8_SMALL_PARTIAL_COLD_ACTIVATE_L1B)
+#error "capacity-1 hint requires the cold transition-only lane"
+#endif
+
+#if defined(H8_SMALL_PARTIAL_COLD_INACTIVE_FREE_L1D) && \
+    !defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B)
+#error "cold inactive free requires transition-only metadata"
+#endif
+
 #if !defined(H8_LIKELY)
 #if defined(__GNUC__) || defined(__clang__)
 #define H8_LIKELY(expr) __builtin_expect(!!(expr), 1)

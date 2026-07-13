@@ -69,9 +69,32 @@ static bool h8_small_partial_depot_valid(H8Span* span,
   return head != H8_SLOT_NONE || bump < span->slot_count;
 }
 
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
+static bool h8_small_partial_hint_cross_tier_valid(H8ThreadCtx* ctx,
+                                                   H8Span* span,
+                                                   uint32_t class_id) {
+  if (ctx->active_spans[class_id] == span) return false;
+  const uint8_t count = ctx->reusable_span_count[class_id];
+  for (uint8_t i = 0; i < count; ++i) {
+    if (ctx->reusable_span_mag[class_id][i] == span) return false;
+  }
+  return true;
+}
+#endif
+
 void h8_small_partial_depot_push(H8ThreadCtx* ctx, H8Span* span) {
   if (!ctx || !span || span->class_id >= H8_CLASS_COUNT) return;
   const uint32_t class_id = span->class_id;
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
+  H8Span* old = ctx->small_partial_head[class_id];
+  if (old == span) {
+    H8_PARTIAL_INC(duplicate_push, class_id);
+    return;
+  }
+  ctx->small_partial_head[class_id] = span;
+  if (!old) h8_small_partial_depth_add(class_id);
+  H8_PARTIAL_INC(push, class_id);
+#else
   if (span->small_partial_indexed) {
     H8_PARTIAL_INC(duplicate_push, class_id);
     return;
@@ -81,6 +104,7 @@ void h8_small_partial_depot_push(H8ThreadCtx* ctx, H8Span* span) {
   ctx->small_partial_head[class_id] = span;
   H8_PARTIAL_INC(push, class_id);
   h8_small_partial_depth_add(class_id);
+#endif
 }
 
 H8Span* h8_small_partial_depot_pop(H8ThreadCtx* ctx,
@@ -88,6 +112,19 @@ H8Span* h8_small_partial_depot_pop(H8ThreadCtx* ctx,
                                    uint32_t class_id) {
   if (!ctx || class_id >= H8_CLASS_COUNT) return NULL;
   H8_PARTIAL_INC(pop_attempt, class_id);
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
+  H8Span* span = ctx->small_partial_head[class_id];
+  if (!span) return NULL;
+  ctx->small_partial_head[class_id] = NULL;
+  h8_small_partial_depth_sub(class_id);
+  if (h8_small_partial_depot_valid(span, owner, class_id) &&
+      h8_small_partial_hint_cross_tier_valid(ctx, span, class_id)) {
+    H8_PARTIAL_INC(pop_hit, class_id);
+    return span;
+  }
+  H8_PARTIAL_INC(pop_reject, class_id);
+  return NULL;
+#else
   while (ctx->small_partial_head[class_id]) {
     H8Span* span = ctx->small_partial_head[class_id];
     ctx->small_partial_head[class_id] = span->next_small_partial;
@@ -104,11 +141,19 @@ H8Span* h8_small_partial_depot_pop(H8ThreadCtx* ctx,
     H8_PARTIAL_INC(pop_reject, class_id);
   }
   return NULL;
+#endif
 }
 
 void h8_small_partial_depot_reset(H8ThreadCtx* ctx) {
   if (!ctx) return;
   for (uint32_t class_id = 0; class_id < H8_CLASS_COUNT; ++class_id) {
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
+    if (ctx->small_partial_head[class_id]) {
+      ctx->small_partial_head[class_id] = NULL;
+      h8_small_partial_depth_sub(class_id);
+      H8_PARTIAL_INC(reset_item, class_id);
+    }
+#else
     H8Span* span = ctx->small_partial_head[class_id];
     while (span) {
       H8Span* next = span->next_small_partial;
@@ -122,7 +167,24 @@ void h8_small_partial_depot_reset(H8ThreadCtx* ctx) {
       span = next;
     }
     ctx->small_partial_head[class_id] = NULL;
+#endif
   }
+}
+
+void h8_small_partial_depot_discard(H8ThreadCtx* ctx,
+                                    H8Span* span,
+                                    uint32_t class_id) {
+#if defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
+  if (ctx && class_id < H8_CLASS_COUNT &&
+      ctx->small_partial_head[class_id] == span) {
+    ctx->small_partial_head[class_id] = NULL;
+    h8_small_partial_depth_sub(class_id);
+  }
+#else
+  (void)ctx;
+  (void)span;
+  (void)class_id;
+#endif
 }
 
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)

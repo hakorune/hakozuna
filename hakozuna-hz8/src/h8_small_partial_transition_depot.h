@@ -13,6 +13,9 @@ H8Span* h8_small_partial_depot_pop(H8ThreadCtx* ctx,
                                    H8OwnerRecord* owner,
                                    uint32_t class_id);
 void h8_small_partial_depot_reset(H8ThreadCtx* ctx);
+void h8_small_partial_depot_discard(H8ThreadCtx* ctx,
+                                     H8Span* span,
+                                     uint32_t class_id);
 #else
 static inline void h8_small_partial_depot_push(H8ThreadCtx* ctx,
                                                 H8Span* span) {
@@ -29,6 +32,13 @@ static inline H8Span* h8_small_partial_depot_pop(H8ThreadCtx* ctx,
 }
 static inline void h8_small_partial_depot_reset(H8ThreadCtx* ctx) {
   (void)ctx;
+}
+static inline void h8_small_partial_depot_discard(H8ThreadCtx* ctx,
+                                                   H8Span* span,
+                                                   uint32_t class_id) {
+  (void)ctx;
+  (void)span;
+  (void)class_id;
 }
 #endif
 

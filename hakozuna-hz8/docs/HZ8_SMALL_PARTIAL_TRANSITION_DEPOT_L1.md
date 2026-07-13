@@ -233,13 +233,131 @@ of balanced and wide, with zero pop reject, index mismatch,
 clean, but Linux does not reproduce the Windows RSS problem and pays more than
 the allowed throughput cost on two small-heavy controls.
 
+## Linux Recovery Ladder
+
+The Linux regression must be handled as separate, reversible boxes. Do not
+stack an unmeasured source change onto the next candidate.
+
+### P0: SmallPartialDepotTraceParity-L0
+
+This is benchmark-only. Select the Windows LCG (`state * 1664525 +
+1013904223`), the same per-thread seed, and the same random value for ring slot
+and allocation size. Emit a deterministic trace hash and allocation/class
+histogram outside the allocator behavior contract.
+
+```text
+allocator behavior change: none
+speed diagnostic counter/atomic: none
+accept: Linux trace hash matches the standalone Windows-formula oracle
+measure: default/depot AB/BA R10 with the parity trace
+```
+
+### P1: TransitionOnlyMetadataTouch-L1B
+
+Keep the intrusive depot contract, but touch its metadata only after the
+existing Mag16-full boundary proves that the freed span is an inactive
+candidate. The active-span local-free path must not read
+`small_partial_indexed`.
+
+```text
+rare boundary:
+  old active span exists and differs from freed span
+  -> Mag16 full
+  -> old free head was NONE
+  -> bump exhausted
+  -> check cross-tier uniqueness
+  -> depot push
+```
+
+The speed Mag16 pop retains the existing indexed protection. Push, pop, and
+reset continue to maintain the indexed bit. Removing the speed check was
+measured separately and rejected when it did not improve the controls.
+
+### P2: PartialDepotColdActivate-L1B
+
+Keep only an unlikely per-class nonempty test at each refill boundary. Move
+pop validation, active installation, and the first allocation into one
+noinline helper. An empty depot must not incur an out-of-line pop call, and
+the same activation block must not be expanded at two malloc sites.
+
+### P3: SmallPartialTransitionHint1-L1C
+
+Attempt this only if P1 plus P2 cannot restore the Linux controls. Replace the
+multi-entry list with one owner-local validated transition hint per class.
+Overwriting is advisory; the hint never declares slot validity and never
+changes owner, generation, state, pending, or remote authority.
+
+### P4: SmallPartialColdInactiveFree-L1D
+
+Attempt this after P1 if the remaining regression is code expansion rather
+than depot capacity. Keep only the active-span comparison inline. Move the
+inactive-span indexed check, Mag16-full boundary, transition proof, and depot
+publication into one noinline helper. This box retains the full intrusive
+depot and does not stack the P2 activation experiment.
+
+### Recovery Acceptance
+
+Use fresh-process rotation among the live default, original depot, and the
+current recovery box:
+
+```text
+balanced/wide:
+  recovery vs original depot >= +5%
+  recovery vs default >= -3%
+
+fixed8K/fixed16K/fixed32K/larger/remote-small:
+  recovery vs default >= -3%
+
+peak/post RSS:
+  no regression versus original depot
+
+diagnostic sibling:
+  duplicate_push = 0
+  pop_reject = 0
+  index_mismatch = 0
+  commit_nonempty = 0
+  shutdown depth = 0
+  push/pop-hit scale retained
+```
+
+Every behavior box requires GCC and Clang smoke/safety, owner-exit, handoff,
+remote, invalid, and generation checks. If trace parity still shows neutral
+Linux RSS and no recovery box clears `-3%`, retain the depot as a Windows-only
+opt-in lane and close Linux behavior work.
+
+## Recovery Result
+
+The independent trace oracle matched every default/depot sample. Exact Windows
+LCG parity changes the interpretation of the first native result:
+
+```text
+balanced:     +745.35%, peak 770.62 -> 48.38 MiB
+wide:         +197.36%, peak 422.25 -> 92.25 MiB
+larger_sizes: +109.30%, peak 277.00 -> 59.88 MiB
+```
+
+The visibility failure and bounded-depot recovery are therefore common to
+Windows and Ubuntu. The earlier neutral-RSS result belongs specifically to
+the xorshift phase trace, not Linux backing behavior.
+
+P1 is the best recovery. Xorshift R20 improves original depot/default from
+`-6.55%` to `-3.45%` on balanced and from `-3.59%` to `-2.55%` on wide, while
+LCG keeps `+737.79%/+200.37%/+112.82%` on balanced/wide/larger and the same
+bounded RSS. Balanced remains just outside the default guard.
+
+P2 cold activation and P4 cold inactive-free retain LCG boundedness but miss
+the xorshift gate. P3 capacity-one hint loses the LCG behavior completely and
+returns to the default's linear RSS. P2, P3, and P4 are NO-GO lanes.
+
 ## Current Decision
 
 ```text
 Windows behavior gate: GO
 Windows remote no-regression: GO
 Linux GCC/Clang correctness: GO
-Linux performance gate: NO-GO (balanced and wide below -3%)
+Linux Windows-trace parity behavior: GO
+P1 transition-only recovery: GO(research) / HOLD(default)
+P2/P3/P4 recovery boxes: NO-GO
 cross-platform default promotion: HOLD
 public HZ8 default: unchanged
 ```

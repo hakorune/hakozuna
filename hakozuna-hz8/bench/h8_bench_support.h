@@ -24,6 +24,7 @@ typedef struct H8BenchOptions {
   int remote_pct;
   int interleaved;
   int working_set_ring;
+  int working_set_lcg;
   size_t live_window;
 } H8BenchOptions;
 
@@ -124,6 +125,7 @@ typedef struct H8BenchReportInput {
 } H8BenchReportInput;
 
 uint32_t h8_rng_next(uint32_t* state);
+uint32_t h8_windows_lcg_next(uint32_t* state);
 size_t h8_rand_range(uint32_t* state, size_t lo, size_t hi);
 uint32_t h8_bench_note_alloc(H8BenchThread* th, size_t size);
 void h8_bench_note_remote_live(H8BenchThread* th, size_t size);

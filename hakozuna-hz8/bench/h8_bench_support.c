@@ -18,6 +18,11 @@ uint32_t h8_rng_next(uint32_t* state) {
   return *state;
 }
 
+uint32_t h8_windows_lcg_next(uint32_t* state) {
+  *state = (*state * 1664525u) + 1013904223u;
+  return *state;
+}
+
 size_t h8_rand_range(uint32_t* state, size_t lo, size_t hi) {
   if (hi <= lo) {
     return lo;
@@ -417,7 +422,7 @@ void h8_usage(const char* argv0) {
           "usage: %s [--runs N] [--threads N] [--iters N]\n"
           "          [--min-size N] [--max-size N] [--remote-pct N]\n"
           "          [--interleaved 0|1] [--working-set-ring 0|1]\n"
-          "          [--live-window N]\n",
+          "          [--working-set-lcg 0|1] [--live-window N]\n",
           argv0);
 }
 
@@ -446,6 +451,8 @@ int h8_parse_options(int argc, char** argv, H8BenchOptions* opt) {
       if (h8_parse_int(argv[++i], &opt->interleaved) != 0) return -1;
     } else if (strcmp(a, "--working-set-ring") == 0 && i + 1 < argc) {
       if (h8_parse_int(argv[++i], &opt->working_set_ring) != 0) return -1;
+    } else if (strcmp(a, "--working-set-lcg") == 0 && i + 1 < argc) {
+      if (h8_parse_int(argv[++i], &opt->working_set_lcg) != 0) return -1;
     } else if (strcmp(a, "--live-window") == 0 && i + 1 < argc) {
       int tmp = 0;
       if (h8_parse_int(argv[++i], &tmp) != 0) return -1;

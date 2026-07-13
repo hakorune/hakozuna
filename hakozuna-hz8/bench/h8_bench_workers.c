@@ -20,7 +20,9 @@ static void* h8_bench_thread_working_set_ring(void* arg) {
   size_t live = 0u;
   uint64_t work_start = h8_now_ns();
   for (size_t i = 0; i < opt->iters_per_thread; ++i) {
-    uint32_t random = h8_rng_next(&th->rng);
+    uint32_t random = opt->working_set_lcg
+                          ? h8_windows_lcg_next(&th->rng)
+                          : h8_rng_next(&th->rng);
     size_t index = (size_t)(random % (uint32_t)working_set);
     if (slots[index]) {
       h8_free(slots[index]);
