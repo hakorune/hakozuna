@@ -56,10 +56,10 @@ docs/HZ8_LINUX_LANE_STATUS_L1.md
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill + remote span-lease publish + Mag16
+  HZ8 / KeepRefill + remote span-lease publish + Mag16
+  + GeneralMediumPage + EntryBoundary-L1A
 
-native Linux staged default:
-  HZ8 v2 + GeneralMediumPage + EntryBoundary-L1A
+cross-platform rollback:
   rollback: make preload-v2-rollback
 
 recommended default:
@@ -71,9 +71,9 @@ release record:
 research lane registry:
   docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   docs/HZ8_LINUX_LANE_STATUS_L1.md
-  HZ8 v2 remains the public/recommended default
-  Linux default integration is GO; Windows public-lane integration is pending
-  cross-platform default: ReusableSpanMagazine-L1 Mag16
+  HZ8 is the Linux/Windows public and recommended default
+  cross-platform default: Mag16 + GeneralMediumPage + EntryBoundary-L1A
+  rollback: hz8-v2-rollback
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
   promoted to the cross-platform default after Linux/Windows gates
   larger/local opt-in: hz8-v2-mag32
@@ -181,7 +181,7 @@ The remaining known weakness is throughput relative to throughput-first
 allocators on some local-only rows.  That is now treated as HZ9 research input,
 not an HZ8 correctness issue.
 
-## HZ8 v2 Default
+## HZ8 Default
 
 The current HZ8 default includes:
 
@@ -199,6 +199,11 @@ RemoteSpanLeasePublish-L0
 PreloadShimSurface-F1
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   malloc_usable_size / aligned allocation surface for LD_PRELOAD hosts
+
+GeneralMediumPage + EntryBoundary-L1A
+  docs/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md
+  exact 8K/16K/32K page substrate with isolated non-small entry dispatch
+  shared Linux/Windows default; old behavior remains hz8-v2-rollback
 ```
 
 It keeps owner-local refill-candidate medium runs active-live after remote
@@ -213,7 +218,7 @@ The HZ8 paper line keeps the public default conservative:
 
 ```text
 default:
-  HZ8-v2 / KeepRefill balanced default
+  HZ8 / KeepRefill + Mag16 + GeneralMediumPage + EntryBoundary
 
 opt-in evidence:
   LargeDirectOwned

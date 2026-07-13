@@ -6,17 +6,17 @@ Updated: 2026-07-13
 
 ```text
 public default:
-  HZ8 v2 / Mag16 / KeepRefill balanced
+  HZ8 / Mag16 / KeepRefill / GeneralMediumPage + EntryBoundary
 
 active research line:
-  GeneralMediumPageSubstrateExpansion-L1 cross-platform validation
+  none; default integration is complete on Linux and Windows
 
 latest commit:
-  f83fc4b3 Close HZ8 owner witness layout probe
+  9a73489f Promote HZ8 general medium default on Linux
 
 next box:
-  run the prepared native Linux three-way gate for EntryBoundary-L1A
-  do not add a free-side split unless evidence requires it
+  freeze the shared default and collect normal release evidence
+  use hz8-v2-rollback for immediate comparison or rollback
 ```
 
 Read first:
@@ -56,7 +56,9 @@ Page8KRecord-L1:
   speed lane has no diagnostic counters or new atomics
 
 public default:
-  unchanged
+  PROMOTED cross-platform
+  Linux and Windows normal lanes select GeneralMediumPage + EntryBoundary
+  old HZ8 v2 remains explicit hz8-v2-rollback
 
 GeneralMediumPageSubstrateExpansion-L1:
   cap64 correctness and exact-size performance GO
@@ -86,8 +88,17 @@ Linux validation surface:
   Makefile speed/smoke/safety targets added
   WSL GCC -Werror build, API smoke, and safety stress PASS
   WSL performance is too noisy for promotion
-  native Ubuntu must compare v2 / general / entry-boundary
+  native Ubuntu default/rollback R10 passed all promotion gates
   runner: scripts/run_hz8_page_general_linux_gate.sh
+
+Windows default integration:
+  public allocator, MT remote, and Redis-like runners now select hz8
+  old v2 is research-only hz8-v2-rollback
+  default/rollback long R10 passed all six performance/RSS gates
+  fixed8K +21.60%, fixed16K +146.95%, fixed32K +91.79%
+  balanced -2.18%, wide_ws +0.24%, larger_sizes -2.83%
+  MT remote smoke 121.147M ops/s, peak 19.2 MiB
+  Redis-like five-pattern focused smoke PASS
 ```
 
 ## Page8K Record Evidence
@@ -120,7 +131,7 @@ invalid free:     7 rejected
 Windows suite:    build PASS
 ```
 
-## Next Box: MediumRecord-L1
+## Archived Box: MediumRecord-L1
 
 Goal:
 
@@ -329,7 +340,7 @@ Final decision:
   public HZ8 v2 default: unchanged
 ```
 
-## Next Box: WindowsMediumHotPathAttribution-L0
+## Archived Box: WindowsMediumHotPathAttribution-L0
 
 Goal:
 

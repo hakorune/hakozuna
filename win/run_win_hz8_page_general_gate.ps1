@@ -5,7 +5,7 @@ param(
     [string]$OutputDir,
     [ValidateSet("v2", "general")]
     [string]$Baseline = "v2",
-    [ValidateSet("general", "cap128", "entry-boundary")]
+    [ValidateSet("general", "cap128", "entry-boundary", "default")]
     [string]$Candidate = "general",
     [switch]$ForceBuild
 )
@@ -19,11 +19,13 @@ $BaselineName = if ($Baseline -eq "general") { "hz8-r3-page-general" } else { "h
 $BaselineFile = if ($Baseline -eq "general") { "bench_mixed_ws_hz8_medium_page_general.exe" } else { "bench_mixed_ws_hz8_v2.exe" }
 $BaselinePath = Join-Path $SuiteDir $BaselineFile
 $CandidateName = switch ($Candidate) {
+    "default" { "hz8" }
     "cap128" { "hz8-r3-page-general-cap128" }
     "entry-boundary" { "hz8-r3-page-general-entry-boundary" }
     default { "hz8-r3-page-general" }
 }
 $CandidateFile = switch ($Candidate) {
+    "default" { "bench_mixed_ws_hz8.exe" }
     "cap128" { "bench_mixed_ws_hz8_medium_page_general_cap128.exe" }
     "entry-boundary" { "bench_mixed_ws_hz8_medium_page_general_entry_boundary.exe" }
     default { "bench_mixed_ws_hz8_medium_page_general.exe" }

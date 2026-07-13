@@ -4,10 +4,10 @@ Updated: 2026-07-13
 
 ## Goal
 
-Promote `GeneralMediumPage + EntryBoundary-L1A` into the native Linux default
-build surface without contaminating existing research lanes. This box changes
-build selection only; allocator ownership, generation, slot-state authority,
-remote publication, and residency behavior are unchanged.
+Promote `GeneralMediumPage + EntryBoundary-L1A` into the Linux and Windows
+public default build surfaces without contaminating existing research lanes.
+This box changes build selection only; allocator ownership, generation,
+slot-state authority, remote publication, and residency behavior are unchanged.
 
 ## Build Boundary
 
@@ -76,5 +76,41 @@ Fresh-process default/rollback AB/BA R10:
 | larger_sizes | 17.884M | 17.946M | +0.35% | 33.12 MiB | 33.12 MiB |
 
 All 120 samples balanced allocation/free totals and retained more than one live
-object. Linux default integration is GO. The shared cross-platform label stays
-on HZ8 v2 until the Windows public lane is switched and rebuilt natively.
+object. Linux default integration is GO.
+
+## Native Windows Result
+
+The normal allocator, MT remote, and Redis-like build surfaces now use the same
+five promoted behavior flags. The previous binary is preserved as the explicit
+research-only `hz8-v2-rollback` row. Historical research variants remain based
+on their original flags and do not inherit the promoted behavior implicitly.
+
+Fresh-process default/rollback AB/BA R10 (`WorkScale=10`):
+
+| row | delta | RSS result |
+| --- | ---: | --- |
+| fixed8k | +21.60% | +30 KiB |
+| fixed16k | +146.95% | -182 KiB |
+| fixed32k | +91.79% | +250 KiB |
+| balanced | -2.18% | -4,704 KiB |
+| wide_ws | +0.24% | +6,068 KiB on an approximately 4.0 GiB row |
+| larger_sizes | -2.83% | -2,092 KiB |
+
+All rows completed with balanced allocation/free totals and zero allocation
+failures. API and remote safety smokes passed. The public MT remote binary also
+completed a RUNS=1 connection smoke at `121.147M ops/s`, actual remote
+`83.72%`, fallback `6.99%`, and peak `19,612 KiB`. A focused Redis-like build
+completed SET/GET/LPUSH/LPOP/RANDOM patterns without failure.
+
+## Final Decision
+
+```text
+Linux default:       GO
+Windows default:     GO
+shared public label: HZ8
+rollback label:      hz8-v2-rollback
+```
+
+The GeneralMediumPage + EntryBoundary integration is closed as the shared
+cross-platform default. Future experiments must remain explicit research rows
+and must not silently alter this flag set.

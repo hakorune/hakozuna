@@ -44,7 +44,8 @@ HZ8 論文 Zenodo record:
 
 ```text
 current public line:
-  HZ8 v2 / KeepRefill + remote span-lease publish + Mag16
+  HZ8 / KeepRefill + remote span-lease publish + Mag16
+  + GeneralMediumPage + EntryBoundary-L1A
 
 recommended default:
   yes
@@ -72,7 +73,8 @@ windows bring-up lane:
 lane registry:
   docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   docs/HZ8_LINUX_LANE_STATUS_L1.md
-  public default: hz8-v2 / Mag16
+  public default: hz8 / Mag16 + GeneralMediumPage + EntryBoundary-L1A
+  rollback: hz8-v2-rollback
   larger/local opt-in: hz8-v2-mag32
   Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated
   docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md
@@ -155,7 +157,7 @@ HZ9は、HZ8とは違う明確なpublic promiseを証明するまで、opt-inの
 残っている弱点は、一部local-only rowでthroughput-first allocatorに届かない点です。
 これはHZ8のcorrectness issueではなく、HZ9研究laneの入力として扱います。
 
-## HZ8 v2 default
+## HZ8 default
 
 現在のHZ8 defaultには以下が入っています。
 
@@ -174,6 +176,11 @@ RemoteSpanLeasePublish-L0
 PreloadShimSurface-F1
   docs/HZ8_PRELOAD_SHIM_SURFACE_F1.md
   malloc_usable_size / aligned allocation surface for LD_PRELOAD hosts
+
+GeneralMediumPage + EntryBoundary-L1A
+  docs/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md
+  exact 8K/16K/32K page substrateとnon-small entry dispatch分離
+  Linux/Windows共通default。旧挙動はhz8-v2-rollbackで保持
 ```
 
 remote collectでmedium runが空になったとき、owner-local refill candidateなら
@@ -187,7 +194,7 @@ HZ8 論文 line では、public default を保守的に維持します。
 
 ```text
 default:
-  HZ8-v2 / KeepRefill balanced default
+  HZ8 / KeepRefill + Mag16 + GeneralMediumPage + EntryBoundary
 
 opt-in evidence:
   LargeDirectOwned

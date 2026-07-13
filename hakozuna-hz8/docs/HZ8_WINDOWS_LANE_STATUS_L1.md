@@ -7,7 +7,8 @@ promotion candidates, diagnostics, and closed experiments.
 
 | Lane | Status | Purpose |
 |---|---|---|
-| `hz8-v2` | public default | KeepRefill balanced default with Mag16 reusable small-span inventory |
+| `hz8` | public default | KeepRefill + Mag16 plus GeneralMediumPage + EntryBoundary-L1A |
+| `hz8-v2-rollback` | research rollback | Previous KeepRefill + Mag16 behavior; excluded from normal runs |
 
 ## Candidate Lanes
 
@@ -18,7 +19,7 @@ promotion candidates, diagnostics, and closed experiments.
 | `hz8-r3-page8k-target-dispatch` | Windows opt-in GO / global HOLD | R3 child lane; Windows fixed8K +69.8% with neutral control rows, native Ubuntu fixed8K +31.90% |
 | `hz8-r3-page-general` | exact-size GO / default HOLD | Cap64 exact 8K/16K/32K substrate; long gate has strong exact gains but `balanced -9.23%` layout tax |
 | `hz8-r3-page-general-cap128` | 32K specialist / HOLD | Removes the measured 32K cap boundary; direct cap64 comparison gives fixed32K +355.18% but misses two control gates |
-| `hz8-r3-page-general-entry-boundary` | Windows research GO / global HOLD | Isolates non-small malloc dispatch; long R10 keeps controls within gate and retains +20%/+146%/+96% at exact 8K/16K/32K |
+| `hz8-r3-page-general-entry-boundary` | compatibility alias / promoted | The selected behavior is now part of `hz8`; the named row remains reproducible |
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 
@@ -46,8 +47,25 @@ largest increase is `+1.00MiB` (`+0.13%`) on balanced. Native Ubuntu clears
 fixed8K (`+31.90%`) but its balanced and larger_sizes rows still block a
 cross-platform default promotion.
 
-The normal allocator matrix and MT remote runner include only the public HZ8
-row unless research controls are requested explicitly.
+The normal allocator matrix, MT remote runner, and Redis-like runner include
+only the public `hz8` row unless research controls are requested explicitly.
+The old `hz8-v2-rollback` row is never mixed into a normal comparison.
+
+Windows default/rollback AB/BA R10 cleared the shared promotion gate:
+
+| Row | Delta vs rollback |
+|---|---:|
+| fixed8K | +21.60% |
+| fixed16K | +146.95% |
+| fixed32K | +91.79% |
+| balanced | -2.18% |
+| wide_ws | +0.24% |
+| larger_sizes | -2.83% |
+
+RSS passed the per-row `max(+3%, +1 MiB)` gate. API and remote smokes passed,
+the public MT remote artifact completed at `121.147M ops/s` with about
+`19.2 MiB` peak RSS, and the focused Redis-like five-pattern smoke completed
+without allocation failure.
 
 ## Research Lanes
 

@@ -141,8 +141,16 @@ $Hz8Flags = @(
     "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
     "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
 )
+$Hz8DefaultFlags = @(
+    "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+    "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+    "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+    "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+    "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
+)
 foreach ($variant in @(
-    @{ Name = "hz8-v2"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
+    @{ Name = "hz8"; Output = "bench_redis_workload_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
+    @{ Name = "hz8-v2-rollback"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
     @{
         Name = "hz8-r3-page8k-integrated"
         Output = "bench_redis_workload_hz8_page8k_r3.exe"
