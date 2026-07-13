@@ -102,8 +102,8 @@ for item in csv.DictReader(open(src, newline="")):
 with open(dst, "w", newline="") as out:
     out.write("# HZ8 General Medium Page Linux Gate\n\n")
     out.write("Fresh-process three-way rotation; speed binaries only; WSL is directional evidence.\n\n")
-    out.write("| row | baseline | general | general delta | entry-boundary | entry delta | entry vs general | baseline peak RSS | entry peak RSS |\n")
-    out.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
+    out.write("| row | baseline | general | general delta | entry-boundary | entry delta | entry vs general | baseline post RSS | entry post RSS | baseline peak RSS | entry peak RSS |\n")
+    out.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
     for row in ("fixed8k", "fixed16k", "fixed32k", "balanced", "wide_ws", "larger_sizes"):
         base = groups[row]["baseline"]
         general = groups[row]["general"]
@@ -111,9 +111,11 @@ with open(dst, "w", newline="") as out:
         bops = statistics.median(float(x["throughput"]) for x in base)
         gops = statistics.median(float(x["throughput"]) for x in general)
         cops = statistics.median(float(x["throughput"]) for x in cand)
+        bpost = statistics.median(int(x["post_rss"]) for x in base)
+        cpost = statistics.median(int(x["post_rss"]) for x in cand)
         bpeak = statistics.median(int(x["peak_rss"]) for x in base)
         cpeak = statistics.median(int(x["peak_rss"]) for x in cand)
-        out.write(f"| {row} | {bops/1e6:.3f}M | {gops/1e6:.3f}M | {(gops/bops-1)*100:+.2f}% | {cops/1e6:.3f}M | {(cops/bops-1)*100:+.2f}% | {(cops/gops-1)*100:+.2f}% | {bpeak/1048576:.2f} MiB | {cpeak/1048576:.2f} MiB |\n")
+        out.write(f"| {row} | {bops/1e6:.3f}M | {gops/1e6:.3f}M | {(gops/bops-1)*100:+.2f}% | {cops/1e6:.3f}M | {(cops/bops-1)*100:+.2f}% | {(cops/gops-1)*100:+.2f}% | {bpost/1048576:.2f} MiB | {cpost/1048576:.2f} MiB | {bpeak/1048576:.2f} MiB | {cpeak/1048576:.2f} MiB |\n")
 PY
 
 cat "${OUTDIR}/summary.md"

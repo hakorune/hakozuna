@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 General Medium Page native Ubuntu gate, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md)
 - [HZ8 Unified Medium Domain Kind L1 native Ubuntu NO-GO, 2026-07-12](./linux/HZ8_UNIFIED_MEDIUM_DOMAIN_KIND_L1_20260712.md)
 - [HZ8 Page8K target dispatch native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_TARGET_DISPATCH_20260712.md)
 - [HZ8 Page8K R3 native Ubuntu gate, 2026-07-12](./linux/HZ8_PAGE8K_R3_NATIVE_UBUNTU_20260712.md)
@@ -82,6 +83,13 @@ This page is the public pointer list for dated benchmark summaries.
 - [Cross-platform benchmark conditions](./CROSS_PLATFORM_BENCH_CONDITIONS.md)
 - [HZ6 remote pending inbox plan](../../hakozuna-hz6/docs/HZ6_REMOTE_PENDING_INBOX_PLAN.md)
 - [Mac benchmark prep order](../MAC_BENCH_PREP.md)
+
+# 2026-07-13
+
+- [HZ8 General Medium Page native Ubuntu gate](linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md):
+  GCC/Clang safety passed and fresh-process three-way R10 kept RSS neutral, but
+  exact gains were small and `larger_sizes` regressed 12.59%; default promotion
+  and a free-side split are rejected.
 
 # 2026-07-12
 
