@@ -2,6 +2,63 @@
 #include "h8_bench_support.h"
 
 #include <sched.h>
+#include <stdlib.h>
+#include <string.h>
+
+static void* h8_bench_thread_working_set_ring(void* arg) {
+  H8BenchThread* th = (H8BenchThread*)arg;
+  const H8BenchOptions* opt = th->opt;
+  size_t working_set = opt->live_window;
+  void** slots = calloc(working_set, sizeof(*slots));
+  if (!slots) {
+    th->error = 3;
+    pthread_barrier_wait(th->barrier);
+    pthread_barrier_wait(th->barrier);
+    return NULL;
+  }
+
+  size_t live = 0u;
+  uint64_t work_start = h8_now_ns();
+  for (size_t i = 0; i < opt->iters_per_thread; ++i) {
+    uint32_t random = h8_rng_next(&th->rng);
+    size_t index = (size_t)(random % (uint32_t)working_set);
+    if (slots[index]) {
+      h8_free(slots[index]);
+      slots[index] = NULL;
+      --live;
+      ++th->working_set_frees;
+      continue;
+    }
+
+    size_t span = opt->max_size - opt->min_size + 1u;
+    size_t size = opt->min_size + (size_t)(random % span);
+#if defined(H8_BENCH_ATTRIBUTION)
+    h8_bench_note_alloc(th, size);
+#endif
+    void* ptr = h8_malloc(size);
+    if (!ptr) {
+      th->error = 1;
+      break;
+    }
+    memset(ptr, 0xA5, size < 64u ? size : 64u);
+    slots[index] = ptr;
+    ++live;
+    ++th->working_set_allocs;
+    if (live > th->working_set_max_live) th->working_set_max_live = live;
+  }
+
+  for (size_t i = 0; i < working_set; ++i) {
+    if (!slots[i]) continue;
+    h8_free(slots[i]);
+    ++th->working_set_frees;
+  }
+  th->alloc_ns = h8_now_ns() - work_start;
+  free(slots);
+
+  pthread_barrier_wait(th->barrier);
+  pthread_barrier_wait(th->barrier);
+  return NULL;
+}
 
 static void* h8_bench_thread_interleaved(void* arg) {
   H8BenchThread* th = (H8BenchThread*)arg;
@@ -90,6 +147,9 @@ static void* h8_bench_thread_interleaved(void* arg) {
 void* h8_bench_thread_main(void* arg) {
   H8BenchThread* th = (H8BenchThread*)arg;
   const H8BenchOptions* opt = th->opt;
+  if (opt->working_set_ring) {
+    return h8_bench_thread_working_set_ring(arg);
+  }
   if (opt->interleaved) {
     return h8_bench_thread_interleaved(arg);
   }

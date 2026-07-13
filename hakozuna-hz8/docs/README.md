@@ -11,6 +11,7 @@
 - `HZ8_REUSABLE_SPAN_MAG32_L1.md`: larger/local opt-in capacity candidate
 - `HZ8_MEDIUM_FIXED8K_COST_AUDIT_L0.md`: medium common-entry assembly/cost and L1 path audit
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
+- `HZ8_LINUX_WORKING_SET_PARITY_L0.md`: Windows-equivalent Linux slot-ring benchmark box
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_L0.md`: diagnostic shared Page8K/medium dispatch directory
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0.md`: type-stable medium route-record lifetime proof
 - `HZ8_PAGE8K_API_SURFACE_F1.md`: R3 route, usable-size, and realloc contract

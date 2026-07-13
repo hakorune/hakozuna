@@ -24,13 +24,17 @@ int main(int argc, char** argv) {
       .max_size = 2048,
       .remote_pct = 0,
       .interleaved = 0,
+      .working_set_ring = 0,
       .live_window = 0,
   };
   if (h8_parse_options(argc, argv, &opt) != 0 ||
       opt.runs <= 0 || opt.threads <= 0 || opt.iters_per_thread == 0 ||
       opt.min_size == 0 || opt.max_size < opt.min_size ||
       opt.remote_pct < 0 || opt.remote_pct > 100 ||
-      opt.interleaved < 0 || opt.interleaved > 1) {
+      opt.interleaved < 0 || opt.interleaved > 1 ||
+      opt.working_set_ring < 0 || opt.working_set_ring > 1 ||
+      (opt.working_set_ring &&
+       (opt.interleaved || opt.remote_pct != 0 || opt.live_window == 0))) {
     h8_usage(argv[0]);
     return 1;
   }
@@ -69,6 +73,9 @@ int main(int argc, char** argv) {
   size_t interleaved_drain_empty_total = 0;
   size_t interleaved_push_yields_total = 0;
   size_t interleaved_finish_yields_total = 0;
+  size_t working_set_allocs_total = 0;
+  size_t working_set_frees_total = 0;
+  size_t working_set_max_live = 0;
   if (!throughput || !rss || !peak_rss || !alloc_phase_ms || !remote_phase_ms ||
       !work_throughput || !minor_faults || !span_lower_bound || !remote_live_objects ||
       !upper1536_span_lower_bound || !upper1p5_span_lower_bound ||
@@ -181,6 +188,11 @@ int main(int argc, char** argv) {
       interleaved_drain_empty_total += th[i].interleaved_drain_empty;
       interleaved_push_yields_total += th[i].interleaved_push_yields;
       interleaved_finish_yields_total += th[i].interleaved_finish_yields;
+      working_set_allocs_total += th[i].working_set_allocs;
+      working_set_frees_total += th[i].working_set_frees;
+      if (th[i].working_set_max_live > working_set_max_live) {
+        working_set_max_live = th[i].working_set_max_live;
+      }
     }
     uint64_t end = h8_now_ns();
     getrusage(RUSAGE_SELF, &usage_after);
@@ -303,15 +315,20 @@ int main(int argc, char** argv) {
   qsort(work_throughput, (size_t)opt.runs, sizeof(*work_throughput),
         h8_cmp_double);
 
-  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d live_window=%zu bench_attribution=%d class_map_id=%s\n",
+  printf("summary runs=%d threads=%d iters=%zu size=%zu..%zu remote_pct=%d interleaved=%d working_set_ring=%d live_window=%zu bench_attribution=%d class_map_id=%s\n",
          opt.runs, opt.threads, opt.iters_per_thread, opt.min_size, opt.max_size,
-         opt.remote_pct, opt.interleaved, opt.live_window,
+         opt.remote_pct, opt.interleaved, opt.working_set_ring, opt.live_window,
 #if defined(H8_BENCH_ATTRIBUTION)
          1,
 #else
          0,
 #endif
          H8_CLASS_MAP_ID);
+  if (opt.working_set_ring) {
+    printf("working_set_ring allocs=%zu frees=%zu max_live_per_thread=%zu\n",
+           working_set_allocs_total, working_set_frees_total,
+           working_set_max_live);
+  }
 #if defined(H8_MEDIUM_V12_48K2_CLASS)
   printf("medium_geometry_id=q64-v12-48k2\n");
 #elif defined(H8_MEDIUM_UPPER48_CLASS)

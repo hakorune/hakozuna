@@ -27,7 +27,8 @@ general_flags=HZ8_DEFAULT_CFLAGS,H8_MEDIUM_PAGE8K_REMOTE_L1,H8_MEDIUM_PAGE8K_REM
 candidate_flags=HZ8_DEFAULT_CFLAGS,H8_MEDIUM_PAGE8K_REMOTE_L1,H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1,H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1,H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1,H8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1
 diagnostic_counters=disabled
 environment=$(uname -a)
-note=WSL results are directional controls; native Ubuntu is required for cross-platform promotion.
+note=Use native Ubuntu for cross-platform promotion; WSL remains directional only.
+worker=working_set_ring
 EOF
 
 csv="${OUTDIR}/samples.csv"
@@ -35,12 +36,12 @@ printf 'row,run,order,allocator,throughput,post_rss,peak_rss,log\n' >"${csv}"
 
 row_args() {
   case "$1" in
-    fixed8k) printf '%s\n' '--threads 4 --iters 200000 --min-size 8192 --max-size 8192 --remote-pct 0 --interleaved 1' ;;
-    fixed16k) printf '%s\n' '--threads 4 --iters 120000 --min-size 16384 --max-size 16384 --remote-pct 0 --interleaved 1' ;;
-    fixed32k) printf '%s\n' '--threads 4 --iters 80000 --min-size 32768 --max-size 32768 --remote-pct 0 --interleaved 1' ;;
-    balanced) printf '%s\n' '--threads 8 --iters 25000 --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 1' ;;
-    wide_ws) printf '%s\n' '--threads 8 --iters 20000 --min-size 16 --max-size 1024 --remote-pct 0 --interleaved 1 --live-window 16384' ;;
-    larger_sizes) printf '%s\n' '--threads 4 --iters 15000 --min-size 256 --max-size 8192 --remote-pct 0 --interleaved 1 --live-window 4096' ;;
+    fixed8k) printf '%s\n' '--threads 4 --iters 200000 --min-size 8192 --max-size 8192 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 256' ;;
+    fixed16k) printf '%s\n' '--threads 4 --iters 120000 --min-size 16384 --max-size 16384 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 256' ;;
+    fixed32k) printf '%s\n' '--threads 4 --iters 80000 --min-size 32768 --max-size 32768 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 256' ;;
+    balanced) printf '%s\n' '--threads 8 --iters 25000 --min-size 16 --max-size 2048 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 4096' ;;
+    wide_ws) printf '%s\n' '--threads 8 --iters 20000 --min-size 16 --max-size 1024 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 16384' ;;
+    larger_sizes) printf '%s\n' '--threads 4 --iters 15000 --min-size 256 --max-size 8192 --remote-pct 0 --interleaved 0 --working-set-ring 1 --live-window 4096' ;;
     *) echo "unknown row: $1" >&2; return 2 ;;
   esac
 }
@@ -101,7 +102,7 @@ for item in csv.DictReader(open(src, newline="")):
 
 with open(dst, "w", newline="") as out:
     out.write("# HZ8 General Medium Page Linux Gate\n\n")
-    out.write("Fresh-process three-way rotation; speed binaries only; WSL is directional evidence.\n\n")
+    out.write("Fresh-process three-way working-set rotation; speed binaries only.\n\n")
     out.write("| row | baseline | general | general delta | entry-boundary | entry delta | entry vs general | baseline post RSS | entry post RSS | baseline peak RSS | entry peak RSS |\n")
     out.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
     for row in ("fixed8k", "fixed16k", "fixed32k", "balanced", "wide_ws", "larger_sizes"):

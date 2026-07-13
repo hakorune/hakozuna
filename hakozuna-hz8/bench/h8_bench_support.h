@@ -23,6 +23,7 @@ typedef struct H8BenchOptions {
   size_t max_size;
   int remote_pct;
   int interleaved;
+  int working_set_ring;
   size_t live_window;
 } H8BenchOptions;
 
@@ -50,6 +51,9 @@ typedef struct H8BenchThread {
   size_t interleaved_drain_empty;
   size_t interleaved_push_yields;
   size_t interleaved_finish_yields;
+  size_t working_set_allocs;
+  size_t working_set_frees;
+  size_t working_set_max_live;
   size_t remote_live_by_class[H8_CLASS_COUNT];
   uint64_t requested_bytes_by_class[H8_CLASS_COUNT];
   uint64_t rounded_bytes_by_class[H8_CLASS_COUNT];

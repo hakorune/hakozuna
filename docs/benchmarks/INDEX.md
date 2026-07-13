@@ -87,9 +87,9 @@ This page is the public pointer list for dated benchmark summaries.
 # 2026-07-13
 
 - [HZ8 General Medium Page native Ubuntu gate](linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md):
-  GCC/Clang safety passed and fresh-process three-way R10 kept RSS neutral, but
-  exact gains were small and `larger_sizes` regressed 12.59%; default promotion
-  and a free-side split are rejected.
+  GCC/Clang safety passed; corrected Windows-equivalent slot-ring R20 improved
+  exact rows 85.04% to 283.71% while all controls remained within 1%, clearing
+  the Windows/Linux research gate. Public default integration remains separate.
 
 # 2026-07-12
 
