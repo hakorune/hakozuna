@@ -7,6 +7,9 @@
     defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0)
 #include "../src/h8_medium_domain_shadow.h"
 #endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
+#include "../src/h8_small_partial_transition_depot.h"
+#endif
 #include "h8_bench_support.h"
 
 #include <pthread.h>
@@ -414,6 +417,11 @@ int main(int argc, char** argv) {
 #endif
   };
   h8_bench_print_final_report(&report);
+
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
+  fflush(stdout);
+  h8_small_partial_depot_dump();
+#endif
 
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
   H8Page8KRemoteStats page8k = h8_page8k_remote_stats();

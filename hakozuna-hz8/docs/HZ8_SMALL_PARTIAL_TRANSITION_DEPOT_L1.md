@@ -210,12 +210,36 @@ GCC and Clang `-Werror` smoke and safety stress pass under WSL. The safety run
 retains the existing owner-exit, handoff, remote-free, duplicate-claim, and
 invalid-free results.
 
+## Native Ubuntu Result
+
+Native x86_64 fresh-process AB/BA R10 used the current GeneralMediumPage plus
+EntryBoundary default as baseline. Local rows used the Windows-equivalent
+working-set ring at WorkScale=10; remote-small used 16 threads and an effective
+remote rate of 90.04%.
+
+| Row | HZ8 default | Partial depot | Delta | Default peak | Depot peak |
+|---|---:|---:|---:|---:|---:|
+| fixed8K | 125.025M | 126.811M | +1.43% | 3.88 MiB | 4.00 MiB |
+| fixed16K | 123.477M | 125.855M | +1.93% | 4.00 MiB | 3.94 MiB |
+| fixed32K | 94.481M | 94.684M | +0.21% | 4.00 MiB | 4.00 MiB |
+| balanced | 152.003M | 142.445M | -6.29% | 26.75 MiB | 26.25 MiB |
+| wide_ws | 96.976M | 90.064M | -7.13% | 49.62 MiB | 49.06 MiB |
+| larger_sizes | 17.765M | 17.807M | +0.24% | 33.12 MiB | 32.81 MiB |
+| remote-small | 52.023M | 51.834M | -0.36% | 22.56 MiB | 22.06 MiB |
+
+Diagnostic-only samples observed about 25K depot pushes and pop hits in each
+of balanced and wide, with zero pop reject, index mismatch,
+`commit_nonempty`, or shutdown depth. The behavior is active and internally
+clean, but Linux does not reproduce the Windows RSS problem and pays more than
+the allowed throughput cost on two small-heavy controls.
+
 ## Current Decision
 
 ```text
 Windows behavior gate: GO
 Windows remote no-regression: GO
 Linux GCC/Clang correctness: GO
-cross-platform default promotion: HOLD for native Ubuntu performance/RSS gate
+Linux performance gate: NO-GO (balanced and wide below -3%)
+cross-platform default promotion: HOLD
 public HZ8 default: unchanged
 ```

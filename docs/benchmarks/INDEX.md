@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 Small Partial Transition Depot native Ubuntu gate, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md)
 - [HZ8 General Medium native Ubuntu default integration, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md)
 - [HZ8 General Medium Page native Ubuntu gate, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_PAGE_NATIVE_UBUNTU_20260713.md)
 - [HZ8 Unified Medium Domain Kind L1 native Ubuntu NO-GO, 2026-07-12](./linux/HZ8_UNIFIED_MEDIUM_DOMAIN_KIND_L1_20260712.md)
@@ -87,6 +88,9 @@ This page is the public pointer list for dated benchmark summaries.
 
 # 2026-07-13
 
+- [HZ8 Small Partial Transition Depot native Ubuntu gate](linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md):
+  GCC/Clang safety and remote-small passed, but balanced `-6.29%` and wide
+  `-7.13%` reject cross-platform/default promotion; Windows remains opt-in GO.
 - [HZ8 General Medium native Ubuntu default integration](linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md):
   default/rollback R10 improved all six rows, exact rows by 86% to 281%, with
   GCC/Clang and preload safety PASS; Linux default GO, Windows integration HOLD.

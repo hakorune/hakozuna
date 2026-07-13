@@ -17,8 +17,10 @@ Artifact: `libhakozuna_hz8_preload.so`.
 |---|---|---|---|
 | `hz8-v2-rollback` | `preload-v2-rollback` | immediate rollback | Previous KeepRefill + span-lease + Mag16 public behavior |
 | `hz8-v2-mag32` | `preload-reusable-span-mag32` | larger/local candidate | Global Mag32 capacity lane for explicit larger-size local workloads |
+| `hz8-small-partial-depot` | `preload-small-partial-depot` | Windows GO / Linux performance NO-GO | FULL-to-AVAILABLE same-owner small-span depot; explicit reproduction only |
 
-Artifact: `libhakozuna_hz8_preload_reusable_span_mag32.so`.
+Artifacts: `libhakozuna_hz8_preload_reusable_span_mag32.so` and
+`libhakozuna_hz8_preload_small_partial_depot.so`.
 
 Mag32 is not included in the normal public matrix. Linux shows large wins and
 peak-RSS reductions for 16..2048 and 16..4096 local churn, but 16..256
@@ -45,6 +47,10 @@ make -C hakozuna-hz8 safety-stress-v2-rollback
 make -C hakozuna-hz8 preload-reusable-span-mag32
 make -C hakozuna-hz8 smoke-reusable-span-mag32
 make -C hakozuna-hz8 safety-stress-reusable-span-mag32
+make -C hakozuna-hz8 preload-small-partial-depot
+make -C hakozuna-hz8 smoke-small-partial-depot
+make -C hakozuna-hz8 safety-stress-small-partial-depot
+make -C hakozuna-hz8 small-partial-depot-gate
 
 # Reproducibility-only Windows controls; not Linux candidates.
 make -C hakozuna-hz8 bench-release-small-available4k
