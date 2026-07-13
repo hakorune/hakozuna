@@ -613,7 +613,8 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
             fprintf(out,
                     "[H8_MEDIUM_PAGE_SHADOW] lookup=%llu hit=%llu miss=%llu "
                     "run_mismatch=%llu exact_valid=%llu exact_invalid=%llu "
-                    "state_match=%llu state_mismatch=%llu\n",
+                    "state_match=%llu state_mismatch=%llu "
+                    "geometry_match=%llu geometry_mismatch=%llu\n",
                     (unsigned long long)ps.lookup,
                     (unsigned long long)ps.hit,
                     (unsigned long long)ps.miss,
@@ -621,7 +622,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
                     (unsigned long long)ps.exact_valid,
                     (unsigned long long)ps.exact_invalid,
                     (unsigned long long)ps.state_match,
-                    (unsigned long long)ps.state_mismatch);
+                    (unsigned long long)ps.state_mismatch,
+                    (unsigned long long)ps.geometry_match,
+                    (unsigned long long)ps.geometry_mismatch);
         }
 #endif
     }

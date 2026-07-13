@@ -9,20 +9,23 @@ public default:
   HZ8 v2 / Mag16 / KeepRefill balanced
 
 active research line:
-  UnifiedMediumDomain
+  GeneralMediumPageSubstrateExpansion-L1 cross-platform validation
 
 latest commit:
-  51b8ebca Test HZ8 generic medium record handoff
+  f83fc4b3 Close HZ8 owner witness layout probe
 
 next box:
-  freeze UnifiedMediumDomain behavior expansion
-  retain Page8KRecord and OwnerWitness as opt-in evidence
+  run the prepared native Linux three-way gate for EntryBoundary-L1A
+  do not add a free-side split unless evidence requires it
 ```
 
 Read first:
 
 - `docs/HZ8_UNIFIED_MEDIUM_DOMAIN_L0.md`
 - `docs/HZ8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0.md`
+- `docs/HZ8_WINDOWS_MEDIUM_HOT_PATH_ATTRIBUTION_L0.md`
+- `docs/HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`
+- `docs/HZ8_WINDOWS_GENERAL_MEDIUM_PAGE_GATE_L1.md`
 - `docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md`
 - `docs/HZ8_BENCH_GATE.md`
 
@@ -54,6 +57,37 @@ Page8KRecord-L1:
 
 public default:
   unchanged
+
+GeneralMediumPageSubstrateExpansion-L1:
+  cap64 correctness and exact-size performance GO
+  long R10: 8K +68.77%, 16K +215.54%, 32K +97.60%
+  larger_sizes -0.09%, but balanced -9.23%
+  public/default promotion HOLD
+
+PageCap128:
+  page_cap_reject 190221 -> 0 on fixed32K
+  direct cap64 comparison: fixed32K +355.18%
+  balanced -5.73%, wide_ws -3.39%
+  32K specialist evidence only
+
+ColdDispatch-L1:
+  branch-hint-only probe
+  balanced -10.78%
+  NO-GO; flag and build row removed
+
+EntryBoundary-L1A:
+  non-small malloc moved to a noinline helper
+  long R10: 8K +19.95%, 16K +146.22%, 32K +96.36%
+  balanced -0.14%, wide_ws +3.64%, larger_sizes +0.55%
+  RSS neutral; same-flag API smoke PASS
+  Windows research GO; cross-platform/default HOLD
+
+Linux validation surface:
+  Makefile speed/smoke/safety targets added
+  WSL GCC -Werror build, API smoke, and safety stress PASS
+  WSL performance is too noisy for promotion
+  native Ubuntu must compare v2 / general / entry-boundary
+  runner: scripts/run_hz8_page_general_linux_gate.sh
 ```
 
 ## Page8K Record Evidence
@@ -294,6 +328,156 @@ Final decision:
   OwnerWitness performance promotion: NO-GO / closed
   public HZ8 v2 default: unchanged
 ```
+
+## Next Box: WindowsMediumHotPathAttribution-L0
+
+Goal:
+
+```text
+Explain the remaining native Windows exact-medium cost before adding behavior.
+Audit fixed 16K and 32K in addition to the existing fixed8K control.
+Keep production malloc/free free of diagnostic counters and atomics.
+```
+
+Decision boundary:
+
+```text
+alloc-side current-run/refill dominates:
+  open one bounded current-run/refill box
+
+free-side classify/authority dominates:
+  evaluate the existing HZ10-style O(1) page substrate through an HZ8 contract
+
+fail-closed checks dominate:
+  record the contract cost; do not remove ownership/generation/state checks
+
+unclear or layout-sensitive:
+  stop behavior work and add a cycle-level microbench only
+```
+
+The audit is an independent diagnostic script, not a normal allocator matrix
+row. OwnerWitness remains buildable only as closed speed evidence plus a
+separate diagnostic sibling.
+
+Native Windows release repeat-5:
+
+| Size | HZ8 v2 | HZ10 substrate | tcmalloc |
+|---:|---:|---:|---:|
+| 8K | 63.190M | 179.180M | 204.940M |
+| 16K | 20.760M | 45.330M | 30.200M |
+| 32K | 5.520M | 13.770M | 15.100M |
+
+Batched single-thread phase attribution:
+
+| Size | HZ8 alloc/free ns | HZ10 alloc/free ns | tcmalloc alloc/free ns |
+|---:|---:|---:|---:|
+| 8K | 26.00 / 11.07 | 7.72 / 2.94 | 4.91 / 2.48 |
+| 16K | 94.86 / 11.10 | 23.60 / 3.00 | 5.48 / 2.46 |
+| 32K | 356.44 / 12.90 | 83.87 / 2.86 | 6.00 / 2.91 |
+
+Diagnostic-only residency/scan result:
+
+```text
+budget reject:       0 at 8K/16K/32K
+global scan:         initial run creation only
+owner scan avg step: about 16 / 32 / 64 at 8K / 16K / 32K
+resident reuse:      succeeds; decommit churn is not the cause
+```
+
+Decision:
+
+```text
+WindowsMediumHotPathAttribution-L0: complete
+primary cost: alloc-side owner-run discovery plus the common medium substrate
+free/classifier-only optimization: not the next box
+MediumAvailableIndex revival: NO-GO; it already removed discovery without a
+  clean medium_r50 gain
+next: GeneralMediumPageSubstrateExpansion-L0 over the existing HZ8-native R3 contract
+```
+
+Correction after contract inventory:
+
+```text
+exact 8K R3 contract:
+  already complete as an HZ8-native research substrate
+
+do not create:
+  a duplicate MediumPageSubstrateContract-L0
+
+active P3 box:
+  GeneralMediumPageSubstrateExpansion-L0
+  exact 16K/32K immutable geometry shadow over the existing contract
+```
+
+P3 L0 gate:
+
+```text
+sizes:              exact 8K / 16K / 32K, fresh process per size
+run geometry:       64KiB with 8 / 4 / 2 slots
+geometry mismatch: 0
+run mismatch:      0
+state mismatch:    0
+interior/duplicate: non-reusable
+speed/default:     unchanged; shadow is diagnostic-only
+```
+
+Only after L0 passes may a behavior sibling replace fixed Page8K constants
+with immutable per-class geometry. Remote publication, owner exit, orphan
+residency, RSS, and native Linux gates remain mandatory before promotion.
+
+P3 L0 Windows result:
+
+```text
+8K:  geometry 3/0, run mismatch 0, state mismatch 0
+16K: geometry 3/0, run mismatch 0, state mismatch 0
+32K: geometry 3/0, run mismatch 0, state mismatch 0
+interior/duplicate: fail-closed
+status: GO
+```
+
+L1 behavior design:
+
+```text
+page metadata:
+  immutable class_id / slot_size / slot_count
+
+owner inventory:
+  active_page[class]
+  available_head[class]
+
+adoption:
+  class-preserving only
+
+shared unchanged contract:
+  64KiB registry classification
+  exact slot and live-state authority
+  bounded pending bitmap and inbox
+  owner close/adopt publication fence
+  bounded orphan residency and decommit
+```
+
+L1 initial Windows result:
+
+```text
+API exact 8K/16K/32K: PASS
+remote claims/drains: 14 / 14
+remote reject/lost:   0 / 0
+
+directional local:
+  8K:  106.7M -> 135.7M
+  16K: 54.8M  -> 151.1M
+  32K: 18.8M  -> 33.5M
+
+status:
+  correctness GO
+  performance HOLD
+```
+
+The exact32 control uses 256 live objects per worker, which needs 128 two-slot
+pages. The initial per-class page cap is 64, so diagnostic attribution reports
+only `211405/400384` allocations served by the page substrate; the rest use the
+legacy medium fallback. Despite that boundary, the directional row improves
+about 1.78x. Measure RSS and paired controls before changing the cap.
 
 ## Other Lanes
 

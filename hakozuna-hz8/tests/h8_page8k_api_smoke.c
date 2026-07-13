@@ -64,6 +64,31 @@ int main(void) {
     return fail("duplicate/stale route is not INVALID");
   }
 
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  const size_t general_sizes[] = {16384u, 32768u};
+  for (size_t i = 0; i < sizeof(general_sizes) / sizeof(general_sizes[0]);
+       ++i) {
+    size_t size = general_sizes[i];
+    void* general = h8_malloc(size);
+    if (!general || h8_route(general) != H8_ROUTE_VALID) {
+      return fail("general medium allocation is not VALID");
+    }
+    usable = 0u;
+    owned = false;
+    if (!h8_usable_size_inner(general, &usable, &owned) || !owned ||
+        usable != size) {
+      return fail("general medium usable_size disagrees");
+    }
+    if (h8_route((unsigned char*)general + 1u) != H8_ROUTE_INVALID) {
+      return fail("general medium interior route is not INVALID");
+    }
+    h8_free(general);
+    if (h8_route(general) != H8_ROUTE_INVALID) {
+      return fail("general medium stale route is not INVALID");
+    }
+  }
+#endif
+
 #if defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
   void* ranged = h8_malloc(5000u);
   if (!ranged || h8_route(ranged) != H8_ROUTE_VALID) {

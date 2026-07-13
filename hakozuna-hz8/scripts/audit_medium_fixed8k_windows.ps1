@@ -1,7 +1,8 @@
 param(
     [string]$OutputDir,
     [int]$Runs = 5,
-    [int]$ItersPerThread = 1000000
+    [int]$ItersPerThread = 1000000,
+    [int[]]$Sizes = @(8192, 16384, 32768)
 )
 
 $ErrorActionPreference = "Stop"
@@ -45,6 +46,7 @@ $manifest.Add("nm=$Nm")
 $manifest.Add("flags=$($commonFlags -join ' ')")
 $manifest.Add("runs=$Runs")
 $manifest.Add("iters_per_thread=$ItersPerThread")
+$manifest.Add("sizes=$($Sizes -join ',')")
 
 if (-not ("Hz8Audit.NativeMethods" -as [type])) {
     Add-Type -TypeDefinition @"
@@ -88,6 +90,49 @@ if ($LASTEXITCODE -ne 0) {
     throw "HZ10 substrate shadow build failed"
 }
 $manifest.Add("hz10_shadow_flags=$($hz10Args -join ' ')")
+
+$phaseSource = Join-Path $Hz8Root "tests\h8_medium_phase_audit_win.c"
+$phaseHz8Sources = Get-ChildItem (Join-Path $Hz8Root "src") -Filter "*.c" |
+    ForEach-Object { $_.FullName }
+$phaseHz8 = Join-Path $OutputDir "h8_medium_phase_hz8.exe"
+$phaseHz8Diag = Join-Path $OutputDir "h8_medium_phase_hz8_diag.exe"
+$phaseHz10 = Join-Path $OutputDir "h8_medium_phase_hz10.exe"
+$phaseTcmalloc = Join-Path $OutputDir "h8_medium_phase_tcmalloc.exe"
+$phaseHz8Args = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/DHZ_PHASE_USE_HZ8=1"
+) + $commonFlags[7..($commonFlags.Count - 1)] + $phaseHz8Sources + @(
+    $phaseSource, "/Fe:$phaseHz8"
+)
+& $Compiler @phaseHz8Args
+if ($LASTEXITCODE -ne 0) { throw "HZ8 phase audit build failed" }
+
+$phaseHz8DiagArgs = $phaseHz8Args[0..($phaseHz8Args.Count - 2)] + @(
+    "/DH8_ENABLE_DEBUG_STATS=1", "/DHZ_PHASE_REPORT_HZ8_STATS=1",
+    "/Fe:$phaseHz8Diag"
+)
+& $Compiler @phaseHz8DiagArgs
+if ($LASTEXITCODE -ne 0) { throw "HZ8 diagnostic phase audit build failed" }
+
+$phaseHz10Args = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/DHZ_PHASE_USE_HZ10=1", "/I$Hz10Root\src"
+) + $hz10Sources + @($phaseSource, "/Fe:$phaseHz10")
+& $Compiler @phaseHz10Args
+if ($LASTEXITCODE -ne 0) { throw "HZ10 phase audit build failed" }
+
+$phaseTcmallocArgs = @(
+    "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+    "/DHZ_PHASE_USE_TCMALLOC_DYNAMIC=1", $phaseSource,
+    "/Fe:$phaseTcmalloc"
+)
+& $Compiler @phaseTcmallocArgs
+if ($LASTEXITCODE -ne 0) { throw "tcmalloc phase audit build failed" }
+Copy-Item -Force (Join-Path $SuiteDir "tcmalloc_minimal.dll") $OutputDir
+$manifest.Add("phase_hz8_flags=$($phaseHz8Args -join ' ')")
+$manifest.Add("phase_hz8_diag_flags=$($phaseHz8DiagArgs -join ' ')")
+$manifest.Add("phase_hz10_flags=$($phaseHz10Args -join ' ')")
+$manifest.Add("phase_tcmalloc_flags=$($phaseTcmallocArgs -join ' ')")
 
 function Get-FunctionStats {
     param(
@@ -201,15 +246,15 @@ $pathAuditOutput = & $pathAuditExe 2>&1
 $pathAuditOutput | Set-Content -Encoding ascii (Join-Path $OutputDir "path_audit.txt")
 $manifest.Add("path_audit_flags=$($pathAuditArgs -join ' ')")
 
-function Invoke-Fixed8K {
-    param([string]$Name, [string]$Path)
+function Invoke-FixedSize {
+    param([string]$Name, [string]$Path, [int]$Size)
     if (-not (Test-Path $Path)) { return $null }
     [double[]]$values = @()
     [double[]]$cyclesPerOp = @()
     for ($run = 0; $run -lt $Runs; ++$run) {
         $psi = [System.Diagnostics.ProcessStartInfo]::new()
         $psi.FileName = $Path
-        $psi.Arguments = "4 $ItersPerThread 1024 8192 8192"
+        $psi.Arguments = "4 $ItersPerThread 1024 $Size $Size"
         $psi.UseShellExecute = $false
         $psi.RedirectStandardOutput = $true
         $psi.RedirectStandardError = $true
@@ -225,7 +270,7 @@ function Invoke-Fixed8K {
         }
         $raw = $stdoutTask.Result + " " + $stderrTask.Result
         $match = [regex]::Match($raw, 'ops/s=([0-9.]+)')
-        if (-not $match.Success) { throw "cannot parse fixed8K output for ${Name}: $raw" }
+        if (-not $match.Success) { throw "cannot parse fixed-size output for ${Name}/${Size}: $raw" }
         $values += [double]$match.Groups[1].Value
         # bench_allocator_compare defines one logical operation per loop
         # iteration; cleanup frees are intentionally outside this denominator.
@@ -236,6 +281,7 @@ function Invoke-Fixed8K {
     $sortedCycles = @($cyclesPerOp | Sort-Object)
     [pscustomobject]@{
         allocator = $Name
+        size = $Size
         median_ops_s = $sorted[[int][math]::Floor($sorted.Count / 2)]
         median_cycles_op = $sortedCycles[[int][math]::Floor($sortedCycles.Count / 2)]
         samples = ($values -join ';')
@@ -243,17 +289,111 @@ function Invoke-Fixed8K {
     }
 }
 
+$allocatorBins = @(
+    @{ Name = "hz8-v2"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe") },
+    @{ Name = "hz10-substrate-shadow"; Path = $hz10Bench },
+    @{ Name = "tcmalloc"; Path = (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe") }
+)
 $bench = @(
-    Invoke-Fixed8K "hz8-v2" (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe")
-    Invoke-Fixed8K "hz10-substrate-shadow" $hz10Bench
-    Invoke-Fixed8K "tcmalloc" (Join-Path $SuiteDir "bench_mixed_ws_tcmalloc.exe")
+    foreach ($size in $Sizes) {
+        foreach ($allocator in $allocatorBins) {
+            Invoke-FixedSize $allocator.Name $allocator.Path $size
+        }
+    }
 ) | Where-Object { $_ }
-$bench | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "fixed8k_repeat.csv")
+$bench | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "medium_size_repeat.csv")
+@($bench | Where-Object { $_.size -eq 8192 }) |
+    Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "fixed8k_repeat.csv")
+
+function Invoke-PhaseAudit {
+    param([string]$Name, [string]$Path, [int]$Size)
+    [double[]]$allocValues = @()
+    [double[]]$freeValues = @()
+    $oldPath = $env:PATH
+    $env:PATH = "$SuiteDir;$oldPath"
+    try {
+        for ($run = 0; $run -lt $Runs; ++$run) {
+            $raw = & $Path $Size 256 1024 64 2>&1 | Out-String
+            if ($LASTEXITCODE -ne 0) { throw "phase audit failed for ${Name}/${Size}: $raw" }
+            $match = [regex]::Match(
+                $raw,
+                'alloc_ns_op=([0-9.]+)\s+free_ns_op=([0-9.]+)\s+failures=([0-9]+)'
+            )
+            if (-not $match.Success -or [int]$match.Groups[3].Value -ne 0) {
+                throw "cannot parse phase audit for ${Name}/${Size}: $raw"
+            }
+            $allocValues += [double]$match.Groups[1].Value
+            $freeValues += [double]$match.Groups[2].Value
+        }
+    } finally {
+        $env:PATH = $oldPath
+    }
+    $allocSorted = @($allocValues | Sort-Object)
+    $freeSorted = @($freeValues | Sort-Object)
+    [pscustomobject]@{
+        allocator = $Name
+        size = $Size
+        median_alloc_ns_op = $allocSorted[[int][math]::Floor($allocSorted.Count / 2)]
+        median_free_ns_op = $freeSorted[[int][math]::Floor($freeSorted.Count / 2)]
+        alloc_samples = ($allocValues -join ';')
+        free_samples = ($freeValues -join ';')
+    }
+}
+
+$phaseBins = @(
+    @{ Name = "hz8-v2"; Path = $phaseHz8 },
+    @{ Name = "hz10-substrate-shadow"; Path = $phaseHz10 },
+    @{ Name = "tcmalloc"; Path = $phaseTcmalloc }
+)
+$phase = @(
+    foreach ($size in $Sizes) {
+        foreach ($allocator in $phaseBins) {
+            Invoke-PhaseAudit $allocator.Name $allocator.Path $size
+        }
+    }
+)
+$phase | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "phase_repeat.csv")
+
+$phaseDiag = @(
+    foreach ($size in $Sizes) {
+        $raw = & $phaseHz8Diag $size 256 1024 64 2>&1 | Out-String
+        if ($LASTEXITCODE -ne 0) { throw "HZ8 diagnostic phase failed for ${size}: $raw" }
+        $match = [regex]::Match(
+            $raw,
+            'diag run_create=([0-9]+) empty_transition=([0-9]+) ' +
+            'empty_retain=([0-9]+) empty_budget_reject=([0-9]+) ' +
+            'empty_reactivate=([0-9]+) mark_live_resident=([0-9]+) ' +
+            'mark_live_decommitted=([0-9]+) reuse_active=([0-9]+) ' +
+            'reuse_owner=([0-9]+) reuse_global=([0-9]+) ' +
+            'owner_scan=([0-9]+) owner_steps=([0-9]+) ' +
+            'global_scan=([0-9]+) global_steps=([0-9]+)'
+        )
+        if (-not $match.Success) { throw "cannot parse HZ8 diagnostic phase for ${size}: $raw" }
+        [pscustomobject]@{
+            size = $size
+            run_create = [uint64]$match.Groups[1].Value
+            empty_transition = [uint64]$match.Groups[2].Value
+            empty_retain = [uint64]$match.Groups[3].Value
+            empty_budget_reject = [uint64]$match.Groups[4].Value
+            empty_reactivate = [uint64]$match.Groups[5].Value
+            mark_live_resident = [uint64]$match.Groups[6].Value
+            mark_live_decommitted = [uint64]$match.Groups[7].Value
+            reuse_active = [uint64]$match.Groups[8].Value
+            reuse_owner = [uint64]$match.Groups[9].Value
+            reuse_global = [uint64]$match.Groups[10].Value
+            owner_scan = [uint64]$match.Groups[11].Value
+            owner_steps = [uint64]$match.Groups[12].Value
+            global_scan = [uint64]$match.Groups[13].Value
+            global_steps = [uint64]$match.Groups[14].Value
+        }
+    }
+)
+$phaseDiag | Export-Csv -NoTypeInformation -Encoding ascii (Join-Path $OutputDir "phase_hz8_diag.csv")
 
 $manifest | Set-Content -Encoding ascii (Join-Path $OutputDir "build_manifest.txt")
 
 $summary = [System.Collections.Generic.List[string]]::new()
-$summary.Add("# HZ8 Medium Fixed 8K Cost Audit")
+$summary.Add("# HZ8 Windows Medium Hot-Path Attribution")
 $summary.Add("")
 $summary.Add("Diagnostic-only release-equivalent object audit. No production allocator flags or behavior are changed.")
 $summary.Add("")
@@ -273,12 +413,38 @@ foreach ($row in $callTargets) {
     $summary.Add("| $($row.symbol) | $($row.target) | $($row.count) |")
 }
 $summary.Add("")
-$summary.Add("## Fixed 8K Throughput")
+$summary.Add("## Exact-Size Throughput")
 $summary.Add("")
-$summary.Add("| allocator | median ops/s | median process cycles/op | runs |")
-$summary.Add("|---|---:|---:|---:|")
+$summary.Add("| size | allocator | median ops/s | median process cycles/op | runs |")
+$summary.Add("|---:|---|---:|---:|---:|")
 foreach ($row in $bench) {
-    $summary.Add("| $($row.allocator) | $([math]::Round($row.median_ops_s / 1e6, 3))M | $([math]::Round($row.median_cycles_op, 2)) | $Runs |")
+    $summary.Add("| $($row.size) | $($row.allocator) | $([math]::Round($row.median_ops_s / 1e6, 3))M | $([math]::Round($row.median_cycles_op, 2)) | $Runs |")
+}
+$summary.Add("")
+$summary.Add("## Batched Allocation/Free Phase Attribution")
+$summary.Add("")
+$summary.Add("Single-thread, batch 256, 64 warmup rounds, 1024 measured rounds.")
+$summary.Add("")
+$summary.Add("| size | allocator | alloc ns/op | free ns/op | runs |")
+$summary.Add("|---:|---|---:|---:|---:|")
+foreach ($row in $phase) {
+    $summary.Add("| $($row.size) | $($row.allocator) | $([math]::Round($row.median_alloc_ns_op, 3)) | $([math]::Round($row.median_free_ns_op, 3)) | $Runs |")
+}
+$summary.Add("")
+$summary.Add("## HZ8 Diagnostic Residency Attribution")
+$summary.Add("")
+$summary.Add("This table comes from a separate counter-bearing binary and is not a speed result.")
+$summary.Add("")
+$summary.Add("| size | run create | empty transitions | retained | budget reject | resident reactivate | decommitted reactivate |")
+$summary.Add("|---:|---:|---:|---:|---:|---:|---:|")
+foreach ($row in $phaseDiag) {
+    $summary.Add("| $($row.size) | $($row.run_create) | $($row.empty_transition) | $($row.empty_retain) | $($row.empty_budget_reject) | $($row.mark_live_resident) | $($row.mark_live_decommitted) |")
+}
+$summary.Add("")
+$summary.Add("| size | active reuse | owner reuse | global reuse | owner scans/steps | global scans/steps |")
+$summary.Add("|---:|---:|---:|---:|---:|---:|")
+foreach ($row in $phaseDiag) {
+    $summary.Add("| $($row.size) | $($row.reuse_active) | $($row.reuse_owner) | $($row.reuse_global) | $($row.owner_scan)/$($row.owner_steps) | $($row.global_scan)/$($row.global_steps) |")
 }
 $summary.Add("")
 $summary.Add("Static instruction counts are attribution aids, not cycle measurements. Calls may inline or share cold blocks; inspect the saved assembly before assigning contract cost.")
@@ -290,6 +456,8 @@ $summary.Add("")
 foreach ($line in $pathAuditOutput) {
     $summary.Add("    " + $line.ToString())
 }
+$summary | Set-Content -Encoding utf8 (Join-Path $OutputDir "HZ8_WINDOWS_MEDIUM_HOT_PATH_ATTRIBUTION.md")
+# Preserve the old report name for links and automation that still consume it.
 $summary | Set-Content -Encoding utf8 (Join-Path $OutputDir "HZ8_MEDIUM_FIXED8K_COST_AUDIT.md")
 
-Write-Host "Wrote HZ8 medium fixed8K audit: $OutputDir"
+Write-Host "Wrote HZ8 Windows medium hot-path attribution: $OutputDir"

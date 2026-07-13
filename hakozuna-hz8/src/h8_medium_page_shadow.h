@@ -6,6 +6,7 @@ typedef struct H8MediumRun H8MediumRun;
 typedef struct H8MediumPageShadowStats {
   uint64_t lookup, hit, miss, run_mismatch, exact_valid, exact_invalid;
   uint64_t state_match, state_mismatch;
+  uint64_t geometry_match, geometry_mismatch;
 } H8MediumPageShadowStats;
 void h8_medium_page_shadow_register(H8MediumRun* run);
 void h8_medium_page_shadow_unregister(H8MediumRun* run);

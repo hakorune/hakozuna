@@ -13,8 +13,13 @@
 #define H8_PAGE8K_RUN_BYTES 65536u
 #define H8_PAGE8K_SLOT_COUNT 8u
 #define H8_PAGE8K_REGISTRY_CAP 8192u
+#ifndef H8_PAGE8K_OWNER_PAGE_CAP
 #define H8_PAGE8K_OWNER_PAGE_CAP 64u
+#endif
 #define H8_PAGE8K_ORPHAN_RESIDENT_EMPTY_CAP 16u
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+#define H8_PAGE8K_CLASS_COUNT 3u
+#endif
 
 typedef enum H8Page8KSlotState {
   H8_PAGE8K_SLOT_FREE = 0,
@@ -43,8 +48,13 @@ struct H8Page8KRemoteOwner {
   _Atomic size_t inbox_depth;
   H8Page8KRemotePage* pages;
   size_t page_count;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  H8Page8KRemotePage* active_page[H8_PAGE8K_CLASS_COUNT];
+  H8Page8KRemotePage* available_head[H8_PAGE8K_CLASS_COUNT];
+#else
   H8Page8KRemotePage* active_page;
   H8Page8KRemotePage* available_head;
+#endif
   size_t resident_empty_pages;
   H8Page8KRemoteOwner* global_next;
   H8Page8KRemoteOwner* free_next;
@@ -52,6 +62,11 @@ struct H8Page8KRemoteOwner {
 
 struct H8Page8KRemotePage {
   uint8_t* base;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  uint8_t class_id;
+  uint8_t slot_count;
+  uint16_t slot_size;
+#endif
   _Atomic(H8Page8KRemoteOwner*) owner;
   _Atomic uint32_t owner_token;
   _Atomic uint8_t publish_closed;
@@ -140,6 +155,76 @@ static void h8_page8k_stat_max(_Atomic uint64_t* target, uint64_t value) {
 #define H8_PAGE8K_STAT_MAX(field, value) ((void)0)
 #endif
 
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+static bool h8_page8k_geometry_for_size(size_t size, uint8_t* class_out,
+                                        uint16_t* slot_size_out,
+                                        uint8_t* slot_count_out) {
+  uint8_t class_id;
+  if (size == 8192u)
+    class_id = 0u;
+  else if (size == 16384u)
+    class_id = 1u;
+  else if (size == 32768u)
+    class_id = 2u;
+  else
+    return false;
+  if (class_out) *class_out = class_id;
+  if (slot_size_out) *slot_size_out = (uint16_t)size;
+  if (slot_count_out)
+    *slot_count_out = (uint8_t)(H8_PAGE8K_RUN_BYTES / size);
+  return true;
+}
+
+static uint8_t h8_page8k_page_class(const H8Page8KRemotePage* page) {
+  return page->class_id;
+}
+
+static size_t h8_page8k_page_slot_size(const H8Page8KRemotePage* page) {
+  return page->slot_size;
+}
+
+static uint8_t h8_page8k_page_slot_count(const H8Page8KRemotePage* page) {
+  return page->slot_count;
+}
+
+static H8Page8KRemotePage** h8_page8k_owner_active_slot(
+    H8Page8KRemoteOwner* owner, uint8_t class_id) {
+  return &owner->active_page[class_id];
+}
+
+static H8Page8KRemotePage** h8_page8k_owner_available_slot(
+    H8Page8KRemoteOwner* owner, uint8_t class_id) {
+  return &owner->available_head[class_id];
+}
+#else
+static uint8_t h8_page8k_page_class(const H8Page8KRemotePage* page) {
+  (void)page;
+  return 0u;
+}
+
+static size_t h8_page8k_page_slot_size(const H8Page8KRemotePage* page) {
+  (void)page;
+  return H8_PAGE8K_BYTES;
+}
+
+static uint8_t h8_page8k_page_slot_count(const H8Page8KRemotePage* page) {
+  (void)page;
+  return H8_PAGE8K_SLOT_COUNT;
+}
+
+static H8Page8KRemotePage** h8_page8k_owner_active_slot(
+    H8Page8KRemoteOwner* owner, uint8_t class_id) {
+  (void)class_id;
+  return &owner->active_page;
+}
+
+static H8Page8KRemotePage** h8_page8k_owner_available_slot(
+    H8Page8KRemoteOwner* owner, uint8_t class_id) {
+  (void)class_id;
+  return &owner->available_head;
+}
+#endif
+
 static bool h8_page8k_registry_add(H8Page8KRemotePage* page) {
   bool added = false;
   size_t mask = H8_PAGE8K_REGISTRY_CAP - 1u;
@@ -178,9 +263,10 @@ static H8Page8KRemotePage* h8_page8k_classify(const void* ptr) {
 static bool h8_page8k_slot_index(const H8Page8KRemotePage* page,
                                  const void* ptr, uint8_t* slot_out) {
   uintptr_t offset = (uintptr_t)ptr - (uintptr_t)page->base;
-  if ((offset % H8_PAGE8K_BYTES) != 0u) return false;
-  uint8_t slot = (uint8_t)(offset / H8_PAGE8K_BYTES);
-  if (slot >= H8_PAGE8K_SLOT_COUNT) return false;
+  size_t slot_size = h8_page8k_page_slot_size(page);
+  if ((offset % slot_size) != 0u) return false;
+  uint8_t slot = (uint8_t)(offset / slot_size);
+  if (slot >= h8_page8k_page_slot_count(page)) return false;
   if (slot_out) *slot_out = slot;
   return true;
 }
@@ -207,7 +293,9 @@ bool h8_page8k_remote_usable_size_current(const void* ptr, size_t* usable_out,
   if (usable_out) *usable_out = 0;
   H8RouteKind route = h8_page8k_route(ptr, owned_out);
   if (route != H8_ROUTE_VALID) return false;
-  if (usable_out) *usable_out = H8_PAGE8K_BYTES;
+  H8Page8KRemotePage* page = h8_page8k_classify(ptr);
+  if (!page) return false;
+  if (usable_out) *usable_out = h8_page8k_page_slot_size(page);
   return true;
 }
 
@@ -269,19 +357,25 @@ static void h8_page8k_queue(H8Page8KRemotePage* page) {
 /* Owner-only index. Remote publishers never mutate these links. */
 static void h8_page8k_available_push(H8Page8KRemotePage* page) {
   H8Page8KRemoteOwner* owner = h8_page8k_page_owner(page);
-  if (owner->active_page == page || page->available_indexed ||
+  H8Page8KRemotePage** active = h8_page8k_owner_active_slot(
+      owner, h8_page8k_page_class(page));
+  H8Page8KRemotePage** available = h8_page8k_owner_available_slot(
+      owner, h8_page8k_page_class(page));
+  if (*active == page || page->available_indexed ||
       page->free_head == UINT8_MAX)
     return;
-  page->available_next = owner->available_head;
-  owner->available_head = page;
+  page->available_next = *available;
+  *available = page;
   page->available_indexed = true;
 }
 
 static H8Page8KRemotePage* h8_page8k_available_pop(
-    H8Page8KRemoteOwner* owner) {
-  H8Page8KRemotePage* page = owner->available_head;
+    H8Page8KRemoteOwner* owner, uint8_t class_id) {
+  H8Page8KRemotePage** available =
+      h8_page8k_owner_available_slot(owner, class_id);
+  H8Page8KRemotePage* page = *available;
   if (!page) return NULL;
-  owner->available_head = page->available_next;
+  *available = page->available_next;
   page->available_next = NULL;
   page->available_indexed = false;
   return page;
@@ -290,7 +384,8 @@ static H8Page8KRemotePage* h8_page8k_available_pop(
 static void h8_page8k_available_remove(H8Page8KRemoteOwner* owner,
                                        H8Page8KRemotePage* page) {
   if (!page->available_indexed) return;
-  H8Page8KRemotePage** link = &owner->available_head;
+  H8Page8KRemotePage** link = h8_page8k_owner_available_slot(
+      owner, h8_page8k_page_class(page));
   while (*link && *link != page) link = &(*link)->available_next;
   if (*link == page) *link = page->available_next;
   page->available_next = NULL;
@@ -307,8 +402,13 @@ static void h8_page8k_owner_prepare(H8Page8KRemoteOwner* owner,
   atomic_store_explicit(&owner->inbox_depth, 0u, memory_order_relaxed);
   owner->pages = NULL;
   owner->page_count = 0u;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  memset(owner->active_page, 0, sizeof(owner->active_page));
+  memset(owner->available_head, 0, sizeof(owner->available_head));
+#else
   owner->active_page = NULL;
   owner->available_head = NULL;
+#endif
   owner->resident_empty_pages = 0u;
   owner->global_next = NULL;
   owner->free_next = NULL;
@@ -414,8 +514,9 @@ void h8_page8k_remote_owner_destroy(H8Page8KRemoteOwner* owner) {
   h8_platform_mutex_unlock(&g_owner_list_lock);
 }
 
-H8Page8KRemotePage* h8_page8k_remote_page_create(
-    H8Page8KRemoteOwner* owner) {
+static H8Page8KRemotePage* h8_page8k_remote_page_create_geometry(
+    H8Page8KRemoteOwner* owner, uint8_t class_id, uint16_t slot_size,
+    uint8_t slot_count) {
   if (!owner) return NULL;
   H8Page8KRemotePage* page = calloc(1u, sizeof(*page));
   if (!page) return NULL;
@@ -425,6 +526,15 @@ H8Page8KRemotePage* h8_page8k_remote_page_create(
     free(page);
     return NULL;
   }
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  page->class_id = class_id;
+  page->slot_size = slot_size;
+  page->slot_count = slot_count;
+#else
+  (void)class_id;
+  (void)slot_size;
+  (void)slot_count;
+#endif
   atomic_init(&page->owner, owner);
   atomic_init(&page->owner_token,
               atomic_load_explicit(&owner->token, memory_order_relaxed));
@@ -432,11 +542,16 @@ H8Page8KRemotePage* h8_page8k_remote_page_create(
   atomic_init(&page->publish_refs, 0u);
   page->resident = true;
   page->free_head = 0u;
-  for (uint8_t i = 0; i < H8_PAGE8K_SLOT_COUNT; ++i) {
+  for (uint8_t i = 0; i < h8_page8k_page_slot_count(page); ++i) {
     page->free_next[i] = (uint8_t)(i + 1u);
     atomic_init(&page->slot_state[i], H8_PAGE8K_SLOT_FREE);
   }
-  page->free_next[H8_PAGE8K_SLOT_COUNT - 1u] = UINT8_MAX;
+  for (uint8_t i = h8_page8k_page_slot_count(page);
+       i < H8_PAGE8K_SLOT_COUNT; ++i) {
+    page->free_next[i] = UINT8_MAX;
+    atomic_init(&page->slot_state[i], H8_PAGE8K_SLOT_FREE);
+  }
+  page->free_next[h8_page8k_page_slot_count(page) - 1u] = UINT8_MAX;
   atomic_init(&page->qstate, H8_PAGE8K_Q_IDLE);
   atomic_init(&page->pending_mask, 0u);
   if (!h8_page8k_registry_add(page)) {
@@ -453,9 +568,30 @@ H8Page8KRemotePage* h8_page8k_remote_page_create(
   page->owner_next = owner->pages;
   owner->pages = page;
   ++owner->page_count;
-  if (!owner->active_page) owner->active_page = page;
+  H8Page8KRemotePage** active =
+      h8_page8k_owner_active_slot(owner, h8_page8k_page_class(page));
+  if (!*active) *active = page;
   return page;
 }
+
+H8Page8KRemotePage* h8_page8k_remote_page_create(
+    H8Page8KRemoteOwner* owner) {
+  return h8_page8k_remote_page_create_geometry(
+      owner, 0u, H8_PAGE8K_BYTES, H8_PAGE8K_SLOT_COUNT);
+}
+
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+H8Page8KRemotePage* h8_page8k_remote_page_create_size(
+    H8Page8KRemoteOwner* owner, size_t size) {
+  uint8_t class_id;
+  uint8_t slot_count;
+  uint16_t slot_size;
+  if (!h8_page8k_geometry_for_size(size, &class_id, &slot_size, &slot_count))
+    return NULL;
+  return h8_page8k_remote_page_create_geometry(owner, class_id, slot_size,
+                                                slot_count);
+}
+#endif
 
 void* h8_page8k_remote_alloc(H8Page8KRemoteOwner* owner,
                              H8Page8KRemotePage* page) {
@@ -470,9 +606,10 @@ void* h8_page8k_remote_alloc(H8Page8KRemoteOwner* owner,
           &page->slot_state[slot], &expected, H8_PAGE8K_SLOT_ALLOCATED,
           memory_order_acq_rel, memory_order_acquire))
     return NULL;
-  if (page->free_head == UINT8_MAX && owner->active_page == page)
-    owner->active_page = NULL;
-  return page->base + (size_t)slot * H8_PAGE8K_BYTES;
+  H8Page8KRemotePage** active = h8_page8k_owner_active_slot(
+      owner, h8_page8k_page_class(page));
+  if (page->free_head == UINT8_MAX && *active == page) *active = NULL;
+  return page->base + (size_t)slot * h8_page8k_page_slot_size(page);
 }
 
 static bool h8_page8k_remote_free_known(H8Page8KRemoteOwner* current_owner,
@@ -485,12 +622,13 @@ static bool h8_page8k_remote_free_known(H8Page8KRemoteOwner* current_owner,
   if (address < base || address >= base + H8_PAGE8K_RUN_BYTES) return false;
   if (owned_out) *owned_out = true;
   uintptr_t offset = address - base;
-  if ((offset % H8_PAGE8K_BYTES) != 0u) {
+  size_t slot_size = h8_page8k_page_slot_size(page);
+  if ((offset % slot_size) != 0u) {
     H8_PAGE8K_STAT_INC(interior_reject);
     return false;
   }
-  uint8_t slot = (uint8_t)(offset / H8_PAGE8K_BYTES);
-  if (slot >= H8_PAGE8K_SLOT_COUNT) return false;
+  uint8_t slot = (uint8_t)(offset / slot_size);
+  if (slot >= h8_page8k_page_slot_count(page)) return false;
 
   uint8_t expected = H8_PAGE8K_SLOT_ALLOCATED;
   H8Page8KRemoteOwner* page_owner = h8_page8k_page_owner(page);
@@ -555,7 +693,7 @@ size_t h8_page8k_remote_drain(H8Page8KRemoteOwner* owner) {
     page->inbox_next = NULL;
     uint8_t mask = atomic_exchange_explicit(&page->pending_mask, 0u,
                                             memory_order_acq_rel);
-    for (uint8_t slot = 0; slot < H8_PAGE8K_SLOT_COUNT; ++slot) {
+    for (uint8_t slot = 0; slot < h8_page8k_page_slot_count(page); ++slot) {
       if ((mask & (uint8_t)(1u << slot)) == 0u) continue;
       uint8_t expected = H8_PAGE8K_SLOT_REMOTE_PENDING;
       if (!atomic_compare_exchange_strong_explicit(
@@ -668,8 +806,13 @@ bool h8_page8k_remote_owner_close(H8Page8KRemoteOwner* owner) {
 
   H8Page8KRemotePage* pages = owner->pages;
   owner->pages = NULL;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  memset(owner->active_page, 0, sizeof(owner->active_page));
+  memset(owner->available_head, 0, sizeof(owner->available_head));
+#else
   owner->active_page = NULL;
   owner->available_head = NULL;
+#endif
   owner->page_count = 0u;
   while (pages) {
     H8Page8KRemotePage* page = pages;
@@ -695,7 +838,8 @@ bool h8_page8k_remote_owner_close(H8Page8KRemoteOwner* owner) {
   return true;
 }
 
-bool h8_page8k_remote_adopt_one(H8Page8KRemoteOwner* owner) {
+static bool h8_page8k_remote_adopt_one_class(H8Page8KRemoteOwner* owner,
+                                              uint8_t class_id) {
   if (!owner || atomic_load_explicit(&owner->state, memory_order_acquire) !=
                     H8_PAGE8K_OWNER_ALIVE)
     return false;
@@ -704,7 +848,7 @@ bool h8_page8k_remote_adopt_one(H8Page8KRemoteOwner* owner) {
 
   h8_platform_mutex_lock(&g_transition_lock);
   (void)h8_page8k_remote_drain(orphan);
-  H8Page8KRemotePage* page = h8_page8k_available_pop(orphan);
+  H8Page8KRemotePage* page = h8_page8k_available_pop(orphan, class_id);
   if (!page) {
     h8_platform_mutex_unlock(&g_transition_lock);
     return false;
@@ -735,13 +879,27 @@ bool h8_page8k_remote_adopt_one(H8Page8KRemoteOwner* owner) {
   page->owner_next = owner->pages;
   owner->pages = page;
   ++owner->page_count;
-  if (!owner->active_page) owner->active_page = page;
+  H8Page8KRemotePage** active = h8_page8k_owner_active_slot(owner, class_id);
+  if (!*active) *active = page;
   else h8_page8k_available_push(page);
   atomic_store_explicit(&page->publish_closed, 0u, memory_order_release);
   H8_PAGE8K_STAT_INC(orphan_adopt);
   h8_platform_mutex_unlock(&g_transition_lock);
   return true;
 }
+
+bool h8_page8k_remote_adopt_one(H8Page8KRemoteOwner* owner) {
+  return h8_page8k_remote_adopt_one_class(owner, 0u);
+}
+
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+bool h8_page8k_remote_adopt_one_size(H8Page8KRemoteOwner* owner,
+                                      size_t size) {
+  uint8_t class_id;
+  if (!h8_page8k_geometry_for_size(size, &class_id, NULL, NULL)) return false;
+  return h8_page8k_remote_adopt_one_class(owner, class_id);
+}
+#endif
 
 void h8_page8k_remote_thread_shutdown(void) {
   H8Page8KRemoteOwner* owner = g_current_owner;
@@ -752,7 +910,9 @@ void h8_page8k_remote_thread_shutdown(void) {
 }
 
 bool h8_page8k_remote_accepts_size(size_t size) {
-#if defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  return h8_page8k_geometry_for_size(size, NULL, NULL, NULL);
+#elif defined(H8_MEDIUM_PAGE8K_RANGE4097_L1)
   return size >= 4097u && size <= H8_PAGE8K_BYTES;
 #else
   return size == H8_PAGE8K_BYTES;
@@ -777,8 +937,17 @@ void* h8_page8k_remote_malloc_current(size_t size) {
 #endif
   H8Page8KRemoteOwner* owner = h8_page8k_current_owner();
   if (!owner) return NULL;
-  if (owner->active_page) {
-    void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
+  uint8_t class_id = 0u;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  uint8_t slot_count;
+  uint16_t slot_size;
+  if (!h8_page8k_geometry_for_size(size, &class_id, &slot_size, &slot_count))
+    return NULL;
+#endif
+  H8Page8KRemotePage** active =
+      h8_page8k_owner_active_slot(owner, class_id);
+  if (*active) {
+    void* ptr = h8_page8k_remote_alloc(owner, *active);
     if (ptr) {
       H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
@@ -786,20 +955,20 @@ void* h8_page8k_remote_malloc_current(size_t size) {
     }
   }
   for (;;) {
-    H8Page8KRemotePage* page = h8_page8k_available_pop(owner);
+    H8Page8KRemotePage* page = h8_page8k_available_pop(owner, class_id);
     if (!page) break;
-    owner->active_page = page;
+    *active = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
     if (ptr) {
       H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
-    owner->active_page = NULL;
+    *active = NULL;
   }
   h8_page8k_remote_drain(owner);
-  if (owner->active_page) {
-    void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
+  if (*active) {
+    void* ptr = h8_page8k_remote_alloc(owner, *active);
     if (ptr) {
       H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
@@ -807,19 +976,19 @@ void* h8_page8k_remote_malloc_current(size_t size) {
     }
   }
   for (;;) {
-    H8Page8KRemotePage* page = h8_page8k_available_pop(owner);
+    H8Page8KRemotePage* page = h8_page8k_available_pop(owner, class_id);
     if (!page) break;
-    owner->active_page = page;
+    *active = page;
     void* ptr = h8_page8k_remote_alloc(owner, page);
     if (ptr) {
       H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
       return ptr;
     }
-    owner->active_page = NULL;
+    *active = NULL;
   }
-  if (h8_page8k_remote_adopt_one(owner) && owner->active_page) {
-    void* ptr = h8_page8k_remote_alloc(owner, owner->active_page);
+  if (h8_page8k_remote_adopt_one_class(owner, class_id) && *active) {
+    void* ptr = h8_page8k_remote_alloc(owner, *active);
     if (ptr) {
       H8_PAGE8K_STAT_INC(dispatch_alloc_served);
       H8_PAGE8K_STAT_INC(range_served_alloc);
@@ -830,7 +999,13 @@ void* h8_page8k_remote_malloc_current(size_t size) {
     H8_PAGE8K_STAT_INC(page_cap_reject);
     return NULL;
   }
-  H8Page8KRemotePage* page = h8_page8k_remote_page_create(owner);
+  H8Page8KRemotePage* page;
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  page = h8_page8k_remote_page_create_geometry(owner, class_id, slot_size,
+                                                slot_count);
+#else
+  page = h8_page8k_remote_page_create(owner);
+#endif
   if (!page) return NULL;
   void* ptr = h8_page8k_remote_alloc(owner, page);
   if (ptr) {

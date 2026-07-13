@@ -97,6 +97,61 @@ function Invoke-Hz8AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz8-r3-page-general"
+            Output = "bench_mixed_ws_hz8_medium_page_general.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-r3-page-general-diag"
+            Output = "bench_mixed_ws_hz8_medium_page_general_diag.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+                "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1"
+            )
+        },
+        @{
+            Name = "hz8-r3-page-general-cap128"
+            Output = "bench_mixed_ws_hz8_medium_page_general_cap128.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+                "/DH8_PAGE8K_OWNER_PAGE_CAP=128"
+            )
+        },
+        @{
+            Name = "hz8-r3-page-general-cap128-diag"
+            Output = "bench_mixed_ws_hz8_medium_page_general_cap128_diag.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+                "/DH8_PAGE8K_OWNER_PAGE_CAP=128",
+                "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1"
+            )
+        },
+        @{
+            Name = "hz8-r3-page-general-entry-boundary"
+            Output = "bench_mixed_ws_hz8_medium_page_general_entry_boundary.exe"
+            ExtraFlags = @(
+                "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+                "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+                "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+                "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+                "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
+            )
+        },
+        @{
             Name = "hz8-r3-page8k-target-dispatch-diag"
             Output = "bench_mixed_ws_hz8_medium_page8k_target_dispatch_diag.exe"
             ExtraFlags = @(
@@ -472,6 +527,65 @@ function Invoke-Hz8AllocatorMatrixBuild {
     & $Compiler.Source @pageApiTargetSmokeArgs
     if ($LASTEXITCODE -ne 0) {
         throw "HZ8 page8k TargetDispatch API smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageApiGeneralSmokeOut = Join-Path $OutDir "h8_page_general_api_smoke.exe"
+    $pageApiGeneralSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+        "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+        "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1"
+    )
+    $pageApiGeneralSmokeArgs += $Hz8CommonFlags
+    $pageApiGeneralSmokeArgs += $Hz8Sources
+    $pageApiGeneralSmokeArgs += $pageApiSmoke
+    $pageApiGeneralSmokeArgs += "/Fe:$pageApiGeneralSmokeOut"
+    Write-Host "[hz8-win] building h8_page_general_api_smoke.exe"
+    & $Compiler.Source @pageApiGeneralSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 general page API smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageApiEntryBoundarySmokeOut =
+        Join-Path $OutDir "h8_page_general_entry_boundary_api_smoke.exe"
+    $pageApiEntryBoundarySmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
+        "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
+        "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+        "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
+    )
+    $pageApiEntryBoundarySmokeArgs += $Hz8CommonFlags
+    $pageApiEntryBoundarySmokeArgs += $Hz8Sources
+    $pageApiEntryBoundarySmokeArgs += $pageApiSmoke
+    $pageApiEntryBoundarySmokeArgs += "/Fe:$pageApiEntryBoundarySmokeOut"
+    Write-Host "[hz8-win] building h8_page_general_entry_boundary_api_smoke.exe"
+    & $Compiler.Source @pageApiEntryBoundarySmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 general page entry-boundary API smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $pageGeneralRemoteSmoke = Join-Path $Hz8Root "tests\h8_medium_page_general_remote_smoke.c"
+    $pageGeneralRemoteSmokeOut = Join-Path $OutDir "h8_medium_page_general_remote_smoke.exe"
+    $pageGeneralRemoteSmokeArgs = @(
+        "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+        "/I$Hz8Root\include", "/I$Hz8Root\src",
+        "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
+        "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
+        "/DH8_PAGE8K_REMOTE_DIAGNOSTIC=1",
+        (Join-Path $Hz8Root "src\h8_platform.c"),
+        (Join-Path $Hz8Root "src\h8_medium_page8k_remote.c"),
+        $pageGeneralRemoteSmoke,
+        "/Fe:$pageGeneralRemoteSmokeOut"
+    )
+    Write-Host "[hz8-win] building h8_medium_page_general_remote_smoke.exe"
+    & $Compiler.Source @pageGeneralRemoteSmokeArgs
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ8 general page remote smoke build failed with exit code $LASTEXITCODE"
     }
 
     $pageApiRangeSmokeOut = Join-Path $OutDir "h8_page8k_api_range_smoke.exe"

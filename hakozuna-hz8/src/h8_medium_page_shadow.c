@@ -18,6 +18,7 @@ static _Atomic(H8MediumPageShadowLeaf*) h8_ps_root[H8_PS_ROOT_SIZE];
 static _Atomic uint64_t h8_ps_lookup, h8_ps_hit, h8_ps_miss;
 static _Atomic uint64_t h8_ps_mismatch, h8_ps_valid, h8_ps_invalid;
 static _Atomic uint64_t h8_ps_state_match, h8_ps_state_mismatch;
+static _Atomic uint64_t h8_ps_geometry_match, h8_ps_geometry_mismatch;
 
 static uint32_t h8_ps_index(uintptr_t addr) { return (uint32_t)(addr >> 16u); }
 static H8MediumPageShadowLeaf* h8_ps_leaf(uint32_t index, bool create) {
@@ -76,6 +77,18 @@ void h8_medium_page_shadow_compare(const void* ptr, H8MediumRun* authority) {
   if (candidate != authority)
     atomic_fetch_add_explicit(&h8_ps_mismatch, 1u, memory_order_relaxed);
   if (!candidate) return;
+  const H8MediumClassSpec* spec = h8_medium_class_spec(candidate->class_id);
+  bool geometry_matches =
+      spec && candidate->slot_size == spec->slot_size &&
+      candidate->run_size == spec->run_size &&
+      candidate->slot_count == spec->slot_count &&
+      candidate->run_size == H8_MEDIUM_RUN_BYTES &&
+      candidate->slot_size != 0u &&
+      candidate->run_size % candidate->slot_size == 0u &&
+      candidate->slot_count == candidate->run_size / candidate->slot_size;
+  atomic_fetch_add_explicit(geometry_matches ? &h8_ps_geometry_match
+                                             : &h8_ps_geometry_mismatch,
+                            1u, memory_order_relaxed);
   uintptr_t offset = (uintptr_t)ptr - (uintptr_t)candidate->base;
   size_t payload = (size_t)candidate->slot_size * candidate->slot_count;
   bool exact = offset < payload && candidate->slot_size != 0u &&
@@ -133,7 +146,9 @@ H8MediumPageShadowStats h8_medium_page_shadow_stats(void) {
       atomic_load_explicit(&h8_ps_valid, memory_order_relaxed),
       atomic_load_explicit(&h8_ps_invalid, memory_order_relaxed),
       atomic_load_explicit(&h8_ps_state_match, memory_order_relaxed),
-      atomic_load_explicit(&h8_ps_state_mismatch, memory_order_relaxed)};
+      atomic_load_explicit(&h8_ps_state_mismatch, memory_order_relaxed),
+      atomic_load_explicit(&h8_ps_geometry_match, memory_order_relaxed),
+      atomic_load_explicit(&h8_ps_geometry_mismatch, memory_order_relaxed)};
   return s;
 }
 #else

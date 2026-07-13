@@ -284,3 +284,101 @@ HZ8 implementation:
   HZ8 bounded remote and owner-exit recovery
   HZ8 API and RSS contract
 ```
+
+## P3 Restart: Exact 16K/32K Geometry Shadow
+
+Native Windows phase attribution identifies allocation-side scaling rather
+than free classification or decommit churn. HZ8 allocation grows from
+`26.00ns` at 8K to `94.86ns` at 16K and `356.44ns` at 32K, while free remains
+near `11-13ns`. Diagnostic owner-list traversal averages about `16/32/64`
+steps at 8K/16K/32K with zero budget rejection.
+
+This evidence reopens only the P3 geometry question. It does not reopen the
+old direct-HZ10 behavior path and does not promote R3.
+
+```text
+GeneralMediumPageSubstrateExpansion-L0:
+  exact 8K / 16K / 32K only
+  64KiB run geometry
+  8 / 4 / 2 slots respectively
+  diagnostic-only class geometry and live-state comparison
+  no allocation/free behavior change
+  no production counter or atomic
+```
+
+The existing `H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0` is the authority for this
+probe. It now verifies that each observed run matches the immutable class
+specification and that `run_size / slot_size == slot_count`, in addition to
+the existing exact-slot and live-state checks. Run each size in a fresh
+process so aggregate counters remain attributable to one class.
+
+Acceptance:
+
+- geometry mismatch is zero at exact 8K, 16K, and 32K;
+- route/run mismatch and live-state mismatch remain zero;
+- interior and duplicate frees remain non-reusable;
+- the shadow lane stays excluded from normal and speed matrices;
+- no behavior implementation begins until remote publication, owner exit,
+  bounded orphan residency, RSS, and cross-platform gates are specified for
+  variable slot geometry.
+
+If geometry passes, the next box may generalize the native R3 page record from
+a fixed 8K constant to immutable per-class geometry. If it fails, P3 closes
+without a behavior lane.
+
+### P3 L0 Windows Result
+
+The targeted Windows build and three fresh-process smokes passed:
+
+| Exact size | Lookup/hit/miss | Run mismatch | State mismatch | Geometry match/mismatch |
+|---:|---:|---:|---:|---:|
+| 8192 | 3 / 3 / 0 | 0 | 0 | 3 / 0 |
+| 16384 | 3 / 3 / 0 | 0 | 0 | 3 / 0 |
+| 32768 | 3 / 3 / 0 | 0 | 0 | 3 / 0 |
+
+Each process also observed two exact frees and one interior INVALID. The
+duplicate remained non-reusable. P3 L0 geometry is therefore `GO`.
+
+The behavior boundary is larger than a constant change. The fixed R3 owner
+currently has one `active_page` and one `available_head`; a generalized
+substrate must use class-indexed active/available inventories. Every page must
+carry immutable `class_id`, `slot_size`, and `slot_count`, and adoption must
+preserve the class. Otherwise an owner could select a free page with the wrong
+geometry.
+
+```text
+next:
+  GeneralMediumPageSubstrateExpansion-L1
+
+initial behavior scope:
+  exact 16K and 32K opt-in sibling
+  immutable per-page geometry
+  class-indexed active/available lists
+  existing registry, slot-state, pending, publication, and owner-exit contract
+
+not yet:
+  public default
+  rounded ranges
+  24K/48K/64K
+  production diagnostics
+```
+
+### P3 L1 Windows Result
+
+The generalized behavior passed API and remote lifecycle smoke. Long
+fresh-process AB/BA testing found strong exact-size gains at cap64, but the
+small-only `balanced` control regressed despite never entering this backend.
+Therefore behavior correctness and exact-size performance are `GO`, while
+public/default promotion is `HOLD` pending an explicit common-entry function
+boundary.
+
+The diagnostic cap equation on fixed32K was exact:
+
+```text
+alloc_attempt - alloc_served == page_cap_reject
+400384 - 210163 == 190221
+```
+
+Cap128 reduced `page_cap_reject` to zero and strongly accelerated fixed32K,
+but missed balanced/wide control gates. It remains a specialist evidence row.
+See `HZ8_WINDOWS_GENERAL_MEDIUM_PAGE_GATE_L1.md` for the complete table.

@@ -7,6 +7,14 @@
 #include <stdlib.h>
 #include <string.h>
 
+#if defined(_MSC_VER)
+#define H8_LOCAL_NOINLINE __declspec(noinline)
+#elif defined(__GNUC__) || defined(__clang__)
+#define H8_LOCAL_NOINLINE __attribute__((noinline))
+#else
+#define H8_LOCAL_NOINLINE
+#endif
+
 static void h8_fail_invalid_free(void) {
   H8_DEBUG_INC(invalid_count);
 }
@@ -271,14 +279,47 @@ static H8Span* h8_find_active_span(H8ThreadCtx* ctx, H8OwnerRecord* owner,
   return NULL;
 }
 
+#if defined(H8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1)
+static H8_LOCAL_NOINLINE void* h8_malloc_non_small_boundary(size_t size) {
+#if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
+    defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
+#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1) && \
+    !defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+  if (size == 8192u) {
+#else
+  if (h8_medium_page_backend_accepts_size(size)) {
+#endif
+    if (!h8_thread_ctx_fast()) return NULL;
+    void* page_ptr = h8_medium_page_backend_malloc(size);
+    if (page_ptr) return page_ptr;
+  }
+#endif
+  if (size <= H8_MEDIUM_MAX_SIZE) {
+    uint32_t medium_class_id = h8_medium_class_for_size_fast(size);
+    return h8_medium_malloc_class_inner(medium_class_id);
+  }
+  if (h8_direct_large_size_supported(size)) {
+    void* ptr = h8_direct_large_malloc(size);
+    if (ptr) return ptr;
+  }
+  return h8_sys_malloc(size);
+}
+#endif
+
 void* h8_malloc_inner(size_t size) {
   if (size == 0) {
     size = 1;
   }
+#if defined(H8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1)
+  if (size > H8_MAX_SMALL_SIZE) {
+    return h8_malloc_non_small_boundary(size);
+  }
+#else
   if (size > H8_MAX_SMALL_SIZE) {
 #if defined(H8_MEDIUM_PAGE8K_HZ10_SHADOW_L1) || \
     defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
-#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1)
+#if defined(H8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1) && \
+    !defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
     if (size == 8192u) {
 #else
     if (h8_medium_page_backend_accepts_size(size)) {
@@ -304,6 +345,7 @@ void* h8_malloc_inner(size_t size) {
     }
     return h8_sys_malloc(size);
   }
+#endif
   H8ThreadCtx* ctx = h8_thread_ctx_fast();
   if (!ctx) {
     return NULL;

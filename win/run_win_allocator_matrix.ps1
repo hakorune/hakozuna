@@ -6,6 +6,7 @@ param(
     [switch]$ForceBuild,
     [switch]$ContinueOnFailure,
     [switch]$IncludeHz8Research,
+    [switch]$IncludeDiagnostics,
     [switch]$ListOnly
 )
 
@@ -34,11 +35,16 @@ $Executables = @(
     @{ Name = "hz8-v2-nomag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_nomag.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-mag32"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_mag32.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-mediumlocalfast"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_mediumlocalfast.exe"); Hz8Research = $true },
-    @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_pageshadow.exe"); Hz8Research = $true },
+    @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_pageshadow.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-medium-page8k-local"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_local.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_target_dispatch.exe"); Hz8Research = $true },
-    @{ Name = "hz8-r3-page8k-target-dispatch-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_target_dispatch_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page-general"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page_general.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page-general-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page_general_diag.exe"); Hz8Research = $true; Diagnostic = $true },
+    @{ Name = "hz8-r3-page-general-cap128"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page_general_cap128.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page-general-cap128-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page_general_cap128_diag.exe"); Hz8Research = $true; Diagnostic = $true },
+    @{ Name = "hz8-r3-page-general-entry-boundary"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page_general_entry_boundary.exe"); Hz8Research = $true },
+    @{ Name = "hz8-r3-page8k-target-dispatch-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_page8k_target_dispatch_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-r3-unified-medium-domain-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_unified_medium_domain_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-unified-medium-domain-stable"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_unified_medium_domain_stable.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-unified-page8k-record"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_unified_page8k_record.exe"); Hz8Research = $true },
@@ -49,12 +55,12 @@ $Executables = @(
     @{ Name = "hz8-v3-adaptive-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v3_adaptive_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-reclaim-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_reclaim_shadow.exe"); Hz8Research = $true },
     @{ Name = "hz8-magazine-tail-shadow"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_magazine_tail_shadow.exe"); Hz8Research = $true },
-    @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true },
+    @{ Name = "hz8-speed-attribution"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_speed_attribution.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-small-reuse-visibility"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_reuse_visibility.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-available4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available4k.exe"); Hz8Research = $true },
-    @{ Name = "hz8-small-available4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available4k_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-available4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available4k_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-small-available2k4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available2k4k.exe"); Hz8Research = $true },
-    @{ Name = "hz8-small-available2k4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available2k4k_diag.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-available2k4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available2k4k_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
     @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },
@@ -121,6 +127,10 @@ $Executables = @(
 
 if (-not $IncludeHz8Research) {
     $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+}
+
+if (-not $IncludeDiagnostics) {
+    $Executables = @($Executables | Where-Object { -not $_.Diagnostic })
 }
 
 if ($Allocators -and $Allocators.Count -gt 0) {

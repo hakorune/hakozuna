@@ -52,6 +52,11 @@ H8Page8KRemoteOwner* h8_page8k_remote_owner_create(uint32_t token);
 void h8_page8k_remote_owner_destroy(H8Page8KRemoteOwner* owner);
 H8Page8KRemotePage* h8_page8k_remote_page_create(
     H8Page8KRemoteOwner* owner);
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+/* Diagnostic/research API: size must be exactly 8K, 16K, or 32K. */
+H8Page8KRemotePage* h8_page8k_remote_page_create_size(
+    H8Page8KRemoteOwner* owner, size_t size);
+#endif
 void* h8_page8k_remote_alloc(H8Page8KRemoteOwner* owner,
                              H8Page8KRemotePage* page);
 bool h8_page8k_remote_free(H8Page8KRemoteOwner* current_owner, void* ptr,
@@ -72,5 +77,10 @@ size_t h8_page8k_remote_drain_all_control(void);
 void h8_page8k_remote_thread_shutdown(void);
 bool h8_page8k_remote_owner_close(H8Page8KRemoteOwner* owner);
 bool h8_page8k_remote_adopt_one(H8Page8KRemoteOwner* owner);
+#if defined(H8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1)
+/* Adopts only an orphan page whose immutable geometry matches size. */
+bool h8_page8k_remote_adopt_one_size(H8Page8KRemoteOwner* owner,
+                                      size_t size);
+#endif
 
 #endif
