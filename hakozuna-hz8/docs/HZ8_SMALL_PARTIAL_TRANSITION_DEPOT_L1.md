@@ -361,3 +361,134 @@ P2/P3/P4 recovery boxes: NO-GO
 cross-platform default promotion: HOLD
 public HZ8 default: unchanged
 ```
+
+## Windows P1 Recovery Gate
+
+The Linux recovery implementation is shared source, but P1 must remain a
+separate Windows research lane until its reduced metadata shape is measured on
+the Windows compiler and runner. Register two siblings:
+
+```text
+hz8-small-partial-transition-only:
+  behavior/speed lane
+  H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1
+  H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1
+  no diagnostic counters
+
+hz8-small-partial-transition-only-diag:
+  same behavior plus H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1
+  never used for throughput
+```
+
+The Windows gate compares `default`, `original depot`, and `P1` in fresh
+process rotation. Trace identity is explicit rather than inferred from the OS:
+
+```text
+LCG:
+  Windows parity/problem-reproduction trace
+  P1 must retain the original depot's bounded RSS and mixed-row recovery
+
+xorshift:
+  common-path fixed-cost control
+  P1 must improve or preserve the original depot and stay near default
+```
+
+Do not promote from a single trace. Windows P1 is GO research when safety is
+zero-error, LCG recovery remains bounded, and xorshift is no worse than the
+original depot. Cross-platform/default promotion remains governed by the
+strict `-3%` controls and application-like evidence.
+
+### Windows P1 Result
+
+Windows fresh-process R5 confirms that P1 preserves the original depot's LCG
+recovery and improves the original xorshift implementation, but not enough for
+default promotion:
+
+```text
+LCG:
+  balanced P1/default +298.99%, peak 52.61 MiB
+  wide     P1/default +162.17%, peak 96.23 MiB
+  larger   P1/default  +37.67%, peak 68.53 MiB
+
+xorshift:
+  balanced P1/default -18.15%, P1/original +7.34%
+  wide     P1/default  -8.25%, P1/original +1.87%
+
+remote-small:
+  default 136.176M, peak 19.18 MiB
+  P1     141.382M, peak 20.33 MiB
+```
+
+Decision: `GO(research) / HOLD(default)`. Do not reopen P2/P3/P4 or add another
+capacity/policy ladder from this result. The remaining Windows xorshift cost is
+a separate common-path/compiler-shape question.
+
+## Dynamic-Cost Attribution L0
+
+The Windows xorshift diagnostic shows that P1 is active rather than inert:
+about 25K successful depot push/pop operations occur in the balanced row,
+versus about 12K on the LCG row. All pop rejects, index mismatches, and safety
+counters remain zero. Xorshift therefore pays successful owner/generation/state
+validation and cross-tier duplicate checks without receiving the LCG trace's
+commit/RSS reduction.
+
+Before changing behavior, attribute the remaining cost with diagnostic-only
+magazine scan counters:
+
+```text
+mag_probe_calls
+mag_probe_steps
+mag_probe_hit
+```
+
+These counters exist only under `H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG` and
+must not enter a speed or publication lane. They distinguish the bounded Mag16
+linear duplicate check from depot pop validation. No P2/P3/P4 policy or
+capacity ladder may be reopened from this probe.
+
+### SmallTierMembership-L1
+
+The first L0 sample attributes 195,806 Mag16 pointer comparisons to LCG and
+608,400 to xorshift. Xorshift also finds 34,857 already-magazine spans, versus
+23 on LCG. Replace only this linear duplicate check with an owner-local
+per-span membership refcount in a separate sibling lane. A bit is insufficient
+because the existing magazine may contain duplicate hints for one span.
+
+Contract:
+
+```text
+magazine push: increment reusable_mag_refs before publishing the entry
+magazine pop/reject: decrement it immediately after removing the entry
+thread shutdown: decrement every remaining entry before owner exit
+depot validation: unchanged and still authoritative
+remote publication / owner generation / span state: unchanged
+```
+
+The refcount is not ownership or route authority. It only replaces a scan of the
+current thread's bounded magazine. The existing P1 lane remains available as
+the control; default promotion still requires both traces and remote safety.
+
+Windows fresh-process R5 rejects the candidate as a general optimization:
+
+```text
+LCG membership/P1:
+  balanced +19.68%
+  wide     +10.52%
+  larger   +13.71%
+
+xorshift membership/P1:
+  balanced  -3.90%
+  wide      -0.76%
+  larger    -9.77%
+
+xorshift membership/default:
+  balanced -11.76%
+  wide      -9.32%
+  larger   -11.21%
+```
+
+`SmallTierMembership-L1` is therefore `NO-GO(default)` and is retained only in
+the focused recovery build/gate as mechanism evidence. It is not registered in
+the normal allocator or MT matrices. The scan was a real LCG recovery cost, but
+it does not explain the common-path regression. Close this optimization family;
+P1 remains the selected research recovery lane.

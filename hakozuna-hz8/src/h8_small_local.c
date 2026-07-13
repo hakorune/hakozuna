@@ -211,6 +211,12 @@ static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
   h8_reusable_span_mag_record_pop_depth(class_id, *count);
   while (*count != 0u) {
     H8Span* span = ctx->reusable_span_mag[class_id][--(*count)];
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+    if (span) {
+      if (H8_UNLIKELY(span->reusable_mag_refs == 0u)) abort();
+      --span->reusable_mag_refs;
+    }
+#endif
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1) && \
     !defined(H8_SMALL_PARTIAL_TRANSITION_HINT1_L1C)
     if (span && span->small_partial_indexed) {
@@ -237,11 +243,40 @@ static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
 static bool h8_reusable_span_mag_contains(H8ThreadCtx* ctx,
                                          uint32_t class_id,
                                          H8Span* target) {
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+  (void)ctx;
+  const bool found = target && target->reusable_mag_refs != 0u;
+  h8_small_partial_depot_note_mag_probe(class_id, 1u, found);
+  return found;
+#else
   const uint8_t count = ctx->reusable_span_count[class_id];
   for (uint8_t i = 0; i < count; ++i) {
-    if (ctx->reusable_span_mag[class_id][i] == target) return true;
+    if (ctx->reusable_span_mag[class_id][i] == target) {
+      h8_small_partial_depot_note_mag_probe(class_id, (uint32_t)i + 1u, true);
+      return true;
+    }
   }
+  h8_small_partial_depot_note_mag_probe(class_id, count, false);
   return false;
+#endif
+}
+#endif
+
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+void h8_reusable_span_mag_reset_membership(H8ThreadCtx* ctx) {
+  if (!ctx) return;
+  for (uint32_t class_id = 0; class_id < H8_CLASS_COUNT; ++class_id) {
+    uint8_t count = ctx->reusable_span_count[class_id];
+    for (uint8_t i = 0; i < count; ++i) {
+      H8Span* span = ctx->reusable_span_mag[class_id][i];
+      if (span) {
+        if (H8_UNLIKELY(span->reusable_mag_refs == 0u)) abort();
+        --span->reusable_mag_refs;
+      }
+      ctx->reusable_span_mag[class_id][i] = NULL;
+    }
+    ctx->reusable_span_count[class_id] = 0;
+  }
 }
 #endif
 
@@ -267,6 +302,10 @@ static H8_LOCAL_NOINLINE void h8_reusable_span_mag_note_inactive_free(
       h8_small_available_index_push(ctx, span);
       return;
     }
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+    if (H8_UNLIKELY(old->reusable_mag_refs == UINT8_MAX)) abort();
+    ++old->reusable_mag_refs;
+#endif
     ctx->reusable_span_mag[class_id][(*count)++] = old;
     H8_DEBUG_INC(reusable_mag_push);
   }
@@ -327,6 +366,10 @@ static void h8_reusable_span_mag_note_local_free(H8ThreadCtx* ctx,
       h8_small_available_index_push(ctx, span);
       return;
     }
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+    if (H8_UNLIKELY(old->reusable_mag_refs == UINT8_MAX)) abort();
+    ++old->reusable_mag_refs;
+#endif
     ctx->reusable_span_mag[class_id][(*count)++] = old;
     H8_DEBUG_INC(reusable_mag_push);
   }

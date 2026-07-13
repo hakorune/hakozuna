@@ -1,6 +1,6 @@
 # HZ8 Current Task
 
-Updated: 2026-07-13
+Updated: 2026-07-14
 
 ## Restart Surface
 
@@ -9,18 +9,21 @@ public default:
   HZ8 / Mag16 / KeepRefill / GeneralMediumPage + EntryBoundary
 
 active research line:
-  SmallPartialTransitionDepot-L1
-  Windows behavior and remote no-regression gates are GO
-  cross-platform default promotion remains HOLD
+  SmallPartialTransitionDepot-L1 / P1 TransitionOnly recovery
+  original depot Windows behavior and remote no-regression gates are GO
+  P1 Linux research is GO; cross-platform default promotion remains HOLD
 
 latest commit:
   9a73489f Promote HZ8 general medium default on Linux
 
 next box:
-  run the native Ubuntu performance/RSS gate for the same source and flags
-  compare balanced/wide/larger plus fixed and remote no-regression controls
-  promote only if Linux preserves the Windows direction without RSS regression
-  otherwise retain the Windows research lane and keep public default unchanged
+  P1 Windows registration and measurement are complete
+  keep P1 as research GO and public default unchanged
+  do not reopen P2/P3/P4 or add a capacity/policy ladder
+  DynamicCost-L0: complete
+  SmallTierMembership-L1: mechanism GO / default NO-GO
+  linear Mag16 scanning is not the xorshift common-path blocker
+  close this recovery optimization family; seek application-like evidence
 ```
 
 Read first:
@@ -123,7 +126,7 @@ Small partial-span attribution:
   Windows AB/BA R5: balanced +435.73%, wide +178.34%, larger +37.34%
   WorkScale=10 candidate peak: 52.95 / 97.29 / 97.82 MiB
   fixed 8K/16K/32K and remote-small controls pass
-  GCC/Clang smoke and safety pass; native Ubuntu performance gate remains
+  Linux trace-parity and P1 recovery gates are complete; default remains HOLD
 ```
 
 ## Page8K Record Evidence

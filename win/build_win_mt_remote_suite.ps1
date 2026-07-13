@@ -140,6 +140,14 @@ function Invoke-Hz8MtRemoteBuilds {
             )
         },
         @{
+            Name = "hz8-small-partial-transition-only"
+            Output = "bench_random_mixed_mt_remote_hz8_small_partial_transition_only.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+            )
+        },
+        @{
             Name = "hz8-medium-pageshadow"
             Output = "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"
             ExtraFlags = @("/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1")

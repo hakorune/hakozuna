@@ -179,6 +179,9 @@ void h8_thread_shutdown(void* arg) {
   if (h8_tls_ctx == ctx) {
     h8_tls_ctx = NULL;
   }
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+  h8_reusable_span_mag_reset_membership(ctx);
+#endif
   h8_small_partial_depot_reset(ctx);
   h8_small_available_index_reset(ctx);
 #if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)

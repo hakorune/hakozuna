@@ -1,6 +1,7 @@
 #ifndef H8_SMALL_PARTIAL_TRANSITION_DEPOT_H
 #define H8_SMALL_PARTIAL_TRANSITION_DEPOT_H
 
+#include <stdbool.h>
 #include <stdint.h>
 
 typedef struct H8ThreadCtx H8ThreadCtx;
@@ -44,12 +45,22 @@ static inline void h8_small_partial_depot_discard(H8ThreadCtx* ctx,
 
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
 void h8_small_partial_depot_note_transition(uint32_t class_id);
+void h8_small_partial_depot_note_mag_probe(uint32_t class_id,
+                                           uint32_t steps,
+                                           bool hit);
 void h8_small_partial_depot_commit_checkpoint(H8ThreadCtx* ctx,
                                                uint32_t class_id);
 void h8_small_partial_depot_dump(void);
 #else
 static inline void h8_small_partial_depot_note_transition(uint32_t class_id) {
   (void)class_id;
+}
+static inline void h8_small_partial_depot_note_mag_probe(uint32_t class_id,
+                                                          uint32_t steps,
+                                                          bool hit) {
+  (void)class_id;
+  (void)steps;
+  (void)hit;
 }
 static inline void h8_small_partial_depot_commit_checkpoint(
     H8ThreadCtx* ctx, uint32_t class_id) {

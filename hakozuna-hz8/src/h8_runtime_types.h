@@ -115,6 +115,9 @@ struct H8Span {
   struct H8Span* next_small_partial;
   bool small_partial_indexed;
 #endif
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+  uint8_t reusable_mag_refs;
+#endif
 };
 
 _Static_assert(_Alignof(H8Span) >= H8_CACHELINE_BYTES,

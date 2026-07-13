@@ -28,11 +28,12 @@ Current direction:
   spans / low RSS without adding owner work to the free hot path. Its bounded
   retirement behavior now passes the repeated-generation safety/RSS/latency
   gate using separate cold P4 advisory and P1 authority batch snapshots.
-  The active family-level task is the native Ubuntu performance/RSS gate for
-  HZ8 SmallPartialTransitionDepot-L1. Windows behavior and remote
-  no-regression are GO; cross-platform/default promotion remains HOLD. HZ12
-  reclaim follows only for residual
-  retention after visibility is fixed. Do not merge allocator cores.
+  HZ8 SmallPartialTransitionDepot P1 is now research GO on Windows and Linux.
+  It preserves LCG recovery but misses the xorshift default gate, so public
+  default remains unchanged. O(1) Mag16 tier membership improved the LCG
+  recovery trace but failed xorshift controls, so that optimization family is
+  closed. Next work should use application-like evidence, not another policy
+  ladder. HZ12 reclaim remains separate evidence; do not merge allocator cores.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
@@ -70,7 +71,6 @@ HZ8 integration roadmap:
 
 Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```
-
 ## Rules
 
 ```text

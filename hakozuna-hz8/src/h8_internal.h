@@ -41,6 +41,11 @@
 #error "transition-only metadata requires the partial depot behavior lane"
 #endif
 
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1) && \
+    !defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B)
+#error "small tier membership requires the transition-only behavior lane"
+#endif
+
 #if defined(H8_SMALL_PARTIAL_COLD_ACTIVATE_L1B) && \
     !defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B)
 #error "cold depot activation requires transition-only metadata"
@@ -382,6 +387,9 @@ H8ThreadCtx* h8_thread_ctx_get(void);
 H8OwnerRecord* h8_owner_current(void);
 H8OwnerRecord* h8_orphan_owner(void);
 void h8_thread_shutdown(void* arg);
+#if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
+void h8_reusable_span_mag_reset_membership(H8ThreadCtx* ctx);
+#endif
 
 static inline H8ThreadCtx* h8_thread_ctx_fast(void) {
   H8ThreadCtx* ctx = h8_tls_ctx;

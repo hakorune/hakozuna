@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 Small Partial Recovery Windows Gate, 2026-07-13](./windows/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Depot trace parity and recovery, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Transition Depot native Ubuntu gate, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md)
 - [HZ8 General Medium native Ubuntu default integration, 2026-07-13](./linux/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_20260713.md)

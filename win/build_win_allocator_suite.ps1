@@ -322,6 +322,42 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
             )
+        },
+        @{
+            Name = "hz8-small-partial-transition-only"
+            Output = "bench_mixed_ws_hz8_small_partial_transition_only.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+            )
+        },
+        @{
+            Name = "hz8-small-partial-transition-only-diag"
+            Output = "bench_mixed_ws_hz8_small_partial_transition_only_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
+            )
+        },
+        @{
+            Name = "hz8-small-tier-membership"
+            Output = "bench_mixed_ws_hz8_small_tier_membership.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
+                "/DH8_SMALL_TIER_MEMBERSHIP_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-small-tier-membership-diag"
+            Output = "bench_mixed_ws_hz8_small_tier_membership_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
+                "/DH8_SMALL_TIER_MEMBERSHIP_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
+            )
         }
     )) {
         $output = Join-Path $OutDir $variant.Output
@@ -533,11 +569,29 @@ function Invoke-Hz8AllocatorMatrixBuild {
         throw "HZ8 page8k API smoke build failed with exit code $LASTEXITCODE"
     }
 
-    $partialDepotFlags = $Hz8DefaultFlags + @(
-        "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1"
-    )
     foreach ($partialTest in @(
-        @{ Source = "tests\h8_smoke.c"; Output = "h8_smoke_small_partial_depot.exe" }
+        @{
+            Source = "tests\h8_smoke.c"
+            Output = "h8_smoke_small_partial_depot.exe"
+            ExtraFlags = @("/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1")
+        },
+        @{
+            Source = "tests\h8_smoke.c"
+            Output = "h8_smoke_small_partial_transition_only.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+            )
+        },
+        @{
+            Source = "tests\h8_smoke.c"
+            Output = "h8_smoke_small_tier_membership.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
+                "/DH8_SMALL_TIER_MEMBERSHIP_L1=1"
+            )
+        }
     )) {
         $partialTestOut = Join-Path $OutDir $partialTest.Output
         $partialTestArgs = @(
@@ -545,7 +599,8 @@ function Invoke-Hz8AllocatorMatrixBuild {
             "/I$Hz8Root\include", "/I$Hz8Root\src"
         )
         $partialTestArgs += $Hz8CommonFlags
-        $partialTestArgs += $partialDepotFlags
+        $partialTestArgs += $Hz8DefaultFlags
+        $partialTestArgs += $partialTest.ExtraFlags
         $partialTestArgs += $Hz8Sources
         $partialTestArgs += (Join-Path $Hz8Root $partialTest.Source)
         $partialTestArgs += "/Fe:$partialTestOut"

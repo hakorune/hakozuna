@@ -7,6 +7,9 @@
 
 typedef struct H8SmallPartialDepotDiag {
   _Atomic uint64_t transition[H8_CLASS_COUNT];
+  _Atomic uint64_t mag_probe_calls[H8_CLASS_COUNT];
+  _Atomic uint64_t mag_probe_steps[H8_CLASS_COUNT];
+  _Atomic uint64_t mag_probe_hit[H8_CLASS_COUNT];
   _Atomic uint64_t push[H8_CLASS_COUNT];
   _Atomic uint64_t duplicate_push[H8_CLASS_COUNT];
   _Atomic uint64_t pop_attempt[H8_CLASS_COUNT];
@@ -192,6 +195,16 @@ void h8_small_partial_depot_note_transition(uint32_t class_id) {
   if (class_id < H8_CLASS_COUNT) H8_PARTIAL_INC(transition, class_id);
 }
 
+void h8_small_partial_depot_note_mag_probe(uint32_t class_id,
+                                           uint32_t steps,
+                                           bool hit) {
+  if (class_id >= H8_CLASS_COUNT) return;
+  H8_PARTIAL_INC(mag_probe_calls, class_id);
+  atomic_fetch_add_explicit(&g_partial_diag.mag_probe_steps[class_id], steps,
+                            memory_order_relaxed);
+  if (hit) H8_PARTIAL_INC(mag_probe_hit, class_id);
+}
+
 void h8_small_partial_depot_commit_checkpoint(H8ThreadCtx* ctx,
                                                uint32_t class_id) {
   if (ctx && class_id < H8_CLASS_COUNT &&
@@ -212,6 +225,7 @@ void h8_small_partial_depot_dump(void) {
     fprintf(stderr,
             "[H8_SMALL_PARTIAL] class=%u transition=%llu push=%llu "
             "duplicate=%llu pop_attempt=%llu pop_hit=%llu pop_reject=%llu "
+            "mag_probe_calls=%llu mag_probe_steps=%llu mag_probe_hit=%llu "
             "index_mismatch=%llu depth_current=%llu depth_max=%llu "
             "reset_item=%llu commit_nonempty=%llu\n",
             class_id, (unsigned long long)transition,
@@ -224,6 +238,15 @@ void h8_small_partial_depot_dump(void) {
                 &g_partial_diag.pop_hit[class_id], memory_order_relaxed),
             (unsigned long long)atomic_load_explicit(
                 &g_partial_diag.pop_reject[class_id], memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_partial_diag.mag_probe_calls[class_id],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_partial_diag.mag_probe_steps[class_id],
+                memory_order_relaxed),
+            (unsigned long long)atomic_load_explicit(
+                &g_partial_diag.mag_probe_hit[class_id],
+                memory_order_relaxed),
             (unsigned long long)atomic_load_explicit(
                 &g_partial_diag.index_mismatch[class_id],
                 memory_order_relaxed),

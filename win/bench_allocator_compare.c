@@ -1,5 +1,5 @@
 // Windows-friendly allocator comparison bench.
-// Usage: bench_allocator_compare [threads] [iters_per_thread] [working_set] [min_size] [max_size]
+// Usage: bench_allocator_compare [threads] [iters_per_thread] [working_set] [min_size] [max_size] [trace_mode]
 
 #include <stdint.h>
 #include <stdio.h>
@@ -99,6 +99,7 @@ typedef struct {
     size_t ws;
     size_t min_size;
     size_t max_size;
+    int trace_mode;
     size_t alloc_attempts;
     size_t alloc_successes;
     size_t alloc_failures;
@@ -351,6 +352,19 @@ static inline uint32_t lcg_next(uint32_t* state) {
     return *state;
 }
 
+static inline uint32_t xorshift_next(uint32_t* state) {
+    uint32_t x = *state;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *state = x ? x : 0xA341316Cu;
+    return *state;
+}
+
+static inline uint32_t trace_next(uint32_t* state, int trace_mode) {
+    return trace_mode == 1 ? xorshift_next(state) : lcg_next(state);
+}
+
 static inline size_t pick_size(uint32_t r, size_t min_size, size_t max_size) {
     size_t span = (max_size > min_size) ? (max_size - min_size + 1) : 1;
     return min_size + (r % span);
@@ -393,7 +407,7 @@ static unsigned __stdcall bench_thread(void* arg) {
     bench_thread_setup(ta);
 
     for (size_t i = 0; i < ta->iters; i++) {
-        uint32_t r = lcg_next(&seed);
+        uint32_t r = trace_next(&seed, ta->trace_mode);
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
 #if defined(HZ_BENCH_USE_HZ6) && HZ_BENCH_TRACE_LAST_OP
@@ -489,7 +503,7 @@ static void* bench_thread(void* arg) {
     bench_thread_setup(ta);
 
     for (size_t i = 0; i < ta->iters; i++) {
-        uint32_t r = lcg_next(&seed);
+        uint32_t r = trace_next(&seed, ta->trace_mode);
         size_t idx = (size_t)(r % (uint32_t)ws);
         if (slots[idx]) {
             bench_free(ta, slots[idx]);
@@ -542,12 +556,18 @@ int main(int argc, char** argv) {
     size_t ws = 8192;
     size_t min_size = 16;
     size_t max_size = 1024;
+    int trace_mode = 0;
 
     if (argc > 1) threads = (size_t)strtoull(argv[1], NULL, 10);
     if (argc > 2) iters = (size_t)strtoull(argv[2], NULL, 10);
     if (argc > 3) ws = (size_t)strtoull(argv[3], NULL, 10);
     if (argc > 4) min_size = (size_t)strtoull(argv[4], NULL, 10);
     if (argc > 5) max_size = (size_t)strtoull(argv[5], NULL, 10);
+    if (argc > 6) trace_mode = (int)strtol(argv[6], NULL, 10);
+    if (trace_mode != 0 && trace_mode != 1) {
+        fprintf(stderr, "trace_mode must be 0 (LCG) or 1 (xorshift)\n");
+        return 2;
+    }
     if (threads == 0) threads = 1;
 #if defined(HZ_BENCH_USE_HZ12) && \
     (defined(HZ_BENCH_HZ12_OWNER_MAP_CONTROL) || \
@@ -566,8 +586,9 @@ int main(int argc, char** argv) {
     SetUnhandledExceptionFilter(bench_allocator_unhandled_exception_filter);
 #endif
 
-    printf("[BENCH_ARGS] threads=%zu iters=%zu ws=%zu min=%zu max=%zu\n",
-           threads, iters, ws, min_size, max_size);
+    printf("[BENCH_ARGS] threads=%zu iters=%zu ws=%zu min=%zu max=%zu trace=%s\n",
+           threads, iters, ws, min_size, max_size,
+           trace_mode == 1 ? "xorshift" : "lcg");
     fflush(stdout);
 
     ThreadArg* args = (ThreadArg*)calloc(threads, sizeof(ThreadArg));
@@ -588,12 +609,15 @@ int main(int argc, char** argv) {
         return 1;
     }
     for (size_t i = 0; i < threads; i++) {
-        args[i].seed = (uint32_t)(1234 + i);
+        args[i].seed = trace_mode == 1
+                           ? (UINT32_C(0x9E3779B9) ^ (uint32_t)(i * 17u))
+                           : (uint32_t)(1234 + i);
         args[i].thread_index = i;
         args[i].iters = iters;
         args[i].ws = ws;
         args[i].min_size = min_size;
         args[i].max_size = max_size;
+        args[i].trace_mode = trace_mode;
         uintptr_t h = _beginthreadex(NULL, 0, bench_thread, &args[i], 0, NULL);
         if (h == 0) {
             fprintf(stderr, "bench_allocator_compare: thread start failed at thread=%zu\n", i);
@@ -629,12 +653,15 @@ int main(int argc, char** argv) {
         return 1;
     }
     for (size_t i = 0; i < threads; i++) {
-        args[i].seed = (uint32_t)(1234 + i);
+        args[i].seed = trace_mode == 1
+                           ? (UINT32_C(0x9E3779B9) ^ (uint32_t)(i * 17u))
+                           : (uint32_t)(1234 + i);
         args[i].thread_index = i;
         args[i].iters = iters;
         args[i].ws = ws;
         args[i].min_size = min_size;
         args[i].max_size = max_size;
+        args[i].trace_mode = trace_mode;
         pthread_create(&tids[i], NULL, bench_thread, &args[i]);
     }
     for (size_t i = 0; i < threads; i++) {
