@@ -211,6 +211,12 @@ static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
   h8_reusable_span_mag_record_pop_depth(class_id, *count);
   while (*count != 0u) {
     H8Span* span = ctx->reusable_span_mag[class_id][--(*count)];
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+    if (span && span->small_partial_indexed) {
+      H8_DEBUG_INC(reusable_mag_pop_reject);
+      continue;
+    }
+#endif
     if (h8_active_hint_matches(span, owner, class_id) &&
         !h8_span_local_exhausted(span)) {
       H8_DEBUG_INC(reusable_mag_pop_hit);
@@ -221,14 +227,38 @@ static H8Span* h8_reusable_span_mag_pop(H8ThreadCtx* ctx,
   return NULL;
 }
 
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+static bool h8_reusable_span_mag_contains(H8ThreadCtx* ctx,
+                                         uint32_t class_id,
+                                         H8Span* target) {
+  const uint8_t count = ctx->reusable_span_count[class_id];
+  for (uint8_t i = 0; i < count; ++i) {
+    if (ctx->reusable_span_mag[class_id][i] == target) return true;
+  }
+  return false;
+}
+#endif
+
 static void h8_reusable_span_mag_note_local_free(H8ThreadCtx* ctx,
-                                                H8Span* span) {
+                                                H8Span* span,
+                                                bool became_available) {
   const uint32_t class_id = span->class_id;
   H8Span* old = ctx->active_spans[class_id];
   uint8_t* count = &ctx->reusable_span_count[class_id];
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  if (span->small_partial_indexed) return;
+#else
+  (void)became_available;
+#endif
   if (old && old != span) {
     if (*count == H8_REUSABLE_SPAN_MAG_CAP) {
       H8_DEBUG_INC(reusable_mag_full_preserve);
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+      if (became_available &&
+          !h8_reusable_span_mag_contains(ctx, class_id, span)) {
+        h8_small_partial_depot_push(ctx, span);
+      }
+#endif
       h8_small_available_index_push(ctx, span);
       return;
     }
@@ -359,6 +389,9 @@ void* h8_malloc_inner(size_t size) {
   H8Span* span = ctx->active_spans[class_id];
   bool active_hint_ok = false;
   bool remote_pressure_collect_triggered = false;
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  bool partial_depot_checked = false;
+#endif
   if (span) {
 #if defined(H8_ENABLE_DEBUG_STATS)
     active_hint_ok = h8_active_hint_matches(span, owner, class_id);
@@ -384,6 +417,15 @@ void* h8_malloc_inner(size_t size) {
       if (ptr) return ptr;
     }
 #endif
+    span = h8_small_partial_depot_pop(ctx, owner, class_id);
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+    partial_depot_checked = true;
+#endif
+    if (span) {
+      ctx->active_spans[class_id] = span;
+      ptr = h8_small_alloc_from_span(span);
+      if (ptr) return ptr;
+    }
     span = h8_small_available_index_pop(ctx, owner, class_id);
     if (span) {
       ctx->active_spans[class_id] = span;
@@ -414,6 +456,16 @@ void* h8_malloc_inner(size_t size) {
 #if !defined(H8_ENABLE_DEBUG_STATS)
   if (!owner) {
     owner = h8_ctx_owner_assume(ctx);
+  }
+#endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  if (!partial_depot_checked) {
+    span = h8_small_partial_depot_pop(ctx, owner, class_id);
+    if (span) {
+      ctx->active_spans[class_id] = span;
+      void* ptr = h8_small_alloc_from_span(span);
+      if (ptr) return ptr;
+    }
   }
 #endif
   H8_DEBUG_INC(local_active_miss);
@@ -450,6 +502,7 @@ void* h8_malloc_inner(size_t size) {
   }
   if (!span) {
     H8_DEBUG_INC(local_span_commit);
+    h8_small_partial_depot_commit_checkpoint(ctx, class_id);
     h8_small_reuse_visibility_checkpoint(ctx, owner, class_id);
     h8_magazine_tail_shadow_checkpoint(ctx);
     h8_adaptive_shadow_note_small_refill(
@@ -498,6 +551,20 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   H8_DEBUG_INC(local_free_head_touch_free);
   uint32_t old_head = atomic_load_explicit(&span->local_hot.local_free_head_word,
                                            memory_order_relaxed);
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  bool became_available = false;
+  if (H8_UNLIKELY(old_head == H8_SLOT_NONE)) {
+    uint32_t bump = atomic_load_explicit(&span->local_hot.local_bump_index,
+                                         memory_order_relaxed);
+    became_available = bump >= span->slot_count;
+    if (became_available) {
+      h8_small_partial_depot_note_transition(span->class_id);
+    }
+  }
+#else
+  const bool became_available = false;
+#endif
+  (void)became_available;
   h8_slot_state_store_free_hot(span, slot, old_head);
   atomic_store_explicit(&span->local_hot.local_free_head_word, (uint32_t)slot,
                         memory_order_relaxed);
@@ -507,7 +574,7 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
 #if H8_REUSABLE_SPAN_MAGAZINE_L1
-  h8_reusable_span_mag_note_local_free(ctx, span);
+  h8_reusable_span_mag_note_local_free(ctx, span, became_available);
 #else
   ctx->active_spans[span->class_id] = span;
 #endif

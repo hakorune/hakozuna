@@ -9,15 +9,18 @@ public default:
   HZ8 / Mag16 / KeepRefill / GeneralMediumPage + EntryBoundary
 
 active research line:
-  none; default integration is complete on Linux and Windows
+  SmallPartialTransitionDepot-L1
+  Windows behavior and remote no-regression gates are GO
+  cross-platform default promotion remains HOLD
 
 latest commit:
   9a73489f Promote HZ8 general medium default on Linux
 
 next box:
-  freeze the shared default
-  if optimization resumes, audit local/broad fixed cost and mixed-size peak retention
-  do not weaken the remote-small/RSS result while pursuing tcmalloc
+  run the native Ubuntu performance/RSS gate for the same source and flags
+  compare balanced/wide/larger plus fixed and remote no-regression controls
+  promote only if Linux preserves the Windows direction without RSS regression
+  otherwise retain the Windows research lane and keep public default unchanged
 ```
 
 Read first:
@@ -29,6 +32,7 @@ Read first:
 - `docs/HZ8_WINDOWS_GENERAL_MEDIUM_PAGE_GATE_L1.md`
 - `docs/HZ8_PAGE8K_R3_INTEGRATED_GATE.md`
 - `docs/HZ8_BENCH_GATE.md`
+- `docs/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md`
 
 ## Fixed Decisions
 
@@ -109,6 +113,17 @@ Windows tcmalloc frontier R10:
   balanced/wide/larger: HZ8 remains 3.0x-7.7x slower
   long mixed peak RSS is a measured HZ8 weakness, not a low-RSS claim row
   detail: docs/HZ8_WINDOWS_DEFAULT_TCMALLOC_R10.md
+
+Small partial-span attribution:
+  balanced/wide/larger peak RSS tracks 64 KiB small-span commits
+  normal owner-list scan steps remain zero by intentional skip policy
+  Mag16 full-preserve events are material across all three rows
+  old broad SmallAvailableIndex is not reopened
+  next behavior records only FULL -> AVAILABLE local transitions
+  Windows AB/BA R5: balanced +435.73%, wide +178.34%, larger +37.34%
+  WorkScale=10 candidate peak: 52.95 / 97.29 / 97.82 MiB
+  fixed 8K/16K/32K and remote-small controls pass
+  GCC/Clang smoke and safety pass; native Ubuntu performance gate remains
 ```
 
 ## Page8K Record Evidence

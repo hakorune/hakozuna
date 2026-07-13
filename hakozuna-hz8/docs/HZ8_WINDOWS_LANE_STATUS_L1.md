@@ -22,10 +22,17 @@ promotion candidates, diagnostics, and closed experiments.
 | `hz8-r3-page-general-entry-boundary` | compatibility alias / promoted | The selected behavior is now part of `hz8`; the named row remains reproducible |
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
+| `hz8-small-partial-depot` | Windows GO / global HOLD | Transition-only same-owner partial-span visibility after Mag16 saturation; R5 balanced +435.73%, wide +178.34%, larger +37.34% |
 
 Windows local and RSS gates are positive, but Linux small/remote gates block a
 cross-platform default promotion. Keep this row behind
 `-IncludeHz8Research` in normal Windows runners.
+
+The partial-transition depot is a separate successor candidate, not a reopen
+of the old broad available index. Its Windows WorkScale=10 directional run
+reduced balanced/wide/larger peak RSS from GiB-scale growth to about
+`53/97/98 MiB`; fixed-medium and remote-small controls passed. Native Ubuntu
+performance/RSS remains required before shared-default promotion.
 
 General page diagnostic siblings remain excluded unless `-IncludeDiagnostics`
 is also specified. See `HZ8_WINDOWS_GENERAL_MEDIUM_PAGE_GATE_L1.md` for the
@@ -83,6 +90,7 @@ without allocation failure.
 | `hz8-r3-owner-witness` | closed speed evidence | Correctness GO, performance NO-GO; retained only to reproduce the final layout-controlled gate |
 | `hz8-r3-owner-witness-diag` | diagnostic-only | Owner-witness attempt/valid/fallback attribution; atomics never enter the speed sibling |
 | `hz8-small-available2k4k` | Windows evidence / global NO-GO | Large fixed 2K/4K gains, but Windows wide reaches -5% and Linux directional rows regress |
+| `hz8-small-partial-depot-diag` | diagnostic-only | Class-attributed transition/depot depth and commit-with-nonempty checks; never a speed result |
 
 Research rows are excluded from normal runs. Use `-IncludeHz8Research`
 explicitly when they are needed. Counter-bearing rows additionally require

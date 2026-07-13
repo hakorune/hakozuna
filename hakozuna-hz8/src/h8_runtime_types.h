@@ -111,6 +111,10 @@ struct H8Span {
 #if defined(H8_SMALL_AVAILABLE_INDEX_L1)
   bool small_available_indexed;
 #endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  struct H8Span* next_small_partial;
+  bool small_partial_indexed;
+#endif
 };
 
 _Static_assert(_Alignof(H8Span) >= H8_CACHELINE_BYTES,
@@ -172,6 +176,9 @@ struct H8ThreadCtx {
 #endif
 #if defined(H8_SMALL_AVAILABLE_INDEX_L1)
   H8Span* small_available_head[H8_CLASS_COUNT];
+#endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+  H8Span* small_partial_head[H8_CLASS_COUNT];
 #endif
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_last_alloc_run;

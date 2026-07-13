@@ -28,10 +28,11 @@ Current direction:
   spans / low RSS without adding owner work to the free hot path. Its bounded
   retirement behavior now passes the repeated-generation safety/RSS/latency
   gate using separate cold P4 advisory and P1 authority batch snapshots.
-  The next family-level task is HZ8 ReclaimAdapter-L1. HZ8 remains the public
-  integration line; HZ10/HZ11/HZ12 remain research suppliers. Import only a
-  mechanism that improves an identified HZ8 cell under paired throughput,
-  peak/post-RSS, safety, and Windows/Linux gates. Do not merge allocator cores.
+  The active family-level task is the native Ubuntu performance/RSS gate for
+  HZ8 SmallPartialTransitionDepot-L1. Windows behavior and remote
+  no-regression are GO; cross-platform/default promotion remains HOLD. HZ12
+  reclaim follows only for residual
+  retention after visibility is fixed. Do not merge allocator cores.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:

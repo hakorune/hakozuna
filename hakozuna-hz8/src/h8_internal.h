@@ -26,6 +26,16 @@
 #define H8_REUSABLE_SPAN_MAG_CAP 16u
 #endif
 
+#if defined(H8_SMALL_AVAILABLE_INDEX_L1) && \
+    defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+#error "small available index and partial transition depot are separate lanes"
+#endif
+
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG) && \
+    !defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
+#error "partial transition depot diagnostics require the behavior lane"
+#endif
+
 #if !defined(H8_LIKELY)
 #if defined(__GNUC__) || defined(__clang__)
 #define H8_LIKELY(expr) __builtin_expect(!!(expr), 1)
@@ -51,6 +61,7 @@
 #include "h8_magazine_tail_shadow.h"
 #include "h8_small_reuse_visibility_shadow.h"
 #include "h8_small_available_index.h"
+#include "h8_small_partial_transition_depot.h"
 
 #if defined(__linux__) && defined(__ELF__) && defined(__x86_64__)
 #define H8_TLS_FAST __attribute__((tls_model("initial-exec"), visibility("hidden")))

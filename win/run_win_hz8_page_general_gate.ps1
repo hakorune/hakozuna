@@ -3,9 +3,9 @@ param(
     [ValidateRange(1, 100)]
     [int]$WorkScale = 1,
     [string]$OutputDir,
-    [ValidateSet("v2", "general", "tcmalloc")]
+    [ValidateSet("v2", "general", "default", "tcmalloc")]
     [string]$Baseline = "v2",
-    [ValidateSet("general", "cap128", "entry-boundary", "default")]
+    [ValidateSet("general", "cap128", "entry-boundary", "default", "partial-depot")]
     [string]$Candidate = "general",
     [switch]$ForceBuild
 )
@@ -17,23 +17,27 @@ $SuiteDir = Join-Path $RepoRoot "out_win_suite"
 $BuildScript = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
 $BaselineName = switch ($Baseline) {
     "general" { "hz8-r3-page-general" }
+    "default" { "hz8" }
     "tcmalloc" { "tcmalloc" }
     default { "hz8-v2" }
 }
 $BaselineFile = switch ($Baseline) {
     "general" { "bench_mixed_ws_hz8_medium_page_general.exe" }
+    "default" { "bench_mixed_ws_hz8.exe" }
     "tcmalloc" { "bench_mixed_ws_tcmalloc.exe" }
     default { "bench_mixed_ws_hz8_v2.exe" }
 }
 $BaselinePath = Join-Path $SuiteDir $BaselineFile
 $CandidateName = switch ($Candidate) {
     "default" { "hz8" }
+    "partial-depot" { "hz8-small-partial-depot" }
     "cap128" { "hz8-r3-page-general-cap128" }
     "entry-boundary" { "hz8-r3-page-general-entry-boundary" }
     default { "hz8-r3-page-general" }
 }
 $CandidateFile = switch ($Candidate) {
     "default" { "bench_mixed_ws_hz8.exe" }
+    "partial-depot" { "bench_mixed_ws_hz8_small_partial_depot.exe" }
     "cap128" { "bench_mixed_ws_hz8_medium_page_general_cap128.exe" }
     "entry-boundary" { "bench_mixed_ws_hz8_medium_page_general_entry_boundary.exe" }
     default { "bench_mixed_ws_hz8_medium_page_general.exe" }

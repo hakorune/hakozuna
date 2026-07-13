@@ -307,6 +307,21 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_SPEED_ATTRIBUTION_L0=1",
                 "/DH8_ENABLE_DEBUG_STATS=1"
             )
+        },
+        @{
+            Name = "hz8-small-partial-depot"
+            Output = "bench_mixed_ws_hz8_small_partial_depot.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-small-partial-depot-diag"
+            Output = "bench_mixed_ws_hz8_small_partial_depot_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
+                "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
+            )
         }
     )) {
         $output = Join-Path $OutDir $variant.Output
@@ -516,6 +531,29 @@ function Invoke-Hz8AllocatorMatrixBuild {
     & $Compiler.Source @pageApiSmokeArgs
     if ($LASTEXITCODE -ne 0) {
         throw "HZ8 page8k API smoke build failed with exit code $LASTEXITCODE"
+    }
+
+    $partialDepotFlags = $Hz8DefaultFlags + @(
+        "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1"
+    )
+    foreach ($partialTest in @(
+        @{ Source = "tests\h8_smoke.c"; Output = "h8_smoke_small_partial_depot.exe" }
+    )) {
+        $partialTestOut = Join-Path $OutDir $partialTest.Output
+        $partialTestArgs = @(
+            "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+            "/I$Hz8Root\include", "/I$Hz8Root\src"
+        )
+        $partialTestArgs += $Hz8CommonFlags
+        $partialTestArgs += $partialDepotFlags
+        $partialTestArgs += $Hz8Sources
+        $partialTestArgs += (Join-Path $Hz8Root $partialTest.Source)
+        $partialTestArgs += "/Fe:$partialTestOut"
+        Write-Host "[hz8-win] building $($partialTest.Output)"
+        & $Compiler.Source @partialTestArgs
+        if ($LASTEXITCODE -ne 0) {
+            throw "HZ8 partial depot test build failed with exit code $LASTEXITCODE"
+        }
     }
 
     $pageApiTargetSmokeOut = Join-Path $OutDir "h8_page8k_api_target_dispatch_smoke.exe"

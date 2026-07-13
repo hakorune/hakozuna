@@ -62,6 +62,8 @@ $Executables = @(
     @{ Name = "hz8-small-available4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available4k_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-small-available2k4k"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available2k4k.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-available2k4k-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_available2k4k_diag.exe"); Hz8Research = $true; Diagnostic = $true },
+    @{ Name = "hz8-small-partial-depot"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_partial_depot.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-partial-depot-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_partial_depot_diag.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz11-span"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span.exe") },
     @{ Name = "hz11-span-transfer"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer.exe") },
     @{ Name = "hz11-span-transfer-fine128-win"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz11_span_transfer_fine128_win.exe") },

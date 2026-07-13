@@ -29,6 +29,9 @@
 #if defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
 #include "h8_small_available_index.h"
 #endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
+#include "h8_small_partial_transition_depot.h"
+#endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
 #include "h8_medium_page_shadow.h"
 #endif
@@ -606,6 +609,9 @@ static inline void hz_bench_dump_stats(FILE* out, const char* label) {
 #endif
 #if defined(H8_SMALL_AVAILABLE_INDEX_DIAG)
         h8_small_available_index_dump();
+#endif
+#if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
+        h8_small_partial_depot_dump();
 #endif
 #if defined(H8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0)
         {
