@@ -374,6 +374,7 @@ void h8_medium_owner_detach_all(H8OwnerRecord* owner) {
       run->owner_attached = false;
       atomic_store_explicit(&run->owner_word, 0, memory_order_release);
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
       h8_medium_domain_stable_owner_note(run, 0u);
 #endif

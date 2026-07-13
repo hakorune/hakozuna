@@ -102,11 +102,6 @@ typedef struct H8MediumRun {
   uint16_t slot_shift;
   uint32_t run_size;
   _Atomic uint64_t owner_word;
-#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
-    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
-  void* stable_domain_record;
-#endif
   _Atomic uint8_t state;
   _Atomic uint8_t qstate;
   _Atomic uint64_t pending_word_mask;
@@ -156,6 +151,11 @@ typedef struct H8MediumRun {
   uint32_t debug_collect_free_credits;
   uint64_t debug_collect_owner_alloc_epoch;
   uint64_t debug_local_fast_shadow_mask;
+#endif
+#if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
+  _Atomic(void*) stable_domain_record;
 #endif
 } H8MediumRun;
 

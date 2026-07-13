@@ -428,6 +428,7 @@ static void h8_medium_owner_add_run(H8ThreadCtx* ctx, H8MediumRun* run) {
                         h8_medium_owner_word_for(ctx->owner),
                         memory_order_release);
 #if defined(H8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0) || \
+    defined(H8_UNIFIED_MEDIUM_DOMAIN_MEDIUM_RECORD_L1) || \
     defined(H8_UNIFIED_MEDIUM_DOMAIN_OWNER_WITNESS_L1)
   h8_medium_domain_stable_owner_note(
       run, atomic_load_explicit(&run->owner_word, memory_order_acquire));

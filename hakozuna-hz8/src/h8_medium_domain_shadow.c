@@ -241,17 +241,21 @@ static H8MediumDomainStableRecord* h8_md_stable_record_create(
       memory_order_relaxed);
   H8_MD_COUNT(h8_md_stable_owner_init);
   H8_MD_COUNT(h8_md_stable_pending_init);
-  atomic_store_explicit(&record->implementation, run, memory_order_relaxed);
+  atomic_store_explicit(&record->implementation, run, memory_order_release);
   atomic_store_explicit(&record->state, H8_MD_RECORD_LIVE,
                         memory_order_release);
-  run->stable_domain_record = record;
+  atomic_store_explicit(&run->stable_domain_record, record,
+                        memory_order_release);
   H8_MD_COUNT(h8_md_stable_record_alloc);
   return record;
 }
 
 static H8MediumDomainStableRecord* h8_md_stable_record_find(H8MediumRun* run) {
-  if (run && run->stable_domain_record) {
-    H8MediumDomainStableRecord* record = run->stable_domain_record;
+  H8MediumDomainStableRecord* record =
+      run ? atomic_load_explicit(&run->stable_domain_record,
+                                 memory_order_acquire)
+          : NULL;
+  if (record) {
     if (atomic_load_explicit(&record->implementation, memory_order_acquire) ==
         run) {
       return record;

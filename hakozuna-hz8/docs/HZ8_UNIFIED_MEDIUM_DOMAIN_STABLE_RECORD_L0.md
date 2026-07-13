@@ -494,3 +494,68 @@ retained lanes:
   hz8-r3-owner-witness       speed evidence
   hz8-r3-owner-witness-diag  diagnostic only
 ```
+
+## MediumOwnerWitness Layout Null-Control
+
+An external review found that the first Windows closure overstated the causal
+interpretation of the balanced regression. The balanced and wide working-set
+rows do not call OwnerWitness, but the conditional stable-record backpointer
+was inserted before the run state, pending bitmap, and embedded lock. That
+changes hot-field offsets in every OwnerWitness build and can affect rows with
+zero witness attempts.
+
+The one permitted follow-up is a layout null-control, not policy tuning:
+
+```text
+stable_domain_record:
+  move to the cold tail of H8MediumRun
+  use atomic release/acquire publication
+
+stable implementation publication:
+  publish with release before backpointer publication
+
+owner mirror:
+  keep STABLE_RECORD, MEDIUM_RECORD, and OWNER_WITNESS guards aligned
+
+behavior:
+  unchanged
+diagnostic counters:
+  unchanged and diagnostic-only
+```
+
+The exact Windows rotated-R10 gate is reused. If balanced/wide_ws return to
+their noise band, the earlier regression is recorded as a layout artifact and
+the medium rows decide the lane. If controls remain outside the guard, the lane
+is archived without further knob experiments.
+
+## Layout Null-Control Result
+
+All WSL `-Werror` builds and the OwnerWitness, StableRecord, and MediumRecord
+smoke/safety siblings pass after the change. Windows builds also pass. The
+first short-duration Windows R10 was rejected: samples were approximately
+30ms and the two control rows moved by more than 8% in opposite directions.
+
+The same AB/BA test with ten times more iterations measured:
+
+| Row | Page8KRecord median | OwnerWitness median | Delta |
+|---|---:|---:|---:|
+| fixed8K | 21.133M | 20.904M | -1.09% |
+| balanced | 63.659M | 61.494M | -3.40% |
+| wide_ws | 62.318M | 63.630M | +2.11% |
+| larger_sizes | 30.628M | 28.750M | -6.13% |
+
+Moving the pointer to the cold tail substantially reduced the unexplained
+control-row movement, so the earlier `-7.05%` balanced result contained a
+layout component. It did not rescue the medium-heavy row: larger_sizes remains
+well outside the `-3%` gate even though diagnostic attribution previously
+showed 100% valid witness acquisition.
+
+```text
+atomic backpointer and release/acquire publication: retained
+owner-mirror guard alignment: retained
+OwnerWitness correctness/research evidence: GO
+OwnerWitness cross-platform performance promotion: NO-GO / closed
+public HZ8 v2 default: unchanged
+```
+
+No additional OwnerWitness policy or capacity experiments are admitted.

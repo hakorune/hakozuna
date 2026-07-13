@@ -254,6 +254,47 @@ knobs. The balanced regression cannot be attributed to the behavior because
 that row never invokes it.
 ```
 
+Claude layout review correction:
+
+```text
+The balanced row does not execute witness behavior, but the conditional
+stable_domain_record field was inserted before hot run state fields. Its
+presence can therefore change cache-line placement even when attempt=0.
+
+Next single experiment:
+  move stable_domain_record to the cold struct tail
+  make the backpointer atomic with release/acquire publication
+  align MEDIUM_RECORD_L1 owner-mirror maintenance
+  rerun the identical Windows rotated R10
+
+Interpretation:
+  controls return to noise band -> previous balanced loss was layout artifact
+  controls remain outside gate -> archive OwnerWitness with a real presence cost
+```
+
+Layout null-control result:
+
+| Windows rotated R10, 10x duration | Delta |
+|---|---:|
+| fixed8K | -1.09% |
+| balanced | -3.40% |
+| wide_ws | +2.11% |
+| larger_sizes | -6.13% |
+
+```text
+The short-duration R10 was rejected because ~30ms samples moved controls by
+more than 8% in opposite directions.
+
+The 10x run shows that cold-tail placement removes much of the control-row
+distortion. The medium-heavy larger_sizes row still fails the -3% gate.
+
+Final decision:
+  atomic/cold-tail lifetime hygiene: GO
+  OwnerWitness correctness evidence: GO
+  OwnerWitness performance promotion: NO-GO / closed
+  public HZ8 v2 default: unchanged
+```
+
 ## Other Lanes
 
 ```text
