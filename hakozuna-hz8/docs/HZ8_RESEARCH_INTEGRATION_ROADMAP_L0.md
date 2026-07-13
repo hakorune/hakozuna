@@ -1,5 +1,31 @@
 # HZ8 Research Integration Roadmap L0
 
+## Current Closeout (2026-07-14)
+
+```text
+public default:
+  GeneralMediumPage + EntryBoundary + Mag16 + KeepRefill
+
+reclaim adapter:
+  owner-retirement upper-bound witness GO
+  commit-time behavior NO-GO; magazine-tail behavior NO-GO
+
+speed integration:
+  medium active-run fast tier NO-GO
+  Mag16 promoted
+  SmallPartialTransition P1 research GO / default HOLD
+  SmallTierMembership mechanism GO / default NO-GO
+
+active behavior box:
+  none
+```
+
+Redis-like AB/BA R5 is positive for P1, but the xorshift synthetic regression
+still blocks default promotion. Do not reopen reclaim timing, active-run tier,
+P2/P3/P4 recovery, magazine capacity, or tier-membership work without a new
+measured public-default weakness. The sections below remain the chronological
+evidence that produced this closeout.
+
 ## Post-Mag16 Order
 
 Mag16 is promoted to the HZ8 v2 default. The next work is intentionally kept
@@ -182,8 +208,8 @@ collection, and its adaptive-transfer L1 was NO-GO. After reclaim is decided,
 use the remaining measured throughput cells to select at most one HZ10/HZ11
 mechanism for a separate shadow-first experiment.
 
-This is now the active next task under the name
-`HZ8SpeedAdapterAttribution-L0`.
+This task ran under the name `HZ8SpeedAdapterAttribution-L0` and is now closed
+by the results below.
 
 The first post-Mag16 medium/local behavior check is not a new mechanism.
 `MediumLocalFastTierActiveRun-L1` already exists behind

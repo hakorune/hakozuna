@@ -8,15 +8,15 @@ Updated: 2026-07-14
 public default:
   HZ8 / Mag16 / KeepRefill / GeneralMediumPage + EntryBoundary
 
-active research line:
+closed research line:
   SmallPartialTransitionDepot-L1 / P1 TransitionOnly recovery
   original depot Windows behavior and remote no-regression gates are GO
   P1 Linux research is GO; cross-platform default promotion remains HOLD
 
 latest commit:
-  9a73489f Promote HZ8 general medium default on Linux
+  2f013455 Add HZ8 P1 Redis-like gate
 
-next box:
+latest closeout:
   P1 Windows registration and measurement are complete
   keep P1 as research GO and public default unchanged
   do not reopen P2/P3/P4 or add a capacity/policy ladder
@@ -26,6 +26,7 @@ next box:
   Redis-like five-pattern AB/BA R5: all controls pass (-1.22%..+7.14%)
   combined verdict: P1 research GO / default HOLD
   recovery optimization family is closed; do not expand to Larson
+  no active HZ8 behavior box remains; require a new measured weakness
 ```
 
 Read first:
@@ -536,7 +537,7 @@ LargeDirect HotCold/ShardedHot:
   HOLD / evidence only
 
 HZ8 reclaim adapter:
-  waits for a proven HZ12-compatible reclaim contract
+  L0 retirement witness GO; commit-time and magazine-tail behavior NO-GO
 ```
 
 ## Rules
