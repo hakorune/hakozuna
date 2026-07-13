@@ -14,6 +14,16 @@ rollback:
 active behavior box:
   none
 
+active diagnostic box:
+  none
+
+latest diagnostic closeout:
+  SmallHotPathAudit-L0 = complete
+  64/128B warmed pairs are about 17% cheaper than tcmalloc
+  HZ11 fine128 is about 45% cheaper but has a weaker contract
+  SmallEntryTrim-L1 = NO-GO
+  next surface = mixed working-set transition/refill attribution
+
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
   SmallTierMembership is mechanism GO / default NO-GO
@@ -102,6 +112,7 @@ Open a new HZ8 behavior box only when all are present:
 - [Linux lane registry](docs/HZ8_LINUX_LANE_STATUS_L1.md)
 - [Default integration record](docs/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md)
 - [P1 recovery closeout](docs/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md)
+- [Small hot-path audit](docs/HZ8_SMALL_HOT_PATH_AUDIT_L0.md)
 - [Source module map](src/README.md)
 - [Benchmark gate](docs/HZ8_BENCH_GATE.md)
 
