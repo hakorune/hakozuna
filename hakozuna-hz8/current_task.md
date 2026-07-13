@@ -15,8 +15,9 @@ latest commit:
   9a73489f Promote HZ8 general medium default on Linux
 
 next box:
-  freeze the shared default and collect normal release evidence
-  use hz8-v2-rollback for immediate comparison or rollback
+  freeze the shared default
+  if optimization resumes, audit local/broad fixed cost and mixed-size peak retention
+  do not weaken the remote-small/RSS result while pursuing tcmalloc
 ```
 
 Read first:
@@ -99,6 +100,15 @@ Windows default integration:
   balanced -2.18%, wide_ws +0.24%, larger_sizes -2.83%
   MT remote smoke 121.147M ops/s, peak 19.2 MiB
   Redis-like five-pattern focused smoke PASS
+
+Windows tcmalloc frontier R10:
+  remote-small: HZ8 129.292M vs tcmalloc 124.778M (+3.62%)
+  remote-small peak: 18.93 MiB vs 728.57 MiB (38.5x lower)
+  fixed8K/16K: HZ8 about one third of tcmalloc, but lower peak RSS
+  fixed32K: HZ8 41.633M vs 300.840M
+  balanced/wide/larger: HZ8 remains 3.0x-7.7x slower
+  long mixed peak RSS is a measured HZ8 weakness, not a low-RSS claim row
+  detail: docs/HZ8_WINDOWS_DEFAULT_TCMALLOC_R10.md
 ```
 
 ## Page8K Record Evidence

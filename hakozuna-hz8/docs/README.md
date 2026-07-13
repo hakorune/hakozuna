@@ -13,6 +13,7 @@
 - `HZ8_MEDIUM_PAGE_SUBSTRATE_CONTRACT_DELTA_L0.md`: HZ10 page-shape import boundary
 - `HZ8_LINUX_WORKING_SET_PARITY_L0.md`: Windows-equivalent Linux slot-ring benchmark box
 - `HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md`: staged default promotion and rollback boundary
+- `HZ8_WINDOWS_DEFAULT_TCMALLOC_R10.md`: promoted Windows default versus tcmalloc R10 frontier
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_L0.md`: diagnostic shared Page8K/medium dispatch directory
 - `HZ8_UNIFIED_MEDIUM_DOMAIN_STABLE_RECORD_L0.md`: type-stable medium route-record lifetime proof
 - `HZ8_PAGE8K_API_SURFACE_F1.md`: R3 route, usable-size, and realloc contract
@@ -40,11 +41,11 @@ Long experiment chronology belongs in `archive/` or `bench_results/`, not in
 
 ```text
 normal public matrix:
-  hz8-v2 only
+  hz8 only
 
 explicit research matrix:
   pass -IncludeHz8Research
-  includes opt-in, diagnostic, evidence, and closed reproducibility rows
+  includes hz8-v2-rollback plus opt-in, diagnostic, evidence, and closed rows
 
 closed lane:
   build target may remain for reproducibility

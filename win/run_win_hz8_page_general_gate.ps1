@@ -3,7 +3,7 @@ param(
     [ValidateRange(1, 100)]
     [int]$WorkScale = 1,
     [string]$OutputDir,
-    [ValidateSet("v2", "general")]
+    [ValidateSet("v2", "general", "tcmalloc")]
     [string]$Baseline = "v2",
     [ValidateSet("general", "cap128", "entry-boundary", "default")]
     [string]$Candidate = "general",
@@ -15,8 +15,16 @@ $ErrorActionPreference = "Stop"
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $SuiteDir = Join-Path $RepoRoot "out_win_suite"
 $BuildScript = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
-$BaselineName = if ($Baseline -eq "general") { "hz8-r3-page-general" } else { "hz8-v2" }
-$BaselineFile = if ($Baseline -eq "general") { "bench_mixed_ws_hz8_medium_page_general.exe" } else { "bench_mixed_ws_hz8_v2.exe" }
+$BaselineName = switch ($Baseline) {
+    "general" { "hz8-r3-page-general" }
+    "tcmalloc" { "tcmalloc" }
+    default { "hz8-v2" }
+}
+$BaselineFile = switch ($Baseline) {
+    "general" { "bench_mixed_ws_hz8_medium_page_general.exe" }
+    "tcmalloc" { "bench_mixed_ws_tcmalloc.exe" }
+    default { "bench_mixed_ws_hz8_v2.exe" }
+}
 $BaselinePath = Join-Path $SuiteDir $BaselineFile
 $CandidateName = switch ($Candidate) {
     "default" { "hz8" }
@@ -155,7 +163,8 @@ foreach ($row in $Rows) {
             $Log.Add(("rc: {0}" -f $result.ExitCode))
             $Log.Add($result.Raw)
             $Log.Add("")
-            if ($result.ExitCode -ne 0 -or [double]::IsNaN($result.Ops) -or $result.AllocFail -ne 0) {
+            $allocFailInvalid = ($allocator.Name -ne "tcmalloc" -and $result.AllocFail -ne 0)
+            if ($result.ExitCode -ne 0 -or [double]::IsNaN($result.Ops) -or $allocFailInvalid) {
                 throw ("Gate run failed: row={0} run={1} allocator={2} rc={3} alloc_fail={4}" -f $row.Name, $run, $allocator.Name, $result.ExitCode, $result.AllocFail)
             }
         }
@@ -209,7 +218,11 @@ foreach ($item in $SummaryRows) {
         $item.peak_rss_delta_pct))
 }
 $Markdown.Add("")
-$Markdown.Add("Acceptance guide: exact medium rows should improve materially; control rows must remain within -3%; peak RSS must remain within max(+5%, +1 MiB); all runs require alloc_fail=0.")
+if ($Baseline -eq "tcmalloc") {
+    $Markdown.Add("Comparison only: throughput-first tcmalloc is the reference; HZ8 keeps its fail-closed and low-RSS contract. HZ8 runs require alloc_fail=0; tcmalloc does not expose that field in this harness.")
+} else {
+    $Markdown.Add("Acceptance guide: exact medium rows should improve materially; control rows must remain within -3%; peak RSS must remain within max(+5%, +1 MiB); all runs require alloc_fail=0.")
+}
 Set-Content -Encoding UTF8 -Path (Join-Path $OutputDir "summary.md") -Value $Markdown
 
 Write-Host "Wrote gate results: $OutputDir"
