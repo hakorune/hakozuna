@@ -22,7 +22,13 @@ latest diagnostic closeout:
   64/128B warmed pairs are about 17% cheaper than tcmalloc
   HZ11 fine128 is about 45% cheaper but has a weaker contract
   SmallEntryTrim-L1 = NO-GO
-  next surface = mixed working-set transition/refill attribution
+  SmallMixedTransitionAttribution-L0 = complete
+  LCG weakness = class-local empty inventory -> span commit (existing P1 evidence)
+  xorshift weakness = 15-21% Mag pop/hit churn, not source commit
+
+next design question:
+  SmallLocalObjectReuse-L0 contract review
+  do not implement before duplicate-authority and remote-safety design is fixed
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
@@ -113,6 +119,7 @@ Open a new HZ8 behavior box only when all are present:
 - [Default integration record](docs/HZ8_GENERAL_MEDIUM_DEFAULT_INTEGRATION_L1.md)
 - [P1 recovery closeout](docs/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md)
 - [Small hot-path audit](docs/HZ8_SMALL_HOT_PATH_AUDIT_L0.md)
+- [Small mixed transition attribution](docs/HZ8_SMALL_MIXED_TRANSITION_ATTRIBUTION_L0.md)
 - [Source module map](src/README.md)
 - [Benchmark gate](docs/HZ8_BENCH_GATE.md)
 
