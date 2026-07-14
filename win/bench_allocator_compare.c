@@ -964,6 +964,68 @@ int main(int argc, char** argv) {
         printf("\n");
     }
 #endif
+#if defined(HZ_BENCH_USE_HZ8) && defined(H8_MEDIUM_BOUNDARY_DIAG)
+    {
+        H8DebugStats s = h8_debug_stats();
+        printf("[H8_MEDIUM_BOUNDARY] "
+               "malloc=[%zu,%zu,%zu,%zu] "
+               "active=[%zu,%zu,%zu,%zu] "
+               "owner=[%zu,%zu,%zu,%zu] "
+               "global=[%zu,%zu,%zu,%zu] "
+               "create=[%zu,%zu,%zu,%zu] "
+               "local_free=[%zu,%zu,%zu,%zu] "
+               "active_miss=[%zu,%zu,%zu,%zu]\n",
+               s.medium_malloc_class_8k, s.medium_malloc_class_16k,
+               s.medium_malloc_class_32k, s.medium_malloc_class_64k,
+               s.medium_run_reuse_active_class_8k,
+               s.medium_run_reuse_active_class_16k,
+               s.medium_run_reuse_active_class_32k,
+               s.medium_run_reuse_active_class_64k,
+               s.medium_run_reuse_owner_class_8k,
+               s.medium_run_reuse_owner_class_16k,
+               s.medium_run_reuse_owner_class_32k,
+               s.medium_run_reuse_owner_class_64k,
+               s.medium_run_reuse_global_class_8k,
+               s.medium_run_reuse_global_class_16k,
+               s.medium_run_reuse_global_class_32k,
+               s.medium_run_reuse_global_class_64k,
+               s.medium_run_create_class_8k,
+               s.medium_run_create_class_16k,
+               s.medium_run_create_class_32k,
+               s.medium_run_create_class_64k,
+               s.medium_local_free_class_8k,
+               s.medium_local_free_class_16k,
+               s.medium_local_free_class_32k,
+               s.medium_local_free_class_64k,
+               s.medium_active_miss_class_8k,
+               s.medium_active_miss_class_16k,
+               s.medium_active_miss_class_32k,
+               s.medium_active_miss_class_64k);
+        printf("[H8_MEDIUM_BOUNDARY_SCAN] "
+               "owner_scan=%zu owner_steps=%zu global_scan=%zu "
+               "global_steps=%zu free_lookup=%zu route_lookup=%zu "
+               "route_steps=%zu owner_hit=%zu "
+               "owner_pos=[%zu,%zu,%zu,%zu,%zu] "
+               "active_switch=[%zu,%zu,%zu,%zu] "
+               "miss_create=%zu miss_detached=%zu\n",
+               s.medium_owner_scan_count, s.medium_owner_scan_step_count,
+               s.medium_global_scan_count, s.medium_global_scan_step_count,
+               s.medium_free_lookup_count, s.medium_route_lookup_count,
+               s.medium_route_lookup_step_count,
+               s.medium_active_miss_owner_list_hit,
+               s.medium_active_miss_owner_list_pos1,
+               s.medium_active_miss_owner_list_pos2,
+               s.medium_active_miss_owner_list_pos3,
+               s.medium_active_miss_owner_list_pos4,
+               s.medium_active_miss_owner_list_pos5p,
+               s.medium_active_switch_class_8k,
+               s.medium_active_switch_class_16k,
+               s.medium_active_switch_class_32k,
+               s.medium_active_switch_class_64k,
+               s.medium_active_miss_create,
+               s.medium_active_miss_detached_reuse);
+    }
+#endif
     fflush(stdout);
     free(args);
     return 0;

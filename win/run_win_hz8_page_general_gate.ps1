@@ -3,7 +3,7 @@ param(
     [ValidateRange(1, 100)]
     [int]$WorkScale = 1,
     [string]$OutputDir,
-    [ValidateSet("v2", "general", "default", "tcmalloc")]
+    [ValidateSet("v2", "pre-transition", "general", "default", "tcmalloc")]
     [string]$Baseline = "v2",
     [ValidateSet("general", "cap128", "entry-boundary", "default", "partial-depot")]
     [string]$Candidate = "general",
@@ -16,12 +16,14 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $SuiteDir = Join-Path $RepoRoot "out_win_suite"
 $BuildScript = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
 $BaselineName = switch ($Baseline) {
+    "pre-transition" { "hz8-pre-transition-rollback" }
     "general" { "hz8-r3-page-general" }
     "default" { "hz8" }
     "tcmalloc" { "tcmalloc" }
     default { "hz8-v2" }
 }
 $BaselineFile = switch ($Baseline) {
+    "pre-transition" { "bench_mixed_ws_hz8_pre_transition.exe" }
     "general" { "bench_mixed_ws_hz8_medium_page_general.exe" }
     "default" { "bench_mixed_ws_hz8.exe" }
     "tcmalloc" { "bench_mixed_ws_tcmalloc.exe" }
@@ -58,9 +60,12 @@ if ($ForceBuild -or -not (Test-Path $BaselinePath) -or -not (Test-Path $Candidat
 }
 
 $Rows = @(
+    @{ Name = "boundary4k"; Threads = 4; Iters = 120000; WorkingSet = 2048; Min = 4096; Max = 4096 },
+    @{ Name = "range4097_8192"; Threads = 4; Iters = 120000; WorkingSet = 2048; Min = 4097; Max = 8192 },
     @{ Name = "fixed8k"; Threads = 4; Iters = 2000000; WorkingSet = 256; Min = 8192; Max = 8192 },
     @{ Name = "fixed16k"; Threads = 4; Iters = 1200000; WorkingSet = 256; Min = 16384; Max = 16384 },
     @{ Name = "fixed32k"; Threads = 4; Iters = 800000; WorkingSet = 256; Min = 32768; Max = 32768 },
+    @{ Name = "fixed64k"; Threads = 4; Iters = 500000; WorkingSet = 128; Min = 65536; Max = 65536 },
     @{ Name = "balanced"; Threads = 8; Iters = 250000; WorkingSet = 4096; Min = 16; Max = 2048 },
     @{ Name = "wide_ws"; Threads = 8; Iters = 200000; WorkingSet = 16384; Min = 16; Max = 1024 },
     @{ Name = "larger_sizes"; Threads = 4; Iters = 150000; WorkingSet = 4096; Min = 256; Max = 8192 }
@@ -200,7 +205,7 @@ foreach ($row in $Rows) {
 $SummaryRows | Export-Csv -NoTypeInformation -Encoding UTF8 (Join-Path $OutputDir "summary.csv")
 
 $Markdown = New-Object System.Collections.Generic.List[string]
-$Markdown.Add("# HZ8 General Medium Page Windows Gate")
+$Markdown.Add("# HZ8 Medium Boundary Windows Gate")
 $Markdown.Add("")
 $Markdown.Add("- Fresh process AB/BA rotation")
 $Markdown.Add("- Runs: $Runs")
@@ -225,7 +230,7 @@ $Markdown.Add("")
 if ($Baseline -eq "tcmalloc") {
     $Markdown.Add("Comparison only: throughput-first tcmalloc is the reference; HZ8 keeps its fail-closed and low-RSS contract. HZ8 runs require alloc_fail=0; tcmalloc does not expose that field in this harness.")
 } else {
-    $Markdown.Add("Acceptance guide: exact medium rows should improve materially; control rows must remain within -3%; peak RSS must remain within max(+5%, +1 MiB); all runs require alloc_fail=0.")
+    $Markdown.Add("Acceptance guide: the target boundary should improve materially; balanced/wide controls must remain within -3%; peak RSS must remain within max(+5%, +1 MiB); all runs require alloc_fail=0.")
 }
 Set-Content -Encoding UTF8 -Path (Join-Path $OutputDir "summary.md") -Value $Markdown
 

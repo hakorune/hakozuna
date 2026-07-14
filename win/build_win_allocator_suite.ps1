@@ -60,6 +60,14 @@ function Invoke-Hz8AllocatorMatrixBuild {
     )
     $hz8Variants = @(
         @{ Name = "hz8"; Output = "bench_mixed_ws_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
+        @{
+            Name = "hz8-medium-boundary-diag"
+            Output = "bench_mixed_ws_hz8_medium_boundary_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_ENABLE_DEBUG_STATS=1",
+                "/DH8_MEDIUM_BOUNDARY_DIAG=1"
+            )
+        },
         @{ Name = "hz8-pre-transition-rollback"; Output = "bench_mixed_ws_hz8_pre_transition.exe"; ExtraFlags = $Hz8PreTransitionDefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_mixed_ws_hz8_v2.exe"; ExtraFlags = @() },
         @{

@@ -17,7 +17,13 @@ active behavior box:
   none; SmallTransitionInventory-L1 promoted shared default
 
 active diagnostic box:
-  none
+  MediumBoundary-L0
+  first prove whether SmallTransitionInventory changed medium code shape by
+  comparing hz8 against hz8-pre-transition-rollback in fresh-process AB/BA
+  L0 complete on Windows: 4097..8192 is +0.72% and medium rows are broadly
+  neutral, so SmallTransitionInventory is not the boundary cause
+  diagnostic: 4097..8192 owner scan averages 127 steps; 64KiB averages 31.5
+  next behavior candidate: MediumTransitionInventory-L1
 
 latest diagnostic closeout:
   SmallHotPathAudit-L0 = complete
@@ -108,6 +114,14 @@ remaining measured weakness:
   direct 128KiB..4MiB throughput
   Redis-like mutation throughput
   long mixed traces can still produce high peak RSS
+
+next gate:
+  win/run_win_hz8_page_general_gate.ps1
+    -Baseline pre-transition -Candidate default -Runs 5
+  rows include 4KiB boundary, 4097..8192, exact 8/16/32/64KiB,
+  balanced, wide_ws, and larger_sizes
+  existing diagnostic siblings already provide per-class active/owner/global/
+  create/free attribution; do not add counters to the speed binaries
 
 claim boundary:
   do not claim universal tcmalloc replacement
