@@ -10,6 +10,7 @@ status:
   L1-B normal-owner remote collection implemented
   correctness smoke GO
   Windows mixed behavior GO
+  native Ubuntu behavior/application GO
   cross-platform default HOLD
 
 next experiment:
@@ -101,6 +102,24 @@ It nevertheless reproduced the two-sided signal: LCG balanced improved
 balanced changed `64.36M -> 61.91M` (`-3.8%`) and peak RSS rose about `9.4%`.
 Native Ubuntu must decide whether that boundary is a WSL artifact or a shared
 regression.
+
+## Native Ubuntu Gate
+
+Native Ubuntu x86_64 fresh-process AB/BA R10 clears the behavior gate. The
+xorshift balanced/wide/larger rows changed `+0.03%/+2.15%/-0.03%`; fixed
+8K/16K/32K changed `-1.76%/-1.82%/+2.19%`; matched remote90 changed `-1.29%`.
+Peak RSS was neutral or lower on every row.
+
+Exact Windows-LCG trace parity reproduced the recovery with standalone-oracle
+hash validation: balanced/wide/larger improved `+761.60%/+194.07%/+115.29%`,
+while peak RSS fell `770.50->48.38`, `422.38->92.25`, and `277.00->60.00 MiB`.
+Redis + memtier R10 changed `-0.91%` with post and peak RSS both about `-0.48%`.
+
+Shared default remains HOLD. The xorshift wide post-RSS median is only about
+0.30 MiB higher but exceeds the strict relative `+5%` guard, and the Windows
+MT remote result still misses both throughput and peak-RSS gates. Full results
+and reproduction commands are in
+`docs/benchmarks/linux/HZ8_SMALL_TRANSITION_INVENTORY_20260714.md`.
 
 ## Evidence
 

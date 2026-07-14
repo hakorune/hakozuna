@@ -8,14 +8,22 @@ WORK_SCALE="${WORK_SCALE:-10}"
 REMOTE_WORK_SCALE="${REMOTE_WORK_SCALE:-1}"
 TRACE_PARITY="${TRACE_PARITY:-0}"
 BASELINE="${ROOT}/h8_bench_release"
-CANDIDATE="${ROOT}/h8_bench_release_small_partial_depot"
+CANDIDATE_TARGET="${CANDIDATE_TARGET:-bench-release-small-partial-depot}"
+CANDIDATE="${CANDIDATE:-${ROOT}/h8_bench_release_small_partial_depot}"
+CANDIDATE_LABEL="${CANDIDATE_LABEL:-small_partial_depot}"
+CANDIDATE_FLAGS="${CANDIDATE_FLAGS:-HZ8_DEFAULT_CFLAGS,H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1}"
+CANDIDATE_SMOKE_TARGET="${CANDIDATE_SMOKE_TARGET:-smoke-small-partial-depot}"
+CANDIDATE_SMOKE="${CANDIDATE_SMOKE:-${ROOT}/h8_smoke_small_partial_depot}"
+CANDIDATE_SAFETY_TARGET="${CANDIDATE_SAFETY_TARGET:-safety-stress-small-partial-depot}"
+CANDIDATE_SAFETY="${CANDIDATE_SAFETY:-${ROOT}/h8_safety_stress_small_partial_depot}"
+SUMMARY_TITLE="${SUMMARY_TITLE:-HZ8 Small Partial Transition Depot Linux Gate}"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" bench-release bench-release-small-partial-depot \
-  smoke-small-partial-depot safety-stress-small-partial-depot >/dev/null
+make -C "${ROOT}" bench-release "${CANDIDATE_TARGET}" \
+  "${CANDIDATE_SMOKE_TARGET}" "${CANDIDATE_SAFETY_TARGET}" >/dev/null
 
-"${ROOT}/h8_smoke_small_partial_depot" >"${OUTDIR}/smoke.log"
-"${ROOT}/h8_safety_stress_small_partial_depot" >"${OUTDIR}/safety_stress.log"
+"${CANDIDATE_SMOKE}" >"${OUTDIR}/smoke.log"
+"${CANDIDATE_SAFETY}" >"${OUTDIR}/safety_stress.log"
 
 cat >"${OUTDIR}/manifest.txt" <<EOF
 commit=$(git -C "${ROOT}" rev-parse HEAD)
@@ -25,7 +33,9 @@ work_scale=${WORK_SCALE}
 remote_work_scale=${REMOTE_WORK_SCALE}
 trace_parity=${TRACE_PARITY}
 baseline_flags=HZ8_DEFAULT_CFLAGS
-candidate_flags=HZ8_DEFAULT_CFLAGS,H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1
+candidate_label=${CANDIDATE_LABEL}
+candidate_target=${CANDIDATE_TARGET}
+candidate_flags=${CANDIDATE_FLAGS}
 diagnostic_counters=disabled
 environment=$(uname -a)
 local_worker=working_set_ring
@@ -80,19 +90,19 @@ for run in $(seq 1 "${RUNS}"); do
   done
 done
 
-python3 - "${csv}" "${OUTDIR}/summary.md" "${TRACE_PARITY}" <<'PY'
+python3 - "${csv}" "${OUTDIR}/summary.md" "${TRACE_PARITY}" "${SUMMARY_TITLE}" <<'PY'
 import csv
 import statistics
 import sys
 from collections import defaultdict
 
-src, dst, trace_parity = sys.argv[1], sys.argv[2], int(sys.argv[3])
+src, dst, trace_parity, title = sys.argv[1], sys.argv[2], int(sys.argv[3]), sys.argv[4]
 groups = defaultdict(lambda: defaultdict(list))
 for item in csv.DictReader(open(src, newline="")):
     groups[item["row"]][item["allocator"]].append(item)
 
 with open(dst, "w", newline="") as out:
-    out.write("# HZ8 Small Partial Transition Depot Linux Gate\n\n")
+    out.write(f"# {title}\n\n")
     out.write("Fresh-process AB/BA rotation; speed binaries only.\n\n")
     out.write("| row | default | candidate | delta | default post RSS | candidate post RSS | default peak RSS | candidate peak RSS |\n")
     out.write("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |\n")
