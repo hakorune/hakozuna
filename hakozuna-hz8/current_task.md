@@ -34,6 +34,12 @@ latest promotion:
   Windows matched-remote Blocks=20 passes 40/40 admissible pairs
   paired throughput +1.63%, post/peak +0.16%, private -0.86%
 
+latest broad check:
+  Windows RUNS=1 full matrix + MT remote + Redis-like complete
+  balanced/wide/heavy_mixed beat tcmalloc in this run
+  fixed 512B..4KiB is strong; 4KiB..64KiB transition and direct-large are weak
+  MT remote uses about 1/41 tcmalloc peak RSS at 53.7% throughput
+
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
   SmallTierMembership is mechanism GO / default NO-GO
@@ -98,8 +104,10 @@ strength:
   exact 8K/16K/32K improved materially after GeneralMediumPage promotion
 
 remaining measured weakness:
-  broad balanced/wide/larger throughput remains below tcmalloc
-  long mixed traces can produce high peak RSS
+  variable 4KiB..8KiB and fixed 16KiB..64KiB throughput
+  direct 128KiB..4MiB throughput
+  Redis-like mutation throughput
+  long mixed traces can still produce high peak RSS
 
 claim boundary:
   do not claim universal tcmalloc replacement
