@@ -1,6 +1,7 @@
 param(
     [string]$VcpkgRoot,
-    [switch]$IncludeHz8Research
+    [switch]$IncludeHz8Research,
+    [string[]]$RequestedHz8Variants
 )
 
 $ErrorActionPreference = "Stop"
@@ -39,9 +40,11 @@ if (-not $VcpkgRoot) {
 
 . $ModernBuildCommon
 
-& $SuiteBuild -IncludeHz8Research:$IncludeHz8Research
-if ($LASTEXITCODE -ne 0) {
-    throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
+if (-not $RequestedHz8Variants) {
+    & $SuiteBuild -IncludeHz8Research:$IncludeHz8Research
+    if ($LASTEXITCODE -ne 0) {
+        throw "build_win_allocator_suite.ps1 failed with exit code $LASTEXITCODE"
+    }
 }
 
 $VcpkgInclude = Join-Path $VcpkgRoot "installed\x64-windows\include"
@@ -159,6 +162,13 @@ $hz8Variants = @(
             "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
         )
     },
+    @{
+        Name = "hz8-small-transition-inventory"
+        Output = "bench_redis_workload_hz8_small_transition_inventory.exe"
+        ExtraFlags = $Hz8DefaultFlags + @(
+            "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+        )
+    },
     @{ Name = "hz8-v2-rollback"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
     @{
         Name = "hz8-r3-page8k-integrated"
@@ -183,10 +193,23 @@ $hz8Variants = @(
 if (-not $IncludeHz8Research) {
     $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
 }
+if ($RequestedHz8Variants -and $RequestedHz8Variants.Count -gt 0) {
+    $wanted = @($RequestedHz8Variants | ForEach-Object { $_ -split ',' } |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $hz8Variants = @($hz8Variants | Where-Object { $wanted -contains $_.Name })
+    if ($hz8Variants.Count -ne $wanted.Count) {
+        throw "Unknown or duplicate HZ8 variant in: $($wanted -join ', ')"
+    }
+}
 foreach ($variant in $hz8Variants) {
     Write-Host "Building: redis workload ($($variant.Name))"
     $output = Join-Path $OutDir $variant.Output
     Invoke-Checked $Cc ($BaseFlags + $Hz8Flags + $variant.ExtraFlags + $Hz8Sources + @($BenchSrc, "/link", "/out:$output"))
+}
+
+if ($RequestedHz8Variants) {
+    Write-Host "Built focused HZ8 Redis artifacts in: $OutDir"
+    return
 }
 
 Invoke-AppLikeHz6BenchBuilds `

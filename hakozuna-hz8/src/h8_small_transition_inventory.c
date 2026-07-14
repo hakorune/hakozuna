@@ -13,6 +13,7 @@ static _Atomic uint64_t g_pop_attempt;
 static _Atomic uint64_t g_pop_hit;
 static _Atomic uint64_t g_pop_reject;
 static _Atomic uint64_t g_remote_push;
+static _Atomic uint64_t g_direct_activate;
 static _Atomic uint64_t g_reset;
 static _Atomic uint64_t g_depth_max;
 
@@ -69,7 +70,18 @@ static bool h8_small_transition_inventory_note(H8ThreadCtx* ctx,
     H8_TRANSITION_INC(g_duplicate);
     return false;
   }
-
+  H8Span* active = ctx->active_spans[span->class_id];
+  if (active) {
+    uint32_t active_head = atomic_load_explicit(
+        &active->local_hot.local_free_head_word, memory_order_relaxed);
+    uint32_t active_bump = atomic_load_explicit(
+        &active->local_hot.local_bump_index, memory_order_relaxed);
+    if (active_head == H8_SLOT_NONE && active_bump >= active->slot_count) {
+      ctx->active_spans[span->class_id] = span;
+      H8_TRANSITION_INC(g_direct_activate);
+      return false;
+    }
+  }
   uint32_t class_id = span->class_id;
   span->next_transition_available = ctx->small_transition_head[class_id];
   span->transition_indexed = true;
@@ -141,6 +153,8 @@ H8SmallTransitionInventoryStats h8_small_transition_inventory_stats(void) {
   out.pop_hit = atomic_load_explicit(&g_pop_hit, memory_order_relaxed);
   out.pop_reject = atomic_load_explicit(&g_pop_reject, memory_order_relaxed);
   out.remote_push = atomic_load_explicit(&g_remote_push, memory_order_relaxed);
+  out.direct_activate =
+      atomic_load_explicit(&g_direct_activate, memory_order_relaxed);
   out.reset = atomic_load_explicit(&g_reset, memory_order_relaxed);
   out.depth_max = atomic_load_explicit(&g_depth_max, memory_order_relaxed);
 #endif
@@ -152,12 +166,13 @@ void h8_small_transition_inventory_dump(void) {
   fprintf(stderr,
           "[H8_SMALL_TRANSITION] candidate=%llu push=%llu duplicate=%llu "
           "pop_attempt=%llu pop_hit=%llu pop_reject=%llu remote_push=%llu "
-          "reset=%llu "
+          "direct_activate=%llu reset=%llu "
           "depth_max=%llu\n",
           (unsigned long long)s.candidate, (unsigned long long)s.push,
           (unsigned long long)s.duplicate, (unsigned long long)s.pop_attempt,
           (unsigned long long)s.pop_hit, (unsigned long long)s.pop_reject,
-          (unsigned long long)s.remote_push, (unsigned long long)s.reset,
+          (unsigned long long)s.remote_push,
+          (unsigned long long)s.direct_activate, (unsigned long long)s.reset,
           (unsigned long long)s.depth_max);
 }
 

@@ -36,6 +36,7 @@ $LegacyExecutables = @(
     @{ Name = "hz8-v2-mediumlocalfast"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_v2_mediumlocalfast.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-partial-depot"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_partial_depot.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-partial-transition-only"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_partial_transition_only.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-transition-inventory"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_transition_inventory.exe"); Hz8Research = $true },
     @{ Name = "hz8-medium-pageshadow"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"); Hz8Research = $true; Diagnostic = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_remote.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_medium_page8k_target_dispatch.exe"); Hz8Research = $true },
@@ -95,8 +96,8 @@ if ($Allocators -and $Allocators.Count -gt 0) {
 }
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    if (($Executables | Where-Object { $_.Name -notlike "hz8-*" }).Count -eq 0) {
-        & $BuildScript -OnlyHz8 -IncludeHz8Research:$IncludeHz8Research
+    if (($Executables | Where-Object { $_.Name -notlike "hz8*" }).Count -eq 0) {
+        & $BuildScript -OnlyHz8 -IncludeHz8Research:$IncludeHz8Research -RequestedHz8Variants $wanted
     } else {
         & $BuildScript
     }

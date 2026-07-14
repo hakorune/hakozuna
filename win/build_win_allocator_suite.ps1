@@ -3,7 +3,8 @@ param(
     [switch]$DiagnosticHz6Probes,
     [switch]$OnlyHz11,
     [switch]$OnlyHz8,
-    [switch]$IncludeHz8Research
+    [switch]$IncludeHz8Research,
+    [string]$Hz8ResearchVariant
 )
 
 $ErrorActionPreference = "Stop"
@@ -342,6 +343,21 @@ function Invoke-Hz8AllocatorMatrixBuild {
             )
         },
         @{
+            Name = "hz8-small-transition-inventory"
+            Output = "bench_mixed_ws_hz8_small_transition_inventory.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-small-transition-inventory-diag"
+            Output = "bench_mixed_ws_hz8_small_transition_inventory_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1",
+                "/DH8_SMALL_TRANSITION_INVENTORY_DIAG=1"
+            )
+        },
+        @{
             Name = "hz8-small-tier-membership"
             Output = "bench_mixed_ws_hz8_small_tier_membership.exe"
             ExtraFlags = $Hz8DefaultFlags + @(
@@ -363,6 +379,13 @@ function Invoke-Hz8AllocatorMatrixBuild {
     )
     if (-not $IncludeHz8Research) {
         $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
+    } elseif ($Hz8ResearchVariant) {
+        $hz8Variants = @($hz8Variants | Where-Object {
+            $_.Name -eq $Hz8ResearchVariant
+        })
+        if ($hz8Variants.Count -eq 0) {
+            throw "Unknown HZ8 research variant: $Hz8ResearchVariant"
+        }
     }
     foreach ($variant in $hz8Variants) {
         $output = Join-Path $OutDir $variant.Output
@@ -384,6 +407,10 @@ function Invoke-Hz8AllocatorMatrixBuild {
         if ($LASTEXITCODE -ne 0) {
             throw "HZ8 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
         }
+    }
+
+    if ($Hz8ResearchVariant) {
+        return
     }
 
     if (-not $IncludeHz8Research) {
@@ -590,6 +617,13 @@ function Invoke-Hz8AllocatorMatrixBuild {
             ExtraFlags = @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
+            )
+        },
+        @{
+            Source = "tests\h8_smoke.c"
+            Output = "h8_smoke_small_transition_inventory.exe"
+            ExtraFlags = @(
+                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
             )
         },
         @{

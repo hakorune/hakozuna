@@ -1,7 +1,8 @@
 param(
     [string]$VcpkgRoot,
     [switch]$OnlyHz8,
-    [switch]$IncludeHz8Research
+    [switch]$IncludeHz8Research,
+    [string[]]$RequestedHz8Variants
 )
 
 $ErrorActionPreference = "Stop"
@@ -149,6 +150,13 @@ function Invoke-Hz8MtRemoteBuilds {
             )
         },
         @{
+            Name = "hz8-small-transition-inventory"
+            Output = "bench_random_mixed_mt_remote_hz8_small_transition_inventory.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+            )
+        },
+        @{
             Name = "hz8-medium-pageshadow"
             Output = "bench_random_mixed_mt_remote_hz8_medium_pageshadow.exe"
             ExtraFlags = @("/DH8_MEDIUM_PAGE_SUBSTRATE_SHADOW_L0=1")
@@ -224,6 +232,14 @@ function Invoke-Hz8MtRemoteBuilds {
     )
     if (-not $IncludeHz8Research) {
         $hz8Variants = @($hz8Variants | Where-Object { $_.Name -eq "hz8" })
+    }
+    if ($RequestedHz8Variants -and $RequestedHz8Variants.Count -gt 0) {
+        $wanted = @($RequestedHz8Variants | ForEach-Object { $_ -split ',' } |
+            ForEach-Object { $_.Trim() } | Where-Object { $_ })
+        $hz8Variants = @($hz8Variants | Where-Object { $wanted -contains $_.Name })
+        if ($hz8Variants.Count -ne $wanted.Count) {
+            throw "Unknown or duplicate HZ8 variant in: $($wanted -join ', ')"
+        }
     }
     foreach ($variant in $hz8Variants) {
         Write-Host "Building: mt_remote ($($variant.Name))"

@@ -14,7 +14,8 @@ rollback:
 active behavior box:
   SmallTransitionInventory-L1 research sibling
   L1-A local behavior and L1-B normal-owner remote collect are implemented
-  correctness smoke GO; performance/default gate pending
+  Windows mixed behavior and correctness are research GO
+  default HOLD pending native Linux and application-like gates
 
 active diagnostic box:
   none
@@ -30,9 +31,9 @@ latest diagnostic closeout:
 
 next gate:
   SmallTransitionInventory-L1
-  paired fresh-process default/candidate LCG and xorshift rows
-  fixed-small and remote controls
-  Windows first, then native Linux confirmation
+  Windows LCG/xorshift/fixed-small complete
+  remote R5 speed -3.56%, peak RSS +6.7%
+  Redis-like R20 passes; native Linux confirmation remains
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
@@ -49,6 +50,7 @@ latest closeout:
 | rollback | `hz8-v2-rollback` | explicit comparison and emergency rollback |
 | research | `hz8-v2-mag32` | larger/local opt-in; global default HOLD |
 | research | `hz8-small-partial-transition-only` | P1 recovery evidence; default HOLD |
+| research | `hz8-small-transition-inventory` | Windows behavior GO; shared default HOLD |
 | research | `LargeDirectOwned` | cross128 profile evidence; not default |
 | diagnostic | Page8K/domain/stats shadows | counter-bearing evidence; never speed rows |
 | archive | P2/P3/P4, tier membership, owner witness, old cache ladders | NO-GO reproduction only |

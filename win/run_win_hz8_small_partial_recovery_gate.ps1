@@ -19,6 +19,7 @@ $Allocators = @(
     @{ Name = "hz8"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8.exe") },
     @{ Name = "original_depot"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_partial_depot.exe") },
     @{ Name = "transition_only"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_partial_transition_only.exe") },
+    @{ Name = "transition_inventory"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_transition_inventory.exe") },
     @{ Name = "tier_membership"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_small_tier_membership.exe") }
 )
 
@@ -111,6 +112,7 @@ $Manifest = @(
     "original_flags=H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1",
     "p1_flags=H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1,H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B",
     "membership_flags=H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1,H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B,H8_SMALL_TIER_MEMBERSHIP_L1",
+    "transition_inventory_flags=H8_SMALL_TRANSITION_INVENTORY_L1",
     "diagnostic_counters=disabled"
 )
 Set-Content -Encoding UTF8 -Path (Join-Path $OutputDir "manifest.txt") -Value $Manifest
@@ -178,21 +180,25 @@ foreach ($traceName in $TraceNames) {
         $default = $medians["hz8"]
         $original = $medians["original_depot"]
         $p1 = $medians["transition_only"]
+        $inventory = $medians["transition_inventory"]
         $membership = $medians["tier_membership"]
         $Summary.Add([pscustomobject]@{
             row = $row.Name
             default_ops = $default.Ops
             original_ops = $original.Ops
             p1_ops = $p1.Ops
+            inventory_ops = $inventory.Ops
             membership_ops = $membership.Ops
             original_vs_default_pct = (($original.Ops / $default.Ops) - 1.0) * 100.0
             p1_vs_default_pct = (($p1.Ops / $default.Ops) - 1.0) * 100.0
             p1_vs_original_pct = (($p1.Ops / $original.Ops) - 1.0) * 100.0
+            inventory_vs_default_pct = (($inventory.Ops / $default.Ops) - 1.0) * 100.0
             membership_vs_default_pct = (($membership.Ops / $default.Ops) - 1.0) * 100.0
             membership_vs_p1_pct = (($membership.Ops / $p1.Ops) - 1.0) * 100.0
             default_peak_kb = $default.Peak
             original_peak_kb = $original.Peak
             p1_peak_kb = $p1.Peak
+            inventory_peak_kb = $inventory.Peak
             membership_peak_kb = $membership.Peak
         })
     }
@@ -207,15 +213,17 @@ foreach ($traceName in $TraceNames) {
     $Markdown.Add("- Work scale: ${WorkScale}x")
     $Markdown.Add("- Diagnostic counters: disabled")
     $Markdown.Add("")
-    $Markdown.Add("| row | default | original | P1 | membership | original/default | P1/default | membership/default | membership/P1 | default peak | original peak | P1 peak | membership peak |")
-    $Markdown.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
+    $Markdown.Add("| row | default | original | P1 | transition inventory | membership | original/default | P1/default | inventory/default | membership/default | membership/P1 | default peak | original peak | P1 peak | inventory peak | membership peak |")
+    $Markdown.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
     foreach ($item in $Summary) {
-        $Markdown.Add(("| {0} | {1:N3}M | {2:N3}M | {3:N3}M | {4:N3}M | {5:+0.00;-0.00;0.00}% | {6:+0.00;-0.00;0.00}% | {7:+0.00;-0.00;0.00}% | {8:+0.00;-0.00;0.00}% | {9:N2} MiB | {10:N2} MiB | {11:N2} MiB | {12:N2} MiB |" -f
-            $item.row, ($item.default_ops / 1e6), ($item.original_ops / 1e6), ($item.p1_ops / 1e6), ($item.membership_ops / 1e6),
+        $Markdown.Add(("| {0} | {1:N3}M | {2:N3}M | {3:N3}M | {4:N3}M | {5:N3}M | {6:+0.00;-0.00;0.00}% | {7:+0.00;-0.00;0.00}% | {8:+0.00;-0.00;0.00}% | {9:+0.00;-0.00;0.00}% | {10:+0.00;-0.00;0.00}% | {11:N2} MiB | {12:N2} MiB | {13:N2} MiB | {14:N2} MiB | {15:N2} MiB |" -f
+            $item.row, ($item.default_ops / 1e6), ($item.original_ops / 1e6), ($item.p1_ops / 1e6),
+            ($item.inventory_ops / 1e6), ($item.membership_ops / 1e6),
             $item.original_vs_default_pct, $item.p1_vs_default_pct,
-            $item.membership_vs_default_pct, $item.membership_vs_p1_pct,
-            ($item.default_peak_kb / 1024.0), ($item.original_peak_kb / 1024.0),
-            ($item.p1_peak_kb / 1024.0), ($item.membership_peak_kb / 1024.0)))
+            $item.inventory_vs_default_pct, $item.membership_vs_default_pct,
+            $item.membership_vs_p1_pct, ($item.default_peak_kb / 1024.0),
+            ($item.original_peak_kb / 1024.0), ($item.p1_peak_kb / 1024.0),
+            ($item.inventory_peak_kb / 1024.0), ($item.membership_peak_kb / 1024.0)))
     }
     Set-Content -Encoding UTF8 -Path (Join-Path $TraceDir "summary.md") -Value $Markdown
     $Summary | Format-Table -AutoSize

@@ -33,6 +33,10 @@ Current direction:
   membership also failed the xorshift controls. Redis-like R5 is positive,
   but the recovery family is closed without default promotion. HZ12 reclaim
   remains separate evidence; do not merge cores.
+  HZ8 SmallTransitionInventory-L1 is the active small-front candidate. Its
+  owner-local transition publication recovers the Windows LCG pressure rows
+  while keeping all xorshift rows within -3%. Windows behavior is research GO;
+  public default remains HOLD pending native Linux and application-like gates.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
@@ -53,10 +57,8 @@ Current strength:
 HZ8 active orientation:
   hakozuna-hz8/current_task.md
   hakozuna-hz8/README.md
-HZ9 archived orientation:
-  hakozuna-hz9/README.md
-HZ10 next-substrate orientation:
-  hakozuna-hz10/README.md
+HZ9 archived orientation: hakozuna-hz9/README.md
+HZ10 next-substrate orientation: hakozuna-hz10/README.md
   hakozuna-hz10/docs/HZ10_LOCAL_PAGE_SUBSTRATE_TARGET.md
 HZ11 speed-first orientation:
   hakozuna-hz11/README.md
@@ -65,10 +67,9 @@ HZ12 advisory-ownership orientation:
   hakozuna-hz12/README.md
   hakozuna-hz12/docs/HZ12_CHARTER_L0.md
   hakozuna-hz12/docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
-HZ8 integration roadmap:
-  hakozuna-hz8/docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
+HZ8 integration roadmap: hakozuna-hz8/docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
 
-Frozen HZ6 reference: hakozuna-hz6/docs/current_task.md
+HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```
 ## Rules
 

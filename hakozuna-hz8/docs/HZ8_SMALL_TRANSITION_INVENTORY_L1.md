@@ -9,7 +9,8 @@ status:
   L1-A local behavior implemented
   L1-B normal-owner remote collection implemented
   correctness smoke GO
-  performance/default gate pending
+  Windows mixed behavior GO
+  cross-platform default HOLD
 
 next experiment:
   SmallTransitionInventory-L1
@@ -57,6 +58,49 @@ zero duplicate insertions and zero pop rejections. Single-run mixed samples
 were roughly neutral-to-slightly-negative and had lower peak RSS, but they are
 not a performance gate; paired fresh-process Windows/Linux rows remain
 required.
+
+The first Windows implementation exposed one avoidable round trip: a local
+free could publish a newly available span only for the next allocation to pop
+it immediately. The behavior sibling now directly activates that span when
+the current active span is exhausted. This remains owner-local and does not
+change slot, route, or remote-pending authority.
+
+## Windows Behavior Gate
+
+Fresh-process paired R5 on 2026-07-14 produced the following medians after the
+direct-activation fix. These are promotion evidence, not public headline rows.
+
+| Trace / row | Default | Inventory | Delta | Peak RSS default -> inventory |
+|---|---:|---:|---:|---:|
+| LCG balanced | 52.34M | 272.75M | +421.14% | 789.58 -> 52.53 MiB |
+| LCG wide_ws | 58.33M | 159.42M | +173.33% | 427.11 -> 96.29 MiB |
+| LCG larger_sizes | 21.15M | 29.66M | +40.22% | 297.45 -> 55.16 MiB |
+| xorshift balanced | 200.85M | 205.26M | +2.20% | 30.90 -> 30.79 MiB |
+| xorshift wide_ws | 152.03M | 152.11M | +0.06% | 53.74 -> 53.29 MiB |
+| xorshift larger_sizes | 28.28M | 27.63M | -2.28% | 39.32 -> 40.56 MiB |
+
+Fixed 8K/16K/32K xorshift controls were `-0.90% / +2.57% / -0.84%`.
+Thus every xorshift throughput row remained inside the `-3%` gate while the
+LCG source-pressure shape improved substantially.
+
+The focused Windows MT remote R5 was `131.75M -> 127.07M` (`-3.56%`) with
+median peak RSS `18.63 -> 19.88 MiB` (about `+6.7%`). Actual remote ratios also
+varied across runs. The mechanism is therefore a strong Windows research GO,
+but remains default HOLD pending an application-like gate and native Linux
+confirmation; the remote RSS result is outside the current `+5%` promotion
+line.
+
+Windows Redis-like R20 removed the noisy RANDOM regression seen in the first
+R5. The stable medians were SET `-1.3%`, GET `+4.7%`, LPUSH `+9.0%`, LPOP
+`+10.0%`, and RANDOM `+0.3%`; median peak RSS changed `16.54 -> 16.33 MiB`.
+The application-like Windows gate therefore passes.
+
+A WSL2 preliminary gate is intentionally not a native-Linux promotion result.
+It nevertheless reproduced the two-sided signal: LCG balanced improved
+`2.55M -> 42.94M` and peak RSS fell about `773 -> 53 MiB`, while xorshift
+balanced changed `64.36M -> 61.91M` (`-3.8%`) and peak RSS rose about `9.4%`.
+Native Ubuntu must decide whether that boundary is a WSL artifact or a shared
+regression.
 
 ## Evidence
 
@@ -147,7 +191,9 @@ The existing validation and slot publication order remain unchanged.
 5. If old_head was empty and bump is exhausted, the span changed from
    exhausted to available.
 6. If not already indexed, push the span once into the owner-local inventory.
-7. Preserve the current active span; do not replace it with the freed span.
+7. If the current active span is exhausted, hand the newly available span
+   directly to `active_spans` without an inventory round trip.
+8. Otherwise preserve the current active span and publish the freed span once.
 ```
 
 The transition predicate prevents every free from becoming publication work.
@@ -210,6 +256,7 @@ transition_pop_reject
 transition_depth_current
 transition_depth_max
 transition_remote_publish
+transition_direct_activate
 transition_adoption_publish
 transition_exit_clear
 ```

@@ -2,6 +2,7 @@ param(
     [string]$OutputDir,
     [int]$Runs = 5,
     [int]$TimeoutSeconds = 60,
+    [string[]]$Allocators,
     [switch]$IncludeHz6CapacityControls,
     [switch]$IncludeHz8Research,
     [switch]$ContinueOnFailure
@@ -26,6 +27,7 @@ $Executables = @(
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz5_policy.exe") },
     @{ Name = "hz8"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8.exe") },
     @{ Name = "hz8-small-partial-transition-only"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_small_partial_transition_only.exe"); Hz8Research = $true },
+    @{ Name = "hz8-small-transition-inventory"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_small_transition_inventory.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-rollback"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_v2.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_r3.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_target_dispatch.exe"); Hz8Research = $true },
@@ -41,6 +43,16 @@ $Executables = @(
 
 if (-not $IncludeHz8Research) {
     $Executables = @($Executables | Where-Object { -not $_.Hz8Research })
+}
+
+if ($Allocators -and $Allocators.Count -gt 0) {
+    $wanted = @($Allocators | ForEach-Object { $_ -split ',' } |
+        ForEach-Object { $_.Trim() } | Where-Object { $_ })
+    $selected = @($Executables | Where-Object { $wanted -contains $_.Name })
+    if ($selected.Count -ne $wanted.Count) {
+        throw "Unknown or duplicate allocator in: $($wanted -join ', ')"
+    }
+    $Executables = $selected
 }
 
 if ($IncludeHz6CapacityControls) {
@@ -67,7 +79,12 @@ if ($IncludeHz6CapacityControls) {
 }
 
 if ($Executables | Where-Object { -not (Test-Path $_.Path) }) {
-    & $BuildScript -IncludeHz8Research:$IncludeHz8Research
+    $hz8Only = ($Executables | Where-Object { $_.Name -notlike "hz8*" }).Count -eq 0
+    if ($hz8Only) {
+        & $BuildScript -IncludeHz8Research:$IncludeHz8Research -RequestedHz8Variants $wanted
+    } else {
+        & $BuildScript -IncludeHz8Research:$IncludeHz8Research
+    }
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_redis_workload_suite.ps1 failed with exit code $LASTEXITCODE"
     }

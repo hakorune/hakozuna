@@ -15,6 +15,7 @@ typedef struct H8SmallTransitionInventoryStats {
   uint64_t pop_hit;
   uint64_t pop_reject;
   uint64_t remote_push;
+  uint64_t direct_activate;
   uint64_t reset;
   uint64_t depth_max;
 } H8SmallTransitionInventoryStats;
