@@ -116,28 +116,30 @@ static void ring_destroy(RemoteRing* ring) {
     ring->tail = 0;
 }
 
+static LONG atomic_load_long(volatile LONG* value) {
+    return InterlockedCompareExchange(value, 0, 0);
+}
+
 static int ring_push(RemoteRing* ring, void* ptr) {
-    LONG tail = ring->tail;
-    LONG head = ring->head;
+    LONG tail = atomic_load_long(&ring->tail);
+    LONG head = atomic_load_long(&ring->head);
     if ((uint32_t)(tail - head) >= ring->capacity) {
         return 0;
     }
     ring->items[(uint32_t)tail % ring->capacity] = ptr;
-    MemoryBarrier();
-    ring->tail = tail + 1;
+    InterlockedExchange(&ring->tail, tail + 1);
     return 1;
 }
 
 static void* ring_pop(RemoteRing* ring) {
-    LONG head = ring->head;
-    LONG tail = ring->tail;
+    LONG head = atomic_load_long(&ring->head);
+    LONG tail = atomic_load_long(&ring->tail);
     void* ptr;
     if (head == tail) {
         return NULL;
     }
     ptr = ring->items[(uint32_t)head % ring->capacity];
-    MemoryBarrier();
-    ring->head = head + 1;
+    InterlockedExchange(&ring->head, head + 1);
     return ptr;
 }
 
@@ -215,12 +217,18 @@ static unsigned __stdcall bench_thread(void* arg) {
         InterlockedExchange(&ts->producer_done[ts->id], 1);
         do {
             drain_remote(ts);
-            if (ts->producer_done[producer] == 0 ||
-                ts->recv_ring->head != ts->recv_ring->tail) {
+            if (atomic_load_long(&ts->producer_done[producer]) == 0 ||
+                atomic_load_long(&ts->recv_ring->head) !=
+                    atomic_load_long(&ts->recv_ring->tail) ||
+                atomic_load_long(&ts->send_ring->head) !=
+                    atomic_load_long(&ts->send_ring->tail)) {
                 SwitchToThread();
             }
-        } while (ts->producer_done[producer] == 0 ||
-                 ts->recv_ring->head != ts->recv_ring->tail);
+        } while (atomic_load_long(&ts->producer_done[producer]) == 0 ||
+                 atomic_load_long(&ts->recv_ring->head) !=
+                     atomic_load_long(&ts->recv_ring->tail) ||
+                 atomic_load_long(&ts->send_ring->head) !=
+                     atomic_load_long(&ts->send_ring->tail));
     } else {
         drain_remote(ts);
     }

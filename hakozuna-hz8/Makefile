@@ -4,7 +4,7 @@
 .PHONY: preload-v2-rollback smoke-v2-rollback safety-stress-v2-rollback bench-release-v2-rollback general-medium-default-gate preload-page8k-r3 smoke-page8k-r3 smoke-page8k-api-r3 safety-stress-page8k-r3 bench-release-page8k-r3 preload-page8k-r3-target-dispatch smoke-page8k-r3-target-dispatch smoke-page8k-api-r3-target-dispatch smoke-page8k-api-r3-target-dispatch-diag safety-stress-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch bench-release-page8k-r3-target-dispatch-diag bench-release-page-general preload-page-general-entry-boundary smoke-page-general-entry-boundary smoke-page-general-entry-boundary-api safety-stress-page-general-entry-boundary bench-release-page-general-entry-boundary page-general-entry-boundary-gate smoke-page8k-r3-unified-domain-shadow safety-stress-page8k-r3-unified-domain-shadow bench-release-page8k-r3-unified-domain-shadow preload-page8k-r3-unified-domain-kind smoke-page8k-r3-unified-domain-kind safety-stress-page8k-r3-unified-domain-kind bench-release-page8k-r3-unified-domain-kind smoke-page8k-r3-unified-domain-stable safety-stress-page8k-r3-unified-domain-stable bench-release-page8k-r3-unified-domain-stable smoke-page8k-r3-unified-page8k-record safety-stress-page8k-r3-unified-page8k-record bench-release-page8k-r3-unified-page8k-record smoke-page8k-r3-unified-medium-record safety-stress-page8k-r3-unified-medium-record bench-release-page8k-r3-unified-medium-record smoke-page8k-r3-owner-witness safety-stress-page8k-r3-owner-witness bench-release-page8k-r3-owner-witness preload-page8k-range4097 smoke-page8k-range4097 safety-stress-page8k-range4097 bench-release-page8k-range4097 audit-fixed8k-path
 .PHONY: preload-small-available4k smoke-small-available4k safety-stress-small-available4k bench-release-small-available4k
 .PHONY: preload-small-available2k4k smoke-small-available2k4k safety-stress-small-available2k4k bench-release-small-available2k4k
-.PHONY: preload-small-partial-depot preload-small-partial-transition-only preload-small-partial-cold-activate preload-small-partial-hint1 preload-small-partial-cold-free smoke-small-partial-depot smoke-small-partial-transition-only smoke-small-partial-cold-activate smoke-small-partial-hint1 smoke-small-partial-cold-free safety-stress-small-partial-depot safety-stress-small-partial-transition-only safety-stress-small-partial-cold-activate safety-stress-small-partial-hint1 safety-stress-small-partial-cold-free bench-release-small-partial-depot bench-release-small-partial-depot-diag bench-release-small-partial-transition-only bench-release-small-partial-transition-only-diag bench-release-small-partial-cold-activate bench-release-small-partial-cold-activate-diag bench-release-small-partial-hint1 bench-release-small-partial-hint1-diag bench-release-small-partial-cold-free bench-release-small-partial-cold-free-diag small-partial-depot-gate small-partial-recovery-gate small-transition-inventory-gate small-transition-inventory-redis-gate small-transition-inventory-final-gate preload-small-transition-inventory smoke-small-transition-inventory safety-stress-small-transition-inventory bench-release-small-transition-inventory bench-release-small-transition-inventory-diag bench-release-post-rss-control bench-release-small-transition-inventory-post-rss-control
+.PHONY: preload-small-partial-depot preload-small-partial-transition-only preload-small-partial-cold-activate preload-small-partial-hint1 preload-small-partial-cold-free smoke-small-partial-depot smoke-small-partial-transition-only smoke-small-partial-cold-activate smoke-small-partial-hint1 smoke-small-partial-cold-free safety-stress-small-partial-depot safety-stress-small-partial-transition-only safety-stress-small-partial-cold-activate safety-stress-small-partial-hint1 safety-stress-small-partial-cold-free bench-release-small-partial-depot bench-release-small-partial-depot-diag bench-release-small-partial-transition-only bench-release-small-partial-transition-only-diag bench-release-small-partial-cold-activate bench-release-small-partial-cold-activate-diag bench-release-small-partial-hint1 bench-release-small-partial-hint1-diag bench-release-small-partial-cold-free bench-release-small-partial-cold-free-diag small-partial-depot-gate small-partial-recovery-gate small-transition-inventory-gate small-transition-inventory-redis-gate small-transition-inventory-final-gate preload-small-transition-inventory preload-pre-transition-rollback smoke-small-transition-inventory smoke-pre-transition-rollback safety-stress-small-transition-inventory safety-stress-pre-transition-rollback bench-release-small-transition-inventory bench-release-small-transition-inventory-diag bench-release-post-rss-control bench-release-pre-transition-post-rss-control bench-release-small-transition-inventory-post-rss-control
 .NOTPARALLEL: clean
 
 CC ?= gcc
@@ -18,7 +18,8 @@ BENCH_ATTR_CFLAGS := -DH8_BENCH_ATTRIBUTION
 MEDIUM_BUDGET_CFLAGS ?= -DH8_MEDIUM_BUDGET_REJECT_LAZY_PURGE
 MEDIUM_COLLECT_CFLAGS ?=
 HZ8_V2_ROLLBACK_CFLAGS := $(MEDIUM_BUDGET_CFLAGS) -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_L1 -DH8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT=4 -DH8_MEDIUM_CAPACITY_COLLECT_BUDGET_L1 -DH8_MEDIUM_KEEP_REFILL_EMPTY_L1 -DH8_REMOTE_SPAN_LEASE_PUBLISH_L1 -DH8_REMOTE_TRANSITION_BACKOFF_L1 -DH8_REUSABLE_SPAN_MAGAZINE_L1=1
-HZ8_DEFAULT_CFLAGS := $(HZ8_V2_ROLLBACK_CFLAGS) -DH8_MEDIUM_PAGE8K_REMOTE_L1=1 -DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1 -DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1 -DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1 -DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1
+HZ8_PRE_TRANSITION_DEFAULT_CFLAGS := $(HZ8_V2_ROLLBACK_CFLAGS) -DH8_MEDIUM_PAGE8K_REMOTE_L1=1 -DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1 -DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1 -DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1 -DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1
+HZ8_DEFAULT_CFLAGS := $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) -DH8_SMALL_TRANSITION_INVENTORY_L1=1
 HZ8_PAGE8K_R3_CFLAGS := $(HZ8_V2_ROLLBACK_CFLAGS) -DH8_MEDIUM_PAGE8K_REMOTE_L1=1 -DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1
 HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS := $(HZ8_PAGE8K_R3_CFLAGS) -DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1
 HZ8_PAGE_GENERAL_CFLAGS := $(HZ8_PAGE8K_R3_TARGET_DISPATCH_CFLAGS) -DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1
@@ -32,12 +33,12 @@ HZ8_OWNER_WITNESS_CFLAGS := $(HZ8_UNIFIED_PAGE8K_RECORD_CFLAGS) -DH8_UNIFIED_MED
 HZ8_PAGE8K_RANGE4097_CFLAGS := $(HZ8_PAGE8K_R3_CFLAGS) -DH8_MEDIUM_PAGE8K_RANGE4097_L1=1
 HZ8_SMALL_AVAILABLE4K_CFLAGS := $(HZ8_V2_ROLLBACK_CFLAGS) -DH8_SMALL_AVAILABLE_INDEX_L1=1
 HZ8_SMALL_AVAILABLE2K4K_CFLAGS := $(HZ8_SMALL_AVAILABLE4K_CFLAGS) -DH8_SMALL_AVAILABLE_CLASS_MASK=0x180u
-HZ8_SMALL_PARTIAL_DEPOT_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1
+HZ8_SMALL_PARTIAL_DEPOT_CFLAGS := $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) -DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1
 HZ8_SMALL_PARTIAL_TRANSITION_ONLY_CFLAGS := $(HZ8_SMALL_PARTIAL_DEPOT_CFLAGS) -DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1
 HZ8_SMALL_PARTIAL_COLD_ACTIVATE_CFLAGS := $(HZ8_SMALL_PARTIAL_TRANSITION_ONLY_CFLAGS) -DH8_SMALL_PARTIAL_COLD_ACTIVATE_L1B=1
 HZ8_SMALL_PARTIAL_HINT1_CFLAGS := $(HZ8_SMALL_PARTIAL_COLD_ACTIVATE_CFLAGS) -DH8_SMALL_PARTIAL_TRANSITION_HINT1_L1C=1
 HZ8_SMALL_PARTIAL_COLD_FREE_CFLAGS := $(HZ8_SMALL_PARTIAL_TRANSITION_ONLY_CFLAGS) -DH8_SMALL_PARTIAL_COLD_INACTIVE_FREE_L1D=1
-HZ8_SMALL_TRANSITION_INVENTORY_CFLAGS := $(HZ8_DEFAULT_CFLAGS) -DH8_SMALL_TRANSITION_INVENTORY_L1=1
+HZ8_SMALL_TRANSITION_INVENTORY_CFLAGS := $(HZ8_DEFAULT_CFLAGS)
 HZ8_LARGE_DIRECT_DEFAULT_CFLAGS := $(HZ8_V2_ROLLBACK_CFLAGS) -DH8_LARGE_DIRECT_OWNED_L1
 HZ8_LARGE_DIRECT_MMAP_CFLAGS := $(HZ8_LARGE_DIRECT_DEFAULT_CFLAGS) -DH8_LARGE_DIRECT_MMAP_PAYLOAD_L1
 HZ8_LARGE_DIRECT_PURGE_CACHE_CFLAGS := $(HZ8_LARGE_DIRECT_MMAP_CFLAGS) -DH8_LARGE_DIRECT_PURGE_CACHE_L1
@@ -86,6 +87,8 @@ preload-small-partial-cold-free: $(ROOT)/libhakozuna_hz8_preload_small_partial_c
 
 preload-small-transition-inventory: $(ROOT)/libhakozuna_hz8_preload_small_transition_inventory.so
 
+preload-pre-transition-rollback: $(ROOT)/libhakozuna_hz8_preload_pre_transition_rollback.so
+
 preload-page8k-r3-target-dispatch: $(ROOT)/libhakozuna_hz8_preload_page8k_r3_target_dispatch.so
 
 preload-page-general-entry-boundary: $(ROOT)/libhakozuna_hz8_preload_page_general_entry_boundary.so
@@ -124,6 +127,8 @@ smoke-small-partial-hint1: $(ROOT)/h8_smoke_small_partial_hint1
 smoke-small-partial-cold-free: $(ROOT)/h8_smoke_small_partial_cold_free
 
 smoke-small-transition-inventory: $(ROOT)/h8_smoke_small_transition_inventory
+
+smoke-pre-transition-rollback: $(ROOT)/h8_smoke_pre_transition_rollback
 
 smoke-page8k-r3-target-dispatch: $(ROOT)/h8_smoke_page8k_r3_target_dispatch
 
@@ -182,6 +187,8 @@ safety-stress-small-partial-hint1: $(ROOT)/h8_safety_stress_small_partial_hint1
 safety-stress-small-partial-cold-free: $(ROOT)/h8_safety_stress_small_partial_cold_free
 
 safety-stress-small-transition-inventory: $(ROOT)/h8_safety_stress_small_transition_inventory
+
+safety-stress-pre-transition-rollback: $(ROOT)/h8_safety_stress_pre_transition_rollback
 
 safety-stress-page8k-r3-target-dispatch: $(ROOT)/h8_safety_stress_page8k_r3_target_dispatch
 
@@ -468,6 +475,9 @@ remote-micro-release: $(ROOT)/h8_remote_micro_release
 $(ROOT)/libhakozuna_hz8_preload.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/libhakozuna_hz8_preload_pre_transition_rollback.so: $(SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/libhakozuna_hz8_preload_v2_rollback.so: $(SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_V2_ROLLBACK_CFLAGS) $(INC) -DH8_BUILD_LD_PRELOAD -shared -o $@ $(SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -567,6 +577,9 @@ $(ROOT)/h8_smoke: $(SMOKE_SRC) $(HEADERS)
 $(ROOT)/h8_smoke_v2_rollback: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_V2_ROLLBACK_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
+$(ROOT)/h8_smoke_pre_transition_rollback: $(SMOKE_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
+
 $(ROOT)/h8_smoke_reusable_span_mag16: $(SMOKE_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_V2_ROLLBACK_CFLAGS) $(INC) -o $@ $(SMOKE_SRC) $(LDFLAGS) $(LDLIBS)
 
@@ -650,6 +663,9 @@ $(ROOT)/h8_safety_stress: $(SAFETY_STRESS_SRC) $(HEADERS)
 
 $(ROOT)/h8_safety_stress_v2_rollback: $(SAFETY_STRESS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_V2_ROLLBACK_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_safety_stress_pre_transition_rollback: $(SAFETY_STRESS_SRC) $(HEADERS)
+	$(CC) $(DEBUG_CFLAGS) $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_safety_stress_reusable_span_mag16: $(SAFETY_STRESS_SRC) $(HEADERS)
 	$(CC) $(DEBUG_CFLAGS) $(HZ8_V2_ROLLBACK_CFLAGS) $(INC) -o $@ $(SAFETY_STRESS_SRC) $(LDFLAGS) $(LDLIBS)
@@ -875,6 +891,9 @@ $(ROOT)/h8_bench_release_small_transition_inventory_diag: $(SRC) $(ROOT)/bench/h
 
 $(ROOT)/h8_bench_release_post_rss_control: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_DEFAULT_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_BENCH_POST_RSS_TRIM_CONTROL=1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(LDFLAGS) $(LDLIBS)
+
+$(ROOT)/h8_bench_release_pre_transition_post_rss_control: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(HEADERS)
+	$(CC) $(CFLAGS) $(HZ8_PRE_TRANSITION_DEFAULT_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_BENCH_POST_RSS_TRIM_CONTROL=1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(LDFLAGS) $(LDLIBS)
 
 $(ROOT)/h8_bench_release_small_transition_inventory_post_rss_control: $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(HEADERS)
 	$(CC) $(CFLAGS) $(HZ8_SMALL_TRANSITION_INVENTORY_CFLAGS) $(MEDIUM_COLLECT_CFLAGS) $(INC) -DH8_BENCH_POST_RSS_TRIM_CONTROL=1 -o $@ $(SRC) $(ROOT)/bench/h8_bench.c $(BENCH_SUPPORT_SRC) $(BENCH_REPORT_SRC) $(BENCH_WORKERS_SRC) $(BENCH_POST_RSS_CONTROL_SRC) $(LDFLAGS) $(LDLIBS)

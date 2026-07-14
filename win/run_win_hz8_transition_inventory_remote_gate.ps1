@@ -16,13 +16,13 @@ if (-not $OutputDir) {
 New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
 $Executables = @{
-    default = Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8.exe"
-    inventory = Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_small_transition_inventory.exe"
+    default = Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8_pre_transition.exe"
+    inventory = Join-Path $SuiteDir "bench_random_mixed_mt_remote_hz8.exe"
 }
 
 if (-not $SkipBuild) {
     & $BuildScript -OnlyHz8 -IncludeHz8Research `
-        -RequestedHz8Variants @("hz8", "hz8-small-transition-inventory")
+        -RequestedHz8Variants @("hz8-pre-transition-rollback", "hz8")
     if ($LASTEXITCODE -ne 0) {
         throw "build_win_mt_remote_suite.ps1 failed with exit code $LASTEXITCODE"
     }
@@ -68,31 +68,22 @@ function Invoke-CapturedProcess {
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $psi
     [void]$process.Start()
-    $peakBytes = [Int64]0
-    $deadline = [DateTime]::UtcNow.AddSeconds($TimeoutSeconds)
-    while (-not $process.HasExited -and [DateTime]::UtcNow -lt $deadline) {
-        try {
-            $process.Refresh()
-            $peakBytes = [Math]::Max($peakBytes, $process.WorkingSet64)
-            $peakBytes = [Math]::Max($peakBytes, $process.PeakWorkingSet64)
-        } catch {
-        }
-        Start-Sleep -Milliseconds 1
-    }
-    if (-not $process.HasExited) {
+    $stdoutTask = $process.StandardOutput.ReadToEndAsync()
+    $stderrTask = $process.StandardError.ReadToEndAsync()
+    if (-not $process.WaitForExit($TimeoutSeconds * 1000)) {
         Stop-Process -Id $process.Id -Force -ErrorAction SilentlyContinue
         $process.WaitForExit()
         throw "Benchmark timed out after $TimeoutSeconds seconds: $FilePath"
     }
-    $stdout = $process.StandardOutput.ReadToEnd()
-    $stderr = $process.StandardError.ReadToEnd()
+    $stdout = $stdoutTask.Result
+    $stderr = $stderrTask.Result
     $process.WaitForExit()
     if ($process.ExitCode -ne 0) {
         throw "Benchmark failed with exit code $($process.ExitCode): $FilePath`n$stdout`n$stderr"
     }
     return @{
         Text = ($stdout + "`n" + $stderr)
-        ExternalPeakKb = [UInt64][Math]::Ceiling($peakBytes / 1024.0)
+        ExternalPeakKb = 0
     }
 }
 
@@ -225,7 +216,8 @@ $Summary.Add(('- paired median throughput delta: `{0:+0.00;-0.00;0.00}%`' -f $pa
 $Summary.Add(('- paired median post/peak/private deltas: `{0:+0.00;-0.00;0.00}% / {1:+0.00;-0.00;0.00}% / {2:+0.00;-0.00;0.00}%`' -f $pairedPost, $pairedPeak, $pairedPrivate))
 $Summary.Add(('- promotion gate: `{0}`' -f $(if ($GatePass) { "PASS" } else { "HOLD" })))
 $Summary.Add("")
-$Summary.Add("Artifacts: `$(Split-Path -Leaf $CsvPath)`, `$(Split-Path -Leaf $RawPath)`")
+$Summary.Add(('Artifacts: `{0}`, `{1}`' -f
+    (Split-Path -Leaf $CsvPath), (Split-Path -Leaf $RawPath)))
 
 Set-Content -Path $SummaryPath -Value $Summary -Encoding UTF8
 Write-Host "Wrote summary: $SummaryPath"

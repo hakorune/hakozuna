@@ -4,6 +4,7 @@ This page is the public pointer list for dated benchmark summaries.
 
 ## Current Summaries
 
+- [HZ8 SmallTransitionInventory matched-remote Windows final gate, 2026-07-14](./windows/paper/20260714_153251_hz8_transition_inventory_matched_remote.md)
 - [HZ8 Small Transition Inventory native Ubuntu x86_64 gate, 2026-07-14](./linux/HZ8_SMALL_TRANSITION_INVENTORY_20260714.md)
 - [HZ8 Small Partial Recovery Windows Gate, 2026-07-13](./windows/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Depot trace parity and recovery, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)

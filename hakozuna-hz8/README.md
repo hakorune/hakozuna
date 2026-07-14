@@ -56,7 +56,7 @@ docs/HZ8_LINUX_LANE_STATUS_L1.md
 
 ```text
 current public line:
-  HZ8 / KeepRefill + remote span-lease publish + Mag16
+  HZ8 / KeepRefill + remote span-lease publish + SmallTransitionInventory
   + GeneralMediumPage + EntryBoundary-L1A
 
 cross-platform rollback:
@@ -72,7 +72,8 @@ research lane registry:
   docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   docs/HZ8_LINUX_LANE_STATUS_L1.md
   HZ8 is the Linux/Windows public and recommended default
-  cross-platform default: Mag16 + GeneralMediumPage + EntryBoundary-L1A
+  cross-platform default: SmallTransitionInventory + GeneralMediumPage + EntryBoundary-L1A
+  immediate rollback: hz8-pre-transition-rollback
   rollback: hz8-v2-rollback
   docs/HZ8_REUSABLE_SPAN_MAGAZINE_L1.md
   promoted to the cross-platform default after Linux/Windows gates
@@ -218,7 +219,8 @@ The HZ8 paper line keeps the public default conservative:
 
 ```text
 default:
-  HZ8 / KeepRefill + Mag16 + GeneralMediumPage + EntryBoundary
+  HZ8 / KeepRefill + SmallTransitionInventory
+  + GeneralMediumPage + EntryBoundary
 
 opt-in evidence:
   LargeDirectOwned

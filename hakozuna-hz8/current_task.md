@@ -6,16 +6,15 @@ Updated: 2026-07-14
 
 ```text
 public default:
-  HZ8 / Mag16 / KeepRefill / GeneralMediumPage + EntryBoundary
+  HZ8 / SmallTransitionInventory / KeepRefill
+  / GeneralMediumPage + EntryBoundary
 
 rollback:
+  hz8-pre-transition-rollback
   hz8-v2-rollback
 
 active behavior box:
-  SmallTransitionInventory-L1 research sibling
-  L1-A local behavior and L1-B normal-owner remote collect are implemented
-  Windows mixed behavior and correctness are research GO
-  default HOLD pending native Linux and application-like gates
+  none; SmallTransitionInventory-L1 promoted shared default
 
 active diagnostic box:
   none
@@ -29,11 +28,11 @@ latest diagnostic closeout:
   LCG weakness = class-local empty inventory -> span commit (existing P1 evidence)
   xorshift weakness = 15-21% Mag pop/hit churn, not source commit
 
-next gate:
+latest promotion:
   SmallTransitionInventory-L1
-  Windows LCG/xorshift/fixed-small complete
-  remote R5 speed -3.56%, peak RSS +6.7%
-  Redis-like R20 passes; native Linux confirmation remains
+  Linux xorshift/LCG/Redis and trim-control gates pass
+  Windows matched-remote Blocks=20 passes 40/40 admissible pairs
+  paired throughput +1.63%, post/peak +0.16%, private -0.86%
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
@@ -46,11 +45,12 @@ latest closeout:
 
 | Bucket | Lane | Disposition |
 |---|---|---|
-| selected | `hz8` | shared Linux/Windows public default |
+| selected | `hz8` | shared default with SmallTransitionInventory-L1 |
+| rollback | `hz8-pre-transition-rollback` | immediate pre-promotion Mag16 control |
 | rollback | `hz8-v2-rollback` | explicit comparison and emergency rollback |
 | research | `hz8-v2-mag32` | larger/local opt-in; global default HOLD |
 | research | `hz8-small-partial-transition-only` | P1 recovery evidence; default HOLD |
-| research | `hz8-small-transition-inventory` | Windows behavior GO; shared default HOLD |
+| compatibility | `hz8-small-transition-inventory` | alias of the promoted default |
 | research | `LargeDirectOwned` | cross128 profile evidence; not default |
 | diagnostic | Page8K/domain/stats shadows | counter-bearing evidence; never speed rows |
 | archive | P2/P3/P4, tier membership, owner witness, old cache ladders | NO-GO reproduction only |

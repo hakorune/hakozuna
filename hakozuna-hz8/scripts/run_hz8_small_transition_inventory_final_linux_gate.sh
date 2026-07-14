@@ -5,11 +5,11 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 OUTDIR="${OUTDIR:-${ROOT}/bench_results/hz8_small_transition_inventory_final_$(date -u +%Y%m%dT%H%M%SZ)}"
 BLOCKS="${BLOCKS:-10}"
 WORK_SCALE="${WORK_SCALE:-10}"
-BASELINE="${ROOT}/h8_bench_release_post_rss_control"
+BASELINE="${ROOT}/h8_bench_release_pre_transition_post_rss_control"
 CANDIDATE="${ROOT}/h8_bench_release_small_transition_inventory_post_rss_control"
 
 mkdir -p "${OUTDIR}"
-make -C "${ROOT}" bench-release-post-rss-control \
+make -C "${ROOT}" bench-release-pre-transition-post-rss-control \
   bench-release-small-transition-inventory-post-rss-control \
   smoke-small-transition-inventory safety-stress-small-transition-inventory >/dev/null
 "${ROOT}/h8_smoke_small_transition_inventory" >"${OUTDIR}/smoke.log"
@@ -25,8 +25,8 @@ order=ABBA
 rows=xorshift_wide,lcg_wide
 settle_ms=100
 trim_control=malloc_trim(0)
-baseline_flags=HZ8_DEFAULT_CFLAGS,H8_BENCH_POST_RSS_TRIM_CONTROL
-candidate_flags=HZ8_DEFAULT_CFLAGS,H8_SMALL_TRANSITION_INVENTORY_L1,H8_BENCH_POST_RSS_TRIM_CONTROL
+baseline_flags=HZ8_PRE_TRANSITION_DEFAULT_CFLAGS,H8_BENCH_POST_RSS_TRIM_CONTROL
+candidate_flags=HZ8_DEFAULT_CFLAGS,H8_BENCH_POST_RSS_TRIM_CONTROL
 allocator_behavior_change=none
 environment=$(uname -a)
 EOF

@@ -7,7 +7,8 @@ promotion candidates, diagnostics, and closed experiments.
 
 | Lane | Status | Purpose |
 |---|---|---|
-| `hz8` | public default | KeepRefill + Mag16 plus GeneralMediumPage + EntryBoundary-L1A |
+| `hz8` | public default | KeepRefill + SmallTransitionInventory plus GeneralMediumPage + EntryBoundary-L1A |
+| `hz8-pre-transition-rollback` | immediate rollback | Previous Mag16 + GeneralMediumPage public behavior |
 | `hz8-v2-rollback` | research rollback | Previous KeepRefill + Mag16 behavior; excluded from normal runs |
 
 ## Candidate Lanes

@@ -48,15 +48,19 @@ function Invoke-Hz8AllocatorMatrixBuild {
         "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
         "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
     )
-    $Hz8DefaultFlags = @(
+    $Hz8PreTransitionDefaultFlags = @(
         "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
         "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
         "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
         "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
         "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
     )
+    $Hz8DefaultFlags = $Hz8PreTransitionDefaultFlags + @(
+        "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+    )
     $hz8Variants = @(
         @{ Name = "hz8"; Output = "bench_mixed_ws_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
+        @{ Name = "hz8-pre-transition-rollback"; Output = "bench_mixed_ws_hz8_pre_transition.exe"; ExtraFlags = $Hz8PreTransitionDefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_mixed_ws_hz8_v2.exe"; ExtraFlags = @() },
         @{
             Name = "hz8-v2-nomag"
@@ -313,14 +317,14 @@ function Invoke-Hz8AllocatorMatrixBuild {
         @{
             Name = "hz8-small-partial-depot"
             Output = "bench_mixed_ws_hz8_small_partial_depot.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1"
             )
         },
         @{
             Name = "hz8-small-partial-depot-diag"
             Output = "bench_mixed_ws_hz8_small_partial_depot_diag.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
             )
@@ -328,7 +332,7 @@ function Invoke-Hz8AllocatorMatrixBuild {
         @{
             Name = "hz8-small-partial-transition-only"
             Output = "bench_mixed_ws_hz8_small_partial_transition_only.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
             )
@@ -336,7 +340,7 @@ function Invoke-Hz8AllocatorMatrixBuild {
         @{
             Name = "hz8-small-partial-transition-only-diag"
             Output = "bench_mixed_ws_hz8_small_partial_transition_only_diag.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG=1"
@@ -345,22 +349,19 @@ function Invoke-Hz8AllocatorMatrixBuild {
         @{
             Name = "hz8-small-transition-inventory"
             Output = "bench_mixed_ws_hz8_small_transition_inventory.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
-                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
-            )
+            ExtraFlags = $Hz8DefaultFlags
         },
         @{
             Name = "hz8-small-transition-inventory-diag"
             Output = "bench_mixed_ws_hz8_small_transition_inventory_diag.exe"
             ExtraFlags = $Hz8DefaultFlags + @(
-                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1",
                 "/DH8_SMALL_TRANSITION_INVENTORY_DIAG=1"
             )
         },
         @{
             Name = "hz8-small-tier-membership"
             Output = "bench_mixed_ws_hz8_small_tier_membership.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
                 "/DH8_SMALL_TIER_MEMBERSHIP_L1=1"
@@ -369,7 +370,7 @@ function Invoke-Hz8AllocatorMatrixBuild {
         @{
             Name = "hz8-small-tier-membership-diag"
             Output = "bench_mixed_ws_hz8_small_tier_membership_diag.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1",
                 "/DH8_SMALL_TIER_MEMBERSHIP_L1=1",
@@ -642,7 +643,7 @@ function Invoke-Hz8AllocatorMatrixBuild {
             "/I$Hz8Root\include", "/I$Hz8Root\src"
         )
         $partialTestArgs += $Hz8CommonFlags
-        $partialTestArgs += $Hz8DefaultFlags
+        $partialTestArgs += $Hz8PreTransitionDefaultFlags
         $partialTestArgs += $partialTest.ExtraFlags
         $partialTestArgs += $Hz8Sources
         $partialTestArgs += (Join-Path $Hz8Root $partialTest.Source)

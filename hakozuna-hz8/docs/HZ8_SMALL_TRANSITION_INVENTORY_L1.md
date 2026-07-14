@@ -11,10 +11,11 @@ status:
   correctness smoke GO
   Windows mixed behavior GO
   native Ubuntu behavior/application GO
-  cross-platform default HOLD
+  Windows matched-remote final gate PASS
+  shared default GO
 
-next experiment:
-  SmallTransitionInventory-L1
+rollback:
+  hz8-pre-transition-rollback
 
 do not add:
   object cache
@@ -23,7 +24,7 @@ do not add:
   Mag16 plus a second publication path
 ```
 
-The next small-front experiment replaces the semantic role of Mag16 rather
+This small-front behavior replaces the semantic role of Mag16 rather
 than placing another cache in front of it. An inactive span is published only
 when it changes from exhausted to available. The existing per-span free list
 remains the sole authority for reusable objects.
@@ -84,12 +85,11 @@ Fixed 8K/16K/32K xorshift controls were `-0.90% / +2.57% / -0.84%`.
 Thus every xorshift throughput row remained inside the `-3%` gate while the
 LCG source-pressure shape improved substantially.
 
-The focused Windows MT remote R5 was `131.75M -> 127.07M` (`-3.56%`) with
+The earlier focused Windows MT remote R5 was `131.75M -> 127.07M` (`-3.56%`) with
 median peak RSS `18.63 -> 19.88 MiB` (about `+6.7%`). Actual remote ratios also
-varied across runs. The mechanism is therefore a strong Windows research GO,
-but remains default HOLD pending an application-like gate and native Linux
-confirmation; the remote RSS result is outside the current `+5%` promotion
-line.
+varied across runs. That noisy unmatched run originally held promotion. It is
+retained as design history and superseded by the matched-remote final gate
+below.
 
 Windows Redis-like R20 removed the noisy RANDOM regression seen in the first
 R5. The stable medians were SET `-1.3%`, GET `+4.7%`, LPUSH `+9.0%`, LPOP
@@ -396,7 +396,30 @@ promotion:
 ```
 
 Do not combine this lane with P1 or Mag16 behavior. Default Mag16 remains the
-rollback/control until promotion is complete.
+explicit pre-transition rollback/control.
+
+## Final Windows Gate
+
+The matched-remote runner was corrected to keep every origin owner alive until
+its outgoing ring was consumed. Before this fix, a consumer could free an
+object after the origin thread had already torn down; that benchmark lifecycle
+race affected both baseline and candidate. Each corrected binary then passed
+50 consecutive matched runs.
+
+Fresh-process A-B-B-A with `Blocks=20` produced 40/40 admissible pairs:
+
+| metric | pre-transition default | inventory default | paired delta |
+| --- | ---: | ---: | ---: |
+| throughput | 62.379M | 62.200M | +1.63% |
+| post working set | 13,460 KiB | 13,476 KiB | +0.16% |
+| peak working set | 13,720 KiB | 13,740 KiB | +0.16% |
+| private usage | 52,226 KiB | 52,980 KiB | -0.86% |
+
+Remote publication was exactly matched, fallback was zero, allocation failure
+was zero, and the promotion gate passed. Together with the native Linux final
+and Redis controls, this promotes `SmallTransitionInventory-L1` to the shared
+default. The diagnostic sibling remains separate and counter-free speed builds
+remain the public measurement surface.
 
 ## Acceptance
 

@@ -7,7 +7,7 @@ where the behavior contract is shared.
 
 | Lane | Build target | Status | Purpose |
 |---|---|---|---|
-| `hz8` / `hz8-general-medium-entry` | `preload` | public default | HZ8 v2 base plus exact 8K/16K/32K GeneralMediumPage and EntryBoundary-L1A |
+| `hz8` / `hz8-general-medium-entry` | `preload` | public default | SmallTransitionInventory plus exact 8K/16K/32K GeneralMediumPage and EntryBoundary-L1A |
 
 Artifact: `libhakozuna_hz8_preload.so`.
 
@@ -16,6 +16,7 @@ Artifact: `libhakozuna_hz8_preload.so`.
 | Lane | Build target | Status | Purpose |
 |---|---|---|---|
 | `hz8-v2-rollback` | `preload-v2-rollback` | immediate rollback | Previous KeepRefill + span-lease + Mag16 public behavior |
+| `hz8-pre-transition-rollback` | `preload-pre-transition-rollback` | immediate rollback | GeneralMedium default before transition-inventory promotion |
 | `hz8-v2-mag32` | `preload-reusable-span-mag32` | larger/local candidate | Global Mag32 capacity lane for explicit larger-size local workloads |
 | `hz8-small-partial-depot` | `preload-small-partial-depot` | Windows GO / Linux performance NO-GO | FULL-to-AVAILABLE same-owner small-span depot; explicit reproduction only |
 | `hz8-small-partial-transition-only` | `preload-small-partial-transition-only` | best recovery / HOLD default | Full depot with active-free metadata bypass; LCG GO, xorshift balanced `-3.45%` |

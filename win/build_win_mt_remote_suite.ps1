@@ -107,17 +107,21 @@ $Hz8CommonFlags = @(
     "/DH8_REMOTE_SPAN_LEASE_PUBLISH_L1=1",
     "/DH8_REMOTE_TRANSITION_BACKOFF_L1=1"
 )
-$Hz8DefaultFlags = @(
+$Hz8PreTransitionDefaultFlags = @(
     "/DH8_MEDIUM_PAGE8K_REMOTE_L1=1",
     "/DH8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1=1",
     "/DH8_MEDIUM_PAGE8K_TARGET_DISPATCH_L1=1",
     "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
     "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
 )
+$Hz8DefaultFlags = $Hz8PreTransitionDefaultFlags + @(
+    "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+)
 
 function Invoke-Hz8MtRemoteBuilds {
     $hz8Variants = @(
         @{ Name = "hz8"; Output = "bench_random_mixed_mt_remote_hz8.exe"; ExtraFlags = $Hz8DefaultFlags },
+        @{ Name = "hz8-pre-transition-rollback"; Output = "bench_random_mixed_mt_remote_hz8_pre_transition.exe"; ExtraFlags = $Hz8PreTransitionDefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_random_mixed_mt_remote_hz8_v2.exe"; ExtraFlags = @() },
         @{
             Name = "hz8-v2-nomag"
@@ -137,14 +141,14 @@ function Invoke-Hz8MtRemoteBuilds {
         @{
             Name = "hz8-small-partial-depot"
             Output = "bench_random_mixed_mt_remote_hz8_small_partial_depot.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1"
             )
         },
         @{
             Name = "hz8-small-partial-transition-only"
             Output = "bench_random_mixed_mt_remote_hz8_small_partial_transition_only.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
+            ExtraFlags = $Hz8PreTransitionDefaultFlags + @(
                 "/DH8_SMALL_PARTIAL_TRANSITION_DEPOT_L1=1",
                 "/DH8_SMALL_PARTIAL_TRANSITION_ONLY_L1B=1"
             )
@@ -152,9 +156,7 @@ function Invoke-Hz8MtRemoteBuilds {
         @{
             Name = "hz8-small-transition-inventory"
             Output = "bench_random_mixed_mt_remote_hz8_small_transition_inventory.exe"
-            ExtraFlags = $Hz8DefaultFlags + @(
-                "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
-            )
+            ExtraFlags = $Hz8DefaultFlags
         },
         @{
             Name = "hz8-medium-pageshadow"

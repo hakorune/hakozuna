@@ -10,7 +10,7 @@ Primary family:
 
 Current direction:
   HZ8 is the public recommended balanced allocator line. Current Linux and
-  Windows default is Mag16 + KeepRefill + GeneralMediumPage + EntryBoundary,
+  Windows default is SmallTransitionInventory + KeepRefill + GeneralMediumPage + EntryBoundary,
   with preload-surface and remote span-lease publish hardening. The previous
   HZ8-v2 behavior remains an explicit rollback/reproduction lane.
   HZ9 in hakozuna-hz9/ is now frozen archived throughput research evidence.
@@ -33,10 +33,9 @@ Current direction:
   membership also failed the xorshift controls. Redis-like R5 is positive,
   but the recovery family is closed without default promotion. HZ12 reclaim
   remains separate evidence; do not merge cores.
-  HZ8 SmallTransitionInventory-L1 is the active small-front candidate. Its
-  owner-local transition publication recovers the Windows LCG pressure rows
-  while keeping all xorshift rows within -3%. Windows behavior is research GO;
-  public default remains HOLD pending native Linux and application-like gates.
+  HZ8 SmallTransitionInventory-L1 is now the shared default. Native Linux
+  xorshift/LCG/Redis controls and Windows matched-remote Blocks=20 passed;
+  the prior Mag16 default remains an explicit rollback lane.
   Prior route-off/layout, remote-safe, and SlabPage variants are evidence only.
   Treat narrow HZ6 Windows appcap-only baselines as frozen reference evidence.
 Current strength:
