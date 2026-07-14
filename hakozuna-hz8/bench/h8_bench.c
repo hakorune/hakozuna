@@ -14,6 +14,9 @@
 #include "../src/h8_small_transition_inventory.h"
 #endif
 #include "h8_bench_support.h"
+#if defined(H8_BENCH_POST_RSS_TRIM_CONTROL)
+#include "h8_bench_post_rss_control.h"
+#endif
 
 #include <pthread.h>
 #include <stdio.h>
@@ -342,6 +345,11 @@ int main(int argc, char** argv) {
     H8MemorySample mem = h8_read_memory_sample();
     rss[run] = mem.rss_bytes;
     peak_rss[run] = mem.hwm_bytes;
+#if defined(H8_BENCH_POST_RSS_TRIM_CONTROL)
+    H8PostRssControl post_rss_control;
+    h8_bench_post_rss_control_run(&post_rss_control);
+    h8_bench_post_rss_control_print(run + 1, &post_rss_control);
+#endif
     span_lower_bound[run] = lower;
     upper1536_span_lower_bound[run] = upper1536_lower;
     upper1p5_span_lower_bound[run] = upper1p5_lower;

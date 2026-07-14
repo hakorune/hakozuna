@@ -121,6 +121,90 @@ MT remote result still misses both throughput and peak-RSS gates. Full results
 and reproduction commands are in
 `docs/benchmarks/linux/HZ8_SMALL_TRANSITION_INVENTORY_20260714.md`.
 
+## Final Gate L0 Design
+
+The remaining two HOLD signals are assigned to measurement-only boxes before
+any allocator behavior changes.
+
+### PostRssQuiescentTrimControl-L0
+
+Native Ubuntu `smaps` attribution showed that the wide post-RSS delta is not
+live HZ8 payload or an `H8Span` size change. `H8Span` is 192 bytes in both
+builds, and the HZ8 arena is already purged. The delta is free glibc heap left
+resident in eight per-thread arenas after worker join.
+
+The Linux control box therefore uses separate benchmark binaries and records:
+
+```text
+after worker join, outside throughput timing:
+  raw status + smaps_rollup snapshot
+  wait 100 ms
+  settled status + smaps_rollup snapshot
+  malloc_trim(0)
+  trim-control status + smaps_rollup snapshot
+```
+
+Each snapshot includes `VmRSS`, `RssAnon`, `RssFile`, `RssShmem`, `Rss`,
+`Pss`, `Private_Clean`, `Private_Dirty`, and `Anonymous`. The ordinary speed
+binary and runner do not call `malloc_trim` or parse `smaps_rollup`.
+
+This control is not product behavior. Calling `malloc_trim` from owner exit is
+NO-GO because it changes the process-global libc heap. A metadata slab is also
+out of scope unless trim-control proves a real live-metadata regression.
+
+### MatchedRemoteABBA-L0
+
+The first Windows MT remote R5 compared different work mixes: default actual
+remote/fallback was `79.08%/12.14%`, while inventory was `75.42%/16.20%`.
+Ring-full fallback feeds allocator speed back into the generated workload.
+
+The Windows control box adds an opt-in benchmark argument. In matched mode a
+producer that finds a full ring drains its receive ring and yields until the
+target pointer is published; it never converts that operation into a local
+free. The existing default mode retains fallback behavior unchanged.
+
+The focused runner uses fresh-process `A-B-B-A` blocks for only `hz8` and
+`hz8-small-transition-inventory`, and records exact remote sends, received
+frees, local frees, fallback frees, push waits, internal process memory, and
+external peak working set. A pair is admissible only when successful work
+counts match and allocation failures are zero.
+
+### L0 Acceptance
+
+```text
+Ubuntu wide xorshift and LCG:
+  throughput and peak RSS preserve the current result
+  trim-control candidate post <= default + max(5%, 128 KiB)
+  remaining Anonymous/Private_Dirty delta is reported, not hidden
+
+Windows matched remote:
+  at least 10 admissible pairs
+  throughput >= default -3%
+  post/peak/private usage <= default +5%
+  fallback = 0
+  remote/local/received counts match in every accepted pair
+
+all normal lanes:
+  byte-for-byte behavior selection unchanged
+```
+
+Only if a matched Windows regression remains should the next behavior box
+merge transition detection into the existing collector result. Remote-only
+direct-activation changes and pending-policy changes remain HOLD until that
+evidence exists.
+
+## Final Gate L0 Result
+
+Native Ubuntu ABBA BLOCKS=10 completed with the post-RSS control binaries.
+Xorshift wide was `-0.10%` throughput and `-1.01%` peak RSS; raw post RSS was
+`+7.49%`, but trim-control post RSS was `-34.17%`. Windows-LCG parity was
+`+201.90%` throughput and `-78.12%` peak RSS; raw post RSS was `+42.53%`,
+and trim-control post RSS was `-3.84%`. Both normalized trim guards passed.
+
+This closes the native Linux measurement HOLD without changing allocator
+behavior. The raw value remains visible, and the Windows matched-remote gate
+is still required before shared-default promotion.
+
 ## Evidence
 
 The counter-free small hot-pair audit showed that warmed HZ8 allocation/free is

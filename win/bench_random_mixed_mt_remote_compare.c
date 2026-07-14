@@ -15,6 +15,9 @@
 #endif
 #include <windows.h>
 #include <process.h>
+#include <psapi.h>
+
+#pragma comment(lib, "psapi.lib")
 
 typedef struct RemoteRing {
     void** items;
@@ -35,12 +38,15 @@ typedef struct ThreadState {
     void** slots;
     RemoteRing* send_ring;
     RemoteRing* recv_ring;
+    volatile LONG* producer_done;
+    uint32_t matched_remote;
     uint64_t ops;
     uint64_t allocs;
     uint64_t local_frees;
     uint64_t remote_sends;
     uint64_t remote_received_frees;
     uint64_t remote_fallback_frees;
+    uint64_t remote_push_waits;
     uint64_t alloc_failures;
 } ThreadState;
 
@@ -171,6 +177,13 @@ static unsigned __stdcall bench_thread(void* arg) {
             if (ts->threads > 1 && (rng_next(&seed) % 100u) < ts->remote_pct) {
                 if (ring_push(ts->send_ring, ptr)) {
                     ts->remote_sends++;
+                } else if (ts->matched_remote) {
+                    do {
+                        drain_remote(ts);
+                        ts->remote_push_waits++;
+                        SwitchToThread();
+                    } while (!ring_push(ts->send_ring, ptr));
+                    ts->remote_sends++;
                 } else {
                     bench_free(ptr);
                     ts->remote_fallback_frees++;
@@ -197,7 +210,20 @@ static unsigned __stdcall bench_thread(void* arg) {
         ts->ops++;
     }
 
-    drain_remote(ts);
+    if (ts->matched_remote) {
+        uint32_t producer = (ts->id + ts->threads - 1u) % ts->threads;
+        InterlockedExchange(&ts->producer_done[ts->id], 1);
+        do {
+            drain_remote(ts);
+            if (ts->producer_done[producer] == 0 ||
+                ts->recv_ring->head != ts->recv_ring->tail) {
+                SwitchToThread();
+            }
+        } while (ts->producer_done[producer] == 0 ||
+                 ts->recv_ring->head != ts->recv_ring->tail);
+    } else {
+        drain_remote(ts);
+    }
     hz_bench_allocator_thread_teardown();
     return 0;
 }
@@ -210,10 +236,12 @@ int main(int argc, char** argv) {
     uint32_t max_size = (argc > 5) ? parse_u32(argv[5], 2048u) : 2048u;
     uint32_t remote_pct = (argc > 6) ? parse_u32(argv[6], 90u) : 90u;
     uint32_t ring_slots = (argc > 7) ? parse_u32(argv[7], 65536u) : 65536u;
+    uint32_t matched_remote = (argc > 8) ? parse_u32(argv[8], 0u) : 0u;
 
     ThreadState* states = NULL;
     HANDLE* handles = NULL;
     RemoteRing* rings = NULL;
+    volatile LONG* producer_done = NULL;
     uint64_t start_ns;
     uint64_t end_ns;
     double dt;
@@ -221,24 +249,26 @@ int main(int argc, char** argv) {
     uint64_t total_remote_sends = 0;
     uint64_t total_remote_fallbacks = 0;
     uint64_t total_remote_received = 0;
+    uint64_t total_remote_push_waits = 0;
     uint64_t total_local_frees = 0;
     uint64_t total_alloc_failures = 0;
     uint32_t i;
     int rc = 1;
 
-    if (threads == 0 || iters == 0 || ws == 0 || min_size == 0 || max_size < min_size || remote_pct > 100u || ring_slots == 0) {
+    if (threads == 0 || iters == 0 || ws == 0 || min_size == 0 || max_size < min_size || remote_pct > 100u || ring_slots == 0 || matched_remote > 1u) {
         fprintf(stderr, "bench_random_mixed_mt_remote_compare: invalid args\n");
-        fprintf(stderr, "usage: %s <threads> <iters> <ws> <min> <max> <remote_pct> [ring_slots]\n", argv[0]);
+        fprintf(stderr, "usage: %s <threads> <iters> <ws> <min> <max> <remote_pct> [ring_slots] [matched_remote]\n", argv[0]);
         return 2;
     }
 
-    printf("[BENCH_ARGS] threads=%u iters=%u ws=%u min=%u max=%u remote_pct=%u ring_slots=%u\n",
-           threads, iters, ws, min_size, max_size, remote_pct, ring_slots);
+    printf("[BENCH_ARGS] threads=%u iters=%u ws=%u min=%u max=%u remote_pct=%u ring_slots=%u matched_remote=%u\n",
+           threads, iters, ws, min_size, max_size, remote_pct, ring_slots, matched_remote);
 
     states = (ThreadState*)calloc(threads, sizeof(ThreadState));
     handles = (HANDLE*)calloc(threads, sizeof(HANDLE));
     rings = (RemoteRing*)calloc(threads, sizeof(RemoteRing));
-    if (!states || !handles || !rings) {
+    producer_done = (volatile LONG*)calloc(threads, sizeof(LONG));
+    if (!states || !handles || !rings || !producer_done) {
         fprintf(stderr, "bench_random_mixed_mt_remote_compare: state allocation failed\n");
         goto cleanup;
     }
@@ -262,6 +292,8 @@ int main(int argc, char** argv) {
         states[i].slots = (void**)calloc(ws, sizeof(void*));
         states[i].send_ring = &rings[i];
         states[i].recv_ring = &rings[(i + threads - 1u) % threads];
+        states[i].producer_done = producer_done;
+        states[i].matched_remote = matched_remote;
         if (!states[i].slots) {
             fprintf(stderr, "bench_random_mixed_mt_remote_compare: slots allocation failed at thread=%u\n", i);
             goto cleanup;
@@ -286,6 +318,7 @@ int main(int argc, char** argv) {
         total_remote_sends += states[i].remote_sends;
         total_remote_fallbacks += states[i].remote_fallback_frees;
         total_remote_received += states[i].remote_received_frees;
+        total_remote_push_waits += states[i].remote_push_waits;
         total_local_frees += states[i].local_frees;
         total_alloc_failures += states[i].alloc_failures;
     }
@@ -311,13 +344,31 @@ int main(int argc, char** argv) {
     dt = (double)(end_ns - start_ns) / 1e9;
     printf("bench_random_mixed_mt_remote: threads=%u ops=%llu time=%.6f ops/s=%.2f\n",
            threads, (unsigned long long)total_ops, dt, (dt > 0.0) ? ((double)total_ops / dt) : 0.0);
-    printf("[EFFECTIVE_REMOTE] target=%u actual=%.2f fallback_rate=%.2f recv_frees=%llu\n",
+    printf("[EFFECTIVE_REMOTE] target=%u actual=%.2f fallback_rate=%.2f sends=%llu local_frees=%llu fallback_frees=%llu recv_frees=%llu push_waits=%llu matched=%u\n",
            remote_pct,
            (total_remote_sends + total_local_frees + total_remote_fallbacks > 0) ? (100.0 * (double)total_remote_sends / (double)(total_remote_sends + total_local_frees + total_remote_fallbacks)) : 0.0,
            (total_remote_sends + total_remote_fallbacks > 0) ? (100.0 * (double)total_remote_fallbacks / (double)(total_remote_sends + total_remote_fallbacks)) : 0.0,
-           (unsigned long long)total_remote_received);
+           (unsigned long long)total_remote_sends,
+           (unsigned long long)total_local_frees,
+           (unsigned long long)total_remote_fallbacks,
+           (unsigned long long)total_remote_received,
+           (unsigned long long)total_remote_push_waits,
+           matched_remote);
     printf("[ALLOC_FAILURES] count=%llu\n",
            (unsigned long long)total_alloc_failures);
+    {
+        PROCESS_MEMORY_COUNTERS_EX memory;
+        ZeroMemory(&memory, sizeof(memory));
+        memory.cb = sizeof(memory);
+        if (GetProcessMemoryInfo(GetCurrentProcess(),
+                                 (PROCESS_MEMORY_COUNTERS*)&memory,
+                                 sizeof(memory))) {
+            printf("[PROCESS_MEMORY] working_set_kb=%llu peak_working_set_kb=%llu private_usage_kb=%llu\n",
+                   (unsigned long long)((memory.WorkingSetSize + 1023u) / 1024u),
+                   (unsigned long long)((memory.PeakWorkingSetSize + 1023u) / 1024u),
+                   (unsigned long long)((memory.PrivateUsage + 1023u) / 1024u));
+        }
+    }
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)
     {
         H8Page8KRemoteStats page8k = h8_page8k_remote_stats();
@@ -379,6 +430,7 @@ cleanup:
     free(rings);
     free(handles);
     free(states);
+    free((void*)producer_done);
     hz_bench_allocator_thread_teardown();
     return rc;
 }

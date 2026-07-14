@@ -10,6 +10,31 @@ Shared-default promotion remains `HOLD`. The strict post-RSS guard is exceeded
 on the synthetic wide row, and the Windows MT remote result is still outside
 its throughput and RSS guards.
 
+Follow-up attribution found that the native post delta comes from free pages
+retained by glibc per-thread arenas after worker join. It is not live HZ8 arena
+payload: default/inventory `H8Span` size is `192/192`, and the candidate's
+extra `H8ThreadCtx` storage is only 112 bytes per worker. At the same wide
+checkpoint, default/inventory Anonymous Private Dirty was `1276/1940 KiB`;
+the eight glibc arenas explained the difference. A control-plane
+`malloc_trim(0)` changed candidate RSS `3704 -> 2396 KiB`.
+
+`PostRssQuiescentTrimControl-L0` will preserve raw RSS and add settled,
+trim-control, and `smaps_rollup` values in separate benchmark binaries. It
+does not add trimming to the allocator or normal benchmark lane.
+
+The native Ubuntu ABBA BLOCKS=10 trim-control gate completed. Raw RSS retains
+the earlier wide delta, while the control-plane trim removes the anonymous
+private dirty pages:
+
+| Row | Throughput delta | Peak RSS delta | Raw post delta | Trim post delta | Trim gate |
+|---|---:|---:|---:|---:|---|
+| xorshift wide | -0.10% | -1.01% | +7.49% | -34.17% | PASS |
+| LCG wide | +201.90% | -78.12% | +42.53% | -3.84% | PASS |
+
+The remaining raw RSS is therefore a libc arena-retention measurement signal,
+not live HZ8 span residency. Raw post RSS remains reported for transparency;
+the normalized trim-control result is the admissible residency comparison.
+
 ```text
 native Ubuntu behavior: GO
 native Ubuntu xorshift throughput: GO
