@@ -45,7 +45,11 @@ HZ8 論文 Zenodo record:
 ```text
 current public line:
   HZ8 / KeepRefill + remote span-lease publish + SmallTransitionInventory
-  + GeneralMediumPage + EntryBoundary-L1A
+  + GeneralMediumPage + EntryBoundary-L1A + MediumTransitionInventory
+
+cross-platform rollback:
+  immediate rollback: hz8-small-transition-inventory
+  deeper rollback: hz8-pre-transition-rollback
 
 recommended default:
   yes
@@ -73,8 +77,9 @@ windows bring-up lane:
 lane registry:
   docs/HZ8_WINDOWS_LANE_STATUS_L1.md
   docs/HZ8_LINUX_LANE_STATUS_L1.md
-  public default: hz8 / SmallTransitionInventory + GeneralMediumPage + EntryBoundary-L1A
-  immediate rollback: hz8-pre-transition-rollback
+  public default: hz8 / SmallTransitionInventory + GeneralMediumPage + EntryBoundary-L1A + MediumTransitionInventory
+  immediate rollback: hz8-small-transition-inventory
+  deeper rollback: hz8-pre-transition-rollback
   rollback: hz8-v2-rollback
   larger/local opt-in: hz8-v2-mag32
   Windows exact-8KiB selected opt-in: hz8-r3-page8k-integrated

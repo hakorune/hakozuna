@@ -3,7 +3,7 @@ param(
     [ValidateRange(1, 100)]
     [int]$WorkScale = 1,
     [string]$OutputDir,
-    [ValidateSet("v2", "pre-transition", "general", "default", "tcmalloc")]
+    [ValidateSet("v2", "pre-transition", "pre-medium", "general", "default", "tcmalloc")]
     [string]$Baseline = "v2",
     [ValidateSet("general", "cap128", "entry-boundary", "default", "partial-depot", "medium-transition")]
     [string]$Candidate = "general",
@@ -16,6 +16,7 @@ $RepoRoot = Split-Path -Parent $PSScriptRoot
 $SuiteDir = Join-Path $RepoRoot "out_win_suite"
 $BuildScript = Join-Path $PSScriptRoot "build_win_allocator_suite.ps1"
 $BaselineName = switch ($Baseline) {
+    "pre-medium" { "hz8-small-transition-inventory" }
     "pre-transition" { "hz8-pre-transition-rollback" }
     "general" { "hz8-r3-page-general" }
     "default" { "hz8" }
@@ -23,6 +24,7 @@ $BaselineName = switch ($Baseline) {
     default { "hz8-v2" }
 }
 $BaselineFile = switch ($Baseline) {
+    "pre-medium" { "bench_mixed_ws_hz8_small_transition_inventory.exe" }
     "pre-transition" { "bench_mixed_ws_hz8_pre_transition.exe" }
     "general" { "bench_mixed_ws_hz8_medium_page_general.exe" }
     "default" { "bench_mixed_ws_hz8.exe" }

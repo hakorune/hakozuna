@@ -7,15 +7,16 @@ Updated: 2026-07-14
 ```text
 public default:
   HZ8 / SmallTransitionInventory / KeepRefill
-  / GeneralMediumPage + EntryBoundary
+  / GeneralMediumPage + EntryBoundary / MediumTransitionInventory
 
 rollback:
+  hz8-small-transition-inventory  # immediate pre-medium default
   hz8-pre-transition-rollback
   hz8-v2-rollback
 
 active behavior box:
   MediumTransitionInventory-L1
-  cross-platform research GO / shared-default HOLD
+  promoted shared default
   transition-only owner/class inventory replaces deep owner scans
   no production counters or hot-path atomics
 
@@ -36,10 +37,10 @@ latest diagnostic closeout:
   xorshift weakness = 15-21% Mag pop/hit churn, not source commit
 
 latest promotion:
-  SmallTransitionInventory-L1
-  Linux xorshift/LCG/Redis and trim-control gates pass
-  Windows matched-remote Blocks=20 passes 40/40 admissible pairs
-  paired throughput +1.63%, post/peak +0.16%, private -0.86%
+  MediumTransitionInventory-L1
+  cross-platform safety/RSS and Redis-like controls pass
+  large medium gains outweigh the documented Windows fixed8K tradeoff
+  previous SmallTransitionInventory default remains the immediate rollback
 
 latest broad check:
   Windows RUNS=1 full matrix + MT remote + Redis-like complete
@@ -48,18 +49,18 @@ latest broad check:
   MT remote uses about 1/41 tcmalloc peak RSS at 53.7% throughput
 
 latest medium candidate:
-  MediumTransitionInventory-L1 is cross-platform research GO
+  MediumTransitionInventory-L1 is now the shared default
   Windows WorkScale=10 paired R10 retains large medium gains and RSS gates
   type-stable owner metadata removes the non-medium Redis-like layout tax
   Windows fixed8K repeats disagree: -1.98% then -5.07%
-  shared default remains HOLD because the -3% fixed control is not robust
+  Windows fixed8K -2%..-5% is an accepted, documented tradeoff
 
 latest Linux medium gate:
   GCC/Clang preload, smoke, safety PASS
   native AB/BA R10: 4097..8192 +157.49%, fixed64K +38.35%
   fixed8/16/32 -1.57%/+1.05%/+2.10%; balanced +0.64%, wide -2.19%
   post/peak RSS and all inventory zero-invariants PASS
-  Windows fixed8K -4.50% still blocks shared-default promotion
+  Windows fixed8K does not block the explicit balanced-default decision
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
@@ -72,13 +73,13 @@ latest closeout:
 
 | Bucket | Lane | Disposition |
 |---|---|---|
-| selected | `hz8` | shared default with SmallTransitionInventory-L1 |
-| rollback | `hz8-pre-transition-rollback` | immediate pre-promotion Mag16 control |
+| selected | `hz8` | shared default with SmallTransitionInventory-L1 and MediumTransitionInventory-L1 |
+| rollback | `hz8-small-transition-inventory` | immediate pre-medium default |
+| rollback | `hz8-pre-transition-rollback` | deeper pre-small-transition control |
 | rollback | `hz8-v2-rollback` | explicit comparison and emergency rollback |
 | research | `hz8-v2-mag32` | larger/local opt-in; global default HOLD |
-| research | `hz8-medium-transition-inventory` | cross-platform medium GO; shared default HOLD on Windows fixed8K variance |
+| compatibility | `hz8-medium-transition-inventory` | alias of the promoted default |
 | research | `hz8-small-partial-transition-only` | P1 recovery evidence; default HOLD |
-| compatibility | `hz8-small-transition-inventory` | alias of the promoted default |
 | research | `LargeDirectOwned` | cross128 profile evidence; not default |
 | diagnostic | Page8K/domain/stats shadows | counter-bearing evidence; never speed rows |
 | archive | P2/P3/P4, tier membership, owner witness, old cache ladders | NO-GO reproduction only |
@@ -126,16 +127,14 @@ strength:
   exact 8K/16K/32K improved materially after GeneralMediumPage promotion
 
 remaining measured weakness:
-  variable 4KiB..8KiB and fixed 32KiB..64KiB have a strong research fix,
-  but the Windows fixed8K control is not robust enough for default promotion
+  Windows fixed8K can regress by about 2%..5% under the promoted balanced default
   direct 128KiB..4MiB throughput
   Redis-like mutation throughput
   long mixed traces can still produce high peak RSS
 
 next gate:
-  no further policy/capacity ladder for MediumTransitionInventory-L1
-  reopen shared-default review only with a stable Windows fixed8K explanation
-  keep Redis-like candidate selection available as an application-like control
+  MediumTransitionInventory-L1 is frozen as default with explicit rollback
+  open a new behavior box only from a newly reproduced public weakness
 
 claim boundary:
   do not claim universal tcmalloc replacement

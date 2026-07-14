@@ -1,7 +1,7 @@
 # HZ8 Medium Boundary L0
 
-Status: **L0 complete; MediumTransitionInventory-L1 is cross-platform
-research GO, shared-default HOLD**.
+Status: **L0 complete; MediumTransitionInventory-L1 is the promoted
+cross-platform shared default**.
 
 ## Signal
 
@@ -211,8 +211,8 @@ Therefore:
 Windows mechanism / research lane:
   GO
 
-shared public default:
-  HOLD
+shared public default at the initial Windows checkpoint:
+  HOLD (later superseded by the balanced-default decision)
 
 reopen default promotion:
   Ubuntu native paired gate passes
@@ -289,13 +289,30 @@ sessions measured `-1.98%` and `-5.07%`. The latter exceeds the binding `-3%`
 control even though all RSS rows pass. Therefore:
 
 ```text
-cross-platform research lane:
-  GO
+cross-platform behavior:
+  GO and promoted
 
 shared public default:
-  HOLD
+  GO with documented Windows fixed8K tradeoff
 
 next action:
+  freeze the promoted behavior and preserve the immediate rollback
   do not add another capacity or replacement-policy knob
-  reopen only with a stable explanation for the Windows fixed8K variance
+```
+
+The promotion is an explicit balanced-default decision rather than a claim
+that every row passes the original strict gate. Cross-platform safety and RSS,
+the Linux controls, and the Windows Redis-like control pass; the 4KiB..64KiB
+and larger-size improvements are material. Windows fixed8K may regress by
+approximately 2%..5%, and `hz8-small-transition-inventory` preserves the
+immediate pre-medium rollback for exact-8KiB-sensitive deployments.
+
+The promoted comparison remains reproducible with:
+
+```powershell
+pwsh win/run_win_hz8_page_general_gate.ps1 `
+  -Baseline pre-medium `
+  -Candidate default `
+  -Runs 10 `
+  -WorkScale 10
 ```

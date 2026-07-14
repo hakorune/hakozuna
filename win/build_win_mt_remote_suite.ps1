@@ -114,8 +114,11 @@ $Hz8PreTransitionDefaultFlags = @(
     "/DH8_MEDIUM_PAGE_GENERAL_GEOMETRY_L1=1",
     "/DH8_MEDIUM_PAGE_ENTRY_BOUNDARY_L1=1"
 )
-$Hz8DefaultFlags = $Hz8PreTransitionDefaultFlags + @(
+$Hz8PreMediumTransitionDefaultFlags = $Hz8PreTransitionDefaultFlags + @(
     "/DH8_SMALL_TRANSITION_INVENTORY_L1=1"
+)
+$Hz8DefaultFlags = $Hz8PreMediumTransitionDefaultFlags + @(
+    "/DH8_MEDIUM_TRANSITION_INVENTORY_L1=1"
 )
 
 function Invoke-Hz8MtRemoteBuilds {
@@ -156,7 +159,7 @@ function Invoke-Hz8MtRemoteBuilds {
         @{
             Name = "hz8-small-transition-inventory"
             Output = "bench_random_mixed_mt_remote_hz8_small_transition_inventory.exe"
-            ExtraFlags = $Hz8DefaultFlags
+            ExtraFlags = $Hz8PreMediumTransitionDefaultFlags
         },
         @{
             Name = "hz8-medium-pageshadow"
