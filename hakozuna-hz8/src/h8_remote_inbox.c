@@ -564,6 +564,9 @@ void h8_span_collect_remote(H8OwnerRecord* owner, H8Span* span) {
 }
 
 static size_t h8_collect_pending_list(H8OwnerRecord* owner, H8Span* list,
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+                                      H8ThreadCtx* transition_ctx,
+#endif
                                       size_t budget, H8Span** remainder_out) {
   size_t collected = 0;
   H8Span* remainder = NULL;
@@ -576,7 +579,17 @@ static size_t h8_collect_pending_list(H8OwnerRecord* owner, H8Span* list,
       remainder->next_pending = list;
       break;
     }
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+    uint32_t old_free_head = atomic_load_explicit(
+        &span->local_hot.local_free_head_word, memory_order_relaxed);
+#endif
     h8_span_collect_remote(owner, span);
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+    if (transition_ctx) {
+      h8_small_transition_inventory_note_remote_collect(
+          transition_ctx, span, old_free_head);
+    }
+#endif
     atomic_fetch_sub_explicit(&owner->pending_span_count, 1, memory_order_relaxed);
     ++collected;
   }
@@ -590,6 +603,13 @@ size_t h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
   }
   H8_DEBUG_INC(pending_collect_call_count);
 
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+  H8ThreadCtx* transition_ctx = h8_thread_ctx_fast();
+  if (!transition_ctx || transition_ctx->owner != owner) {
+    transition_ctx = NULL;
+  }
+#endif
+
   h8_platform_mutex_lock(&owner->pending_lock);
 
   H8Span* carry = owner->pending_carry;
@@ -598,7 +618,11 @@ size_t h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
 
   if (carry) {
     H8_DEBUG_INC(pending_collect_carry_hit_count);
-    collected += h8_collect_pending_list(owner, carry, budget, &carry);
+    collected += h8_collect_pending_list(owner, carry,
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+                                         transition_ctx,
+#endif
+                                         budget, &carry);
     if (carry) {
       owner->pending_carry = carry;
       H8_DEBUG_INC(pending_collect_requeue_count);
@@ -611,7 +635,11 @@ size_t h8_collect_owner_pending_budget(H8OwnerRecord* owner, size_t budget) {
     H8Span* list = atomic_exchange_explicit(&owner->pending_head, NULL,
                                             memory_order_acq_rel);
     H8Span* remainder = NULL;
-    collected += h8_collect_pending_list(owner, list, budget - collected, &remainder);
+    collected += h8_collect_pending_list(owner, list,
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+                                         transition_ctx,
+#endif
+                                         budget - collected, &remainder);
     if (remainder) {
       owner->pending_carry = remainder;
       H8_DEBUG_INC(pending_collect_requeue_count);

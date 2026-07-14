@@ -10,6 +10,9 @@
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
 #include "../src/h8_small_partial_transition_depot.h"
 #endif
+#if defined(H8_SMALL_TRANSITION_INVENTORY_DIAG)
+#include "../src/h8_small_transition_inventory.h"
+#endif
 #include "h8_bench_support.h"
 
 #include <pthread.h>
@@ -499,6 +502,10 @@ int main(int argc, char** argv) {
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_DIAG)
   fflush(stdout);
   h8_small_partial_depot_dump();
+#endif
+#if defined(H8_SMALL_TRANSITION_INVENTORY_DIAG)
+  fflush(stdout);
+  h8_small_transition_inventory_dump();
 #endif
 
 #if defined(H8_PAGE8K_REMOTE_DIAGNOSTIC)

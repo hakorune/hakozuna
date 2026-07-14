@@ -184,6 +184,7 @@ void h8_thread_shutdown(void* arg) {
 #endif
   h8_small_partial_depot_reset(ctx);
   h8_small_available_index_reset(ctx);
+  h8_small_transition_inventory_reset(ctx);
 #if defined(H8_MEDIUM_PAGE8K_REMOTE_BEHAVIOR_L1)
   h8_page8k_remote_thread_shutdown();
 #endif

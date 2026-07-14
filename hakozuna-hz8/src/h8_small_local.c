@@ -180,7 +180,8 @@ static void h8_debug_record_active_full_pending(size_t pending) {
 #define H8_REMOTE_PRESSURE_ACTIVE_FULL_DEFER_LIMIT 8u
 #endif
 
-#if H8_REUSABLE_SPAN_MAGAZINE_L1
+#if H8_REUSABLE_SPAN_MAGAZINE_L1 && \
+    !defined(H8_SMALL_TRANSITION_INVENTORY_L1)
 #if defined(H8_ENABLE_DEBUG_STATS)
 static void h8_reusable_span_mag_record_pop_depth(uint32_t class_id,
                                                   size_t depth) {
@@ -528,7 +529,14 @@ void* h8_malloc_inner(size_t size) {
 #if !defined(H8_ENABLE_DEBUG_STATS)
     owner = h8_ctx_owner_assume(ctx);
 #endif
-#if H8_REUSABLE_SPAN_MAGAZINE_L1
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+    span = h8_small_transition_inventory_pop(ctx, owner, class_id);
+    if (span) {
+      ctx->active_spans[class_id] = span;
+      ptr = h8_small_alloc_from_span(span);
+      if (ptr) return ptr;
+    }
+#elif H8_REUSABLE_SPAN_MAGAZINE_L1
     span = h8_reusable_span_mag_pop(ctx, owner, class_id);
     if (span) {
       ctx->active_spans[class_id] = span;
@@ -584,6 +592,14 @@ void* h8_malloc_inner(size_t size) {
     owner = h8_ctx_owner_assume(ctx);
   }
 #endif
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+  span = h8_small_transition_inventory_pop(ctx, owner, class_id);
+  if (span) {
+    ctx->active_spans[class_id] = span;
+    void* ptr = h8_small_alloc_from_span(span);
+    if (ptr) return ptr;
+  }
+#endif
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
   if (!partial_depot_checked) {
 #if defined(H8_SMALL_PARTIAL_COLD_ACTIVATE_L1B)
@@ -619,6 +635,12 @@ void* h8_malloc_inner(size_t size) {
     } else {
       h8_pressure_owner_collect(owner);
     }
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+    span = h8_small_transition_inventory_pop(ctx, owner, class_id);
+    if (span) {
+      ctx->active_spans[class_id] = span;
+    } else
+#endif
     span = h8_find_active_span(ctx, owner, class_id);
     if (remote_pressure_collect_triggered) {
       if (span) {
@@ -709,7 +731,9 @@ static bool h8_local_free(H8ThreadCtx* ctx, H8OwnerRecord* owner, H8Span* span,
   }
   H8_DEBUG_INC(local_free_count);
   H8_DEBUG_INC(local_free_hit);
-#if H8_REUSABLE_SPAN_MAGAZINE_L1
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+  h8_small_transition_inventory_note_local_free(ctx, span, old_head);
+#elif H8_REUSABLE_SPAN_MAGAZINE_L1
 #if defined(H8_SMALL_PARTIAL_TRANSITION_ONLY_L1B)
   h8_reusable_span_mag_note_local_free(ctx, span, old_head);
 #else

@@ -12,7 +12,9 @@ rollback:
   hz8-v2-rollback
 
 active behavior box:
-  none
+  SmallTransitionInventory-L1 research sibling
+  L1-A local behavior and L1-B normal-owner remote collect are implemented
+  correctness smoke GO; performance/default gate pending
 
 active diagnostic box:
   none
@@ -26,9 +28,11 @@ latest diagnostic closeout:
   LCG weakness = class-local empty inventory -> span commit (existing P1 evidence)
   xorshift weakness = 15-21% Mag pop/hit churn, not source commit
 
-next design question:
-  SmallLocalObjectReuse-L0 contract review
-  do not implement before duplicate-authority and remote-safety design is fixed
+next gate:
+  SmallTransitionInventory-L1
+  paired fresh-process default/candidate LCG and xorshift rows
+  fixed-small and remote controls
+  Windows first, then native Linux confirmation
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
@@ -120,6 +124,7 @@ Open a new HZ8 behavior box only when all are present:
 - [P1 recovery closeout](docs/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md)
 - [Small hot-path audit](docs/HZ8_SMALL_HOT_PATH_AUDIT_L0.md)
 - [Small mixed transition attribution](docs/HZ8_SMALL_MIXED_TRANSITION_ATTRIBUTION_L0.md)
+- [Small transition inventory design](docs/HZ8_SMALL_TRANSITION_INVENTORY_L1.md)
 - [Source module map](src/README.md)
 - [Benchmark gate](docs/HZ8_BENCH_GATE.md)
 

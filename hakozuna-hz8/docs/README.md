@@ -24,6 +24,7 @@
 - `HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_L1.md`: closed recovery-family record; P1 research GO/default HOLD
 - `HZ8_SMALL_HOT_PATH_AUDIT_L0.md`: current counter-free 64/128/256B alloc/free cost audit
 - `HZ8_SMALL_MIXED_TRANSITION_ATTRIBUTION_L0.md`: LCG commit starvation vs xorshift Mag churn attribution
+- `HZ8_SMALL_TRANSITION_INVENTORY_L1.md`: next owner-local exhausted-to-available span inventory contract
 - `../../docs/benchmarks/windows/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md`: Windows default/original/P1 LCG and xorshift R5 gate
 
 ## Frozen Public Baseline

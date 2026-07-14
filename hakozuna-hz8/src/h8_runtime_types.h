@@ -115,6 +115,10 @@ struct H8Span {
   struct H8Span* next_small_partial;
   bool small_partial_indexed;
 #endif
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+  struct H8Span* next_transition_available;
+  bool transition_indexed;
+#endif
 #if defined(H8_SMALL_TIER_MEMBERSHIP_L1)
   uint8_t reusable_mag_refs;
 #endif
@@ -182,6 +186,10 @@ struct H8ThreadCtx {
 #endif
 #if defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
   H8Span* small_partial_head[H8_CLASS_COUNT];
+#endif
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+  H8Span* small_transition_head[H8_CLASS_COUNT];
+  uint32_t small_transition_depth[H8_CLASS_COUNT];
 #endif
   H8MediumRun* active_medium_runs[H8_MEDIUM_CLASS_COUNT];
   H8MediumRun* medium_last_alloc_run;

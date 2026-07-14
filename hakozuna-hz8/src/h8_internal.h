@@ -26,6 +26,17 @@
 #define H8_REUSABLE_SPAN_MAG_CAP 16u
 #endif
 
+#if defined(H8_SMALL_TRANSITION_INVENTORY_DIAG) && \
+    !defined(H8_SMALL_TRANSITION_INVENTORY_L1)
+#error "transition inventory diagnostics require the behavior lane"
+#endif
+
+#if defined(H8_SMALL_TRANSITION_INVENTORY_L1) && \
+    (defined(H8_SMALL_AVAILABLE_INDEX_L1) || \
+     defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1))
+#error "transition inventory replaces other small-span publication lanes"
+#endif
+
 #if defined(H8_SMALL_AVAILABLE_INDEX_L1) && \
     defined(H8_SMALL_PARTIAL_TRANSITION_DEPOT_L1)
 #error "small available index and partial transition depot are separate lanes"
@@ -87,6 +98,7 @@
 #include "h8_small_reuse_visibility_shadow.h"
 #include "h8_small_available_index.h"
 #include "h8_small_partial_transition_depot.h"
+#include "h8_small_transition_inventory.h"
 
 #if defined(__linux__) && defined(__ELF__) && defined(__x86_64__)
 #define H8_TLS_FAST __attribute__((tls_model("initial-exec"), visibility("hidden")))
