@@ -1,6 +1,7 @@
 # HZ8 Medium Boundary L0
 
-Status: **active diagnostic gate; behavior unchanged**.
+Status: **L0 complete; MediumTransitionInventory-L1 is Windows research GO,
+shared-default HOLD**.
 
 ## Signal
 
@@ -140,3 +141,83 @@ new candidate:
 
 This imports the successful SmallTransitionInventory discipline without
 reopening the old every-free MediumAvailableIndex maintenance policy.
+
+The first behavior sibling is `hz8-medium-transition-inventory`. It keeps the
+existing slot-state, owner token, generation, directory, and remote pending
+authority unchanged. Only same-owner local placement changes:
+
+```text
+active local free:
+  keep current active run
+
+non-active local free, full -> available:
+  publish run to owner/class inventory
+  do not replace current active run
+
+active allocation miss:
+  validate and consume one inventory run
+  fallback to the unchanged owner scan on miss/reject
+```
+
+Remote collection may publish a validated non-active run from the collector
+slow path. It does not change remote-pending authority or add work to the
+per-object publication path.
+
+## L1 Windows Result
+
+Fresh-process AB/BA R10 uses the median of the ten in-pair throughput ratios.
+The earlier ratio-of-independent-medians field remains in CSV only for
+diagnostic continuity.
+
+| row | paired throughput delta | peak RSS delta |
+| --- | ---: | ---: |
+| 4097..8192 | +109.82% | -0.48% |
+| fixed 8 KiB | -4.50% | +0.06% |
+| fixed 16 KiB | -1.50% | -0.06% |
+| fixed 32 KiB | +35.09% | -0.99% |
+| fixed 64 KiB | +24.26% | -4.96% |
+| balanced | +4.67% | +0.04% |
+| wide_ws | -2.03% | +2.22% |
+| larger_sizes | +50.28% | -26.88% |
+
+All runs completed with `alloc_fail=0` and exit code zero. The candidate's
+generic Windows smoke also passes.
+
+Diagnostic-only evidence for 4097..8192:
+
+```text
+baseline owner scan steps:
+  3,864,556
+
+candidate owner scan steps:
+  130,560
+  reduction: 96.6%
+
+inventory:
+  attempt = 29,464
+  hit = 29,464
+  unusable = 0
+  duplicate / owner mismatch / class mismatch = 0
+  indexed full / detached / nonactive / active = 0
+  exit nonempty = 0
+```
+
+The target and larger-medium rows clearly pass. `fixed8k` misses the strict
+`-3%` control even though its page path does not consume this owner inventory.
+Windows campaign-to-campaign sign changes also show a wide noise/layout band.
+Therefore:
+
+```text
+Windows mechanism / research lane:
+  GO
+
+shared public default:
+  HOLD
+
+reopen default promotion:
+  Ubuntu native paired gate passes
+  and Windows application-like controls show no material regression
+```
+
+Speed builds contain no diagnostic atomics or counters. The counter-bearing
+`hz8-medium-transition-inventory-diag` sibling is evidence-only.

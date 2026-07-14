@@ -68,6 +68,23 @@ function Invoke-Hz8AllocatorMatrixBuild {
                 "/DH8_MEDIUM_BOUNDARY_DIAG=1"
             )
         },
+        @{
+            Name = "hz8-medium-transition-inventory"
+            Output = "bench_mixed_ws_hz8_medium_transition_inventory.exe"
+            SmokeOutput = "h8_smoke_medium_transition_inventory.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_MEDIUM_TRANSITION_INVENTORY_L1=1"
+            )
+        },
+        @{
+            Name = "hz8-medium-transition-inventory-diag"
+            Output = "bench_mixed_ws_hz8_medium_transition_inventory_diag.exe"
+            ExtraFlags = $Hz8DefaultFlags + @(
+                "/DH8_MEDIUM_TRANSITION_INVENTORY_L1=1",
+                "/DH8_ENABLE_DEBUG_STATS=1",
+                "/DH8_MEDIUM_BOUNDARY_DIAG=1"
+            )
+        },
         @{ Name = "hz8-pre-transition-rollback"; Output = "bench_mixed_ws_hz8_pre_transition.exe"; ExtraFlags = $Hz8PreTransitionDefaultFlags },
         @{ Name = "hz8-v2-rollback"; Output = "bench_mixed_ws_hz8_v2.exe"; ExtraFlags = @() },
         @{
@@ -415,6 +432,29 @@ function Invoke-Hz8AllocatorMatrixBuild {
         & $Compiler.Source @args
         if ($LASTEXITCODE -ne 0) {
             throw "HZ8 mixed_ws build failed for $($variant.Name) with exit code $LASTEXITCODE"
+        }
+        foreach ($testBuild in @(
+            @{ Output = $variant.SmokeOutput; Source = "tests\h8_smoke.c" }
+        )) {
+            if (-not $testBuild.Output) {
+                continue
+            }
+            $testOutput = Join-Path $OutDir $testBuild.Output
+            $testSource = Join-Path $Hz8Root $testBuild.Source
+            $testArgs = @(
+                "/nologo", "/O2", "/DNDEBUG", "/std:c11", "/W3", "/MD",
+                "/I$Hz8Root\include", "/I$Hz8Root\src"
+            )
+            $testArgs += $Hz8CommonFlags
+            $testArgs += $variant.ExtraFlags
+            $testArgs += $Hz8Sources
+            $testArgs += $testSource
+            $testArgs += "/Fe:$testOutput"
+            Write-Host "[hz8-win] building $($testBuild.Output)"
+            & $Compiler.Source @testArgs
+            if ($LASTEXITCODE -ne 0) {
+                throw "HZ8 test build failed for $($variant.Name) with exit code $LASTEXITCODE"
+            }
         }
     }
 

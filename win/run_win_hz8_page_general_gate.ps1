@@ -5,7 +5,7 @@ param(
     [string]$OutputDir,
     [ValidateSet("v2", "pre-transition", "general", "default", "tcmalloc")]
     [string]$Baseline = "v2",
-    [ValidateSet("general", "cap128", "entry-boundary", "default", "partial-depot")]
+    [ValidateSet("general", "cap128", "entry-boundary", "default", "partial-depot", "medium-transition")]
     [string]$Candidate = "general",
     [switch]$ForceBuild
 )
@@ -31,6 +31,7 @@ $BaselineFile = switch ($Baseline) {
 }
 $BaselinePath = Join-Path $SuiteDir $BaselineFile
 $CandidateName = switch ($Candidate) {
+    "medium-transition" { "hz8-medium-transition-inventory" }
     "default" { "hz8" }
     "partial-depot" { "hz8-small-partial-depot" }
     "cap128" { "hz8-r3-page-general-cap128" }
@@ -38,6 +39,7 @@ $CandidateName = switch ($Candidate) {
     default { "hz8-r3-page-general" }
 }
 $CandidateFile = switch ($Candidate) {
+    "medium-transition" { "bench_mixed_ws_hz8_medium_transition_inventory.exe" }
     "default" { "bench_mixed_ws_hz8.exe" }
     "partial-depot" { "bench_mixed_ws_hz8_small_partial_depot.exe" }
     "cap128" { "bench_mixed_ws_hz8_medium_page_general_cap128.exe" }
@@ -189,6 +191,19 @@ foreach ($row in $Rows) {
     $candidateRecords = @($Records | Where-Object { $_.row -eq $row.Name -and $_.allocator -eq $CandidateName })
     $baseOps = Get-Median ([double[]]@($base.ops_per_sec))
     $candidateOps = Get-Median ([double[]]@($candidateRecords.ops_per_sec))
+    $pairedThroughputDeltas = New-Object System.Collections.Generic.List[double]
+    for ($run = 1; $run -le $Runs; $run++) {
+        $baseRun = @($base | Where-Object { [int]$_.run -eq $run })
+        $candidateRun = @($candidateRecords | Where-Object { [int]$_.run -eq $run })
+        if ($baseRun.Count -eq 1 -and $candidateRun.Count -eq 1 -and
+            [double]$baseRun[0].ops_per_sec -gt 0.0) {
+            $pairedThroughputDeltas.Add(
+                (([double]$candidateRun[0].ops_per_sec /
+                  [double]$baseRun[0].ops_per_sec) - 1.0) * 100.0)
+        }
+    }
+    $pairedThroughputDelta =
+        Get-Median ([double[]]@($pairedThroughputDeltas))
     $baseRss = Get-Median ([double[]]@($base.peak_rss_kb))
     $candidateRss = Get-Median ([double[]]@($candidateRecords.peak_rss_kb))
     $SummaryRows.Add([pscustomobject]@{
@@ -196,6 +211,7 @@ foreach ($row in $Rows) {
         baseline_ops = $baseOps
         candidate_ops = $candidateOps
         throughput_delta_pct = (($candidateOps / $baseOps) - 1.0) * 100.0
+        paired_throughput_delta_pct = $pairedThroughputDelta
         baseline_peak_rss_kb = $baseRss
         candidate_peak_rss_kb = $candidateRss
         peak_rss_delta_kb = $candidateRss - $baseRss
@@ -214,17 +230,22 @@ $Markdown.Add(('- Baseline: `{0}`' -f $BaselineName))
 $Markdown.Add(('- Candidate: `{0}`' -f $CandidateName))
 $Markdown.Add("- Diagnostic counters: disabled")
 $Markdown.Add("")
-$Markdown.Add(("| row | {0} ops/s | {1} ops/s | delta | {0} peak RSS | {1} peak RSS | RSS delta |" -f $BaselineName, $CandidateName))
+$Markdown.Add(("| row | {0} ops/s | {1} ops/s | paired delta | {0} peak RSS | {1} peak RSS | RSS delta |" -f $BaselineName, $CandidateName))
 $Markdown.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
 foreach ($item in $SummaryRows) {
-    $Markdown.Add(("| {0} | {1:N3}M | {2:N3}M | {3:+0.00;-0.00;0.00}% | {4:N2} MiB | {5:N2} MiB | {6:+0.00;-0.00;0.00}% |" -f
+    $rssDeltaText = if ([double]::IsNaN($item.peak_rss_delta_pct)) {
+        "n/a"
+    } else {
+        "{0:+0.00;-0.00;0.00}%" -f $item.peak_rss_delta_pct
+    }
+    $Markdown.Add(("| {0} | {1:N3}M | {2:N3}M | {3:+0.00;-0.00;0.00}% | {4:N2} MiB | {5:N2} MiB | {6} |" -f
         $item.row,
         ($item.baseline_ops / 1000000.0),
         ($item.candidate_ops / 1000000.0),
-        $item.throughput_delta_pct,
+        $item.paired_throughput_delta_pct,
         ($item.baseline_peak_rss_kb / 1024.0),
         ($item.candidate_peak_rss_kb / 1024.0),
-        $item.peak_rss_delta_pct))
+        $rssDeltaText))
 }
 $Markdown.Add("")
 if ($Baseline -eq "tcmalloc") {

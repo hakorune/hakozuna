@@ -445,7 +445,8 @@ static bool h8_medium_run_usable_locked(const H8MediumRun* run,
              H8_MEDIUM_RUN_ACTIVE;
 }
 
-#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX)
+#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX) || \
+    defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
 static H8OwnerRecord* h8_medium_available_shadow_owner(const H8MediumRun* run) {
   if (!run || !run->owner_attached) {
     return NULL;
@@ -696,6 +697,28 @@ static void h8_medium_set_active_run(H8ThreadCtx* ctx, uint32_t class_id,
     }
   }
   ctx->active_medium_runs[class_id] = run;
+}
+
+bool h8_medium_run_free_owner_local(H8ThreadCtx* ctx, H8MediumRun* run,
+                                    void* ptr, bool keep_empty_live) {
+#if defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
+  bool was_full = run && run->free_mask == 0;
+#endif
+  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  if (!ok || !ctx || !run || run->class_id >= H8_MEDIUM_CLASS_COUNT) {
+    return ok;
+  }
+#if defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
+  if (keep_empty_live) {
+    return true;
+  }
+  if (was_full && run->free_mask != 0 && h8_medium_run_owned_by_ctx(run, ctx)) {
+    h8_medium_available_shadow_attach(ctx->owner, run);
+  }
+#else
+  h8_medium_set_active_run(ctx, run->class_id, run);
+#endif
+  return true;
 }
 
 #if defined(H8_MEDIUM_ENABLE_LOCAL_FREE_CACHE)

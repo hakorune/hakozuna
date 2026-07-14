@@ -1,4 +1,5 @@
-#if defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX)
+#if defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX) || \
+    defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
 static void* h8_medium_try_available_index(H8ThreadCtx* ctx,
                                            uint32_t class_id) {
   if (!ctx || !ctx->owner || class_id >= H8_MEDIUM_CLASS_COUNT) {
@@ -231,7 +232,8 @@ static bool h8_medium_try_cached_local_free(H8ThreadCtx* ctx, void* ptr,
   }
   bool keep_empty_live = cached->class_id < H8_MEDIUM_CLASS_COUNT &&
                          ctx->active_medium_runs[cached->class_id] == cached;
-  bool ok = h8_medium_run_free_local_scaffold(cached, ptr, keep_empty_live);
+  bool ok =
+      h8_medium_run_free_owner_local(ctx, cached, ptr, keep_empty_live);
   if (!ok) {
     H8_DEBUG_INC(medium_invalid_owned_count);
   }
@@ -246,7 +248,6 @@ static bool h8_medium_try_cached_local_free(H8ThreadCtx* ctx, void* ptr,
                                   &h8g.medium_local_free_class_24k,
                                   &h8g.medium_local_free_class_48k);
 #endif
-    h8_medium_set_active_run(ctx, cached->class_id, cached);
   }
   h8_medium_debug_writer_exit(cached);
   return ok;
@@ -588,11 +589,15 @@ retry_owner_capacity:
   }
   if (ctx && ctx->owner) {
     H8_DEBUG_INC(medium_owner_scan_count);
+#if defined(H8_ENABLE_DEBUG_STATS)
     size_t owner_scan_position = 0;
+#endif
     for (H8MediumRun* run = ctx->owner->medium_by_class[class_id]; run;
          run = run->next_owner) {
       H8_DEBUG_INC(medium_owner_scan_step_count);
+#if defined(H8_ENABLE_DEBUG_STATS)
       ++owner_scan_position;
+#endif
       if (!h8_medium_run_owned_by_ctx(run, ctx)) {
         H8_DEBUG_INC(medium_owner_list_owner_mismatch);
         continue;
@@ -617,7 +622,9 @@ retry_owner_capacity:
 #endif
         void* ptr = h8_medium_run_alloc_local_hot(run);
         if (ptr) {
+#if defined(H8_ENABLE_DEBUG_STATS)
           h8_medium_debug_note_owner_list_hit_position(owner_scan_position);
+#endif
           h8_medium_debug_note_owner_list_hit_class(class_id);
           h8_medium_debug_note_alloc_collect_credit(ctx->owner, run);
         }

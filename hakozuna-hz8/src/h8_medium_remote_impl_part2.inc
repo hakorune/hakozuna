@@ -1,6 +1,8 @@
     } else {
       H8_DEBUG_INC(invalid_count);
+#if defined(H8_ENABLE_DEBUG_STATS)
       ++rejected;
+#endif
     }
     collect &= collect - 1u;
   }
@@ -53,7 +55,9 @@
   (void)ctx;
 #endif
   H8_DEBUG_ADD(medium_remote_collect_slot_count, collected);
+#if defined(H8_ENABLE_DEBUG_STATS)
   H8_DEBUG_ADD(medium_remote_collect_reject_count, rejected);
+#endif
   H8_DEBUG_ADD(medium_remote_collect_run_count, 1);
   h8_medium_debug_class_inc(run->class_id,
                             &h8g.medium_remote_collect_run_class_8k,

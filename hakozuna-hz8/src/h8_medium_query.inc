@@ -27,7 +27,7 @@ bool h8_medium_free_record_same_owner(const H8MediumDomainProbe* probe,
   bool keep_empty_live =
       ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
       ctx->active_medium_runs[run->class_id] == run;
-  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  bool ok = h8_medium_run_free_owner_local(ctx, run, ptr, keep_empty_live);
   if (!ok) {
     H8_DEBUG_INC(medium_invalid_owned_count);
   } else if (ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
@@ -41,7 +41,6 @@ bool h8_medium_free_record_same_owner(const H8MediumDomainProbe* probe,
                                   &h8g.medium_local_free_class_24k,
                                   &h8g.medium_local_free_class_48k);
 #endif
-    h8_medium_set_active_run(ctx, run->class_id, run);
   }
   h8_medium_debug_writer_exit(run);
   h8_medium_domain_stable_release_probe(*probe);
@@ -72,7 +71,7 @@ bool h8_medium_free_owner_witness(const H8MediumDomainProbe* probe, void* ptr,
                                H8_MEDIUM_WRITER_OWNER_LOCAL_FREE);
   bool keep_empty_live = run->class_id < H8_MEDIUM_CLASS_COUNT &&
                          ctx->active_medium_runs[run->class_id] == run;
-  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  bool ok = h8_medium_run_free_owner_local(ctx, run, ptr, keep_empty_live);
   if (!ok) {
     H8_DEBUG_INC(medium_invalid_owned_count);
   } else if (run->class_id < H8_MEDIUM_CLASS_COUNT) {
@@ -86,7 +85,6 @@ bool h8_medium_free_owner_witness(const H8MediumDomainProbe* probe, void* ptr,
                                   &h8g.medium_local_free_class_24k,
                                   &h8g.medium_local_free_class_48k);
 #endif
-    h8_medium_set_active_run(ctx, run->class_id, run);
   }
   h8_medium_debug_writer_exit(run);
   return ok;
@@ -155,7 +153,8 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
       bool keep_empty_live =
           ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
           ctx->active_medium_runs[run->class_id] == run;
-      bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+      bool ok =
+          h8_medium_run_free_owner_local(ctx, run, ptr, keep_empty_live);
       if (!ok) {
         H8_DEBUG_INC(medium_invalid_owned_count);
       }
@@ -170,9 +169,6 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
                                       &h8g.medium_local_free_class_24k,
                                       &h8g.medium_local_free_class_48k);
 #endif
-      }
-      if (ok && ctx && run->class_id < H8_MEDIUM_CLASS_COUNT) {
-        h8_medium_set_active_run(ctx, run->class_id, run);
       }
       h8_medium_debug_writer_exit(run);
       return ok;
@@ -228,7 +224,8 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
   bool keep_empty_live =
       ctx && run->class_id < H8_MEDIUM_CLASS_COUNT &&
       ctx->active_medium_runs[run->class_id] == run;
-  bool ok = h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
+  bool ok = ctx ? h8_medium_run_free_owner_local(ctx, run, ptr, keep_empty_live)
+                : h8_medium_run_free_local_scaffold(run, ptr, keep_empty_live);
   if (!ok) {
     H8_DEBUG_INC(medium_invalid_owned_count);
   }
@@ -245,7 +242,6 @@ bool h8_medium_free_inner(void* ptr, bool* owned_out) {
                                     &h8g.medium_local_free_class_24k,
                                     &h8g.medium_local_free_class_48k);
 #endif
-      h8_medium_set_active_run(ctx, run->class_id, run);
     }
   }
   h8_medium_unlock_run(run);

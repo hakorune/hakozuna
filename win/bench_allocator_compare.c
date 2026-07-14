@@ -1024,6 +1024,25 @@ int main(int argc, char** argv) {
                s.medium_active_switch_class_64k,
                s.medium_active_miss_create,
                s.medium_active_miss_detached_reuse);
+        printf("[H8_MEDIUM_TRANSITION_INVENTORY] "
+               "add=%zu remove=%zu attempt=%zu hit=%zu unusable=%zu "
+               "owner_without_available=%zu duplicate=%zu owner_mismatch=%zu "
+               "class_mismatch=%zu indexed_full=%zu indexed_detached=%zu "
+               "indexed_nonactive=%zu active_indexed=%zu exit_nonempty=%zu "
+               "reuse=%zu\n",
+               s.medium_available_add, s.medium_available_remove,
+               s.medium_available_head_attempt, s.medium_available_head_hit,
+               s.medium_available_head_unusable,
+               s.medium_available_owner_list_hit_without_available,
+               s.medium_available_duplicate_membership,
+               s.medium_available_owner_mismatch,
+               s.medium_available_class_mismatch,
+               s.medium_available_indexed_full,
+               s.medium_available_indexed_detached,
+               s.medium_available_indexed_nonactive,
+               s.medium_available_active_indexed,
+               s.medium_available_exit_nonempty,
+               s.medium_available_hit_reuse);
     }
 #endif
     fflush(stdout);

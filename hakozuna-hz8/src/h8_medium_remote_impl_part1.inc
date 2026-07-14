@@ -487,8 +487,8 @@ static bool h8_medium_collect_run(H8OwnerRecord* owner, H8MediumRun* run,
   uint64_t collect = bits;
   uint64_t accepted = 0;
   size_t collected = 0;
-  size_t rejected = 0;
 #if defined(H8_ENABLE_DEBUG_STATS)
+  size_t rejected = 0;
   uint64_t section_start = h8_medium_remote_now_ns();
 #endif
   while (collect) {

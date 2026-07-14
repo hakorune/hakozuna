@@ -33,6 +33,7 @@ $Executables = @(
     @{ Name = "hz5-policy"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz5_policy.exe") },
     @{ Name = "hz8"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8.exe") },
     @{ Name = "hz8-medium-boundary-diag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_boundary_diag.exe"); Hz8Research = $true; Diagnostic = $true },
+    @{ Name = "hz8-medium-transition-inventory"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_medium_transition_inventory.exe"); Hz8Research = $true },
     @{ Name = "hz8-pre-transition-rollback"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_pre_transition.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-rollback"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-nomag"; Path = (Join-Path $SuiteDir "bench_mixed_ws_hz8_v2_nomag.exe"); Hz8Research = $true },

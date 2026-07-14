@@ -14,16 +14,17 @@ rollback:
   hz8-v2-rollback
 
 active behavior box:
-  none; SmallTransitionInventory-L1 promoted shared default
+  MediumTransitionInventory-L1
+  Windows research GO / shared-default HOLD
+  transition-only owner/class inventory replaces deep owner scans
+  no production counters or hot-path atomics
 
 active diagnostic box:
-  MediumBoundary-L0
-  first prove whether SmallTransitionInventory changed medium code shape by
-  comparing hz8 against hz8-pre-transition-rollback in fresh-process AB/BA
-  L0 complete on Windows: 4097..8192 is +0.72% and medium rows are broadly
-  neutral, so SmallTransitionInventory is not the boundary cause
-  diagnostic: 4097..8192 owner scan averages 127 steps; 64KiB averages 31.5
-  next behavior candidate: MediumTransitionInventory-L1
+  MediumBoundary-L0 complete
+  SmallTransitionInventory exonerated
+  4097..8192 baseline owner scan averaged 127 steps
+  L1 reduces owner scan steps 96.6%; inventory 29,464/29,464 hits
+  inventory safety/mismatch counters and exit residue are zero
 
 latest diagnostic closeout:
   SmallHotPathAudit-L0 = complete
@@ -46,6 +47,13 @@ latest broad check:
   fixed 512B..4KiB is strong; 4KiB..64KiB transition and direct-large are weak
   MT remote uses about 1/41 tcmalloc peak RSS at 53.7% throughput
 
+latest medium candidate:
+  MediumTransitionInventory-L1 Windows paired R10
+  4097..8192 +109.82%, fixed32K +35.09%, fixed64K +24.26%
+  larger_sizes +50.28%, balanced +4.67%, wide_ws -2.03%
+  fixed8K -4.50% blocks default; RSS gate passes
+  research GO; shared default waits for Ubuntu native/application-like gate
+
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD
   SmallTierMembership is mechanism GO / default NO-GO
@@ -61,6 +69,7 @@ latest closeout:
 | rollback | `hz8-pre-transition-rollback` | immediate pre-promotion Mag16 control |
 | rollback | `hz8-v2-rollback` | explicit comparison and emergency rollback |
 | research | `hz8-v2-mag32` | larger/local opt-in; global default HOLD |
+| research | `hz8-medium-transition-inventory` | Windows medium GO; shared default HOLD |
 | research | `hz8-small-partial-transition-only` | P1 recovery evidence; default HOLD |
 | compatibility | `hz8-small-transition-inventory` | alias of the promoted default |
 | research | `LargeDirectOwned` | cross128 profile evidence; not default |
@@ -110,18 +119,17 @@ strength:
   exact 8K/16K/32K improved materially after GeneralMediumPage promotion
 
 remaining measured weakness:
-  variable 4KiB..8KiB and fixed 16KiB..64KiB throughput
+  variable 4KiB..8KiB and fixed 32KiB..64KiB have a strong research fix,
+  but cross-platform/default controls are not closed
   direct 128KiB..4MiB throughput
   Redis-like mutation throughput
   long mixed traces can still produce high peak RSS
 
 next gate:
   win/run_win_hz8_page_general_gate.ps1
-    -Baseline pre-transition -Candidate default -Runs 5
-  rows include 4KiB boundary, 4097..8192, exact 8/16/32/64KiB,
-  balanced, wide_ws, and larger_sizes
-  existing diagnostic siblings already provide per-class active/owner/global/
-  create/free attribution; do not add counters to the speed binaries
+    -Baseline default -Candidate medium-transition -Runs 10
+  summary uses median paired candidate/baseline ratios
+  next external gate is Ubuntu native with the same behavior contract
 
 claim boundary:
   do not claim universal tcmalloc replacement

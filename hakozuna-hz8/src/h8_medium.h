@@ -127,7 +127,8 @@ typedef struct H8MediumRun {
   struct H8MediumRun* next_detached;
   struct H8MediumRun* next_pending;
   bool detached_indexed;
-#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX)
+#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX) || \
+    defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
   struct H8MediumRun* debug_available_prev;
   struct H8MediumRun* debug_available_next;
   bool debug_available_indexed;
@@ -352,7 +353,10 @@ void h8_medium_payload_free(void* raw_base, size_t raw_bytes, bool chunk_backed)
 void* h8_medium_run_alloc_local_scaffold(H8MediumRun* run);
 bool h8_medium_run_free_local_scaffold(H8MediumRun* run, void* ptr,
                                        bool keep_empty_live);
-#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX)
+bool h8_medium_run_free_owner_local(H8ThreadCtx* ctx, H8MediumRun* run,
+                                    void* ptr, bool keep_empty_live);
+#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX) || \
+    defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
 void h8_medium_available_shadow_attach(H8OwnerRecord* owner,
                                        H8MediumRun* run);
 void h8_medium_available_shadow_remove(H8OwnerRecord* owner,
