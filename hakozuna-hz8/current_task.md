@@ -15,7 +15,7 @@ rollback:
 
 active behavior box:
   MediumTransitionInventory-L1
-  Windows research GO / shared-default HOLD
+  cross-platform research GO / shared-default HOLD
   transition-only owner/class inventory replaces deep owner scans
   no production counters or hot-path atomics
 
@@ -52,7 +52,15 @@ latest medium candidate:
   4097..8192 +109.82%, fixed32K +35.09%, fixed64K +24.26%
   larger_sizes +50.28%, balanced +4.67%, wide_ws -2.03%
   fixed8K -4.50% blocks default; RSS gate passes
-  research GO; shared default waits for Ubuntu native/application-like gate
+  native Ubuntu gate now passes; Windows fixed8K/application-like follow-up
+  still blocks shared default
+
+latest Linux medium gate:
+  GCC/Clang preload, smoke, safety PASS
+  native AB/BA R10: 4097..8192 +157.49%, fixed64K +38.35%
+  fixed8/16/32 -1.57%/+1.05%/+2.10%; balanced +0.64%, wide -2.19%
+  post/peak RSS and all inventory zero-invariants PASS
+  Windows fixed8K -4.50% still blocks shared-default promotion
 
 latest closeout:
   SmallPartialTransitionDepot P1 is research GO / default HOLD

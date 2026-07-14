@@ -8,6 +8,7 @@ where the behavior contract is shared.
 | Lane | Build target | Status | Purpose |
 |---|---|---|---|
 | `hz8` / `hz8-general-medium-entry` | `preload` | public default | SmallTransitionInventory plus exact 8K/16K/32K GeneralMediumPage and EntryBoundary-L1A |
+| `hz8-medium-transition-inventory` | `preload-medium-transition-inventory` | research GO | Transition-only owner/class medium-run inventory; active miss consumes one validated candidate before the unchanged owner scan. Shared default HOLD on the Windows fixed-8KiB control. |
 
 Artifact: `libhakozuna_hz8_preload.so`.
 
@@ -59,6 +60,10 @@ make -C hakozuna-hz8 small-partial-depot-gate
 make -C hakozuna-hz8 preload-small-partial-transition-only
 make -C hakozuna-hz8 smoke-small-partial-transition-only
 make -C hakozuna-hz8 safety-stress-small-partial-transition-only
+make -C hakozuna-hz8 preload-medium-transition-inventory
+make -C hakozuna-hz8 smoke-medium-transition-inventory
+make -C hakozuna-hz8 safety-stress-medium-transition-inventory
+make -C hakozuna-hz8 medium-transition-inventory-gate
 
 # Reproducibility-only Windows controls; not Linux candidates.
 make -C hakozuna-hz8 bench-release-small-available4k

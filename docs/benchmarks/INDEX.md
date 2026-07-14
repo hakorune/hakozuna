@@ -7,6 +7,7 @@ This page is the public pointer list for dated benchmark summaries.
 - [HZ8 shared-default Windows full development check, 2026-07-14](./windows/hz8_full_default_20260714/SUMMARY.md)
 - [HZ8 SmallTransitionInventory matched-remote Windows final gate, 2026-07-14](./windows/paper/20260714_153251_hz8_transition_inventory_matched_remote.md)
 - [HZ8 Small Transition Inventory native Ubuntu x86_64 gate, 2026-07-14](./linux/HZ8_SMALL_TRANSITION_INVENTORY_20260714.md)
+- [HZ8 MediumTransitionInventory native Ubuntu x86_64 gate, 2026-07-14](./linux/HZ8_MEDIUM_TRANSITION_INVENTORY_20260714.md)
 - [HZ8 Small Partial Recovery Windows Gate, 2026-07-13](./windows/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Depot trace parity and recovery, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_RECOVERY_20260713.md)
 - [HZ8 Small Partial Transition Depot native Ubuntu gate, 2026-07-13](./linux/HZ8_SMALL_PARTIAL_TRANSITION_DEPOT_20260713.md)
@@ -93,6 +94,11 @@ This page is the public pointer list for dated benchmark summaries.
 
 # 2026-07-14
 
+- [HZ8 MediumTransitionInventory native Ubuntu x86_64 gate](linux/HZ8_MEDIUM_TRANSITION_INVENTORY_20260714.md):
+  the transition-only medium inventory passes GCC/Clang safety and native
+  AB/BA R10: `4097..8192 +157.49%`, fixed 64KiB `+38.35%`, and all fixed,
+  balanced, wide, and RSS controls pass. Cross-platform research GO; shared
+  default remains HOLD on the Windows fixed-8KiB control.
 - [HZ8 Small Transition Inventory native Ubuntu x86_64 gate](linux/HZ8_SMALL_TRANSITION_INVENTORY_20260714.md):
   xorshift, remote90, Redis, GCC/Clang safety, and LCG recovery pass; LCG
   improves `+762%/+194%/+115%` with bounded peak RSS. Shared default remains

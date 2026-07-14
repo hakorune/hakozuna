@@ -1,7 +1,7 @@
 # HZ8 Medium Boundary L0
 
-Status: **L0 complete; MediumTransitionInventory-L1 is Windows research GO,
-shared-default HOLD**.
+Status: **L0 complete; MediumTransitionInventory-L1 is cross-platform
+research GO, shared-default HOLD**.
 
 ## Signal
 
@@ -221,3 +221,44 @@ reopen default promotion:
 
 Speed builds contain no diagnostic atomics or counters. The counter-bearing
 `hz8-medium-transition-inventory-diag` sibling is evidence-only.
+
+## Linux Native Gate
+
+The Linux candidate is the same portable ownership box, compiled explicitly
+with `H8_MEDIUM_TRANSITION_INVENTORY_L1=1`; the public `HZ8_DEFAULT_CFLAGS`
+remain unchanged. The speed lane does not enable `H8_ENABLE_DEBUG_STATS` or
+the boundary diagnostic flag.
+
+```bash
+make -C hakozuna-hz8 medium-transition-inventory-gate
+```
+
+The runner builds both compiler variants, then runs fresh-process AB/BA R10
+against the current public default. The candidate/baseline result is the
+median of the ten within-pair ratios, rather than a ratio of independent
+medians. It records per-run exit status, throughput, post RSS, and peak RSS
+for these rows:
+
+```text
+4097..8192
+fixed 8 / 16 / 32 / 64 KiB
+balanced / wide_ws / larger_sizes
+```
+
+Linux acceptance is intentionally stricter than the original Windows
+research result:
+
+```text
+4097..8192 target:       >= +15%
+balanced and wide_ws:    >= -3%
+every fixed control:     >= -3%
+post and peak RSS:       <= max(+5%, +1 MiB)
+allocation failure:      0
+GCC and Clang smoke/safety: PASS
+```
+
+The `-3%` fixed-row gate remains binding even for a row that does not consume
+the inventory. It detects layout or shared-code regressions before a shared
+default decision. A Linux pass reopens shared-default review; it does not
+promote the box by itself, because the Windows fixed-8KiB control is still
+outside the same bound.
