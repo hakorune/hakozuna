@@ -21,6 +21,7 @@ promotion candidates, diagnostics, and closed experiments.
 | `hz8-r3-page-general` | exact-size GO / default HOLD | Cap64 exact 8K/16K/32K substrate; long gate has strong exact gains but `balanced -9.23%` layout tax |
 | `hz8-r3-page-general-cap128` | 32K specialist / HOLD | Removes the measured 32K cap boundary; direct cap64 comparison gives fixed32K +355.18% but misses two control gates |
 | `hz8-r3-page-general-entry-boundary` | compatibility alias / promoted | The selected behavior is now part of `hz8`; the named row remains reproducible |
+| `hz8-medium-transition-inventory` | cross-platform research GO / default HOLD | Large 4KiB..64KiB gains and neutral Redis-like control after type-stable metadata; Windows fixed8K repeatability still exceeds the -3% guard |
 | `hz8-r3-page8k-range4097` | Windows evidence / NO-GO speed candidate | Same 8KiB geometry for 4097..8192 requests; correctness passes but focused throughput is about 12.7% below HZ8 v2 |
 | `hz8-small-available4k` | Windows GO / global HOLD | O(1) class-8 reuse visibility; about 9.7x fixed-4KiB speedup and much lower peak RSS |
 | `hz8-small-partial-depot` | Windows GO / global HOLD | Transition-only same-owner partial-span visibility after Mag16 saturation; R5 balanced +435.73%, wide +178.34%, larger +37.34% |

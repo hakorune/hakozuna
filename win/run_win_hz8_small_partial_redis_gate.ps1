@@ -2,6 +2,12 @@ param(
     [ValidateRange(1, 30)]
     [int]$Runs = 5,
     [string]$OutputDir,
+    [ValidateSet("small-partial-transition-only", "medium-transition-inventory")]
+    [string]$Candidate = "small-partial-transition-only",
+    [ValidateRange(1, 100000)]
+    [int]$Cycles = 500,
+    [ValidateRange(1, 1000000)]
+    [int]$Ops = 2000,
     [switch]$ForceBuild
 )
 
@@ -9,10 +15,14 @@ $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
 $SuiteDir = Join-Path $RepoRoot "out_win_redis"
-$BuildScript = Join-Path $PSScriptRoot "build_win_hz8_redis_r3_gate.ps1"
+$BuildScript = Join-Path $PSScriptRoot "build_win_redis_workload_suite.ps1"
+$CandidateExecutables = @{
+    "small-partial-transition-only" = "bench_redis_workload_hz8_small_partial_transition_only.exe"
+    "medium-transition-inventory" = "bench_redis_workload_hz8_medium_transition_inventory.exe"
+}
 $Allocators = @(
     @{ Name = "hz8"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8.exe") },
-    @{ Name = "transition_only"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_small_partial_transition_only.exe") }
+    @{ Name = $Candidate; Path = (Join-Path $SuiteDir $CandidateExecutables[$Candidate]) }
 )
 $Patterns = @("SET", "GET", "LPUSH", "LPOP", "RANDOM")
 
@@ -24,9 +34,9 @@ New-Item -ItemType Directory -Force $OutputDir | Out-Null
 
 $missing = @($Allocators | Where-Object { -not (Test-Path $_.Path) })
 if ($ForceBuild -or $missing.Count -ne 0) {
-    & $BuildScript
+    & $BuildScript -IncludeHz8Research -RequestedHz8Variants @("hz8", "hz8-$Candidate")
     if ($LASTEXITCODE -ne 0) {
-        throw "build_win_hz8_redis_r3_gate.ps1 failed with exit code $LASTEXITCODE"
+        throw "build_win_redis_workload_suite.ps1 failed with exit code $LASTEXITCODE"
     }
 }
 
@@ -44,7 +54,7 @@ function Invoke-RedisBench {
 
     $psi = New-Object System.Diagnostics.ProcessStartInfo
     $psi.FileName = $Path
-    $psi.Arguments = "4 500 2000 16 256"
+    $psi.Arguments = "4 $Cycles $Ops 16 256"
     $psi.UseShellExecute = $false
     $psi.RedirectStandardOutput = $true
     $psi.RedirectStandardError = $true
@@ -119,16 +129,26 @@ for ($run = 1; $run -le $Runs; ++$run) {
 $summary = New-Object System.Collections.Generic.List[object]
 foreach ($pattern in $Patterns) {
     $defaultRows = @($records | Where-Object { $_.pattern -eq $pattern -and $_.allocator -eq "hz8" })
-    $p1Rows = @($records | Where-Object { $_.pattern -eq $pattern -and $_.allocator -eq "transition_only" })
+    $p1Rows = @($records | Where-Object { $_.pattern -eq $pattern -and $_.allocator -eq $Candidate })
     $defaultOps = Get-Median ([double[]]@($defaultRows.ops_m))
     $p1Ops = Get-Median ([double[]]@($p1Rows.ops_m))
     $defaultPeak = Get-Median ([double[]]@($defaultRows.peak_rss_kb))
     $p1Peak = Get-Median ([double[]]@($p1Rows.peak_rss_kb))
+    $pairedRatios = New-Object System.Collections.Generic.List[double]
+    for ($run = 1; $run -le $Runs; ++$run) {
+        $defaultRun = @($defaultRows | Where-Object { $_.run -eq $run })
+        $candidateRun = @($p1Rows | Where-Object { $_.run -eq $run })
+        if ($defaultRun.Count -eq 1 -and $candidateRun.Count -eq 1 -and $defaultRun[0].ops_m -gt 0) {
+            $pairedRatios.Add((([double]$candidateRun[0].ops_m / [double]$defaultRun[0].ops_m) - 1.0) * 100.0)
+        }
+    }
     $summary.Add([pscustomobject]@{
         pattern = $pattern
+        candidate = $Candidate
         default_mops = $defaultOps
         p1_mops = $p1Ops
         delta_pct = (($p1Ops / $defaultOps) - 1.0) * 100.0
+        paired_delta_pct = Get-Median ($pairedRatios.ToArray())
         default_peak_kb = $defaultPeak
         p1_peak_kb = $p1Peak
         peak_delta_pct = (($p1Peak / $defaultPeak) - 1.0) * 100.0
@@ -140,17 +160,19 @@ $summary | Export-Csv -NoTypeInformation -Encoding UTF8 (Join-Path $OutputDir "s
 Set-Content -Encoding UTF8 -Path (Join-Path $OutputDir "runs.log") -Value $log
 
 $markdown = New-Object System.Collections.Generic.List[string]
-$markdown.Add("# HZ8 Small Partial Redis-Like Gate")
+$markdown.Add("# HZ8 Redis-Like Candidate Gate")
 $markdown.Add("")
 $markdown.Add("- Fresh-process AB/BA")
 $markdown.Add("- Runs: $Runs")
+$markdown.Add("- Candidate: $Candidate")
+$markdown.Add("- Work: threads=4, cycles=$Cycles, ops=$Ops, size=16..256")
 $markdown.Add("- Diagnostic counters: disabled")
 $markdown.Add("")
-$markdown.Add("| pattern | default | P1 | delta | default peak | P1 peak | peak delta |")
-$markdown.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: |")
+$markdown.Add("| pattern | default | candidate | median delta | paired delta | default peak | candidate peak | peak delta |")
+$markdown.Add("| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |")
 foreach ($item in $summary) {
-    $markdown.Add(("| {0} | {1:N2}M | {2:N2}M | {3:+0.00;-0.00;0.00}% | {4:N2} MiB | {5:N2} MiB | {6:+0.00;-0.00;0.00}% |" -f
-        $item.pattern, $item.default_mops, $item.p1_mops, $item.delta_pct,
+    $markdown.Add(("| {0} | {1:N2}M | {2:N2}M | {3:+0.00;-0.00;0.00}% | {4:+0.00;-0.00;0.00}% | {5:N2} MiB | {6:N2} MiB | {7:+0.00;-0.00;0.00}% |" -f
+        $item.pattern, $item.default_mops, $item.p1_mops, $item.delta_pct, $item.paired_delta_pct,
         ($item.default_peak_kb / 1024.0), ($item.p1_peak_kb / 1024.0), $item.peak_delta_pct))
 }
 Set-Content -Encoding UTF8 -Path (Join-Path $OutputDir "summary.md") -Value $markdown

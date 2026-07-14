@@ -262,3 +262,40 @@ the inventory. It detects layout or shared-code regressions before a shared
 default decision. A Linux pass reopens shared-default review; it does not
 promote the box by itself, because the Windows fixed-8KiB control is still
 outside the same bound.
+
+## Windows Final Gate And Type Stability
+
+Windows WorkScale=10 fresh-process AB/BA R10 retained the mechanism signal:
+
+```text
+4097..8192:  +281.70%
+fixed32K:     +36.05%
+fixed64K:     +29.36%
+balanced:      +9.48%
+wide_ws:       -1.35%
+larger_sizes: +154.34%
+```
+
+The owner record originally included `medium_available_shadow` only in the
+candidate build. That shifted the following small pending/inbox fields and
+produced an apparent Redis-like regression even though the Redis size range
+was 16..256 bytes and could not execute the medium behavior. The field is now
+type-stable across lanes. A 10x Redis-like AB/BA R10 then measured paired
+deltas of `-0.64% / +0.21% / -0.39% / +3.92% / +9.16%` for
+SET/GET/LPUSH/LPOP/RANDOM, with peak RSS `+0.02%`.
+
+The remaining blocker is fixed8K repeatability. Two WorkScale=10 paired R10
+sessions measured `-1.98%` and `-5.07%`. The latter exceeds the binding `-3%`
+control even though all RSS rows pass. Therefore:
+
+```text
+cross-platform research lane:
+  GO
+
+shared public default:
+  HOLD
+
+next action:
+  do not add another capacity or replacement-policy knob
+  reopen only with a stable explanation for the Windows fixed8K variance
+```

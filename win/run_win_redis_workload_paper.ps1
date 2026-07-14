@@ -28,6 +28,7 @@ $Executables = @(
     @{ Name = "hz8"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8.exe") },
     @{ Name = "hz8-small-partial-transition-only"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_small_partial_transition_only.exe"); Hz8Research = $true },
     @{ Name = "hz8-small-transition-inventory"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_small_transition_inventory.exe"); Hz8Research = $true },
+    @{ Name = "hz8-medium-transition-inventory"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_medium_transition_inventory.exe"); Hz8Research = $true },
     @{ Name = "hz8-v2-rollback"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_v2.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-integrated"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_r3.exe"); Hz8Research = $true },
     @{ Name = "hz8-r3-page8k-target-dispatch"; Path = (Join-Path $SuiteDir "bench_redis_workload_hz8_page8k_target_dispatch.exe"); Hz8Research = $true },

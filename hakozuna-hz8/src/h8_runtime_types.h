@@ -140,10 +140,8 @@ struct H8OwnerRecord {
   H8OwnerPlacement placement;
   H8Span* owned_by_class[H8_CLASS_COUNT];
   H8MediumRun* medium_by_class[H8_MEDIUM_CLASS_COUNT];
-#if defined(H8_ENABLE_DEBUG_STATS) || defined(H8_MEDIUM_ENABLE_AVAILABLE_INDEX) || \
-    defined(H8_MEDIUM_TRANSITION_INVENTORY_L1)
+  /* Keep owner hot-field offsets stable across medium research lanes. */
   H8MediumRun* medium_available_shadow[H8_MEDIUM_CLASS_COUNT];
-#endif
 #if defined(H8_ENABLE_DEBUG_STATS) || \
     defined(H8_MEDIUM_ENABLE_REFILL_CANDIDATE) || \
     defined(H8_MEDIUM_KEEP_REFILL_EMPTY_L1)

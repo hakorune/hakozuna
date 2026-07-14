@@ -48,12 +48,11 @@ latest broad check:
   MT remote uses about 1/41 tcmalloc peak RSS at 53.7% throughput
 
 latest medium candidate:
-  MediumTransitionInventory-L1 Windows paired R10
-  4097..8192 +109.82%, fixed32K +35.09%, fixed64K +24.26%
-  larger_sizes +50.28%, balanced +4.67%, wide_ws -2.03%
-  fixed8K -4.50% blocks default; RSS gate passes
-  native Ubuntu gate now passes; Windows fixed8K/application-like follow-up
-  still blocks shared default
+  MediumTransitionInventory-L1 is cross-platform research GO
+  Windows WorkScale=10 paired R10 retains large medium gains and RSS gates
+  type-stable owner metadata removes the non-medium Redis-like layout tax
+  Windows fixed8K repeats disagree: -1.98% then -5.07%
+  shared default remains HOLD because the -3% fixed control is not robust
 
 latest Linux medium gate:
   GCC/Clang preload, smoke, safety PASS
@@ -77,7 +76,7 @@ latest closeout:
 | rollback | `hz8-pre-transition-rollback` | immediate pre-promotion Mag16 control |
 | rollback | `hz8-v2-rollback` | explicit comparison and emergency rollback |
 | research | `hz8-v2-mag32` | larger/local opt-in; global default HOLD |
-| research | `hz8-medium-transition-inventory` | Windows medium GO; shared default HOLD |
+| research | `hz8-medium-transition-inventory` | cross-platform medium GO; shared default HOLD on Windows fixed8K variance |
 | research | `hz8-small-partial-transition-only` | P1 recovery evidence; default HOLD |
 | compatibility | `hz8-small-transition-inventory` | alias of the promoted default |
 | research | `LargeDirectOwned` | cross128 profile evidence; not default |
@@ -128,16 +127,15 @@ strength:
 
 remaining measured weakness:
   variable 4KiB..8KiB and fixed 32KiB..64KiB have a strong research fix,
-  but cross-platform/default controls are not closed
+  but the Windows fixed8K control is not robust enough for default promotion
   direct 128KiB..4MiB throughput
   Redis-like mutation throughput
   long mixed traces can still produce high peak RSS
 
 next gate:
-  win/run_win_hz8_page_general_gate.ps1
-    -Baseline default -Candidate medium-transition -Runs 10
-  summary uses median paired candidate/baseline ratios
-  next external gate is Ubuntu native with the same behavior contract
+  no further policy/capacity ladder for MediumTransitionInventory-L1
+  reopen shared-default review only with a stable Windows fixed8K explanation
+  keep Redis-like candidate selection available as an application-like control
 
 claim boundary:
   do not claim universal tcmalloc replacement

@@ -171,6 +171,13 @@ $hz8Variants = @(
         Output = "bench_redis_workload_hz8_small_transition_inventory.exe"
         ExtraFlags = $Hz8DefaultFlags
     },
+    @{
+        Name = "hz8-medium-transition-inventory"
+        Output = "bench_redis_workload_hz8_medium_transition_inventory.exe"
+        ExtraFlags = $Hz8DefaultFlags + @(
+            "/DH8_MEDIUM_TRANSITION_INVENTORY_L1=1"
+        )
+    },
     @{ Name = "hz8-v2-rollback"; Output = "bench_redis_workload_hz8_v2.exe"; ExtraFlags = @() },
     @{
         Name = "hz8-r3-page8k-integrated"
