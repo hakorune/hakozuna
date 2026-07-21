@@ -1,5 +1,4 @@
 # Current Task
-
 This root file is the short project orientation ledger. Do not add chronological logs here.
 
 ## Active Work
@@ -7,7 +6,9 @@ This root file is the short project orientation ledger. Do not add chronological
 ```text
 Primary family:
   HZ8 allocator development and benchmarking
-
+New tool:
+  Hakozuna Bench Lab is a Windows-first .NET 8/WPF GUI over existing runners.
+  Its MVP is documentation-first under hakozuna-bench-lab/.
 Current direction:
   HZ8 is the public recommended balanced allocator line. Current Linux and
   Windows default is SmallTransitionInventory + KeepRefill + GeneralMediumPage + EntryBoundary,
@@ -67,7 +68,7 @@ HZ12 advisory-ownership orientation:
   hakozuna-hz12/docs/HZ12_CHARTER_L0.md
   hakozuna-hz12/docs/HZ12_WINDOWS_OWNER_ROUTING_SHADOW_L0.md
 HZ8 integration roadmap: hakozuna-hz8/docs/HZ8_RESEARCH_INTEGRATION_ROADMAP_L0.md
-
+Bench Lab: hakozuna-bench-lab/current_task.md
 HZ6 reference: hakozuna-hz6/docs/current_task.md
 ```
 ## Rules
