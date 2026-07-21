@@ -22,10 +22,14 @@ measurement: existing native benchmark executables
 4. Add the Windows child-process agent with timeout and tree cleanup. [done]
    Allocator/runner version, SHA-256, and redacted environment identity are
    mandatory for Verified plans.
-5. Parse allocator matrix and MT remote output markers.
-6. Build Run Setup and Result Detail before charts.
-7. Add throughput/RSS charts and JSON/CSV/Markdown export.
-8. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.
+5. Add provider pack manifest, validation, safe import, and side-by-side
+   installation. [done]
+   The Providers screen imports local `.hbl-provider.zip` files, validates
+   platform/architecture and SHA-256, and refuses unsafe paths or overwrite.
+6. Parse allocator matrix and MT remote output markers.
+7. Build Run Setup and Result Detail before charts.
+8. Add throughput/RSS charts and JSON/CSV/Markdown export.
+9. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.
 
 ## Guardrails
 

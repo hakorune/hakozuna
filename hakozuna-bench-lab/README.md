@@ -46,6 +46,7 @@ not reportable when required runs fail or allocator identity is ambiguous.
 - [Architecture](docs/ARCHITECTURE.md)
 - [Windows MVP](docs/MVP_WINDOWS.md)
 - [Result protocol](docs/RESULT_PROTOCOL.md)
+- [Distribution and provider packs](docs/DISTRIBUTION_AND_PROVIDERS.md)
 - [Current task](current_task.md)
 
 ## Non-Goals for the MVP
@@ -60,3 +61,12 @@ not reportable when required runs fail or allocator identity is ambiguous.
 The product promise is simple: select allocators and a workload, run them under
 the same conditions, and understand the speed/RSS tradeoff without reading
 PowerShell scripts.
+
+## Build The Windows Portable Archive
+
+```powershell
+pwsh hakozuna-bench-lab/scripts/build_windows_portable.ps1
+```
+
+Extract the generated ZIP and launch `HakozunaBenchLab.App.exe`. Allocator
+packs are managed from the Providers tab and stored per user.

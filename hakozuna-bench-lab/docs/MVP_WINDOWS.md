@@ -49,6 +49,10 @@ numerals, and restrained motion used only for run-state transitions.
 External DLL support must validate architecture and use a child process. The
 application must never call allocator exports directly.
 
+Provider installation and side-by-side versioning are defined in
+`DISTRIBUTION_AND_PROVIDERS.md`. System and HZ8 ship with the application;
+mimalloc and tcmalloc use explicit downloadable provider packs.
+
 ## Initial Presets
 
 | Preset | Purpose | Existing basis |
@@ -73,7 +77,7 @@ application must never call allocator exports directly.
 
 - Linux UI
 - Remote-machine execution
-- Automatic allocator downloads
+- Background or silent allocator downloads
 - ETW allocation tracing
 - Plugin marketplace
 - Paper-style statistical analysis beyond median and quartiles
