@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using System.Diagnostics;
 using HakozunaBenchLab.Core.Models;
+using HakozunaBenchLab.Core.Environment;
 
 namespace HakozunaBenchLab.Agent;
 
@@ -15,15 +16,20 @@ public sealed class BenchmarkAgent
         ArgumentNullException.ThrowIfNull(options);
         if (options.Timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(options));
 
+        var environmentOverrides = EnvironmentPolicy.MergeOverrides(
+            plan.Allocator.EnvironmentOverrides,
+            plan.Workload.EnvironmentOverrides);
         var samples = ImmutableArray.CreateBuilder<ProcessSample>(plan.Runs);
         for (var index = 0; index < plan.Runs; index++)
-            samples.Add(await RunOneAsync(plan, index + 1, options, cancellationToken));
+            samples.Add(await RunOneAsync(plan, index + 1, options, environmentOverrides, cancellationToken));
 
-        return new RunResult(plan, samples.ToImmutable(), plan.Allocator.ArtifactSha256, DateTimeOffset.UtcNow);
+        return new RunResult(plan, samples.ToImmutable(), plan.Allocator.ArtifactSha256,
+            EnvironmentPolicy.CaptureForReport(environmentOverrides), DateTimeOffset.UtcNow);
     }
 
     private static async Task<ProcessSample> RunOneAsync(RunPlan plan, int sampleIndex,
-        AgentOptions options, CancellationToken cancellationToken)
+        AgentOptions options, IReadOnlyDictionary<string, string> environmentOverrides,
+        CancellationToken cancellationToken)
     {
         var started = DateTimeOffset.UtcNow;
         var stopwatch = Stopwatch.StartNew();
@@ -37,6 +43,7 @@ public sealed class BenchmarkAgent
             CreateNoWindow = true
         };
         foreach (var argument in plan.Workload.Arguments) startInfo.ArgumentList.Add(argument);
+        foreach (var pair in environmentOverrides) startInfo.Environment[pair.Key] = pair.Value;
 
         using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         process.Start();

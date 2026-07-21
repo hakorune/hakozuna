@@ -20,6 +20,8 @@ measurement: existing native benchmark executables
 2. Implement allocator/workload manifest models and validation. [done]
 3. Implement the immutable run plan and result protocol. [done]
 4. Add the Windows child-process agent with timeout and tree cleanup. [done]
+   Allocator/runner version, SHA-256, and redacted environment identity are
+   mandatory for Verified plans.
 5. Parse allocator matrix and MT remote output markers.
 6. Build Run Setup and Result Detail before charts.
 7. Add throughput/RSS charts and JSON/CSV/Markdown export.

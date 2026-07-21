@@ -39,6 +39,9 @@ Export enough evidence to reproduce the result.
 5. Raw output is retained with every result bundle.
 6. Windows and Linux results are never mixed into one absolute ranking.
 7. The GUI is an orchestrator, not part of the timed benchmark process.
+8. Allocator version, provider hash, runner version, and relevant environment
+   variables are part of the result identity.
+9. Environment capture is allowlisted and secret-like values are redacted.
 
 ## Success Criteria
 
