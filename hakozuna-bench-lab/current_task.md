@@ -8,7 +8,7 @@ child processes and visualizes throughput, peak RSS, and post-workload RSS.
 ## Current Phase
 
 ```text
-phase: documentation and skeleton preparation
+phase: core/agent/app skeleton implementation
 platform: Windows 10/11 x64 first; macOS next
 stack: .NET 8 + Avalonia UI
 measurement: existing native benchmark executables
@@ -16,10 +16,10 @@ measurement: existing native benchmark executables
 
 ## Implementation Order
 
-1. Create the .NET solution and four project skeletons.
-2. Implement allocator/workload manifest models and validation.
-3. Implement the immutable run plan and result protocol.
-4. Add the Windows child-process agent with timeout and tree cleanup.
+1. Create the .NET solution and four project skeletons. [done]
+2. Implement allocator/workload manifest models and validation. [done]
+3. Implement the immutable run plan and result protocol. [done]
+4. Add the Windows child-process agent with timeout and tree cleanup. [done]
 5. Parse allocator matrix and MT remote output markers.
 6. Build Run Setup and Result Detail before charts.
 7. Add throughput/RSS charts and JSON/CSV/Markdown export.

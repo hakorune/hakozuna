@@ -1,0 +1,49 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="HakozunaBenchLab.App.MainWindow"
+        Width="1100"
+        Height="720"
+        Title="Hakozuna Bench Lab">
+  <Grid RowDefinitions="Auto,*,Auto" Margin="28">
+    <StackPanel Spacing="6">
+      <TextBlock FontSize="30" FontWeight="Bold" Foreground="#18212B">Hakozuna Bench Lab</TextBlock>
+      <TextBlock Foreground="#596773">Measure speed and memory together.</TextBlock>
+    </StackPanel>
+    <Grid Grid.Row="1" ColumnDefinitions="260,*" ColumnSpacing="24" Margin="0,28,0,24">
+      <Border Background="#F1E9DC" CornerRadius="14" Padding="18">
+        <StackPanel Spacing="14">
+          <TextBlock Text="RUN SETUP" FontWeight="Bold" Foreground="#8A4B2A" />
+          <TextBlock Text="Allocator" />
+          <ComboBox SelectedIndex="0">
+            <ComboBoxItem Content="HZ8" />
+            <ComboBoxItem Content="system" />
+            <ComboBoxItem Content="mimalloc" />
+            <ComboBoxItem Content="tcmalloc" />
+          </ComboBox>
+          <TextBlock Text="Workload" />
+          <ComboBox SelectedIndex="0">
+            <ComboBoxItem Content="Local Mixed" />
+            <ComboBoxItem Content="Remote 90" />
+            <ComboBoxItem Content="Medium Mixed" />
+            <ComboBoxItem Content="RSS Turnover" />
+          </ComboBox>
+          <CheckBox Content="Verified mode" IsChecked="True" />
+          <Button Content="Run benchmark" HorizontalContentAlignment="Center" />
+        </StackPanel>
+      </Border>
+      <Border Grid.Column="1" Background="#FBF8F2" BorderBrush="#D8CDBD" BorderThickness="1" CornerRadius="14" Padding="24">
+        <StackPanel Spacing="18">
+          <TextBlock Text="RESULT OVERVIEW" FontWeight="Bold" Foreground="#8A4B2A" />
+          <TextBlock Text="No verified run yet" FontSize="24" Foreground="#18212B" />
+          <TextBlock Text="Throughput and RSS charts will appear here after the isolated runner completes." TextWrapping="Wrap" />
+          <Grid ColumnDefinitions="*,*,*" ColumnSpacing="12">
+            <Border Background="#E4EFEA" CornerRadius="10" Padding="14"><StackPanel><TextBlock Text="OPS/S"/><TextBlock Text="--" FontSize="24"/></StackPanel></Border>
+            <Border Grid.Column="1" Background="#E8EDF4" CornerRadius="10" Padding="14"><StackPanel><TextBlock Text="PEAK RSS"/><TextBlock Text="--" FontSize="24"/></StackPanel></Border>
+            <Border Grid.Column="2" Background="#F4E4D9" CornerRadius="10" Padding="14"><StackPanel><TextBlock Text="POST RSS"/><TextBlock Text="--" FontSize="24"/></StackPanel></Border>
+          </Grid>
+        </StackPanel>
+      </Border>
+    </Grid>
+    <TextBlock Grid.Row="2" Text="Preview is directional. Verified results retain raw output, hashes, and run conditions." Foreground="#596773" />
+  </Grid>
+</Window>
