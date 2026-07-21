@@ -3,7 +3,7 @@
 ## Process Boundary
 
 ```text
-HakozunaBenchLab.exe (WPF)
+HakozunaBenchLab (Avalonia UI)
   |
   +-- validates allocator/workload manifests
   +-- creates immutable run plan
@@ -20,12 +20,14 @@ HakozunaBenchLab.exe (WPF)
 ```
 
 The agent exists so benchmark execution can later be reused by CLI and Linux
-front ends. The GUI must not parse allocator-specific output directly.
+front ends. The GUI must not parse allocator-specific output directly. The
+process-control implementation is platform-specific; the run plan and result
+model are shared.
 
 ## Proposed Projects
 
 ```text
-src/HakozunaBenchLab.App/       WPF application
+src/HakozunaBenchLab.App/       Avalonia desktop application
 src/HakozunaBenchLab.Core/      manifests, plans, result model, statistics
 src/HakozunaBenchLab.Agent/     child-process execution and capture
 tests/HakozunaBenchLab.Tests/   parser, validation, and report tests

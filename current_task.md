@@ -7,7 +7,8 @@ This root file is the short project orientation ledger. Do not add chronological
 Primary family:
   HZ8 allocator development and benchmarking
 New tool:
-  Hakozuna Bench Lab is a Windows-first .NET 8/WPF GUI over existing runners.
+  Hakozuna Bench Lab is a Windows-first .NET 8/Avalonia GUI over existing runners,
+  with macOS as the next desktop target.
   Its MVP is documentation-first under hakozuna-bench-lab/.
 Current direction:
   HZ8 is the public recommended balanced allocator line. Current Linux and

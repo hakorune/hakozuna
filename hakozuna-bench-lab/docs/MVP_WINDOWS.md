@@ -1,19 +1,28 @@
-# Windows MVP
+# Windows MVP and macOS Follow-up
 
 ## Technology
 
 ```text
 .NET 8
-WPF
+Avalonia UI
 System.Text.Json
 Windows Job Objects for child cleanup
 GetProcessMemoryInfo for working-set/private metrics
 existing C benchmark executables and PowerShell build scripts
 ```
 
-WPF is selected for the first release because it is small, stable, easy to run
-without packaging infrastructure, and integrates directly with Windows process
-controls. Cross-platform UI work is deferred.
+Avalonia is selected so the Windows-first UI can be reused on macOS without a
+second screen implementation. Windows remains the first validation target; the
+agent's process-control layer is isolated so macOS can later use its own
+process-group and memory-query implementation.
+
+## Platform Sequence
+
+```text
+1. Windows: existing PowerShell/native runners and Windows memory metrics
+2. macOS: same Avalonia screens and result schema, native runner adapter
+3. Linux: reuse protocol after desktop workflows are stable
+```
 
 ## Screens
 
@@ -62,7 +71,7 @@ application must never call allocator exports directly.
 
 ## Deferred
 
-- Linux/macOS UI
+- Linux UI
 - Remote-machine execution
 - Automatic allocator downloads
 - ETW allocation tracing

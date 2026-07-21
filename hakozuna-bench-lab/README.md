@@ -10,17 +10,17 @@ throughput, RSS, latency, and safety reports.
 ## First Release
 
 ```text
-platform: Windows 10/11 x64
-UI: .NET 8 + WPF
+platform: Windows 10/11 x64 first; macOS next
+UI: .NET 8 + Avalonia UI
 execution: isolated child processes
 allocators: system, HZ8, mimalloc, tcmalloc
 presets: local, remote-heavy, mixed-size, RSS turnover
 exports: JSON, CSV, Markdown
 ```
 
-The first release is intentionally Windows-only. Linux support should reuse
-the result protocol after the Windows workflow is stable; it must not delay the
-MVP.
+The first release is Windows-first, with macOS as the second desktop target.
+Linux support should reuse the result protocol after the two desktop workflows
+are stable; it must not delay the Windows MVP.
 
 ## Core Rule
 

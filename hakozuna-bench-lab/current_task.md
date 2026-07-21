@@ -9,8 +9,8 @@ child processes and visualizes throughput, peak RSS, and post-workload RSS.
 
 ```text
 phase: documentation and skeleton preparation
-platform: Windows 10/11 x64
-stack: .NET 8 + WPF
+platform: Windows 10/11 x64 first; macOS next
+stack: .NET 8 + Avalonia UI
 measurement: existing native benchmark executables
 ```
 

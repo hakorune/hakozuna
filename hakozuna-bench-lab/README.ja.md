@@ -9,16 +9,16 @@ throughput、RSS、latency、安全性の結果を同じ形式で比較できる
 ## 最初のリリース
 
 ```text
-platform: Windows 10/11 x64
-UI: .NET 8 + WPF
+platform: Windows 10/11 x64 first; macOS next
+UI: .NET 8 + Avalonia UI
 execution: 隔離した子プロセス
 allocators: system, HZ8, mimalloc, tcmalloc
 presets: local, remote-heavy, mixed-size, RSS turnover
 exports: JSON, CSV, Markdown
 ```
 
-最初はWindows版だけを完成させます。Linux対応はWindows workflowと結果protocol
-が固まった後に追加し、MVPを遅らせません。
+最初はWindows版を主対象にし、次にmacOS版を追加します。Linux対応はWindowsと
+macOSのworkflow、結果protocolが固まった後に追加し、MVPを遅らせません。
 
 ## 最重要ルール
 
