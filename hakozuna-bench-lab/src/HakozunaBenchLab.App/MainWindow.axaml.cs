@@ -1,6 +1,7 @@
 using Avalonia.Controls;
 using Avalonia.Platform.Storage;
 using HakozunaBenchLab.Agent;
+using HakozunaBenchLab.Core.Results;
 using HakozunaBenchLab.Core.Providers;
 using System.Runtime.InteropServices;
 
@@ -53,6 +54,47 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void RunBenchmarkClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var allocatorId = (AllocatorComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        var workloadId = (WorkloadComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        if (string.IsNullOrWhiteSpace(allocatorId) || string.IsNullOrWhiteSpace(workloadId))
+        {
+            RunStatusText.Text = "Select an allocator and workload first.";
+            return;
+        }
+
+        RunButton.IsEnabled = false;
+        RunStatusText.Text = "Running isolated Preview benchmark...";
+        OpsValueText.Text = "...";
+        PeakRssValueText.Text = "...";
+        PostRssValueText.Text = "...";
+        try
+        {
+            // This connected slice is Preview-only; Verified requires package hashes.
+            var plan = RepositoryBenchCatalog.CreatePreviewPlan(allocatorId, workloadId);
+            var result = await new BenchmarkAgent().RunAsync(plan,
+                new AgentOptions(TimeSpan.FromSeconds(30)));
+            var measurement = BenchmarkOutputParser.ParseSingle(result);
+            OpsValueText.Text = FormatOps(measurement.OpsPerSecond);
+            PeakRssValueText.Text = FormatBytes(measurement.PeakWorkingSetBytes);
+            PostRssValueText.Text = "runner does not emit it";
+            RunStatusText.Text = $"Preview complete: {allocatorId} / {workloadId}";
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or
+            NotSupportedException or FileNotFoundException or InvalidDataException or IOException)
+        {
+            OpsValueText.Text = "--";
+            PeakRssValueText.Text = "--";
+            PostRssValueText.Text = "--";
+            RunStatusText.Text = exception.Message;
+        }
+        finally
+        {
+            RunButton.IsEnabled = true;
+        }
+    }
+
     private static string GetPlatform() => OperatingSystem.IsMacOS() ? "macos" : "windows";
 
     private static string GetArchitecture() => RuntimeInformation.ProcessArchitecture switch
@@ -63,4 +105,12 @@ public partial class MainWindow : Window
         Architecture.Arm => "arm",
         var architecture => architecture.ToString().ToLowerInvariant()
     };
+
+    private static string FormatOps(double opsPerSecond) => opsPerSecond >= 1_000_000
+        ? $"{opsPerSecond / 1_000_000d:F2}M"
+        : $"{opsPerSecond:N0}";
+
+    private static string FormatBytes(long bytes) => bytes <= 0
+        ? "not sampled"
+        : $"{bytes / 1024d / 1024d:F2} MiB";
 }

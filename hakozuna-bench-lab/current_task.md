@@ -26,7 +26,9 @@ measurement: existing native benchmark executables
    installation. [done]
    The Providers screen imports local `.hbl-provider.zip` files, validates
    platform/architecture and SHA-256, and refuses unsafe paths or overwrite.
-6. Parse allocator matrix and MT remote output markers.
+6. Connect Preview Run to the existing Windows system/HZ8 mixed-workspace
+   executables, parse throughput, and capture child-process peak RSS. [active]
+   Remote 90 and RSS Turnover remain blocked on dedicated runner adapters.
 7. Build Run Setup and Result Detail before charts.
 8. Add throughput/RSS charts and JSON/CSV/Markdown export.
 9. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.

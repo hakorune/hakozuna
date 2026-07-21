@@ -62,6 +62,16 @@ The product promise is simple: select allocators and a workload, run them under
 the same conditions, and understand the speed/RSS tradeoff without reading
 PowerShell scripts.
 
+## Connected Preview
+
+The current Windows Preview can run the repository's `system` and `HZ8` Local
+Mixed and Medium Mixed executables from the Run tab. Each runner is staged to a
+unique local temporary directory, and its reported throughput and peak RSS are
+shown in the UI. Remote 90 and RSS Turnover require dedicated adapters;
+mimalloc and tcmalloc require provider packs. These boundaries are intentional:
+the GUI never substitutes a different workload and never presents a Preview as
+a verified comparison.
+
 ## Build The Windows Portable Archive
 
 ```powershell

@@ -2,6 +2,7 @@ using HakozunaBenchLab.Core.Models;
 using HakozunaBenchLab.Core.Validation;
 using HakozunaBenchLab.Agent;
 using HakozunaBenchLab.Core.Environment;
+using HakozunaBenchLab.Core.Results;
 using System.Collections.Immutable;
 
 namespace HakozunaBenchLab.Tests;
@@ -59,5 +60,23 @@ public sealed class RunPlanTests
 
         Assert.Equal("balanced", captured["H8_PROFILE"]);
         Assert.Equal("<redacted>", captured["H8_API_TOKEN"]);
+    }
+
+    [Fact]
+    public void PreviewParserUsesRunnerReportedPeakRss()
+    {
+        var allocator = new AllocatorManifest("system", "System", LaneKind.Speed,
+            "bench.exe", "1.0");
+        var workload = new WorkloadPreset("local", "Local", "bench.exe", [], "1.0");
+        var plan = RunPlan.Create(allocator, workload, RunMode.Preview, 1);
+        var sample = new ProcessSample(1, DateTimeOffset.UtcNow, TimeSpan.FromSeconds(1), 0,
+            false, "ops/s=12.50 peak_rss_kb=2048", string.Empty, 1024);
+        var result = new RunResult(plan, [sample], null,
+            ImmutableDictionary<string, string>.Empty, DateTimeOffset.UtcNow);
+
+        var measurement = BenchmarkOutputParser.ParseSingle(result);
+
+        Assert.Equal(12.5, measurement.OpsPerSecond);
+        Assert.Equal(2L * 1024 * 1024, measurement.PeakWorkingSetBytes);
     }
 }

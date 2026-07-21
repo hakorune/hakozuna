@@ -383,7 +383,6 @@ static uint64_t now_ns(void) {
     }
 }
 
-#if defined(HZ_BENCH_USE_HZ6)
 static size_t peak_working_set_kb(void) {
     PROCESS_MEMORY_COUNTERS pmc;
     if (!GetProcessMemoryInfo(GetCurrentProcess(), &pmc, sizeof(pmc))) {
@@ -391,7 +390,6 @@ static size_t peak_working_set_kb(void) {
     }
     return (size_t)(pmc.PeakWorkingSetSize / 1024u);
 }
-#endif
 
 static unsigned __stdcall bench_thread(void* arg) {
     ThreadArg* ta = (ThreadArg*)arg;
@@ -482,7 +480,6 @@ static uint64_t now_ns(void) {
     return (uint64_t)ts.tv_sec * 1000000000ULL + (uint64_t)ts.tv_nsec;
 }
 
-#if defined(HZ_BENCH_USE_HZ6)
 static size_t peak_working_set_kb(void) {
     struct rusage usage;
     if (getrusage(RUSAGE_SELF, &usage) != 0) {
@@ -490,7 +487,6 @@ static size_t peak_working_set_kb(void) {
     }
     return (size_t)usage.ru_maxrss;
 }
-#endif
 
 static void* bench_thread(void* arg) {
     ThreadArg* ta = (ThreadArg*)arg;
@@ -674,9 +670,7 @@ int main(int argc, char** argv) {
     double sec = (double)(end - start) / 1000000000.0;
     double total_ops = (double)threads * (double)iters;
     double ops_sec = sec > 0.0 ? (total_ops / sec) : 0.0;
-#if defined(HZ_BENCH_USE_HZ6)
     size_t peak_kb = peak_working_set_kb();
-#endif
 
     size_t alloc_attempts = 0;
     size_t alloc_successes = 0;
@@ -743,9 +737,9 @@ int main(int argc, char** argv) {
     }
 
     printf("threads=%zu iters=%zu ws=%zu size=%zu..%zu time=%.3f ops/s=%.3f "
-           "alloc_attempts=%zu alloc_success=%zu alloc_fail=%zu frees=%zu",
+           "alloc_attempts=%zu alloc_success=%zu alloc_fail=%zu frees=%zu peak_rss_kb=%zu",
            threads, iters, ws, min_size, max_size, sec, ops_sec,
-           alloc_attempts, alloc_successes, alloc_failures, frees);
+           alloc_attempts, alloc_successes, alloc_failures, frees, peak_kb);
 #if defined(HZ_BENCH_USE_HZ6)
 #if defined(HZ_BENCH_TRACE_LAST_OP) && HZ_BENCH_TRACE_LAST_OP
     bench_print_hz6_summary(&hz6_stats, hz6_pre_free_owns_false,

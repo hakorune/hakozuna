@@ -62,6 +62,23 @@ mimalloc and tcmalloc use explicit downloadable provider packs.
 | Medium Mixed | medium-size throughput/RSS | allocator matrix |
 | RSS Turnover | peak and post-workload recovery | turnover/control lanes |
 
+## Connected Preview Slice
+
+The first connected GUI slice intentionally stays narrow:
+
+| Allocator | Preset | Status |
+|---|---|---|
+| Windows system allocator | Local Mixed, Medium Mixed | runnable Preview |
+| HZ8 selected Windows build | Local Mixed, Medium Mixed | runnable Preview |
+| mimalloc / tcmalloc | all | requires an installed provider pack |
+| any allocator | Remote 90, RSS Turnover | requires a dedicated runner adapter |
+
+Preview stages file-backed runners into a unique local temporary directory before
+launching them. This avoids executing a benchmark directly from a network or
+mapped drive and keeps the GUI process separate from allocator code. The common
+runner emits `ops/s` and peak RSS; post-workload RSS remains unavailable until a
+turnover-specific adapter is connected.
+
 ## MVP Acceptance
 
 - Four allocators can be discovered and validated from manifests.

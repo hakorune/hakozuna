@@ -31,12 +31,16 @@ public sealed class BenchmarkAgent
         AgentOptions options, IReadOnlyDictionary<string, string> environmentOverrides,
         CancellationToken cancellationToken)
     {
+        using var staged = File.Exists(plan.Workload.ExecutablePath)
+            ? ExecutableStager.Create(plan.Workload.ExecutablePath)
+            : null;
         var started = DateTimeOffset.UtcNow;
         var stopwatch = Stopwatch.StartNew();
         var startInfo = new ProcessStartInfo
         {
-            FileName = plan.Workload.ExecutablePath,
-            WorkingDirectory = plan.Workload.WorkingDirectory ?? Environment.CurrentDirectory,
+            FileName = staged?.ExecutablePath ?? plan.Workload.ExecutablePath,
+            WorkingDirectory = staged?.WorkingDirectory ??
+                plan.Workload.WorkingDirectory ?? Environment.CurrentDirectory,
             UseShellExecute = false,
             RedirectStandardOutput = options.CaptureOutput,
             RedirectStandardError = options.CaptureOutput,
@@ -47,6 +51,7 @@ public sealed class BenchmarkAgent
 
         using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
         process.Start();
+        var peakWorkingSetTask = TrackPeakWorkingSetAsync(process);
         var stdoutTask = options.CaptureOutput ? process.StandardOutput.ReadToEndAsync(cancellationToken) : Task.FromResult(string.Empty);
         var stderrTask = options.CaptureOutput ? process.StandardError.ReadToEndAsync(cancellationToken) : Task.FromResult(string.Empty);
         var waitTask = process.WaitForExitAsync(cancellationToken);
@@ -58,8 +63,9 @@ public sealed class BenchmarkAgent
         var stdout = await stdoutTask;
         var stderr = await stderrTask;
         stopwatch.Stop();
+        var peakWorkingSetBytes = await peakWorkingSetTask;
         return new ProcessSample(sampleIndex, started, stopwatch.Elapsed,
-            timedOut ? -1 : process.ExitCode, timedOut, stdout, stderr);
+            timedOut ? -1 : process.ExitCode, timedOut, stdout, stderr, peakWorkingSetBytes);
     }
 
     private static void TryKillTree(Process process)
@@ -71,6 +77,26 @@ public sealed class BenchmarkAgent
         catch (InvalidOperationException)
         {
             // The process exited between the check and Kill.
+        }
+    }
+
+    private static async Task<long> TrackPeakWorkingSetAsync(Process process)
+    {
+        long peakWorkingSetBytes = 0;
+        while (true)
+        {
+            try
+            {
+                process.Refresh();
+                peakWorkingSetBytes = Math.Max(peakWorkingSetBytes, process.PeakWorkingSet64);
+                if (process.HasExited) return peakWorkingSetBytes;
+            }
+            catch (InvalidOperationException)
+            {
+                return peakWorkingSetBytes;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(10));
         }
     }
 }

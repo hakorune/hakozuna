@@ -64,7 +64,8 @@ public sealed record ProcessSample(
     int ExitCode,
     bool TimedOut,
     string StandardOutput,
-    string StandardError);
+    string StandardError,
+    long PeakWorkingSetBytes = 0);
 
 public sealed record RunResult(
     RunPlan Plan,
@@ -75,3 +76,8 @@ public sealed record RunResult(
 {
     public int FailureCount => Samples.Count(sample => sample.TimedOut || sample.ExitCode != 0);
 }
+
+public sealed record BenchmarkMeasurement(
+    double OpsPerSecond,
+    long PeakWorkingSetBytes,
+    string RawOutput);
