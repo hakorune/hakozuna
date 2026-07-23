@@ -95,6 +95,52 @@ public partial class MainWindow : Window
         }
     }
 
+    private async void RunComparisonClick(object? sender, Avalonia.Interactivity.RoutedEventArgs e)
+    {
+        var suite = (CompareSuiteComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        var profile = (CompareProfileComboBox.SelectedItem as ComboBoxItem)?.Content?.ToString();
+        if (string.IsNullOrWhiteSpace(suite) || string.IsNullOrWhiteSpace(profile))
+        {
+            CompareStatusText.Text = "Select a suite and profile first.";
+            return;
+        }
+
+        RunComparisonButton.IsEnabled = false;
+        CompareStatusText.Text = $"Running {suite} comparison...";
+        CompareRecommendedText.Text = "Recommended: ...";
+        CompareSummaryText.Text = "Waiting for isolated allocator workers...";
+        try
+        {
+            var request = RepositoryComparisonCatalog.CreateRequest(suite, profile);
+            var scorecard = await new ComparisonAgent().RunAsync(
+                request, new ComparisonAgentOptions(TimeSpan.FromMinutes(5)));
+            ShowComparisonScorecard(scorecard);
+        }
+        catch (Exception exception) when (exception is InvalidOperationException or
+            NotSupportedException or FileNotFoundException or InvalidDataException or
+            IOException or TimeoutException)
+        {
+            CompareRecommendedText.Text = "Recommended: --";
+            CompareSummaryText.Text = exception.Message;
+            CompareStatusText.Text = "Comparison failed";
+        }
+        finally
+        {
+            RunComparisonButton.IsEnabled = true;
+        }
+    }
+
+    private void ShowComparisonScorecard(ComparisonScorecard scorecard)
+    {
+        CompareStatusText.Text = $"Complete: {scorecard.Profile} / {string.Join(", ", scorecard.SuiteNames)}";
+        CompareRecommendedText.Text = $"Recommended: {scorecard.RecommendedAllocator ?? "n/a"}";
+        CompareSummaryText.Text = string.Join(Environment.NewLine,
+            scorecard.AllocatorSummaries.Select(summary =>
+                $"{summary.Allocator,-22} speed {summary.AverageSpeedScore,6:F1}  memory {FormatScore(summary.AverageMemoryScore),6}  score {FormatScore(summary.AverageProfileScore),6}"));
+    }
+
+    private static string FormatScore(double? score) => score is double value ? $"{value:F1}" : "n/a";
+
     private static string GetPlatform() => OperatingSystem.IsMacOS() ? "macos" : "windows";
 
     private static string GetArchitecture() => RuntimeInformation.ProcessArchitecture switch

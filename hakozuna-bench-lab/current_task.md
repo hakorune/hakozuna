@@ -27,11 +27,18 @@ measurement: existing native benchmark executables
    The Providers screen imports local `.hbl-provider.zip` files, validates
    platform/architecture and SHA-256, and refuses unsafe paths or overwrite.
 6. Connect Preview Run to the existing Windows system/HZ8 mixed-workspace
-   executables, parse throughput, and capture child-process peak RSS. [active]
+   executables, parse throughput, and capture child-process peak RSS. [done]
    Remote 90 and RSS Turnover remain blocked on dedicated runner adapters.
-7. Build Run Setup and Result Detail before charts.
-8. Add throughput/RSS charts and JSON/CSV/Markdown export.
-9. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.
+7. Connect the Compare tab to the Rust `benchlab compare batch` scorecard
+   command. [active]
+   Keep the CLI as the authoritative suite runner and score calculator.
+8. Add a reproducible provider-pack builder for prepared Windows mimalloc and
+   tcmalloc artifacts. [done]
+   Do not commit third-party binaries; validate packs through the existing
+   Providers import boundary.
+9. Build Run Setup and Result Detail before charts.
+10. Add throughput/RSS charts and JSON/CSV/Markdown export.
+11. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.
 
 ## Guardrails
 

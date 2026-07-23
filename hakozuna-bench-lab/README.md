@@ -13,7 +13,7 @@ throughput, RSS, latency, and safety reports.
 platform: Windows 10/11 x64 first; macOS next
 UI: .NET 8 + Avalonia UI
 execution: isolated child processes
-allocators: system, HZ8, mimalloc, tcmalloc
+allocators: system, HZ8, plus explicit mimalloc/tcmalloc provider packs
 presets: local, remote-heavy, mixed-size, RSS turnover
 exports: JSON, CSV, Markdown
 ```
@@ -47,6 +47,7 @@ not reportable when required runs fail or allocator identity is ambiguous.
 - [Windows MVP](docs/MVP_WINDOWS.md)
 - [Result protocol](docs/RESULT_PROTOCOL.md)
 - [Distribution and provider packs](docs/DISTRIBUTION_AND_PROVIDERS.md)
+- [Build provider packs](docs/PROVIDER_PACK_BUILD.md)
 - [Current task](current_task.md)
 
 ## Non-Goals for the MVP
@@ -61,6 +62,14 @@ not reportable when required runs fail or allocator identity is ambiguous.
 The product promise is simple: select allocators and a workload, run them under
 the same conditions, and understand the speed/RSS tradeoff without reading
 PowerShell scripts.
+
+The Compare tab runs the repository's `benchlab compare batch` command for a
+suite of allocator manifests and displays the selected profile scorecard. The
+presubmit scorecard currently includes system, mimalloc, and tcmalloc. HZ8's
+dedicated Windows Preview remains in the Run tab until its runner contract is
+adapted to the CLI manifest worker. The CLI remains the source of truth for
+raw records and scoring; the GUI is the safe visualization and control
+surface.
 
 ## Connected Preview
 

@@ -45,6 +45,12 @@ self-contained, signed, and notarized `.dmg`.
 
 The application never asks users to copy allocator DLLs into the GUI folder.
 
+Maintainers can build local Windows packs from prepared private artifacts with
+`scripts/build_provider_pack.ps1`. The reproducible procedure and the current
+mimalloc/tcmalloc artifact mapping are documented in
+`docs/PROVIDER_PACK_BUILD.md`. Generated ZIPs stay under `.artifacts/` and are
+not committed to the repository.
+
 ## Provider Pack
 
 A provider pack is a platform-specific ZIP with the extension
@@ -99,6 +105,11 @@ Versions install side by side. Import refuses to overwrite an existing
 
 No third-party pack is downloaded silently. A future catalog may expose
 available versions, but installation always requires user action.
+
+Provider selection means selecting one allocator pack for a comparison lane;
+it does not mean that the application ships an unreviewed bundle of every
+allocator. Each provider has its own manifest, version, environment profile,
+license notice, and artifact hashes.
 
 ## Security Contract
 

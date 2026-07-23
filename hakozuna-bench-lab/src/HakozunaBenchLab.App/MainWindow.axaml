@@ -49,6 +49,43 @@
         <TextBlock Grid.Row="2" Text="Preview is directional. Verified results retain raw output, hashes, and run conditions." Foreground="#596773" />
       </Grid>
     </TabItem>
+    <TabItem Header="Compare">
+      <Grid RowDefinitions="Auto,*,Auto" Margin="8,18,8,8">
+        <StackPanel Spacing="6">
+          <TextBlock Text="Allocator Comparison" FontSize="30" FontWeight="Bold" Foreground="#18212B" />
+          <TextBlock Text="Run one suite across multiple allocators and inspect the speed/RSS tradeoff." Foreground="#596773" TextWrapping="Wrap" />
+        </StackPanel>
+        <Grid Grid.Row="1" ColumnDefinitions="260,*" ColumnSpacing="24" Margin="0,28,0,24">
+          <Border Background="#F1E9DC" CornerRadius="14" Padding="18">
+            <StackPanel Spacing="14">
+              <TextBlock Text="COMPARE SETUP" FontWeight="Bold" Foreground="#8A4B2A" />
+              <TextBlock Text="Suite" />
+              <ComboBox x:Name="CompareSuiteComboBox" SelectedIndex="0">
+                <ComboBoxItem Content="presubmit" />
+                <ComboBoxItem Content="integration" />
+              </ComboBox>
+              <TextBlock Text="Profile" />
+              <ComboBox x:Name="CompareProfileComboBox" SelectedIndex="0">
+                <ComboBoxItem Content="balanced" />
+                <ComboBoxItem Content="local-fast" />
+                <ComboBoxItem Content="remote-heavy" />
+                <ComboBoxItem Content="low-rss" />
+              </ComboBox>
+              <Button x:Name="RunComparisonButton" Content="Run comparison" Click="RunComparisonClick" HorizontalContentAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <Border Grid.Column="1" Background="#FBF8F2" BorderBrush="#D8CDBD" BorderThickness="1" CornerRadius="14" Padding="24">
+            <StackPanel Spacing="14">
+              <TextBlock Text="SCORECARD" FontWeight="Bold" Foreground="#8A4B2A" />
+              <TextBlock x:Name="CompareStatusText" Text="No comparison run yet" FontSize="22" Foreground="#18212B" TextWrapping="Wrap" />
+              <TextBlock x:Name="CompareRecommendedText" Text="Recommended: --" FontSize="20" Foreground="#39705B" />
+              <TextBlock x:Name="CompareSummaryText" Text="Select a suite and profile to begin." FontFamily="Consolas" TextWrapping="Wrap" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <TextBlock Grid.Row="2" Text="Comparison runs use the CLI scorecard and remain Preview/Research until provider identity is shown here." Foreground="#596773" TextWrapping="Wrap" />
+      </Grid>
+    </TabItem>
     <TabItem Header="Providers">
       <ScrollViewer>
         <StackPanel Margin="8,22" Spacing="18" MaxWidth="940" HorizontalAlignment="Stretch">
