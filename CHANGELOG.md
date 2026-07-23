@@ -17,12 +17,18 @@ This project follows a release-tag workflow (`vX.Y.Z`) and keeps BREAKING change
   recommended balanced allocator line.
 - HZ8 preload hardening notes covering the expanded LD_PRELOAD surface and the
   default remote span-lease publish/backoff fix for xmalloc-style remote storms.
+- HZ8 balanced source-release notes, five-minute verification commands,
+  explicit rollback boundaries, and links to the HZ8 and HZ10-HZ12 papers.
+- A Windows HZ8 release smoke that compiles the selected default flags without
+  research or diagnostic lanes and runs outside non-executable source drives.
 
 ### Changed
 - Clarified that HZ5 is a profile family and paper-facing source/artifact
   track, not a default general allocator or prebuilt binary package.
 - Clarified that HZ8 is the current public recommendation, while HZ9/HZ10
   remain research/candidate lines unless a later release promotes them.
+- Updated the HZ8 release contract to the current KeepRefill +
+  SmallTransitionInventory + GeneralMediumPage + EntryBoundary-L1A default.
 
 ### BREAKING
 - None.

@@ -1,12 +1,13 @@
 # HZ8 Public Release Preparation
 
-Status: public-release preparation / paper input.
+Status: release candidate; source and public evidence are frozen for the
+source-first GitHub release.
 
 HZ8 is the recommended Hakozuna allocator line.  The current default is
-HZ8-v2 / KeepRefill plus the preload-surface, remote span-lease publish
-hardening, and Mag16 reusable small-span inventory, with HZ8-v1.1 kept as the
-frozen comparison baseline. The pre-promotion no-Mag behavior remains only as
-the explicit `hz8-v2-nomag` research control.
+KeepRefill plus preload-surface hardening, remote span-lease publication,
+SmallTransitionInventory, GeneralMediumPage, and EntryBoundary-L1A. The
+immediate pre-transition behavior remains `hz8-pre-transition-rollback`; the
+broader KeepRefill + Mag16 behavior remains `hz8-v2-rollback`.
 
 LargeDirectOwned and LargeDirectShardedHotCache-L1 are not release defaults.
 They are opt-in evidence lanes showing that the `cross128_r90` weakness is
@@ -27,10 +28,12 @@ Use this wording:
 ```text
 HZ8 is a balanced allocator line combining low post-workload RSS,
 fail-closed ownership, cross-thread free correctness, and practical throughput.
-The HZ8-v2 KeepRefill default removes the prior remote-heavy cliff while
-staying far below mimalloc RSS on the reported remote-heavy rows. The current
-default also fixes the redis `malloc_usable_size` preload split and the
-xmalloc remote publish livelock observed during macro-lane hardening.
+The HZ8 default removes the prior remote-heavy cliff while staying far below
+mimalloc RSS on the reported remote-heavy rows. SmallTransitionInventory and
+the GeneralMediumPage + EntryBoundary-L1A substrate improve bounded reuse and
+medium-size service without weakening fail-closed ownership. The current
+default also fixes the redis `malloc_usable_size` preload split and the xmalloc
+remote publish livelock observed during macro-lane hardening.
 ```
 
 Do not use these claims:
@@ -139,18 +142,37 @@ cross128 / LargeDirect:
 [x] LargeDirect / ShardedHot are described as opt-in evidence, not defaults.
 [x] Redis preload surface mismatch is documented and fixed in F1.
 [x] xmalloc remote publish livelock is fixed in the default preload lane.
-[ ] Generated binaries are excluded from the source release unless explicitly
+[x] Generated binaries are excluded from the source release unless explicitly
     attached as separate artifacts.
 ```
 
 ## Release Names
 
-Suggested tag names:
+Selected source-release tag:
 
 ```text
-hz8-v2-keeprefill
-hz8-paper-artifacts-2026-07
+hz8-balanced-2026.07
 ```
+
+## Release Verification
+
+Linux:
+
+```sh
+make -C hakozuna-hz8 smoke safety-stress preload-smoke
+```
+
+Windows with `clang-cl`:
+
+```powershell
+.\hakozuna-hz8\scripts\build_hz8_win64_release_smoke.ps1
+.\win\build_win_allocator_suite.ps1 -OnlyHz8
+.\win\build_win_mt_remote_suite.ps1 -OnlyHz8
+```
+
+The release smoke compiles the selected default flags explicitly and executes
+both regular-adoption modes from a local temporary directory. Research and
+diagnostic flags are intentionally absent.
 
 Suggested Zenodo title:
 

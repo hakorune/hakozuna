@@ -13,6 +13,9 @@ allocator families:
 - hakozuna-hz8/: HZ8 recommended balanced allocator line with low post-workload
                  RSS, fail-closed ownership, and KeepRefill remote-pressure
                  control
+- hakozuna-hz10/: HZ10 route/lifecycle/measurement research substrate
+- hakozuna-hz11/: HZ11 ownerless speed-first recycling research line
+- hakozuna-hz12/: HZ12 advisory-ownership and bounded span-reclaim research line
 
 Allocator profile map
 ---------------------
@@ -27,6 +30,9 @@ and ownership models.
 | HZ5 | page/run-first sidecar allocator prototype | ownership/policy-first: page/run descriptors route owner, profile, and dispatch policy | low-RSS fail-closed research line |
 | HZ6 | balanced speed/RSS with explicit safety contracts | RouteLayer + descriptor + SourceLayer + FrontCache | selected-family successor line |
 | HZ8 | recommended balanced line | fail-closed ownership + owner-stable remote free + KeepRefill pressure control | current public allocator line |
+| HZ10 | route/lifecycle/measurement substrate | page-based fail-closed routing + explicit measurement boundaries | foundation for later speed/reclaim research |
+| HZ11 | ownerless speed-first recycling | front cache + transfer cache + central spans | lean throughput research baseline |
+| HZ12 | bounded span reclamation | advisory ownership + complete-span authority + bounded depot | cold-boundary reclaim research line |
 
 In short:
 
@@ -35,6 +41,8 @@ In short:
 - HZ5 is ownership/policy-first.
 - HZ6 is contract-first with selected/default and profile-only lanes.
 - HZ8 is the recommended balanced allocator line.
+- HZ10-HZ12 form one research arc from measurement substrate, through
+  ownerless speed, to bounded span reclamation.
 
 The API is still malloc/free, but allocator behavior changes sharply depending
 on how free(ptr) recovers pointer identity and where ownership is sent next.
@@ -90,6 +98,12 @@ Latest benchmark and paper
   https://doi.org/10.5281/zenodo.21084278
 - HZ8 paper-ready Ubuntu matrix:
   hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md
+- HZ10-HZ12 integrated paper Zenodo record:
+  https://zenodo.org/records/21360690
+- DOI for the HZ10-HZ12 integrated paper:
+  https://doi.org/10.5281/zenodo.21360690
+- All-version DOI for the HZ10-HZ12 integrated paper series:
+  https://doi.org/10.5281/zenodo.21360689
 
 Representative MT snapshot
 --------------------------

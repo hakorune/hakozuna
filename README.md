@@ -1,9 +1,10 @@
-# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9 / hakozuna-hz10 / hakozuna-hz11
+# hakozuna (hz3) / hakozuna-mt (hz4) / hakozuna-hz5 / hakozuna-hz6 / hakozuna-hz8 / hakozuna-hz9 / hakozuna-hz10 / hakozuna-hz11 / hakozuna-hz12
 
 [![hz3/hz4 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753903.svg)](https://doi.org/10.5281/zenodo.20753903)
 [![HZ5 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753950.svg)](https://doi.org/10.5281/zenodo.20753950)
 [![HZ6 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.20753968.svg)](https://doi.org/10.5281/zenodo.20753968)
 [![HZ8 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21084279.svg)](https://doi.org/10.5281/zenodo.21084279)
+[![HZ10-HZ12 DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21360690.svg)](https://doi.org/10.5281/zenodo.21360690)
 
 **High-performance memory allocators competitive with mimalloc and tcmalloc**
 
@@ -37,6 +38,10 @@ Part of the [hakorune](https://github.com/hakorune) project.
 - **HZ11 (hakozuna-hz11)**: design-only speed-first research line for a
   tcmalloc-style front-end / transfer-cache / span allocator. It is not a
   faster HZ10 and it does not replace HZ8.
+- **HZ12 (hakozuna-hz12)**: bounded span-reclamation research line. It adds
+  advisory ownership at batch/retirement boundaries while keeping production
+  per-operation diagnostic accounting out of speed lanes. It is not an
+  unconditional HZ11 replacement or the public default.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
 
 ## Allocator Profile Map
@@ -55,6 +60,7 @@ metadata and ownership models:
 | HZ9 | archived standalone throughput research | HZ8-derived safety boundary + HZ9-owned local substrates | frozen design evidence under `hakozuna-hz9/` |
 | HZ10 | macro/shim speed research | page-based fail-closed substrate + preload shim + orphan adoption work | the speed-oriented research candidate under `hakozuna-hz10/` |
 | HZ11 | speed-first tcmalloc competitor design | front-end cache + transfer cache + central spans + checked-mode diagnostics | design-only speed line under `hakozuna-hz11/` |
+| HZ12 | bounded whole-span reclamation | advisory ownership + complete-span authority + bounded depot + zero-limbo rollback | cold-boundary reclaim research under `hakozuna-hz12/` |
 
 In short:
 
@@ -68,6 +74,8 @@ In short:
   the public recommendation.**
 - **HZ11 is a design-only speed-first line; it intentionally separates
   tcmalloc-class speed mode from HZ8/HZ10 correctness and reclaim semantics.**
+- **HZ12 studies bounded span reclamation with advisory ownership at cold
+  boundaries; it does not add per-free ownership to the production hot path.**
 
 Hakozuna is not trying to be the fastest allocator on every local hot-path
 benchmark. HZ8 is the recommended balanced line for low post-workload RSS,
@@ -76,6 +84,8 @@ the active research line for faster allocator substrates that keep explicit
 route, ownership, and reclamation boundaries; it is not the public default yet.
 HZ11 is a separate speed-first design line for testing a tcmalloc-shaped
 front-end/middle-end/backend allocator inside the Hakozuna family.
+HZ12 is the reclaim research line built from the HZ11 speed baseline. HZ8
+remains the recommended balanced allocator for normal use.
 
 ## Architecture Difference / アーキテクチャの違い
 
@@ -109,6 +119,11 @@ HZ11:
   Uses a tcmalloc-style front-end cache, transfer cache, central spans, and
   pageheap as the starting point. HZ8/HZ10-style diagnostics belong to checked
   lanes, not the default speed hot path.
+
+HZ12:
+  Advisory-ownership and bounded-reclaim research line.
+  Ownership narrows cold-path candidate discovery; complete-span validation,
+  bounded depot capacity, and zero-limbo rollback authorize reclamation.
 ```
 
 Japanese summary:
@@ -140,6 +155,11 @@ HZ11:
   design-onlyのspeed-firstライン。
   tcmalloc型のfront-end cache、transfer cache、central span、pageheapを
   出発点にする。HZ8/HZ10型の診断はchecked laneへ分離する。
+
+HZ12:
+  advisory ownershipとbounded reclaimの研究ライン。
+  ownershipはcold pathの候補探索だけに使い、complete-span validation、
+  bounded depot、zero-limbo rollbackでreclaimを許可する。
 ```
 
 The API is still `malloc` / `free`, but allocator behavior changes sharply
@@ -231,6 +251,12 @@ This repository already includes public Windows-native allocator comparisons and
   https://doi.org/10.5281/zenodo.21084279
 - All-version DOI for the HZ8 paper series:
   https://doi.org/10.5281/zenodo.21084278
+- HZ10-HZ12 integrated paper Zenodo record:
+  https://zenodo.org/records/21360690
+- DOI for the HZ10-HZ12 integrated paper:
+  https://doi.org/10.5281/zenodo.21360690
+- All-version DOI for the HZ10-HZ12 integrated paper series:
+  https://doi.org/10.5281/zenodo.21360689
 - GitHub Releases: https://github.com/hakorune/hakozuna/releases
 - Citation metadata: `CITATION.cff`
 - Changelog: `CHANGELOG.md` (BREAKING changes are explicitly listed per release)
@@ -240,6 +266,8 @@ This repository already includes public Windows-native allocator comparisons and
 - HZ6 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz6.md`
 - HZ8 source/artifact release draft: `docs/releases/GITHUB_RELEASE_hz8.md`
 - HZ8 Zenodo description draft: `docs/releases/ZENODO_hz8_DESCRIPTION.md`
+- HZ10-HZ12 paper release notes: `docs/releases/GITHUB_RELEASE_hz10_hz12.md`
+- HZ10-HZ12 Zenodo record notes: `docs/releases/ZENODO_hz10_hz12_DESCRIPTION.md`
 - HZ8 release/paper preparation: `hakozuna-hz8/docs/HZ8_PUBLIC_RELEASE_PREP.md`
 - HZ8 paper-ready Ubuntu matrix:
   `hakozuna-hz8/docs/HZ8_PAPER_PUBLIC_MATRIX_UBUNTU_X86_64.md`
