@@ -27,8 +27,9 @@ Part of the [hakorune](https://github.com/hakorune) project.
   distilled from HZ6. Its phased family now lives under `hz7/` as `v1`,
   `v2`, `v3`, and `v4`.
 - **HZ8 (hakozuna-hz8)**: recommended balanced allocator line. Current default
-  is KeepRefill + remote span-lease publish + Mag16 + GeneralMediumPage +
-  EntryBoundary-L1A. The previous behavior is retained as `hz8-v2-rollback`.
+  is KeepRefill + remote span-lease publish + SmallTransitionInventory +
+  GeneralMediumPage + EntryBoundary-L1A. The previous behavior is retained as
+  `hz8-pre-transition-rollback` and `hz8-v2-rollback`.
 - **HZ9 (hakozuna-hz9)**: archived standalone throughput research line. It
   remains in-tree as design evidence, but active speed/RSS-aware work has moved
   to HZ10.
@@ -43,6 +44,17 @@ Part of the [hakorune](https://github.com/hakorune) project.
   per-operation diagnostic accounting out of speed lanes. It is not an
   unconditional HZ11 replacement or the public default.
 - Profile selection guide: [PROFILE_GUIDE.md](PROFILE_GUIDE.md)
+
+## Benchmark Tool
+
+**Hakozuna Bench Lab** is the new Windows-first GUI project for running the
+existing allocator benchmarks as isolated child processes and visualizing
+throughput, peak RSS, and post-workload RSS. It is an orchestration and
+reporting layer; the command-line runners remain authoritative.
+
+- [Hakozuna Bench Lab](hakozuna-bench-lab/README.md)
+- [Windows MVP](hakozuna-bench-lab/docs/MVP_WINDOWS.md)
+- [Result protocol](hakozuna-bench-lab/docs/RESULT_PROTOCOL.md)
 
 ## Allocator Profile Map
 

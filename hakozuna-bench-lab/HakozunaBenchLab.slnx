@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/HakozunaBenchLab.Agent/HakozunaBenchLab.Agent.csproj" />
+    <Project Path="src/HakozunaBenchLab.App/HakozunaBenchLab.App.csproj" />
+    <Project Path="src/HakozunaBenchLab.Core/HakozunaBenchLab.Core.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/HakozunaBenchLab.Tests/HakozunaBenchLab.Tests.csproj" />
+  </Folder>
+</Solution>

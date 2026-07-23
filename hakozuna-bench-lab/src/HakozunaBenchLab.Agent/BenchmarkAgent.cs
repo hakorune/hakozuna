@@ -1,0 +1,102 @@
+using System.Collections.Immutable;
+using System.Diagnostics;
+using HakozunaBenchLab.Core.Models;
+using HakozunaBenchLab.Core.Environment;
+
+namespace HakozunaBenchLab.Agent;
+
+public sealed record AgentOptions(TimeSpan Timeout, bool CaptureOutput = true);
+
+public sealed class BenchmarkAgent
+{
+    public async Task<RunResult> RunAsync(RunPlan plan, AgentOptions options,
+        CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(plan);
+        ArgumentNullException.ThrowIfNull(options);
+        if (options.Timeout <= TimeSpan.Zero) throw new ArgumentOutOfRangeException(nameof(options));
+
+        var environmentOverrides = EnvironmentPolicy.MergeOverrides(
+            plan.Allocator.EnvironmentOverrides,
+            plan.Workload.EnvironmentOverrides);
+        var samples = ImmutableArray.CreateBuilder<ProcessSample>(plan.Runs);
+        for (var index = 0; index < plan.Runs; index++)
+            samples.Add(await RunOneAsync(plan, index + 1, options, environmentOverrides, cancellationToken));
+
+        return new RunResult(plan, samples.ToImmutable(), plan.Allocator.ArtifactSha256,
+            EnvironmentPolicy.CaptureForReport(environmentOverrides), DateTimeOffset.UtcNow);
+    }
+
+    private static async Task<ProcessSample> RunOneAsync(RunPlan plan, int sampleIndex,
+        AgentOptions options, IReadOnlyDictionary<string, string> environmentOverrides,
+        CancellationToken cancellationToken)
+    {
+        using var staged = File.Exists(plan.Workload.ExecutablePath)
+            ? ExecutableStager.Create(plan.Workload.ExecutablePath)
+            : null;
+        var started = DateTimeOffset.UtcNow;
+        var stopwatch = Stopwatch.StartNew();
+        var startInfo = new ProcessStartInfo
+        {
+            FileName = staged?.ExecutablePath ?? plan.Workload.ExecutablePath,
+            WorkingDirectory = staged?.WorkingDirectory ??
+                plan.Workload.WorkingDirectory ?? Environment.CurrentDirectory,
+            UseShellExecute = false,
+            RedirectStandardOutput = options.CaptureOutput,
+            RedirectStandardError = options.CaptureOutput,
+            CreateNoWindow = true
+        };
+        foreach (var argument in plan.Workload.Arguments) startInfo.ArgumentList.Add(argument);
+        foreach (var pair in environmentOverrides) startInfo.Environment[pair.Key] = pair.Value;
+
+        using var process = new Process { StartInfo = startInfo, EnableRaisingEvents = true };
+        process.Start();
+        var peakWorkingSetTask = TrackPeakWorkingSetAsync(process);
+        var stdoutTask = options.CaptureOutput ? process.StandardOutput.ReadToEndAsync(cancellationToken) : Task.FromResult(string.Empty);
+        var stderrTask = options.CaptureOutput ? process.StandardError.ReadToEndAsync(cancellationToken) : Task.FromResult(string.Empty);
+        var waitTask = process.WaitForExitAsync(cancellationToken);
+        var timeoutTask = Task.Delay(options.Timeout, cancellationToken);
+        var completed = await Task.WhenAny(waitTask, timeoutTask);
+        var timedOut = completed == timeoutTask;
+        if (timedOut) TryKillTree(process);
+        await process.WaitForExitAsync(CancellationToken.None);
+        var stdout = await stdoutTask;
+        var stderr = await stderrTask;
+        stopwatch.Stop();
+        var peakWorkingSetBytes = await peakWorkingSetTask;
+        return new ProcessSample(sampleIndex, started, stopwatch.Elapsed,
+            timedOut ? -1 : process.ExitCode, timedOut, stdout, stderr, peakWorkingSetBytes);
+    }
+
+    private static void TryKillTree(Process process)
+    {
+        try
+        {
+            if (!process.HasExited) process.Kill(entireProcessTree: true);
+        }
+        catch (InvalidOperationException)
+        {
+            // The process exited between the check and Kill.
+        }
+    }
+
+    private static async Task<long> TrackPeakWorkingSetAsync(Process process)
+    {
+        long peakWorkingSetBytes = 0;
+        while (true)
+        {
+            try
+            {
+                process.Refresh();
+                peakWorkingSetBytes = Math.Max(peakWorkingSetBytes, process.PeakWorkingSet64);
+                if (process.HasExited) return peakWorkingSetBytes;
+            }
+            catch (InvalidOperationException)
+            {
+                return peakWorkingSetBytes;
+            }
+
+            await Task.Delay(TimeSpan.FromMilliseconds(10));
+        }
+    }
+}

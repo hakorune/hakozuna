@@ -1,0 +1,52 @@
+# Hakozuna Bench Lab Current Task
+
+## Goal
+
+Build a Windows-first GUI that runs existing allocator benchmarks in isolated
+child processes and visualizes throughput, peak RSS, and post-workload RSS.
+
+## Current Phase
+
+```text
+phase: core/agent/app skeleton implementation
+platform: Windows 10/11 x64 first; macOS next
+stack: .NET 8 + Avalonia UI
+measurement: existing native benchmark executables
+```
+
+## Implementation Order
+
+1. Create the .NET solution and four project skeletons. [done]
+2. Implement allocator/workload manifest models and validation. [done]
+3. Implement the immutable run plan and result protocol. [done]
+4. Add the Windows child-process agent with timeout and tree cleanup. [done]
+   Allocator/runner version, SHA-256, and redacted environment identity are
+   mandatory for Verified plans.
+5. Add provider pack manifest, validation, safe import, and side-by-side
+   installation. [done]
+   The Providers screen imports local `.hbl-provider.zip` files, validates
+   platform/architecture and SHA-256, and refuses unsafe paths or overwrite.
+6. Connect Preview Run to the existing Windows system/HZ8 mixed-workspace
+   executables, parse throughput, and capture child-process peak RSS. [done]
+   Remote 90 and RSS Turnover remain blocked on dedicated runner adapters.
+7. Connect the Compare tab to the Rust `benchlab compare batch` scorecard
+   command. [active]
+   Keep the CLI as the authoritative suite runner and score calculator.
+8. Add a reproducible provider-pack builder for prepared Windows mimalloc and
+   tcmalloc artifacts. [done]
+   Do not commit third-party binaries; validate packs through the existing
+   Providers import boundary.
+9. Build Run Setup and Result Detail before charts.
+10. Add throughput/RSS charts and JSON/CSV/Markdown export.
+11. Run an end-to-end system/HZ8/mimalloc/tcmalloc smoke.
+
+## Guardrails
+
+```text
+GUI never loads allocator DLLs.
+Preview and Verified samples never mix.
+Diagnostic builds never appear as speed results.
+Failed samples remain visible.
+Existing command-line runners remain authoritative.
+Linux UI work waits until the Windows MVP is stable.
+```

@@ -65,6 +65,11 @@ perf.data*
 *.trace
 dump.rdb
 
+# Hakozuna Bench Lab local .NET outputs
+hakozuna-bench-lab/**/bin/
+hakozuna-bench-lab/**/obj/
+hakozuna-bench-lab/.artifacts/
+
 # Private development docs (not for public)
 /private/
 
